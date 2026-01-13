@@ -1,0 +1,595 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		499584AF2F0C01EE0053760D /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 499584AE2F0C01EE0053760D /* StoreKit.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		499583DD2F0BD2770053760D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 499583BE2F0BD2730053760D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 499583C52F0BD2740053760D;
+			remoteInfo = chillnote;
+		};
+		499583E72F0BD2770053760D /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 499583BE2F0BD2730053760D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 499583C52F0BD2740053760D;
+			remoteInfo = chillnote;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		499583C62F0BD2740053760D /* chillnote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = chillnote.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		499583DC2F0BD2770053760D /* chillnoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = chillnoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		499583E62F0BD2770053760D /* chillnoteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = chillnoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		499584AE2F0C01EE0053760D /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+/* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		499583EE2F0BD2770053760D /* Exceptions for "chillnote" folder in "chillnote" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 499583C52F0BD2740053760D /* chillnote */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		499583C82F0BD2740053760D /* chillnote */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				499583EE2F0BD2770053760D /* Exceptions for "chillnote" folder in "chillnote" target */,
+			);
+			path = chillnote;
+			sourceTree = "<group>";
+		};
+		499583DF2F0BD2770053760D /* chillnoteTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = chillnoteTests;
+			sourceTree = "<group>";
+		};
+		499583E92F0BD2770053760D /* chillnoteUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = chillnoteUITests;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		499583C32F0BD2740053760D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				499584AF2F0C01EE0053760D /* StoreKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		499583D92F0BD2770053760D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		499583E32F0BD2770053760D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		499583BD2F0BD2730053760D = {
+			isa = PBXGroup;
+			children = (
+				499583C82F0BD2740053760D /* chillnote */,
+				499583DF2F0BD2770053760D /* chillnoteTests */,
+				499583E92F0BD2770053760D /* chillnoteUITests */,
+				499584AD2F0C01EE0053760D /* Frameworks */,
+				499583C72F0BD2740053760D /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		499583C72F0BD2740053760D /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				499583C62F0BD2740053760D /* chillnote.app */,
+				499583DC2F0BD2770053760D /* chillnoteTests.xctest */,
+				499583E62F0BD2770053760D /* chillnoteUITests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		499584AD2F0C01EE0053760D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				499584AE2F0C01EE0053760D /* StoreKit.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		499583C52F0BD2740053760D /* chillnote */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 499583EF2F0BD2770053760D /* Build configuration list for PBXNativeTarget "chillnote" */;
+			buildPhases = (
+				499583C22F0BD2740053760D /* Sources */,
+				499583C32F0BD2740053760D /* Frameworks */,
+				499583C42F0BD2740053760D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				499583C82F0BD2740053760D /* chillnote */,
+			);
+			name = chillnote;
+			packageProductDependencies = (
+			);
+			productName = chillnote;
+			productReference = 499583C62F0BD2740053760D /* chillnote.app */;
+			productType = "com.apple.product-type.application";
+		};
+		499583DB2F0BD2770053760D /* chillnoteTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 499583F42F0BD2770053760D /* Build configuration list for PBXNativeTarget "chillnoteTests" */;
+			buildPhases = (
+				499583D82F0BD2770053760D /* Sources */,
+				499583D92F0BD2770053760D /* Frameworks */,
+				499583DA2F0BD2770053760D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				499583DE2F0BD2770053760D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				499583DF2F0BD2770053760D /* chillnoteTests */,
+			);
+			name = chillnoteTests;
+			packageProductDependencies = (
+			);
+			productName = chillnoteTests;
+			productReference = 499583DC2F0BD2770053760D /* chillnoteTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		499583E52F0BD2770053760D /* chillnoteUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 499583F72F0BD2770053760D /* Build configuration list for PBXNativeTarget "chillnoteUITests" */;
+			buildPhases = (
+				499583E22F0BD2770053760D /* Sources */,
+				499583E32F0BD2770053760D /* Frameworks */,
+				499583E42F0BD2770053760D /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				499583E82F0BD2770053760D /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				499583E92F0BD2770053760D /* chillnoteUITests */,
+			);
+			name = chillnoteUITests;
+			packageProductDependencies = (
+			);
+			productName = chillnoteUITests;
+			productReference = 499583E62F0BD2770053760D /* chillnoteUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		499583BE2F0BD2730053760D /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1640;
+				LastUpgradeCheck = 1640;
+				TargetAttributes = {
+					499583C52F0BD2740053760D = {
+						CreatedOnToolsVersion = 16.4;
+					};
+					499583DB2F0BD2770053760D = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 499583C52F0BD2740053760D;
+					};
+					499583E52F0BD2770053760D = {
+						CreatedOnToolsVersion = 16.4;
+						TestTargetID = 499583C52F0BD2740053760D;
+					};
+				};
+			};
+			buildConfigurationList = 499583C12F0BD2730053760D /* Build configuration list for PBXProject "chillnote" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 499583BD2F0BD2730053760D;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 499583C72F0BD2740053760D /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				499583C52F0BD2740053760D /* chillnote */,
+				499583DB2F0BD2770053760D /* chillnoteTests */,
+				499583E52F0BD2770053760D /* chillnoteUITests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		499583C42F0BD2740053760D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		499583DA2F0BD2770053760D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		499583E42F0BD2770053760D /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		499583C22F0BD2740053760D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		499583D82F0BD2770053760D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		499583E22F0BD2770053760D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		499583DE2F0BD2770053760D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 499583C52F0BD2740053760D /* chillnote */;
+			targetProxy = 499583DD2F0BD2770053760D /* PBXContainerItemProxy */;
+		};
+		499583E82F0BD2770053760D /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 499583C52F0BD2740053760D /* chillnote */;
+			targetProxy = 499583E72F0BD2770053760D /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		499583F02F0BD2770053760D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = chillnote/chillnote.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y6A6D9322M;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = chillnote/Info.plist;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillNote needs microphone access to record your thoughts.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "ChillNote uses speech recognition to transcribe your voice to text.";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sponteoai.chillnote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		499583F12F0BD2770053760D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = chillnote/chillnote.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y6A6D9322M;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = chillnote/Info.plist;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillNote needs microphone access to record your thoughts.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "ChillNote uses speech recognition to transcribe your voice to text.";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sponteoai.chillnote;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		499583F22F0BD2770053760D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = Y6A6D9322M;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		499583F32F0BD2770053760D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = Y6A6D9322M;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		499583F52F0BD2770053760D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y6A6D9322M;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sponteoai.chillnoteTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/chillnote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/chillnote";
+			};
+			name = Debug;
+		};
+		499583F62F0BD2770053760D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y6A6D9322M;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.5;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sponteoai.chillnoteTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/chillnote.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/chillnote";
+			};
+			name = Release;
+		};
+		499583F82F0BD2770053760D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y6A6D9322M;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sponteoai.chillnoteUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = chillnote;
+			};
+			name = Debug;
+		};
+		499583F92F0BD2770053760D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y6A6D9322M;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = sponteoai.chillnoteUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = chillnote;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		499583C12F0BD2730053760D /* Build configuration list for PBXProject "chillnote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				499583F22F0BD2770053760D /* Debug */,
+				499583F32F0BD2770053760D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		499583EF2F0BD2770053760D /* Build configuration list for PBXNativeTarget "chillnote" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				499583F02F0BD2770053760D /* Debug */,
+				499583F12F0BD2770053760D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		499583F42F0BD2770053760D /* Build configuration list for PBXNativeTarget "chillnoteTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				499583F52F0BD2770053760D /* Debug */,
+				499583F62F0BD2770053760D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		499583F72F0BD2770053760D /* Build configuration list for PBXNativeTarget "chillnoteUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				499583F82F0BD2770053760D /* Debug */,
+				499583F92F0BD2770053760D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 499583BE2F0BD2730053760D /* Project object */;
+}

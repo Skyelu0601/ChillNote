@@ -1,0 +1,297 @@
+import SwiftUI
+import UIKit
+
+struct RecordingOverlayView: View {
+    @ObservedObject var speechRecognizer: SpeechRecognizer
+    var onDismiss: () -> Void
+    var onSave: (String) async -> Void
+    @State private var isProcessing = false
+    @State private var bannerData: BannerData?
+    @State private var startTime: Date?
+    @State private var elapsed: TimeInterval = 0
+    @State private var didTriggerStartHaptic = false
+    @State private var pendingSave = false
+    private let analytics = AnalyticsService.shared
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    
+    var body: some View {
+        ZStack {
+            // Blur Background
+            Color.white.opacity(0.9)
+                .background(.ultraThinMaterial)
+                .ignoresSafeArea()
+            
+            VStack {
+                Spacer()
+                
+                // Pulsing Animation Logic (Visual only for MVP)
+                ZStack {
+                    Circle()
+                        .fill(Color.chillYellow.opacity(0.3))
+                        .frame(width: 150, height: 150)
+                        .scaleEffect(speechRecognizer.isRecording ? 1.5 : 1.0)
+                        .opacity(speechRecognizer.isRecording ? 0.0 : 0.5)
+                        .animation(.easeOut(duration: 1.5).repeatForever(autoreverses: false), value: speechRecognizer.isRecording)
+                    
+                    Circle()
+                        .fill(Color.chillYellow)
+                        .frame(width: 80, height: 80)
+                }
+                .accessibilityHidden(true)
+                .padding(.bottom, 40)
+                
+                Text(statusTitle)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.textMain)
+                
+                Text(timeText)
+                    .font(.bodySmall)
+                    .foregroundColor(.textSub)
+                    .padding(.top, 4)
+                    .accessibilityLabel("Recording duration")
+                    .accessibilityValue(timeText)
+                
+                WaveformView(isActive: speechRecognizer.isRecording)
+                    .padding(.top, 12)
+                    .accessibilityHidden(true)
+                
+                // Live Transcript
+                if speechRecognizer.permissionGranted {
+                    ScrollView {
+                        if case let .error(message) = speechRecognizer.recordingState {
+                            VStack(spacing: 12) {
+                                Text(displayErrorMessage(message))
+                                    .font(.bodyMedium)
+                                    .foregroundColor(.textMain)
+                                    .multilineTextAlignment(.center)
+                                Button("Try Again") {
+                                    speechRecognizer.startRecording()
+                                }
+                                .font(.bodyMedium)
+                                .foregroundColor(.chillYellow)
+                                .accessibilityHint("Restarts recording.")
+                            }
+                            .padding()
+                        } else {
+                            // User requested to hide real-time transcription
+                            // Text(speechRecognizer.transcript.isEmpty ? "(Say something...)" : speechRecognizer.transcript)
+                            //     .font(.bodyLarge)
+                            //     .foregroundColor(.textMain)
+                            //     .multilineTextAlignment(.center)
+                            //     .padding()
+                            if isProcessing {
+                                VStack(spacing: 16) {
+                                    ProgressView()
+                                        .scaleEffect(1.5)
+                                    Text("Refining your thought...")
+                                        .font(.bodyMedium)
+                                        .foregroundColor(.textSub)
+                                }
+                                .padding(.top, 20)
+                            } else {
+                                Text(speechRecognizer.transcript.isEmpty ? "Go ahead, I'm listening..." : " ")
+                                    .font(.bodyLarge)
+                                    .foregroundColor(.textSub)
+                                    .padding()
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 200)
+                } else {
+                    VStack(spacing: 12) {
+                        Text("Microphone and Speech access are required.")
+                            .font(.bodyMedium)
+                            .foregroundColor(.textMain)
+                            .multilineTextAlignment(.center)
+                        Button("Request Access") {
+                            speechRecognizer.checkPermissions()
+                        }
+                        .font(.bodyMedium)
+                        .foregroundColor(.chillYellow)
+                        .accessibilityHint("Requests microphone permission.")
+                        Button("Open Settings") {
+                            openSettings()
+                        }
+                        .font(.bodyMedium)
+                        .foregroundColor(.chillYellow)
+                        .accessibilityHint("Opens system Settings for permissions.")
+                    }
+                    .padding(.horizontal, 32)
+                }
+                
+                Spacer()
+                
+                // Controls
+                Button(action: {
+                    finishRecording()
+                }) {
+                    HStack {
+                        if isProcessing {
+                            EmptyView() // Spinner is in the middle now
+                        } else {
+                            Text("Done")
+                        }
+                    }
+                    .font(.bodyMedium)
+                    .fontWeight(.bold)
+                    // Keep same frame/padding even if text changes
+                    .frame(minWidth: 100) 
+                    .padding(.vertical, 14)
+                    .background(isProcessing ? Color.gray.opacity(0.3) : Color.black)
+                    .foregroundColor(.white)
+                    .cornerRadius(30)
+                }
+                .disabled(isProcessing)
+                .accessibilityLabel("Finish recording")
+                .accessibilityHint("Stops recording and saves your note.")
+                .padding(.bottom, 50)
+            }
+        }
+        .onAppear {
+            startIfNeeded()
+        }
+        .onDisappear {
+            if speechRecognizer.isRecording {
+                speechRecognizer.stopRecording(reason: .cancelled)
+            }
+        }
+        .onChange(of: speechRecognizer.permissionGranted) { _, newValue in
+            if newValue {
+                startIfNeeded()
+            }
+        }
+        .onChange(of: speechRecognizer.recordingState) { _, newValue in
+            switch newValue {
+            case .recording:
+                startTime = Date()
+                elapsed = 0
+                analytics.log(.recordStart)
+                if !didTriggerStartHaptic {
+                    didTriggerStartHaptic = true
+                    impactHaptic(style: .medium)
+                }
+            case .processing:
+                break
+            case .idle:
+                startTime = nil
+                elapsed = 0
+                didTriggerStartHaptic = false
+                if pendingSave {
+                    finalizeSave()
+                }
+            case .error(let message):
+                bannerData = BannerData(message: displayErrorMessage(message), style: .error)
+                analytics.log(.transcribeFail)
+                notificationHaptic(type: .error)
+                if pendingSave {
+                    pendingSave = false
+                    isProcessing = false
+                }
+            }
+        }
+        .onReceive(timer) { _ in
+            guard speechRecognizer.isRecording, let startTime = startTime else { return }
+            elapsed = Date().timeIntervalSince(startTime)
+        }
+        .onChange(of: speechRecognizer.shouldStop) { _, newValue in
+            print("📍 shouldStop changed: \(newValue)")
+            if newValue {
+                print("📍 Calling stopRecording()")
+                speechRecognizer.stopRecording()
+                print("📍 After stopRecording()")
+                speechRecognizer.shouldStop = false
+            }
+        }
+        .banner(data: $bannerData)
+    }
+    
+    func finishRecording() {
+        print("🔘 Done pressed, isProcessing=\(isProcessing)")
+        guard !isProcessing else { return }
+        pendingSave = true
+        isProcessing = true
+        print("📍 Setting shouldStop = true")
+        speechRecognizer.shouldStop = true
+        print("📍 shouldStop set to true")
+    }
+
+    private var statusTitle: String {
+        if !speechRecognizer.permissionGranted {
+            return "Permission Needed"
+        }
+        switch speechRecognizer.recordingState {
+        case .recording:
+            return "Listening..."
+        case .processing:
+            return "Processing..."
+        case .error:
+            return "Recording Error"
+        case .idle:
+            return "Ready"
+        }
+    }
+    
+    private var timeText: String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = elapsed >= 3600 ? [.hour, .minute, .second] : [.minute, .second]
+        formatter.zeroFormattingBehavior = .pad
+        return formatter.string(from: elapsed) ?? "00:00"
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func startIfNeeded() {
+        guard speechRecognizer.permissionGranted, !speechRecognizer.isRecording else { return }
+        Task { @MainActor in
+            await Task.yield()
+            speechRecognizer.startRecording()
+        }
+    }
+
+    private func finalizeSave() {
+        pendingSave = false
+        let trimmed = speechRecognizer.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        Task {
+            await onSave(trimmed)
+            
+            // Analytics
+            if !trimmed.isEmpty {
+                analytics.log(.transcribeSuccess, properties: ["length": "\(trimmed.count)"])
+            }
+            analytics.log(.recordEnd)
+            notificationHaptic(type: .success)
+            
+            isProcessing = false
+            onDismiss()
+        }
+    }
+
+    private func displayErrorMessage(_ message: String) -> String {
+        if message.lowercased().contains("network error") {
+            return "Network unavailable. Transcription failed."
+        }
+        if message.lowercased().contains("timed out") || message.lowercased().contains("timeout") {
+            return "Transcription timed out. Please try again."
+        }
+        if message.lowercased().contains("transcription failed") {
+            return "Transcription failed."
+        }
+        return message
+    }
+
+    private func impactHaptic(style: UIImpactFeedbackGenerator.FeedbackStyle) {
+        let generator = UIImpactFeedbackGenerator(style: style)
+        generator.prepare()
+        generator.impactOccurred()
+    }
+    
+    private func notificationHaptic(type: UINotificationFeedbackGenerator.FeedbackType) {
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
+        generator.notificationOccurred(type)
+    }
+}
