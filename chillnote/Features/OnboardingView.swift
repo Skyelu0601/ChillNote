@@ -56,16 +56,16 @@ struct OnboardingView: View {
                             // Icon Circle
                             ZStack {
                                 Circle()
-                                    .fill(Color.chillYellowDim.opacity(0.3))
+                                    .fill(Color.paleCream.opacity(0.3))
                                     .frame(width: 200, height: 200)
                                 
                                 Circle()
-                                    .fill(Color.chillYellowDim.opacity(0.5))
+                                    .fill(Color.paleCream.opacity(0.5))
                                     .frame(width: 150, height: 150)
                                 
                                 Image(systemName: pages[index].icon)
                                     .font(.system(size: 70))
-                                    .foregroundColor(.chillYellow)
+                                    .foregroundColor(.accentPrimary)
                             }
                             .padding(.bottom, 20)
                             
@@ -92,7 +92,7 @@ struct OnboardingView: View {
                 HStack(spacing: 8) {
                     ForEach(0..<pages.count, id: \.self) { index in
                         Circle()
-                            .fill(currentPage == index ? Color.chillYellow : Color.gray.opacity(0.3))
+                            .fill(currentPage == index ? Color.accentPrimary : Color.gray.opacity(0.3))
                             .frame(width: 8, height: 8)
                             .scaleEffect(currentPage == index ? 1.2 : 1.0)
                             .animation(.spring(), value: currentPage)
@@ -120,9 +120,9 @@ struct OnboardingView: View {
                         .foregroundColor(.textMain)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
-                        .background(Color.chillYellow)
+                        .background(Color.accentPrimary)
                         .cornerRadius(30)
-                        .shadow(color: Color.chillYellow.opacity(0.4), radius: 10, x: 0, y: 5)
+                        .shadow(color: Color.accentPrimary.opacity(0.4), radius: 10, x: 0, y: 5)
                 }
                 .padding(.horizontal, 32)
                 .padding(.bottom, 40)

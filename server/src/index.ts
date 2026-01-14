@@ -154,18 +154,28 @@ app.post("/ai/voice-note", async (req, res) => {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
     const systemInstruction = [
-      "You are a voice note assistant.",
-      "Task: (1) transcribe the audio accurately, (2) remove filler words, (3) fix grammar, (4) lightly polish while preserving meaning and tone.",
-      "Return STRICT JSON only, no markdown, no extra keys.",
-      "JSON schema: {\"text\": string}.",
-      locale ? `Locale hint: ${locale}.` : undefined
-    ].filter(Boolean).join("\n");
+      "You are a professional voice transcription assistant. Produce clean, polished transcriptions that preserve the speaker's original meaning, tone, and intent.",
+      "",
+      "Capabilities:",
+      "1) Removes filler: Automatically remove filler words and disfluencies while keeping all real content intact.",
+      "2) Removes repetition: Detect and remove unnecessary repetitions, including short-range repeats within the same clause or sentence, while preserving intentional emphasis.",
+      "3) Auto-edits corrections: When the speaker changes their mind mid-sentence, keep only the final intended message.",
+      "4) Auto-formats: If the speaker uses ordinal or step markers, normalize the content into an ordered list format. Otherwise keep plain paragraphs.",
+      "5) Finds the right words: Lightly improve word choice for clarity without changing sentence structure or meaning. Keep changes minimal.",
+      "",
+      "Rules:",
+      "- Do NOT translate; keep the original language spoken.",
+      "- Do NOT summarize or invent content.",
+      "- When in doubt, keep the original wording.",
+      "- Return STRICT JSON only, no markdown, no extra keys.",
+      "JSON schema: {\\\"text\\\": string}",
+      locale ? `Locale hint: ${locale}` : undefined
+    ].filter(Boolean).join("\\n");
 
     const body: any = {
       systemInstruction: { parts: [{ text: systemInstruction }] },
       contents: [
         {
-          role: "user",
           parts: [
             {
               inlineData: {
@@ -178,7 +188,7 @@ app.post("/ai/voice-note", async (req, res) => {
         }
       ],
       generationConfig: {
-        temperature: 0.2,
+        temperature: 0.3,
         responseMimeType: "application/json"
       }
     };

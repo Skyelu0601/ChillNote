@@ -27,14 +27,14 @@ struct RecordingOverlayView: View {
                 // Pulsing Animation Logic (Visual only for MVP)
                 ZStack {
                     Circle()
-                        .fill(Color.chillYellow.opacity(0.3))
+                        .fill(Color.accentPrimary.opacity(0.3))
                         .frame(width: 150, height: 150)
                         .scaleEffect(speechRecognizer.isRecording ? 1.5 : 1.0)
                         .opacity(speechRecognizer.isRecording ? 0.0 : 0.5)
                         .animation(.easeOut(duration: 1.5).repeatForever(autoreverses: false), value: speechRecognizer.isRecording)
                     
                     Circle()
-                        .fill(Color.chillYellow)
+                        .fill(Color.accentPrimary)
                         .frame(width: 80, height: 80)
                 }
                 .accessibilityHidden(true)
@@ -69,7 +69,7 @@ struct RecordingOverlayView: View {
                                     speechRecognizer.startRecording()
                                 }
                                 .font(.bodyMedium)
-                                .foregroundColor(.chillYellow)
+                                .foregroundColor(.accentPrimary)
                                 .accessibilityHint("Restarts recording.")
                             }
                             .padding()
@@ -108,13 +108,13 @@ struct RecordingOverlayView: View {
                             speechRecognizer.checkPermissions()
                         }
                         .font(.bodyMedium)
-                        .foregroundColor(.chillYellow)
+                        .foregroundColor(.accentPrimary)
                         .accessibilityHint("Requests microphone permission.")
                         Button("Open Settings") {
                             openSettings()
                         }
                         .font(.bodyMedium)
-                        .foregroundColor(.chillYellow)
+                        .foregroundColor(.accentPrimary)
                         .accessibilityHint("Opens system Settings for permissions.")
                     }
                     .padding(.horizontal, 32)

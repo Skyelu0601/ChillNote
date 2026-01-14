@@ -21,7 +21,7 @@ struct LoginView: View {
                         .scaledToFit()
                         .frame(width: 100, height: 100)
                         .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: .chillYellow.opacity(0.3), radius: 20, x: 0, y: 10)
+                        .shadow(color: .accentPrimary.opacity(0.3), radius: 20, x: 0, y: 10)
                     
                     Text("Welcome Back")
                         .font(.displayLarge)

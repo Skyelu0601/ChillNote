@@ -92,7 +92,7 @@ struct GeminiService {
         }
     }
 
-    /// Voice note: transcribe + lightly polish, returning only final text.
+    /// Voice note: transcribe + lightly polish, returning final text.
     func transcribeAndPolish(audioFileURL: URL, locale: String? = nil) async throws -> String {
         let serverURL = AppConfig.backendBaseURL + "/ai/voice-note"
         guard let url = URL(string: serverURL) else {
@@ -138,7 +138,8 @@ struct GeminiService {
                 fix grammar, and lightly polish the text while preserving the original meaning \
                 and tone. Return ONLY the polished text, no explanations.
                 """
-                return try await generateContent(prompt: fallbackPrompt, audioFileURL: audioFileURL)
+                let text = try await generateContent(prompt: fallbackPrompt, audioFileURL: audioFileURL)
+                return text
             }
 
             if !(200...299).contains(httpResponse.statusCode) {
@@ -168,5 +169,12 @@ struct GeminiService {
         } catch {
             throw GeminiError.networkError(error)
         }
+    }
+    
+    /// Simple chat method for text-based AI interactions
+    /// - Parameter prompt: The user's message/prompt
+    /// - Returns: AI's response
+    func chat(prompt: String) async throws -> String {
+        return try await generateContent(prompt: prompt)
     }
 }

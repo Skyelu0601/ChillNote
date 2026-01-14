@@ -8,9 +8,9 @@ struct MagicButton: View {
         Button(action: action) {
             ZStack {
                 Circle()
-                    .fill(Color.chillYellow)
+                    .fill(Color.accentPrimary)
                     .frame(width: 72, height: 72)
-                    .shadow(color: Color.chillYellow.opacity(0.5), radius: 20, x: 0, y: 10)
+                    .shadow(color: Color.accentPrimary.opacity(0.5), radius: 20, x: 0, y: 10)
                 
                 Image(systemName: "mic.fill")
                     .font(.system(size: 28, weight: .bold))

@@ -14,7 +14,7 @@ struct WaveformView: View {
             ForEach(0..<baseHeights.count, id: \.self) { index in
                 let height = barHeight(for: index)
                 RoundedRectangle(cornerRadius: 2)
-                    .fill(Color.chillYellow)
+                    .fill(Color.accentPrimary)
                     .frame(width: 4, height: height)
                     .animation(animation(for: index), value: phase)
             }

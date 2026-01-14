@@ -205,7 +205,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         
         // Transcribe using Gemini
         do {
-            let polishedText = try await withTimeout(seconds: 45) {
+            let text = try await withTimeout(seconds: 45) {
                 try await GeminiService.shared.transcribeAndPolish(
                     audioFileURL: fileURL,
                     locale: Locale.current.identifier
@@ -215,7 +215,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             print("✅ Transcription complete")
             
             isTranscribing = false
-            transcript = polishedText.trimmingCharacters(in: .whitespacesAndNewlines)
+            transcript = text.trimmingCharacters(in: .whitespacesAndNewlines)
             recordingState = .idle
             
         } catch is TimeoutError {
@@ -410,11 +410,20 @@ private extension SpeechRecognizer {
         let s = AVAudioSession.sharedInstance()
 
         let recordPermission: String = {
-            switch s.recordPermission {
-            case .undetermined: return "undetermined"
-            case .denied: return "denied"
-            case .granted: return "granted"
-            @unknown default: return "unknown"
+            if #available(iOS 17.0, *) {
+                switch AVAudioApplication.shared.recordPermission {
+                case .undetermined: return "undetermined"
+                case .denied: return "denied"
+                case .granted: return "granted"
+                @unknown default: return "unknown"
+                }
+            } else {
+                switch s.recordPermission {
+                case .undetermined: return "undetermined"
+                case .denied: return "denied"
+                case .granted: return "granted"
+                @unknown default: return "unknown"
+                }
             }
         }()
 

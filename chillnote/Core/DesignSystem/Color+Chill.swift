@@ -1,17 +1,23 @@
 import SwiftUI
 
 extension Color {
-    // MARK: - Brand Colors
-    static let chillYellow = Color(hex: "FFD046")
-    static let chillYellowDim = Color(hex: "FFEBA0")
+    // MARK: - Brand Palette (Warm & Mellow)
+    static let mellowYellow = Color(hex: "FFD56B") // Warm Honey Yellow
+    static let mellowOrange = Color(hex: "FFB347") // Sunset Orange for accents
+    static let paleCream = Color(hex: "FFF9E5")    // Very light yellow background
     
     // MARK: - Semantic Colors
-    static let bgPrimary = Color(hex: "FAFAFA")
-    static let bgSecondary = Color(hex: "F2F2F7")
+    static let bgPrimary = Color(hex: "FAFAFA")    // Light grey background (original)
+    static let bgSecondary = Color(hex: "F2F2F7")  // Slightly darker grey (original)
     static let cardBackground = Color.white
     
-    static let textMain = Color(hex: "1A1A1A")
-    static let textSub = Color(hex: "6E6E73")
+    // Warm accent replacement for system blue
+    static let accentPrimary = Color(hex: "FFC043") // Richer yellow for actions
+    static let selectionHighlight = Color(hex: "FFF4D1") // Very pale yellow for selection bg
+    
+    // Text Colors (Softer than pure black)
+    static let textMain = Color(hex: "3E3B36")     // Deep Latte Brown
+    static let textSub = Color(hex: "8A8680")      // Warm Grey
     
     // MARK: - Helpers
     init(hex: String) {

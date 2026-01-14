@@ -74,7 +74,7 @@ struct ChatInputBar: View {
                 }) {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 32))
-                        .foregroundColor(.chillYellow)
+                        .foregroundColor(.accentPrimary)
                 }
                 .transition(.scale.combined(with: .opacity))
             }
@@ -116,9 +116,9 @@ struct ChatInputBar: View {
                 }) {
                     Image(systemName: "checkmark")
                         .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.textMain)
                         .frame(width: 44, height: 44)
-                        .background(Color.chillYellow)
+                        .background(Color.accentPrimary)
                         .clipShape(Circle())
                 }
             } else if speechRecognizer.recordingState == .processing {
@@ -144,7 +144,7 @@ struct ChatInputBar: View {
                     }
                     .font(.caption)
                     .fontWeight(.bold)
-                    .foregroundColor(.chillYellow)
+                    .foregroundColor(.accentPrimary)
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 44)
@@ -159,11 +159,11 @@ struct ChatInputBar: View {
                         .foregroundColor(.textMain)
                         .frame(maxWidth: .infinity)
                         .frame(height: 44)
-                        .background(Color.chillYellow.opacity(0.1))
+                        .background(Color.accentPrimary.opacity(0.1))
                         .cornerRadius(22)
                         .overlay(
                             RoundedRectangle(cornerRadius: 22)
-                                .stroke(Color.chillYellow, lineWidth: 1)
+                                .stroke(Color.accentPrimary, lineWidth: 1)
                         )
                 }
             }
