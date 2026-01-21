@@ -37,5 +37,37 @@ npm run dev
   - Optional query: `?since=ISO8601` to return only changes since that time
 - `POST /media/upload` (multipart `file`)
 - `GET /media/:id` (requires auth)
+- `POST /ai/voice-note` - Voice transcription and polishing
+- `POST /ai/gemini` - General AI text processing
 
 Uploads are stored on disk under `server/uploads/<userId>/`.
+
+## Configuration
+
+### Upload Limits
+
+For production deployments with voice recording features, you need to configure upload limits at multiple layers:
+
+- **Nginx**: Set `client_max_body_size` (recommended: 50m or higher)
+- **Application**: Set `MAX_VOICE_NOTE_AUDIO_MB` in `.env` (default: 30)
+- **Timeout**: Set `VOICE_NOTE_TIMEOUT_MS` in `.env` (default: 180000)
+
+See [Upload Limits Configuration Guide](../docs/upload-limits-config.md) for detailed instructions.
+
+### Quick Start for Production
+
+```bash
+# In your .env file
+MAX_VOICE_NOTE_AUDIO_MB=50
+VOICE_NOTE_TIMEOUT_MS=180000
+```
+
+```nginx
+# In your Nginx config
+server {
+  client_max_body_size 50m;
+  proxy_read_timeout 300s;
+  proxy_send_timeout 300s;
+  # ... other config
+}
+```

@@ -82,13 +82,15 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     func checkPermissions() {
         if #available(iOS 17.0, *) {
             AVAudioApplication.requestRecordPermission { [weak self] allowed in
-                Task { @MainActor in
+                // Use DispatchQueue to avoid publishing changes during view updates
+                DispatchQueue.main.async {
                     self?.permissionGranted = allowed
                 }
             }
         } else {
             AVAudioSession.sharedInstance().requestRecordPermission { [weak self] allowed in
-                Task { @MainActor in
+                // Use DispatchQueue to avoid publishing changes during view updates
+                DispatchQueue.main.async {
                     self?.permissionGranted = allowed
                 }
             }
@@ -320,6 +322,9 @@ private extension SpeechRecognizer {
             options: [.duckOthers, .defaultToSpeaker, .allowBluetooth]
         )
         try? audioSession.setPreferredInputNumberOfChannels(1)
+        // 16kHz mono is sufficient for speech and keeps uploads small (important for server/proxy limits).
+        // Note: `setPreferredSampleRate` is a best-effort hint; we still set the recorder sample rate below.
+        try? audioSession.setPreferredSampleRate(16_000)
         try audioSession.setActive(true)
 
         guard audioSession.isInputAvailable else {
@@ -337,7 +342,7 @@ private extension SpeechRecognizer {
         // Linear PCM WAV is much more reliable across devices/simulators than AAC at low sample rates.
         let settings: [String: Any] = [
             AVFormatIDKey: Int(kAudioFormatLinearPCM),
-            AVSampleRateKey: 44_100,
+            AVSampleRateKey: 16_000,
             AVNumberOfChannelsKey: 1,
             AVLinearPCMBitDepthKey: 16,
             AVLinearPCMIsFloatKey: false,

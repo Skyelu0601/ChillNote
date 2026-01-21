@@ -9,10 +9,6 @@ struct VoiceInputBar: View {
     @State private var isRecordingPulsing = false
     
     var body: some View {
-        VStack(spacing: 0) {
-            Divider()
-                .background(Color.gray.opacity(0.1))
-            
             HStack(spacing: 12) {
                 if speechRecognizer.isRecording {
                     // Recording State
@@ -77,11 +73,19 @@ struct VoiceInputBar: View {
                     .frame(height: 44)
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(Color.white)
-            .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: -5)
-        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(
+            Group {
+                if speechRecognizer.recordingState != .idle {
+                    Capsule()
+                        .fill(Color.white.opacity(0.95))
+                        .background(Capsule().fill(.ultraThinMaterial))
+                        .shadow(color: Color.black.opacity(0.1), radius: 10, x: 0, y: 5)
+                        .padding(.horizontal, 8)
+                }
+            }
+        )
     }
 }
 

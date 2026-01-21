@@ -8,6 +8,7 @@ struct ChillNoteApp: App {
     let container: ModelContainer
     @StateObject private var authService = AuthService.shared
     @StateObject private var syncManager = SyncManager()
+    @StateObject private var actionsManager = AIActionsManager.shared
     
     init() {
         guard let dataContainer = DataService.shared.container else {
@@ -18,6 +19,11 @@ struct ChillNoteApp: App {
         // Ensure data is seeded on launch
         Task { @MainActor in
             DataService.shared.seedDataIfNeeded()
+            
+            // Initialize AIActionsManager with model context
+            if let context = DataService.shared.container?.mainContext {
+                AIActionsManager.shared.initialize(context: context)
+            }
         }
     }
     
@@ -28,6 +34,7 @@ struct ChillNoteApp: App {
                 .modelContainer(container)
                 .environmentObject(authService)
                 .environmentObject(syncManager)
+                .environmentObject(actionsManager)
         }
     }
 }

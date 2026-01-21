@@ -1,11 +1,11 @@
 import SwiftUI
 
 extension Font {
-    // We stick to Apple System rounded for that "Chill" vibe + native feel
-    // unless user loads "Outfit" externally. for MVP, System Rounded is robust.
+    // We use Serif for titles to give a premium, organic "Japandi" feel.
+    // Body text remains sans-serif (Default or Rounded) for legibility.
     
-    static let displayLarge = Font.system(.largeTitle, design: .rounded).weight(.bold)
-    static let displayMedium = Font.system(.title2, design: .rounded).weight(.semibold)
+    static let displayLarge = Font.system(.largeTitle, design: .serif).weight(.medium)
+    static let displayMedium = Font.system(.title2, design: .serif).weight(.medium)
     
     static let bodyLarge = Font.system(.body, design: .default)
     static let bodyMedium = Font.system(.callout, design: .default)

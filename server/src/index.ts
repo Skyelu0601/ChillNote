@@ -1,3 +1,51 @@
+// Polyfill for Node.js 16 - provides minimal Headers API for jose library
+if (typeof globalThis.Headers === 'undefined') {
+  // @ts-ignore
+  globalThis.Headers = class Headers {
+    private headers: Record<string, string> = {};
+    constructor(init?: Record<string, string>) {
+      if (init) {
+        Object.entries(init).forEach(([key, value]) => {
+          this.headers[key.toLowerCase()] = value;
+        });
+      }
+    }
+    get(name: string): string | null {
+      return this.headers[name.toLowerCase()] || null;
+    }
+    set(name: string, value: string): void {
+      this.headers[name.toLowerCase()] = value;
+    }
+    has(name: string): boolean {
+      return name.toLowerCase() in this.headers;
+    }
+    delete(name: string): void {
+      delete this.headers[name.toLowerCase()];
+    }
+    *entries(): IterableIterator<[string, string]> {
+      for (const [key, value] of Object.entries(this.headers)) {
+        yield [key, value];
+      }
+    }
+    *keys(): IterableIterator<string> {
+      for (const key of Object.keys(this.headers)) {
+        yield key;
+      }
+    }
+    *values(): IterableIterator<string> {
+      for (const value of Object.values(this.headers)) {
+        yield value;
+      }
+    }
+    forEach(callback: (value: string, key: string, parent: any) => void): void {
+      for (const [key, value] of Object.entries(this.headers)) {
+        callback(value, key, this);
+      }
+    }
+  };
+}
+
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import jwt from "jsonwebtoken";
@@ -17,14 +65,27 @@ const PORT = Number(process.env.PORT ?? 4000);
 const JWT_SECRET = process.env.JWT_SECRET ?? "dev-secret";
 const APPLE_CLIENT_ID = process.env.APPLE_CLIENT_ID ?? "";
 
+const isoDateString = z
+  .string()
+  .min(1)
+  .refine((value) => !Number.isNaN(Date.parse(value)), { message: "Invalid date" });
+
 const appleAuthSchema = z.object({
   userId: z.string().min(1),
   identityToken: z.string().min(1),
   authorizationCode: z.string().min(1)
 });
 
+const noteSchema = z.object({
+  id: z.string().min(1),
+  content: z.string(),
+  createdAt: isoDateString,
+  updatedAt: isoDateString,
+  deletedAt: isoDateString.nullish()
+});
+
 const syncSchema = z.object({
-  notes: z.array(z.any())
+  notes: z.array(noteSchema)
 });
 
 function signTokens(userId: string): AuthTokens {
@@ -70,20 +131,41 @@ app.post("/auth/apple", async (req, res) => {
     return;
   }
 
+  console.log("🍎 [Backend] Apple Sign In Request:");
+  console.log("   User ID:", payload.userId);
+  console.log("   Client ID (expected audience):", APPLE_CLIENT_ID);
+  console.log("   Identity Token (first 50 chars):", payload.identityToken.substring(0, 50) + "...");
+
   try {
     const tokenPayload = await verifyAppleIdentityToken(payload.identityToken, APPLE_CLIENT_ID);
+    console.log("✅ [Backend] Token verified successfully:");
+    console.log("   Token subject (sub):", tokenPayload.sub);
+    console.log("   Token issuer (iss):", tokenPayload.iss);
+    console.log("   Token audience (aud):", tokenPayload.aud);
+    console.log("   Token email:", tokenPayload.email || "not provided");
+
     if (tokenPayload.sub !== payload.userId) {
+      console.log("❌ [Backend] User ID mismatch!");
+      console.log("   Expected:", payload.userId);
+      console.log("   Got:", tokenPayload.sub);
       res.status(401).json({ error: "User mismatch" });
       return;
     }
 
     await upsertUser(payload.userId);
   } catch (error) {
+    console.error("❌ [Backend] Token verification failed:");
+    console.error("   Error:", error);
+    if (error instanceof Error) {
+      console.error("   Message:", error.message);
+      console.error("   Stack:", error.stack);
+    }
     res.status(401).json({ error: "Invalid Apple token" });
     return;
   }
 
   const tokens = signTokens(payload.userId);
+  console.log("✅ [Backend] Sign in successful, tokens generated");
   res.json(tokens);
 });
 
@@ -129,6 +211,15 @@ const voiceNoteSchema = z.object({
   locale: z.string().optional()
 });
 
+function estimateBase64DecodedBytes(base64: string): number {
+  const len = base64.length;
+  if (len === 0) return 0;
+  let padding = 0;
+  if (base64.endsWith("==")) padding = 2;
+  else if (base64.endsWith("=")) padding = 1;
+  return Math.max(0, Math.floor((len * 3) / 4) - padding);
+}
+
 // Voice Note Endpoint: Audio -> Transcription + Polished Text
 app.post("/ai/voice-note", async (req, res) => {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -146,28 +237,48 @@ app.post("/ai/voice-note", async (req, res) => {
 
   try {
     const { audioBase64, mimeType, locale } = parsed.data;
-    const audioKb = Math.round(audioBase64.length / 1024);
-    console.log(`🗣️ VoiceNote Request: audioSize=${audioKb}KB, mimeType=${mimeType ?? "unknown"}, locale=${locale ?? "unknown"}`);
+    const contentLengthHeader = req.headers["content-length"];
+    const requestBytes = typeof contentLengthHeader === "string" ? Number(contentLengthHeader) : undefined;
+    const audioDecodedBytes = estimateBase64DecodedBytes(audioBase64);
+    const audioDecodedMb = audioDecodedBytes / 1024 / 1024;
+
+    const maxAudioMb = Number(process.env.MAX_VOICE_NOTE_AUDIO_MB ?? 30);
+    if (Number.isFinite(maxAudioMb) && maxAudioMb > 0 && audioDecodedMb > maxAudioMb) {
+      console.warn(
+        `🗣️ VoiceNote Rejected: audioDecoded=${audioDecodedMb.toFixed(2)}MB > max=${maxAudioMb}MB (content-length=${requestBytes ?? "unknown"})`
+      );
+      res.status(413).json({
+        error: "Voice note too large",
+        details: {
+          maxAudioMb,
+          audioDecodedMb: Number(audioDecodedMb.toFixed(2)),
+          hint: "Reduce recording length/quality, or increase proxy/body limits (e.g. Nginx client_max_body_size 50m) and MAX_VOICE_NOTE_AUDIO_MB (e.g. 50)."
+        }
+      });
+      return;
+    }
+
+    const audioBase64Kb = Math.round(audioBase64.length / 1024);
+    const audioDecodedKb = Math.round(audioDecodedBytes / 1024);
+    console.log(
+      `🗣️ VoiceNote Request: requestSize=${requestBytes ? Math.round(requestBytes / 1024) : "unknown"}KB, audioBase64=${audioBase64Kb}KB, audioDecoded=${audioDecodedKb}KB, mimeType=${mimeType ?? "unknown"}, locale=${locale ?? "unknown"}`
+    );
 
     // Gemini 2.0 Flash URL - Using experimental model which is currently reliable for 2.0 Flash features
     const model = "gemini-2.0-flash-exp";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
     const systemInstruction = [
-      "You are a professional voice transcription assistant. Produce clean, polished transcriptions that preserve the speaker's original meaning, tone, and intent.",
-      "",
-      "Capabilities:",
-      "1) Removes filler: Automatically remove filler words and disfluencies while keeping all real content intact.",
-      "2) Removes repetition: Detect and remove unnecessary repetitions, including short-range repeats within the same clause or sentence, while preserving intentional emphasis.",
-      "3) Auto-edits corrections: When the speaker changes their mind mid-sentence, keep only the final intended message.",
-      "4) Auto-formats: If the speaker uses ordinal or step markers, normalize the content into an ordered list format. Otherwise keep plain paragraphs.",
-      "5) Finds the right words: Lightly improve word choice for clarity without changing sentence structure or meaning. Keep changes minimal.",
+      "You are a professional voice transcription assistant. Your goal is to provide an accurate, readable transcription of the audio.",
       "",
       "Rules:",
-      "- Do NOT translate; keep the original language spoken.",
-      "- Do NOT summarize or invent content.",
-      "- When in doubt, keep the original wording.",
-      "- Return STRICT JSON only, no markdown, no extra keys.",
+      "- Transcribe exactly what is said in the original language. Do NOT translate.",
+      "- Remove filler words (um, uh, you know, 那个, 就是) and stuttering to make the text readable.",
+      "- If the speaker corrects themselves (false starts), keep only the final intended phrase.",
+      "- Use standard punctuation (periods, commas, question marks).",
+      "- Do NOT apply special formatting (no bullet points, no markdown headers). Return a single block of plain text.",
+      "- Do NOT attempt to interpret the intent (e.g. do not format as an email even if the user says 'write an email'). Just transcribe the words.",
+      "- Return STRICT JSON only, no extra keys.",
       "JSON schema: {\\\"text\\\": string}",
       locale ? `Locale hint: ${locale}` : undefined
     ].filter(Boolean).join("\\n");
@@ -194,7 +305,8 @@ app.post("/ai/voice-note", async (req, res) => {
     };
 
     const abortController = new AbortController();
-    const timeoutId = setTimeout(() => abortController.abort(), 60000); // 60s timeout
+    const timeoutMs = Number(process.env.VOICE_NOTE_TIMEOUT_MS ?? 180000);
+    const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
 
     try {
       const response = await fetch(url, {
@@ -207,9 +319,15 @@ app.post("/ai/voice-note", async (req, res) => {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const error = await response.json();
-        console.error("❌ Gemini API Error:", JSON.stringify(error));
-        res.status(response.status).json(error);
+        const errorText = await response.text();
+        let errorPayload: any = { error: "Gemini API error", status: response.status };
+        try {
+          errorPayload = JSON.parse(errorText);
+        } catch {
+          errorPayload.body = errorText.slice(0, 2000);
+        }
+        console.error("❌ Gemini API Error:", JSON.stringify(errorPayload));
+        res.status(response.status).json(errorPayload);
         return;
       }
 
@@ -229,10 +347,11 @@ app.post("/ai/voice-note", async (req, res) => {
         }
       }
 
+      console.log(`✅ VoiceNote Success: responseLength=${String(text).trim().length}`);
       res.json({ text: String(text).trim() });
     } catch (fetchError: any) {
       if (fetchError.name === "AbortError") {
-        console.error("❌ Gemini API Timeout (60s)");
+        console.error(`❌ Gemini API Timeout (${timeoutMs}ms)`);
         res.status(504).json({ error: "Gemini API Timeout" });
       } else {
         throw fetchError;
@@ -303,9 +422,15 @@ app.post("/ai/gemini", async (req, res) => {
       clearTimeout(timeoutId);
 
       if (!response.ok) {
-        const error = await response.json();
-        console.error("❌ Gemini API Error:", JSON.stringify(error));
-        res.status(response.status).json(error);
+        const errorText = await response.text();
+        let errorPayload: any = { error: "Gemini API error", status: response.status };
+        try {
+          errorPayload = JSON.parse(errorText);
+        } catch {
+          errorPayload.body = errorText.slice(0, 2000);
+        }
+        console.error("❌ Gemini API Error:", JSON.stringify(errorPayload));
+        res.status(response.status).json(errorPayload);
         return;
       }
 

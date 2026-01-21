@@ -4,8 +4,15 @@ import SwiftData
 struct SyncEngine {
     private let mapper = SyncMapper()
 
-    func makePayload(context: ModelContext) -> SyncPayload {
-        let notes = (try? context.fetch(FetchDescriptor<Note>())) ?? []
+    func makePayload(context: ModelContext, since: Date?) -> SyncPayload {
+        var descriptor = FetchDescriptor<Note>()
+        if let since {
+            descriptor.predicate = #Predicate<Note> { note in
+                note.updatedAt >= since || (note.deletedAt != nil && note.deletedAt! >= since)
+            }
+        }
+
+        let notes = (try? context.fetch(descriptor)) ?? []
         return SyncPayload(notes: notes.map { mapper.noteDTO(from: $0) })
     }
 
@@ -30,14 +37,30 @@ struct SyncEngine {
 
                 if remoteUpdatedAt > localUpdatedAt {
                     mapper.apply(dto, to: existing)
+                    existing.syncContentStructure(with: context)
                 }
             } else {
                 let note = Note(content: dto.content)
                 note.id = id
                 mapper.apply(dto, to: note)
+                note.syncContentStructure(with: context)
                 context.insert(note)
                 notesById[id] = note
             }
+        }
+
+        purgeDeletedNotes(olderThan: Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date.distantPast, context: context)
+    }
+
+    private func purgeDeletedNotes(olderThan cutoff: Date, context: ModelContext) {
+        var descriptor = FetchDescriptor<Note>()
+        descriptor.predicate = #Predicate<Note> { note in
+            note.deletedAt != nil && note.deletedAt! < cutoff
+        }
+
+        guard let staleNotes = try? context.fetch(descriptor) else { return }
+        for note in staleNotes {
+            context.delete(note)
         }
     }
 }

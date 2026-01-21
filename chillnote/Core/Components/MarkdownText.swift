@@ -16,7 +16,10 @@ struct MarkdownText: View {
     private func parseMarkdown(_ text: String) -> AttributedString {
         // Use SwiftUI's built-in markdown support (iOS 15+)
         do {
-            var attributedString = try AttributedString(markdown: text, options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace))
+            let attributedString = try AttributedString(
+                markdown: text,
+                options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+            )
             return attributedString
         } catch {
             // If markdown parsing fails, return plain text
@@ -25,22 +28,26 @@ struct MarkdownText: View {
     }
 }
 
-#Preview {
-    VStack(alignment: .leading, spacing: 16) {
-        MarkdownText("This is **bold** text")
-            .font(.bodyMedium)
-        
-        MarkdownText("This is *italic* text")
-            .font(.bodyMedium)
-        
-        MarkdownText("This is **bold** and *italic* text")
-            .font(.bodyMedium)
-        
-        MarkdownText("This is a `code` snippet")
-            .font(.bodyMedium)
-        
-        MarkdownText("Normal text with **bold**, *italic*, and `code`")
-            .font(.bodyMedium)
+#if DEBUG
+struct MarkdownText_Previews: PreviewProvider {
+    static var previews: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            MarkdownText("This is **bold** text")
+                .font(.bodyMedium)
+
+            MarkdownText("This is *italic* text")
+                .font(.bodyMedium)
+
+            MarkdownText("This is **bold** and *italic* text")
+                .font(.bodyMedium)
+
+            MarkdownText("This is a `code` snippet")
+                .font(.bodyMedium)
+
+            MarkdownText("Normal text with **bold**, *italic*, and `code`")
+                .font(.bodyMedium)
+        }
+        .padding()
     }
-    .padding()
 }
+#endif

@@ -17,6 +17,10 @@ struct AIContextChatView: View {
     @StateObject private var speechRecognizer = SpeechRecognizer()
     @State private var isVoiceMode = false
     
+    // Save note feedback
+    @State private var savedMessageId: UUID?
+    @EnvironmentObject private var syncManager: SyncManager
+    
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
@@ -31,15 +35,22 @@ struct AIContextChatView: View {
                     ScrollView {
                         LazyVStack(spacing: 16) {
                             ForEach(messages) { message in
-                                ChatMessageBubble(message: message)
-                                    .id(message.id)
+                                ChatMessageBubble(
+                                    message: message,
+                                    isSaved: savedMessageId == message.id,
+                                    onSave: message.role == .assistant ? {
+                                        saveMessageAsNote(message)
+                                    } : nil
+                                )
+                                .id(message.id)
                             }
+                            
                             
                             if isLoading {
                                 HStack {
                                     ProgressView()
                                         .progressViewStyle(CircularProgressViewStyle(tint: .accentPrimary))
-                                    Text("AI is thinking...")
+                                    Text("Chillo is thinking...")
                                         .font(.bodyMedium)
                                         .foregroundColor(.textSub)
                                 }
@@ -92,7 +103,7 @@ struct AIContextChatView: View {
                     )
                 } else {
                     HStack(spacing: 12) {
-                        TextField("Ask about these notes...", text: $userInput, axis: .vertical)
+                        TextField("Ask Chillo about these notes...", text: $userInput, axis: .vertical)
                             .textFieldStyle(.plain)
                             .font(.bodyMedium)
                             .foregroundColor(.textMain)
@@ -124,7 +135,7 @@ struct AIContextChatView: View {
                     .background(Color.white)
                 }
             }
-            .navigationTitle("AI Chat")
+            .navigationTitle("Chillo")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -255,6 +266,28 @@ struct AIContextChatView: View {
         }.joined(separator: "\n\n")
     }
     
+    private func saveMessageAsNote(_ message: ChatMessage) {
+        let newNote = Note(content: message.content)
+        modelContext.insert(newNote)
+        
+
+        
+        try? modelContext.save()
+        Task { await syncManager.syncIfNeeded(context: modelContext) }
+        
+        // Show feedback
+        withAnimation {
+            savedMessageId = message.id
+        }
+        
+        // Reset feedback after 2 seconds
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            withAnimation {
+                savedMessageId = nil
+            }
+        }
+    }
+    
     private func clearChat() {
         messages.removeAll()
         errorMessage = nil
@@ -277,6 +310,8 @@ struct ChatMessage: Identifiable {
 // MARK: - Chat Message Bubble
 struct ChatMessageBubble: View {
     let message: ChatMessage
+    var isSaved: Bool = false
+    var onSave: (() -> Void)? = nil
     
     var body: some View {
         HStack {
@@ -284,27 +319,49 @@ struct ChatMessageBubble: View {
                 Spacer()
             }
             
-            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
-                // Use MarkdownText for AI responses to properly render markdown
-                if message.role == .assistant {
-                    MarkdownText(message.content)
-                        .font(.bodyMedium)
-                        .foregroundColor(.textMain)
-                        .padding(12)
-                        .background(Color.bgSecondary)
-                        .cornerRadius(16)
-                } else {
-                    Text(message.content)
-                        .font(.bodyMedium)
-                        .foregroundColor(.textMain)
-                        .padding(12)
-                        .background(Color.mellowYellow)
-                        .cornerRadius(16)
+            VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 8) {
+                // Message content
+                VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
+                    // Use MarkdownText for AI responses to properly render markdown
+                    if message.role == .assistant {
+                        MarkdownText(message.content)
+                            .font(.bodyMedium)
+                            .foregroundColor(.textMain)
+                            .padding(12)
+                            .background(Color.bgSecondary)
+                            .cornerRadius(16)
+                    } else {
+                        Text(message.content)
+                            .font(.bodyMedium)
+                            .foregroundColor(.textMain)
+                            .padding(12)
+                            .background(Color.mellowYellow)
+                            .cornerRadius(16)
+                    }
+                    
+                    Text(message.timestamp.formatted(date: .omitted, time: .shortened))
+                        .font(.system(size: 10))
+                        .foregroundColor(.textSub)
                 }
                 
-                Text(message.timestamp.formatted(date: .omitted, time: .shortened))
-                    .font(.system(size: 10))
-                    .foregroundColor(.textSub)
+                // Save button for AI responses
+                if message.role == .assistant, let onSave = onSave {
+                    Button(action: onSave) {
+                        HStack(spacing: 6) {
+                            Image(systemName: isSaved ? "checkmark.circle.fill" : "square.and.arrow.down")
+                                .font(.system(size: 14))
+                            Text(isSaved ? "Saved!" : "Save as Note")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .foregroundColor(isSaved ? .green : .accentPrimary)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(isSaved ? Color.green.opacity(0.1) : Color.accentPrimary.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                    .disabled(isSaved)
+                }
             }
             .frame(maxWidth: 280, alignment: message.role == .user ? .trailing : .leading)
             

@@ -30,7 +30,7 @@ struct RemoteSyncService: SyncService {
     
     func syncAll(context: ModelContext) async throws {
         let engine = SyncEngine()
-        let payload = engine.makePayload(context: context)
+        let payload = engine.makePayload(context: context, since: config.since)
         
         var urlComponents = URLComponents(url: config.baseURL.appendingPathComponent("sync"), resolvingAgainstBaseURL: false)
         if let since = config.since {
@@ -50,8 +50,11 @@ struct RemoteSyncService: SyncService {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
         
-        let encoder = JSONEncoder()
-        request.httpBody = try encoder.encode(payload)
+        let httpBody = try await Task.detached(priority: .utility) {
+            let encoder = JSONEncoder()
+            return try encoder.encode(payload)
+        }.value
+        request.httpBody = httpBody
         
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -64,8 +67,10 @@ struct RemoteSyncService: SyncService {
             throw SyncError.serverError
         }
         
-        let decoder = JSONDecoder()
-        let remotePayload = try decoder.decode(SyncPayload.self, from: data)
+        let remotePayload = try await Task.detached(priority: .utility) {
+            let decoder = JSONDecoder()
+            return try decoder.decode(SyncPayload.self, from: data)
+        }.value
         engine.apply(remote: remotePayload, context: context)
     }
 }

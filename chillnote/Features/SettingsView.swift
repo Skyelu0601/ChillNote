@@ -9,7 +9,9 @@ struct SettingsView: View {
     @State private var showPrivacy = false
     @State private var showAgreement = false
     @State private var showAbout = false
+    @State private var showAIActionsSettings = false
     @State private var bannerData: BannerData?
+    @State private var showLogoutConfirmation = false
     
     var body: some View {
         NavigationView {
@@ -44,9 +46,7 @@ struct SettingsView: View {
                                     SettingItem(label: "Account", value: "Signed In")
                                     Divider().padding(.leading, 20)
                                     Button {
-                                        authService.signOut()
-                                        hasGuestAccess = false
-                                        dismiss()
+                                        showLogoutConfirmation = true
                                     } label: {
                                         SettingItem(label: "Sign Out", labelColor: .red)
                                     }
@@ -59,7 +59,18 @@ struct SettingsView: View {
                             .cornerRadius(16)
                             .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
 
-                            // Section 2: Permissions + Legal/About
+                            // Section 2: AI & Customization
+                            VStack(spacing: 0) {
+                                Button(action: { showAIActionsSettings = true }) {
+                                    SettingItem(label: "AI Quick Actions")
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .background(Color.white)
+                            .cornerRadius(16)
+                            .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
+                            
+                            // Section 3: Permissions + Legal/About
                             VStack(spacing: 0) {
                                 Button(action: openAppSettings) {
                                     SettingItem(label: "Permissions")
@@ -125,7 +136,21 @@ struct SettingsView: View {
             .sheet(isPresented: $showAbout) {
                 LegalTextView(title: "About ChillNote", bodyText: aboutText)
             }
+            .fullScreenCover(isPresented: $showAIActionsSettings) {
+                AIActionsSettingsView()
+                    .environmentObject(AIActionsManager.shared)
+            }
             .banner(data: $bannerData)
+            .alert("Sign Out", isPresented: $showLogoutConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("Sign Out", role: .destructive) {
+                    authService.signOut()
+                    hasGuestAccess = false
+                    dismiss()
+                }
+            } message: {
+                Text("Are you sure you want to sign out?")
+            }
         }
     }
 }
@@ -153,6 +178,7 @@ struct SettingItem: View {
             }
         }
         .padding(20)
+        .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel(label)
         .accessibilityValue(value ?? "")

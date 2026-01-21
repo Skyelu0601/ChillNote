@@ -4,6 +4,8 @@ import AuthenticationServices
 
 enum AuthProvider: String, Codable {
     case apple
+    case google
+    case email
 }
 
 enum AuthState: Equatable {
@@ -18,6 +20,7 @@ final class AuthService: ObservableObject {
 
     @Published private(set) var state: AuthState = .signedOut
     @Published var errorMessage: String?
+    @Published var isPro: Bool = false
 
     private let keychainService = "com.chillnote.auth"
     private let providerKey = "provider"
@@ -107,14 +110,34 @@ final class AuthService: ObservableObject {
             )
             request.httpBody = try JSONEncoder().encode(payload)
             
+            print("📤 [Apple Sign In] Sending request to: \(url.absoluteString)")
+            print("📤 [Apple Sign In] User ID: \(credential.user)")
+            print("📤 [Apple Sign In] Identity token length: \(identityTokenString.count)")
+            print("📤 [Apple Sign In] Auth code length: \(authorizationCodeString.count)")
+
+            
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
+                print("❌ [Apple Sign In] Invalid HTTP response")
                 errorMessage = "Auth server is unavailable."
                 state = .signedOut
                 return false
             }
+            
+            print("📡 [Apple Sign In] Backend response status: \(httpResponse.statusCode)")
+            if let responseString = String(data: data, encoding: .utf8) {
+                print("📡 [Apple Sign In] Backend response body: \(responseString)")
+            }
+            
             guard (200..<300).contains(httpResponse.statusCode) else {
-                errorMessage = "Sign in failed. Please try again."
+                // Try to parse error message from backend
+                if let errorResponse = try? JSONDecoder().decode([String: String].self, from: data),
+                   let backendError = errorResponse["error"] ?? errorResponse["message"] {
+                    errorMessage = backendError
+                    print("⚠️ [Apple Sign In] Backend error: \(backendError)")
+                } else {
+                    errorMessage = "Sign in failed. Please try again."
+                }
                 state = .signedOut
                 return false
             }
@@ -124,7 +147,19 @@ final class AuthService: ObservableObject {
             storeTokens(accessToken: tokenResponse.accessToken, refreshToken: tokenResponse.refreshToken)
             UserDefaults.standard.set(tokenResponse.accessToken, forKey: "syncAuthToken")
             return true
+        } catch let decodingError as DecodingError {
+            print("❌ [Apple Sign In] JSON decoding error: \(decodingError)")
+            errorMessage = "Sign in failed. Please try again."
+            state = .signedOut
+            return false
+        } catch let urlError as URLError {
+            print("❌ [Apple Sign In] Network error: \(urlError.localizedDescription)")
+            print("   Error code: \(urlError.code.rawValue)")
+            errorMessage = "Network error. Please check your connection."
+            state = .signedOut
+            return false
         } catch {
+            print("❌ [Apple Sign In] Unexpected error: \(error.localizedDescription)")
             errorMessage = "Sign in failed. Please try again."
             state = .signedOut
             return false
@@ -175,6 +210,18 @@ final class AuthService: ObservableObject {
         _ = KeychainStore.writeString(accessToken, service: keychainService, account: accessTokenKey)
         _ = KeychainStore.writeString(refreshToken, service: keychainService, account: refreshTokenKey)
     }
+    
+    // MARK: - Mock Sign In (for Google and Email)
+    func signInWithMock(_ provider: AuthProvider) {
+        let mockUserId = "mock_user_" + UUID().uuidString.prefix(8)
+        self.completeSignIn(provider: provider, userId: String(mockUserId))
+        self.isPro = false
+    }
+    
+    // MARK: - Update Pro Status
+    func updateProStatus(to status: Bool) {
+        self.isPro = status
+    }
 }
 
 private struct AppleSignInRequest: Encodable {
@@ -187,6 +234,9 @@ private struct AppleSignInResponse: Decodable {
     let userId: String
     let accessToken: String
     let refreshToken: String
+    let isPro: Bool?
+    let subscriptionPlan: String?
+    let subscriptionExpiry: String?
 }
 
 private struct RefreshTokenRequest: Encodable {

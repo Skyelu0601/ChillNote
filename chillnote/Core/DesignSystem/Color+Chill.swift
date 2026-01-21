@@ -1,23 +1,30 @@
 import SwiftUI
 
 extension Color {
-    // MARK: - Brand Palette (Warm & Mellow)
-    static let mellowYellow = Color(hex: "FFD56B") // Warm Honey Yellow
-    static let mellowOrange = Color(hex: "FFB347") // Sunset Orange for accents
-    static let paleCream = Color(hex: "FFF9E5")    // Very light yellow background
+    // MARK: - Brand Palette (Japandi / Warm & Mellow)
+    static let mellowYellow = Color(hex: "F3E2A9") // Softer, pastel yellow (Butter)
+    static let mellowOrange = Color(hex: "EBB176") // Soft Apricot
+    static let paleCream = Color(hex: "FDFCF8")    // Paper White (Main Background)
+    
+    // MARK: - Aesthetic Accents
+    static let sageGreen = Color(hex: "9CAF88")    // Muted earthy green
+    static let dustyBlue = Color(hex: "8DA399")    // Muted blue-grey
     
     // MARK: - Semantic Colors
-    static let bgPrimary = Color(hex: "FAFAFA")    // Light grey background (original)
-    static let bgSecondary = Color(hex: "F2F2F7")  // Slightly darker grey (original)
+    static let bgPrimary = Color(hex: "FDFCF8")    // Paper White
+    static let bgSecondary = Color(hex: "F4F2EB")  // Warm light grey/beige
     static let cardBackground = Color.white
     
-    // Warm accent replacement for system blue
-    static let accentPrimary = Color(hex: "FFC043") // Richer yellow for actions
-    static let selectionHighlight = Color(hex: "FFF4D1") // Very pale yellow for selection bg
+    // Actions & Highlights
+    static let accentPrimary = Color(hex: "E6A355") // Warm Bronze/Orange for primary actions
+    static let selectionHighlight = Color(hex: "FFF8E1") // Very pale warm highlight
     
-    // Text Colors (Softer than pure black)
-    static let textMain = Color(hex: "3E3B36")     // Deep Latte Brown
-    static let textSub = Color(hex: "8A8680")      // Warm Grey
+    // Text Colors
+    static let textMain = Color(hex: "2D2A26")     // Soft Charcoal
+    static let textSub = Color(hex: "85807A")      // Warm Grey
+    
+    // Shadows
+    static let shadowColor = Color(hex: "5A4C38").opacity(0.08) // Warm diffused shadow
     
     // MARK: - Helpers
     init(hex: String) {

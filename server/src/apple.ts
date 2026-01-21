@@ -29,10 +29,27 @@ export type AppleTokenResponse = {
 };
 
 export async function verifyAppleIdentityToken(identityToken: string, audience: string): Promise<AppleTokenPayload> {
+  // Debug: Decode token without verification to see what's inside
+  try {
+    const parts = identityToken.split('.');
+    if (parts.length === 3) {
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64').toString());
+      console.log("🔍 [Debug] Decoded token payload (unverified):");
+      console.log("   sub:", payload.sub);
+      console.log("   iss:", payload.iss);
+      console.log("   aud:", payload.aud);
+      console.log("   exp:", payload.exp, "(", new Date(payload.exp * 1000).toISOString(), ")");
+      console.log("   iat:", payload.iat, "(", new Date(payload.iat * 1000).toISOString(), ")");
+      console.log("   email:", payload.email || "not provided");
+    }
+  } catch (e) {
+    console.log("⚠️ [Debug] Could not decode token for debugging");
+  }
+
   const { payload } = await jwtVerify(identityToken, jwks, {
     issuer: APPLE_ISSUER,
     audience,
-    clockTolerance: 5
+    clockTolerance: 60 // Increased to 60 seconds to handle time sync issues
   });
 
   if (typeof payload.sub !== "string") {

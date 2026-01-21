@@ -10,14 +10,12 @@ struct HomeView: View {
     @Query(filter: #Predicate<Note> { $0.deletedAt == nil }, sort: [SortDescriptor(\Note.createdAt, order: .reverse)])
     private var allNotes: [Note]
     
-    @Query(sort: \Category.order) private var allCategories: [Category]
+
 
     @StateObject private var speechRecognizer = SpeechRecognizer()
     @State private var showingSettings = false
     @State private var inputText = ""
-    @State private var isVoiceMode = false
-    @State private var selectedCategory: Category? = nil
-    @State private var showCategorySelector = false
+    @State private var isVoiceMode = true
     @State private var pendingNoteText: String? = nil
     
     // Multi-selection mode for AI context
@@ -25,14 +23,18 @@ struct HomeView: View {
     @State private var selectedNotes: Set<UUID> = []
     @State private var showAIChat = false
     @State private var showDeleteConfirmation = false
+    
+    // AI Agent Actions
+    @State private var showAgentActionsSheet = false
+    @State private var isAgentMenuOpen = false // Controls the custom overlay menu
+    @State private var isExecutingAction = false
+    @State private var actionProgress: String?
+    
+    // Voice Processing
+    // (Handled server-side in /ai/voice-note)
 
     private var recentNotes: [Note] {
-        let filtered = selectedCategory == nil 
-            ? allNotes 
-            : allNotes.filter { note in
-                note.categories?.contains(where: { $0.id == selectedCategory?.id }) ?? false
-            }
-        return Array(filtered.prefix(50))
+        return Array(allNotes.prefix(50))
     }
 
     var body: some View {
@@ -43,7 +45,7 @@ struct HomeView: View {
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 if !isSelectionMode {
-                                    Text("Recent Notes")
+                                    Text("ChillNote")
                                         .font(.displayMedium)
                                         .foregroundColor(.textMain)
                                     Spacer()
@@ -69,74 +71,49 @@ struct HomeView: View {
                                     }
                                     .accessibilityLabel("Open settings")
                                 } else {
-                                    // Selection mode header
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text("Select Notes")
-                                            .font(.displayMedium)
-                                            .foregroundColor(.textMain)
-                                        Text("\(selectedNotes.count) selected")
-                                            .font(.caption)
-                                            .foregroundColor(.textSub)
+                                    // Selection Mode Header (Clean Layout)
+                                    HStack {
+                                        // Left: Cancel
+                                        Button("Cancel") {
+                                            exitSelectionMode()
+                                        }
+                                        .font(.bodyMedium)
+                                        .foregroundColor(.textSub)
+                                        
+                                        Spacer()
+                                        
+                                        // Right: Actions
+                                        HStack(spacing: 20) {
+                                            if selectedNotes.count < recentNotes.count {
+                                                Button("Select All") {
+                                                    selectAllNotes()
+                                                }
+                                                .font(.bodyMedium)
+                                                .foregroundColor(.accentPrimary)
+                                            } else {
+                                                Button("Deselect All") {
+                                                    selectedNotes.removeAll()
+                                                }
+                                                .font(.bodyMedium)
+                                                .foregroundColor(.accentPrimary)
+                                            }
+                                            
+                                            Button(action: { showDeleteConfirmation = true }) {
+                                                Image(systemName: "trash")
+                                                    .font(.system(size: 18, weight: .medium)) // refined weight
+                                                    .foregroundColor(.red.opacity(0.8)) // slightly softer red
+                                            }
+                                            .disabled(selectedNotes.isEmpty)
+                                            .opacity(selectedNotes.isEmpty ? 0.3 : 1.0)
+                                        }
                                     }
-                                    Spacer()
-                                    
-                                    // Delete button
-                                    Button(action: { showDeleteConfirmation = true }) {
-                                        Image(systemName: "trash")
-                                            .font(.system(size: 18, weight: .semibold))
-                                            .foregroundColor(.red)
-                                            .padding(8)
-                                    }
-                                    .disabled(selectedNotes.isEmpty)
-                                    .opacity(selectedNotes.isEmpty ? 0.3 : 1.0)
-                                    .accessibilityLabel("Delete selected notes")
-                                    
-                                    Button("Select All") {
-                                        selectAllNotes()
-                                    }
-                                    .font(.bodyMedium)
-                                    .foregroundColor(.accentPrimary)
-                                    
-                                    Button("Cancel") {
-                                        exitSelectionMode()
-                                    }
-                                    .font(.bodyMedium)
-                                    .foregroundColor(.textSub)
+                                    .padding(.vertical, 8)
                                 }
                             }
                             .padding(.horizontal, 24)
                             .padding(.top, 20)
                             
-                            // Category Filter Bar
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 12) {
-                                    CategoryPill(
-                                        category: nil,
-                                        count: allNotes.count,
-                                        isSelected: selectedCategory == nil
-                                    ) {
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                            selectedCategory = nil
-                                        }
-                                    }
-                                    
-                                    ForEach(allCategories) { category in
-                                        CategoryPill(
-                                            category: category,
-                                            count: allNotes.filter { note in
-                                                note.categories?.contains(where: { $0.id == category.id }) ?? false
-                                            }.count,
-                                            isSelected: selectedCategory?.id == category.id
-                                        ) {
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                                selectedCategory = selectedCategory?.id == category.id ? nil : category
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 24)
-                            }
-                            .padding(.bottom, 8)
+
 
                             if recentNotes.isEmpty {
                                 Text("No notes yet. Start typing or recording below.")
@@ -175,7 +152,7 @@ struct HomeView: View {
                                     }
                                 }
                                 .padding(.horizontal, 24)
-                                .padding(.bottom, 20)
+                                .padding(.bottom, 100) // Extra padding for floating mic button
                             }
                         }
                         .contentShape(Rectangle())
@@ -185,70 +162,141 @@ struct HomeView: View {
                     }
                     .background(Color.bgPrimary)
                     .scrollDismissesKeyboard(.interactively)
-                    
-                    // Show AI chat button in selection mode, otherwise show input bar
-                    if isSelectionMode {
-                        VStack(spacing: 0) {
-                            Divider()
-                                .background(Color.textSub.opacity(0.2))
-                            
-                            HStack {
-                                VStack(alignment: .leading, spacing: 4) {
-                                    Text("\(selectedNotes.count) notes selected")
-                                        .font(.bodyMedium)
-                                        .fontWeight(.semibold)
-                                        .foregroundColor(.textMain)
-                                    if selectedNotes.count > 0 {
-                                        Text("Tap button to start AI chat")
-                                            .font(.caption)
-                                            .foregroundColor(.textSub)
-                                    }
-                                }
-                                
-                                Spacer()
-                                
-                                Button(action: startAIChat) {
-                                    HStack(spacing: 8) {
-                                        Text("AI")
-                                            .font(.system(size: 16, weight: .bold))
-                                        Text("Chat")
-                                            .font(.bodyMedium)
-                                            .fontWeight(.semibold)
-                                    }
-                                    .foregroundColor(.textMain)
-                                    .padding(.horizontal, 20)
-                                    .padding(.vertical, 12)
-                                    .background(
-                                        LinearGradient(
-                                            colors: [Color.mellowYellow, Color.mellowOrange],
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .cornerRadius(24)
-                                    .shadow(color: Color.mellowOrange.opacity(0.3), radius: 8, x: 0, y: 4)
-                                }
-                                .disabled(selectedNotes.isEmpty)
-                                .opacity(selectedNotes.isEmpty ? 0.5 : 1.0)
-                            }
-                            .padding(16)
-                            .background(Color.white)
+                }
+                
+                // Floating Voice Input
+                if !isSelectionMode {
+                    ChatInputBar(
+                        text: $inputText,
+                        isVoiceMode: $isVoiceMode,
+                        speechRecognizer: speechRecognizer,
+                        onSendText: {
+                            handleTextSubmit()
+                        },
+                        onCancelVoice: {
+                            speechRecognizer.stopRecording(reason: .cancelled)
+                        },
+                        onConfirmVoice: {
+                            speechRecognizer.stopRecording()
                         }
-                    } else {
-                        ChatInputBar(
-                            text: $inputText,
-                            isVoiceMode: $isVoiceMode,
-                            speechRecognizer: speechRecognizer,
-                            onSendText: {
-                                handleTextSubmit()
-                            },
-                            onCancelVoice: {
-                                speechRecognizer.stopRecording(reason: .cancelled)
-                            },
-                            onConfirmVoice: {
-                                speechRecognizer.stopRecording()
+                    )
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                
+                // Twin Floating Icons for Selection Mode
+                if isSelectionMode {
+                    VStack {
+                        Spacer()
+                        HStack(spacing: 24) {
+                            // Chat Button (Left)
+                            Button(action: startAIChat) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 56, height: 56)
+                                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                                    
+                                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                                        .font(.system(size: 22))
+                                        .foregroundColor(.accentPrimary) // Using accent color for chat too for unity
+                                }
                             }
-                        )
+                            
+                            // Actions Menu (Right) - Toggle Button
+                            Button(action: {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    isAgentMenuOpen.toggle()
+                                }
+                            }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 56, height: 56)
+                                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
+                                    
+                                    Image(systemName: isAgentMenuOpen ? "xmark" : "bolt.fill")
+                                        .font(.system(size: isAgentMenuOpen ? 20 : 22, weight: isAgentMenuOpen ? .medium : .regular))
+                                        .foregroundColor(.accentPrimary)
+                                        .rotationEffect(.degrees(isAgentMenuOpen ? 90 : 0))
+                                }
+                            }
+                        }
+                        .padding(.bottom, 32)
+                    }
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                
+                // Agent Menu Overlay (Global Layer)
+                if isSelectionMode && isAgentMenuOpen {
+                    ZStack(alignment: .bottom) {
+                        // Background Dismiss Layer
+                        Color.black.opacity(0.01)
+                            .ignoresSafeArea()
+                            .onTapGesture {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    isAgentMenuOpen = false
+                                }
+                            }
+                        
+                        // Menu Items Container - Aligned with bottom buttons
+                        HStack(spacing: 24) {
+                            // Spacer for Chat Button
+                            Color.clear.frame(width: 56, height: 1)
+                            
+                            // Menu Items Column
+                            VStack(spacing: 16) {
+                                ForEach(Array(AIAgentAction.defaultActions.enumerated()), id: \.element.id) { index, action in
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                            isAgentMenuOpen = false
+                                        }
+                                        // Delay execution slightly to allow UI to close
+                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                            Task { await executeAgentAction(action) }
+                                        }
+                                    }) {
+                                        ZStack {
+                                            Circle()
+                                                .fill(Color.white)
+                                                .frame(width: 44, height: 44)
+                                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                            
+                                            Image(systemName: action.icon)
+                                                .font(.system(size: 20))
+                                                .foregroundColor(.accentPrimary)
+                                        }
+                                    }
+                                    .transition(.scale(scale: 0.5).combined(with: .opacity).combined(with: .move(edge: .bottom)))
+                                }
+                                
+                                // Spacer for Main Toggle Button
+                                Color.clear.frame(width: 56, height: 56)
+                            }
+                        }
+                        .padding(.bottom, 32)
+                    }
+                    .zIndex(100) // Ensure it's above everything else
+                }
+                
+                // Progress Overlay for Agent Actions
+                if isExecutingAction, let progress = actionProgress {
+                    ZStack {
+                        Color.black.opacity(0.4)
+                            .ignoresSafeArea()
+                        
+                        VStack(spacing: 16) {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(1.5)
+                            
+                            Text(progress)
+                                .font(.bodyMedium)
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(32)
+                        .background(Color.black.opacity(0.8))
+                        .cornerRadius(20)
                     }
                 }
             }
@@ -257,25 +305,18 @@ struct HomeView: View {
             .fullScreenCover(isPresented: $showingSettings) {
                 SettingsView()
             }
-            .sheet(isPresented: $showCategorySelector, onDismiss: {
-                pendingNoteText = nil
-            }) {
-                CategorySelectorSheet(
-                    onConfirm: { selectedCategories in
-                        if let noteText = pendingNoteText {
-                            saveNoteWithCategories(text: noteText, categories: selectedCategories)
-                        }
-                        pendingNoteText = nil
-                    }
-                )
-                .presentationDetents([.medium, .large])
-                .presentationDragIndicator(.visible)
-            }
+
             .fullScreenCover(isPresented: $showAIChat) {
                 AIContextChatView(contextNotes: getSelectedNotes())
+                    .environmentObject(syncManager)
                     .onDisappear {
                         exitSelectionMode()
                     }
+            }
+            .sheet(isPresented: $showAgentActionsSheet) {
+                AIAgentActionsSheet(selectedCount: selectedNotes.count) { action in
+                    Task { await executeAgentAction(action) }
+                }
             }
             .alert("Delete Notes", isPresented: $showDeleteConfirmation) {
                 Button("Cancel", role: .cancel) { }
@@ -287,9 +328,11 @@ struct HomeView: View {
             }
             .onChange(of: speechRecognizer.transcript) { _, newValue in
                 if !newValue.isEmpty {
-                    pendingNoteText = newValue
+                    let rawTranscript = newValue
                     speechRecognizer.transcript = ""
-                    showCategorySelector = true
+                    Task {
+                        await processAndSaveVoiceNote(rawTranscript: rawTranscript)
+                    }
                 }
             }
             .onChange(of: authService.isSignedIn) { isSignedIn in
@@ -311,31 +354,45 @@ struct HomeView: View {
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         
-        // Clear input immediately for better UX
         let noteText = trimmed
         inputText = ""
 
-        // Ask user to tag manually (or skip).
-        pendingNoteText = noteText
-        showCategorySelector = true
+        saveNote(text: noteText)
     }
 
-    private func saveNoteWithCategories(text: String, categories: [Category]) {
+    private func saveNote(text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
         withAnimation {
             let note = Note(content: trimmed)
             modelContext.insert(note)
-            
-            // Add selected categories
-            for category in categories {
-                note.addCategory(category)
-            }
         }
         
         try? modelContext.save()
         Task { await syncManager.syncIfNeeded(context: modelContext) }
+    }
+    
+    /// Process voice transcript with AI intent recognition before saving
+    private func processAndSaveVoiceNote(rawTranscript: String) async {
+        let trimmed = rawTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        // Use the VoiceProcessingService to apply intent rules (email, list, etc.)
+        // This is the "second pass" that structures the text based on the user's prompt.
+        do {
+            let processedText = try await VoiceProcessingService.shared.processTranscript(trimmed)
+            
+            await MainActor.run {
+                saveNote(text: processedText)
+            }
+        } catch {
+            print("⚠️ AI processing failed, falling back to raw text: \(error)")
+            // Fallback to raw text if AI fails
+            await MainActor.run {
+                saveNote(text: trimmed)
+            }
+        }
     }
 
     private func hideKeyboard() {
@@ -386,18 +443,52 @@ struct HomeView: View {
     // MARK: - Delete Methods
     
     private func deleteNote(_ note: Note) {
+        guard note.deletedAt == nil else { return }
         withAnimation {
-            modelContext.delete(note)
+            note.markDeleted()
         }
         try? modelContext.save()
         Task { await syncManager.syncIfNeeded(context: modelContext) }
     }
     
+    private func executeAgentAction(_ action: AIAgentAction) async {
+        let notesToProcess = getSelectedNotes()
+        guard !notesToProcess.isEmpty else { return }
+        
+        await MainActor.run {
+            isExecutingAction = true
+            actionProgress = "Executing \(action.title)..."
+        }
+        
+        do {
+            _ = try await action.execute(on: notesToProcess, context: modelContext)
+            
+            await MainActor.run {
+                try? modelContext.save()
+                Task { await syncManager.syncIfNeeded(context: modelContext) }
+                
+                isExecutingAction = false
+                actionProgress = nil
+                exitSelectionMode()
+                
+                // TODO: Navigate to the new note or show success message
+                // For now, just exit selection mode
+            }
+        } catch {
+            print("⚠️ Agent action failed: \(error)")
+            await MainActor.run {
+                isExecutingAction = false
+                actionProgress = nil
+                // Could show error alert here
+            }
+        }
+    }
+    
     private func deleteSelectedNotes() {
         let notesToDelete = getSelectedNotes()
         withAnimation {
-            for note in notesToDelete {
-                modelContext.delete(note)
+            for note in notesToDelete where note.deletedAt == nil {
+                note.markDeleted()
             }
         }
         try? modelContext.save()

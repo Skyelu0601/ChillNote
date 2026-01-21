@@ -11,7 +11,7 @@ class DataService {
         do {
             let schema = Schema([
                 Note.self,
-                Category.self
+                CustomAIAction.self
             ])
             
             let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
@@ -50,15 +50,7 @@ class DataService {
         let context = container.mainContext
         
         do {
-            // Initialize preset categories if needed
-            let existingCategories = try context.fetch(FetchDescriptor<Category>())
-            if existingCategories.isEmpty {
-                let presetCategories = Category.createPresets()
-                for category in presetCategories {
-                    context.insert(category)
-                }
-                print("✅ Initialized \(presetCategories.count) preset categories")
-            }
+
             
             // Seed welcome note if needed
             let existingNotes = try context.fetch(FetchDescriptor<Note>())

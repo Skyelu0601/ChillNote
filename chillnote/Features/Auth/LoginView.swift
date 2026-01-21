@@ -1,0 +1,212 @@
+import SwiftUI
+import AuthenticationServices
+
+struct LoginView: View {
+    @Environment(\.dismiss) var dismiss
+    @EnvironmentObject var authService: AuthService
+    @State private var showEmailLogin = false
+    @State private var email = ""
+    @State private var otpCode = ""
+    @State private var sentCode = false
+    
+    var body: some View {
+        ZStack {
+            Color.bgPrimary.ignoresSafeArea()
+            
+            VStack(spacing: 30) {
+                Spacer()
+                
+                // MARK: - Brand Header
+                VStack(spacing: 16) {
+                    Image(systemName: "leaf.fill") // Placeholder Icon
+                        .font(.system(size: 60))
+                        .foregroundStyle(Color.accentPrimary)
+                    
+                    Text("ChillNote")
+                        .font(.system(size: 32, weight: .bold, design: .serif))
+                        .foregroundColor(.textMain)
+                    
+                    Text("Sync your thoughts.\nUnclutter your mind.")
+                        .multilineTextAlignment(.center)
+                        .font(.system(size: 16))
+                        .foregroundColor(.textSub)
+                }
+                .padding(.bottom, 20)
+                
+                if showEmailLogin {
+                    // MARK: - Email Login Form
+                    emailLoginForm
+                } else {
+                    // MARK: - Social Login Buttons
+                    VStack(spacing: 16) {
+                        // Apple Sign In
+                        SignInWithAppleButton(
+                            onRequest: { request in
+                                print("🍎 [Apple Sign In] Request initiated")
+                                request.requestedScopes = [.fullName, .email]
+                                print("🍎 [Apple Sign In] Requested scopes: fullName, email")
+                            },
+                            onCompletion: { result in
+                                print("🍎 [Apple Sign In] Completion callback triggered")
+                                switch result {
+                                case .success(let authorization):
+                                    print("✅ [Apple Sign In] Authorization successful")
+                                    print("   Credential type: \(type(of: authorization.credential))")
+                                    
+                                    if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
+                                        print("   User ID: \(appleIDCredential.user)")
+                                        print("   Has identity token: \(appleIDCredential.identityToken != nil)")
+                                        print("   Has authorization code: \(appleIDCredential.authorizationCode != nil)")
+                                        print("   Email: \(appleIDCredential.email ?? "nil")")
+                                        print("   Full name: \(appleIDCredential.fullName?.givenName ?? "nil")")
+                                        
+                                        Task {
+                                            print("🚀 [Apple Sign In] Starting backend authentication...")
+                                            let success = await authService.signInWithApple(appleIDCredential)
+                                            print("🎯 [Apple Sign In] Backend result: \(success ? "✅ SUCCESS" : "❌ FAILED")")
+                                            if !success {
+                                                print("⚠️ [Apple Sign In] Error message: \(authService.errorMessage ?? "Unknown error")")
+                                            }
+                                        }
+                                    } else {
+                                        print("❌ [Apple Sign In] Failed to cast credential to ASAuthorizationAppleIDCredential")
+                                    }
+                                case .failure(let error):
+                                    print("❌ [Apple Sign In] Authorization failed")
+                                    print("   Error: \(error.localizedDescription)")
+                                    print("   Error code: \((error as NSError).code)")
+                                    print("   Error domain: \((error as NSError).domain)")
+                                }
+                            }
+                        )
+                        .signInWithAppleButtonStyle(.black)
+                        .frame(height: 50)
+                        
+                        // Google Sign In (Custom Button)
+                        Button(action: {
+                            // Mock Google Login
+                            print("Google Login Tapped")
+                            authService.signInWithMock(.google)
+                        }) {
+                            HStack {
+                                Image(systemName: "globe") // Placeholder for Google G logo
+                                Text("Sign in with Google")
+                                    .font(.system(size: 17, weight: .medium))
+                            }
+                            .foregroundColor(.black)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.white)
+                            .cornerRadius(8)
+                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
+                            )
+                        }
+                        
+                        // Email Toggle
+                        Button(action: {
+                            withAnimation { showEmailLogin = true }
+                        }) {
+                            Text("Continue with Email")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundColor(.textSub)
+                        }
+                        .padding(.top, 10)
+                    }
+                    .padding(.horizontal, 30)
+                }
+                
+                Spacer()
+                
+                // MARK: - Terms
+                Text("By continuing, you agree to our Terms & Privacy Policy.")
+                    .font(.caption)
+                    .foregroundColor(.textSub.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+                    .padding(.bottom, 20)
+            }
+        }
+        .onChange(of: authService.isSignedIn) { oldValue, newValue in
+            if newValue {
+                dismiss()
+            }
+        }
+    }
+    
+    var emailLoginForm: some View {
+        VStack(spacing: 20) {
+            if !sentCode {
+                TextField("name@example.com", text: $email)
+                    .textContentType(.emailAddress)
+                    .keyboardType(.emailAddress)
+                    .autocapitalization(.none)
+                    .padding()
+                    .background(Color.bgSecondary)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.textSub.opacity(0.1), lineWidth: 1)
+                    )
+                
+                Button(action: {
+                    // Mock Send Code
+                    sentCode = true
+                }) {
+                    Text("Send Verification Code")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.accentPrimary)
+                        .cornerRadius(12)
+                }
+            } else {
+                VStack(spacing: 8) {
+                    Text("Enter code sent to \(email)")
+                        .font(.caption)
+                        .foregroundColor(.textSub)
+                    
+                    TextField("123456", text: $otpCode)
+                        .keyboardType(.numberPad)
+                        .multilineTextAlignment(.center)
+                        .font(.title2)
+                        .padding()
+                        .background(Color.bgSecondary)
+                        .cornerRadius(12)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 12)
+                                .stroke(Color.textSub.opacity(0.1), lineWidth: 1)
+                        )
+                }
+                
+                Button(action: {
+                    // Mock Verify
+                    authService.signInWithMock(.email)
+                }) {
+                    Text("Verify & Login")
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color.textMain)
+                        .cornerRadius(12)
+                }
+            }
+            
+            Button("Back to Options") {
+                withAnimation {
+                    showEmailLogin = false
+                    sentCode = false
+                    otpCode = ""
+                }
+            }
+            .font(.footnote)
+            .foregroundColor(.textSub)
+        }
+        .padding(.horizontal, 30)
+        .transition(.move(edge: .trailing))
+    }
+}

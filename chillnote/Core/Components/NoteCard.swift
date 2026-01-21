@@ -13,40 +13,18 @@ struct NoteCard: View {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.system(size: 24))
                     .foregroundColor(isSelected ? .accentPrimary : .textSub.opacity(0.3))
-                    .onTapGesture {
-                        onSelectionToggle?()
-                    }
             }
             
             VStack(alignment: .leading, spacing: 12) {
-                Text(note.displayText)
-                    .font(.bodyMedium) // Slighly larger for list style
-                    .foregroundColor(.textMain)
-                    .lineLimit(3)
-                    .multilineTextAlignment(.leading)
+                // Unified Rich Text Preview - renders all content including checkboxes as formatted text
+                RichTextPreview(
+                    content: note.content,
+                    lineLimit: 4,
+                    font: .bodyMedium,
+                    textColor: .textMain
+                )
                 
-                // Category tags
-                if let categories = note.categories, !categories.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(categories.sorted(by: { $0.order < $1.order })) { category in
-                                HStack(spacing: 4) {
-                                    Image(systemName: category.icon)
-                                        .font(.system(size: 10, weight: .semibold))
-                                    Text(category.name)
-                                        .font(.system(size: 12, weight: .medium))
-                                }
-                                .foregroundColor(category.color)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(category.color.opacity(0.15))
-                                )
-                            }
-                        }
-                    }
-                }
+
                 
                 HStack {
                     Text(note.createdAt.relativeFormatted())
@@ -84,6 +62,9 @@ struct NoteCard: View {
 #Preview {
     ZStack {
         Color.bgSecondary.ignoresSafeArea()
-        NoteCard(note: Note(content: "Remember to buy milk and check the post office for that package."))
+        VStack {
+            NoteCard(note: Note(content: "Remember to buy milk"))
+            // Mock checklist note is harder without context setup, just showing text note
+        }
     }
 }

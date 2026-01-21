@@ -30,7 +30,21 @@ function shouldApply(remoteUpdatedAt?: string | null, remoteDeletedAt?: string |
 }
 
 export async function applySync(payload: SyncPayload, existing: SyncPayload, userId: string): Promise<void> {
+  const deduped = new Map<string, typeof payload.notes[number]>();
   for (const note of payload.notes) {
+    const existing = deduped.get(note.id);
+    const currentTimestamp = Math.max(parseDate(note.deletedAt) ?? -Infinity, parseDate(note.updatedAt) ?? -Infinity);
+    if (!existing) {
+      deduped.set(note.id, note);
+      continue;
+    }
+    const existingTimestamp = Math.max(parseDate(existing.deletedAt) ?? -Infinity, parseDate(existing.updatedAt) ?? -Infinity);
+    if (currentTimestamp > existingTimestamp) {
+      deduped.set(note.id, note);
+    }
+  }
+
+  for (const note of deduped.values()) {
     const local = existing.notes.find((item) => item.id === note.id);
     if (!local || shouldApply(note.updatedAt, note.deletedAt, local.updatedAt, local.deletedAt)) {
       await upsertNote(userId, note);
