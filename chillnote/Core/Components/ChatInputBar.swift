@@ -8,10 +8,12 @@ struct ChatInputBar: View {
     var onSendText: () -> Void
     var onCancelVoice: () -> Void
     var onConfirmVoice: () -> Void
+    var onCreateBlankNote: () -> Void
     
     @FocusState private var isTextFocused: Bool
     @State private var isRecordingPulsing = false
     @State private var showTextInput = false
+    @State private var isPressed = false
     
     // Haptic generators
     private let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
@@ -114,30 +116,48 @@ struct ChatInputBar: View {
     }
     
     private var idleVoiceButton: some View {
-        Button(action: {
+        ZStack {
+            // Outer breathable ring
+            Circle()
+                .fill(Color.accentPrimary.opacity(0.1))
+                .frame(width: 88, height: 88)
+            
+            // Main Button with Shadow
+            Circle()
+                .fill(Color.accentPrimary)
+                .frame(width: 72, height: 72)
+                .shadow(color: Color.accentPrimary.opacity(0.4), radius: 12, x: 0, y: 6)
+            
+            // Icon
+            Image(systemName: "mic.fill")
+                .font(.system(size: 30, weight: .bold))
+                .foregroundColor(.white)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 88)
+        .contentShape(Circle())
+        .scaleEffect(isPressed ? 0.9 : 1.0)
+        .onTapGesture {
             impactGenerator.impactOccurred()
             speechRecognizer.startRecording()
-        }) {
-            ZStack {
-                // Outer breathable ring
-                Circle()
-                    .fill(Color.accentPrimary.opacity(0.1))
-                    .frame(width: 88, height: 88)
-                
-                // Main Button with Shadow
-                Circle()
-                    .fill(Color.accentPrimary)
-                    .frame(width: 72, height: 72)
-                    .shadow(color: Color.accentPrimary.opacity(0.4), radius: 12, x: 0, y: 6)
-                
-                // Icon
-                Image(systemName: "mic.fill")
-                    .font(.system(size: 30, weight: .bold))
-                    .foregroundColor(.white)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 88)
         }
+        .onLongPressGesture(minimumDuration: 0.5, pressing: { pressing in
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isPressed = pressing
+            }
+        }, perform: {
+            // Heavy haptic feedback for document creation
+            let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
+            heavyImpact.impactOccurred()
+            
+            // Reset scale
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                isPressed = false
+            }
+            
+            // Execute action
+            onCreateBlankNote()
+        })
     }
     
     private var recordingView: some View {
@@ -186,15 +206,12 @@ struct ChatInputBar: View {
     }
     
     private var processingView: some View {
-        HStack(spacing: 12) {
-            ProgressView()
-                .scaleEffect(0.9)
-            Text("Processing your thought...")
-                .font(.bodyMedium)
-                .foregroundColor(.textSub)
-        }
-        .frame(maxWidth: .infinity, alignment: .center)
-        .frame(height: 44)
+        // Processing state is now handled in the Note Detail View
+        // We show the idle button (or minimal transition state) here
+        // to prevent UI flash before navigation.
+        return idleVoiceButton
+            .disabled(true)
+            .opacity(0.5)
     }
     
     private func errorView(message: String) -> some View {
@@ -227,7 +244,8 @@ struct ChatInputBar_Previews: PreviewProvider {
                 speechRecognizer: SpeechRecognizer(),
                 onSendText: {},
                 onCancelVoice: {},
-                onConfirmVoice: {}
+                onConfirmVoice: {},
+                onCreateBlankNote: {}
             )
         }
         .background(Color.bgPrimary)

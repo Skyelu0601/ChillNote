@@ -51,6 +51,7 @@ final class SyncManager: ObservableObject {
             let config = SyncConfig(baseURL: url, authToken: authToken, since: lastSyncAt)
             let service: SyncService = RemoteSyncService(config: config)
             try await service.syncAll(context: context)
+            TagService.shared.cleanupEmptyTags(context: context)
             lastSyncAtTimestamp = Date().timeIntervalSince1970
         } catch {
             if case SyncError.unauthorized = error {
@@ -61,6 +62,7 @@ final class SyncManager: ObservableObject {
                         let retryConfig = SyncConfig(baseURL: url, authToken: refreshedToken, since: lastSyncAt)
                         let retryService: SyncService = RemoteSyncService(config: retryConfig)
                         try await retryService.syncAll(context: context)
+                        TagService.shared.cleanupEmptyTags(context: context)
                         lastSyncAtTimestamp = Date().timeIntervalSince1970
                     } catch {
                         lastError = "Sync failed. Please try again."

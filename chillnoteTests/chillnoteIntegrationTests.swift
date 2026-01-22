@@ -1,0 +1,187 @@
+//
+//  chillnoteIntegrationTests.swift
+//  chillnoteTests
+//
+//  Created by Automation on 2026/1/22.
+//
+
+import XCTest
+import SwiftData
+@testable import chillnote
+
+@MainActor
+final class chillnoteIntegrationTests: XCTestCase {
+    
+    var modelContainer: ModelContainer!
+    var modelContext: ModelContext!
+    var tagService: TagService!
+
+    override func setUpWithError() throws {
+        // 使用内存数据库进行快速、隔离的集成测试
+        let schema = Schema([Note.self, Tag.self, ChecklistItem.self])
+        let configuration = ModelConfiguration(isStoredInMemoryOnly: true)
+        modelContainer = try ModelContainer(for: schema, configurations: [configuration])
+        modelContext = modelContainer.mainContext
+        
+        // TagService 是单例，但我们的测试方法允许注入 Context，所以直接使用单例即可
+        tagService = TagService.shared
+    }
+
+    override func tearDownWithError() throws {
+        modelContainer = nil
+        modelContext = nil
+        tagService = nil
+    }
+
+    // MARK: - SwiftData Relationship Tests (数据完整性)
+    
+    /// 测试：删除标签时，关联的笔记**不应该**被删除
+    func testDeletingTagDoesNotDeleteNotes() throws {
+        // Arrange
+        let note = Note(content: "Important Note")
+        let tag = Tag(name: "Work")
+        
+        modelContext.insert(note)
+        modelContext.insert(tag)
+        
+        // 建立关联
+        note.tags.append(tag)
+        try modelContext.save()
+        
+        // 验证关联建立成功
+        XCTAssertEqual(note.tags.count, 1)
+        XCTAssertEqual(tag.notes.count, 1)
+        
+        // Act - 删除标签
+        modelContext.delete(tag)
+        try modelContext.save()
+        
+        // Assert - 验证标签没了，但笔记还在
+        let notesCheck = try modelContext.fetch(FetchDescriptor<Note>())
+        let tagsCheck = try modelContext.fetch(FetchDescriptor<Tag>())
+        
+        XCTAssertEqual(tagsCheck.count, 0, "标签应该被删除")
+        XCTAssertEqual(notesCheck.count, 1, "笔记应该保留")
+        XCTAssertEqual(notesCheck.first?.content, "Important Note", "笔记内容应保持不变")
+        XCTAssertEqual(notesCheck.first?.tags.count, 0, "笔记的标签列表应为空")
+    }
+    
+    /// 测试：删除笔记时，关联的 ChecklistItems **应该** 级联删除
+    func testChecklistItemCascadeDelete() throws {
+        // Arrange
+        let note = Note(content: "- [ ] Item 1\n- [ ] Item 2")
+        // 手动触发解析以生成 checkItems (因为逻辑在 init 或 syncContentStructure)
+        // Note(content:) init 中会调用 parsing，所以此时 checklistItems 应该已经生成
+        
+        modelContext.insert(note)
+        try modelContext.save()
+        
+        // 验证初始状态
+        XCTAssertEqual(note.checklistItems.count, 2)
+        
+        // 确保 Item 确实存到了 context 中
+        let itemsCheckBefore = try modelContext.fetch(FetchDescriptor<ChecklistItem>())
+        XCTAssertEqual(itemsCheckBefore.count, 2, "Context 中应该有 2 个 Item")
+        
+        // Act - 删除笔记
+        modelContext.delete(note)
+        try modelContext.save()
+        
+        // Assert - 验证 Item 也都被删除了
+        let notesCheck = try modelContext.fetch(FetchDescriptor<Note>())
+        let itemsCheckAfter = try modelContext.fetch(FetchDescriptor<ChecklistItem>())
+        
+        XCTAssertEqual(notesCheck.count, 0, "笔记应该被删除")
+        XCTAssertEqual(itemsCheckAfter.count, 0, "ChecklistItems 应该被级联删除")
+    }
+
+    // MARK: - TagService Logic Tests (业务逻辑集成)
+    
+    /// 测试：Cleanup 应该删除没有任何笔记的空标签
+    func testCleanupEmptyTagsDeletesUnusedTags() throws {
+        // Arrange
+        let emptyTag = Tag(name: "Empty")
+        let usedTag = Tag(name: "Used")
+        let note = Note(content: "Note")
+        
+        modelContext.insert(emptyTag)
+        modelContext.insert(usedTag)
+        modelContext.insert(note)
+        
+        note.tags.append(usedTag)
+        try modelContext.save()
+        
+        // Act
+        tagService.cleanupEmptyTags(context: modelContext)
+        
+        // Assert
+        let tags = try modelContext.fetch(FetchDescriptor<Tag>())
+        XCTAssertEqual(tags.count, 1)
+        XCTAssertEqual(tags.first?.name, "Used")
+    }
+    
+    /// 测试：Cleanup **不应该** 删除有活跃笔记的标签
+    func testCleanupEmptyTagsPreservesTagsWithActiveNotes() throws {
+        // Arrange
+        let tag = Tag(name: "Important")
+        let note = Note(content: "My Data")
+        
+        modelContext.insert(tag)
+        modelContext.insert(note)
+        
+        note.tags.append(tag)
+        try modelContext.save()
+        
+        // Act
+        tagService.cleanupEmptyTags(context: modelContext)
+        
+        // Assert
+        let tags = try modelContext.fetch(FetchDescriptor<Tag>())
+        XCTAssertEqual(tags.count, 1)
+        XCTAssertEqual(tags.first?.name, "Important")
+    }
+    
+    /// 测试：Cleanup **应该** 删除那些只有软删除笔记的标签
+    func testCleanupEmptyTagsDeletesTagsWithOnlySoftDeletedNotes() throws {
+        // Arrange
+        let tag = Tag(name: "Ghost Tag")
+        let note = Note(content: "Deleted Note")
+        
+        modelContext.insert(tag)
+        modelContext.insert(note)
+        
+        note.tags.append(tag)
+        
+        // 软删除笔记
+        note.markDeleted()
+        try modelContext.save()
+        
+        // Act
+        tagService.cleanupEmptyTags(context: modelContext)
+        
+        // Assert
+        let tags = try modelContext.fetch(FetchDescriptor<Tag>())
+        XCTAssertEqual(tags.count, 0, "如果标签只关联了已删除的笔记，该标签也应该被清理")
+    }
+    
+    /// 测试：软删除笔记过滤逻辑验证
+    func testFetchActiveNotesExcludesSoftDeleted() throws {
+        // Arrange
+        let activeNote = Note(content: "Active")
+        let deletedNote = Note(content: "Deleted")
+        deletedNote.markDeleted()
+        
+        modelContext.insert(activeNote)
+        modelContext.insert(deletedNote)
+        try modelContext.save()
+        
+        // Act
+        // 模拟 DataService 或 View 中的过滤逻辑
+        let descriptor = FetchDescriptor<Note>(predicate: #Predicate { $0.deletedAt == nil })
+        let fetchedNotes = try modelContext.fetch(descriptor)
+        
+        // Assert
+        XCTAssertEqual(fetchedNotes.count, 1)
+        XCTAssertEqual(fetchedNotes.first?.content, "Active")
+    }
+}

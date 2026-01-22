@@ -6,6 +6,7 @@ extension Font {
     
     static let displayLarge = Font.system(.largeTitle, design: .serif).weight(.medium)
     static let displayMedium = Font.system(.title2, design: .serif).weight(.medium)
+    static let displaySmall = Font.system(.headline, design: .serif).weight(.medium)
     
     static let bodyLarge = Font.system(.body, design: .default)
     static let bodyMedium = Font.system(.callout, design: .default)

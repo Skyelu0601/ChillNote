@@ -222,7 +222,7 @@ private extension SettingsView {
     }
     
     func sendFeedback() {
-        guard let url = URL(string: "mailto:hello@chillnote.app?subject=ChillNote%20Feedback") else { return }
+        guard let url = URL(string: "mailto:skye@sponteoai.com?subject=ChillNote%20Feedback") else { return }
         UIApplication.shared.open(url)
     }
     

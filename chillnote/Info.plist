@@ -9,6 +9,17 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>chillnote</string>
+			</array>
+			<key>CFBundleURLName</key>
+			<string>com.chillnote.app</string>
+		</dict>
+	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>ChillNote uses the microphone to record your voice notes.</string>
 	<key>UILaunchScreen</key>

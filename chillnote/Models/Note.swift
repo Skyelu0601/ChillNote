@@ -18,6 +18,11 @@ final class Note {
     var updatedAt: Date
     var deletedAt: Date?
     
+    @Relationship
+    var tags: [Tag] = []
+    
+    var suggestedTags: [String] = []
+    
     /// Get the editable HTML content, migrating from Markdown if needed
     var editableHTML: String {
         get {
@@ -80,6 +85,8 @@ final class Note {
         self.createdAt = now
         self.updatedAt = now
         self.deletedAt = nil
+        self.tags = []
+        self.suggestedTags = []
 
         if let parsed = ChecklistMarkdown.parse(content) {
             self.contentFormat = NoteContentFormat.checklist.rawValue
@@ -102,6 +109,8 @@ final class Note {
         self.createdAt = now
         self.updatedAt = now
         self.deletedAt = nil
+        self.tags = []
+        self.suggestedTags = []
     }
 
     var isChecklist: Bool {
@@ -170,5 +179,15 @@ final class Note {
     func markDeleted() {
         deletedAt = Date()
         updatedAt = deletedAt ?? updatedAt
+    }
+}
+
+extension Note: Hashable {
+    static func == (lhs: Note, rhs: Note) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }

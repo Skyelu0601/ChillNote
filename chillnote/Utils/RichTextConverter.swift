@@ -221,12 +221,6 @@ struct RichTextConverter {
         
         // Content
         let quoteFont = UIFont.italicSystemFont(ofSize: baseFont.pointSize)
-        let contentAttrs: [NSAttributedString.Key: Any] = [
-            .font: quoteFont,
-            .foregroundColor: UIColor.secondaryLabel,
-            .backgroundColor: Config.codeBgColor,
-            .paragraphStyle: style
-        ]
         // Note: Inline formatting might override these info, but we apply base first
         let content = parseInlineFormatting(text, baseFont: quoteFont, textColor: UIColor.secondaryLabel, paragraphStyle: style)
         // Re-apply background to ensure it covers
@@ -291,7 +285,7 @@ struct RichTextConverter {
             if remaining.hasPrefix("`"), let end = text.range(of: "`", range: text.index(currentIndex, offsetBy: 1)..<text.endIndex)?.lowerBound {
                 let content = String(text[text.index(currentIndex, offsetBy: 1)..<end])
                 let codeFont = UIFont.monospacedSystemFont(ofSize: baseFont.pointSize - 1, weight: .regular)
-                var attrs: [NSAttributedString.Key: Any] = [
+                let attrs: [NSAttributedString.Key: Any] = [
                     .font: codeFont,
                     .foregroundColor: Config.codeColor,
                     .backgroundColor: Config.codeBgColor,

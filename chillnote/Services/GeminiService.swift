@@ -144,7 +144,7 @@ struct GeminiService {
                 let fallbackPrompt = """
                 Transcribe the attached audio and return the final cleaned text.
                 Requirements:
-                - Remove filler words and disfluencies (e.g., um/uh/like/you know; 嗯/呃/那个/就是/然后).
+                - Remove filler words and disfluencies (e.g., um, uh, like, you know).
                 - Remove unnecessary repetition while preserving intentional emphasis.
                 - If the speaker corrects themselves mid-sentence, keep only the final intended wording.
                 - Auto-format lists/steps/key points into clear structured Markdown when appropriate.

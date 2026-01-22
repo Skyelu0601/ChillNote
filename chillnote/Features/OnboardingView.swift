@@ -7,19 +7,16 @@ struct OnboardingView: View {
     
     private let pages: [OnboardingPage] = [
         OnboardingPage(
-            title: "Just Say It.",
-            description: "Don't type. Just talk.\nChillNote captures your thoughts instantly.",
-            icon: "mic.fill"
+            title: "Capture at the\nSpeed of Thought",
+            image: "notion_style_capture"
         ),
         OnboardingPage(
-            title: "Let AI Do the Work.",
-            description: "We tidy up your ramblings, tag them,\nand sort them into stacks automatically.",
-            icon: "sparkles"
+            title: "Chaos in,\nClarity out",
+            image: "notion_style_clarity"
         ),
         OnboardingPage(
-            title: "Your Second Brain.",
-            description: "Review your week, find connections,\nand see your thoughts clearly.",
-            icon: "brain.head.profile"
+            title: "Build Assets,\nNot Just Notes",
+            image: "notion_style_assets"
         )
     ]
     
@@ -27,8 +24,8 @@ struct OnboardingView: View {
         ZStack {
             Color.bgPrimary.ignoresSafeArea()
             
-            VStack {
-                // Skip Button
+            VStack(spacing: 0) {
+                // Top Bar
                 HStack {
                     Spacer()
                     if currentPage < pages.count - 1 {
@@ -37,54 +34,37 @@ struct OnboardingView: View {
                                 currentPage = pages.count - 1
                             }
                         }
-                        .font(.bodySmall)
+                        .font(.system(size: 16, weight: .medium, design: .rounded))
                         .foregroundColor(.textSub)
                         .padding()
-                    } else {
-                        // Placeholder to keep spacing
-                        Text(" ").padding()
                     }
                 }
                 
                 Spacer()
                 
-                // Page Content
+                // Content Layer
                 TabView(selection: $currentPage) {
                     ForEach(0..<pages.count, id: \.self) { index in
-                        VStack(spacing: 24) {
+                        VStack(spacing: 40) {
+                            // Illustration
+                            Image(pages[index].image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxWidth: 300)
+                                .padding(.horizontal, 40)
                             
-                            // Icon Circle
-                            ZStack {
-                                Circle()
-                                    .fill(Color.paleCream.opacity(0.3))
-                                    .frame(width: 200, height: 200)
-                                
-                                Circle()
-                                    .fill(Color.paleCream.opacity(0.5))
-                                    .frame(width: 150, height: 150)
-                                
-                                Image(systemName: pages[index].icon)
-                                    .font(.system(size: 70))
-                                    .foregroundColor(.accentPrimary)
-                            }
-                            .padding(.bottom, 20)
-                            
+                            // Headline
                             Text(pages[index].title)
-                                .font(.displayLarge)
+                                .font(.system(size: 32, weight: .bold, design: .serif))
                                 .foregroundColor(.textMain)
                                 .multilineTextAlignment(.center)
-                            
-                            Text(pages[index].description)
-                                .font(.bodyLarge)
-                                .foregroundColor(.textSub)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 32)
+                                .padding(.horizontal, 40)
                         }
                         .tag(index)
                     }
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
-                .frame(height: 500) // Constrain height to keep buttons steady
+                .frame(maxHeight: 500)
                 
                 Spacer()
                 
@@ -92,13 +72,12 @@ struct OnboardingView: View {
                 HStack(spacing: 8) {
                     ForEach(0..<pages.count, id: \.self) { index in
                         Circle()
-                            .fill(currentPage == index ? Color.accentPrimary : Color.gray.opacity(0.3))
+                            .fill(currentPage == index ? Color.accentPrimary : Color.accentPrimary.opacity(0.2))
                             .frame(width: 8, height: 8)
-                            .scaleEffect(currentPage == index ? 1.2 : 1.0)
                             .animation(.spring(), value: currentPage)
                     }
                 }
-                .padding(.bottom, 32)
+                .padding(.bottom, 40)
                 
                 // Action Button
                 Button(action: {
@@ -114,25 +93,23 @@ struct OnboardingView: View {
                         }
                     }
                 }) {
-                    Text(currentPage == pages.count - 1 ? "Enable Permissions & Start" : "Next")
-                        .font(.bodyMedium)
-                        .fontWeight(.bold)
-                        .foregroundColor(.textMain)
+                    Text(currentPage == pages.count - 1 ? "Get Started" : "Continue")
+                        .font(.system(size: 18, weight: .semibold, design: .rounded))
+                        .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.accentPrimary)
-                        .cornerRadius(30)
-                        .shadow(color: Color.accentPrimary.opacity(0.4), radius: 10, x: 0, y: 5)
+                        .padding(.vertical, 18)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color.textMain)
+                        )
                 }
                 .padding(.horizontal, 32)
-                .padding(.bottom, 40)
+                .padding(.bottom, 50)
             }
         }
-        .transition(.opacity)
     }
-
+    
     private func requestPermissions(completion: @escaping () -> Void) {
-        // Only request microphone permission (no Speech Recognition needed for Qwen ASR)
         if #available(iOS 17.0, *) {
             AVAudioApplication.requestRecordPermission { _ in
                 DispatchQueue.main.async {
@@ -151,8 +128,7 @@ struct OnboardingView: View {
 
 struct OnboardingPage {
     let title: String
-    let description: String
-    let icon: String
+    let image: String
 }
 
 #Preview {

@@ -90,7 +90,7 @@ npm ci --only=production || npm install --only=production
 
 echo "🔧 生成 Prisma 客户端并迁移..."
 npx prisma generate
-npx prisma migrate deploy
+npx prisma db push --accept-data-loss
 
 if ! command -v pm2 &> /dev/null; then
     echo "📥 安装 PM2..."

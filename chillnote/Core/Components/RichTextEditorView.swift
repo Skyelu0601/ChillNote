@@ -19,6 +19,17 @@ struct RichTextEditorView: UIViewRepresentable {
         textView.isEditable = isEditable
         textView.isScrollEnabled = isScrollEnabled
         
+        // Set default font and text color - ensures cursor has correct height when empty
+        textView.font = font
+        textView.textColor = textColor
+        
+        // Set typing attributes for new text input
+        textView.typingAttributes = [
+            .font: font,
+            .foregroundColor: textColor,
+            .paragraphStyle: RichTextConverter.Config.baseStyle()
+        ]
+        
         // Layout configuration
         if !isScrollEnabled {
             textView.setContentCompressionResistancePriority(.required, for: .vertical)
@@ -26,6 +37,13 @@ struct RichTextEditorView: UIViewRepresentable {
         }
         
         textView.textContainerInset = UIEdgeInsets(top: 8, left: 12, bottom: bottomInset, right: 12)
+        
+        // Setup Toolbar
+        let toolbar = EditorFormattingToolbar(textView: textView)
+        toolbar.onAction = { action in
+            context.coordinator.handleToolbarAction(action, in: textView)
+        }
+        textView.inputAccessoryView = toolbar
         
         // Tap handler for checkboxes
         textView.onCheckboxTap = { lineIndex, range in
@@ -63,51 +81,235 @@ struct RichTextEditorView: UIViewRepresentable {
         }
         
         func textViewDidChange(_ textView: UITextView) {
-            // Convert rich text back to markdown
             let markdown = RichTextConverter.attributedStringToMarkdown(textView.attributedText)
-            
-            // Update bindings
             lastKnownMarkdown = markdown
             parent.text = markdown
         }
         
+        // MARK: - Smart Enter Logic
+        
+        func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+            // Check for "Enter" key
+            if text == "\n" {
+                return handleReturnKey(textView, range: range)
+            }
+            
+            // Normalize pasted text - strip foreign font sizes, keep only traits like bold/italic
+            // This prevents pasted text from appearing with unexpected font sizes
+            if text.count > 1, let pasteboardString = UIPasteboard.general.string, text == pasteboardString {
+                // User is pasting text - normalize it
+                let normalizedText = NSMutableAttributedString(string: text)
+                let baseFont = parent.font
+                let fullRange = NSRange(location: 0, length: normalizedText.length)
+                
+                // Apply base font and color
+                normalizedText.addAttribute(.font, value: baseFont, range: fullRange)
+                normalizedText.addAttribute(.foregroundColor, value: parent.textColor, range: fullRange)
+                normalizedText.addAttribute(.paragraphStyle, value: RichTextConverter.Config.baseStyle(), range: fullRange)
+                
+                // Insert the normalized text
+                textView.textStorage.beginEditing()
+                textView.textStorage.replaceCharacters(in: range, with: normalizedText)
+                textView.textStorage.endEditing()
+                
+                // Update cursor position
+                textView.selectedRange = NSRange(location: range.location + text.count, length: 0)
+                
+                // Trigger change callback
+                textViewDidChange(textView)
+                
+                return false // We handled it manually
+            }
+            
+            return true
+        }
+        
+        private func handleReturnKey(_ textView: UITextView, range: NSRange) -> Bool {
+            let nsText = textView.text as NSString
+            let lineRange = nsText.lineRange(for: NSRange(location: range.location, length: 0))
+            let lineText = nsText.substring(with: lineRange)
+            
+            // Check for common prefixes
+            let prefixes = ["- [ ] ", "- [x] ", "☑ ", "☐ ", "• ", "- "]
+            var detectedPrefix: String?
+            
+            for p in prefixes {
+                if lineText.hasPrefix(p) {
+                    detectedPrefix = p
+                    break
+                }
+            }
+            
+            // Handle Numbered list (e.g. "1. ")
+            if detectedPrefix == nil {
+                if let match = lineText.range(of: #"^\d+\.\s"#, options: .regularExpression) {
+                    detectedPrefix = String(lineText[match])
+                }
+            }
+            
+            guard let prefix = detectedPrefix else { return true }
+            
+            // If the line consists ONLY of the prefix (and maybe whitespace), remove it (stop the list)
+            let trimmedLine = lineText.trimmingCharacters(in: .whitespacesAndNewlines)
+            if trimmedLine == prefix.trimmingCharacters(in: .whitespaces) {
+                // Clear the line
+                textView.textStorage.beginEditing()
+                textView.textStorage.replaceCharacters(in: lineRange, with: "")
+                textView.textStorage.endEditing()
+                textViewDidChange(textView)
+                return false
+            }
+            
+            // Otherwise, insert a newline and the same prefix
+            // For numbered lists, we should ideally increment but let's start with same for simplicity
+            // or just use "• " if we want to be safe.
+            var nextPrefix = prefix
+            
+            // Special Case: If it was a numbered list, let's try to increment
+            if prefix.range(of: #"^(\d+)\.\s"#, options: .regularExpression) != nil {
+                let numStr = String(prefix[prefix.startIndex..<prefix.index(prefix.startIndex, offsetBy: prefix.count-2)])
+                if let num = Int(numStr) {
+                    nextPrefix = "\(num + 1). "
+                }
+            }
+            
+            // Note: If we use custom symbols like ☑ in text storage, use them in next line too
+            
+            let insertion = "\n" + nextPrefix
+            textView.textStorage.beginEditing()
+            textView.textStorage.replaceCharacters(in: range, with: insertion)
+            
+            // Apply attributes to the new prefix? (e.g. checkbox color)
+            // For now, RichTextConverter handles this on re-render, but for WYSIWYG 
+            // we should ideally apply attributes immediately. 
+            // But replacing text clears selection. We need to restore it.
+            
+            textView.textStorage.endEditing()
+            
+            // Move cursor to end of new prefix
+            let newCursorPos = range.location + insertion.count
+            textView.selectedRange = NSRange(location: newCursorPos, length: 0)
+            
+            textViewDidChange(textView)
+            return false
+        }
+        
+        // MARK: - Toolbar Actions
+        
+        func handleToolbarAction(_ action: EditorAction, in textView: UITextView) {
+            let selectedRange = textView.selectedRange
+            
+            switch action {
+            case .bold:
+                toggleTrait(.traitBold, in: textView, range: selectedRange)
+            case .italic:
+                toggleTrait(.traitItalic, in: textView, range: selectedRange)
+            case .h1:
+                applyBlockStyle(level: 1, in: textView, range: selectedRange)
+            case .h2:
+                applyBlockStyle(level: 2, in: textView, range: selectedRange)
+            case .checklist:
+                applyChecklist(in: textView, range: selectedRange)
+            }
+            
+            textViewDidChange(textView)
+        }
+        
+        private func toggleTrait(_ trait: UIFontDescriptor.SymbolicTraits, in textView: UITextView, range: NSRange) {
+            textView.textStorage.beginEditing()
+            
+            // Use enumerate to handle multi-font selections
+            textView.textStorage.enumerateAttribute(.font, in: range, options: []) { (value, subRange, _) in
+                guard let currentFont = value as? UIFont else { return }
+                
+                var traits = currentFont.fontDescriptor.symbolicTraits
+                if traits.contains(trait) {
+                    traits.remove(trait)
+                } else {
+                    traits.insert(trait)
+                }
+                
+                if let newDescriptor = currentFont.fontDescriptor.withSymbolicTraits(traits) {
+                    let newFont = UIFont(descriptor: newDescriptor, size: currentFont.pointSize)
+                    textView.textStorage.addAttribute(.font, value: newFont, range: subRange)
+                }
+            }
+            
+            textView.textStorage.endEditing()
+        }
+        
+        private func applyBlockStyle(level: Int, in textView: UITextView, range: NSRange) {
+            // Find full lines covered by selection
+            let nsText = textView.text as NSString
+            let lineRange = nsText.lineRange(for: range)
+            
+            textView.textStorage.beginEditing()
+            
+            // Check if it's already a header of this level
+            let currentLevel = textView.textStorage.attribute(RichTextConverter.Key.headerLevel, at: lineRange.location, effectiveRange: nil) as? Int
+            
+            if currentLevel == level {
+                // Remove header style
+                textView.textStorage.removeAttribute(RichTextConverter.Key.headerLevel, range: lineRange)
+                // Reset font to base
+                textView.textStorage.addAttribute(.font, value: parent.font, range: lineRange)
+            } else {
+                // Apply header style
+                textView.textStorage.addAttribute(RichTextConverter.Key.headerLevel, value: level, range: lineRange)
+                let fontSize: CGFloat = level == 1 ? 24 : 20
+                let font = UIFont.systemFont(ofSize: fontSize, weight: .bold)
+                textView.textStorage.addAttribute(.font, value: font, range: lineRange)
+            }
+            
+            textView.textStorage.endEditing()
+        }
+        
+        private func applyChecklist(in textView: UITextView, range: NSRange) {
+            let nsText = textView.text as NSString
+            let lineRange = nsText.lineRange(for: range)
+            let lineText = nsText.substring(with: lineRange)
+            
+            textView.textStorage.beginEditing()
+            
+            // Check if already a checkbox
+            if lineText.hasPrefix("☐ ") || lineText.hasPrefix("☑ ") {
+                // Remove checkbox
+                textView.textStorage.replaceCharacters(in: NSRange(location: lineRange.location, length: 2), with: "")
+                let newFullRange = NSRange(location: lineRange.location, length: lineRange.length - 2)
+                textView.textStorage.removeAttribute(RichTextConverter.Key.checkbox, range: newFullRange)
+            } else {
+                // Add checkbox symbol at start of line
+                let symbol = "☐ "
+                textView.textStorage.replaceCharacters(in: NSRange(location: lineRange.location, length: 0), with: symbol)
+                
+                // Set Attributes
+                let symbolRange = NSRange(location: lineRange.location, length: 2)
+                textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: false, range: symbolRange)
+                textView.textStorage.addAttribute(.foregroundColor, value: RichTextConverter.Config.checkboxUncheckedColor, range: symbolRange)
+                textView.textStorage.addAttribute(.font, value: UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium), range: symbolRange)
+            }
+            
+            textView.textStorage.endEditing()
+        }
+        
+        // Existing toggleCheckbox from previous turn, updated for range
         func toggleCheckbox(at range: NSRange, in textView: InteractiveTextView) {
-            // 1. Get current state
             guard let checkboxState = textView.textStorage.attribute(RichTextConverter.Key.checkbox, at: range.location, effectiveRange: nil) as? Bool else {
                 return
             }
             
-            // 2. Toggle state
             let newState = !checkboxState
-            
-            // 3. Update the Attribute directly for instant feedback
-            textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: newState, range: range)
-            
-            // 4. Update the visual symbol (CheckBox) as well?
-            // The attribute alone doesn't change the text "☑" to "☐".
-            // We need to replace the characters in the text storage.
-            
-            let currentSymbol = (textView.text as NSString).substring(with: range)
-            // Range usually covers the symbol e.g. "☑ " (length 2)
+            textView.textStorage.beginEditing()
             
             let newSymbol = newState ? "☑ " : "☐ "
             let newColor = newState ? RichTextConverter.Config.checkboxCheckedColor : RichTextConverter.Config.checkboxUncheckedColor
             
-            // Use replaceCharacters to swap the symbol while keeping attributes?
-            // Actually, we must be careful. `textStorage.replaceCharacters` might shift ranges.
-            
-            textView.textStorage.beginEditing()
-            
-            // Update symbol string
             textView.textStorage.replaceCharacters(in: range, with: newSymbol)
             
-            // Re-apply attributes for the new symbol
             let newRange = NSRange(location: range.location, length: newSymbol.count)
             textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: newState, range: newRange)
             textView.textStorage.addAttribute(.foregroundColor, value: newColor, range: newRange)
             
-            // Handle Strikethrough for the content
-            // The content follows the checkbox. We need to find the extent of the line.
             let lineRange = (textView.text as NSString).lineRange(for: newRange)
             let contentRange = NSRange(location: newRange.upperBound, length: lineRange.upperBound - newRange.upperBound)
             
@@ -122,28 +324,101 @@ struct RichTextEditorView: UIViewRepresentable {
             }
             
             textView.textStorage.endEditing()
-            
-            // 5. Trigger update
             textViewDidChange(textView)
         }
     }
 }
 
+// MARK: - Toolbar Component
+
+enum EditorAction {
+    case bold, italic, h1, h2, checklist
+}
+
+class EditorFormattingToolbar: UIView {
+    var onAction: ((EditorAction) -> Void)?
+    private let textView: UITextView
+    
+    init(textView: UITextView) {
+        self.textView = textView
+        super.init(frame: .zero)
+        setupUI()
+    }
+    
+    required init?(coder: NSCoder) { fatalError() }
+    
+    private func setupUI() {
+        self.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.95)
+        self.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44)
+        
+        let blurEffect = UIBlurEffect(style: .systemMaterial)
+        let blurView = UIVisualEffectView(effect: blurEffect)
+        blurView.frame = self.bounds
+        blurView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        addSubview(blurView)
+        
+        let stackView = UIStackView()
+        stackView.axis = .horizontal
+        stackView.distribution = .equalSpacing
+        stackView.alignment = .center
+        stackView.spacing = 16
+        
+        let buttons: [(String, EditorAction)] = [
+            ("bold", .bold),
+            ("italic", .italic),
+            ("h1.circle", .h1),
+            ("h2.circle", .h2),
+            ("checklist", .checklist)
+        ]
+        
+        for (icon, action) in buttons {
+            let btn = UIButton(type: .system)
+            let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+            btn.setImage(UIImage(systemName: icon, withConfiguration: config), for: .normal)
+            btn.tintColor = .systemOrange // Matching ChillNote Theme
+            btn.addAction(UIAction { [weak self] _ in
+                self?.onAction?(action)
+                // Haptic feedback
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }, for: .touchUpInside)
+            stackView.addArrangedSubview(btn)
+        }
+        
+        // Add "Dismiss Keyboard" button
+        let dismissBtn = UIButton(type: .system)
+        dismissBtn.setImage(UIImage(systemName: "keyboard.chevron.compact.down"), for: .normal)
+        dismissBtn.tintColor = .secondaryLabel
+        dismissBtn.addAction(UIAction { [weak self] _ in
+            self?.textView.resignFirstResponder()
+        }, for: .touchUpInside)
+        stackView.addArrangedSubview(dismissBtn)
+        
+        addSubview(stackView)
+        stackView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            stackView.topAnchor.constraint(equalTo: topAnchor),
+            stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
+        ])
+    }
+}
+
 // MARK: - Interactive Text View
 
-/// Custom UITextView that detects taps on checkbox attributes
 class InteractiveTextView: UITextView {
-    // Callback: Line Index is less useful now, we pass the Range of the checkbox itself
     var onCheckboxTap: ((Int, NSRange) -> Void)?
     
     override init(frame: CGRect, textContainer: NSTextContainer?) {
         super.init(frame: frame, textContainer: textContainer)
         setupTapGesture()
+        setupTextChangeObserver()
     }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         setupTapGesture()
+        setupTextChangeObserver()
     }
     
     private func setupTapGesture() {
@@ -152,37 +427,58 @@ class InteractiveTextView: UITextView {
         addGestureRecognizer(tapGesture)
     }
     
+    private func setupTextChangeObserver() {
+        // Observe text changes to invalidate intrinsic content size
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(textDidChangeNotification),
+            name: UITextView.textDidChangeNotification,
+            object: self
+        )
+    }
+    
+    @objc private func textDidChangeNotification() {
+        // Force layout recalculation when text changes
+        invalidateIntrinsicContentSize()
+    }
+    
+    // MARK: - Intrinsic Content Size for ScrollView support
+    
+    override var intrinsicContentSize: CGSize {
+        // When scrolling is disabled, calculate the size needed to show all content
+        if !isScrollEnabled {
+            let fixedWidth = bounds.width > 0 ? bounds.width : UIScreen.main.bounds.width - 32
+            let size = sizeThatFits(CGSize(width: fixedWidth, height: .greatestFiniteMagnitude))
+            return CGSize(width: UIView.noIntrinsicMetric, height: max(size.height, 100))
+        }
+        return super.intrinsicContentSize
+    }
+    
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // Ensure intrinsic size is updated after layout
+        if !isScrollEnabled {
+            invalidateIntrinsicContentSize()
+        }
+    }
+    
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         let location = gesture.location(in: self)
-        
-        // Find if we touched a character
         guard let position = closestPosition(to: location) else { return }
         let index = offset(from: beginningOfDocument, to: position)
         
-        // Check if there's a checkbox attribute at this index
         if index < textStorage.length {
-            // We explicitly look for the custom key we set in Converter
             if textStorage.attribute(RichTextConverter.Key.checkbox, at: index, effectiveRange: nil) != nil {
-                
-                // Find the full range of this checkbox symbol
-                // effectiveRange will give us the range where this specific attribute value applies
-                /*
-                 Note: attribute(_:at:effectiveRange:) returns the range for that *specific value*.
-                 So if we toggle it, the value changes.
-                 Ideally we want the range of the symbol "☑ "
-                 */
                 var range = NSRange(location: 0, length: 0)
                 _ = textStorage.attribute(RichTextConverter.Key.checkbox, at: index, effectiveRange: &range)
-                
-                // Haptic feedback
-                let generator = UIImpactFeedbackGenerator(style: .light)
-                generator.impactOccurred()
-                
-                // Trigger action
-                // We pass 0 as dummy line index, logic is now range-based
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
                 onCheckboxTap?(0, range)
             }
         }
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self)
     }
 }
 
@@ -190,17 +486,15 @@ extension InteractiveTextView: UIGestureRecognizerDelegate {
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if let tapGesture = gestureRecognizer as? UITapGestureRecognizer {
             let location = tapGesture.location(in: self)
-            
-            // Hit test for checkbox
             if let position = closestPosition(to: location) {
                 let index = offset(from: beginningOfDocument, to: position)
                 if index < textStorage.length {
                     if textStorage.attribute(RichTextConverter.Key.checkbox, at: index, effectiveRange: nil) != nil {
-                        return true // Consume tap
+                        return true
                     }
                 }
             }
         }
-        return false // Pass through to text view for editing cursor
+        return false
     }
 }

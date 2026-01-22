@@ -12,9 +12,6 @@ struct AIAgentAction: Identifiable {
     
     enum ActionType: String {
         case merge = "merge"
-        case generateReport = "generate_report"
-        case summarizeAll = "summarize_all"
-        case extractCommon = "extract_common"
     }
     
     /// Default set of agent actions
@@ -25,104 +22,40 @@ struct AIAgentAction: Identifiable {
             icon: "doc.on.doc.fill",
             description: "Combine selected notes into one",
             requiresConfirmation: true
-        ),
-        AIAgentAction(
-            type: .generateReport,
-            title: "Generate Report",
-            icon: "doc.text.fill",
-            description: "Create a comprehensive report",
-            requiresConfirmation: false
-        ),
-        AIAgentAction(
-            type: .summarizeAll,
-            title: "Summarize All",
-            icon: "list.bullet.rectangle",
-            description: "Create a summary of all notes",
-            requiresConfirmation: false
-        ),
-        AIAgentAction(
-            type: .extractCommon,
-            title: "Find Patterns",
-            icon: "sparkles.rectangle.stack",
-            description: "Extract common themes",
-            requiresConfirmation: false
         )
     ]
     
     /// Execute the action on given notes
     @MainActor
     func execute(on notes: [Note], context: ModelContext) async throws -> Note {
-        let combinedContent = notes.enumerated().map { index, note in
-            """
-            [Note \(index + 1)]
-            Created: \(note.createdAt.formatted(date: .long, time: .shortened))
-            Content: \(note.content)
-            """
-        }.joined(separator: "\n\n---\n\n")
+        // Just join the content directly without adding metadata wrappers which confuse the AI
+        let combinedContent = notes.map { $0.content }.joined(separator: "\n\n---\n\n")
+        
+        // Helper to detect language
+        let languageRule = LanguageDetection.languagePreservationRule(for: combinedContent)
         
         let prompt: String
         let systemInstruction: String
-        let languageRule = LanguageDetection.languagePreservationRule(for: combinedContent)
         
         switch type {
         case .merge:
             prompt = """
-            Please merge the following notes into a single, well-organized note.
-            Preserve all important information while removing redundancy.
-            Organize the content logically with clear sections if needed.
+            Merge the following notes into a single, cohesive document.
             
-            Notes to merge:
+            Original Notes:
             \(combinedContent)
             """
+            
             systemInstruction = """
-            You are a professional note organizer. Create a clean, well-structured merged note.
+            You are a professional editor.
             Rules:
             \(languageRule)
-            """
-            
-        case .generateReport:
-            prompt = """
-            Based on the following notes, generate a comprehensive report.
-            Include an executive summary, key findings, and actionable insights.
-            Use clear headings and bullet points where appropriate.
-            
-            Source notes:
-            \(combinedContent)
-            """
-            systemInstruction = """
-            You are a professional report writer. Create clear, actionable reports.
-            Rules:
-            \(languageRule)
-            """
-            
-        case .summarizeAll:
-            prompt = """
-            Create a concise summary of the following notes.
-            Highlight the most important points from each note.
-            Organize by theme or chronologically as appropriate.
-            
-            Notes to summarize:
-            \(combinedContent)
-            """
-            systemInstruction = """
-            You are a professional summarizer. Create clear, concise summaries.
-            Rules:
-            \(languageRule)
-            """
-            
-        case .extractCommon:
-            prompt = """
-            Analyze the following notes and extract common themes, patterns, and insights.
-            Identify recurring topics, ideas, or concerns.
-            Present your findings in a clear, organized format.
-            
-            Notes to analyze:
-            \(combinedContent)
-            """
-            systemInstruction = """
-            You are a professional analyst. Identify patterns and insights from data.
-            Rules:
-            \(languageRule)
+            - Merge the content into a single, well-structured markdown document.
+            - Remove redundancy and improve flow.
+            - Use markdown for styling (# Headers, **bold**, - list).
+            - DO NOT wrap the output in markdown code blocks (```).
+            - DO NOT include meta-headers like "Merged Note", "Creation Date", or "[Note 1]".
+            - Start directly with the content.
             """
         }
         

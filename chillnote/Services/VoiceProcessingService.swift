@@ -1,12 +1,59 @@
-import Foundation
+import SwiftUI
+
+enum VoiceNoteState: Equatable {
+    case idle
+    case processing
+    case completed(originalText: String)
+}
 
 /// Service for processing voice transcripts with intent recognition and structuring
 @MainActor
-class VoiceProcessingService {
+class VoiceProcessingService: ObservableObject {
     static let shared = VoiceProcessingService()
+    
+    @Published var processingStates: [UUID: VoiceNoteState] = [:]
     
     private init() {}
     
+    /// Process the note in the background and update it dynamically
+    func startProcessing(note: Note, rawTranscript: String) async {
+        let noteID = note.id
+        processingStates[noteID] = .processing
+        
+        do {
+            let processedText = try await processTranscript(rawTranscript)
+            
+            // Artificial delay for effect (if too fast)
+            try? await Task.sleep(nanoseconds: 800_000_000) // 0.8s
+            
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
+                // Update the note content
+                note.content = processedText
+                
+                // If it looks like a checklist, we might need to sync structure
+                // (Note: Syncing structure is tricky here as it might disrupt the animation, 
+                //  but Note.editableHTML logic should handle display)
+                
+                processingStates[noteID] = .completed(originalText: rawTranscript)
+            }
+            
+            // Clear the specific state after 10 seconds (hides Undo option)
+            Task {
+                try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
+                if case .completed = processingStates[noteID] {
+                    withAnimation {
+                        processingStates.removeValue(forKey: noteID)
+                    }
+                }
+            }
+            
+        } catch {
+            print("⚠️ AI processing failed: \(error)")
+            // On error, just revert state to idle so user sees raw text
+            processingStates[noteID] = .idle
+        }
+    }
+
     /// Process raw voice transcript into structured, usable text
     /// This handles intent recognition and automatic formatting
     func processTranscript(_ rawTranscript: String) async throws -> String {
@@ -14,7 +61,7 @@ class VoiceProcessingService {
         guard !trimmed.isEmpty else { return trimmed }
         
         // Skip AI processing for very short inputs (likely just a word or two)
-        if trimmed.count < 20 {
+        if trimmed.count < 5 { // Lowered threshold so even short commands might work
             return trimmed
         }
         

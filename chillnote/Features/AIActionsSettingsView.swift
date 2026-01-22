@@ -34,7 +34,7 @@ struct AIActionsSettingsView: View {
                 } header: {
                     Text("Quick Actions")
                 } footer: {
-                    Text("智能排版功能可以自动优化文本结构和格式。您也可以添加自定义的AI动作。")
+                    Text("Smart Format automatically enhances text structure and styling. You can also create custom AI actions.")
                 }
                 
                 Section {
@@ -58,7 +58,7 @@ struct AIActionsSettingsView: View {
                         }
                     }
                 } footer: {
-                    Text("这将删除所有自定义动作并恢复内置的智能排版预设。")
+                    Text("This will remove all custom actions and restore the built-in Smart Format preset.")
                 }
             }
             .navigationTitle("AI Quick Actions")

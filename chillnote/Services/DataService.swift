@@ -11,6 +11,7 @@ class DataService {
         do {
             let schema = Schema([
                 Note.self,
+                Tag.self,
                 CustomAIAction.self
             ])
             
@@ -55,7 +56,16 @@ class DataService {
             // Seed welcome note if needed
             let existingNotes = try context.fetch(FetchDescriptor<Note>())
             if !existingNotes.isEmpty { return }
-            context.insert(Note(content: "Welcome to ChillNote! Tap the yellow button to record a voice note."))
+            
+            let welcomeNote = Note(content: "Welcome to ChillNote! Tap the yellow button to record a voice note.")
+            // Use a fixed UUID and old timestamp so that if the user has deleted/modified this note
+            // on the server, the server version (which is newer) will override this default one
+            // during sync, preventing duplicate or zombie welcome notes.
+            welcomeNote.id = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
+            welcomeNote.createdAt = Date.distantPast
+            welcomeNote.updatedAt = Date.distantPast
+            
+            context.insert(welcomeNote)
             try? context.save()
         } catch {
             print("Error checking seed data: \(error)")

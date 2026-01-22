@@ -265,7 +265,7 @@ app.post("/ai/voice-note", async (req, res) => {
     );
 
     // Gemini 2.0 Flash URL - Using experimental model which is currently reliable for 2.0 Flash features
-    const model = "gemini-2.0-flash-exp";
+    const model = "gemini-2.0-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
     const systemInstruction = [
@@ -378,7 +378,7 @@ app.post("/ai/gemini", async (req, res) => {
     console.log(`🤖 Gemini Request: prompt="${prompt?.substring(0, 50)}...", hasAudio=${!!audioBase64}, audioSize=${audioBase64 ? Math.round(audioBase64.length / 1024) : 0}KB`);
 
     // Gemini 2.0 Flash URL - Using experimental model which is currently reliable for 2.0 Flash features
-    const model = "gemini-2.0-flash-exp";
+    const model = "gemini-2.0-flash";
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
 
     const contentsParts: any[] = [];

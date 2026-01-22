@@ -13,10 +13,13 @@ struct HomeView: View {
 
 
     @StateObject private var speechRecognizer = SpeechRecognizer()
+    @State private var navigationPath = NavigationPath()
     @State private var showingSettings = false
     @State private var inputText = ""
     @State private var isVoiceMode = true
     @State private var pendingNoteText: String? = nil
+    @State private var currentRecordingNote: Note? // Track note being recorded for immediate nav
+
     
     // Multi-selection mode for AI context
     @State private var isSelectionMode = false
@@ -30,22 +33,49 @@ struct HomeView: View {
     @State private var isExecutingAction = false
     @State private var actionProgress: String?
     
+    // Merge Action State
+    @State private var showMergeSuccessAlert = false
+    @State private var notesToDeleteAfterMerge: [Note] = []
+    
+    // Sidebar & Filtering
+    @State private var isSidebarPresented = false
+    @State private var selectedTag: Tag? = nil
+    
     // Voice Processing
     // (Handled server-side in /ai/voice-note)
 
     private var recentNotes: [Note] {
-        return Array(allNotes.prefix(50))
+        let activeNotes = allNotes
+        if let tag = selectedTag {
+            return activeNotes.filter { note in
+                note.tags.contains { t in t.id == tag.id }
+            }
+        }
+        return Array(activeNotes.prefix(50))
     }
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ZStack(alignment: .bottom) {
                 VStack(spacing: 0) {
                     ScrollView {
                         VStack(alignment: .leading, spacing: 16) {
                             HStack {
                                 if !isSelectionMode {
-                                    Text("ChillNote")
+                                    // Sidebar Toggle
+                                    Button(action: {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                            isSidebarPresented.toggle()
+                                        }
+                                    }) {
+                                        Image(systemName: "line.3.horizontal")
+                                            .font(.system(size: 20, weight: .semibold))
+                                            .foregroundColor(.textMain)
+                                            .frame(width: 44, height: 44)
+                                    }
+                                    .padding(.leading, -10)
+                                    
+                                    Text(selectedTag?.name ?? "ChillNote")
                                         .font(.displayMedium)
                                         .foregroundColor(.textMain)
                                     Spacer()
@@ -135,9 +165,7 @@ struct HomeView: View {
                                                 }
                                             )
                                         } else {
-                                            NavigationLink {
-                                                NoteDetailView(note: note)
-                                            } label: {
+                                            NavigationLink(value: note) {
                                                 NoteCard(note: note)
                                             }
                                             .buttonStyle(.plain)
@@ -162,6 +190,9 @@ struct HomeView: View {
                     }
                     .background(Color.bgPrimary)
                     .scrollDismissesKeyboard(.interactively)
+                    .navigationDestination(for: Note.self) { note in
+                        NoteDetailView(note: note)
+                    }
                 }
                 
                 // Floating Voice Input
@@ -178,6 +209,9 @@ struct HomeView: View {
                         },
                         onConfirmVoice: {
                             speechRecognizer.stopRecording()
+                        },
+                        onCreateBlankNote: {
+                            createAndOpenBlankNote()
                         }
                     )
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -300,7 +334,12 @@ struct HomeView: View {
                     }
                 }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.bgPrimary.ignoresSafeArea())
+            .overlay {
+                // Sidebar Overlay
+                SidebarView(isPresented: $isSidebarPresented, selectedTag: $selectedTag)
+            }
             .navigationBarHidden(true)
             .fullScreenCover(isPresented: $showingSettings) {
                 SettingsView()
@@ -326,13 +365,53 @@ struct HomeView: View {
             } message: {
                 Text("Are you sure you want to delete \(selectedNotes.count) note\(selectedNotes.count == 1 ? "" : "s")? This action cannot be undone.")
             }
-            .onChange(of: speechRecognizer.transcript) { _, newValue in
-                if !newValue.isEmpty {
-                    let rawTranscript = newValue
-                    speechRecognizer.transcript = ""
-                    Task {
-                        await processAndSaveVoiceNote(rawTranscript: rawTranscript)
+            .alert("Merge Successful", isPresented: $showMergeSuccessAlert) {
+                Button("Keep Original Notes", role: .cancel) {
+                    exitSelectionMode()
+                }
+                Button("Delete Originals", role: .destructive) {
+                    deleteNotes(notesToDeleteAfterMerge)
+                    exitSelectionMode()
+                }
+            } message: {
+                Text("The notes have been merged into a new note. Would you like to delete the original \(notesToDeleteAfterMerge.count) notes?")
+            }
+            .onChange(of: speechRecognizer.recordingState) { _, newState in
+                switch newState {
+                case .processing:
+                    // Navigate immediately when user hits done
+                    let note = Note(content: "")
+                    modelContext.insert(note)
+                    try? modelContext.save()
+                    
+                    VoiceProcessingService.shared.processingStates[note.id] = .processing
+                    currentRecordingNote = note
+                    navigationPath.append(note)
+                    
+                case .idle:
+                    // Post-processing update
+                    if let note = currentRecordingNote {
+                        let rawText = speechRecognizer.transcript
+                        if !rawText.isEmpty {
+                            // Update content and start 2nd pass
+                            note.content = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+                            Task {
+                                await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: rawText)
+                            }
+                        } else {
+                            // Empty? Cancel state
+                            VoiceProcessingService.shared.processingStates.removeValue(forKey: note.id)
+                        }
+                        currentRecordingNote = nil
                     }
+                    isVoiceMode = false
+                    
+                case .error(let msg):
+                    print("Error recording: \(msg)")
+                    currentRecordingNote = nil
+                    isVoiceMode = false
+                    
+                default: break
                 }
             }
             .onChange(of: authService.isSignedIn) { isSignedIn in
@@ -342,6 +421,10 @@ struct HomeView: View {
             }
             .task {
                 await syncManager.syncIfNeeded(context: modelContext)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("StartRecording"))) { _ in
+                isVoiceMode = true
+                speechRecognizer.startRecording()
             }
             .onChange(of: scenePhase) { newPhase in
                 guard newPhase == .active else { return }
@@ -354,23 +437,49 @@ struct HomeView: View {
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         
-        let noteText = trimmed
+        // If we are currently "recording" into a note but user typed instead, we might want to use that?
+        // But for now, just save a new note.
+        _ = saveNote(text: trimmed)
         inputText = ""
-
-        saveNote(text: noteText)
     }
 
-    private func saveNote(text: String) {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+    private func createAndOpenBlankNote() {
+        let note = Note(content: "")
+        modelContext.insert(note)
+        try? modelContext.save()
+        
+        // No tag generation needed for empty note
+        
+        // Trigger sync
+        Task { await syncManager.syncIfNeeded(context: modelContext) }
+        
+        // Navigate
+        navigationPath.append(note)
+    }
 
+    @discardableResult
+    private func saveNote(text: String, shouldNavigate: Bool = false) -> Note? {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+
+        let note = Note(content: trimmed)
         withAnimation {
-            let note = Note(content: trimmed)
             modelContext.insert(note)
+            
+            // Trigger background tag generation
+            Task {
+                await generateTags(for: note)
+            }
         }
         
         try? modelContext.save()
         Task { await syncManager.syncIfNeeded(context: modelContext) }
+        
+        if shouldNavigate {
+            navigationPath.append(note)
+        }
+        
+        return note
     }
     
     /// Process voice transcript with AI intent recognition before saving
@@ -378,20 +487,37 @@ struct HomeView: View {
         let trimmed = rawTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        // Use the VoiceProcessingService to apply intent rules (email, list, etc.)
-        // This is the "second pass" that structures the text based on the user's prompt.
+        // NEW FLOW: Immediate navigation + Background Processing
+        // 1. Save and navigate immediately with Raw Text
+        let note = await MainActor.run {
+            saveNote(text: trimmed, shouldNavigate: true)
+        }
+        
+        guard let note = note else { return }
+        
+        // 2. Trigger AI processing in background
+        Task {
+            await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: trimmed)
+        }
+    }
+
+    private func generateTags(for note: Note) async {
         do {
-            let processedText = try await VoiceProcessingService.shared.processTranscript(trimmed)
+            // Fetch all existing tags for context
+            let fetchDescriptor = FetchDescriptor<Tag>()
+            let allTags = (try? modelContext.fetch(fetchDescriptor))?.map { $0.name } ?? []
             
-            await MainActor.run {
-                saveNote(text: processedText)
+            let suggestions = try await TagService.shared.suggestTags(for: note.content, existingTags: allTags)
+            
+            if !suggestions.isEmpty {
+                await MainActor.run {
+                    note.suggestedTags = suggestions
+                    try? modelContext.save()
+                    Task { await syncManager.syncIfNeeded(context: modelContext) }
+                }
             }
         } catch {
-            print("⚠️ AI processing failed, falling back to raw text: \(error)")
-            // Fallback to raw text if AI fails
-            await MainActor.run {
-                saveNote(text: trimmed)
-            }
+            print("⚠️ Failed to generate tags: \(error)")
         }
     }
 
@@ -448,6 +574,7 @@ struct HomeView: View {
             note.markDeleted()
         }
         try? modelContext.save()
+        TagService.shared.cleanupEmptyTags(context: modelContext)
         Task { await syncManager.syncIfNeeded(context: modelContext) }
     }
     
@@ -469,10 +596,14 @@ struct HomeView: View {
                 
                 isExecutingAction = false
                 actionProgress = nil
-                exitSelectionMode()
                 
-                // TODO: Navigate to the new note or show success message
-                // For now, just exit selection mode
+                // If it was a merge action, offer to delete original notes
+                if action.type == .merge {
+                    notesToDeleteAfterMerge = notesToProcess
+                    showMergeSuccessAlert = true
+                } else {
+                    exitSelectionMode()
+                }
             }
         } catch {
             print("⚠️ Agent action failed: \(error)")
@@ -486,14 +617,20 @@ struct HomeView: View {
     
     private func deleteSelectedNotes() {
         let notesToDelete = getSelectedNotes()
+        deleteNotes(notesToDelete)
+        exitSelectionMode()
+    }
+    
+    // Helper to delete specific array of notes
+    private func deleteNotes(_ notes: [Note]) {
         withAnimation {
-            for note in notesToDelete where note.deletedAt == nil {
+            for note in notes where note.deletedAt == nil {
                 note.markDeleted()
             }
         }
         try? modelContext.save()
+        TagService.shared.cleanupEmptyTags(context: modelContext)
         Task { await syncManager.syncIfNeeded(context: modelContext) }
-        exitSelectionMode()
     }
 }
 

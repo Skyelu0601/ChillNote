@@ -35,6 +35,11 @@ struct ChillNoteApp: App {
                 .environmentObject(authService)
                 .environmentObject(syncManager)
                 .environmentObject(actionsManager)
+                .onOpenURL { url in
+                    if url.host == "record" {
+                        NotificationCenter.default.post(name: NSNotification.Name("StartRecording"), object: nil)
+                    }
+                }
         }
     }
 }
