@@ -1,12 +1,27 @@
 import Foundation
 import NaturalLanguage
 
-enum GeminiError: Error {
+enum GeminiError: LocalizedError {
     case missingAPIKey
     case invalidURL
     case networkError(Error)
     case apiError(String)
     case invalidResponse
+    
+    var errorDescription: String? {
+        switch self {
+        case .missingAPIKey:
+            return "Chillo service key is not configured."
+        case .invalidURL:
+            return "Invalid Chillo configuration."
+        case .networkError(let error):
+            return "Network error: \(error.localizedDescription)"
+        case .apiError(let message):
+            return "Chillo Service Error: \(message)"
+        case .invalidResponse:
+            return "Invalid response from Chillo."
+        }
+    }
 }
 
 struct GeminiService {

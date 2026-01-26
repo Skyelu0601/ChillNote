@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+import UIKit
 
 struct SidebarView: View {
     @Environment(\.modelContext) private var modelContext
@@ -77,12 +78,24 @@ struct SidebarView: View {
                                         .padding(.top, 40)
                                         .frame(maxWidth: .infinity)
                                 }
+                                
+                                // Drag area filler to ensure drop zone covers remaining space
+                                Color.clear
+                                    .contentShape(Rectangle())
+                                    .frame(height: 100)
                             }
+                        }
+                        .dropDestination(for: String.self) { items, _ in
+                            handleRootDrop(items: items)
                         }
                     }
                     .padding(.horizontal, 16)
                     
                     Spacer()
+                    
+                    TrashDropZone(modelContext: modelContext)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 24)
                 }
                 .frame(width: 290)
                 .background(Color.bgSecondary) // 纯净背景
@@ -93,6 +106,30 @@ struct SidebarView: View {
         }
         .ignoresSafeArea(.all, edges: .vertical)
         .zIndex(1000)
+    }
+    
+    // MARK: - Helper Methods
+    
+    private func handleRootDrop(items: [String]) -> Bool {
+        guard let droppedIdString = items.first,
+              let droppedId = UUID(uuidString: droppedIdString) else {
+            return false
+        }
+        
+        let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.id == droppedId })
+        guard let droppedTag = try? modelContext.fetch(fetchDescriptor).first else { return false }
+        
+        // Only proceed if tag is not already root
+        if droppedTag.parent == nil { return false }
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            if let oldParent = droppedTag.parent {
+                oldParent.children.removeAll { $0.id == droppedTag.id }
+            }
+            droppedTag.parent = nil
+            try? modelContext.save()
+        }
+        return true
     }
 }
 
@@ -211,6 +248,23 @@ struct TagTreeItemView: View {
         }
     }
     
+    private func moveToRoot() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            if let parent = tag.parent {
+                parent.children.removeAll { $0.id == tag.id }
+                tag.parent = nil
+                try? modelContext.save()
+            }
+        }
+    }
+    
+    private func deleteTag() {
+        withAnimation {
+            modelContext.delete(tag)
+            try? modelContext.save()
+        }
+    }
+
     private func handleDrop(droppedTagId: UUID, onto targetTag: Tag) -> Bool {
         let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.id == droppedTagId })
         guard let droppedTag = try? modelContext.fetch(fetchDescriptor).first else { return false }
@@ -286,6 +340,62 @@ struct RootDropZone: View {
             droppedTag.parent = nil
             try? modelContext.save()
         }
+        return true
+    }
+}
+
+// MARK: - Trash Drop Zone
+
+struct TrashDropZone: View {
+    let modelContext: ModelContext
+    @State private var isTargeted: Bool = false
+    
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: isTargeted ? "trash.fill" : "trash")
+                .font(.system(size: 16))
+            
+            Text(isTargeted ? "Release to delete" : "Drag here to delete")
+                .font(.system(size: 14, weight: isTargeted ? .bold : .medium))
+        }
+        .foregroundColor(isTargeted ? .red : .textMain.opacity(0.4))
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(isTargeted ? Color.red.opacity(0.08) : Color.clear)
+                .strokeBorder(isTargeted ? Color.red.opacity(0.3) : Color.textMain.opacity(0.1), style: StrokeStyle(lineWidth: 1, dash: [4]))
+        )
+        .dropDestination(for: String.self) { items, location in
+            guard let droppedIdString = items.first,
+                  let droppedId = UUID(uuidString: droppedIdString) else {
+                return false
+            }
+            return handleDeleteDrop(droppedTagId: droppedId)
+        } isTargeted: { targeted in
+            withAnimation(.spring(response: 0.2)) {
+                isTargeted = targeted
+            }
+        }
+    }
+    
+    private func handleDeleteDrop(droppedTagId: UUID) -> Bool {
+        let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.id == droppedTagId })
+        guard let droppedTag = try? modelContext.fetch(fetchDescriptor).first else { return false }
+        
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            // Remove from parent if needed (SwiftData usually handles relationship cleanup, but manual is safer for tree UI)
+            if let parent = droppedTag.parent {
+                parent.children.removeAll { $0.id == droppedTag.id }
+            }
+            modelContext.delete(droppedTag)
+            try? modelContext.save()
+        }
+        
+        // Haptic feedback
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.impactOccurred()
+        
         return true
     }
 }

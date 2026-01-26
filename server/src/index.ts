@@ -51,7 +51,7 @@ import cors from "cors";
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 import { applySync } from "./sync.js";
-import { toPayload, upsertUser } from "./store.js";
+import { toPayload, upsertUser, deleteUser } from "./store.js";
 import type { AuthAppleRequest, AuthTokens, SyncPayload } from "./types.js";
 import { verifyAppleIdentityToken } from "./apple.js";
 import fetch from "node-fetch";
@@ -112,6 +112,10 @@ function requireAuth(req: express.Request, res: express.Response, next: express.
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
+});
+
+app.get("/version", (_req, res) => {
+  res.json({ version: "1.0.1", updated: new Date().toISOString() });
 });
 
 app.post("/auth/apple", async (req, res) => {
@@ -188,6 +192,22 @@ app.post("/auth/refresh", async (req, res) => {
   }
 });
 
+app.delete("/auth/account", requireAuth, async (req, res) => {
+  const userId = req.userId;
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+  try {
+    await deleteUser(userId);
+    console.log(`🗑️ [Backend] Deleted user account: ${userId}`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error(`❌ [Backend] Failed to delete user ${userId}:`, error);
+    res.status(500).json({ error: "Failed to delete account" });
+  }
+});
+
 app.post("/sync", requireAuth, async (req, res) => {
   const parsed = syncSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -225,7 +245,7 @@ app.post("/ai/voice-note", async (req, res) => {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) {
     console.error("❌ GEMINI_API_KEY is not configured");
-    res.status(500).json({ error: "GEMINI_API_KEY is not configured on server" });
+    res.status(500).json({ error: "AI Service key is not configured on server" });
     return;
   }
 
@@ -320,14 +340,9 @@ app.post("/ai/voice-note", async (req, res) => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        let errorPayload: any = { error: "Gemini API error", status: response.status };
-        try {
-          errorPayload = JSON.parse(errorText);
-        } catch {
-          errorPayload.body = errorText.slice(0, 2000);
-        }
-        console.error("❌ Gemini API Error:", JSON.stringify(errorPayload));
-        res.status(response.status).json(errorPayload);
+        console.error("❌ Gemini API Error (Upstream):", errorText);
+        // Return generic error to client to hide provider details
+        res.status(response.status).json({ error: "AI Provider Error" });
         return;
       }
 
@@ -352,7 +367,7 @@ app.post("/ai/voice-note", async (req, res) => {
     } catch (fetchError: any) {
       if (fetchError.name === "AbortError") {
         console.error(`❌ Gemini API Timeout (${timeoutMs}ms)`);
-        res.status(504).json({ error: "Gemini API Timeout" });
+        res.status(504).json({ error: "AI Service Timeout" });
       } else {
         throw fetchError;
       }
@@ -368,7 +383,7 @@ app.post("/ai/gemini", async (req, res) => {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
   if (!GEMINI_API_KEY) {
     console.error("❌ GEMINI_API_KEY is not configured");
-    res.status(500).json({ error: "GEMINI_API_KEY is not configured on server" });
+    res.status(500).json({ error: "AI Service key is not configured on server" });
     return;
   }
 
@@ -423,14 +438,9 @@ app.post("/ai/gemini", async (req, res) => {
 
       if (!response.ok) {
         const errorText = await response.text();
-        let errorPayload: any = { error: "Gemini API error", status: response.status };
-        try {
-          errorPayload = JSON.parse(errorText);
-        } catch {
-          errorPayload.body = errorText.slice(0, 2000);
-        }
-        console.error("❌ Gemini API Error:", JSON.stringify(errorPayload));
-        res.status(response.status).json(errorPayload);
+        console.error("❌ Gemini API Error (Upstream):", errorText);
+        // Return generic error to client to hide provider details
+        res.status(response.status).json({ error: "AI Provider Error" });
         return;
       }
 
@@ -443,7 +453,7 @@ app.post("/ai/gemini", async (req, res) => {
     } catch (fetchError: any) {
       if (fetchError.name === 'AbortError') {
         console.error("❌ Gemini API Timeout (60s)");
-        res.status(504).json({ error: "Gemini API Timeout" });
+        res.status(504).json({ error: "AI Service Timeout" });
       } else {
         throw fetchError;
       }

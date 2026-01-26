@@ -20,13 +20,13 @@ struct AIQuickActionsSheet: View {
                         Image(systemName: "sparkles")
                             .font(.system(size: 24))
                             .foregroundColor(.accentPrimary)
-                        Text("AI Magic")
+                        Text("Chillo's Magic")
                             .font(.displayMedium)
                             .foregroundColor(.textMain)
                         Spacer()
                     }
                     
-                    Text("Transform your note with AI")
+                    Text("Let Chillo polish this up.")
                         .font(.bodyMedium)
                         .foregroundColor(.textSub)
                 }

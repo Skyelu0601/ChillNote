@@ -15,8 +15,19 @@ struct ChatInputBar: View {
     @State private var showTextInput = false
     @State private var isPressed = false
     
+    @State private var startTime: Date?
+    @State private var elapsed: TimeInterval = 0
+    private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+
     // Haptic generators
     private let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
+    
+    private var timeText: String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = elapsed >= 3600 ? [.hour, .minute, .second] : [.minute, .second]
+        formatter.zeroFormattingBehavior = .pad
+        return formatter.string(from: elapsed) ?? "00:00"
+    }
     
     var body: some View {
         VStack(spacing: 0) {
@@ -69,6 +80,19 @@ struct ChatInputBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
+        .onReceive(timer) { _ in
+            guard speechRecognizer.isRecording, let startTime = startTime else { return }
+            elapsed = Date().timeIntervalSince(startTime)
+        }
+        .onChange(of: speechRecognizer.recordingState) { _, newValue in
+            if newValue == .recording {
+                startTime = Date()
+                elapsed = 0
+            } else if newValue == .idle {
+                startTime = nil
+                elapsed = 0
+            }
+        }
     }
     
     // MARK: - Central Voice View
@@ -182,10 +206,11 @@ struct ChatInputBar: View {
                     .opacity(isRecordingPulsing ? 1.0 : 0.3)
                     .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: isRecordingPulsing)
                 
-                Text("Listening...")
+                Text(timeText)
                     .font(.bodyMedium)
                     .fontWeight(.medium)
                     .foregroundColor(.textMain)
+                    .monospacedDigit()
             }
             .frame(maxWidth: .infinity)
             .onAppear { isRecordingPulsing = true }

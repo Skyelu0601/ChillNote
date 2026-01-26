@@ -94,65 +94,195 @@ struct RichTextEditorView: UIViewRepresentable {
                 return handleReturnKey(textView, range: range)
             }
             
-            // Normalize pasted text - strip foreign font sizes, keep only traits like bold/italic
-            // This prevents pasted text from appearing with unexpected font sizes
-            if text.count > 1, let pasteboardString = UIPasteboard.general.string, text == pasteboardString {
-                // User is pasting text - normalize it
-                let normalizedText = NSMutableAttributedString(string: text)
-                let baseFont = parent.font
-                let fullRange = NSRange(location: 0, length: normalizedText.length)
-                
-                // Apply base font and color
-                normalizedText.addAttribute(.font, value: baseFont, range: fullRange)
-                normalizedText.addAttribute(.foregroundColor, value: parent.textColor, range: fullRange)
-                normalizedText.addAttribute(.paragraphStyle, value: RichTextConverter.Config.baseStyle(), range: fullRange)
-                
-                // Insert the normalized text
-                textView.textStorage.beginEditing()
-                textView.textStorage.replaceCharacters(in: range, with: normalizedText)
-                textView.textStorage.endEditing()
-                
-                // Update cursor position
-                textView.selectedRange = NSRange(location: range.location + text.count, length: 0)
-                
-                // Trigger change callback
-                textViewDidChange(textView)
-                
-                return false // We handled it manually
+            // Check for "Space" key (Auto-format trigger)
+            if text == " " {
+                if handleAutoFormatting(textView, range: range) {
+                    return false
+                }
+            }
+            
+
+            // Check for "Backspace" (Handle deleting list prefix)
+            if text == "" && range.length == 1 {
+                if handleBackspace(textView, range: range) {
+                    return false
+                }
             }
             
             return true
         }
         
+        private func handleBackspace(_ textView: UITextView, range: NSRange) -> Bool {
+            // Check if we are deleting key characters of a list prefix
+            let nsText = textView.text as NSString
+            let lineRange = nsText.lineRange(for: NSRange(location: range.location, length: 0))
+            let lineText = nsText.substring(with: lineRange) as String
+            
+            // Check prefixes
+            let prefixes = ["- [ ] ", "- [x] ", "☑ ", "☐ ", "• ", "- "]
+            for prefix in prefixes {
+                if lineText.hasPrefix(prefix) {
+                    let prefixLen = prefix.count
+                    // If cursor is at end of prefix (e.g. "|• ") and user hits backspace
+                    // The range.location would be prefixLen - 1 (deleting the space) or anywhere in it?
+                    // Actually, if iOS keyboard deletes one char, range.length = 1.
+                    
+                    // We want to detect if the user is messing with the prefix.
+                    // If the deletion falls WITHIN the prefix range
+                    let absolutePrefixRange = NSRange(location: lineRange.location, length: prefixLen)
+                    if NSIntersectionRange(range, absolutePrefixRange).length > 0 {
+                        // Nuke the whole prefix to turn it into a normal line
+                        textView.textStorage.beginEditing()
+                        textView.textStorage.replaceCharacters(in: absolutePrefixRange, with: "")
+                        textView.textStorage.endEditing()
+                        textViewDidChange(textView)
+                        return false // blocked original mutation
+                    }
+                }
+            }
+            
+            // Check Ordered List
+            if let match = lineText.range(of: #"^\d+\.\s"#, options: .regularExpression) {
+                let prefixLen = lineText.distance(from: lineText.startIndex, to: match.upperBound)
+                let absolutePrefixRange = NSRange(location: lineRange.location, length: prefixLen)
+                
+                if NSIntersectionRange(range, absolutePrefixRange).length > 0 {
+                     textView.textStorage.beginEditing()
+                     textView.textStorage.replaceCharacters(in: absolutePrefixRange, with: "")
+                     textView.textStorage.endEditing()
+                     textViewDidChange(textView)
+                     return false
+                }
+            }
+            
+            return false
+        }
+        
+        private func handleAutoFormatting(_ textView: UITextView, range: NSRange) -> Bool {
+            let nsText = textView.text as NSString
+            let lineRange = nsText.lineRange(for: NSRange(location: range.location, length: 0))
+            
+            // Get text from start of line up to cursor
+            let currentPrefixLength = range.location - lineRange.location
+            guard currentPrefixLength > 0 else { return false }
+            
+            let currentLinePrefixRange = NSRange(location: lineRange.location, length: currentPrefixLength)
+            let currentLinePrefix = nsText.substring(with: currentLinePrefixRange)
+            
+            let trimmed = currentLinePrefix.trimmingCharacters(in: .whitespaces)
+            let leadingSpaces = currentLinePrefix.prefix(while: { $0.isWhitespace })
+            
+            var replacement: String?
+            var isCheckbox = false
+            var isOrdered = false
+            
+            // Detect Triggers
+            if trimmed == "-" || trimmed == "*" {
+                // Bullet
+                replacement = String(leadingSpaces) + "• "
+            } else if trimmed == "[]" || trimmed == "[ ]" {
+                // Checkbox
+                replacement = String(leadingSpaces) + "☐ "
+                isCheckbox = true
+            } else if let _ = trimmed.range(of: #"^\d+\.$"#, options: .regularExpression) {
+                // Ordered List (e.g. "1.")
+                replacement = String(leadingSpaces) + trimmed + " "
+                isOrdered = true
+            }
+            
+            guard let newText = replacement else { return false }
+            
+            // Apply Replacement
+            textView.textStorage.beginEditing()
+            textView.textStorage.replaceCharacters(in: currentLinePrefixRange, with: newText)
+            
+            // Range for styling (the whole prefix including bullet/number)
+            let prefixLen = newText.count
+            let stylingRange = NSRange(location: lineRange.location, length: prefixLen)
+            
+            // Apply Styles to the Prefix (Orange Zone)
+            if isCheckbox {
+                let symbolFont = UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium)
+                textView.textStorage.addAttributes([
+                    .foregroundColor: RichTextConverter.Config.checkboxUncheckedColor,
+                    .font: symbolFont,
+                    RichTextConverter.Key.checkbox: false
+                ], range: stylingRange)
+                
+                // Ensure no strikethrough (safety)
+                textView.textStorage.removeAttribute(.strikethroughStyle, range: stylingRange)
+                
+            } else if isOrdered {
+                textView.textStorage.addAttributes([
+                    .foregroundColor: RichTextConverter.Config.bulletColor,
+                    .font: UIFont.monospacedDigitSystemFont(ofSize: parent.font.pointSize, weight: .medium),
+                    RichTextConverter.Key.orderedList: newText
+                ], range: stylingRange)
+            } else {
+                // Bullet
+                textView.textStorage.addAttributes([
+                    .foregroundColor: RichTextConverter.Config.bulletColor,
+                    .font: parent.font,
+                    RichTextConverter.Key.bullet: true
+                ], range: stylingRange)
+            }
+            
+            textView.textStorage.endEditing()
+            
+            // Reset Typing Attributes for User Input (Black Zone)
+            let newCursorPos = lineRange.location + prefixLen
+            textView.selectedRange = NSRange(location: newCursorPos, length: 0)
+            
+            let cleanAttributes: [NSAttributedString.Key: Any] = [
+                .font: parent.font,
+                .foregroundColor: parent.textColor,
+                .paragraphStyle: RichTextConverter.Config.baseStyle()
+            ]
+            textView.typingAttributes = cleanAttributes
+            
+            textViewDidChange(textView)
+            return true
+        }
+
         private func handleReturnKey(_ textView: UITextView, range: NSRange) -> Bool {
             let nsText = textView.text as NSString
             let lineRange = nsText.lineRange(for: NSRange(location: range.location, length: 0))
             let lineText = nsText.substring(with: lineRange)
             
-            // Check for common prefixes
-            let prefixes = ["- [ ] ", "- [x] ", "☑ ", "☐ ", "• ", "- "]
+            // 1. Identify Prefix and List Type
             var detectedPrefix: String?
+            var isCheckbox = false
+            var isOrdered = false
             
-            for p in prefixes {
-                if lineText.hasPrefix(p) {
-                    detectedPrefix = p
-                    break
-                }
-            }
-            
-            // Handle Numbered list (e.g. "1. ")
-            if detectedPrefix == nil {
-                if let match = lineText.range(of: #"^\d+\.\s"#, options: .regularExpression) {
-                    detectedPrefix = String(lineText[match])
-                }
+            // Checkboxes (Visual or Markdown)
+            if lineText.hasPrefix("☑ ") || lineText.hasPrefix("☐ ") || lineText.hasPrefix("- [ ] ") || lineText.hasPrefix("- [x] ") {
+                detectedPrefix = "☐ " // Always reset to unchecked state for new line
+                isCheckbox = true
+            } 
+            // Bullets
+            else if lineText.hasPrefix("• ") || lineText.hasPrefix("- ") {
+                detectedPrefix = "• "
+            } 
+            // Ordered Lists
+            else if let match = lineText.range(of: #"^\d+\.\s"#, options: .regularExpression) {
+                detectedPrefix = String(lineText[match])
+                isOrdered = true
             }
             
             guard let prefix = detectedPrefix else { return true }
             
-            // If the line consists ONLY of the prefix (and maybe whitespace), remove it (stop the list)
+            // 2. Check for "Empty" Line to Exit List
+            // If the line contains ONLY the prefix (ignoring whitespace), we exit the list mode
+            let currentVisual = (lineText.hasPrefix("☑ ") ? "☑ " : nil) ?? 
+                                (lineText.hasPrefix("☐ ") ? "☐ " : nil) ?? 
+                                (lineText.hasPrefix("• ") ? "• " : nil) ?? 
+                                prefix // fallback
+            
             let trimmedLine = lineText.trimmingCharacters(in: .whitespacesAndNewlines)
-            if trimmedLine == prefix.trimmingCharacters(in: .whitespaces) {
-                // Clear the line
+            // Compare trimmed line to trimmed visual prefix
+            let current = currentVisual
+            if trimmedLine == current.trimmingCharacters(in: .whitespaces) {
+                // Remove the list item from the current line
                 textView.textStorage.beginEditing()
                 textView.textStorage.replaceCharacters(in: lineRange, with: "")
                 textView.textStorage.endEditing()
@@ -160,35 +290,70 @@ struct RichTextEditorView: UIViewRepresentable {
                 return false
             }
             
-            // Otherwise, insert a newline and the same prefix
-            // For numbered lists, we should ideally increment but let's start with same for simplicity
-            // or just use "• " if we want to be safe.
+            // 3. Determine Next Prefix (Increment numbers)
             var nextPrefix = prefix
-            
-            // Special Case: If it was a numbered list, let's try to increment
-            if prefix.range(of: #"^(\d+)\.\s"#, options: .regularExpression) != nil {
-                let numStr = String(prefix[prefix.startIndex..<prefix.index(prefix.startIndex, offsetBy: prefix.count-2)])
+            if isOrdered, let match = prefix.range(of: #"^(\d+)\.\s"#, options: .regularExpression) {
+                let numStr = String(prefix[match].dropLast(2))
                 if let num = Int(numStr) {
                     nextPrefix = "\(num + 1). "
                 }
             }
             
-            // Note: If we use custom symbols like ☑ in text storage, use them in next line too
-            
+            // 4. Perform Insertion with Specific Attributes
             let insertion = "\n" + nextPrefix
             textView.textStorage.beginEditing()
+            
+            // Insert raw text first
             textView.textStorage.replaceCharacters(in: range, with: insertion)
             
-            // Apply attributes to the new prefix? (e.g. checkbox color)
-            // For now, RichTextConverter handles this on re-render, but for WYSIWYG 
-            // we should ideally apply attributes immediately. 
-            // But replacing text clears selection. We need to restore it.
+            // Ranges for styling
+            let newlineLen = 1
+            let prefixLen = nextPrefix.count
+            let insertStart = range.location
+            let prefixRange = NSRange(location: insertStart + newlineLen, length: prefixLen)
+            
+            // Apply Styles to the Prefix (Orange Zone)
+            if isCheckbox {
+                let symbolFont = UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium)
+                textView.textStorage.addAttributes([
+                    .foregroundColor: RichTextConverter.Config.checkboxUncheckedColor,
+                    .font: symbolFont,
+                    RichTextConverter.Key.checkbox: false
+                ], range: prefixRange)
+                
+                // Ensure no strikethrough on the checkbox itself (safety)
+                textView.textStorage.removeAttribute(.strikethroughStyle, range: prefixRange)
+                
+            } else if isOrdered {
+                textView.textStorage.addAttributes([
+                    .foregroundColor: RichTextConverter.Config.bulletColor,
+                    .font: UIFont.monospacedDigitSystemFont(ofSize: parent.font.pointSize, weight: .medium),
+                    RichTextConverter.Key.orderedList: nextPrefix
+                ], range: prefixRange)
+            } else {
+                // Bullet
+                textView.textStorage.addAttributes([
+                    .foregroundColor: RichTextConverter.Config.bulletColor,
+                    .font: parent.font,
+                    RichTextConverter.Key.bullet: true
+                ], range: prefixRange)
+            }
             
             textView.textStorage.endEditing()
             
+            // 5. Reset Typing Attributes for User Input (Black Zone)
             // Move cursor to end of new prefix
-            let newCursorPos = range.location + insertion.count
+            let newCursorPos = insertStart + insertion.count
             textView.selectedRange = NSRange(location: newCursorPos, length: 0)
+            
+            // Force reset typing attributes to Clean State (Black Text, No Strikethrough)
+            // This ensures the next character typed by the user is clean
+            let cleanAttributes: [NSAttributedString.Key: Any] = [
+                .font: parent.font,
+                .foregroundColor: parent.textColor,
+                .paragraphStyle: RichTextConverter.Config.baseStyle()
+            ]
+            textView.typingAttributes = cleanAttributes
             
             textViewDidChange(textView)
             return false
@@ -442,6 +607,45 @@ class InteractiveTextView: UITextView {
         invalidateIntrinsicContentSize()
     }
     
+    // MARK: - Paste Handling
+    
+    override func paste(_ sender: Any?) {
+        // Intercept paste to normalize text AND apply markdown formatting immediately
+        if let pasteboardString = UIPasteboard.general.string {
+            // Use the Converter to parse the pasted text as Markdown
+            // This ensures if I paste "• Hello", it becomes an Orange bullet, not black text.
+            let fontToUse = self.font ?? .systemFont(ofSize: 17)
+            let colorToUse = self.textColor ?? .label
+            
+            let formattedText = RichTextConverter.markdownToAttributedString(
+                pasteboardString, 
+                baseFont: fontToUse, 
+                textColor: colorToUse
+            )
+            
+            let len = formattedText.length
+            
+            // Insert at current selection
+            let selectedRange = self.selectedRange
+            textStorage.beginEditing()
+            if selectedRange.length > 0 {
+                textStorage.replaceCharacters(in: selectedRange, with: formattedText)
+            } else {
+                textStorage.insert(formattedText, at: selectedRange.location)
+            }
+            textStorage.endEditing()
+            
+            // Move cursor to end of pasted text
+            self.selectedRange = NSRange(location: selectedRange.location + len, length: 0)
+            
+            // Notify Changes
+            delegate?.textViewDidChange?(self)
+            NotificationCenter.default.post(name: UITextView.textDidChangeNotification, object: self)
+        } else {
+            super.paste(sender)
+        }
+    }
+
     // MARK: - Intrinsic Content Size for ScrollView support
     
     override var intrinsicContentSize: CGSize {

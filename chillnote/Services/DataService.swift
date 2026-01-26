@@ -11,11 +11,13 @@ class DataService {
         do {
             let schema = Schema([
                 Note.self,
-                Tag.self,
-                CustomAIAction.self
+                Tag.self
             ])
             
             let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+
+            // Ensure the Application Support directory exists to prevent Core Data errors
+            try? FileManager.default.createDirectory(at: .applicationSupportDirectory, withIntermediateDirectories: true)
             
             // Try to create container with migration support
             do {
@@ -45,28 +47,37 @@ class DataService {
         }
     }
     
+
     /// Seeds the database with a welcome note if empty
     func seedDataIfNeeded() {
+        // Check if we have already seeded the welcome note to prevent duplicates
+        // This solves the issue where the note reappears after invalidation or sync delays
+        let hasSeededKey = "hasSeededWelcomeNote"
+        if UserDefaults.standard.bool(forKey: hasSeededKey) {
+            return
+        }
+        
         guard let container = container else { return }
         let context = container.mainContext
         
         do {
-
+            // Check if there are any existing notes
+            let existingNotesDescriptor = FetchDescriptor<Note>()
+            let noteCount = try context.fetchCount(existingNotesDescriptor)
             
-            // Seed welcome note if needed
-            let existingNotes = try context.fetch(FetchDescriptor<Note>())
-            if !existingNotes.isEmpty { return }
+            if noteCount > 0 {
+                // If notes exist but flag wasn't set, set it now to prevent future seeding
+                UserDefaults.standard.set(true, forKey: hasSeededKey)
+                return
+            }
             
-            let welcomeNote = Note(content: "Welcome to ChillNote! Tap the yellow button to record a voice note.")
-            // Use a fixed UUID and old timestamp so that if the user has deleted/modified this note
-            // on the server, the server version (which is newer) will override this default one
-            // during sync, preventing duplicate or zombie welcome notes.
-            welcomeNote.id = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
-            welcomeNote.createdAt = Date.distantPast
-            welcomeNote.updatedAt = Date.distantPast
-            
-            context.insert(welcomeNote)
+            // Insert Welcome Note
+            context.insert(Note(content: "Welcome to ChillNote! Tap the yellow button to record a voice note."))
             try? context.save()
+            
+            // Mark as seeded
+            UserDefaults.standard.set(true, forKey: hasSeededKey)
+            
         } catch {
             print("Error checking seed data: \(error)")
         }

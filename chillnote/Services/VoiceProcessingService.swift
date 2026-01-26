@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 enum VoiceNoteState: Equatable {
     case idle
@@ -16,7 +17,7 @@ class VoiceProcessingService: ObservableObject {
     private init() {}
     
     /// Process the note in the background and update it dynamically
-    func startProcessing(note: Note, rawTranscript: String) async {
+    func startProcessing(note: Note, rawTranscript: String, context: ModelContext) async {
         let noteID = note.id
         processingStates[noteID] = .processing
         
@@ -29,6 +30,8 @@ class VoiceProcessingService: ObservableObject {
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                 // Update the note content
                 note.content = processedText
+                note.updatedAt = Date()
+                try? context.save()
                 
                 // If it looks like a checklist, we might need to sync structure
                 // (Note: Syncing structure is tricky here as it might disrupt the animation, 
@@ -41,7 +44,7 @@ class VoiceProcessingService: ObservableObject {
             Task {
                 try? await Task.sleep(nanoseconds: 10 * 1_000_000_000)
                 if case .completed = processingStates[noteID] {
-                    withAnimation {
+                    _ = withAnimation {
                         processingStates.removeValue(forKey: noteID)
                     }
                 }
@@ -72,6 +75,8 @@ class VoiceProcessingService: ObservableObject {
         \(trimmed)
         """
         
+        let languageRule = LanguageDetection.languagePreservationRule(for: trimmed)
+        
         let systemInstruction = """
         You are a voice-to-text optimizer called "chillnote". Your job is to transform raw speech transcripts into polished, ready-to-use notes.
         
@@ -90,7 +95,7 @@ class VoiceProcessingService: ObservableObject {
            - "Meeting Notes": Structured with headers and action items.
 
         STRICT RULES:
-        - LANGUAGE PRESERVATION: Keep the SAME language as the input (Chinese stays Chinese, English stays English). Do NOT translate.
+        \(languageRule)
         - NO EXPLANATIONS: Return ONLY the processed note text. Do not add "Here is your note" or any metadata.
         - MINIMAL CHANGE: If the input is already clean and short, return it mostly unchanged.
         """

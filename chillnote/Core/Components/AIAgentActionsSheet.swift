@@ -15,7 +15,7 @@ struct AIAgentActionsSheet: View {
                         Image(systemName: "bolt.fill")
                             .font(.system(size: 24))
                             .foregroundColor(.accentPrimary)
-                        Text("AI Actions")
+                        Text("Chillo's Toolkit")
                             .font(.displayMedium)
                             .foregroundColor(.textMain)
                         Spacer()

@@ -26,6 +26,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     @Published var transcript: String = ""
     @Published var permissionGranted: Bool = false
     @Published var recordingState: RecordingState = .idle
+    @Published var recordingStartTime: Date?
     @Published var shouldStop: Bool = false
     
     // MARK: - Private Properties
@@ -34,12 +35,17 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     private var audioFileURL: URL?
     private var isStopping = false
     private var isTranscribing = false
-    private let maxAudioBytes = 14 * 1024 * 1024 // 14MB limit for Gemini
+    private let maxAudioBytes = 25 * 1024 * 1024 // 25MB limit (plenty for M4A)
+    private let fileManager = RecordingFileManager.shared
     
     // MARK: - Computed Properties
     
     var isRecording: Bool {
         recordingState == .recording
+    }
+    
+    func getCurrentAudioFileURL() -> URL? {
+        return audioFileURL
     }
     
     // MARK: - Initialization
@@ -63,12 +69,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             name: AVAudioSession.interruptionNotification,
             object: AVAudioSession.sharedInstance()
         )
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleAppWillResignActive),
-            name: UIApplication.willResignActiveNotification,
-            object: nil
-        )
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(handleAppDidBecomeActive),
@@ -99,6 +100,14 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     
     // MARK: - Recording Control
     
+    /// Call this after successfully saving the transcription to clean up the recording file
+    func completeRecording() {
+        if let fileURL = audioFileURL {
+            fileManager.completeRecording(fileURL: fileURL)
+            audioFileURL = nil
+        }
+    }
+    
     func startRecording() {
         print("🎙️ Starting recording...")
         
@@ -120,12 +129,30 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         do {
             try startRecordingInternal()
             recordingState = .recording
+            recordingStartTime = Date()
             print("✅ Recording started successfully")
         } catch {
             print("❌ Recording failed: \(describeError(error))")
             print(debugAudioSessionSnapshot())
             cleanupRecordingSession()
             setError("Failed to start recording: \(error.localizedDescription)")
+        }
+    }
+    
+    /// Retry transcribing the existing audio file without re-recording
+    /// Useful for network errors or timeouts
+    func retryTranscription() {
+        guard let fileURL = audioFileURL else {
+            setError("No recording available to retry")
+            return
+        }
+        
+        print("🔄 Retrying transcription...")
+        recordingState = .processing
+        isTranscribing = true
+        
+        Task {
+            await transcribeAudio(fileURL: fileURL)
         }
     }
     
@@ -147,17 +174,32 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         switch reason {
         case .cancelled:
             recordingState = .idle
+            recordingStartTime = nil
             isTranscribing = false
+            // Clean up the cancelled recording
+            if let fileURL = fileURL {
+                fileManager.cancelRecording(fileURL: fileURL)
+                audioFileURL = nil
+            }
             return
             
         case .interruption:
             isTranscribing = false
             setError("Recording was interrupted")
+            // Treat interruptions as non-recoverable to avoid noisy recovery prompts.
+            if let fileURL = fileURL {
+                fileManager.cancelRecording(fileURL: fileURL)
+                audioFileURL = nil
+            }
             return
             
         case .error(let message):
             isTranscribing = false
             setError(message)
+            if let fileURL = fileURL {
+                fileManager.cancelRecording(fileURL: fileURL)
+                audioFileURL = nil
+            }
             return
             
         case .user, .finished:
@@ -187,6 +229,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         
         // Validate file
         guard let fileSize = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? NSNumber else {
+            discardUnusableRecording(fileURL: fileURL)
             setError("Could not read audio file")
             return
         }
@@ -194,11 +237,13 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         let size = fileSize.intValue
         
         if size < 512 {
+            discardUnusableRecording(fileURL: fileURL)
             setError("No audio captured. Please try again.")
             return
         }
         
         if size > maxAudioBytes {
+            discardUnusableRecording(fileURL: fileURL)
             setError("Audio too long. Please record a shorter note.")
             return
         }
@@ -207,7 +252,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         
         // Transcribe using Gemini
         do {
-            let text = try await withTimeout(seconds: 45) {
+            let text = try await withTimeout(seconds: 300) {
                 try await GeminiService.shared.transcribeAndPolish(
                     audioFileURL: fileURL,
                     locale: Locale.current.identifier
@@ -219,6 +264,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             isTranscribing = false
             transcript = text.trimmingCharacters(in: .whitespacesAndNewlines)
             recordingState = .idle
+            recordingStartTime = nil
             
         } catch is TimeoutError {
             await handleTranscriptionError("Transcription timed out. Please try again.")
@@ -235,6 +281,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     
     private func handleTranscriptionError(_ message: String) async {
         isTranscribing = false
+        clearRecoveryFlagForCurrentRecording()
         setError(message)
     }
     
@@ -243,24 +290,38 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         
         switch error {
         case .missingAPIKey:
-            message = "Gemini API key not configured. Please set GEMINI_API_KEY in Environment Variables."
+            message = "Chillo service key not configured. Please contact support."
         case .apiError(let apiMessage):
-            message = "Gemini API error: \(apiMessage)"
+            message = "Chillo service error: \(apiMessage)"
         case .networkError(let networkError):
             message = "Network error: \(networkError.localizedDescription)"
         case .invalidResponse:
-            message = "Invalid response from Gemini service."
+            message = "Invalid response from Chillo."
         case .invalidURL:
             message = "Invalid configuration URL."
         }
         
         isTranscribing = false
+        clearRecoveryFlagForCurrentRecording()
         setError(message)
     }
     
     private func setError(_ message: String) {
         print("❌ Error: \(message)")
         recordingState = .error(message)
+    }
+
+    private func clearRecoveryFlagForCurrentRecording() {
+        if let fileURL = audioFileURL {
+            fileManager.clearPendingReference(fileURL: fileURL)
+        }
+    }
+    
+    private func discardUnusableRecording(fileURL: URL) {
+        fileManager.cancelRecording(fileURL: fileURL)
+        if audioFileURL?.path == fileURL.path {
+            audioFileURL = nil
+        }
     }
     
     // MARK: - Timeout Helper
@@ -298,11 +359,8 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         }
     }
     
-    @objc private func handleAppWillResignActive() {
-        if recordingState == .recording {
-            stopRecording(reason: .interruption)
-        }
-    }
+    
+
     
     @objc private func handleAppDidBecomeActive() {
         checkPermissions()
@@ -319,7 +377,7 @@ private extension SpeechRecognizer {
         try audioSession.setCategory(
             .playAndRecord,
             mode: .spokenAudio,
-            options: [.duckOthers, .defaultToSpeaker, .allowBluetooth]
+            options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP]
         )
         try? audioSession.setPreferredInputNumberOfChannels(1)
         // 16kHz mono is sufficient for speech and keeps uploads small (important for server/proxy limits).
@@ -335,18 +393,15 @@ private extension SpeechRecognizer {
             )
         }
 
-        let fileURL = makeTempAudioURL(ext: "wav")
+        let fileURL = makeTempAudioURL(ext: "m4a")
         print("📁 Recording to: \(fileURL.path)")
         try? FileManager.default.removeItem(at: fileURL)
 
-        // Linear PCM WAV is much more reliable across devices/simulators than AAC at low sample rates.
+        // AAC (M4A) compression for much smaller file sizes while maintaining quality.
         let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatLinearPCM),
+            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
             AVSampleRateKey: 16_000,
             AVNumberOfChannelsKey: 1,
-            AVLinearPCMBitDepthKey: 16,
-            AVLinearPCMIsFloatKey: false,
-            AVLinearPCMIsBigEndianKey: false,
             AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
         ]
 
@@ -379,10 +434,17 @@ private extension SpeechRecognizer {
     }
 
     func makeTempAudioURL(ext: String) -> URL {
-        let tempPath = NSTemporaryDirectory()
-        let fileName = "\(UUID().uuidString).\(ext)"
-        let filePath = (tempPath as NSString).appendingPathComponent(fileName)
-        return URL(fileURLWithPath: filePath)
+        // Use the file manager's safe directory instead of temp
+        do {
+            return try fileManager.createRecordingURL(ext: ext)
+        } catch {
+            print("⚠️ Failed to create recording URL: \(error), falling back to temp")
+            // Fallback to temp if something goes wrong
+            let tempPath = NSTemporaryDirectory()
+            let fileName = "\(UUID().uuidString).\(ext)"
+            let filePath = (tempPath as NSString).appendingPathComponent(fileName)
+            return URL(fileURLWithPath: filePath)
+        }
     }
 }
 

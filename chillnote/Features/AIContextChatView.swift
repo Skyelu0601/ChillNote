@@ -12,6 +12,10 @@ struct AIContextChatView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @FocusState private var isInputFocused: Bool
+    @State private var isContextExpanded = false // Collapsible context state
+    
+    var initialQuery: String? = nil // Optional initial query to auto-send
+
     
     // Voice input
     @StateObject private var speechRecognizer = SpeechRecognizer()
@@ -37,6 +41,7 @@ struct AIContextChatView: View {
                             ForEach(messages) { message in
                                 ChatMessageBubble(
                                     message: message,
+                                    isLast: message.id == messages.last?.id,
                                     isSaved: savedMessageId == message.id,
                                     onSave: message.role == .assistant ? {
                                         saveMessageAsNote(message)
@@ -58,8 +63,17 @@ struct AIContextChatView: View {
                             }
                         }
                         .padding(16)
+                        .padding(.top, 40) // Spacing for empty state
+                        
+                        // Empty State
+                        if messages.isEmpty {
+                            emptyStateView
+                        }
                     }
                     .background(Color.bgPrimary)
+                    .onTapGesture {
+                        isInputFocused = false
+                    }
                     .onChange(of: messages.count) { _, _ in
                         if let lastMessage = messages.last {
                             withAnimation {
@@ -101,38 +115,49 @@ struct AIContextChatView: View {
                             isVoiceMode = false
                         }
                     )
+                    .transition(.move(edge: .bottom))
                 } else {
                     HStack(spacing: 12) {
-                        TextField("Ask Chillo about these notes...", text: $userInput, axis: .vertical)
-                            .textFieldStyle(.plain)
-                            .font(.bodyMedium)
-                            .foregroundColor(.textMain)
-                            .padding(12)
-                            .background(Color.bgSecondary)
-                            .cornerRadius(20)
-                            .lineLimit(1...5)
-                            .focused($isInputFocused)
-                        
                         // Voice button
                         Button(action: startVoiceInput) {
                             Image(systemName: "mic.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(.accentPrimary)
-                                .frame(width: 40, height: 40)
-                                .background(Color.accentPrimary.opacity(0.1))
+                                .font(.system(size: 18))
+                                .foregroundColor(.textSub)
+                                .frame(width: 36, height: 36)
+                                .background(Color.bgSecondary)
                                 .clipShape(Circle())
                         }
                         .disabled(isLoading)
                         
-                        Button(action: sendMessage) {
-                            Image(systemName: "arrow.up.circle.fill")
-                                .font(.system(size: 32))
-                                .foregroundColor(userInput.isEmpty ? .textSub : .accentPrimary)
+                        TextField("Ask Chillo...", text: $userInput, axis: .vertical)
+                            .font(.bodyMedium)
+                            .foregroundColor(.textMain)
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                            .background(Color.bgSecondary)
+                            .cornerRadius(24)
+                            .lineLimit(1...5)
+                            .focused($isInputFocused)
+                            .submitLabel(.send)
+                            .onSubmit {
+                                sendMessage()
+                            }
+                        
+                        if !userInput.isEmpty {
+                            Button(action: sendMessage) {
+                                Image(systemName: "arrow.up.circle.fill")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.accentPrimary)
+                                    .symbolEffect(.bounce, value: userInput)
+                            }
+                            .transition(.scale.combined(with: .opacity))
                         }
-                        .disabled(userInput.isEmpty || isLoading)
                     }
-                    .padding(16)
-                    .background(Color.white)
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial)
+                    .clipShape(RoundedRectangle(cornerRadius: 0))
+                    .shadow(color: Color.black.opacity(0.05), radius: 8, y: -4)
                 }
             }
             .navigationTitle("Chillo")
@@ -152,9 +177,16 @@ struct AIContextChatView: View {
                     .disabled(messages.isEmpty)
                 }
             }
-        }
         .onAppear {
-            isInputFocused = true
+            if let initial = initialQuery {
+                userInput = initial
+                // Small delay to allow view to appear before sending
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    sendMessage()
+                }
+            } else {
+                isInputFocused = true
+            }
         }
         .onChange(of: speechRecognizer.transcript) { _, newValue in
             if !newValue.isEmpty {
@@ -164,51 +196,142 @@ struct AIContextChatView: View {
             }
         }
     }
+}
     
-    private var contextPreviewSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Image(systemName: "doc.text.fill")
-                    .foregroundColor(.accentPrimary)
-                Text("Context Notes (\(contextNotes.count))")
-                    .font(.bodyMedium)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.textMain)
-                Spacer()
+    var contextPreviewSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: { withAnimation(.spring(response: 0.3)) { isContextExpanded.toggle() } }) {
+                HStack {
+                    Image(systemName: "doc.text.fill")
+                        .foregroundColor(.accentPrimary)
+                        .font(.system(size: 14))
+                    
+                    Text("\(contextNotes.count) Context Notes")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.textMain)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .foregroundColor(.textSub)
+                        .rotationEffect(.degrees(isContextExpanded ? 180 : 0))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.bgSecondary.opacity(0.5))
             }
             
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(contextNotes) { note in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(note.displayText)
-                                .font(.caption)
-                                .foregroundColor(.textMain)
-                                .lineLimit(2)
-                            Text(note.createdAt.formatted(date: .abbreviated, time: .shortened))
-                                .font(.system(size: 10))
-                                .foregroundColor(.textSub)
+            if isContextExpanded {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(contextNotes) { note in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(note.displayText)
+                                    .font(.caption)
+                                    .foregroundColor(.textMain)
+                                    .lineLimit(3)
+                                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                                
+                                Spacer()
+                                
+                                Text(note.createdAt.formatted(date: .abbreviated, time: .omitted))
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.textSub)
+                            }
+                            .padding(10)
+                            .frame(width: 140, height: 100)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                            )
                         }
-                        .padding(8)
-                        .frame(width: 150)
-                        .background(Color.bgSecondary)
-                        .cornerRadius(8)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
+                .background(Color.bgPrimary.opacity(0.5))
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: isContextExpanded ? 0 : 0))
+        .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
+    }
+    
+    var emptyStateView: some View {
+        VStack(spacing: 24) {
+            Spacer()
+            
+            VStack(spacing: 12) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 40))
+                    .foregroundStyle(LinearGradient(colors: [.accentPrimary, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                    .symbolEffect(.bounce, options: .repeating)
+                
+                Text(contextNotes.isEmpty ? "Select some notes to start" : "Ready to brainstorm?")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.textMain)
+                
+                Text("Ask me to summarize, find connections, or draft new content based on your selected notes.")
+                    .font(.body)
+                    .foregroundColor(.textSub)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
+            
+            // Suggested Questions
+            if !contextNotes.isEmpty {
+                VStack(spacing: 10) {
+                    Text("SUGGESTED")
+                        .font(.caption)
+                        .fontWeight(.bold)
+                        .foregroundColor(.textSub)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.horizontal, 32)
+                    
+                    ForEach(["Summarize these notes", "What are the key takeaways?", "Draft a blog post from this"], id: \.self) { question in
+                        Button(action: {
+                            userInput = question
+                            sendMessage()
+                        }) {
+                            Text(question)
+                                .font(.subheadline)
+                                .foregroundColor(.textMain)
+                                .padding(.vertical, 12)
+                                .padding(.horizontal, 16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(Color.white)
+                                .cornerRadius(12)
+                                .shadow(color: Color.black.opacity(0.03), radius: 2, y: 1)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12)
+                                        .stroke(Color.accentPrimary.opacity(0.1), lineWidth: 1)
+                                )
+                        }
+                        .padding(.horizontal, 24)
                     }
                 }
             }
+            
+            Spacer()
+            Spacer()
         }
-        .padding(16)
-        .background(Color.white)
     }
     
-    private func startVoiceInput() {
+    func startVoiceInput() {
         guard !isLoading else { return }
         isVoiceMode = true
         isInputFocused = false
         speechRecognizer.startRecording()
     }
     
-    private func sendMessage() {
+    func sendMessage() {
         let trimmed = userInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
         
@@ -236,9 +359,17 @@ struct AIContextChatView: View {
                 Please answer the user's question based on the notes above. If the notes don't contain relevant information, please tell the user honestly.
                 """
                 
+                let languageRule = LanguageDetection.languagePreservationRule(for: trimmed)
+                
                 let response = try await GeminiService.shared.generateContent(
                     prompt: fullPrompt,
-                    systemInstruction: "You are a professional note-taking assistant, skilled at analyzing and summarizing note content. Keep your answers concise, accurate, and helpful."
+                    systemInstruction: """
+                    You are a professional note-taking assistant, skilled at analyzing and summarizing note content. Keep your answers concise, accurate, and helpful.
+                    
+                    CRITICAL:
+                    \(languageRule)
+                    - Always prioritize the language of the User's question for your response, even if the notes are in a different language.
+                    """
                 )
                 
                 await MainActor.run {
@@ -250,13 +381,13 @@ struct AIContextChatView: View {
             } catch {
                 await MainActor.run {
                     isLoading = false
-                    errorMessage = "AI response failed: \(error.localizedDescription)"
+                    errorMessage = "Chillo ran into an issue: \(error.localizedDescription)"
                 }
             }
         }
     }
     
-    private func buildContext() -> String {
+    func buildContext() -> String {
         contextNotes.enumerated().map { index, note in
             """
             [Note \(index + 1)]
@@ -266,7 +397,7 @@ struct AIContextChatView: View {
         }.joined(separator: "\n\n")
     }
     
-    private func saveMessageAsNote(_ message: ChatMessage) {
+    func saveMessageAsNote(_ message: ChatMessage) {
         let newNote = Note(content: message.content)
         modelContext.insert(newNote)
         
@@ -288,7 +419,7 @@ struct AIContextChatView: View {
         }
     }
     
-    private func clearChat() {
+    func clearChat() {
         messages.removeAll()
         errorMessage = nil
     }
@@ -310,6 +441,7 @@ struct ChatMessage: Identifiable {
 // MARK: - Chat Message Bubble
 struct ChatMessageBubble: View {
     let message: ChatMessage
+    var isLast: Bool = false
     var isSaved: Bool = false
     var onSave: (() -> Void)? = nil
     
@@ -324,12 +456,15 @@ struct ChatMessageBubble: View {
                 VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
                     // Use MarkdownText for AI responses to properly render markdown
                     if message.role == .assistant {
-                        MarkdownText(message.content)
-                            .font(.bodyMedium)
-                            .foregroundColor(.textMain)
-                            .padding(12)
-                            .background(Color.bgSecondary)
-                            .cornerRadius(16)
+                        TypewriterMarkdownText(
+                            content: message.content,
+                            isNew: isLast
+                        )
+                        .font(.bodyMedium)
+                        .foregroundColor(.textMain)
+                        .padding(12)
+                        .background(Color.bgSecondary)
+                        .cornerRadius(16)
                     } else {
                         Text(message.content)
                             .font(.bodyMedium)
@@ -363,11 +498,9 @@ struct ChatMessageBubble: View {
                     .disabled(isSaved)
                 }
             }
-            .frame(maxWidth: 280, alignment: message.role == .user ? .trailing : .leading)
+            .frame(maxWidth: message.role == .assistant ? .infinity : 280, alignment: message.role == .user ? .trailing : .leading)
             
-            if message.role == .assistant {
-                Spacer()
-            }
+
         }
     }
 }

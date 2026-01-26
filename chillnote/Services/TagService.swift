@@ -13,6 +13,8 @@ class TagService {
         
         let existingTagsList = existingTags.isEmpty ? "None" : existingTags.joined(separator: ", ")
         
+        let languageRule = LanguageDetection.languagePreservationRule(for: trimmedContent)
+        
         let prompt = """
         Suggest exactly 3 tags for this note, each at a different level of specificity:
         
@@ -30,12 +32,15 @@ class TagService {
         
         Guidelines:
         - Prefer reusing existing tags when they fit well.
-        - Use the same language as the note.
+        \(languageRule)
         
         Output format: "Broad, Topic, Specific" — Example: "Work, AI, LLM"
         """
         
-        let systemInstruction = "You suggest meaningful topic tags for personal notes at three levels: broad area, topic, and specific subtopic."
+        let systemInstruction = """
+        You suggest meaningful topic tags for personal notes at three levels: broad area, topic, and specific subtopic.
+        \(languageRule)
+        """
         
         do {
             let response = try await GeminiService.shared.generateContent(

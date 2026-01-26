@@ -8,6 +8,7 @@ final class SyncManager: ObservableObject {
     @AppStorage("syncLastAt") private var lastSyncAtTimestamp: Double = 0
     @AppStorage("syncServerURL") var serverURLString: String = AppConfig.backendBaseURL
     @AppStorage("syncAuthToken") var authToken: String = ""
+    @AppStorage("syncHasUploadedLocal") private var hasUploadedLocal: Bool = false
     
     @Published private(set) var isSyncing: Bool = false
     @Published private(set) var lastError: String?
@@ -45,25 +46,35 @@ final class SyncManager: ObservableObject {
             lastError = "Server URL is required."
             return
         }
+        let syncStartedAt = Date()
         isSyncing = true
         lastError = nil
+        let localNotesCount = (try? context.fetchCount(FetchDescriptor<Note>())) ?? 0
+        let shouldForceFullSync = !hasUploadedLocal && localNotesCount > 0
+        let sinceDate = shouldForceFullSync ? nil : lastSyncAt
         do {
-            let config = SyncConfig(baseURL: url, authToken: authToken, since: lastSyncAt)
+            let config = SyncConfig(baseURL: url, authToken: authToken, since: sinceDate)
             let service: SyncService = RemoteSyncService(config: config)
             try await service.syncAll(context: context)
             TagService.shared.cleanupEmptyTags(context: context)
-            lastSyncAtTimestamp = Date().timeIntervalSince1970
+            lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
+            if localNotesCount > 0 {
+                hasUploadedLocal = true
+            }
         } catch {
             if case SyncError.unauthorized = error {
                 let refreshed = await AuthService.shared.refreshAccessToken()
                 if refreshed {
                     do {
                         let refreshedToken = UserDefaults.standard.string(forKey: "syncAuthToken") ?? authToken
-                        let retryConfig = SyncConfig(baseURL: url, authToken: refreshedToken, since: lastSyncAt)
+                        let retryConfig = SyncConfig(baseURL: url, authToken: refreshedToken, since: sinceDate)
                         let retryService: SyncService = RemoteSyncService(config: retryConfig)
                         try await retryService.syncAll(context: context)
                         TagService.shared.cleanupEmptyTags(context: context)
-                        lastSyncAtTimestamp = Date().timeIntervalSince1970
+                        lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
+                        if localNotesCount > 0 {
+                            hasUploadedLocal = true
+                        }
                     } catch {
                         lastError = "Sync failed. Please try again."
                     }

@@ -41,17 +41,39 @@ struct HomeView: View {
     @State private var isSidebarPresented = false
     @State private var selectedTag: Tag? = nil
     
+    // Search
+    @State private var searchText = ""
+    @FocusState private var isSearchFocused: Bool
+    
+    // Recording Recovery
+    @State private var pendingRecordings: [PendingRecording] = []
+    @State private var showRecoveryAlert = false
+    @State private var isRecoveringRecording = false
+    
     // Voice Processing
     // (Handled server-side in /ai/voice-note)
 
     private var recentNotes: [Note] {
         let activeNotes = allNotes
+        var result = activeNotes
+        
+        // 1. Tag Filter
         if let tag = selectedTag {
-            return activeNotes.filter { note in
+            result = result.filter { note in
                 note.tags.contains { t in t.id == tag.id }
             }
         }
-        return Array(activeNotes.prefix(50))
+        
+        // 2. Search Filter
+        if !searchText.isEmpty {
+            result = result.filter { note in
+                note.content.localizedCaseInsensitiveContains(searchText) ||
+                note.tags.contains { $0.name.localizedCaseInsensitiveContains(searchText) }
+            }
+            return result // Return all matches when searching
+        }
+        
+        return Array(result.prefix(50))
     }
 
     var body: some View {
@@ -143,6 +165,19 @@ struct HomeView: View {
                             .padding(.horizontal, 24)
                             .padding(.top, 20)
                             
+                            // Search Bar
+                            if !isSelectionMode {
+                                VStack(spacing: 12) {
+                                    searchBar
+                                    
+                                    if !searchText.isEmpty {
+                                        askChilloButton
+                                    }
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.top, 8)
+                            }
+                            
 
 
                             if recentNotes.isEmpty {
@@ -192,11 +227,12 @@ struct HomeView: View {
                     .scrollDismissesKeyboard(.interactively)
                     .navigationDestination(for: Note.self) { note in
                         NoteDetailView(note: note)
+                            .environmentObject(speechRecognizer)
                     }
                 }
                 
                 // Floating Voice Input
-                if !isSelectionMode {
+                if !isSelectionMode && !isSearchFocused && searchText.isEmpty {
                     ChatInputBar(
                         text: $inputText,
                         isVoiceMode: $isVoiceMode,
@@ -346,11 +382,20 @@ struct HomeView: View {
             }
 
             .fullScreenCover(isPresented: $showAIChat) {
-                AIContextChatView(contextNotes: getSelectedNotes())
+                // If we have an active search, pass that as context + initial query
+                if !searchText.isEmpty && selectedNotes.isEmpty {
+                    AIContextChatView(
+                        contextNotes: searchContextNotes, // All notes (filtered by tag) for broad questions
+                        initialQuery: searchText
+                    )
                     .environmentObject(syncManager)
-                    .onDisappear {
-                        exitSelectionMode()
-                    }
+                } else {
+                    AIContextChatView(contextNotes: getSelectedNotes())
+                        .environmentObject(syncManager)
+                        .onDisappear {
+                            exitSelectionMode()
+                        }
+                }
             }
             .sheet(isPresented: $showAgentActionsSheet) {
                 AIAgentActionsSheet(selectedCount: selectedNotes.count) { action in
@@ -393,11 +438,15 @@ struct HomeView: View {
                     if let note = currentRecordingNote {
                         let rawText = speechRecognizer.transcript
                         if !rawText.isEmpty {
-                            // Update content and start 2nd pass
-                            note.content = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
                             Task {
-                                await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: rawText)
+                                await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: rawText, context: modelContext)
+                                await syncManager.syncIfNeeded(context: modelContext)
                             }
+                            
+                            // CRITICAL FIX: Mark recording as complete to clean up the file
+                            // This was missing, causing files to linger and trigger "Unfinished Recording" alerts
+                            speechRecognizer.completeRecording()
+                            
                         } else {
                             // Empty? Cancel state
                             VoiceProcessingService.shared.processingStates.removeValue(forKey: note.id)
@@ -414,7 +463,7 @@ struct HomeView: View {
                 default: break
                 }
             }
-            .onChange(of: authService.isSignedIn) { isSignedIn in
+            .onChange(of: authService.isSignedIn) { _, isSignedIn in
                 guard !isSignedIn else { return }
                 showingSettings = false
                 isVoiceMode = false
@@ -426,9 +475,33 @@ struct HomeView: View {
                 isVoiceMode = true
                 speechRecognizer.startRecording()
             }
-            .onChange(of: scenePhase) { newPhase in
+            .onChange(of: scenePhase) { _, newPhase in
                 guard newPhase == .active else { return }
                 Task { await syncManager.syncIfNeeded(context: modelContext) }
+            }
+            .onAppear {
+                checkForPendingRecordings()
+            }
+            .overlay {
+                if showRecoveryAlert && !pendingRecordings.isEmpty {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture { /* Prevent dismissal by tapping background */ }
+                    
+                    RecordingRecoveryAlert(
+                        pendingRecordings: pendingRecordings,
+                        onRecover: { recording in
+                            recoverRecording(recording)
+                        },
+                        onDiscard: { recording in
+                            discardRecording(recording)
+                        },
+                        onDismiss: {
+                            showRecoveryAlert = false
+                        }
+                    )
+                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+                }
             }
         }
     }
@@ -489,15 +562,20 @@ struct HomeView: View {
 
         // NEW FLOW: Immediate navigation + Background Processing
         // 1. Save and navigate immediately with Raw Text
-        let note = await MainActor.run {
-            saveNote(text: trimmed, shouldNavigate: true)
+        let noteID = await MainActor.run {
+            let note = saveNote(text: trimmed, shouldNavigate: true)
+            return note?.id
         }
         
-        guard let note = note else { return }
+        guard let noteID = noteID else { return }
         
         // 2. Trigger AI processing in background
         Task {
-            await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: trimmed)
+            // Find the note by ID to avoid Sendable issues
+            if let note = allNotes.first(where: { $0.id == noteID }) {
+                await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: trimmed, context: modelContext)
+                await syncManager.syncIfNeeded(context: modelContext)
+            }
         }
     }
 
@@ -631,6 +709,213 @@ struct HomeView: View {
         try? modelContext.save()
         TagService.shared.cleanupEmptyTags(context: modelContext)
         Task { await syncManager.syncIfNeeded(context: modelContext) }
+    }
+    
+    // MARK: - Recording Recovery Methods
+    
+    private func checkForPendingRecordings() {
+        // If we are currently recording or processing, DO NOT check for recovery
+        // The current file is valid and active, not a crash remnant.
+        guard speechRecognizer.recordingState == .idle else { return }
+        
+        // Clean up old recordings first (>24 hours)
+        RecordingFileManager.shared.cleanupOldRecordings()
+        
+        // Check for pending recordings
+        var pending = RecordingFileManager.shared.checkForPendingRecordings()
+        
+        // IMPORTANT: Filter out the file that might be currently held by SpeechRecognizer
+        // even if state is idle (e.g. just finished but not cleaned yet)
+        if let currentURL = speechRecognizer.getCurrentAudioFileURL() {
+            pending.removeAll { $0.fileURL.path == currentURL.path }
+        }
+        
+        if !pending.isEmpty {
+            pendingRecordings = pending
+            // Reduced to 0.1s just to ensure view hierarchy is ready, making it feel instant
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation {
+                    showRecoveryAlert = true
+                }
+            }
+        }
+    }
+    
+    private func recoverRecording(_ recording: PendingRecording) {
+        guard !isRecoveringRecording else { return }
+        isRecoveringRecording = true
+        
+        // Remove from list
+        if let index = pendingRecordings.firstIndex(where: { $0.id == recording.id }) {
+            pendingRecordings.remove(at: index)
+        }
+        
+        // Close alert if no more recordings
+        if pendingRecordings.isEmpty {
+            showRecoveryAlert = false
+        }
+        
+        Task {
+            do {
+                // Create a new note immediately and get its ID
+                let noteID = await MainActor.run {
+                    let newNote = Note(content: "")
+                    modelContext.insert(newNote)
+                    try? modelContext.save()
+                    return newNote.id
+                }
+                
+                // Set processing state and navigate
+                await MainActor.run {
+                    VoiceProcessingService.shared.processingStates[noteID] = .processing
+                    // Find the note to navigate
+                    if let note = allNotes.first(where: { $0.id == noteID }) {
+                        navigationPath.append(note)
+                    }
+                }
+                
+                // Transcribe the recovered audio
+                print("🔄 Recovering recording from: \(recording.fileURL.path)")
+                let text = try await GeminiService.shared.transcribeAndPolish(
+                    audioFileURL: recording.fileURL,
+                    locale: Locale.current.identifier
+                )
+                
+                await MainActor.run {
+                    // Find the note by ID and update it
+                    if let note = allNotes.first(where: { $0.id == noteID }) {
+                        note.content = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                        note.updatedAt = Date()
+                        try? modelContext.save()
+                        
+                        // Start 2nd pass processing
+                        Task {
+                            await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: text, context: modelContext)
+                            await syncManager.syncIfNeeded(context: modelContext)
+                        }
+                    }
+                    
+                    // Clean up the recording file
+                    RecordingFileManager.shared.completeRecording(fileURL: recording.fileURL)
+                    
+                    isRecoveringRecording = false
+                }
+                
+            } catch {
+                print("❌ Recovery failed: \(error)")
+                await MainActor.run {
+                    // Clean up the failed recording
+                    RecordingFileManager.shared.cancelRecording(fileURL: recording.fileURL)
+                    isRecoveringRecording = false
+                }
+            }
+        }
+    }
+    
+    private func discardRecording(_ recording: PendingRecording) {
+        // Remove from list
+        if let index = pendingRecordings.firstIndex(where: { $0.id == recording.id }) {
+            pendingRecordings.remove(at: index)
+        }
+        
+        // Close alert if no more recordings
+        if pendingRecordings.isEmpty {
+            showRecoveryAlert = false
+        }
+        
+        // Delete the recording file
+        RecordingFileManager.shared.cancelRecording(fileURL: recording.fileURL)
+        print("🗑️ Discarded recording: \(recording.fileName)")
+    }
+    
+    // MARK: - Search Components
+    
+    private var searchBar: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "magnifyingglass")
+                .foregroundColor(.textSub)
+                .font(.system(size: 16, weight: .semibold))
+            
+            TextField("Find a thought...", text: $searchText)
+                .font(.bodyMedium)
+                .foregroundColor(.textMain)
+                .focused($isSearchFocused)
+                .submitLabel(.search)
+            
+            if !searchText.isEmpty {
+                Button(action: {
+                    withAnimation {
+                        searchText = ""
+                        hideKeyboard()
+                    }
+                }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundColor(.textSub)
+                        .font(.system(size: 16))
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color.secondary.opacity(0.08))
+        .cornerRadius(16)
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.black.opacity(0.03), lineWidth: 1)
+        )
+    }
+    
+    private var askChilloButton: some View {
+        Button(action: {
+            showAIChat = true
+        }) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(LinearGradient(colors: [.accentPrimary, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
+                        .frame(width: 32, height: 32)
+                    
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Ask Chillo")
+                        .font(.bodyMedium)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.textMain)
+                    
+                    Text("\"\(searchText)\"")
+                        .font(.caption)
+                        .foregroundColor(.textSub)
+                        .lineLimit(1)
+                }
+                
+                Spacer()
+                
+                Image(systemName: "arrow.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.textSub.opacity(0.5))
+            }
+            .padding(12)
+            .background(Color.white)
+            .cornerRadius(16)
+            .shadow(color: Color.black.opacity(0.05), radius: 4, y: 2)
+        }
+    }
+    
+    /// Context notes for "Ask Chillo" - should respect Tag but ignore text search (so we search *in* the notes)
+    private var searchContextNotes: [Note] {
+        if let tag = selectedTag {
+            return allNotes.filter { note in
+                note.tags.contains { t in t.id == tag.id }
+            }
+        }
+        // If no tag, maybe limit to recent 100 to avoid token overload?
+        // Or just return all (local model might be fine, API might cost)
+        // For now, let's cap at 100 most recent for "All Notes" queries to be safe
+        return Array(allNotes.prefix(100))
     }
 }
 

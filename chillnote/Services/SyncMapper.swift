@@ -13,9 +13,24 @@ struct SyncMapper {
             content: note.content,
             createdAt: dateFormatter.string(from: note.createdAt),
             updatedAt: dateFormatter.string(from: note.updatedAt),
-            deletedAt: note.deletedAt.map { dateFormatter.string(from: $0) }
+            deletedAt: note.deletedAt.map { dateFormatter.string(from: $0) },
+            tagIds: note.tags.map { $0.id.uuidString }
         )
     }
+
+    func tagDTO(from tag: Tag) -> TagDTO {
+        TagDTO(
+            id: tag.id.uuidString,
+            name: tag.name,
+            colorHex: tag.colorHex,
+            createdAt: dateFormatter.string(from: tag.createdAt),
+            lastUsedAt: dateFormatter.string(from: tag.lastUsedAt),
+            sortOrder: tag.sortOrder,
+            parentId: tag.parent?.id.uuidString
+        )
+    }
+
+
 
     func parseDate(_ string: String) -> Date? {
         dateFormatter.date(from: string) ?? ISO8601DateFormatter().date(from: string)
@@ -34,5 +49,21 @@ struct SyncMapper {
         } else {
             note.deletedAt = nil
         }
+        // Tags are handled separately in SyncEngine to resolve relationships
     }
+
+    func apply(_ dto: TagDTO, to tag: Tag) {
+        tag.name = dto.name
+        tag.colorHex = dto.colorHex
+        if let createdAt = parseDate(dto.createdAt) {
+            tag.createdAt = createdAt
+        }
+        if let lastUsedAt = dto.lastUsedAt, let date = parseDate(lastUsedAt) {
+            tag.lastUsedAt = date
+        }
+        tag.sortOrder = dto.sortOrder
+        // Parent/Child relationship is handled in SyncEngine
+    }
+
+
 }

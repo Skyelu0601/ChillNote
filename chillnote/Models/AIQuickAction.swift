@@ -17,9 +17,9 @@ struct AIQuickAction: Identifiable {
             case .smartFormat:
                 return AIQuickAction(
                     type: .smartFormat,
-                    title: "Smart Format",
+                    title: "Tidy",
                     icon: "wand.and.stars",
-                    description: "Intelligently enhance text structure and styling",
+                    description: "Automatically organize and format text structure",
                     systemPrompt: """
                     You are a professional typesetter. Your task is to enhance the VISUAL STRUCTURE of the text.
                     

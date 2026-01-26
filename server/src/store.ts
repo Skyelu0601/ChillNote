@@ -51,3 +51,9 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
     }
   });
 }
+
+export async function deleteUser(userId: string): Promise<void> {
+  await prisma.user.delete({
+    where: { id: userId }
+  });
+}

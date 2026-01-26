@@ -98,8 +98,12 @@ if ! command -v pm2 &> /dev/null; then
 fi
 
 echo "🚀 重启应用..."
+# 停止旧进程（ID 0 是 chillnote，以及我们之前误创建的 chillnote-api）
+pm2 delete chillnote 2>/dev/null || true
 pm2 delete chillnote-api 2>/dev/null || true
-pm2 start "$APP_DIR/ecosystem.config.cjs" --only chillnote-api --update-env
+
+# 启动新进程（名字现在是 chillnote）
+pm2 start "$APP_DIR/ecosystem.config.cjs" --only chillnote --update-env
 pm2 save
 
 echo "✅ 部署完成！"

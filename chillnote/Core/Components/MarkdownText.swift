@@ -17,8 +17,7 @@ struct MarkdownText: View {
         // Use SwiftUI's built-in markdown support (iOS 15+)
         do {
             let attributedString = try AttributedString(
-                markdown: text,
-                options: AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+                markdown: text
             )
             return attributedString
         } catch {

@@ -7,19 +7,18 @@ struct NoteDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var syncManager: SyncManager
-    @EnvironmentObject private var actionsManager: AIActionsManager
+
     
     @State private var showDeleteConfirmation = false
     @State private var inputText = ""
     @State private var isVoiceMode = false
     @State private var isProcessing = false // Local processing state (e.g. for Magic Wand)
     @ObservedObject private var voiceService = VoiceProcessingService.shared // Global processing state (background)
-    @StateObject private var speechRecognizer = SpeechRecognizer()
+    @EnvironmentObject private var speechRecognizer: SpeechRecognizer
     
     // AI Quick Actions
-    @State private var showAIActionsSheet = false
     @State private var showAIToolbar = false
-    @State private var currentAIAction: CustomAIAction?
+
     @State private var aiOriginalContent: String?
     @State private var isProgrammaticContentUpdate = false
     @State private var isWriting = false
@@ -27,9 +26,10 @@ struct NoteDetailView: View {
     // Manual Tag Input
     @State private var showAddTagAlert = false
     @State private var newTagName = ""
+
     
     // Voice Input State
-    @State private var recordingStartTime: Date?
+    // recordingStartTime is now in SpeechRecognizer
     @State private var recordingDuration: TimeInterval = 0
     private let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
@@ -50,19 +50,11 @@ struct NoteDetailView: View {
                     }
                     .accessibilityLabel("Back")
                     
-                    if isProcessing {
-                        HStack(spacing: 6) {
-                            ProgressView()
-                                .scaleEffect(0.6)
-                            Text("AI Thinking...")
-                                .font(.system(size: 12))
-                                .foregroundColor(.textSub)
-                        }
-                    }
+
                     
                     Spacer()
                     
-                    if isVoiceMode && speechRecognizer.isRecording {
+                    if speechRecognizer.isRecording {
                         // Compact Recording State in Header
                         HStack(spacing: 8) {
                             Text(timeString(from: recordingDuration))
@@ -105,9 +97,7 @@ struct NoteDetailView: View {
                             
                             // Magic Wand
                             Button(action: {
-                                if let action = actionsManager.enabledActions.first {
-                                    Task { await executeAIAction(action) }
-                                }
+                                Task { await executeTidyAction() }
                             }) {
                                 Image(systemName: "wand.and.stars")
                                     .font(.system(size: 16))
@@ -116,12 +106,14 @@ struct NoteDetailView: View {
                                     .background(Color.bgSecondary)
                                     .clipShape(Circle())
                             }
-                            .accessibilityLabel("AI Magic")
+                            .accessibilityLabel("Chillo's Magic")
                             .disabled(isProcessing || note.content.isEmpty)
                             .opacity((isProcessing || note.content.isEmpty) ? 0.5 : 1)
                             
                             // More Menu (Ellipsis)
                             Menu {
+
+                                
                                 Button(role: .destructive, action: { showDeleteConfirmation = true }) {
                                     Label("Delete Note", systemImage: "trash")
                                 }
@@ -151,7 +143,7 @@ struct NoteDetailView: View {
                         Image(systemName: "pencil.and.scribble")
                             .font(.system(size: 16))
                             .foregroundColor(.accentPrimary)
-                            .symbolEffect(.variableColor.iterative, options: .repeating)
+                            .symbolEffect(.variableColor.iterative.reversing, options: .repeating)
                         
                         Text("Jotting this down...")
                             .font(.subheadline)
@@ -162,10 +154,15 @@ struct NoteDetailView: View {
                     .padding(.vertical, 10)
                     .background(.ultraThinMaterial)
                     .clipShape(Capsule())
-                    .shadow(color: Color.black.opacity(0.05), radius: 5, y: 2)
-                    .overlay(
-                        Capsule().stroke(Color.accentPrimary.opacity(0.2), lineWidth: 1)
-                    )
+                    .phaseAnimator([false, true]) { content, phase in
+                        content
+                            .shadow(color: phase ? Color.accentPrimary.opacity(0.2) : Color.black.opacity(0.05), radius: phase ? 8 : 5, y: 2)
+                            .overlay(
+                                Capsule().stroke(Color.accentPrimary.opacity(phase ? 0.5 : 0.2), lineWidth: 1)
+                            )
+                    } animation: { _ in
+                            .easeInOut(duration: 1.5)
+                    }
                     .frame(maxWidth: .infinity, alignment: .leading) // Align left
                     .padding(.horizontal, 20)
                     .padding(.bottom, 16)
@@ -329,14 +326,14 @@ struct NoteDetailView: View {
             }
             
             // AI Action Review Toolbar (Floats at bottom only when reviewing changes)
-            if showAIToolbar, let action = currentAIAction {
+            if showAIToolbar {
                 VStack {
                     Spacer()
                     HStack {
                         Spacer()
                         AIActionToolbar(
                             onRetry: {
-                                Task { await executeAIAction(action) }
+                                Task { await executeTidyAction() }
                             },
                             onUndo: {
                                 undoAIContent()
@@ -377,8 +374,9 @@ struct NoteDetailView: View {
         } message: {
             Text("Are you sure you want to delete this note? This action cannot be undone.")
         }
+
         .onReceive(timer) { _ in
-            if speechRecognizer.isRecording, let startTime = recordingStartTime {
+            if speechRecognizer.isRecording, let startTime = speechRecognizer.recordingStartTime {
                 recordingDuration = Date().timeIntervalSince(startTime)
             }
         }
@@ -444,7 +442,6 @@ struct NoteDetailView: View {
     
     private func startRecording() {
         isVoiceMode = true
-        recordingStartTime = Date()
         recordingDuration = 0
         speechRecognizer.transcript = "" // Reset
         speechRecognizer.startRecording()
@@ -462,19 +459,20 @@ struct NoteDetailView: View {
     
     // MARK: - AI Quick Actions
     
-    private func executeAIAction(_ action: CustomAIAction) async {
+    private func executeTidyAction() async {
         let contentToTransform: String = await MainActor.run {
             // Store original content for undo
             if !showAIToolbar {
                 aiOriginalContent = note.content
             }
 
-            currentAIAction = action
             isProcessing = true
             return note.content
         }
         
         do {
+            // Use the built-in Tidy (smartFormat) action
+            let action = AIQuickAction.ActionType.smartFormat.defaultAction
             let result = try await action.execute(on: contentToTransform)
             
             await MainActor.run {
@@ -493,7 +491,7 @@ struct NoteDetailView: View {
                 }
             }
         } catch {
-            print("⚠️ AI action failed: \(error)")
+            print("⚠️ Tidy action failed: \(error)")
             await MainActor.run {
                 isProcessing = false
             }
@@ -523,7 +521,6 @@ struct NoteDetailView: View {
     private func dismissAIToolbar() {
         withAnimation {
             showAIToolbar = false
-            currentAIAction = nil
             aiOriginalContent = nil
         }
     }
@@ -547,11 +544,13 @@ struct NoteDetailView: View {
         
         // Use AI to help edit or expand the note
         do {
-            let languageRule = LanguageDetection.languagePreservationRule(for: note.content)
+            // Detect language from both user input and existing note to ensure consistency
+            let languageRule = LanguageDetection.languagePreservationRule(for: userInput + "\n" + note.content)
             let systemInstruction = """
             You are a professional writing assistant helping the user edit a note.
             Rules:
             \(languageRule)
+            - Respond and update the note using the language derived from the user's request and context.
             - Preserve the original structure and formatting (including markdown, code blocks, and line breaks) unless the user explicitly requests changes.
             - Return only the updated note content, without any explanations or meta-commentary.
             """
@@ -574,7 +573,7 @@ struct NoteDetailView: View {
             // Update the note content with AI response
             await MainActor.run {
                 isProgrammaticContentUpdate = true
-                note.updateContent(response)
+                note.content = response
                 note.syncContentStructure(with: modelContext)
                 note.updatedAt = Date()
                 isProcessing = false
@@ -771,6 +770,7 @@ struct FlowLayout: Layout {
 
 #Preview {
     NoteDetailView(note: Note(content: "Hello"))
+        .environmentObject(SpeechRecognizer())
         .modelContainer(DataService.shared.container!)
         .environmentObject(SyncManager())
 }

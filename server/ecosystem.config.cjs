@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: "chillnote-api",
+      name: "chillnote",
       cwd: "/root/chillnote-api/current",
       script: "dist/index.js",
       exec_mode: "fork",

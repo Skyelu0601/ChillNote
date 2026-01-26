@@ -8,7 +8,7 @@ struct ChillNoteApp: App {
     let container: ModelContainer
     @StateObject private var authService = AuthService.shared
     @StateObject private var syncManager = SyncManager()
-    @StateObject private var actionsManager = AIActionsManager.shared
+
     
     init() {
         guard let dataContainer = DataService.shared.container else {
@@ -20,10 +20,10 @@ struct ChillNoteApp: App {
         Task { @MainActor in
             DataService.shared.seedDataIfNeeded()
             
-            // Initialize AIActionsManager with model context
-            if let context = DataService.shared.container?.mainContext {
-                AIActionsManager.shared.initialize(context: context)
-            }
+
+            
+            // Clean up old recording files (>24 hours)
+            RecordingFileManager.shared.cleanupOldRecordings()
         }
     }
     
@@ -34,7 +34,7 @@ struct ChillNoteApp: App {
                 .modelContainer(container)
                 .environmentObject(authService)
                 .environmentObject(syncManager)
-                .environmentObject(actionsManager)
+
                 .onOpenURL { url in
                     if url.host == "record" {
                         NotificationCenter.default.post(name: NSNotification.Name("StartRecording"), object: nil)

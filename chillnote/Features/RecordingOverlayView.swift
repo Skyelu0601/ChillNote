@@ -44,13 +44,8 @@ struct RecordingOverlayView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.textMain)
-                
-                Text(timeText)
-                    .font(.bodySmall)
-                    .foregroundColor(.textSub)
-                    .padding(.top, 4)
-                    .accessibilityLabel("Recording duration")
-                    .accessibilityValue(timeText)
+                    .accessibilityLabel("Recording status or duration")
+                    .accessibilityValue(statusTitle)
                 
                 WaveformView(isActive: speechRecognizer.isRecording)
                     .padding(.top, 12)
@@ -60,17 +55,28 @@ struct RecordingOverlayView: View {
                 if speechRecognizer.permissionGranted {
                     ScrollView {
                         if case let .error(message) = speechRecognizer.recordingState {
-                            VStack(spacing: 12) {
+                            VStack(spacing: 16) {
                                 Text(displayErrorMessage(message))
                                     .font(.bodyMedium)
                                     .foregroundColor(.textMain)
                                     .multilineTextAlignment(.center)
-                                Button("Try Again") {
-                                    speechRecognizer.startRecording()
+                                
+                                HStack(spacing: 24) {
+                                    Button("Discard") {
+                                        speechRecognizer.stopRecording(reason: .cancelled)
+                                        // Force clear error state to close overlay if needed
+                                        onDismiss()
+                                    }
+                                    .font(.bodyMedium)
+                                    .foregroundColor(.red.opacity(0.8))
+                                    
+                                    Button("Retry Upload") {
+                                        speechRecognizer.retryTranscription()
+                                    }
+                                    .font(.bodyMedium)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.accentPrimary)
                                 }
-                                .font(.bodyMedium)
-                                .foregroundColor(.accentPrimary)
-                                .accessibilityHint("Restarts recording.")
                             }
                             .padding()
                         } else {
@@ -222,7 +228,7 @@ struct RecordingOverlayView: View {
         }
         switch speechRecognizer.recordingState {
         case .recording:
-            return "Listening..."
+            return timeText
         case .processing:
             return "Processing..."
         case .error:
@@ -257,6 +263,9 @@ struct RecordingOverlayView: View {
         let trimmed = speechRecognizer.transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         Task {
             await onSave(trimmed)
+            
+            // Clean up the recording file after successful save
+            speechRecognizer.completeRecording()
             
             // Analytics
             if !trimmed.isEmpty {

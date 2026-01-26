@@ -4,14 +4,12 @@ import SwiftData
 enum NoteContentFormat: String {
     case text
     case checklist
-    case html  // New: Rich text stored as HTML
 }
 
 @Model
 final class Note {
     var id: UUID
-    var content: String  // Legacy: Markdown/plain text (kept for backward compatibility)
-    var contentHTML: String?  // New: HTML formatted content for rich text editing
+    var content: String  // Markdown format - single source of truth
     var contentFormat: String
     var checklistNotes: String
     var createdAt: Date
@@ -23,46 +21,13 @@ final class Note {
     
     var suggestedTags: [String] = []
     
-    /// Get the editable HTML content, migrating from Markdown if needed
-    var editableHTML: String {
-        get {
-            // If we already have HTML content, use it
-            if let html = contentHTML, !html.isEmpty {
-                return html
-            }
-            // Otherwise, convert from Markdown/plain text
-            return HTMLConverter.markdownToHTML(content)
-        }
-        set {
-            contentHTML = newValue
-            contentFormat = NoteContentFormat.html.rawValue
-            // Keep plain text version synced for search/preview
-            content = HTMLConverter.htmlToPlainText(newValue)
-        }
-    }
-    
-    /// Check if note uses the new HTML format
-    var isHTMLFormat: Bool {
-        contentFormat == NoteContentFormat.html.rawValue && contentHTML != nil && !contentHTML!.isEmpty
-    }
-    
+    /// Get display text for previews (strips Markdown formatting)
     var displayText: String {
-        // For HTML format, use plain text extracted from HTML
-        if isHTMLFormat {
-            let plainText = HTMLConverter.htmlToPlainText(contentHTML ?? "")
-            let limit = 200
-            if plainText.count <= limit {
-                return plainText
-            }
-            return "\(plainText.prefix(limit))..."
-        }
-        
-        // Legacy handling for Markdown format
         let sourceText: String
         if isChecklist {
             sourceText = ChecklistMarkdown.serializePlainText(notes: checklistNotes, items: checklistItems)
         } else {
-            sourceText = content
+            sourceText = stripMarkdownFormatting(content)
         }
         let limit = 200
         if sourceText.count <= limit {
@@ -70,6 +35,26 @@ final class Note {
         }
         let prefixText = sourceText.prefix(limit)
         return "\(prefixText)..."
+    }
+    
+    /// Strip basic Markdown formatting for plain text display
+    private func stripMarkdownFormatting(_ text: String) -> String {
+        var result = text
+        // Remove headers
+        result = result.replacingOccurrences(of: #"^#{1,6}\s+"#, with: "", options: .regularExpression)
+        // Remove bold
+        result = result.replacingOccurrences(of: "**", with: "")
+        // Remove italic
+        result = result.replacingOccurrences(of: "*", with: "")
+        // Remove code
+        result = result.replacingOccurrences(of: "`", with: "")
+        // Remove checkbox markers
+        result = result.replacingOccurrences(of: "- [ ] ", with: "")
+        result = result.replacingOccurrences(of: "- [x] ", with: "")
+        result = result.replacingOccurrences(of: "- [X] ", with: "")
+        // Remove bullet markers
+        result = result.replacingOccurrences(of: #"^[\-\•]\s+"#, with: "", options: .regularExpression)
+        return result
     }
 
     @Relationship(deleteRule: .cascade, inverse: \ChecklistItem.note)
@@ -79,7 +64,6 @@ final class Note {
         let now = Date()
         self.id = UUID()
         self.content = content
-        self.contentHTML = nil
         self.contentFormat = NoteContentFormat.text.rawValue
         self.checklistNotes = ""
         self.createdAt = now
@@ -97,39 +81,12 @@ final class Note {
             self.content = ChecklistMarkdown.serialize(notes: self.checklistNotes, items: self.checklistItems)
         }
     }
-    
-    /// Initialize with HTML content directly
-    init(htmlContent: String) {
-        let now = Date()
-        self.id = UUID()
-        self.contentHTML = htmlContent
-        self.content = HTMLConverter.htmlToPlainText(htmlContent)
-        self.contentFormat = NoteContentFormat.html.rawValue
-        self.checklistNotes = ""
-        self.createdAt = now
-        self.updatedAt = now
-        self.deletedAt = nil
-        self.tags = []
-        self.suggestedTags = []
-    }
 
     var isChecklist: Bool {
         contentFormat == NoteContentFormat.checklist.rawValue
     }
-    
-    /// Migrate legacy content to HTML format
-    func migrateToHTML() {
-        guard !isHTMLFormat else { return }
-        
-        let html = HTMLConverter.markdownToHTML(content)
-        contentHTML = html
-        contentFormat = NoteContentFormat.html.rawValue
-    }
 
     func syncContentStructure(with context: ModelContext) {
-        // Skip for HTML format notes
-        guard !isHTMLFormat else { return }
-        
         guard let parsed = ChecklistMarkdown.parse(content) else {
             guard isChecklist else { return }
             contentFormat = NoteContentFormat.text.rawValue
@@ -179,6 +136,18 @@ final class Note {
     func markDeleted() {
         deletedAt = Date()
         updatedAt = deletedAt ?? updatedAt
+    }
+    
+    // MARK: - Export Functions
+    
+    /// Export note as Markdown (original format)
+    func exportAsMarkdown() -> String {
+        return content
+    }
+    
+    /// Export note as plain text (all formatting stripped)
+    func exportAsPlainText() -> String {
+        return stripMarkdownFormatting(content)
     }
 }
 

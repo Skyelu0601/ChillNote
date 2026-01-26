@@ -6,8 +6,24 @@ struct NoteDTO: Codable {
     let createdAt: String
     let updatedAt: String
     let deletedAt: String?
+    let tagIds: [String]? // Optional for backward compatibility
 }
+
+struct TagDTO: Codable {
+    let id: String
+    let name: String
+    let colorHex: String
+    let createdAt: String
+    let lastUsedAt: String?
+    let sortOrder: Int
+    let parentId: String? // Hierarchy support
+}
+
+
 
 struct SyncPayload: Codable {
     let notes: [NoteDTO]
+    let tags: [TagDTO]?
+
+    let preferences: [String: String]?
 }

@@ -195,6 +195,52 @@ final class AuthService: ObservableObject {
             return false
         }
     }
+    
+    func deleteAccount() async -> Bool {
+        guard let accessToken = KeychainStore.readString(service: keychainService, account: accessTokenKey),
+              !accessToken.isEmpty
+        else {
+            errorMessage = "No access token found. Please sign in again."
+            return false
+        }
+        
+        guard let url = URL(string: AppConfig.backendBaseURL + "/auth/account") else {
+            errorMessage = "Invalid URL"
+            return false
+        }
+        
+        do {
+            var request = URLRequest(url: url)
+            request.httpMethod = "DELETE"
+            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                errorMessage = "Invalid server response."
+                return false
+            }
+            
+            guard (200..<300).contains(httpResponse.statusCode) else {
+                if let errorResponse = try? JSONDecoder().decode([String: String].self, from: data),
+                   let backendError = errorResponse["error"] ?? errorResponse["message"] {
+                    errorMessage = backendError
+                    print("⚠️ [Delete Account] Backend error: \(backendError)")
+                } else {
+                    errorMessage = "Failed to delete account (Status: \(httpResponse.statusCode))"
+                }
+                return false
+            }
+            
+            // Successfully deleted on backend, now cleanup locally
+            await MainActor.run {
+                self.signOut()
+            }
+            return true
+        } catch {
+            errorMessage = "Network error: \(error.localizedDescription)"
+            return false
+        }
+    }
 
     func signOut() {
         errorMessage = nil
@@ -204,6 +250,7 @@ final class AuthService: ObservableObject {
         _ = KeychainStore.delete(service: keychainService, account: accessTokenKey)
         _ = KeychainStore.delete(service: keychainService, account: refreshTokenKey)
         UserDefaults.standard.removeObject(forKey: "syncAuthToken")
+        UserDefaults.standard.removeObject(forKey: "syncHasUploadedLocal")
     }
     
     private func storeTokens(accessToken: String, refreshToken: String) {
