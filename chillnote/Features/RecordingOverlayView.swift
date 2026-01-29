@@ -24,18 +24,17 @@ struct RecordingOverlayView: View {
             VStack {
                 Spacer()
                 
-                // Pulsing Animation Logic (Visual only for MVP)
+                // Liquid Ripple Animation
                 ZStack {
-                    Circle()
-                        .fill(Color.accentPrimary.opacity(0.3))
+                    RippleView(isActive: speechRecognizer.isRecording, color: .accentPrimary)
                         .frame(width: 150, height: 150)
-                        .scaleEffect(speechRecognizer.isRecording ? 1.5 : 1.0)
-                        .opacity(speechRecognizer.isRecording ? 0.0 : 0.5)
-                        .animation(.easeOut(duration: 1.5).repeatForever(autoreverses: false), value: speechRecognizer.isRecording)
                     
                     Circle()
                         .fill(Color.accentPrimary)
                         .frame(width: 80, height: 80)
+                        .scaleEffect(speechRecognizer.isRecording ? 1.05 : 1.0)
+                        .animation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true), value: speechRecognizer.isRecording)
+                        .shadow(color: Color.accentPrimary.opacity(0.3), radius: 15, x: 0, y: 0)
                 }
                 .accessibilityHidden(true)
                 .padding(.bottom, 40)
@@ -148,6 +147,7 @@ struct RecordingOverlayView: View {
                     .foregroundColor(.white)
                     .cornerRadius(30)
                 }
+                .buttonStyle(.bouncy)
                 .disabled(isProcessing)
                 .accessibilityLabel("Finish recording")
                 .accessibilityHint("Stops recording and saves your note.")
@@ -199,6 +199,12 @@ struct RecordingOverlayView: View {
         .onReceive(timer) { _ in
             guard speechRecognizer.isRecording, let startTime = startTime else { return }
             elapsed = Date().timeIntervalSince(startTime)
+            
+            // Enforce limit based on subscription
+            let limit = StoreService.shared.recordingTimeLimit
+            if elapsed >= limit {
+                finishRecording()
+            }
         }
         .onChange(of: speechRecognizer.shouldStop) { _, newValue in
             print("📍 shouldStop changed: \(newValue)")
@@ -240,9 +246,14 @@ struct RecordingOverlayView: View {
     
     private var timeText: String {
         let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = elapsed >= 3600 ? [.hour, .minute, .second] : [.minute, .second]
+        formatter.allowedUnits = [.minute, .second]
         formatter.zeroFormattingBehavior = .pad
-        return formatter.string(from: elapsed) ?? "00:00"
+        let current = formatter.string(from: elapsed) ?? "00:00"
+        
+        let limit = StoreService.shared.recordingTimeLimit
+        let maxTime = formatter.string(from: limit) ?? "01:00"
+        
+        return "\(current) / \(maxTime)"
     }
 
     private func openSettings() {

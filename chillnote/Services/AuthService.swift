@@ -1,6 +1,9 @@
 import Foundation
 import SwiftUI
 import AuthenticationServices
+import GoogleSignIn
+import Supabase
+import CryptoKit
 
 enum AuthProvider: String, Codable {
     case apple
@@ -11,281 +14,258 @@ enum AuthProvider: String, Codable {
 enum AuthState: Equatable {
     case signedOut
     case signingIn
-    case signedIn(userId: String, provider: AuthProvider)
+    case signedIn(userId: String)
 }
 
 @MainActor
 final class AuthService: ObservableObject {
     static let shared = AuthService()
 
+    // Initialize Supabase Client
+    let supabase = SupabaseClient(
+        supabaseURL: AppConfig.supabaseURL,
+        supabaseKey: AppConfig.supabaseAnonKey,
+        options: SupabaseClientOptions(
+            auth: SupabaseClientOptions.AuthOptions(
+                emitLocalSessionAsInitialSession: true
+            )
+        )
+    )
+
     @Published private(set) var state: AuthState = .signedOut
     @Published var errorMessage: String?
     @Published var isPro: Bool = false
-
-    private let keychainService = "com.chillnote.auth"
-    private let providerKey = "provider"
-    private let userIdKey = "userId"
-    private let accessTokenKey = "accessToken"
-    private let refreshTokenKey = "refreshToken"
+    @Published var currentUser: User?
+    
+    // To prevent replay attacks with Apple Sign In
+    var currentNonce: String?
 
     var isSignedIn: Bool {
         if case .signedIn = state { return true }
         return false
     }
-
-    private init() {
-        restoreSessionIfPossible()
+    
+    var currentUserId: String? {
+        if case .signedIn(let userId) = state {
+            return userId
+        }
+        return nil
+    }
+    
+    var loginProvider: String {
+        guard let user = currentUser else { return "email" }
+        return user.identities?.first?.provider ?? "email"
     }
 
-    func restoreSessionIfPossible() {
-        let providerRaw = KeychainStore.readString(service: keychainService, account: providerKey)
-        let userId = KeychainStore.readString(service: keychainService, account: userIdKey)
-        let accessToken = KeychainStore.readString(service: keychainService, account: accessTokenKey)
-
-        guard
-            let providerRaw,
-            let provider = AuthProvider(rawValue: providerRaw),
-            let userId,
-            !userId.isEmpty
-        else {
-            state = .signedOut
-            return
-        }
-
-        state = .signedIn(userId: userId, provider: provider)
-        if let accessToken, !accessToken.isEmpty {
-            UserDefaults.standard.set(accessToken, forKey: "syncAuthToken")
-        }
-
-        if provider == .apple {
-            ASAuthorizationAppleIDProvider().getCredentialState(forUserID: userId) { [weak self] credentialState, _ in
-                Task { @MainActor in
-                    guard let self else { return }
-                    switch credentialState {
-                    case .authorized:
-                        break
-                    default:
-                        self.signOut()
-                    }
-                }
+    private init() {
+        // Listen to Auth State Changes
+        Task {
+            for await _ in supabase.auth.authStateChanges {
+                await checkSession()
             }
         }
     }
 
-    func completeSignIn(provider: AuthProvider, userId: String) {
-        errorMessage = nil
-        state = .signedIn(userId: userId, provider: provider)
-        _ = KeychainStore.writeString(provider.rawValue, service: keychainService, account: providerKey)
-        _ = KeychainStore.writeString(userId, service: keychainService, account: userIdKey)
+    func checkSession() async {
+        do {
+            let session = try await supabase.auth.session
+            
+            // Check if the session is expired
+            if session.isExpired {
+                self.state = .signedOut
+                return
+            }
+            
+            self.state = .signedIn(userId: session.user.id.uuidString)
+            self.currentUser = session.user
+            UserDefaults.standard.set(session.accessToken, forKey: "syncAuthToken")
+        } catch {
+            self.state = .signedOut
+        }
     }
     
+    // MARK: - Apple Sign In
+    
+    // Call this from SignInWithAppleButton.onRequest
+    func handleAppleRequest(_ request: ASAuthorizationAppleIDRequest) {
+        let nonce = randomNonceString()
+        currentNonce = nonce
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = sha256(nonce)
+    }
+
     func signInWithApple(_ credential: ASAuthorizationAppleIDCredential) async -> Bool {
         errorMessage = nil
         state = .signingIn
         
-        guard let identityToken = credential.identityToken,
-              let identityTokenString = String(data: identityToken, encoding: .utf8),
-              let authorizationCode = credential.authorizationCode,
-              let authorizationCodeString = String(data: authorizationCode, encoding: .utf8)
-        else {
-            errorMessage = "Apple Sign-In failed. Please try again."
-            state = .signedOut
-            return false
-        }
-        
-        guard let url = URL(string: AppConfig.backendBaseURL + "/auth/apple") else {
-            errorMessage = "Auth server URL is invalid."
+        guard let idTokenData = credential.identityToken,
+              let idToken = String(data: idTokenData, encoding: .utf8),
+              let nonce = currentNonce else {
+            errorMessage = "Invalid Apple credentials"
             state = .signedOut
             return false
         }
         
         do {
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            let payload = AppleSignInRequest(
-                userId: credential.user,
-                identityToken: identityTokenString,
-                authorizationCode: authorizationCodeString
-            )
-            request.httpBody = try JSONEncoder().encode(payload)
-            
-            print("📤 [Apple Sign In] Sending request to: \(url.absoluteString)")
-            print("📤 [Apple Sign In] User ID: \(credential.user)")
-            print("📤 [Apple Sign In] Identity token length: \(identityTokenString.count)")
-            print("📤 [Apple Sign In] Auth code length: \(authorizationCodeString.count)")
-
-            
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                print("❌ [Apple Sign In] Invalid HTTP response")
-                errorMessage = "Auth server is unavailable."
-                state = .signedOut
-                return false
-            }
-            
-            print("📡 [Apple Sign In] Backend response status: \(httpResponse.statusCode)")
-            if let responseString = String(data: data, encoding: .utf8) {
-                print("📡 [Apple Sign In] Backend response body: \(responseString)")
-            }
-            
-            guard (200..<300).contains(httpResponse.statusCode) else {
-                // Try to parse error message from backend
-                if let errorResponse = try? JSONDecoder().decode([String: String].self, from: data),
-                   let backendError = errorResponse["error"] ?? errorResponse["message"] {
-                    errorMessage = backendError
-                    print("⚠️ [Apple Sign In] Backend error: \(backendError)")
-                } else {
-                    errorMessage = "Sign in failed. Please try again."
-                }
-                state = .signedOut
-                return false
-            }
-            
-            let tokenResponse = try JSONDecoder().decode(AppleSignInResponse.self, from: data)
-            completeSignIn(provider: .apple, userId: tokenResponse.userId)
-            storeTokens(accessToken: tokenResponse.accessToken, refreshToken: tokenResponse.refreshToken)
-            UserDefaults.standard.set(tokenResponse.accessToken, forKey: "syncAuthToken")
+            try await supabase.auth.signInWithIdToken(credentials: .init(
+                provider: .apple,
+                idToken: idToken,
+                nonce: nonce
+            ))
             return true
-        } catch let decodingError as DecodingError {
-            print("❌ [Apple Sign In] JSON decoding error: \(decodingError)")
-            errorMessage = "Sign in failed. Please try again."
-            state = .signedOut
-            return false
-        } catch let urlError as URLError {
-            print("❌ [Apple Sign In] Network error: \(urlError.localizedDescription)")
-            print("   Error code: \(urlError.code.rawValue)")
-            errorMessage = "Network error. Please check your connection."
-            state = .signedOut
-            return false
         } catch {
-            print("❌ [Apple Sign In] Unexpected error: \(error.localizedDescription)")
-            errorMessage = "Sign in failed. Please try again."
+            print("❌ Apple Sign In Error: \(error)")
+            errorMessage = error.localizedDescription
             state = .signedOut
             return false
         }
     }
     
-    func refreshAccessToken() async -> Bool {
-        guard let refreshToken = KeychainStore.readString(service: keychainService, account: refreshTokenKey),
-              !refreshToken.isEmpty
-        else {
-            return false
-        }
-        guard let url = URL(string: AppConfig.backendBaseURL + "/auth/refresh") else {
+    // MARK: - Google Sign In
+    func signInWithGoogle() async -> Bool {
+        errorMessage = nil
+        state = .signingIn
+        
+        guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+              let rootViewController = windowScene.windows.first?.rootViewController else {
+            errorMessage = "Could not find root view controller."
+            state = .signedOut
             return false
         }
         
         do {
-            var request = URLRequest(url: url)
-            request.httpMethod = "POST"
-            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-            request.httpBody = try JSONEncoder().encode(RefreshTokenRequest(refreshToken: refreshToken))
-            
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
+            guard let idToken = result.user.idToken?.tokenString else {
+                errorMessage = "Missing Google ID Token"
+                state = .signedOut
                 return false
             }
             
-            let tokenResponse = try JSONDecoder().decode(AppleSignInResponse.self, from: data)
-            storeTokens(accessToken: tokenResponse.accessToken, refreshToken: tokenResponse.refreshToken)
-            UserDefaults.standard.set(tokenResponse.accessToken, forKey: "syncAuthToken")
+            try await supabase.auth.signInWithIdToken(credentials: .init(
+                provider: .google,
+                idToken: idToken
+            ))
             return true
         } catch {
+            print("❌ Google Sign In Error: \(error)")
+            errorMessage = error.localizedDescription
+            state = .signedOut
             return false
+        }
+    }
+    
+    func signOut() {
+        Task {
+            try? await supabase.auth.signOut()
+            state = .signedOut
+            currentUser = nil
+            UserDefaults.standard.removeObject(forKey: "syncAuthToken")
         }
     }
     
     func deleteAccount() async -> Bool {
-        guard let accessToken = KeychainStore.readString(service: keychainService, account: accessTokenKey),
-              !accessToken.isEmpty
-        else {
-            errorMessage = "No access token found. Please sign in again."
-            return false
-        }
+        // Supabase Client SDK doesn't allow deleting self easily without admin, 
+        // usually you call an Edge Function or Backend endpoint.
+        // We will call our Backend endpoint which requires the JWT.
         
-        guard let url = URL(string: AppConfig.backendBaseURL + "/auth/account") else {
-            errorMessage = "Invalid URL"
-            return false
-        }
+        guard let session = try? await supabase.auth.session else { return false }
+        let token = session.accessToken
+        
+        guard let url = URL(string: AppConfig.backendBaseURL + "/auth/account") else { return false }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "DELETE"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         do {
-            var request = URLRequest(url: url)
-            request.httpMethod = "DELETE"
-            request.setValue("Bearer \(accessToken)", forHTTPHeaderField: "Authorization")
-            
-            let (data, response) = try await URLSession.shared.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                errorMessage = "Invalid server response."
-                return false
+            let (_, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, http.statusCode == 200 {
+                signOut()
+                return true
             }
-            
-            guard (200..<300).contains(httpResponse.statusCode) else {
-                if let errorResponse = try? JSONDecoder().decode([String: String].self, from: data),
-                   let backendError = errorResponse["error"] ?? errorResponse["message"] {
-                    errorMessage = backendError
-                    print("⚠️ [Delete Account] Backend error: \(backendError)")
-                } else {
-                    errorMessage = "Failed to delete account (Status: \(httpResponse.statusCode))"
-                }
-                return false
-            }
-            
-            // Successfully deleted on backend, now cleanup locally
-            await MainActor.run {
-                self.signOut()
-            }
+        } catch {
+            print("Delete account error: \(error)")
+        }
+        return false
+    }
+    
+    // MARK: - Helpers
+    
+    private func randomNonceString(length: Int = 32) -> String {
+        precondition(length > 0)
+        var randomBytes = [UInt8](repeating: 0, count: length)
+        let errorCode = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
+        if errorCode != errSecSuccess {
+            fatalError("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(errorCode)")
+        }
+        
+        let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
+        
+        let nonce = randomBytes.map { byte in
+            charset[Int(byte) % charset.count]
+        }.reduce("") { partialResult, char in
+            partialResult + String(char)
+        }
+        
+        return nonce
+    }
+
+    private func sha256(_ input: String) -> String {
+        let inputData = Data(input.utf8)
+        let hashedData = SHA256.hash(data: inputData)
+        let hashString = hashedData.compactMap {
+            return String(format: "%02x", $0)
+        }.joined()
+        return hashString
+    }
+    
+    // MARK: - Email OTP Sign In
+    
+    func signInWithEmailOTP(email: String) async -> Bool {
+        errorMessage = nil
+        state = .signingIn
+        
+        do {
+            try await supabase.auth.signInWithOTP(email: email)
+            // Reset state to .signedOut so the UI doesn't show a spinner while waiting for user input
+            state = .signedOut
             return true
         } catch {
-            errorMessage = "Network error: \(error.localizedDescription)"
+            print("❌ Email OTP Error: \(error)")
+            errorMessage = error.localizedDescription
+            state = .signedOut
             return false
         }
     }
-
-    func signOut() {
+    
+    func verifyEmailOTP(email: String, code: String) async -> Bool {
         errorMessage = nil
-        state = .signedOut
-        _ = KeychainStore.delete(service: keychainService, account: providerKey)
-        _ = KeychainStore.delete(service: keychainService, account: userIdKey)
-        _ = KeychainStore.delete(service: keychainService, account: accessTokenKey)
-        _ = KeychainStore.delete(service: keychainService, account: refreshTokenKey)
-        UserDefaults.standard.removeObject(forKey: "syncAuthToken")
-        UserDefaults.standard.removeObject(forKey: "syncHasUploadedLocal")
+        state = .signingIn
+        
+        do {
+            try await supabase.auth.verifyOTP(
+                email: email,
+                token: code,
+                type: .email
+            )
+            // Session listener will flip state to .signedIn automatically
+            return true
+        } catch {
+            print("❌ Verify OTP Error: \(error)")
+            errorMessage = error.localizedDescription
+            state = .signedOut
+            return false
+        }
     }
+    // MARK: - Token Helper
     
-    private func storeTokens(accessToken: String, refreshToken: String) {
-        _ = KeychainStore.writeString(accessToken, service: keychainService, account: accessTokenKey)
-        _ = KeychainStore.writeString(refreshToken, service: keychainService, account: refreshTokenKey)
-    }
-    
-    // MARK: - Mock Sign In (for Google and Email)
-    func signInWithMock(_ provider: AuthProvider) {
-        let mockUserId = "mock_user_" + UUID().uuidString.prefix(8)
-        self.completeSignIn(provider: provider, userId: String(mockUserId))
-        self.isPro = false
-    }
-    
-    // MARK: - Update Pro Status
-    func updateProStatus(to status: Bool) {
-        self.isPro = status
+    func getSessionToken() async -> String? {
+        do {
+            let session = try await supabase.auth.session
+            return session.accessToken
+        } catch {
+            return nil
+        }
     }
 }
 
-private struct AppleSignInRequest: Encodable {
-    let userId: String
-    let identityToken: String
-    let authorizationCode: String
-}
-
-private struct AppleSignInResponse: Decodable {
-    let userId: String
-    let accessToken: String
-    let refreshToken: String
-    let isPro: Bool?
-    let subscriptionPlan: String?
-    let subscriptionExpiry: String?
-}
-
-private struct RefreshTokenRequest: Encodable {
-    let refreshToken: String
-}

@@ -18,9 +18,10 @@ struct LoginView: View {
                 
                 // MARK: - Brand Header
                 VStack(spacing: 16) {
-                    Image(systemName: "leaf.fill") // Placeholder Icon
-                        .font(.system(size: 60))
-                        .foregroundStyle(Color.accentPrimary)
+                    Image("chillo_touming")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 120, height: 120)
                     
                     Text("ChillNote")
                         .font(.system(size: 32, weight: .bold, design: .serif))
@@ -42,9 +43,7 @@ struct LoginView: View {
                         // Apple Sign In
                         SignInWithAppleButton(
                             onRequest: { request in
-                                print("🍎 [Apple Sign In] Request initiated")
-                                request.requestedScopes = [.fullName, .email]
-                                print("🍎 [Apple Sign In] Requested scopes: fullName, email")
+                                authService.handleAppleRequest(request)
                             },
                             onCompletion: { result in
                                 print("🍎 [Apple Sign In] Completion callback triggered")
@@ -84,9 +83,12 @@ struct LoginView: View {
                         
                         // Google Sign In (Custom Button)
                         Button(action: {
-                            // Mock Google Login
-                            print("Google Login Tapped")
-                            authService.signInWithMock(.google)
+                            Task {
+                                let success = await authService.signInWithGoogle()
+                                if !success {
+                                    print("Google Sign In failed: \(authService.errorMessage ?? "Unknown error")")
+                                }
+                            }
                         }) {
                             HStack {
                                 Image(systemName: "globe") // Placeholder for Google G logo
@@ -152,17 +154,33 @@ struct LoginView: View {
                     )
                 
                 Button(action: {
-                    // Mock Send Code
-                    sentCode = true
+                    Task {
+                        let success = await authService.signInWithEmailOTP(email: email)
+                        if success {
+                            withAnimation {
+                                sentCode = true
+                            }
+                        }
+                    }
                 }) {
-                    Text("Send Verification Code")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.accentPrimary)
-                        .cornerRadius(12)
+                    if authService.state == .signingIn && !sentCode {
+                         ProgressView()
+                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                             .frame(maxWidth: .infinity)
+                             .frame(height: 50)
+                             .background(Color.accentPrimary)
+                             .cornerRadius(12)
+                    } else {
+                        Text("Send Verification Code")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.accentPrimary)
+                            .cornerRadius(12)
+                    }
                 }
+
             } else {
                 VStack(spacing: 8) {
                     Text("Enter code sent to \(email)")
@@ -183,17 +201,32 @@ struct LoginView: View {
                 }
                 
                 Button(action: {
-                    // Mock Verify
-                    authService.signInWithMock(.email)
+                    Task {
+                        let success = await authService.verifyEmailOTP(email: email, code: otpCode)
+                        if !success {
+                           // Error is handled in AuthService and published via errorMessage
+                           // potentially show an alert here if needed
+                        }
+                    }
                 }) {
-                    Text("Verify & Login")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.textMain)
-                        .cornerRadius(12)
+                    if authService.state == .signingIn && sentCode {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.textMain)
+                            .cornerRadius(12)
+                    } else {
+                        Text("Verify & Login")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.textMain)
+                            .cornerRadius(12)
+                    }
                 }
+
             }
             
             Button("Back to Options") {

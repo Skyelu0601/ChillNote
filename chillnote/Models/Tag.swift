@@ -8,7 +8,9 @@ final class Tag {
     var name: String
     var colorHex: String
     var createdAt: Date
+    var updatedAt: Date
     var lastUsedAt: Date
+    var deletedAt: Date?
     
     var aiSummary: String?
     
@@ -26,15 +28,18 @@ final class Tag {
     var notes: [Note] = []
     
     init(name: String, colorHex: String = "#E6A355") {
+        let now = Date()
         self.id = UUID()
         self.name = name
         self.colorHex = colorHex
-        self.createdAt = Date()
-        self.lastUsedAt = Date()
+        self.createdAt = now
+        self.updatedAt = now
+        self.lastUsedAt = now
         self.notes = []
         self.parent = nil
         self.children = []
         self.sortOrder = 0
+        self.deletedAt = nil
     }
     
     // MARK: - Computed Properties

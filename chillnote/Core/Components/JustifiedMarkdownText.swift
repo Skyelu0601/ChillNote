@@ -31,7 +31,7 @@ struct JustifiedMarkdownText: UIViewRepresentable {
         attributedText.enumerateAttribute(.paragraphStyle, in: NSRange(location: 0, length: attributedText.length), options: []) { value, range, _ in
             if let style = value as? NSParagraphStyle {
                 let mutableStyle = style.mutableCopy() as! NSMutableParagraphStyle
-                mutableStyle.alignment = .justified
+                mutableStyle.alignment = .natural // Changed from .justified for better chat spacing
                 attributedText.addAttribute(.paragraphStyle, value: mutableStyle, range: range)
             }
         }

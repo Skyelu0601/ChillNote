@@ -1,5 +1,5 @@
-import type { SyncPayload } from "./types.js";
-import { upsertNote } from "./store.js";
+import type { SyncPayload, TagDTO } from "./types.js";
+import { upsertNote, upsertTag } from "./store.js";
 
 function parseDate(value?: string | null): number | null {
   if (!value) return null;
@@ -30,6 +30,37 @@ function shouldApply(remoteUpdatedAt?: string | null, remoteDeletedAt?: string |
 }
 
 export async function applySync(payload: SyncPayload, existing: SyncPayload, userId: string): Promise<void> {
+  // 1) Tags: upsert first so note->tag relations can connect safely.
+  const dedupedTags = new Map<string, TagDTO>();
+  for (const tag of payload.tags ?? []) {
+    const current = dedupedTags.get(tag.id);
+    const tagTimestamp = Math.max(parseDate(tag.deletedAt) ?? -Infinity, parseDate(tag.updatedAt) ?? -Infinity, parseDate(tag.createdAt) ?? -Infinity);
+    if (!current) {
+      dedupedTags.set(tag.id, tag);
+      continue;
+    }
+    const existingTimestamp = Math.max(parseDate(current.deletedAt) ?? -Infinity, parseDate(current.updatedAt) ?? -Infinity, parseDate(current.createdAt) ?? -Infinity);
+    if (tagTimestamp > existingTimestamp) {
+      dedupedTags.set(tag.id, tag);
+    }
+  }
+
+  // Stage 1: create/update tag core fields without parent links to avoid FK issues.
+  for (const tag of dedupedTags.values()) {
+    const local = existing.tags?.find((item) => item.id === tag.id);
+    if (!local || shouldApply(tag.updatedAt, tag.deletedAt ?? null, local.updatedAt, local.deletedAt ?? null)) {
+      await upsertTag(userId, { ...tag, parentId: tag.parentId ?? null }, { setParent: false });
+    }
+  }
+  // Stage 2: apply parent relationships once all tags exist.
+  for (const tag of dedupedTags.values()) {
+    const local = existing.tags?.find((item) => item.id === tag.id);
+    if (!local || shouldApply(tag.updatedAt, tag.deletedAt ?? null, local.updatedAt, local.deletedAt ?? null)) {
+      await upsertTag(userId, tag, { setParent: true });
+    }
+  }
+
+  // 2) Notes: dedupe and apply changes with tag relations.
   const deduped = new Map<string, typeof payload.notes[number]>();
   for (const note of payload.notes) {
     const existing = deduped.get(note.id);

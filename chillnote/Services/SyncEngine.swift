@@ -19,8 +19,7 @@ struct SyncEngine {
             notes = []
         }
         
-        // 2. Tags (Full Sync)
-        // Since Tag doesn't have updatedAt, we sync all tags to ensure consistency.
+        // 2. Tags (Full Sync with tombstones)
         let tags = (try? context.fetch(FetchDescriptor<Tag>())) ?? []
         
 
@@ -38,6 +37,18 @@ struct SyncEngine {
     }
 
     func apply(remote: SyncPayload, context: ModelContext) {
+        func shouldApply(remoteUpdatedAt: Date?, remoteDeletedAt: Date?, localUpdatedAt: Date?, localDeletedAt: Date?) -> Bool {
+            if let remoteDeletedAt {
+                if let localDeletedAt, localDeletedAt >= remoteDeletedAt { return false }
+                if let localUpdatedAt, localUpdatedAt > remoteDeletedAt { return false }
+                return true
+            }
+            guard let remoteUpdatedAt else { return false }
+            if let localDeletedAt, localDeletedAt >= remoteUpdatedAt { return false }
+            guard let localUpdatedAt else { return true }
+            return remoteUpdatedAt > localUpdatedAt
+        }
+
         // 1. Preferences
         if let prefs = remote.preferences {
             if let val = prefs["hasSeededWelcomeNote"] {
@@ -53,8 +64,12 @@ struct SyncEngine {
         if let remoteTags = remote.tags {
             for dto in remoteTags {
                 guard let tagId = UUID(uuidString: dto.id) else { continue }
+                let remoteUpdatedAt = mapper.parseDate(dto.updatedAt)
+                let remoteDeletedAt = dto.deletedAt.flatMap { mapper.parseDate($0) }
                 if let existing = tagMap[tagId] {
-                    mapper.apply(dto, to: existing)
+                    if shouldApply(remoteUpdatedAt: remoteUpdatedAt, remoteDeletedAt: remoteDeletedAt, localUpdatedAt: existing.updatedAt, localDeletedAt: existing.deletedAt) {
+                        mapper.apply(dto, to: existing)
+                    }
                 } else {
                     let newTag = Tag(name: dto.name)
                     newTag.id = tagId
@@ -73,6 +88,12 @@ struct SyncEngine {
                     tag.parent = nil
                 }
             }
+            
+            // Purge soft-deleted tags older than 30 days
+            let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date.distantPast
+            for tag in tagMap.values where (tag.deletedAt ?? Date.distantPast) < cutoff && tag.deletedAt != nil {
+                context.delete(tag)
+            }
         }
 
 
@@ -87,7 +108,10 @@ struct SyncEngine {
             // Helper to resolve tags
             func resolveTags(for note: Note) {
                 if let tagIds = dto.tagIds {
-                    note.tags = tagIds.compactMap { UUID(uuidString: $0) }.compactMap { tagMap[$0] }
+                    note.tags = tagIds
+                        .compactMap { UUID(uuidString: $0) }
+                        .compactMap { tagMap[$0] }
+                        .filter { $0.deletedAt == nil }
                 }
             }
 

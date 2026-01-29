@@ -5,10 +5,11 @@ import UIKit
 
 struct SidebarView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(sort: \Tag.name) private var allTags: [Tag]
+    @Query(filter: #Predicate<Tag> { $0.deletedAt == nil }, sort: \Tag.name) private var allTags: [Tag]
     
     @Binding var isPresented: Bool
     @Binding var selectedTag: Tag?
+    var onSettingsTap: (() -> Void)?
     
     /// Root-level tags (those without a parent)
     private var rootTags: [Tag] {
@@ -38,9 +39,25 @@ struct SidebarView: View {
                             .fill(Color.accentPrimary)
                             .frame(width: 8, height: 8)
                         Text("ChillNote")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
+                            .font(.system(size: 22, weight: .bold, design: .serif))
                             .foregroundColor(.textMain)
                             .tracking(0.5)
+                        
+                        Spacer()
+                        
+                        // Settings Button (Moved from Home)
+                        Button(action: {
+                            isPresented = false // Close sidebar
+                            onSettingsTap?()
+                        }) {
+                            Image(systemName: "gearshape")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.textMain.opacity(0.6))
+                                .frame(width: 32, height: 32)
+                                .background(Color.textMain.opacity(0.05))
+                                .clipShape(Circle())
+                        }
+                        .accessibilityLabel("Open Settings")
                     }
                     .padding(.top, 60)
                     .padding(.horizontal, 28)
@@ -73,7 +90,7 @@ struct SidebarView: View {
                                 
                                 if allTags.isEmpty {
                                     Text("Start organizing with tags")
-                                        .font(.system(size: 13))
+                                        .font(.system(size: 13, design: .serif))
                                         .foregroundColor(.textSub.opacity(0.6))
                                         .padding(.top, 40)
                                         .frame(maxWidth: .infinity)
@@ -127,6 +144,7 @@ struct SidebarView: View {
                 oldParent.children.removeAll { $0.id == droppedTag.id }
             }
             droppedTag.parent = nil
+            droppedTag.updatedAt = Date()
             try? modelContext.save()
         }
         return true
@@ -182,7 +200,7 @@ struct TagTreeItemView: View {
                     .frame(width: 12)
                     
                     Text(tag.name)
-                        .font(.system(size: 15, weight: selectedTag?.id == tag.id ? .semibold : .medium))
+                        .font(.system(size: 15, weight: selectedTag?.id == tag.id ? .semibold : .medium, design: .serif))
                         .foregroundColor(selectedTag?.id == tag.id ? .textMain : .textMain.opacity(0.7))
                         .lineLimit(1)
                     
@@ -206,7 +224,7 @@ struct TagTreeItemView: View {
             // Drag and Drop
             .draggable(tag.id.uuidString) {
                 Text(tag.name)
-                    .font(.system(size: 14, weight: .medium))
+                    .font(.system(size: 14, weight: .medium, design: .serif))
                     .padding(.horizontal, 12)
                     .padding(.vertical, 6)
                     .background(Color.bgSecondary)
@@ -253,6 +271,7 @@ struct TagTreeItemView: View {
             if let parent = tag.parent {
                 parent.children.removeAll { $0.id == tag.id }
                 tag.parent = nil
+                tag.updatedAt = Date()
                 try? modelContext.save()
             }
         }
@@ -260,7 +279,13 @@ struct TagTreeItemView: View {
     
     private func deleteTag() {
         withAnimation {
-            modelContext.delete(tag)
+            // Remove the tag from any associated notes to avoid syncing stale relations
+            for note in tag.notes {
+                note.tags.removeAll { $0.id == tag.id }
+                note.updatedAt = Date()
+            }
+            tag.deletedAt = Date()
+            tag.updatedAt = tag.deletedAt ?? Date()
             try? modelContext.save()
         }
     }
@@ -280,6 +305,9 @@ struct TagTreeItemView: View {
             if !targetTag.children.contains(where: { $0.id == droppedTag.id }) {
                 targetTag.children.append(droppedTag)
             }
+            let now = Date()
+            droppedTag.updatedAt = now
+            targetTag.updatedAt = now
             try? modelContext.save()
         }
         return true
@@ -295,7 +323,7 @@ struct RootDropZone: View {
     var body: some View {
         HStack {
             Text("TAGS")
-                .font(.system(size: 11, weight: .black))
+                .font(.system(size: 11, weight: .black, design: .serif))
                 .foregroundColor(.textSub.opacity(0.4))
                 .tracking(1.2)
             
@@ -303,7 +331,7 @@ struct RootDropZone: View {
             
             if isDropTargeted {
                 Text("Release to unnest")
-                    .font(.system(size: 10, weight: .bold))
+                    .font(.system(size: 10, weight: .bold, design: .serif))
                     .foregroundColor(.accentPrimary)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
             }
@@ -338,6 +366,7 @@ struct RootDropZone: View {
                 oldParent.children.removeAll { $0.id == droppedTag.id }
             }
             droppedTag.parent = nil
+            droppedTag.updatedAt = Date()
             try? modelContext.save()
         }
         return true
@@ -356,7 +385,7 @@ struct TrashDropZone: View {
                 .font(.system(size: 16))
             
             Text(isTargeted ? "Release to delete" : "Drag here to delete")
-                .font(.system(size: 14, weight: isTargeted ? .bold : .medium))
+                .font(.system(size: 14, weight: isTargeted ? .bold : .medium, design: .serif))
         }
         .foregroundColor(isTargeted ? .red : .textMain.opacity(0.4))
         .frame(maxWidth: .infinity)
@@ -388,7 +417,12 @@ struct TrashDropZone: View {
             if let parent = droppedTag.parent {
                 parent.children.removeAll { $0.id == droppedTag.id }
             }
-            modelContext.delete(droppedTag)
+            for note in droppedTag.notes {
+                note.tags.removeAll { $0.id == droppedTag.id }
+                note.updatedAt = Date()
+            }
+            droppedTag.deletedAt = Date()
+            droppedTag.updatedAt = droppedTag.deletedAt ?? Date()
             try? modelContext.save()
         }
         
@@ -417,8 +451,8 @@ struct SidebarItem: View {
                     .frame(width: 20)
                 
                 Text(title)
-                    .font(.system(size: 15, weight: isSelected ? .semibold : .medium))
-                    .foregroundColor(isSelected ? .textMain : .textMain.opacity(0.7))
+                    .font(.system(size: 15, weight: isSelected ? .semibold : .medium, design: .serif))
+                    .foregroundColor(isSelected ? .textMain : .textMain.opacity(0.8)) // increased opacity slightly for serif readability
                 
                 Spacer()
             }

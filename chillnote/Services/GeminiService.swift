@@ -221,6 +221,83 @@ struct GeminiService {
     func chat(prompt: String) async throws -> String {
         return try await generateContent(prompt: prompt)
     }
+    
+    /// Generates content with streaming response
+    /// - Parameters:
+    ///   - prompt: The text prompt
+    ///   - systemInstruction: Optional system instruction
+    /// - Returns: An async throwing stream of text chunks
+    func streamGenerateContent(prompt: String, systemInstruction: String? = nil) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    let serverURL = AppConfig.backendBaseURL + "/ai/gemini"
+                    guard let url = URL(string: serverURL) else {
+                        throw GeminiError.invalidURL
+                    }
+                    
+                    var request = URLRequest(url: url)
+                    request.httpMethod = "POST"
+                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    request.timeoutInterval = 120 // Longer timeout for stream
+                    
+                    var requestBody: [String: Any] = [
+                        "prompt": prompt,
+                        "stream": true
+                    ]
+                    
+                    if let systemInstruction = systemInstruction {
+                        requestBody["systemPrompt"] = systemInstruction
+                    }
+                    
+                    request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+                    
+                    print("🌐 Sending streaming request to \(serverURL)")
+                    
+                    let (bytes, response) = try await URLSession.shared.bytes(for: request)
+                    
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        throw GeminiError.invalidResponse
+                    }
+                    
+                    guard (200...299).contains(httpResponse.statusCode) else {
+                        // Validate error if possible, though handling bytes error content is tricky without consuming stream
+                        print("❌ Stream failed with status: \(httpResponse.statusCode)")
+                        throw GeminiError.apiError("Status code: \(httpResponse.statusCode)")
+                    }
+                    
+                    for try await line in bytes.lines {
+                        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if trimmed.isEmpty { continue }
+                        
+                        // Handle potential SSE format "data: {json}"
+                        let jsonString = trimmed.hasPrefix("data: ") ? String(trimmed.dropFirst(6)) : trimmed
+                        
+                        if jsonString == "[DONE]" { break }
+                        
+                        guard let data = jsonString.data(using: .utf8) else { continue }
+                        
+                        if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
+                            // Extract text content from various potential backend formats
+                            if let content = json["content"] as? String {
+                                continuation.yield(content)
+                            } else if let text = json["text"] as? String {
+                                continuation.yield(text)
+                            } else if let error = json["error"] as? String {
+                                throw GeminiError.apiError(error)
+                            }
+                        }
+                    }
+                    
+                    continuation.finish()
+                    
+                } catch {
+                    print("❌ Stream error: \(error.localizedDescription)")
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
 }
 
 enum LanguageDetection {

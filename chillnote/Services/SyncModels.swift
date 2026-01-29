@@ -14,9 +14,11 @@ struct TagDTO: Codable {
     let name: String
     let colorHex: String
     let createdAt: String
+    let updatedAt: String
     let lastUsedAt: String?
     let sortOrder: Int
     let parentId: String? // Hierarchy support
+    let deletedAt: String?
 }
 
 

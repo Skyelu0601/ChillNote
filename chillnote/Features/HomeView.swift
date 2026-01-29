@@ -43,6 +43,7 @@ struct HomeView: View {
     
     // Search
     @State private var searchText = ""
+    @State private var isSearchVisible = false
     @FocusState private var isSearchFocused: Bool
     
     // Recording Recovery
@@ -52,6 +53,7 @@ struct HomeView: View {
     
     // Voice Processing
     // (Handled server-side in /ai/voice-note)
+    @ObservedObject private var voiceService = VoiceProcessingService.shared
 
     private var recentNotes: [Note] {
         let activeNotes = allNotes
@@ -91,42 +93,65 @@ struct HomeView: View {
                                         }
                                     }) {
                                         Image(systemName: "line.3.horizontal")
-                                            .font(.system(size: 20, weight: .semibold))
+                                            .font(.system(size: 22, weight: .medium)) // Slightly larger, cleaner weight
                                             .foregroundColor(.textMain)
                                             .frame(width: 44, height: 44)
                                     }
+                                    .buttonStyle(.bouncy)
                                     .padding(.leading, -10)
                                     
                                     Text(selectedTag?.name ?? "ChillNote")
                                         .font(.displayMedium)
                                         .foregroundColor(.textMain)
+                                    
                                     Spacer()
                                     
-                                    // Manage button (for selection mode)
-                                    Button(action: enterSelectionMode) {
-                                        Image(systemName: "ellipsis.circle")
-                                            .font(.system(size: 18, weight: .semibold))
-                                            .foregroundColor(.accentPrimary)
-                                            .frame(width: 40, height: 40)
-                                            .background(Color.accentPrimary.opacity(0.1))
-                                            .clipShape(Circle())
+                                    // RIGHT SIDE ACTIONS
+                                    HStack(spacing: 12) {
+                                        // 1. AI Context Button (Featured)
+                                        Button(action: enterSelectionMode) {
+                                            Image("chillohead_touming")
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 48, height: 48) // Back to slightly larger pop size
+                                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2) // Maintain the subtle lift
+                                                .opacity(speechRecognizer.isRecording ? 0.3 : 1.0)
+                                                .grayscale(speechRecognizer.isRecording ? 1.0 : 0.0)
+                                        }
+                                        .buttonStyle(.bouncy)
+                                        .disabled(speechRecognizer.isRecording)
+                                        .accessibilityLabel("Enter AI Context Mode")
+                                        
+                                        // 2. Search Button
+                                        Button(action: {
+                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                                isSearchVisible.toggle()
+                                                if !isSearchVisible {
+                                                    searchText = ""
+                                                    hideKeyboard()
+                                                } else {
+                                                    isSearchFocused = true
+                                                }
+                                            }
+                                        }) {
+                                            Image(systemName: "magnifyingglass")
+                                                .font(.system(size: 20, weight: .regular))
+                                                .foregroundColor(isSearchVisible ? .accentPrimary : .textMain.opacity(0.8))
+                                                .frame(width: 40, height: 40)
+                                                .background(Color.white)
+                                                .clipShape(Circle())
+                                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
+                                                .opacity(speechRecognizer.isRecording ? 0.3 : 1.0)
+                                        }
+                                        .buttonStyle(.bouncy)
+                                        .disabled(speechRecognizer.isRecording)
+                                        .accessibilityLabel("Search")
                                     }
-                                    .accessibilityLabel("Manage notes")
-                                    
-                                    Button(action: { showingSettings = true }) {
-                                        Image(systemName: "gearshape")
-                                            .font(.system(size: 18, weight: .semibold))
-                                            .foregroundColor(.textMain)
-                                            .frame(width: 40, height: 40)
-                                            .background(Color.white)
-                                            .clipShape(Circle())
-                                    }
-                                    .accessibilityLabel("Open settings")
                                 } else {
                                     // Selection Mode Header (Clean Layout)
                                     HStack {
                                         // Left: Cancel
-                                        Button("Cancel") {
+                                        Button("common.cancel") {
                                             exitSelectionMode()
                                         }
                                         .font(.bodyMedium)
@@ -137,13 +162,13 @@ struct HomeView: View {
                                         // Right: Actions
                                         HStack(spacing: 20) {
                                             if selectedNotes.count < recentNotes.count {
-                                                Button("Select All") {
+                                                Button("home.action.selectAll") {
                                                     selectAllNotes()
                                                 }
                                                 .font(.bodyMedium)
                                                 .foregroundColor(.accentPrimary)
                                             } else {
-                                                Button("Deselect All") {
+                                                Button("home.action.deselectAll") {
                                                     selectedNotes.removeAll()
                                                 }
                                                 .font(.bodyMedium)
@@ -166,22 +191,16 @@ struct HomeView: View {
                             .padding(.top, 20)
                             
                             // Search Bar
-                            if !isSelectionMode {
-                                VStack(spacing: 12) {
-                                    searchBar
-                                    
-                                    if !searchText.isEmpty {
-                                        askChilloButton
-                                    }
-                                }
-                                .padding(.horizontal, 24)
-                                .padding(.top, 8)
+                            if !isSelectionMode && isSearchVisible {
+                                searchBar
+                                    .padding(.horizontal, 24)
+                                    .padding(.top, 8)
                             }
                             
 
 
                             if recentNotes.isEmpty {
-                                Text("No notes yet. Start typing or recording below.")
+                                Text("home.empty.title")
                                     .font(.bodyMedium)
                                     .foregroundColor(.textSub)
                                     .padding(.horizontal, 24)
@@ -254,98 +273,106 @@ struct HomeView: View {
                 }
                 
                 // Twin Floating Icons for Selection Mode
+                // Text-Based Floating Action Bar (The "Chill" Capsule)
                 if isSelectionMode {
                     VStack {
                         Spacer()
-                        HStack(spacing: 24) {
-                            // Chat Button (Left)
-                            Button(action: startAIChat) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.white)
-                                        .frame(width: 56, height: 56)
-                                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
-                                    
-                                    Image(systemName: "bubble.left.and.bubble.right.fill")
-                                        .font(.system(size: 22))
-                                        .foregroundColor(.accentPrimary) // Using accent color for chat too for unity
-                                }
-                            }
-                            
-                            // Actions Menu (Right) - Toggle Button
-                            Button(action: {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    isAgentMenuOpen.toggle()
-                                }
-                            }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.white)
-                                        .frame(width: 56, height: 56)
-                                        .shadow(color: Color.black.opacity(0.15), radius: 8, x: 0, y: 4)
-                                    
-                                    Image(systemName: isAgentMenuOpen ? "xmark" : "bolt.fill")
-                                        .font(.system(size: isAgentMenuOpen ? 20 : 22, weight: isAgentMenuOpen ? .medium : .regular))
-                                        .foregroundColor(.accentPrimary)
-                                        .rotationEffect(.degrees(isAgentMenuOpen ? 90 : 0))
-                                }
-                            }
-                        }
-                        .padding(.bottom, 32)
-                    }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-                
-                // Agent Menu Overlay (Global Layer)
-                if isSelectionMode && isAgentMenuOpen {
-                    ZStack(alignment: .bottom) {
-                        // Background Dismiss Layer
-                        Color.black.opacity(0.01)
-                            .ignoresSafeArea()
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    isAgentMenuOpen = false
-                                }
-                            }
                         
-                        // Menu Items Container - Aligned with bottom buttons
-                        HStack(spacing: 24) {
-                            // Spacer for Chat Button
-                            Color.clear.frame(width: 56, height: 1)
-                            
-                            // Menu Items Column
-                            VStack(spacing: 16) {
-                                ForEach(Array(AIAgentAction.defaultActions.enumerated()), id: \.element.id) { index, action in
+                        // Action Menu (Text List) - Anchored above the bar
+                        if isAgentMenuOpen {
+                            VStack(spacing: 8) {
+                                ForEach(AIAgentAction.defaultActions) { action in
                                     Button(action: {
                                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                             isAgentMenuOpen = false
                                         }
-                                        // Delay execution slightly to allow UI to close
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                            Task { await executeAgentAction(action) }
-                                        }
+                                        Task { await executeAgentAction(action) }
                                     }) {
-                                        ZStack {
-                                            Circle()
-                                                .fill(Color.white)
-                                                .frame(width: 44, height: 44)
-                                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                                            
-                                            Image(systemName: action.icon)
-                                                .font(.system(size: 20))
+                                        HStack {
+                                            Text(action.title)
+                                                .font(.system(size: 16, weight: .medium, design: .rounded))
                                                 .foregroundColor(.accentPrimary)
+                                            
+                                            Spacer()
+                                            
+                                            // Optional: subtly keep the icon for visual anchor, or remove if strictly purist
+                                            // Keeping it small and subtle helps quick scanning
+                                            Image(systemName: action.icon)
+                                                .font(.system(size: 14))
+                                                .foregroundColor(.accentPrimary.opacity(0.6))
                                         }
+                                        .padding(.vertical, 16)
+                                        .padding(.horizontal, 24)
+                                        .background(Color.white)
+                                        .cornerRadius(100) // Pill shape for individual actions
+                                        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
                                     }
-                                    .transition(.scale(scale: 0.5).combined(with: .opacity).combined(with: .move(edge: .bottom)))
+                                    .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.9)))
                                 }
-                                
-                                // Spacer for Main Toggle Button
-                                Color.clear.frame(width: 56, height: 56)
+                            }
+                            .padding(.bottom, 12)
+                            .padding(.horizontal, 40) // Match approximate width of main bar
+                            .transition(.opacity)
+                        }
+                        
+                        // Main Control Capsule
+                        HStack(spacing: 0) {
+                            // Left: Ask
+                            Button(action: startAIChat) {
+                                Text("home.askChillo")
+                                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                    .foregroundColor(.accentPrimary)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 56)
+                            }
+                            
+                            // Divider
+                            Rectangle()
+                                .fill(Color.accentPrimary.opacity(0.15))
+                                .frame(width: 1, height: 24)
+                            
+                            // Right: Actions
+                            Button(action: {
+                                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
+                                    isAgentMenuOpen.toggle()
+                                }
+                            }) {
+                                HStack(spacing: 4) {
+                                    Text("home.actions")
+                                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                                    
+                                    // Subtle chevron to indicate menu
+                                    Image(systemName: "chevron.up")
+                                        .font(.system(size: 12, weight: .bold))
+                                        .rotationEffect(.degrees(isAgentMenuOpen ? 180 : 0))
+                                }
+                                .foregroundColor(.accentPrimary)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
                             }
                         }
+                        .background(Color.white) // Clean, premium white background
+                        .clipShape(Capsule())
+                        .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6) // Soft, premium shadow
+                        .padding(.horizontal, 40)
                         .padding(.bottom, 32)
                     }
-                    .zIndex(100) // Ensure it's above everything else
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(100)
+                }
+                
+                // Agent Menu Overlay (Global Layer)
+                // (Old global menu overlay removed in favor of local stack)
+                if isSelectionMode && isAgentMenuOpen {
+                    // Just the dismiss background
+                     Color.black.opacity(0.001)
+                        .ignoresSafeArea()
+                        .onTapGesture {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                isAgentMenuOpen = false
+                            }
+                        }
+                        .zIndex(99) // Just below the text pill
                 }
                 
                 // Progress Overlay for Agent Actions
@@ -370,11 +397,27 @@ struct HomeView: View {
                     }
                 }
             }
+            // Screen Edge Swipe to Open Sidebar
+            .gesture(
+                DragGesture()
+                    .onEnded { value in
+                        // Detect swipe from left edge (first 50pts) moving right
+                        if value.startLocation.x < 50 && value.translation.width > 60 {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                isSidebarPresented = true
+                            }
+                        }
+                    }
+            )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.bgPrimary.ignoresSafeArea())
             .overlay {
                 // Sidebar Overlay
-                SidebarView(isPresented: $isSidebarPresented, selectedTag: $selectedTag)
+                SidebarView(
+                    isPresented: $isSidebarPresented,
+                    selectedTag: $selectedTag,
+                    onSettingsTap: { showingSettings = true }
+                )
             }
             .navigationBarHidden(true)
             .fullScreenCover(isPresented: $showingSettings) {
@@ -382,20 +425,11 @@ struct HomeView: View {
             }
 
             .fullScreenCover(isPresented: $showAIChat) {
-                // If we have an active search, pass that as context + initial query
-                if !searchText.isEmpty && selectedNotes.isEmpty {
-                    AIContextChatView(
-                        contextNotes: searchContextNotes, // All notes (filtered by tag) for broad questions
-                        initialQuery: searchText
-                    )
+                AIContextChatView(contextNotes: getSelectedNotes())
                     .environmentObject(syncManager)
-                } else {
-                    AIContextChatView(contextNotes: getSelectedNotes())
-                        .environmentObject(syncManager)
-                        .onDisappear {
-                            exitSelectionMode()
-                        }
-                }
+                    .onDisappear {
+                        exitSelectionMode()
+                    }
             }
             .sheet(isPresented: $showAgentActionsSheet) {
                 AIAgentActionsSheet(selectedCount: selectedNotes.count) { action in
@@ -424,8 +458,22 @@ struct HomeView: View {
             .onChange(of: speechRecognizer.recordingState) { _, newState in
                 switch newState {
                 case .processing:
+                    // Only create a new note if we are on the home screen (not already in a note)
+                    // This prevents duplicate notes when Retrying from NoteDetailView
+                    guard navigationPath.isEmpty else { return }
+                    
                     // Navigate immediately when user hits done
                     let note = Note(content: "")
+                    
+                    // Apply current tag context if active
+                    if let currentTag = selectedTag {
+                        note.tags.append(currentTag)
+                        let now = Date()
+                        currentTag.lastUsedAt = now
+                        currentTag.updatedAt = now
+                        note.updatedAt = now
+                    }
+                    
                     modelContext.insert(note)
                     try? modelContext.save()
                     
@@ -518,6 +566,16 @@ struct HomeView: View {
 
     private func createAndOpenBlankNote() {
         let note = Note(content: "")
+        
+        // Apply current tag context if active
+        if let currentTag = selectedTag {
+            note.tags.append(currentTag)
+            let now = Date()
+            currentTag.lastUsedAt = now
+            currentTag.updatedAt = now
+            note.updatedAt = now
+        }
+        
         modelContext.insert(note)
         try? modelContext.save()
         
@@ -536,6 +594,16 @@ struct HomeView: View {
         guard !trimmed.isEmpty else { return nil }
 
         let note = Note(content: trimmed)
+        
+        // Apply current tag context if active
+        if let currentTag = selectedTag {
+            note.tags.append(currentTag)
+            let now = Date()
+            currentTag.lastUsedAt = now
+            currentTag.updatedAt = now
+            note.updatedAt = now
+        }
+        
         withAnimation {
             modelContext.insert(note)
             
@@ -760,6 +828,16 @@ struct HomeView: View {
                 // Create a new note immediately and get its ID
                 let noteID = await MainActor.run {
                     let newNote = Note(content: "")
+                    
+                    // Apply current tag context if active
+                    if let currentTag = selectedTag {
+                        newNote.tags.append(currentTag)
+                        let now = Date()
+                        currentTag.lastUsedAt = now
+                        currentTag.updatedAt = now
+                        newNote.updatedAt = now
+                    }
+                    
                     modelContext.insert(newNote)
                     try? modelContext.save()
                     return newNote.id
@@ -836,7 +914,7 @@ struct HomeView: View {
                 .foregroundColor(.textSub)
                 .font(.system(size: 16, weight: .semibold))
             
-            TextField("Find a thought...", text: $searchText)
+            TextField("home.search.placeholder", text: $searchText)
                 .font(.bodyMedium)
                 .foregroundColor(.textMain)
                 .focused($isSearchFocused)
@@ -865,57 +943,193 @@ struct HomeView: View {
         )
     }
     
-    private var askChilloButton: some View {
-        Button(action: {
-            showAIChat = true
-        }) {
-            HStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(LinearGradient(colors: [.accentPrimary, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                        .frame(width: 32, height: 32)
-                    
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(.white)
-                }
-                
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Ask Chillo")
-                        .font(.bodyMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.textMain)
-                    
-                    Text("\"\(searchText)\"")
-                        .font(.caption)
-                        .foregroundColor(.textSub)
-                        .lineLimit(1)
-                }
-                
-                Spacer()
-                
-                Image(systemName: "arrow.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.textSub.opacity(0.5))
-            }
-            .padding(12)
-            .background(Color.white)
-            .cornerRadius(16)
-            .shadow(color: Color.black.opacity(0.05), radius: 4, y: 2)
-        }
+    // MARK: - Processing Status Badge
+    
+    private enum ProcessingStage {
+        case jotting
+        case polishing
     }
     
-    /// Context notes for "Ask Chillo" - should respect Tag but ignore text search (so we search *in* the notes)
-    private var searchContextNotes: [Note] {
-        if let tag = selectedTag {
-            return allNotes.filter { note in
-                note.tags.contains { t in t.id == tag.id }
-            }
+    private func processingStage(for note: Note) -> ProcessingStage? {
+        guard let state = voiceService.processingStates[note.id],
+              case .processing = state else {
+            return nil
         }
-        // If no tag, maybe limit to recent 100 to avoid token overload?
-        // Or just return all (local model might be fine, API might cost)
-        // For now, let's cap at 100 most recent for "All Notes" queries to be safe
-        return Array(allNotes.prefix(100))
+        
+        let isEmpty = note.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return isEmpty ? .jotting : .polishing
+    }
+    
+    @ViewBuilder
+    private func processingBadge(for note: Note) -> some View {
+        if let stage = processingStage(for: note) {
+            HStack(spacing: 6) {
+                switch stage {
+                case .jotting:
+                    Image(systemName: "pencil.and.scribble")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundColor(.accentPrimary)
+                    Text("Jotting this down...")
+                        .font(.bodySmall)
+                        .foregroundColor(.textMain)
+                case .polishing:
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.accentPrimary, .purple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                    Text("Getting your vibe...")
+                        .font(.bodySmall)
+                        .foregroundColor(.textMain)
+                }
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+            .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+            .overlay(
+                Capsule()
+                    .stroke(Color.accentPrimary.opacity(0.2), lineWidth: 1)
+            )
+            .padding(12)
+            .allowsHitTesting(false)
+            .transition(.opacity)
+        } else {
+            EmptyView()
+        }
+    }
+
+
+}
+
+struct NoteCard: View {
+    let note: Note
+    var isSelectionMode: Bool = false
+    var isSelected: Bool = false
+    var onSelectionToggle: (() -> Void)? = nil
+
+    private enum ProcessingStage {
+        case jotting
+        case polishing
+    }
+
+    private var processingStage: ProcessingStage? {
+        guard let state = VoiceProcessingService.shared.processingStates[note.id],
+              case .processing = state else {
+            return nil
+        }
+        
+        let isEmpty = note.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return isEmpty ? .jotting : .polishing
+    }
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            if isSelectionMode {
+                Button(action: {
+                    onSelectionToggle?()
+                }) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 20, weight: .semibold))
+                        .foregroundColor(isSelected ? .accentPrimary : .textSub)
+                }
+                .buttonStyle(.plain)
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                // Always show Timestamp
+                HStack(alignment: .firstTextBaseline) {
+                    Text(note.createdAt.relativeFormatted())
+                        .font(.chillCaption)
+                        .foregroundColor(.textSub)
+                    Spacer()
+                }
+
+                if let stage = processingStage {
+                    // Processing State: Show Badge INLINE
+                    HStack(spacing: 6) {
+                        switch stage {
+                        case .jotting:
+                            Image(systemName: "pencil.and.scribble")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.accentPrimary)
+                            Text("Jotting this down...")
+                                .font(.bodySmall)
+                                .foregroundColor(.textMain)
+                        case .polishing:
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(
+                                    LinearGradient(
+                                        colors: [.accentPrimary, .purple],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                            Text("Getting your vibe...")
+                                .font(.bodySmall)
+                                .foregroundColor(.textMain)
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.accentPrimary.opacity(0.2), lineWidth: 1)
+                    )
+                    // Slightly reduce top padding to align nicely where text would be
+                    .padding(.top, 2)
+                    
+                } else {
+                    // Normal Content State
+                    if note.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                        Text("home.empty.title")
+                            .font(.bodyMedium)
+                            .foregroundColor(.textSub)
+                    } else {
+                        RichTextPreview(
+                            content: note.content,
+                            lineLimit: 3,
+                            font: .bodyMedium,
+                            textColor: .textMain
+                        )
+                    }
+
+                    if !note.tags.isEmpty {
+                        HStack(spacing: 6) {
+                            ForEach(note.tags.prefix(3)) { tag in
+                                Text(tag.name)
+                                    .font(.chillCaption)
+                                    .foregroundColor(tag.color)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(tag.color.opacity(0.12))
+                                    .clipShape(Capsule())
+                            }
+                            if note.tags.count > 3 {
+                                Text("+\(note.tags.count - 3)")
+                                    .font(.chillCaption)
+                                    .foregroundColor(.textSub)
+                            }
+                        }
+                    }
+                }
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(Color.cardBackground)
+        .cornerRadius(16)
+        .shadow(color: Color.shadowColor, radius: 8, y: 4)
     }
 }
 

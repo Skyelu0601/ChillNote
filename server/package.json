@@ -10,11 +10,13 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "@supabase/supabase-js": "^2.93.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "jose": "^5.6.3",
     "jsonwebtoken": "^9.0.2",
+    "node-apple-receipt-verify": "^1.15.0",
     "node-fetch": "^2.7.0",
     "prisma": "^5.22.0",
     "zod": "^3.23.8"

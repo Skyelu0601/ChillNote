@@ -61,7 +61,7 @@ class TagService {
         }
     }
     
-    /// Removes tags that are no longer associated with any active notes.
+    /// Marks tags that are no longer associated with any active notes as deleted (soft-delete for sync).
     func cleanupEmptyTags(context: ModelContext) {
         let fetchDescriptor = FetchDescriptor<Tag>()
         do {
@@ -69,7 +69,9 @@ class TagService {
             for tag in allTags {
                 let activeNotes = tag.notes.filter { $0.deletedAt == nil }
                 if activeNotes.isEmpty {
-                    context.delete(tag)
+                    let now = Date()
+                    tag.deletedAt = now
+                    tag.updatedAt = now
                 }
             }
             // Use a slight delay or ensure this is after the main operation

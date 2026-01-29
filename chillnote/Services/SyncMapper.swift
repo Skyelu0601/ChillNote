@@ -14,7 +14,9 @@ struct SyncMapper {
             createdAt: dateFormatter.string(from: note.createdAt),
             updatedAt: dateFormatter.string(from: note.updatedAt),
             deletedAt: note.deletedAt.map { dateFormatter.string(from: $0) },
-            tagIds: note.tags.map { $0.id.uuidString }
+            tagIds: note.tags
+                .filter { $0.deletedAt == nil }
+                .map { $0.id.uuidString }
         )
     }
 
@@ -24,9 +26,11 @@ struct SyncMapper {
             name: tag.name,
             colorHex: tag.colorHex,
             createdAt: dateFormatter.string(from: tag.createdAt),
+            updatedAt: dateFormatter.string(from: tag.updatedAt),
             lastUsedAt: dateFormatter.string(from: tag.lastUsedAt),
             sortOrder: tag.sortOrder,
-            parentId: tag.parent?.id.uuidString
+            parentId: tag.parent?.id.uuidString,
+            deletedAt: tag.deletedAt.map { dateFormatter.string(from: $0) }
         )
     }
 
@@ -58,8 +62,16 @@ struct SyncMapper {
         if let createdAt = parseDate(dto.createdAt) {
             tag.createdAt = createdAt
         }
+        if let updatedAt = parseDate(dto.updatedAt) {
+            tag.updatedAt = updatedAt
+        }
         if let lastUsedAt = dto.lastUsedAt, let date = parseDate(lastUsedAt) {
             tag.lastUsedAt = date
+        }
+        if let deletedAt = dto.deletedAt, let date = parseDate(deletedAt) {
+            tag.deletedAt = date
+        } else {
+            tag.deletedAt = nil
         }
         tag.sortOrder = dto.sortOrder
         // Parent/Child relationship is handled in SyncEngine

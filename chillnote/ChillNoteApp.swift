@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import GoogleSignIn
 
 @main
 struct ChillNoteApp: App {
@@ -18,10 +19,6 @@ struct ChillNoteApp: App {
         
         // Ensure data is seeded on launch
         Task { @MainActor in
-            DataService.shared.seedDataIfNeeded()
-            
-
-            
             // Clean up old recording files (>24 hours)
             RecordingFileManager.shared.cleanupOldRecordings()
         }
@@ -36,7 +33,12 @@ struct ChillNoteApp: App {
                 .environmentObject(syncManager)
 
                 .onOpenURL { url in
-                    if url.host == "record" {
+                    // Handle Google Sign-In URL
+                    if GIDSignIn.sharedInstance.handle(url) {
+                        return
+                    }
+                    
+                    if url.scheme == "chillnote" && url.host == "record" {
                         NotificationCenter.default.post(name: NSNotification.Name("StartRecording"), object: nil)
                     }
                 }

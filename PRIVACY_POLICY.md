@@ -2,7 +2,7 @@
 
 **Last Updated:** [Date]
 
-**[SPONTEO AI]** ("we," "our," or "us") respects your privacy and is committed to protecting it through our compliance with this policy. This Privacy Policy describes the types of information we may collect from you or that you may provide when you use the **ChillNote** mobile application (the "App") and our practices for collecting, using, maintaining, protecting, and disclosing that information.
+**Sponteoai** ("we," "our," or "us") respects your privacy and is committed to protecting it through our compliance with this policy. This Privacy Policy describes the types of information we may collect from you or that you may provide when you use the **ChillNote** mobile application (the "App") and our practices for collecting, using, maintaining, protecting, and disclosing that information.
 
 This policy applies specifically to users located in the United States and is designed to comply with applicable US federal and state laws.
 
@@ -37,7 +37,7 @@ To provide high-quality AI transcription and summarization, we utilize trusted t
 *   **Google Gemini (Google Cloud):**
     *   **Purpose:** We use Google's enterprise-grade AI APIs for speech-to-text transcription and content summarization.
     *   **Privacy Commitment:** Data sent to Google via our API integration is used solely for processing your specific request. According to our configuration and enterprise agreements, your data is **not** used by Google to train their foundational public models.
-    *   **Data Flow:** Audio -> [SPONTEO AI] Server (Memory Only) -> Google Gemini API -> Text Returned -> Audio Deleted.
+    *   **Data Flow:** Audio -> Sponteoai Server (Memory Only) -> Google Gemini API -> Text Returned -> Audio Deleted.
 
 We do not sell, trade, or otherwise transfer your personally identifiable information to outside parties for marketing or advertising purposes.
 
@@ -64,7 +64,7 @@ We may update our Privacy Policy from time to time. If we make material changes 
 
 To ask questions or comment about this privacy policy and our privacy practices, contact us at:
 
-**[SPONTEO AI]**  
+**Sponteoai**  
 [Address / City, State, Zip]  
-Email: [Support Email Address]  
+Email: support@chillnoteai.com  
 Website: [Website URL]

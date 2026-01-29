@@ -46,7 +46,10 @@ final class SyncManager: ObservableObject {
             lastError = "Server URL is required."
             return
         }
+        let currentUserId = AuthService.shared.currentUserId
+        WelcomeNoteFlagStore.syncGlobalFlag(for: currentUserId)
         let syncStartedAt = Date()
+        var needsFollowUpSync = false
         isSyncing = true
         lastError = nil
         let localNotesCount = (try? context.fetchCount(FetchDescriptor<Note>())) ?? 0
@@ -57,35 +60,40 @@ final class SyncManager: ObservableObject {
             let service: SyncService = RemoteSyncService(config: config)
             try await service.syncAll(context: context)
             TagService.shared.cleanupEmptyTags(context: context)
-            lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
-            if localNotesCount > 0 {
-                hasUploadedLocal = true
+            WelcomeNoteFlagStore.setHasSeenWelcome(UserDefaults.standard.bool(forKey: "hasSeededWelcomeNote"), for: currentUserId)
+            
+            let postSyncNotesCount = (try? context.fetchCount(FetchDescriptor<Note>())) ?? 0
+            let seededWelcome = DataService.shared.seedDataIfNeeded(context: context, userId: currentUserId)
+            
+            if seededWelcome {
+                hasUploadedLocal = false
+                lastSyncAtTimestamp = 0
+                needsFollowUpSync = true
+            } else {
+                lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
+                hasUploadedLocal = postSyncNotesCount > 0
             }
         } catch {
             if case SyncError.unauthorized = error {
-                let refreshed = await AuthService.shared.refreshAccessToken()
-                if refreshed {
-                    do {
-                        let refreshedToken = UserDefaults.standard.string(forKey: "syncAuthToken") ?? authToken
-                        let retryConfig = SyncConfig(baseURL: url, authToken: refreshedToken, since: sinceDate)
-                        let retryService: SyncService = RemoteSyncService(config: retryConfig)
-                        try await retryService.syncAll(context: context)
-                        TagService.shared.cleanupEmptyTags(context: context)
-                        lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
-                        if localNotesCount > 0 {
-                            hasUploadedLocal = true
-                        }
-                    } catch {
-                        lastError = "Sync failed. Please try again."
-                    }
-                } else {
+                // Supabase SDK handles session refresh under the hood, but if we get a 401 here,
+                // it likely means the Refresh Token is also invalid/expired.
+                // We should prompt user to sign in again.
+                await AuthService.shared.checkSession() // Try one last check
+                if !AuthService.shared.isSignedIn {
                     lastError = "Session expired. Please sign in again."
+                } else {
+                     // If checkSession says we are signed in, maybe just a temporary glitch
+                    lastError = "Sync authorization failed."
                 }
             } else {
-                lastError = "Sync failed. Please try again."
+                lastError = "Sync failed: \(error.localizedDescription)"
             }
         }
         isSyncing = false
+        
+        if needsFollowUpSync {
+            await syncIfNeeded(context: context)
+        }
     }
     
     private func shouldSyncNow() -> Bool {

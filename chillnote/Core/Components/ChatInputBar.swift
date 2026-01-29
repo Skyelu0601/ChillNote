@@ -14,8 +14,10 @@ struct ChatInputBar: View {
     @State private var isRecordingPulsing = false
     @State private var showTextInput = false
     @State private var isPressed = false
+    @State private var isLongPressing = false
+    @State private var isBreathing = false
+    @State private var waveformHeights: [CGFloat] = Array(repeating: 6, count: 5)
     
-    @State private var startTime: Date?
     @State private var elapsed: TimeInterval = 0
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -24,9 +26,10 @@ struct ChatInputBar: View {
     
     private var timeText: String {
         let formatter = DateComponentsFormatter()
-        formatter.allowedUnits = elapsed >= 3600 ? [.hour, .minute, .second] : [.minute, .second]
+        formatter.allowedUnits = [.minute, .second]
         formatter.zeroFormattingBehavior = .pad
-        return formatter.string(from: elapsed) ?? "00:00"
+        let current = formatter.string(from: elapsed) ?? "00:00"
+        return "\(current) / 10:00"
     }
     
     var body: some View {
@@ -51,6 +54,7 @@ struct ChatInputBar: View {
                                 .font(.system(size: 32))
                                 .foregroundColor(.accentPrimary)
                         }
+                        .buttonStyle(.bouncy)
                         .transition(.scale.combined(with: .opacity))
                     }
                     
@@ -64,6 +68,7 @@ struct ChatInputBar: View {
                             .font(.system(size: 24))
                             .foregroundColor(.textSub)
                     }
+                    .buttonStyle(.bouncy)
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 12)
@@ -81,53 +86,54 @@ struct ChatInputBar: View {
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
         .onReceive(timer) { _ in
-            guard speechRecognizer.isRecording, let startTime = startTime else { return }
+            guard speechRecognizer.isRecording, let startTime = speechRecognizer.recordingStartTime else { 
+                if !speechRecognizer.isRecording {
+                    elapsed = 0
+                }
+                return 
+            }
             elapsed = Date().timeIntervalSince(startTime)
-        }
-        .onChange(of: speechRecognizer.recordingState) { _, newValue in
-            if newValue == .recording {
-                startTime = Date()
-                elapsed = 0
-            } else if newValue == .idle {
-                startTime = nil
-                elapsed = 0
+            
+            // Enforce 10-minute limit
+            if elapsed >= 600 {
+                onConfirmVoice() // Auto-finish
             }
         }
+        // Removed onChange that was resetting local startTime
     }
+
+    
+    // MARK: - Central Voice View
     
     // MARK: - Central Voice View
     
     private var voiceCenterView: some View {
-        Group {
+        ZStack {
             if speechRecognizer.isRecording {
-                // Recording State
-                recordingView
+                // Recording State (Expanded Capsule)
+                recordingGlassCapsule
+                    .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .opacity))
             } else if speechRecognizer.recordingState == .processing {
                 // Processing State
-                processingView
+                 idleGlassCapsule
+                    .opacity(0.6)
+                    .overlay {
+                        ProgressView()
+                            .tint(.accentPrimary)
+                    }
             } else if isErrorState() {
                 // Error State
                 if case .error(let message) = speechRecognizer.recordingState {
                     errorView(message: message)
                 }
             } else {
-                // Idle State - Main Mic Button
-                idleVoiceButton
+                // Idle State - Glass Capsule
+                idleGlassCapsule
             }
         }
-        .padding(.horizontal, isVoiceActive ? 16 : 0)
-        .padding(.vertical, isVoiceActive ? 12 : 0)
-        .background(
-            ZStack {
-                if isVoiceActive {
-                    Capsule()
-                        .fill(Color.white.opacity(0.95))
-                        .background(Capsule().fill(.ultraThinMaterial))
-                        .shadow(color: Color.black.opacity(0.1), radius: 15, x: 0, y: 5)
-                }
-            }
-        )
+        .padding(.top, 4) // Slight top offset to balance shadows
         .frame(maxWidth: .infinity)
+        .animation(.spring(response: 0.4, dampingFraction: 0.7), value: speechRecognizer.recordingState)
     }
     
     private var isVoiceActive: Bool {
@@ -139,44 +145,83 @@ struct ChatInputBar: View {
         return false
     }
     
-    private var idleVoiceButton: some View {
+    // MARK: - New Components
+    
+    private var idleGlassCapsule: some View {
         ZStack {
-            // Outer breathable ring
-            Circle()
-                .fill(Color.accentPrimary.opacity(0.1))
-                .frame(width: 88, height: 88)
-            
-            // Main Button with Shadow
-            Circle()
+            // 1. Back Layer (Brand Color / Hint)
+            // Rotated to show a sliver of color ("4-6 degrees")
+            Capsule()
                 .fill(Color.accentPrimary)
-                .frame(width: 72, height: 72)
-                .shadow(color: Color.accentPrimary.opacity(0.4), radius: 12, x: 0, y: 6)
+                .frame(width: 80, height: 56)
+                .rotationEffect(.degrees(isPressed ? 0 : 6)) // Align when pressed for "sinking" effect
+                .offset(y: isPressed ? 2 : 4) // Subtle depth
+                .opacity(0.8)
+                .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
             
-            // Icon
-            Image(systemName: "mic.fill")
-                .font(.system(size: 30, weight: .bold))
-                .foregroundColor(.white)
+            // "Type" Hint Icon (Hidden behind, revealed slightly)
+             if isPressed {
+                Image(systemName: "keyboard")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundColor(.white.opacity(0.8))
+                    .offset(x: 28, y: 16) // Positioned to peek out or be visible on layer
+                    .transition(.opacity)
+            }
+            
+            // 2. Glow / Breathing Aura
+            if !isPressed {
+                Capsule()
+                    .fill(Color.accentPrimary.opacity(0.3))
+                    .frame(width: 100, height: 76)
+                    .blur(radius: 12)
+                    .scaleEffect(isBreathing ? 1.1 : 0.95)
+                    .opacity(isBreathing ? 0.4 : 0.1)
+                    .onAppear {
+                        withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true)) {
+                            isBreathing = true
+                        }
+                    }
+            }
+            
+            // 3. Front Layer (Glass/White)
+            Capsule()
+                .fill(Color.bgPrimary) // Solid background for clarity
+                .frame(width: 90, height: 56)
+                .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
+                .overlay(
+                    HStack(spacing: 8) {
+                        // Dynamic Icon: Changes to Plus on long press idea (simulated logic)
+                        Image(systemName: isLongPressing ? "plus" : "mic.fill")
+                            .font(.system(size: 24, weight: .semibold))
+                            .foregroundColor(isLongPressing ? .accentPrimary : .textMain)
+                            .contentTransition(.symbolEffect(.replace))
+                    }
+                )
+                .scaleEffect(isPressed ? 0.95 : 1.0)
+                .offset(y: isPressed ? 2 : 0) // Physical "press" movement
+            
         }
-        .frame(maxWidth: .infinity)
-        .frame(height: 88)
-        .contentShape(Circle())
-        .scaleEffect(isPressed ? 0.9 : 1.0)
+        .contentShape(Rectangle()) // Hit area
         .onTapGesture {
-            impactGenerator.impactOccurred()
+            let impact = UIImpactFeedbackGenerator(style: .light)
+            impact.impactOccurred()
             speechRecognizer.startRecording()
         }
         .onLongPressGesture(minimumDuration: 0.5, pressing: { pressing in
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            withAnimation(.spring(response: 0.3)) {
                 isPressed = pressing
+                if pressing { isLongPressing = true } // Start visual cue
+                else { isLongPressing = false }
             }
         }, perform: {
             // Heavy haptic feedback for document creation
             let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
             heavyImpact.impactOccurred()
             
-            // Reset scale
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            // Reset visual states
+            withAnimation {
                 isPressed = false
+                isLongPressing = false
             }
             
             // Execute action
@@ -184,60 +229,89 @@ struct ChatInputBar: View {
         })
     }
     
-    private var recordingView: some View {
-        HStack(spacing: 12) {
-            // Cancel Button
-            Button(action: {
-                onCancelVoice()
-            }) {
-                Image(systemName: "xmark")
-                    .font(.system(size: 16, weight: .bold))
-                    .foregroundColor(.textSub)
-                    .frame(width: 40, height: 40)
-                    .background(Color.bgSecondary)
-                    .clipShape(Circle())
-            }
+    private var recordingGlassCapsule: some View {
+        ZStack {
+            // Glowing border/aura for recording
+            Capsule()
+                .fill(Color.accentPrimary.opacity(0.1))
+                .frame(height: 64)
+                .frame(maxWidth: .infinity)
+                .blur(radius: 10)
             
-            // Recording Indicator
-            HStack(spacing: 8) {
-                Circle()
-                    .fill(Color.red)
-                    .frame(width: 10, height: 10)
-                    .opacity(isRecordingPulsing ? 1.0 : 0.3)
-                    .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: isRecordingPulsing)
-                
-                Text(timeText)
-                    .font(.bodyMedium)
-                    .fontWeight(.medium)
-                    .foregroundColor(.textMain)
-                    .monospacedDigit()
-            }
-            .frame(maxWidth: .infinity)
-            .onAppear { isRecordingPulsing = true }
-            .onDisappear { isRecordingPulsing = false }
-            
-            // Confirm Button
-            Button(action: {
-                onConfirmVoice()
-            }) {
-                Image(systemName: "checkmark")
-                    .font(.system(size: 18, weight: .bold))
-                    .foregroundColor(.white)
-                    .frame(width: 44, height: 44)
-                    .background(Color.accentPrimary)
-                    .clipShape(Circle())
-            }
+            Capsule()
+                .fill(Color.white)
+                .frame(height: 56)
+                .frame(maxWidth: .infinity)
+                .shadow(color: Color.accentPrimary.opacity(0.15), radius: 12, x: 0, y: 8)
+                .overlay(
+                    HStack(spacing: 16) {
+                        // Cancel Button (Left)
+                        Button(action: onCancelVoice) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 16, weight: .bold))
+                                .foregroundColor(.textSub)
+                                .frame(width: 36, height: 36)
+                                .background(Color.bgSecondary)
+                                .clipShape(Circle())
+                        }
+                        .buttonStyle(.bouncy)
+                        
+                        // Center Info (Waveform + Time)
+                        VStack(spacing: 2) {
+                            // Pseudo Waveform
+                             HStack(spacing: 3) {
+                                ForEach(0..<5) { index in
+                                    RoundedRectangle(cornerRadius: 2)
+                                        .fill(Color.accentPrimary)
+                                        .frame(width: 4, height: waveformHeights[index])
+                                        .animation(.easeInOut(duration: 0.2), value: waveformHeights[index])
+                                        .hueRotation(.degrees(elapsed * 5)) // Shift color over time
+                                }
+                            }
+                            .frame(height: 24)
+                            .onReceive(timer) { _ in
+                                // Update waveform randomly
+                                if speechRecognizer.isRecording {
+                                     updateWaveform()
+                                }
+                            }
+                            
+                            // Timer
+                             Text(timeText)
+                                .font(.caption2)
+                                .bold()
+                                .foregroundColor(.accentPrimary)
+                                .monospacedDigit()
+                        }
+                        
+                        // Confirm Button (Right)
+                        Button(action: onConfirmVoice) {
+                            Image(systemName: "arrow.up")
+                                .font(.system(size: 18, weight: .bold))
+                                .foregroundColor(.white)
+                                .frame(width: 36, height: 36)
+                                .background(
+                                    Circle()
+                                        .fill(Color.accentPrimary)
+                                        .shadow(color: .accentPrimary.opacity(0.4), radius: 6, y: 3)
+                                )
+                        }
+                        .buttonStyle(.bouncy)
+                    }
+                    .padding(.horizontal, 12)
+                )
+        }
+        .padding(.horizontal, 24)
+    }
+    
+    private func updateWaveform() {
+        // Randomize heights to simulate voice activity
+        for i in 0..<5 {
+            waveformHeights[i] = CGFloat.random(in: 4...20)
         }
     }
     
-    private var processingView: some View {
-        // Processing state is now handled in the Note Detail View
-        // We show the idle button (or minimal transition state) here
-        // to prevent UI flash before navigation.
-        return idleVoiceButton
-            .disabled(true)
-            .opacity(0.5)
-    }
+
     
     private func errorView(message: String) -> some View {
         HStack {
@@ -252,6 +326,7 @@ struct ChatInputBar: View {
             .font(.caption)
             .fontWeight(.bold)
             .foregroundColor(.accentPrimary)
+            .buttonStyle(.bouncy)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 44)

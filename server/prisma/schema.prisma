@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
@@ -11,7 +11,14 @@ model User {
   id        String   @id
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  
+  // Subscription Info
+  subscriptionTier      String    @default("free") // "free" or "pro"
+  subscriptionExpiresAt DateTime?
+  originalTransactionId String?   @unique // To link Apple receipt to User
+  
   notes     Note[]
+  tags      Tag[]
 }
 
 model Note {
@@ -21,6 +28,25 @@ model Note {
   createdAt DateTime
   updatedAt DateTime
   deletedAt DateTime?
+  tags      Tag[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id         String   @id
+  userId     String
+  name       String
+  colorHex   String
+  createdAt  DateTime
+  updatedAt  DateTime
+  lastUsedAt DateTime?
+  sortOrder  Int
+  parentId   String?
+  deletedAt  DateTime?
+
+  user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent   Tag?   @relation("TagHierarchy", fields: [parentId], references: [id])
+  children Tag[]  @relation("TagHierarchy")
+  notes    Note[]
 }

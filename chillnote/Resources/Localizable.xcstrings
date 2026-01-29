@@ -1,0 +1,797 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    " " : {
+
+    },
+    "\"Capturing the speed of thought,\none voice at a time.\"" : {
+
+    },
+    "\"Defining the boundaries to preserve the 'Chill'.\"" : {
+
+    },
+    "#" : {
+
+    },
+    "%lld Context Notes" : {
+
+    },
+    "%lld note%@ selected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld note%2$@ selected"
+          }
+        }
+      }
+    },
+    "+%lld" : {
+
+    },
+    "123456" : {
+
+    },
+    "Add" : {
+
+    },
+    "Add Tag" : {
+
+    },
+    "Are you sure you want to delete %lld note%@? This action cannot be undone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Are you sure you want to delete %1$lld note%2$@? This action cannot be undone."
+          }
+        }
+      }
+    },
+    "Are you sure you want to delete this note? This action cannot be undone." : {
+
+    },
+    "Are you sure you want to delete your account? All your data will be permanently removed. This action cannot be undone." : {
+
+    },
+    "Are you sure you want to sign out?" : {
+
+    },
+    "Ask Chillo..." : {
+
+    },
+    "Back" : {
+
+    },
+    "Back to Options" : {
+
+    },
+    "By continuing, you agree to our Terms & Privacy Policy." : {
+
+    },
+    "Cancel" : {
+
+    },
+    "ChillNote" : {
+
+    },
+    "ChillNote is an attempt to use technology to return us to a more natural, healthy, and efficient state of being.\n\nIt is for the dreamers who talk fast, the creators who hurt from typing, and anyone who believes their ideas deserve to be heard, not just written." : {
+
+    },
+    "ChillNote is not just another note-taking app. It is a tool designed to realign the way we capture, process, and structure our thoughts. By prioritizing voice input and AI-driven organization, ChillNote addresses the friction between the human mind's speed and the limitations of traditional input methods." : {
+
+    },
+    "Chillo" : {
+
+    },
+    "Chillo is climbing the tree of knowledge..." : {
+
+    },
+    "Chillo's Magic" : {
+
+    },
+    "Chillo's Toolkit" : {
+
+    },
+    "Choose Icon" : {
+
+    },
+    "Close" : {
+
+    },
+    "common.cancel" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abbrechen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancelar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Annuler"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "キャンセル"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
+    },
+    "Continue" : {
+
+    },
+    "Continue with Email" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete %lld Note%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Delete %1$lld Note%2$@"
+          }
+        }
+      }
+    },
+    "Delete Account" : {
+
+    },
+    "Delete Note" : {
+
+    },
+    "Delete Notes" : {
+
+    },
+    "Delete Originals" : {
+
+    },
+    "Deleting..." : {
+
+    },
+    "Deletion Failed" : {
+
+    },
+    "Design Philosophy & Vision" : {
+
+    },
+    "Discard" : {
+
+    },
+    "Dismiss" : {
+
+    },
+    "Done" : {
+
+    },
+    "Drag here to delete" : {
+
+    },
+    "Enter a name for your custom tag." : {
+
+    },
+    "Enter AI Context Mode" : {
+
+    },
+    "Enter code sent to %@" : {
+
+    },
+    "Experience the freedom of thought with enhanced AI capabilities." : {
+
+    },
+    "Finish recording" : {
+
+    },
+    "Free Plan" : {
+
+    },
+    "Get Started" : {
+
+    },
+    "Getting your vibe..." : {
+
+    },
+    "Go ahead, I'm listening..." : {
+
+    },
+    "home.action.deselectAll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Auswahl aufheben"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deselect All"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deseleccionar todo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout désélectionner"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選択を解除"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消全选"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消全選"
+          }
+        }
+      }
+    },
+    "home.action.selectAll" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle auswählen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select All"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Seleccionar todo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tout sélectionner"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべて選択"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全选"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全選"
+          }
+        }
+      }
+    },
+    "home.actions" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktionen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actions"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Acciones"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actions"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アクション"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作"
+          }
+        }
+      }
+    },
+    "home.askChillo" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Frag Chillo"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask Chillo"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Preguntar a Chillo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Demander à Chillo"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chilloに聞く"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "问问 Chillo"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "問問 Chillo"
+          }
+        }
+      }
+    },
+    "home.empty.title" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Notizen. Beginne unten zu tippen oder aufzunehmen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No notes yet. Start typing or recording below."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No hay notas aún. Comienza a escribir o grabar abajo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune note. Commencez à écrire ou enregistrer ci-dessous."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まだノートがありません。下から入力または録音を開始してください。"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂无笔记。在下方开始输入或录音。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫無筆記。在下方開始輸入或錄音。"
+          }
+        }
+      }
+    },
+    "home.nav.settings" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einstellungen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Configuración"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paramètres"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "设置"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
+          }
+        }
+      }
+    },
+    "home.search.placeholder" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notizen suchen..."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search notes..."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Buscar notas..."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rechercher..."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを検索..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜索笔记..."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜尋筆記..."
+          }
+        }
+      }
+    },
+    "I'm ready to help once you pick some content." : {
+
+    },
+    "I've read through your notes. Let's see what we can create together." : {
+
+    },
+    "Introductory notes..." : {
+
+    },
+    "Jotting this down..." : {
+
+    },
+    "Keep Original Notes" : {
+
+    },
+    "Let Chillo polish this up." : {
+
+    },
+    "Magic applied" : {
+
+    },
+    "Manage" : {
+
+    },
+    "Merge Successful" : {
+
+    },
+    "Microphone and Speech access are required." : {
+
+    },
+    "More Actions" : {
+
+    },
+    "My Account" : {
+
+    },
+    "name@example.com" : {
+
+    },
+    "Network Error" : {
+
+    },
+    "OK" : {
+
+    },
+    "Open Settings" : {
+
+    },
+    "Opens system Settings for permissions." : {
+
+    },
+    "Opens the recording overlay." : {
+
+    },
+    "Our Vision" : {
+
+    },
+    "PRO" : {
+
+    },
+    "Pro Active" : {
+
+    },
+    "Process" : {
+
+    },
+    "Processing..." : {
+
+    },
+    "Recording Failed" : {
+
+    },
+    "Recording status or duration" : {
+
+    },
+    "Recording..." : {
+
+    },
+    "Recovery Found" : {
+
+    },
+    "Refining your thought..." : {
+
+    },
+    "Release to delete" : {
+
+    },
+    "Release to unnest" : {
+
+    },
+    "Request Access" : {
+
+    },
+    "Requests microphone permission." : {
+
+    },
+    "Restore Purchases" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Retry Upload" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save as Note" : {
+
+    },
+    "Saved!" : {
+
+    },
+    "Search" : {
+
+    },
+    "Select some notes to start" : {
+
+    },
+    "Send Verification Code" : {
+
+    },
+    "Settings" : {
+
+    },
+    "settings.language" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprache"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Idioma"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Langue"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "言語"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "语言"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "語言"
+          }
+        }
+      }
+    },
+    "Sign In to ChillNote" : {
+
+    },
+    "Sign in with Google" : {
+
+    },
+    "Sign Out" : {
+
+    },
+    "Skip" : {
+
+    },
+    "Start organizing with tags" : {
+
+    },
+    "Start recording" : {
+
+    },
+    "Stops recording and saves your note." : {
+
+    },
+    "Subscription Plan" : {
+
+    },
+    "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. Manage via Apple ID settings." : {
+
+    },
+    "Sync your thoughts.\nUnclutter your mind." : {
+
+    },
+    "Tag" : {
+
+    },
+    "Tag name" : {
+
+    },
+    "TAGS" : {
+
+    },
+    "The notes have been merged into a new note. Would you like to delete the original %lld notes?" : {
+
+    },
+    "To-do" : {
+
+    },
+    "Type a note..." : {
+
+    },
+    "Undo" : {
+
+    },
+    "Unlock ChillNote Pro" : {
+
+    },
+    "Upgrade" : {
+
+    },
+    "Verify & Login" : {
+
+    },
+    "Voice Memo" : {
+
+    },
+    "We found an unfinished recording from a previous session." : {
+
+    },
+    "What ChillNote is NOT" : {
+
+    },
+    "What's on your mind?" : {
+
+    }
+  },
+  "version" : "1.0"
+}

@@ -7,10 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		493CE19F2F20A2C000F2A94F /* RichTextKit in Frameworks */ = {isa = PBXBuildFile; productRef = 493CE19E2F20A2C000F2A94F /* RichTextKit */; };
 		493CE1B92F21DB9600F2A94F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 493CE1B82F21DB9600F2A94F /* WidgetKit.framework */; };
 		493CE1BB2F21DB9600F2A94F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 493CE1BA2F21DB9600F2A94F /* SwiftUI.framework */; };
 		493CE1C82F21DB9900F2A94F /* ChillNoteWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 493CE1B72F21DB9600F2A94F /* ChillNoteWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		49862ACB2F28AB9E00ADFB08 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ACA2F28AB9E00ADFB08 /* GoogleSignIn */; };
+		49862ACE2F28AC7000ADFB08 /* RichTextKit in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ACD2F28AC7000ADFB08 /* RichTextKit */; };
+		49862ADB2F29C5F400ADFB08 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ADA2F29C5F400ADFB08 /* Supabase */; };
 		499584AF2F0C01EE0053760D /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 499584AE2F0C01EE0053760D /* StoreKit.framework */; };
 /* End PBXBuildFile section */
 
@@ -122,8 +124,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				493CE19F2F20A2C000F2A94F /* RichTextKit in Frameworks */,
 				499584AF2F0C01EE0053760D /* StoreKit.framework in Frameworks */,
+				49862ADB2F29C5F400ADFB08 /* Supabase in Frameworks */,
+				49862ACB2F28AB9E00ADFB08 /* GoogleSignIn in Frameworks */,
+				49862ACE2F28AC7000ADFB08 /* RichTextKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -221,7 +225,9 @@
 			);
 			name = chillnote;
 			packageProductDependencies = (
-				493CE19E2F20A2C000F2A94F /* RichTextKit */,
+				49862ACA2F28AB9E00ADFB08 /* GoogleSignIn */,
+				49862ACD2F28AC7000ADFB08 /* RichTextKit */,
+				49862ADA2F29C5F400ADFB08 /* Supabase */,
 			);
 			productName = chillnote;
 			productReference = 499583C62F0BD2740053760D /* chillnote.app */;
@@ -309,7 +315,9 @@
 			mainGroup = 499583BD2F0BD2730053760D;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				493CE1212F1FA45300F2A94F /* XCRemoteSwiftPackageReference "RichTextKit" */,
+				49862A292F28A9D800ADFB08 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
+				49862ACC2F28AC6100ADFB08 /* XCRemoteSwiftPackageReference "RichTextKit" */,
+				49862ACF2F29C13400ADFB08 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 499583C72F0BD2740053760D /* Products */;
@@ -763,7 +771,15 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		493CE1212F1FA45300F2A94F /* XCRemoteSwiftPackageReference "RichTextKit" */ = {
+		49862A292F28A9D800ADFB08 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.1.0;
+			};
+		};
+		49862ACC2F28AC6100ADFB08 /* XCRemoteSwiftPackageReference "RichTextKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/danielsaidi/RichTextKit.git";
 			requirement = {
@@ -771,13 +787,31 @@
 				minimumVersion = 1.2.0;
 			};
 		};
+		49862ACF2F29C13400ADFB08 /* XCRemoteSwiftPackageReference "supabase-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/supabase/supabase-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.5.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		493CE19E2F20A2C000F2A94F /* RichTextKit */ = {
+		49862ACA2F28AB9E00ADFB08 /* GoogleSignIn */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 493CE1212F1FA45300F2A94F /* XCRemoteSwiftPackageReference "RichTextKit" */;
+			package = 49862A292F28A9D800ADFB08 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
+		};
+		49862ACD2F28AC7000ADFB08 /* RichTextKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49862ACC2F28AC6100ADFB08 /* XCRemoteSwiftPackageReference "RichTextKit" */;
 			productName = RichTextKit;
+		};
+		49862ADA2F29C5F400ADFB08 /* Supabase */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 49862ACF2F29C13400ADFB08 /* XCRemoteSwiftPackageReference "supabase-swift" */;
+			productName = Supabase;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

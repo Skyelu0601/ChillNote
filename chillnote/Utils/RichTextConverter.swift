@@ -78,8 +78,15 @@ struct RichTextConverter {
         }
         
         // --- Bullets ---
-        if trimmed.hasPrefix("- ") || trimmed.hasPrefix("• ") {
-            let content = trimmed.hasPrefix("- ") ? String(trimmed.dropFirst(2)) : String(trimmed.dropFirst(2))
+        if trimmed.hasPrefix("- ") || trimmed.hasPrefix("• ") || trimmed.hasPrefix("* ") {
+            let content: String
+            if trimmed.hasPrefix("- ") {
+                content = String(trimmed.dropFirst(2))
+            } else if trimmed.hasPrefix("* ") {
+                 content = String(trimmed.dropFirst(2))
+            } else {
+                 content = String(trimmed.dropFirst(2))
+            }
             return parseBullet(content, baseFont: baseFont, textColor: textColor, paragraphStyle: paragraphStyle)
         }
         

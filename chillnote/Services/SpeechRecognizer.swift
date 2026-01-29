@@ -184,21 +184,25 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             return
             
         case .interruption:
-            isTranscribing = false
-            setError("Recording was interrupted")
-            // Treat interruptions as non-recoverable to avoid noisy recovery prompts.
-            if let fileURL = fileURL {
-                fileManager.cancelRecording(fileURL: fileURL)
-                audioFileURL = nil
-            }
-            return
+            // CRITICAL FIX: Save recording on interruption instead of deleting
+            print("⚠️ Interruption received. Saving recording...")
+            break // Fall through to processing logic
             
         case .error(let message):
             isTranscribing = false
             setError(message)
+            // If we have a valid file url, we might want to try to keep it as a pending recording
+            // instead of deleting it immediately, depending on the error severity.
+            // For now, if it's a recording error, it might be corrupt, but let's be safe.
             if let fileURL = fileURL {
-                fileManager.cancelRecording(fileURL: fileURL)
-                audioFileURL = nil
+                 // Check if file exists and has data
+                 if let attr = try? FileManager.default.attributesOfItem(atPath: fileURL.path),
+                    let size = attr[.size] as? Int, size > 1024 {
+                     print("⚠️ Error occurred but file seems valid. Keeping for recovery.")
+                 } else {
+                     fileManager.cancelRecording(fileURL: fileURL)
+                     audioFileURL = nil
+                 }
             }
             return
             
@@ -229,6 +233,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         
         // Validate file
         guard let fileSize = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? NSNumber else {
+            // Only discard if we truly can't read it
             discardUnusableRecording(fileURL: fileURL)
             setError("Could not read audio file")
             return
@@ -242,10 +247,10 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             return
         }
         
+        // WARNING: File is huge. We still try to process it,
+        // but it might fail at the API level. Better than deleting user data.
         if size > maxAudioBytes {
-            discardUnusableRecording(fileURL: fileURL)
-            setError("Audio too long. Please record a shorter note.")
-            return
+            print("⚠️ Audio file is large (\(size) bytes). Attempting to process anyway.")
         }
         
         print("📊 Audio file size: \(size) bytes")

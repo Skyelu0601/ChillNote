@@ -84,27 +84,16 @@ struct NoteDetailView: View {
                     } else {
                         // Compact Action Buttons
                         HStack(spacing: 8) {
-                            // Microphone
-                            Button(action: startRecording) {
-                                Image(systemName: "mic.fill")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.accentPrimary)
-                                    .frame(width: 32, height: 32)
-                                    .background(Color.bgSecondary)
-                                    .clipShape(Circle())
-                            }
-                            .accessibilityLabel("Voice Input")
-                            
                             // Magic Wand
                             Button(action: {
                                 Task { await executeTidyAction() }
                             }) {
                                 Image(systemName: "wand.and.stars")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.accentPrimary)
-                                    .frame(width: 32, height: 32)
-                                    .background(Color.bgSecondary)
-                                    .clipShape(Circle())
+                                .font(.system(size: 16))
+                                .foregroundColor(.accentPrimary)
+                                .frame(width: 32, height: 32)
+                                .background(Color.bgSecondary)
+                                .clipShape(Circle())
                             }
                             .accessibilityLabel("Chillo's Magic")
                             .disabled(isProcessing || note.content.isEmpty)
@@ -112,18 +101,17 @@ struct NoteDetailView: View {
                             
                             // More Menu (Ellipsis)
                             Menu {
-
                                 
                                 Button(role: .destructive, action: { showDeleteConfirmation = true }) {
                                     Label("Delete Note", systemImage: "trash")
                                 }
                             } label: {
                                 Image(systemName: "ellipsis")
-                                    .font(.system(size: 16))
-                                    .foregroundColor(.textSub)
-                                    .frame(width: 32, height: 32)
-                                    .background(Color.bgSecondary)
-                                    .clipShape(Circle())
+                                .font(.system(size: 16))
+                                .foregroundColor(.textSub)
+                                .frame(width: 32, height: 32)
+                                .background(Color.bgSecondary)
+                                .clipShape(Circle())
                             }
                             .accessibilityLabel("More Actions")
                         }
@@ -231,6 +219,7 @@ struct NoteDetailView: View {
                                 },
                                 onRemove: { tag in
                                     note.tags.removeAll { $0.id == tag.id }
+                                    note.updatedAt = Date()
                                     TagService.shared.cleanupEmptyTags(context: modelContext)
                                 },
                                 onAddClick: {
@@ -323,6 +312,65 @@ struct NoteDetailView: View {
                         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                     }
                 }
+            }
+
+            // Error State Bottom Float
+            if case .error(let msg) = speechRecognizer.recordingState {
+                VStack {
+                    Spacer()
+                    HStack(spacing: 12) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 16))
+                            .foregroundColor(.red)
+                            .symbolEffect(.pulse, isActive: true)
+                        
+                        Text(msg.localizedCaseInsensitiveContains("network") ? "Network Error" : "Recording Failed")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.primary)
+                        
+                        Spacer()
+                        
+                        // Retry Button
+                        Button(action: { 
+                            // Haptic
+                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            speechRecognizer.retryTranscription() 
+                        }) {
+                            Text("Retry")
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 8)
+                                .background(Capsule().fill(Color.accentPrimary))
+                        }
+                        
+                        // X / Dismiss
+                        Button(action: { 
+                            speechRecognizer.stopRecording(reason: .cancelled) 
+                        }) {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.textSub)
+                                .frame(width: 32, height: 32)
+                                .background(Circle().fill(Color.bgSecondary))
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.black.opacity(0.1), radius: 10, y: 5)
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(Color.red.opacity(0.1), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                .zIndex(100)
             }
             
             // AI Action Review Toolbar (Floats at bottom only when reviewing changes)
@@ -420,7 +468,7 @@ struct NoteDetailView: View {
     
     private func generateTags() async {
         do {
-            let fetchDescriptor = FetchDescriptor<Tag>()
+            let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
             let allTags = (try? modelContext.fetch(fetchDescriptor))?.map { $0.name } ?? []
             
             let suggestions = try await TagService.shared.suggestTags(for: note.content, existingTags: allTags)
@@ -594,7 +642,15 @@ struct NoteDetailView: View {
     
     private func updateTimestampAndDismiss() {
         // Automatically delete if content is empty (referencing Apple Notes behavior)
-        if note.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        let isVoiceProcessing: Bool = {
+            if let state = voiceService.processingStates[note.id],
+               case .processing = state {
+                return true
+            }
+            return false
+        }()
+
+        if note.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isVoiceProcessing {
             deleteNote()
             return
         }
@@ -627,19 +683,23 @@ struct NoteDetailView: View {
             note.suggestedTags.removeAll { $0 == tagName }
             
             // Find or create tag
-            let fetchDescriptor = FetchDescriptor<Tag>()
+            let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
             let allTags = (try? modelContext.fetch(fetchDescriptor)) ?? []
             let existing = allTags.first { $0.name.lowercased() == tagName.lowercased() }
             
             if let existing = existing {
                 if !note.tags.contains(where: { $0.id == existing.id }) {
                     note.tags.append(existing)
-                    existing.lastUsedAt = Date()
+                    let now = Date()
+                    existing.lastUsedAt = now
+                    existing.updatedAt = now
+                    note.updatedAt = now
                 }
             } else {
                 let newTag = Tag(name: tagName)
                 modelContext.insert(newTag)
                 note.tags.append(newTag)
+                note.updatedAt = Date()
             }
             
             try? modelContext.save()
@@ -663,7 +723,7 @@ struct TagBannerView: View {
             
             FlowLayout(spacing: 8) {
                 // Confirmed Tags
-                ForEach(tags) { tag in
+                ForEach(tags.filter { $0.deletedAt == nil }) { tag in
                     TagPill(title: tag.name, color: tag.color, isSuggested: false) {
                         onRemove(tag)
                     }

@@ -45,7 +45,12 @@ struct AIContextChatView: View {
                                     isSaved: savedMessageId == message.id,
                                     onSave: message.role == .assistant ? {
                                         saveMessageAsNote(message)
-                                    } : nil
+                                    } : nil,
+                                    onAnimationComplete: {
+                                        if let index = messages.firstIndex(where: { $0.id == message.id }) {
+                                            messages[index].isAnimated = true
+                                        }
+                                    }
                                 )
                                 .id(message.id)
                             }
@@ -55,7 +60,7 @@ struct AIContextChatView: View {
                                 HStack {
                                     ProgressView()
                                         .progressViewStyle(CircularProgressViewStyle(tint: .accentPrimary))
-                                    Text("Chillo is thinking...")
+                                    Text("Chillo is climbing the tree of knowledge...")
                                         .font(.bodyMedium)
                                         .foregroundColor(.textSub)
                                 }
@@ -117,23 +122,13 @@ struct AIContextChatView: View {
                     )
                     .transition(.move(edge: .bottom))
                 } else {
-                    HStack(spacing: 12) {
-                        // Voice button
-                        Button(action: startVoiceInput) {
-                            Image(systemName: "mic.fill")
-                                .font(.system(size: 18))
-                                .foregroundColor(.textSub)
-                                .frame(width: 36, height: 36)
-                                .background(Color.bgSecondary)
-                                .clipShape(Circle())
-                        }
-                        .disabled(isLoading)
-                        
+                    HStack(alignment: .bottom, spacing: 12) {
+                        // Text Input
                         TextField("Ask Chillo...", text: $userInput, axis: .vertical)
                             .font(.bodyMedium)
                             .foregroundColor(.textMain)
                             .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
+                            .padding(.vertical, 14) // Slightly taller for better touch target
                             .background(Color.bgSecondary)
                             .cornerRadius(24)
                             .lineLimit(1...5)
@@ -143,21 +138,31 @@ struct AIContextChatView: View {
                                 sendMessage()
                             }
                         
-                        if !userInput.isEmpty {
-                            Button(action: sendMessage) {
-                                Image(systemName: "arrow.up.circle.fill")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(.accentPrimary)
-                                    .symbolEffect(.bounce, value: userInput)
+                        // Primary Action Button (Voice or Send)
+                        Button(action: {
+                            if userInput.isEmpty {
+                                startVoiceInput()
+                            } else {
+                                sendMessage()
                             }
-                            .transition(.scale.combined(with: .opacity))
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.accentPrimary)
+                                    .frame(width: 52, height: 52)
+                                    .shadow(color: Color.accentPrimary.opacity(0.3), radius: 4, y: 2)
+                                
+                                Image(systemName: userInput.isEmpty ? "mic.fill" : "arrow.up")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundColor(.white) // Always white for contrast on accent color
+                                    .contentTransition(.symbolEffect(.replace))
+                            }
                         }
+                        .disabled(isLoading)
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
                     .background(.ultraThinMaterial)
-                    .clipShape(RoundedRectangle(cornerRadius: 0))
-                    .shadow(color: Color.black.opacity(0.05), radius: 8, y: -4)
                 }
             }
             .navigationTitle("Chillo")
@@ -192,6 +197,10 @@ struct AIContextChatView: View {
             if !newValue.isEmpty {
                 userInput = newValue
                 speechRecognizer.transcript = ""
+                
+                // Mark recording as complete to clean up the file so it doesn't trigger "Unsaved Recording" checks
+                speechRecognizer.completeRecording()
+                
                 sendMessage()
             }
         }
@@ -268,55 +277,21 @@ struct AIContextChatView: View {
             Spacer()
             
             VStack(spacing: 12) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 40))
-                    .foregroundStyle(LinearGradient(colors: [.accentPrimary, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .symbolEffect(.bounce, options: .repeating)
+                Image("chillo_touming")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 140, height: 140)
                 
-                Text(contextNotes.isEmpty ? "Select some notes to start" : "Ready to brainstorm?")
+                Text(contextNotes.isEmpty ? "Select some notes to start" : "What's on your mind?")
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundColor(.textMain)
                 
-                Text("Ask me to summarize, find connections, or draft new content based on your selected notes.")
+                Text(contextNotes.isEmpty ? "I'm ready to help once you pick some content." : "I've read through your notes. Let's see what we can create together.")
                     .font(.body)
                     .foregroundColor(.textSub)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
-            }
-            
-            // Suggested Questions
-            if !contextNotes.isEmpty {
-                VStack(spacing: 10) {
-                    Text("SUGGESTED")
-                        .font(.caption)
-                        .fontWeight(.bold)
-                        .foregroundColor(.textSub)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.horizontal, 32)
-                    
-                    ForEach(["Summarize these notes", "What are the key takeaways?", "Draft a blog post from this"], id: \.self) { question in
-                        Button(action: {
-                            userInput = question
-                            sendMessage()
-                        }) {
-                            Text(question)
-                                .font(.subheadline)
-                                .foregroundColor(.textMain)
-                                .padding(.vertical, 12)
-                                .padding(.horizontal, 16)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .background(Color.white)
-                                .cornerRadius(12)
-                                .shadow(color: Color.black.opacity(0.03), radius: 2, y: 1)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(Color.accentPrimary.opacity(0.1), lineWidth: 1)
-                                )
-                        }
-                        .padding(.horizontal, 24)
-                    }
-                }
             }
             
             Spacer()
@@ -334,6 +309,16 @@ struct AIContextChatView: View {
     func sendMessage() {
         let trimmed = userInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        
+        // Enforce daily message limit
+        let store = StoreService.shared
+        if !store.canSendMessage() {
+             errorMessage = "Daily free limit reached (\(store.dailyMessageLimit)/\(store.dailyMessageLimit)). Upgrade to Pro for unlimited chat."
+             return
+        }
+        
+        // Track usage
+        store.incrementMessageUsage()
         
         // Add user message
         let userMessage = ChatMessage(role: .user, content: trimmed)
@@ -361,10 +346,17 @@ struct AIContextChatView: View {
                 
                 let languageRule = LanguageDetection.languagePreservationRule(for: trimmed)
                 
-                let response = try await GeminiService.shared.generateContent(
+                // Add empty assistant message placeholder
+                await MainActor.run {
+                    let placeholder = ChatMessage(role: .assistant, content: "", isStreaming: true)
+                    messages.append(placeholder)
+                    isLoading = false // Start showing bubble immediately
+                }
+                
+                let stream = GeminiService.shared.streamGenerateContent(
                     prompt: fullPrompt,
                     systemInstruction: """
-                    You are a professional note-taking assistant, skilled at analyzing and summarizing note content. Keep your answers concise, accurate, and helpful.
+                    You are Chillo, a friendly and calm Koala assistant. You are wise but laid-back. Your tone is soothing, concise, and helpful. You prefer a 'chill' vibe but deliver accurate information. Don't be overly formal.
                     
                     CRITICAL:
                     \(languageRule)
@@ -372,14 +364,28 @@ struct AIContextChatView: View {
                     """
                 )
                 
+                for try await chunk in stream {
+                    await MainActor.run {
+                        if let lastIndex = messages.indices.last {
+                            messages[lastIndex].content += chunk
+                        }
+                    }
+                }
+                
+                // Mark as finished
                 await MainActor.run {
-                    let aiMessage = ChatMessage(role: .assistant, content: response)
-                    messages.append(aiMessage)
-                    isLoading = false
+                    if let lastIndex = messages.indices.last {
+                        messages[lastIndex].isStreaming = false
+                        messages[lastIndex].isAnimated = true // Skip typewriter effect since we streamed it
+                    }
                 }
                 
             } catch {
                 await MainActor.run {
+                    // Remove the empty/partial message if it failed
+                    if let last = messages.last, last.role == .assistant, last.isStreaming {
+                        messages.removeLast()
+                    }
                     isLoading = false
                     errorMessage = "Chillo ran into an issue: \(error.localizedDescription)"
                 }
@@ -400,8 +406,6 @@ struct AIContextChatView: View {
     func saveMessageAsNote(_ message: ChatMessage) {
         let newNote = Note(content: message.content)
         modelContext.insert(newNote)
-        
-
         
         try? modelContext.save()
         Task { await syncManager.syncIfNeeded(context: modelContext) }
@@ -429,13 +433,17 @@ struct AIContextChatView: View {
 struct ChatMessage: Identifiable {
     let id = UUID()
     let role: Role
-    let content: String
+    var content: String
     let timestamp = Date()
     
     enum Role {
         case user
         case assistant
     }
+    
+    // UI State
+    var isAnimated: Bool = false
+    var isStreaming: Bool = false
 }
 
 // MARK: - Chat Message Bubble
@@ -444,6 +452,7 @@ struct ChatMessageBubble: View {
     var isLast: Bool = false
     var isSaved: Bool = false
     var onSave: (() -> Void)? = nil
+    var onAnimationComplete: (() -> Void)? = nil
     
     var body: some View {
         HStack {
@@ -458,7 +467,9 @@ struct ChatMessageBubble: View {
                     if message.role == .assistant {
                         TypewriterMarkdownText(
                             content: message.content,
-                            isNew: isLast
+                            isStreaming: message.isStreaming,
+                            shouldAnimate: isLast && !message.isAnimated && !message.isStreaming,
+                            onAnimationComplete: onAnimationComplete
                         )
                         .font(.bodyMedium)
                         .foregroundColor(.textMain)

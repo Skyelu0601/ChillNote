@@ -1,6 +1,40 @@
 import SwiftUI
 import SwiftData
 
+struct WelcomeNoteFlagStore {
+    private static let globalKey = "hasSeededWelcomeNote"
+    private static let perUserKey = "welcomeNoteSeededByUserId"
+    
+    static func hasSeenWelcome(for userId: String?) -> Bool {
+        let defaults = UserDefaults.standard
+        if let userId,
+           let map = defaults.dictionary(forKey: perUserKey) as? [String: Bool],
+           let value = map[userId] {
+            return value
+        }
+        if userId != nil {
+            return false
+        } else {
+            return defaults.bool(forKey: globalKey)
+        }
+    }
+    
+    static func setHasSeenWelcome(_ value: Bool, for userId: String?) {
+        let defaults = UserDefaults.standard
+        if let userId {
+            var map = defaults.dictionary(forKey: perUserKey) as? [String: Bool] ?? [:]
+            map[userId] = value
+            defaults.set(map, forKey: perUserKey)
+        }
+        defaults.set(value, forKey: globalKey)
+    }
+    
+    static func syncGlobalFlag(for userId: String?) {
+        let value = hasSeenWelcome(for: userId)
+        UserDefaults.standard.set(value, forKey: globalKey)
+    }
+}
+
 @MainActor
 class DataService {
     static let shared = DataService()
@@ -48,17 +82,16 @@ class DataService {
     }
     
 
-    /// Seeds the database with a welcome note if empty
-    func seedDataIfNeeded() {
-        // Check if we have already seeded the welcome note to prevent duplicates
-        // This solves the issue where the note reappears after invalidation or sync delays
-        let hasSeededKey = "hasSeededWelcomeNote"
-        if UserDefaults.standard.bool(forKey: hasSeededKey) {
-            return
+    /// Seeds the database with a welcome note if empty (per-user)
+    @discardableResult
+    func seedDataIfNeeded(context: ModelContext? = nil, userId: String? = nil) -> Bool {
+        let effectiveUserId = userId ?? AuthService.shared.currentUserId
+        
+        if WelcomeNoteFlagStore.hasSeenWelcome(for: effectiveUserId) {
+            return false
         }
         
-        guard let container = container else { return }
-        let context = container.mainContext
+        guard let context = context ?? container?.mainContext else { return false }
         
         do {
             // Check if there are any existing notes
@@ -67,8 +100,8 @@ class DataService {
             
             if noteCount > 0 {
                 // If notes exist but flag wasn't set, set it now to prevent future seeding
-                UserDefaults.standard.set(true, forKey: hasSeededKey)
-                return
+                WelcomeNoteFlagStore.setHasSeenWelcome(true, for: effectiveUserId)
+                return false
             }
             
             // Insert Welcome Note
@@ -76,10 +109,11 @@ class DataService {
             try? context.save()
             
             // Mark as seeded
-            UserDefaults.standard.set(true, forKey: hasSeededKey)
-            
+            WelcomeNoteFlagStore.setHasSeenWelcome(true, for: effectiveUserId)
+            return true
         } catch {
             print("Error checking seed data: \(error)")
+            return false
         }
     }
 }

@@ -52,15 +52,16 @@ final class chillnoteIntegrationTests: XCTestCase {
         XCTAssertEqual(note.tags.count, 1)
         XCTAssertEqual(tag.notes.count, 1)
         
-        // Act - 删除标签
-        modelContext.delete(tag)
+        // Act - 软删除标签
+        tag.deletedAt = Date()
+        tag.updatedAt = tag.deletedAt ?? Date()
         try modelContext.save()
         
         // Assert - 验证标签没了，但笔记还在
         let notesCheck = try modelContext.fetch(FetchDescriptor<Note>())
-        let tagsCheck = try modelContext.fetch(FetchDescriptor<Tag>())
+        let activeTagsCheck = try modelContext.fetch(FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil }))
         
-        XCTAssertEqual(tagsCheck.count, 0, "标签应该被删除")
+        XCTAssertEqual(activeTagsCheck.count, 0, "活动标签应该被隐藏/删除")
         XCTAssertEqual(notesCheck.count, 1, "笔记应该保留")
         XCTAssertEqual(notesCheck.first?.content, "Important Note", "笔记内容应保持不变")
         XCTAssertEqual(notesCheck.first?.tags.count, 0, "笔记的标签列表应为空")
@@ -115,9 +116,12 @@ final class chillnoteIntegrationTests: XCTestCase {
         tagService.cleanupEmptyTags(context: modelContext)
         
         // Assert
-        let tags = try modelContext.fetch(FetchDescriptor<Tag>())
-        XCTAssertEqual(tags.count, 1)
-        XCTAssertEqual(tags.first?.name, "Used")
+        let activeTags = try modelContext.fetch(FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil }))
+        XCTAssertEqual(activeTags.count, 1)
+        XCTAssertEqual(activeTags.first?.name, "Used")
+        
+        let deletedTags = try modelContext.fetch(FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt != nil }))
+        XCTAssertEqual(deletedTags.count, 1, "空标签应被软删除以便同步墓碑")
     }
     
     /// 测试：Cleanup **不应该** 删除有活跃笔记的标签
