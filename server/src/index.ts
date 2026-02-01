@@ -74,6 +74,7 @@ const noteSchema = z.object({
   createdAt: isoDateString,
   updatedAt: isoDateString,
   deletedAt: isoDateString.nullish(),
+  pinnedAt: isoDateString.nullish(),
   tagIds: z.array(z.string().min(1)).nullish()
 });
 
@@ -127,6 +128,46 @@ app.get("/health", (_req, res) => {
 
 app.get("/version", (_req, res) => {
   res.json({ version: "1.0.2", updated: new Date().toISOString() });
+});
+
+// Waitlist Signup
+const waitlistSchema = z.object({
+  email: z.string().email(),
+  source: z.string().optional()
+});
+
+app.post("/waitlist", async (req, res) => {
+  const parsed = waitlistSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Please provide a valid email address." });
+    return;
+  }
+
+  const { email, source } = parsed.data;
+
+  try {
+    const existing = await prisma.waitlist.findUnique({
+      where: { email }
+    });
+
+    if (existing) {
+      res.json({ success: true, alreadyExists: true });
+      return;
+    }
+
+    await prisma.waitlist.create({
+      data: {
+        email,
+        source: source || "website"
+      }
+    });
+
+    console.log(`✨ New Waitlist Signup: ${email} (${source || "website"})`);
+    res.json({ success: true });
+  } catch (error) {
+    console.error("❌ Waitlist Signup Error:", error);
+    res.status(500).json({ error: "Failed to join waitlist. Please try again later." });
+  }
 });
 
 // Delete Account: Deletes from both public DB and Supabase Auth
@@ -183,15 +224,6 @@ const voiceNoteSchema = z.object({
   locale: z.string().optional()
 });
 
-function estimateBase64DecodedBytes(base64: string): number {
-  const len = base64.length;
-  if (len === 0) return 0;
-  let padding = 0;
-  if (base64.endsWith("==")) padding = 2;
-  else if (base64.endsWith("=")) padding = 1;
-  return Math.max(0, Math.floor((len * 3) / 4) - padding);
-}
-
 // Voice Note Endpoint: Audio -> Transcription + Polished Text
 app.post("/ai/voice-note", async (req, res) => {
   const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -209,9 +241,7 @@ app.post("/ai/voice-note", async (req, res) => {
 
   try {
     const { audioBase64, mimeType, locale } = parsed.data;
-    const contentLengthHeader = req.headers["content-length"];
-    const requestBytes = typeof contentLengthHeader === "string" ? Number(contentLengthHeader) : undefined;
-    const audioDecodedBytes = estimateBase64DecodedBytes(audioBase64);
+    const audioDecodedBytes = Buffer.byteLength(audioBase64, "base64");
     const audioDecodedMb = audioDecodedBytes / 1024 / 1024;
 
     const maxAudioMb = Number(process.env.MAX_VOICE_NOTE_AUDIO_MB ?? 30);

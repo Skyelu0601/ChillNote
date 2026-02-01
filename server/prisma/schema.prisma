@@ -28,6 +28,7 @@ model Note {
   createdAt DateTime
   updatedAt DateTime
   deletedAt DateTime?
+  pinnedAt DateTime?
   tags      Tag[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -49,4 +50,11 @@ model Tag {
   parent   Tag?   @relation("TagHierarchy", fields: [parentId], references: [id])
   children Tag[]  @relation("TagHierarchy")
   notes    Note[]
+}
+
+model Waitlist {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  source    String?  // e.g., "twitter", "website"
 }

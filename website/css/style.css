@@ -141,6 +141,7 @@ header {
   margin-bottom: var(--spacing-md);
   background: linear-gradient(135deg, var(--color-text-main) 0%, var(--color-accent-primary) 100%);
   -webkit-background-clip: text;
+  background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
@@ -213,6 +214,104 @@ header {
 
 .doc-content li {
   margin-bottom: 0.5rem;
+}
+
+/* Waitlist Section */
+.waitlist-section {
+  padding: var(--spacing-xl) 0;
+  text-align: center;
+}
+
+.waitlist-card {
+  max-width: 600px;
+  margin: 0 auto;
+  background: var(--color-card-bg);
+  padding: var(--spacing-lg);
+  border-radius: 32px;
+  box-shadow: 0 20px 40px rgba(90, 76, 56, 0.1);
+  border: 1px solid rgba(230, 163, 85, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.waitlist-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle, rgba(230, 163, 85, 0.05) 0%, transparent 70%);
+  z-index: 0;
+  pointer-events: none;
+}
+
+.waitlist-card h2 {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-sm);
+  position: relative;
+  z-index: 1;
+}
+
+.waitlist-card p {
+  font-size: 1.1rem;
+  margin-bottom: var(--spacing-md);
+  position: relative;
+  z-index: 1;
+}
+
+.waitlist-form {
+  display: flex;
+  gap: var(--spacing-sm);
+  max-width: 500px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.waitlist-form input {
+  flex: 1;
+  padding: 16px 24px;
+  border-radius: 50px;
+  border: 2px solid var(--color-bg-secondary);
+  background: var(--color-pale-cream);
+  font-family: inherit;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+  outline: none;
+}
+
+.waitlist-form input:focus {
+  border-color: var(--color-accent-primary);
+  box-shadow: 0 0 0 4px rgba(230, 163, 85, 0.1);
+}
+
+.waitlist-success {
+  padding: var(--spacing-md);
+  border-radius: 20px;
+  background: rgba(156, 175, 136, 0.1);
+  color: var(--color-sage-green);
+  font-weight: 600;
+  margin-top: var(--spacing-md);
+  animation: fadeIn 0.5s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (max-width: 600px) {
+  .waitlist-form {
+    flex-direction: column;
+  }
 }
 
 /* Footer */

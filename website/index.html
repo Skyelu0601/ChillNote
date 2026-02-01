@@ -18,6 +18,7 @@
             <a href="index.html" class="logo">ChillNote</a>
             <nav class="nav-links">
                 <a href="#philosophy">Philosophy</a>
+                <a href="#waitlist">Join Waitlist</a>
                 <a href="#support">Support</a>
             </nav>
         </div>
@@ -29,8 +30,10 @@
                 <h1>Capturing the speed of thought, one voice at a time.</h1>
                 <p>Use your voice to capture, process, and structure your thoughts. AI-driven organization for the
                     hyper-active mind.</p>
-                <!-- Placeholder for App Store Link -->
-                <a href="#" class="btn btn-primary">Download on the App Store</a>
+                <div class="hero-btns">
+                    <a href="#waitlist" class="btn btn-primary">Join the Waitlist</a>
+                    <a href="#" class="btn btn-secondary">Coming Soon to App Store</a>
+                </div>
             </section>
 
             <section id="philosophy" class="philosophy">
@@ -104,6 +107,20 @@
                 </div>
             </section>
 
+            <section id="waitlist" class="waitlist-section">
+                <div class="waitlist-card">
+                    <h2>Ready to capture your genius?</h2>
+                    <p>Join the inner circle. Get early access to ChillNote and start turning your voice into gold.</p>
+                    <form id="waitlist-form" class="waitlist-form">
+                        <input type="email" placeholder="Enter your email address" required>
+                        <button type="submit" class="btn btn-primary">Join the Waitlist</button>
+                    </form>
+                    <div id="waitlist-success" class="waitlist-success" style="display: none;">
+                        <p>Welcome to the family! 🎉 You're on the list.</p>
+                    </div>
+                </div>
+            </section>
+
             <section id="support" style="text-align: center; padding: 4rem 0;">
                 <h2>Support</h2>
                 <p>Have questions or feedback? We'd love to hear from you.</p>
@@ -123,6 +140,7 @@
         </div>
     </footer>
 
+    <script src="js/main.js"></script>
 </body>
 
 </html>
