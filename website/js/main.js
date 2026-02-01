@@ -18,9 +18,13 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.disabled = true;
         submitBtn.textContent = 'Joining...';
 
+        // Detect environment
+        const apiBaseUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? 'http://localhost:4000'
+            : 'https://chillnote-backend.vercel.app'; // Replace with your ACTUAL production backend URL
+
         try {
-            // Replace with your actual backend URL if different
-            const response = await fetch('http://localhost:4000/waitlist', {
+            const response = await fetch(`${apiBaseUrl}/waitlist`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
