@@ -385,6 +385,8 @@ ul {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--spacing-md);
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
 }
 
 .card {
@@ -600,9 +602,3 @@ footer {
     font-size: 2.1rem;
   }
 }
-  .philosophy-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-  .philosophy-grid {
-    grid-template-columns: 1fr;
-  }
