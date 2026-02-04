@@ -14,6 +14,7 @@ struct SyncMapper {
             createdAt: dateFormatter.string(from: note.createdAt),
             updatedAt: dateFormatter.string(from: note.updatedAt),
             deletedAt: note.deletedAt.map { dateFormatter.string(from: $0) },
+            pinnedAt: note.pinnedAt.map { dateFormatter.string(from: $0) },
             tagIds: note.tags
                 .filter { $0.deletedAt == nil }
                 .map { $0.id.uuidString }
@@ -52,6 +53,11 @@ struct SyncMapper {
             note.deletedAt = date
         } else {
             note.deletedAt = nil
+        }
+        if let pinnedAt = dto.pinnedAt, let date = parseDate(pinnedAt) {
+            note.pinnedAt = date
+        } else {
+            note.pinnedAt = nil
         }
         // Tags are handled separately in SyncEngine to resolve relationships
     }

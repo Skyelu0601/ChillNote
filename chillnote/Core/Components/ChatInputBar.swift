@@ -4,6 +4,7 @@ struct ChatInputBar: View {
     @Binding var text: String
     @Binding var isVoiceMode: Bool
     @ObservedObject var speechRecognizer: SpeechRecognizer
+    @StateObject private var storeService = StoreService.shared
     
     var onSendText: () -> Void
     var onCancelVoice: () -> Void
@@ -19,6 +20,9 @@ struct ChatInputBar: View {
     @State private var waveformHeights: [CGFloat] = Array(repeating: 6, count: 5)
     
     @State private var elapsed: TimeInterval = 0
+    @State private var didTriggerLimit = false
+    @State private var showUpgradeSheet = false
+    @State private var showSubscription = false
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     // Haptic generators
@@ -29,7 +33,15 @@ struct ChatInputBar: View {
         formatter.allowedUnits = [.minute, .second]
         formatter.zeroFormattingBehavior = .pad
         let current = formatter.string(from: elapsed) ?? "00:00"
-        return "\(current) / 10:00"
+        let maxTime = formatter.string(from: storeService.recordingTimeLimit) ?? "01:00"
+        return "\(current) / \(maxTime)"
+    }
+
+    private func openSubscriptionFromUpgrade() {
+        showUpgradeSheet = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            showSubscription = true
+        }
     }
     
     var body: some View {
@@ -85,21 +97,41 @@ struct ChatInputBar: View {
         }
         .padding(.horizontal, 16)
         .padding(.bottom, 8)
+        .onAppear {
+            syncElapsed()
+        }
         .onReceive(timer) { _ in
-            guard speechRecognizer.isRecording, let startTime = speechRecognizer.recordingStartTime else { 
-                if !speechRecognizer.isRecording {
-                    elapsed = 0
-                }
-                return 
-            }
-            elapsed = Date().timeIntervalSince(startTime)
+            syncElapsed()
             
-            // Enforce 10-minute limit
-            if elapsed >= 600 {
+            // Enforce limit based on subscription
+            if elapsed >= storeService.recordingTimeLimit, speechRecognizer.isRecording {
+                if storeService.currentTier == .free && !didTriggerLimit {
+                    didTriggerLimit = true
+                    showUpgradeSheet = true
+                }
                 onConfirmVoice() // Auto-finish
             }
         }
-        // Removed onChange that was resetting local startTime
+        .onChange(of: speechRecognizer.recordingState) { _, _ in
+            syncElapsed()
+            if speechRecognizer.recordingState == .recording {
+                didTriggerLimit = false
+            }
+        }
+        .sheet(isPresented: $showUpgradeSheet) {
+            UpgradeBottomSheet(
+                title: "Recording limit reached",
+                message: "Upgrade to Pro to record up to 10 minutes per note.",
+                primaryButtonTitle: "Upgrade to Pro",
+                onUpgrade: openSubscriptionFromUpgrade,
+                onDismiss: { showUpgradeSheet = false }
+            )
+            .presentationDetents([.height(220)])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showSubscription) {
+            SubscriptionView()
+        }
     }
 
     
@@ -310,6 +342,15 @@ struct ChatInputBar: View {
             waveformHeights[i] = CGFloat.random(in: 4...20)
         }
     }
+
+    private func syncElapsed() {
+        guard speechRecognizer.isRecording,
+              let startTime = speechRecognizer.recordingStartTime else {
+            elapsed = 0
+            return
+        }
+        elapsed = Date().timeIntervalSince(startTime)
+    }
     
 
     
@@ -321,7 +362,11 @@ struct ChatInputBar: View {
                 .lineLimit(1)
             
             Button("Retry") {
-                speechRecognizer.startRecording()
+                if speechRecognizer.getCurrentAudioFileURL() != nil {
+                    speechRecognizer.retryTranscription()
+                } else {
+                    speechRecognizer.startRecording()
+                }
             }
             .font(.caption)
             .fontWeight(.bold)

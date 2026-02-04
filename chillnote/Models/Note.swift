@@ -9,12 +9,14 @@ enum NoteContentFormat: String {
 @Model
 final class Note {
     var id: UUID
+    var userId: String
     var content: String  // Markdown format - single source of truth
     var contentFormat: String
     var checklistNotes: String
     var createdAt: Date
     var updatedAt: Date
     var deletedAt: Date?
+    var pinnedAt: Date?
     
     @Relationship
     var tags: [Tag] = []
@@ -60,15 +62,17 @@ final class Note {
     @Relationship(deleteRule: .cascade, inverse: \ChecklistItem.note)
     var checklistItems: [ChecklistItem] = []
 
-    init(content: String) {
+    init(content: String, userId: String) {
         let now = Date()
         self.id = UUID()
+        self.userId = userId
         self.content = content
         self.contentFormat = NoteContentFormat.text.rawValue
         self.checklistNotes = ""
         self.createdAt = now
         self.updatedAt = now
         self.deletedAt = nil
+        self.pinnedAt = nil
         self.tags = []
         self.suggestedTags = []
 

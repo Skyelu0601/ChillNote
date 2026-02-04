@@ -5,6 +5,7 @@ import SwiftUI
 @Model
 final class Tag {
     var id: UUID
+    var userId: String
     var name: String
     var colorHex: String
     var createdAt: Date
@@ -27,9 +28,10 @@ final class Tag {
     @Relationship(inverse: \Note.tags)
     var notes: [Note] = []
     
-    init(name: String, colorHex: String = "#E6A355") {
+    init(name: String, userId: String, colorHex: String = "#E6A355") {
         let now = Date()
         self.id = UUID()
+        self.userId = userId
         self.name = name
         self.colorHex = colorHex
         self.createdAt = now

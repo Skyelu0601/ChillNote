@@ -4,6 +4,7 @@ export type NoteDTO = {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+  pinnedAt?: string | null;
   tagIds?: string[] | null;
 };
 

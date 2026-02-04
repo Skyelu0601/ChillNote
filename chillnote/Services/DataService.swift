@@ -92,10 +92,14 @@ class DataService {
         }
         
         guard let context = context ?? container?.mainContext else { return false }
+        guard let userId = effectiveUserId else { return false }
         
         do {
-            // Check if there are any existing notes
-            let existingNotesDescriptor = FetchDescriptor<Note>()
+            // Check if there are any existing notes for this user
+            var existingNotesDescriptor = FetchDescriptor<Note>()
+            existingNotesDescriptor.predicate = #Predicate<Note> { note in
+                note.userId == userId
+            }
             let noteCount = try context.fetchCount(existingNotesDescriptor)
             
             if noteCount > 0 {
@@ -105,7 +109,7 @@ class DataService {
             }
             
             // Insert Welcome Note
-            context.insert(Note(content: "Welcome to ChillNote! Tap the yellow button to record a voice note."))
+            context.insert(Note(content: "Welcome to ChillNote! Tap the yellow button to record a voice note.", userId: userId))
             try? context.save()
             
             // Mark as seeded

@@ -16,6 +16,9 @@
     "%lld Context Notes" : {
 
     },
+    "%lld days left" : {
+
+    },
     "%lld note%@ selected" : {
       "localizations" : {
         "en" : {
@@ -26,16 +29,28 @@
         }
       }
     },
+    "•" : {
+
+    },
     "+%lld" : {
 
     },
     "123456" : {
 
     },
+    "Actions" : {
+
+    },
     "Add" : {
 
     },
+    "Add Recipes" : {
+
+    },
     "Add Tag" : {
+
+    },
+    "Add to My Recipes" : {
 
     },
     "Are you sure you want to delete %lld note%@? This action cannot be undone." : {
@@ -57,6 +72,12 @@
     "Are you sure you want to sign out?" : {
 
     },
+    "Ask Agent" : {
+
+    },
+    "Ask AI" : {
+
+    },
     "Ask Chillo..." : {
 
     },
@@ -66,10 +87,16 @@
     "Back to Options" : {
 
     },
+    "BEST VALUE" : {
+
+    },
     "By continuing, you agree to our Terms & Privacy Policy." : {
 
     },
     "Cancel" : {
+
+    },
+    "Chill Recipes" : {
 
     },
     "ChillNote" : {
@@ -91,6 +118,9 @@
 
     },
     "Chillo's Toolkit" : {
+
+    },
+    "Choose a language to translate your note" : {
 
     },
     "Choose Icon" : {
@@ -145,10 +175,16 @@
         }
       }
     },
-    "Continue" : {
+    "Continue with Email" : {
 
     },
-    "Continue with Email" : {
+    "Create" : {
+
+    },
+    "Create Recipe" : {
+
+    },
+    "Current Plan" : {
 
     },
     "Delete" : {
@@ -176,7 +212,13 @@
     "Delete Originals" : {
 
     },
-    "Deleting..." : {
+    "Delete Permanently" : {
+
+    },
+    "Delete Recipe" : {
+
+    },
+    "Deleted %@" : {
 
     },
     "Deletion Failed" : {
@@ -191,10 +233,19 @@
     "Dismiss" : {
 
     },
+    "Do it" : {
+
+    },
     "Done" : {
 
     },
     "Drag here to delete" : {
+
+    },
+    "Empty" : {
+
+    },
+    "Empty Recycle Bin" : {
 
     },
     "Enter a name for your custom tag." : {
@@ -206,10 +257,22 @@
     "Enter code sent to %@" : {
 
     },
-    "Experience the freedom of thought with enhanced AI capabilities." : {
+    "Enter your instruction for these notes." : {
+
+    },
+    "Error: %@" : {
+
+    },
+    "Expires today" : {
 
     },
     "Finish recording" : {
+
+    },
+    "Fixing grammar..." : {
+
+    },
+    "FLEXIBLE" : {
 
     },
     "Free Plan" : {
@@ -222,6 +285,9 @@
 
     },
     "Go ahead, I'm listening..." : {
+
+    },
+    "Grammar fixed." : {
 
     },
     "home.action.deselectAll" : {
@@ -317,6 +383,7 @@
       }
     },
     "home.actions" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -363,6 +430,7 @@
       }
     },
     "home.askChillo" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -553,6 +621,9 @@
     "I've read through your notes. Let's see what we can create together." : {
 
     },
+    "Icon" : {
+
+    },
     "Introductory notes..." : {
 
     },
@@ -583,10 +654,25 @@
     "My Account" : {
 
     },
+    "Name (e.g. Summarize)" : {
+
+    },
     "name@example.com" : {
 
     },
     "Network Error" : {
+
+    },
+    "No deleted notes yet. Notes stay for 30 days." : {
+
+    },
+    "No recipes yet" : {
+
+    },
+    "No tags available" : {
+
+    },
+    "Not now" : {
 
     },
     "OK" : {
@@ -604,6 +690,21 @@
     "Our Vision" : {
 
     },
+    "per month" : {
+
+    },
+    "per year" : {
+
+    },
+    "Pin" : {
+
+    },
+    "Pinned" : {
+
+    },
+    "Privacy" : {
+
+    },
     "PRO" : {
 
     },
@@ -614,6 +715,15 @@
 
     },
     "Processing..." : {
+
+    },
+    "Prompt" : {
+
+    },
+    "Read this aloud to try voice input:" : {
+
+    },
+    "Recipe Details" : {
 
     },
     "Recording Failed" : {
@@ -637,10 +747,22 @@
     "Release to unnest" : {
 
     },
+    "Remove" : {
+
+    },
+    "Remove from My Recipes" : {
+
+    },
     "Request Access" : {
 
     },
     "Requests microphone permission." : {
+
+    },
+    "Restore" : {
+
+    },
+    "Restore Note" : {
 
     },
     "Restore Purchases" : {
@@ -655,6 +777,9 @@
     "Save" : {
 
     },
+    "Save ~40% vs Monthly" : {
+
+    },
     "Save as Note" : {
 
     },
@@ -662,6 +787,9 @@
 
     },
     "Search" : {
+
+    },
+    "Select Language" : {
 
     },
     "Select some notes to start" : {
@@ -732,19 +860,28 @@
     "Skip" : {
 
     },
+    "Start Annual Plan" : {
+
+    },
+    "Start Monthly Plan" : {
+
+    },
     "Start organizing with tags" : {
 
     },
     "Start recording" : {
 
     },
+    "Still working on this. Feel free to do something else and return." : {
+
+    },
     "Stops recording and saves your note." : {
 
     },
-    "Subscription Plan" : {
+    "Subscription auto-renews. Cancel anytime." : {
 
     },
-    "Subscriptions auto-renew unless canceled at least 24 hours before the end of the current period. Manage via Apple ID settings." : {
+    "Subscription Plan" : {
 
     },
     "Sync your thoughts.\nUnclutter your mind." : {
@@ -759,7 +896,25 @@
     "TAGS" : {
 
     },
+    "Tap Koala > Ask to get the answer." : {
+
+    },
+    "Tap the Koala button to fix grammar." : {
+
+    },
+    "Terms" : {
+
+    },
     "The notes have been merged into a new note. Would you like to delete the original %lld notes?" : {
+
+    },
+    "This will permanently delete all notes in the recycle bin." : {
+
+    },
+    "This will permanently delete the note. This action cannot be undone." : {
+
+    },
+    "This will permanently delete this custom recipe." : {
 
     },
     "To-do" : {
@@ -771,10 +926,16 @@
     "Undo" : {
 
     },
-    "Unlock ChillNote Pro" : {
+    "Unlock the full power of ChillNote" : {
+
+    },
+    "Unpin" : {
 
     },
     "Upgrade" : {
+
+    },
+    "Upgrade to Pro" : {
 
     },
     "Verify & Login" : {
@@ -787,6 +948,9 @@
 
     },
     "What ChillNote is NOT" : {
+
+    },
+    "What should I do?" : {
 
     },
     "What's on your mind?" : {

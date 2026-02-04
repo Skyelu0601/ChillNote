@@ -4,7 +4,9 @@ import SwiftUI
 struct AIAgentActionsSheet: View {
     @Environment(\.dismiss) private var dismiss
     let selectedCount: Int
-    let onActionSelected: (AIAgentAction) -> Void
+    let onActionSelected: (AgentRecipe) -> Void
+    
+    @ObservedObject private var recipeManager = RecipeManager.shared
     
     var body: some View {
         NavigationStack {
@@ -35,9 +37,9 @@ struct AIAgentActionsSheet: View {
                 // Actions List
                 ScrollView {
                     VStack(spacing: 12) {
-                        ForEach(AIAgentAction.defaultActions) { action in
-                            AgentActionRow(action: action) {
-                                onActionSelected(action)
+                        ForEach(recipeManager.savedRecipes) { recipe in
+                            AgentActionRow(recipe: recipe) {
+                                onActionSelected(recipe)
                                 dismiss()
                             }
                         }
@@ -63,7 +65,7 @@ struct AIAgentActionsSheet: View {
 
 // MARK: - Agent Action Row
 private struct AgentActionRow: View {
-    let action: AIAgentAction
+    let recipe: AgentRecipe
     let onTap: () -> Void
     
     @State private var isPressed = false
@@ -83,21 +85,26 @@ private struct AgentActionRow: View {
                         )
                         .frame(width: 50, height: 50)
                     
-                    Image(systemName: action.icon)
+                    Image(systemName: recipe.systemIcon)
                         .font(.system(size: 22))
                         .foregroundColor(.accentPrimary)
                 }
                 
                 // Text
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(action.title)
+                    Text(recipe.name)
                         .font(.bodyMedium)
                         .fontWeight(.semibold)
                         .foregroundColor(.textMain)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
+                        .minimumScaleFactor(0.85)
                     
-                    Text(action.description)
+                    Text(recipe.description)
                         .font(.bodySmall)
                         .foregroundColor(.textSub)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
                 
                 Spacer()
@@ -132,6 +139,6 @@ private struct AgentActionRow: View {
 
 #Preview {
     AIAgentActionsSheet(selectedCount: 3) { action in
-        print("Selected: \(action.title)")
+        print("Selected: \(action.name)")
     }
 }

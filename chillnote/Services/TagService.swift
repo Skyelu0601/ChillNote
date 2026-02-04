@@ -1,7 +1,6 @@
 import Foundation
 import SwiftData
 
-@MainActor
 class TagService {
     static let shared = TagService()
     private init() {}
@@ -62,20 +61,30 @@ class TagService {
     }
     
     /// Marks tags that are no longer associated with any active notes as deleted (soft-delete for sync).
-    func cleanupEmptyTags(context: ModelContext) {
-        let fetchDescriptor = FetchDescriptor<Tag>()
-        do {
-            let allTags = try context.fetch(fetchDescriptor)
-            for tag in allTags {
-                let activeNotes = tag.notes.filter { $0.deletedAt == nil }
-                if activeNotes.isEmpty {
-                    let now = Date()
-                    tag.deletedAt = now
-                    tag.updatedAt = now
-                }
+    /// If candidates are provided, only those tags are checked.
+    func cleanupEmptyTags(context: ModelContext, candidates: [Tag]? = nil) {
+        let tagsToCheck: [Tag]
+        if let candidates, !candidates.isEmpty {
+            var seen = Set<UUID>()
+            tagsToCheck = candidates.filter { tag in
+                guard !seen.contains(tag.id) else { return false }
+                seen.insert(tag.id)
+                return true
             }
-            // Use a slight delay or ensure this is after the main operation
-            try? context.save()
+        } else {
+            let fetchDescriptor = FetchDescriptor<Tag>()
+            tagsToCheck = (try? context.fetch(fetchDescriptor)) ?? []
+        }
+        for tag in tagsToCheck {
+            let activeNotes = tag.notes.filter { $0.deletedAt == nil }
+            if activeNotes.isEmpty {
+                let now = Date()
+                tag.deletedAt = now
+                tag.updatedAt = now
+            }
+        }
+        do {
+            try context.save()
         } catch {
             print("⚠️ TagService Cleanup Error: \(error)")
         }

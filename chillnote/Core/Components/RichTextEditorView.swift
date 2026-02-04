@@ -43,13 +43,16 @@ struct RichTextEditorView: UIViewRepresentable {
         toolbar.onAction = { action in
             context.coordinator.handleToolbarAction(action, in: textView)
         }
+        toolbar.onSelectionChange = { action in
+            context.coordinator.handleToolbarAction(action, in: textView)
+        }
         textView.inputAccessoryView = toolbar
         
         // Tap handler for checkboxes
         textView.onCheckboxTap = { lineIndex, range in
             context.coordinator.toggleCheckbox(at: range, in: textView)
         }
-        
+
         return textView
     }
     
@@ -84,6 +87,15 @@ struct RichTextEditorView: UIViewRepresentable {
             let markdown = RichTextConverter.attributedStringToMarkdown(textView.attributedText)
             lastKnownMarkdown = markdown
             parent.text = markdown
+            if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
+                updateToolbarState(in: textView, toolbar: toolbar)
+            }
+        }
+
+        func textViewDidChangeSelection(_ textView: UITextView) {
+            if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
+                updateToolbarState(in: textView, toolbar: toolbar)
+            }
         }
         
         // MARK: - Smart Enter Logic
@@ -101,7 +113,6 @@ struct RichTextEditorView: UIViewRepresentable {
                 }
             }
             
-
             // Check for "Backspace" (Handle deleting list prefix)
             if text == "" && range.length == 1 {
                 if handleBackspace(textView, range: range) {
@@ -155,7 +166,7 @@ struct RichTextEditorView: UIViewRepresentable {
                 }
             }
             
-            return false
+            return true
         }
         
         private func handleAutoFormatting(_ textView: UITextView, range: NSRange) -> Bool {
@@ -175,15 +186,22 @@ struct RichTextEditorView: UIViewRepresentable {
             var replacement: String?
             var isCheckbox = false
             var isOrdered = false
+            var checkboxState: Bool? = nil
             
             // Detect Triggers
             if trimmed == "-" || trimmed == "*" {
                 // Bullet
                 replacement = String(leadingSpaces) + "• "
-            } else if trimmed == "[]" || trimmed == "[ ]" {
+            } else if trimmed == "[]" || trimmed == "[ ]" || trimmed == "- [ ]" || trimmed == "* [ ]" {
                 // Checkbox
                 replacement = String(leadingSpaces) + "☐ "
                 isCheckbox = true
+                checkboxState = false
+            } else if trimmed.lowercased() == "- [x]" || trimmed.lowercased() == "* [x]" {
+                // Checked checkbox
+                replacement = String(leadingSpaces) + "☑ "
+                isCheckbox = true
+                checkboxState = true
             } else if let _ = trimmed.range(of: #"^\d+\.$"#, options: .regularExpression) {
                 // Ordered List (e.g. "1.")
                 replacement = String(leadingSpaces) + trimmed + " "
@@ -203,10 +221,12 @@ struct RichTextEditorView: UIViewRepresentable {
             // Apply Styles to the Prefix (Orange Zone)
             if isCheckbox {
                 let symbolFont = UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium)
+                let isChecked = checkboxState ?? false
+                let symbolColor = isChecked ? RichTextConverter.Config.checkboxCheckedColor : RichTextConverter.Config.checkboxUncheckedColor
                 textView.textStorage.addAttributes([
-                    .foregroundColor: RichTextConverter.Config.checkboxUncheckedColor,
+                    .foregroundColor: symbolColor,
                     .font: symbolFont,
-                    RichTextConverter.Key.checkbox: false
+                    RichTextConverter.Key.checkbox: isChecked
                 ], range: stylingRange)
                 
                 // Ensure no strikethrough (safety)
@@ -248,6 +268,8 @@ struct RichTextEditorView: UIViewRepresentable {
             let nsText = textView.text as NSString
             let lineRange = nsText.lineRange(for: NSRange(location: range.location, length: 0))
             let lineText = nsText.substring(with: lineRange)
+            let leadingSpaces = lineText.prefix { $0 == " " || $0 == "\t" }
+            let trimmedLine = String(lineText.dropFirst(leadingSpaces.count))
             
             // 1. Identify Prefix and List Type
             var detectedPrefix: String?
@@ -255,17 +277,17 @@ struct RichTextEditorView: UIViewRepresentable {
             var isOrdered = false
             
             // Checkboxes (Visual or Markdown)
-            if lineText.hasPrefix("☑ ") || lineText.hasPrefix("☐ ") || lineText.hasPrefix("- [ ] ") || lineText.hasPrefix("- [x] ") {
-                detectedPrefix = "☐ " // Always reset to unchecked state for new line
+            if trimmedLine.hasPrefix("☑ ") || trimmedLine.hasPrefix("☐ ") || trimmedLine.hasPrefix("- [ ] ") || trimmedLine.hasPrefix("- [x] ") {
+                detectedPrefix = String(leadingSpaces) + "☐ " // Always reset to unchecked state for new line
                 isCheckbox = true
             } 
             // Bullets
-            else if lineText.hasPrefix("• ") || lineText.hasPrefix("- ") {
-                detectedPrefix = "• "
+            else if trimmedLine.hasPrefix("• ") || trimmedLine.hasPrefix("- ") {
+                detectedPrefix = String(leadingSpaces) + "• "
             } 
             // Ordered Lists
-            else if let match = lineText.range(of: #"^\d+\.\s"#, options: .regularExpression) {
-                detectedPrefix = String(lineText[match])
+            else if let match = trimmedLine.range(of: #"^\d+\.\s"#, options: .regularExpression) {
+                detectedPrefix = String(leadingSpaces) + String(trimmedLine[match])
                 isOrdered = true
             }
             
@@ -273,29 +295,29 @@ struct RichTextEditorView: UIViewRepresentable {
             
             // 2. Check for "Empty" Line to Exit List
             // If the line contains ONLY the prefix (ignoring whitespace), we exit the list mode
-            let currentVisual = (lineText.hasPrefix("☑ ") ? "☑ " : nil) ?? 
-                                (lineText.hasPrefix("☐ ") ? "☐ " : nil) ?? 
-                                (lineText.hasPrefix("• ") ? "• " : nil) ?? 
-                                prefix // fallback
+            let currentVisual = (trimmedLine.hasPrefix("☑ ") ? "☑ " : nil) ??
+                                (trimmedLine.hasPrefix("☐ ") ? "☐ " : nil) ??
+                                (trimmedLine.hasPrefix("• ") ? "• " : nil) ??
+                                prefix.trimmingCharacters(in: .whitespaces) // fallback
             
-            let trimmedLine = lineText.trimmingCharacters(in: .whitespacesAndNewlines)
-            // Compare trimmed line to trimmed visual prefix
             let current = currentVisual
-            if trimmedLine == current.trimmingCharacters(in: .whitespaces) {
-                // Remove the list item from the current line
+            if trimmedLine.trimmingCharacters(in: .whitespacesAndNewlines) == current.trimmingCharacters(in: .whitespacesAndNewlines) {
+                // Remove the list item from the current line, but keep a blank line
                 textView.textStorage.beginEditing()
-                textView.textStorage.replaceCharacters(in: lineRange, with: "")
+                textView.textStorage.replaceCharacters(in: lineRange, with: "\n")
                 textView.textStorage.endEditing()
+                textView.selectedRange = NSRange(location: lineRange.location + 1, length: 0)
                 textViewDidChange(textView)
                 return false
             }
             
             // 3. Determine Next Prefix (Increment numbers)
             var nextPrefix = prefix
-            if isOrdered, let match = prefix.range(of: #"^(\d+)\.\s"#, options: .regularExpression) {
-                let numStr = String(prefix[match].dropLast(2))
+            if isOrdered, let match = prefix.trimmingCharacters(in: .whitespaces).range(of: #"^(\d+)\."#, options: .regularExpression) {
+                let trimmedPrefix = prefix.trimmingCharacters(in: .whitespaces)
+                let numStr = String(trimmedPrefix[match].dropLast(1))
                 if let num = Int(numStr) {
-                    nextPrefix = "\(num + 1). "
+                    nextPrefix = String(leadingSpaces) + "\(num + 1). "
                 }
             }
             
@@ -375,11 +397,46 @@ struct RichTextEditorView: UIViewRepresentable {
                 applyBlockStyle(level: 2, in: textView, range: selectedRange)
             case .checklist:
                 applyChecklist(in: textView, range: selectedRange)
+            case .undo:
+                textView.undoManager?.undo()
+            case .redo:
+                textView.undoManager?.redo()
             }
             
             textViewDidChange(textView)
         }
-        
+
+        private func updateToolbarState(in textView: UITextView, toolbar: EditorFormattingToolbar) {
+            let selectedRange = textView.selectedRange
+            let location = min(selectedRange.location, max(textView.textStorage.length - 1, 0))
+            let attrs = textView.textStorage.length > 0
+                ? textView.textStorage.attributes(at: location, effectiveRange: nil)
+                : textView.typingAttributes
+            
+            if let font = attrs[.font] as? UIFont {
+                toolbar.setActive(.bold, isActive: font.fontDescriptor.symbolicTraits.contains(.traitBold))
+                toolbar.setActive(.italic, isActive: font.fontDescriptor.symbolicTraits.contains(.traitItalic))
+            } else {
+                toolbar.setActive(.bold, isActive: false)
+                toolbar.setActive(.italic, isActive: false)
+            }
+            
+            if let level = attrs[RichTextConverter.Key.headerLevel] as? Int {
+                toolbar.setActive(.h1, isActive: level == 1)
+                toolbar.setActive(.h2, isActive: level == 2)
+            } else {
+                toolbar.setActive(.h1, isActive: false)
+                toolbar.setActive(.h2, isActive: false)
+            }
+            
+            toolbar.setActive(.checklist, isActive: attrs[RichTextConverter.Key.checkbox] != nil)
+            
+            let canUndo = textView.undoManager?.canUndo ?? false
+            let canRedo = textView.undoManager?.canRedo ?? false
+            toolbar.setEnabled(.undo, isEnabled: canUndo)
+            toolbar.setEnabled(.redo, isEnabled: canRedo)
+        }
+
         private func toggleTrait(_ trait: UIFontDescriptor.SymbolicTraits, in textView: UITextView, range: NSRange) {
             textView.textStorage.beginEditing()
             
@@ -497,12 +554,14 @@ struct RichTextEditorView: UIViewRepresentable {
 // MARK: - Toolbar Component
 
 enum EditorAction {
-    case bold, italic, h1, h2, checklist
+    case bold, italic, h1, h2, checklist, undo, redo
 }
 
 class EditorFormattingToolbar: UIView {
     var onAction: ((EditorAction) -> Void)?
+    var onSelectionChange: ((EditorAction) -> Void)?
     private let textView: UITextView
+    private var buttons: [EditorAction: UIButton] = [:]
     
     init(textView: UITextView) {
         self.textView = textView
@@ -533,7 +592,9 @@ class EditorFormattingToolbar: UIView {
             ("italic", .italic),
             ("h1.circle", .h1),
             ("h2.circle", .h2),
-            ("checklist", .checklist)
+            ("checklist", .checklist),
+            ("arrow.uturn.left", .undo),
+            ("arrow.uturn.right", .redo)
         ]
         
         for (icon, action) in buttons {
@@ -546,6 +607,7 @@ class EditorFormattingToolbar: UIView {
                 // Haptic feedback
                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
             }, for: .touchUpInside)
+            self.buttons[action] = btn
             stackView.addArrangedSubview(btn)
         }
         
@@ -566,6 +628,19 @@ class EditorFormattingToolbar: UIView {
             stackView.topAnchor.constraint(equalTo: topAnchor),
             stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
+    }
+
+    func setActive(_ action: EditorAction, isActive: Bool) {
+        guard let button = buttons[action] else { return }
+        let activeColor = UIColor.systemOrange
+        let inactiveColor = UIColor.secondaryLabel
+        button.tintColor = isActive ? activeColor : inactiveColor
+    }
+
+    func setEnabled(_ action: EditorAction, isEnabled: Bool) {
+        guard let button = buttons[action] else { return }
+        button.isEnabled = isEnabled
+        button.alpha = isEnabled ? 1.0 : 0.35
     }
 }
 
@@ -684,6 +759,8 @@ class InteractiveTextView: UITextView {
     deinit {
         NotificationCenter.default.removeObserver(self)
     }
+
+    
 }
 
 extension InteractiveTextView: UIGestureRecognizerDelegate {

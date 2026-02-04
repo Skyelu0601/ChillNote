@@ -57,6 +57,7 @@ export async function toPayload(userId: string, since?: string): Promise<SyncPay
       createdAt: note.createdAt.toISOString(),
       updatedAt: note.updatedAt.toISOString(),
       deletedAt: note.deletedAt?.toISOString() ?? null,
+      pinnedAt: note.pinnedAt?.toISOString() ?? null,
       tagIds: Array.isArray(note.tags) ? note.tags.filter((tag: any) => tag.deletedAt == null).map((tag: any) => tag.id) : []
     })),
     tags: tags.map(
@@ -111,6 +112,7 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
       createdAt: new Date(incoming.createdAt),
       updatedAt: new Date(incoming.updatedAt),
       deletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
+      pinnedAt: incoming.pinnedAt ? new Date(incoming.pinnedAt) : null,
       userId,
       tags: tagIds ? { set: tagIds.map((tagId) => ({ id: tagId })) } : undefined
     },
@@ -121,6 +123,7 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
       createdAt: new Date(incoming.createdAt),
       updatedAt: new Date(incoming.updatedAt),
       deletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
+      pinnedAt: incoming.pinnedAt ? new Date(incoming.pinnedAt) : null,
       tags: tagIds ? { connect: tagIds.map((tagId) => ({ id: tagId })) } : undefined
     }
   });

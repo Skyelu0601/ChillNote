@@ -13,8 +13,11 @@ struct AIContextChatView: View {
     @State private var errorMessage: String?
     @FocusState private var isInputFocused: Bool
     @State private var isContextExpanded = false // Collapsible context state
+    @State private var showUpgradeSheet = false
+    @State private var showSubscription = false
     
     var initialQuery: String? = nil // Optional initial query to auto-send
+    var onAnswer: ((String) -> Void)? = nil
 
     
     // Voice input
@@ -24,6 +27,13 @@ struct AIContextChatView: View {
     // Save note feedback
     @State private var savedMessageId: UUID?
     @EnvironmentObject private var syncManager: SyncManager
+    
+    private func openSubscriptionFromUpgrade() {
+        showUpgradeSheet = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            showSubscription = true
+        }
+    }
     
     var body: some View {
         NavigationStack {
@@ -204,6 +214,20 @@ struct AIContextChatView: View {
                 sendMessage()
             }
         }
+        .sheet(isPresented: $showUpgradeSheet) {
+            UpgradeBottomSheet(
+                title: "Daily free limit reached",
+                message: "Upgrade to Pro for unlimited AI chat and 10-minute recordings.",
+                primaryButtonTitle: "Upgrade to Pro",
+                onUpgrade: openSubscriptionFromUpgrade,
+                onDismiss: { showUpgradeSheet = false }
+            )
+            .presentationDetents([.height(280)])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showSubscription) {
+            SubscriptionView()
+        }
     }
 }
     
@@ -277,7 +301,7 @@ struct AIContextChatView: View {
             Spacer()
             
             VStack(spacing: 12) {
-                Image("chillo_touming")
+                Image("chillohead_touming")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 140, height: 140)
@@ -313,7 +337,8 @@ struct AIContextChatView: View {
         // Enforce daily message limit
         let store = StoreService.shared
         if !store.canSendMessage() {
-             errorMessage = "Daily free limit reached (\(store.dailyMessageLimit)/\(store.dailyMessageLimit)). Upgrade to Pro for unlimited chat."
+             errorMessage = nil
+             showUpgradeSheet = true
              return
         }
         
@@ -377,6 +402,10 @@ struct AIContextChatView: View {
                     if let lastIndex = messages.indices.last {
                         messages[lastIndex].isStreaming = false
                         messages[lastIndex].isAnimated = true // Skip typewriter effect since we streamed it
+                        let finalAnswer = messages[lastIndex].content
+                        if !finalAnswer.isEmpty {
+                            onAnswer?(finalAnswer)
+                        }
                     }
                 }
                 
@@ -404,11 +433,12 @@ struct AIContextChatView: View {
     }
     
     func saveMessageAsNote(_ message: ChatMessage) {
-        let newNote = Note(content: message.content)
+        guard let userId = AuthService.shared.currentUserId else { return }
+        let newNote = Note(content: message.content, userId: userId)
         modelContext.insert(newNote)
         
         try? modelContext.save()
-        Task { await syncManager.syncIfNeeded(context: modelContext) }
+        Task { await syncManager.syncNow(context: modelContext) }
         
         // Show feedback
         withAnimation {
@@ -518,8 +548,8 @@ struct ChatMessageBubble: View {
 
 #Preview {
     AIContextChatView(contextNotes: [
-        Note(content: "Learned about SwiftUI state management today. The difference between @State and @Binding is important."),
-        Note(content: "Completed the UI design for the project, using gradients and rounded cards.")
+        Note(content: "Learned about SwiftUI state management today. The difference between @State and @Binding is important.", userId: "preview-user"),
+        Note(content: "Completed the UI design for the project, using gradients and rounded cards.", userId: "preview-user")
     ])
     .modelContainer(DataService.shared.container!)
 }

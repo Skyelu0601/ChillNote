@@ -149,6 +149,8 @@ struct RichTextConverter {
         let symbol = checked ? "☑ " : "☐ "
         let symbolFont = UIFont.systemFont(ofSize: baseFont.pointSize + 8, weight: .medium)
         let symbolColor = checked ? Config.checkboxCheckedColor : Config.checkboxUncheckedColor
+        paragraphStyle.headIndent = 24
+        paragraphStyle.firstLineHeadIndent = 0
         
         let symbolAttrs: [NSAttributedString.Key: Any] = [
             .font: symbolFont,
@@ -340,7 +342,6 @@ struct RichTextConverter {
     }
     
     private static func processLineToMarkdown(_ text: String, attributes: [NSAttributedString.Key: Any], fullAttributedLine: NSAttributedString) -> String {
-        
         // 1. Header
         if let level = attributes[Key.headerLevel] as? Int {
             let prefix = String(repeating: "#", count: level)
@@ -393,35 +394,22 @@ struct RichTextConverter {
         var result = ""
         
         attrStr.enumerateAttributes(in: NSRange(location: 0, length: attrStr.length), options: []) { (attrs, range, stop) in
-            var text = (attrStr.string as NSString).substring(with: range)
-            
-            // Clean up invisible/helper characters if any slipped in (like code spacers)
-            text = text.trimmingCharacters(in: .whitespaces) // Naive trim, might eat spaces between words. 
-            // Better: Don't trim blindly. But code block parser adds " " padding.
-            
-            /* 
-               Re-reading text logic:
-               Code adds " " padding: " \(content) "
-               We should handle strict matching.
-            */
-            
+            let rawText = (attrStr.string as NSString).substring(with: range)
+
             // Check for Code (Purple background/color)
             if let bgColor = attrs[.backgroundColor] as? UIColor, 
                bgColor == Config.codeBgColor { // Basic check
-                result += "`\(text)` " // Add space back?
-                // Actually if we just iterate ranges, we concatenate. 
-                // Using `trimming` above was dangerous. Let's use raw text.
+                let codeContent = trimSinglePaddingSpace(rawText)
+                result += "`\(codeContent)`"
                 return
             }
-             
-            let rawText = (attrStr.string as NSString).substring(with: range)
             
             // Detect Code based on font?
             if let font = attrs[.font] as? UIFont, font.fontName.contains("Mono") {
                  // It's likely code.
                  // The parser added spaces around it: " content "
                  // We trim one space from ends?
-                 let codeContent = rawText.trimmingCharacters(in: .whitespaces)
+                 let codeContent = trimSinglePaddingSpace(rawText)
                  result += "`\(codeContent)`"
                  return
             }
@@ -468,5 +456,18 @@ struct RichTextConverter {
         if length <= 0 { return attr }
         if length >= attr.length { return NSAttributedString() }
         return attr.attributedSubstring(from: NSRange(location: length, length: attr.length - length))
+    }
+
+    
+
+    private static func trimSinglePaddingSpace(_ text: String) -> String {
+        var result = text
+        if result.hasPrefix(" ") {
+            result.removeFirst()
+        }
+        if result.hasSuffix(" ") {
+            result.removeLast()
+        }
+        return result
     }
 }

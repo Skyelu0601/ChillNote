@@ -23,14 +23,14 @@ struct SyncConfig {
     let baseURL: URL
     let authToken: String?
     let since: Date?
+    let userId: String
 }
 
 struct RemoteSyncService: SyncService {
     let config: SyncConfig
     
     func syncAll(context: ModelContext) async throws {
-        let engine = SyncEngine()
-        let payload = engine.makePayload(context: context, since: config.since)
+        let payload = makeSyncPayload(context: context, since: config.since, userId: config.userId)
         
         var urlComponents = URLComponents(url: config.baseURL.appendingPathComponent("sync"), resolvingAgainstBaseURL: false)
         if let since = config.since {
@@ -71,6 +71,16 @@ struct RemoteSyncService: SyncService {
             let decoder = JSONDecoder()
             return try decoder.decode(SyncPayload.self, from: data)
         }.value
-        engine.apply(remote: remotePayload, context: context)
+        applyRemotePayload(context: context, payload: remotePayload, userId: config.userId)
     }
+}
+
+private func makeSyncPayload(context: ModelContext, since: Date?, userId: String) -> SyncPayload {
+    let engine = SyncEngine()
+    return engine.makePayload(context: context, since: since, userId: userId)
+}
+
+private func applyRemotePayload(context: ModelContext, payload: SyncPayload, userId: String) {
+    let engine = SyncEngine()
+    engine.apply(remote: payload, context: context, userId: userId)
 }

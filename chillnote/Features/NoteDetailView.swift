@@ -10,6 +10,7 @@ struct NoteDetailView: View {
 
     
     @State private var showDeleteConfirmation = false
+    @State private var showPermanentDeleteConfirmation = false
     @State private var inputText = ""
     @State private var isVoiceMode = false
     @State private var isProcessing = false // Local processing state (e.g. for Magic Wand)
@@ -22,6 +23,14 @@ struct NoteDetailView: View {
     @State private var aiOriginalContent: String?
     @State private var isProgrammaticContentUpdate = false
     @State private var isWriting = false
+
+    // Processing toast
+    @State private var showProcessingToast = false
+    @State private var hasShownProcessingToast = false
+    
+    // Change Tracking
+    @State private var initialContent: String = ""
+    @State private var initialTags: Set<UUID> = []
     
     // Manual Tag Input
     @State private var showAddTagAlert = false
@@ -32,6 +41,27 @@ struct NoteDetailView: View {
     // recordingStartTime is now in SpeechRecognizer
     @State private var recordingDuration: TimeInterval = 0
     private let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    
+    private var isDeleted: Bool {
+        note.deletedAt != nil
+    }
+
+    private var isVoiceProcessing: Bool {
+        if let state = voiceService.processingStates[note.id],
+           case .processing = state {
+            return true
+        }
+        return false
+    }
+    
+    private var trashCountdownText: String? {
+        guard let deletedAt = note.deletedAt else { return nil }
+        let daysRemaining = TrashPolicy.daysRemaining(from: deletedAt)
+        if daysRemaining == 0 {
+            return "This note will be permanently deleted today."
+        }
+        return "This note will be permanently deleted in \(daysRemaining) days."
+    }
 
     var body: some View {
         ZStack {
@@ -54,7 +84,18 @@ struct NoteDetailView: View {
                     
                     Spacer()
                     
-                    if speechRecognizer.isRecording {
+                    if isDeleted {
+                        Button(action: restoreNote) {
+                            Label("Restore", systemImage: "arrow.uturn.left")
+                                .font(.system(size: 14, weight: .semibold))
+                                .foregroundColor(.accentPrimary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color.accentPrimary.opacity(0.1))
+                                .clipShape(Capsule())
+                        }
+                        .accessibilityLabel("Restore Note")
+                    } else if speechRecognizer.isRecording {
                         // Compact Recording State in Header
                         HStack(spacing: 8) {
                             Text(timeString(from: recordingDuration))
@@ -101,9 +142,18 @@ struct NoteDetailView: View {
                             
                             // More Menu (Ellipsis)
                             Menu {
+                                if isDeleted {
+                                    Button(action: restoreNote) {
+                                        Label("Restore", systemImage: "arrow.uturn.left")
+                                    }
+                                }
                                 
                                 Button(role: .destructive, action: { showDeleteConfirmation = true }) {
                                     Label("Delete Note", systemImage: "trash")
+                                }
+                                
+                                Button(role: .destructive, action: { showPermanentDeleteConfirmation = true }) {
+                                    Label("Delete Permanently", systemImage: "trash.slash")
                                 }
                             } label: {
                                 Image(systemName: "ellipsis")
@@ -120,7 +170,22 @@ struct NoteDetailView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
                 
-
+                if let trashCountdownText {
+                    HStack(spacing: 10) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 14))
+                            .foregroundColor(.red.opacity(0.8))
+                        Text(trashCountdownText)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.textSub)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.red.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                }
 
                 if let state = voiceService.processingStates[note.id],
                    case .processing = state,
@@ -230,11 +295,13 @@ struct NoteDetailView: View {
                             .padding(.top, 0)
                             .padding(.bottom, 16)
                             .padding(.horizontal, 20)
+                            .opacity(isDeleted ? 0.5 : 1.0)
+                            .allowsHitTesting(!isDeleted)
                             
                             // Rich Text Editor - renders markdown as formatted text
                             RichTextEditorView(
                                 text: $note.content,
-                                isEditable: !isProcessing && voiceService.processingStates[note.id] != .processing,
+                                isEditable: !isProcessing && voiceService.processingStates[note.id] != .processing && !isDeleted,
                                 font: .systemFont(ofSize: 17),
                                 textColor: UIColor(Color.textMain),
                                 bottomInset: 40,
@@ -372,6 +439,35 @@ struct NoteDetailView: View {
                 }
                 .zIndex(100)
             }
+
+            // Processing Toast (temporary, auto-dismiss)
+            if showProcessingToast {
+                VStack {
+                    Spacer()
+                    HStack(spacing: 10) {
+                        Image(systemName: "clock.arrow.circlepath")
+                            .font(.system(size: 14))
+                            .foregroundColor(.textSub)
+                        Text("Still working on this. Feel free to do something else and return.")
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                            .foregroundColor(.textMain)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                    .background(.ultraThinMaterial)
+                    .clipShape(Capsule())
+                    .shadow(color: Color.black.opacity(0.08), radius: 8, y: 4)
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 18)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                .zIndex(90)
+            }
             
             // AI Action Review Toolbar (Floats at bottom only when reviewing changes)
             if showAIToolbar {
@@ -422,6 +518,14 @@ struct NoteDetailView: View {
         } message: {
             Text("Are you sure you want to delete this note? This action cannot be undone.")
         }
+        .alert("Delete Permanently", isPresented: $showPermanentDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete Permanently", role: .destructive) {
+                deleteNotePermanently()
+            }
+        } message: {
+            Text("This will permanently delete the note. This action cannot be undone.")
+        }
 
         .onReceive(timer) { _ in
             if speechRecognizer.isRecording, let startTime = speechRecognizer.recordingStartTime {
@@ -448,10 +552,41 @@ struct NoteDetailView: View {
                 isProcessing = false
             }
         }
-        .task {
+        .onChange(of: isVoiceProcessing) { _, processing in
+            if processing {
+                guard !hasShownProcessingToast else { return }
+                hasShownProcessingToast = true
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                    showProcessingToast = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        showProcessingToast = false
+                    }
+                }
+            } else {
+                hasShownProcessingToast = false
+            }
+        }
+        .onAppear {
+            initialContent = note.content
+            initialTags = Set(note.tags.map { $0.id })
+
+            if isVoiceProcessing, !hasShownProcessingToast {
+                hasShownProcessingToast = true
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                    showProcessingToast = true
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        showProcessingToast = false
+                    }
+                }
+            }
+            
             // If the note has no tags and no suggestions, trigger once
             if note.tags.isEmpty && note.suggestedTags.isEmpty && !note.content.isEmpty {
-                await generateTags()
+                Task { await generateTags() }
             }
         }
         .onChange(of: note.content) { oldValue, newValue in
@@ -527,8 +662,7 @@ struct NoteDetailView: View {
                 isProgrammaticContentUpdate = true
                 note.content = result
                 note.updatedAt = Date()
-                try? modelContext.save()
-                Task { await syncManager.syncIfNeeded(context: modelContext) }
+                persistAndSync()
                 
                 isProcessing = false
                 withAnimation {
@@ -555,8 +689,7 @@ struct NoteDetailView: View {
             isProgrammaticContentUpdate = true
             note.content = aiOriginalContent
             note.updatedAt = Date()
-            try? modelContext.save()
-            Task { await syncManager.syncIfNeeded(context: modelContext) }
+            persistAndSync()
             
             // Dismiss toolbar
             dismissAIToolbar()
@@ -576,8 +709,7 @@ struct NoteDetailView: View {
     private func saveAIContentAndDismissToolbar() {
         // Persist the formatted content and close the toolbar
         note.updatedAt = Date()
-        try? modelContext.save()
-        Task { await syncManager.syncIfNeeded(context: modelContext) }
+        persistAndSync()
         
         dismissAIToolbar()
     }
@@ -625,8 +757,7 @@ struct NoteDetailView: View {
                 note.syncContentStructure(with: modelContext)
                 note.updatedAt = Date()
                 isProcessing = false
-                try? modelContext.save()
-                Task { await syncManager.syncIfNeeded(context: modelContext) }
+                persistAndSync()
                 DispatchQueue.main.async {
                     isProgrammaticContentUpdate = false
                 }
@@ -641,6 +772,15 @@ struct NoteDetailView: View {
     }
     
     private func updateTimestampAndDismiss() {
+        if isDeleted {
+            dismiss()
+            return
+        }
+        
+        // Detect if anything changed
+        let currentTags = Set(note.tags.map { $0.id })
+        let hasChanged = note.content != initialContent || currentTags != initialTags
+        
         // Automatically delete if content is empty (referencing Apple Notes behavior)
         let isVoiceProcessing: Bool = {
             if let state = voiceService.processingStates[note.id],
@@ -655,11 +795,13 @@ struct NoteDetailView: View {
             return
         }
 
-        // Update the timestamp to track when the note was last modified
-        note.updatedAt = Date()
-        try? modelContext.save()
-        TagService.shared.cleanupEmptyTags(context: modelContext)
-        Task { await syncManager.syncIfNeeded(context: modelContext) }
+        if hasChanged {
+            // Update the timestamp to track when the note was last modified
+            note.updatedAt = Date()
+            persistAndSync()
+            TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
+        }
+        
         dismiss()
     }
 
@@ -671,9 +813,27 @@ struct NoteDetailView: View {
             return
         }
         note.markDeleted()
-        try? modelContext.save()
-        TagService.shared.cleanupEmptyTags(context: modelContext)
-        Task { await syncManager.syncIfNeeded(context: modelContext) }
+        persistAndSync()
+        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
+        dismiss()
+    }
+    
+    private func restoreNote() {
+        guard note.deletedAt != nil else { return }
+        let now = Date()
+        note.deletedAt = nil
+        note.updatedAt = now
+        for tag in note.tags where tag.deletedAt != nil {
+            tag.deletedAt = nil
+            tag.updatedAt = now
+        }
+        persistAndSync()
+    }
+    
+    private func deleteNotePermanently() {
+        modelContext.delete(note)
+        persistAndSync()
+        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
         dismiss()
     }
     
@@ -690,21 +850,30 @@ struct NoteDetailView: View {
             if let existing = existing {
                 if !note.tags.contains(where: { $0.id == existing.id }) {
                     note.tags.append(existing)
-                    let now = Date()
-                    existing.lastUsedAt = now
-                    existing.updatedAt = now
-                    note.updatedAt = now
+                    touchTag(existing, note: note)
                 }
             } else {
-                let newTag = Tag(name: tagName)
+                guard let userId = AuthService.shared.currentUserId else { return }
+                let newTag = Tag(name: tagName, userId: userId)
                 modelContext.insert(newTag)
                 note.tags.append(newTag)
                 note.updatedAt = Date()
             }
             
-            try? modelContext.save()
-            Task { await syncManager.syncIfNeeded(context: modelContext) }
+            persistAndSync()
         }
+    }
+
+    private func persistAndSync() {
+        try? modelContext.save()
+        Task { await syncManager.syncIfNeeded(context: modelContext) }
+    }
+
+    private func touchTag(_ tag: Tag, note: Note? = nil) {
+        let now = Date()
+        tag.lastUsedAt = now
+        tag.updatedAt = now
+        note?.updatedAt = now
     }
 }
 
@@ -829,7 +998,7 @@ struct FlowLayout: Layout {
 }
 
 #Preview {
-    NoteDetailView(note: Note(content: "Hello"))
+    NoteDetailView(note: Note(content: "Hello", userId: "preview-user"))
         .environmentObject(SpeechRecognizer())
         .modelContainer(DataService.shared.container!)
         .environmentObject(SyncManager())

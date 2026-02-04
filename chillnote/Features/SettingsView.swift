@@ -24,8 +24,12 @@ struct SettingsView: View {
     @State private var exportURL: URL?
     @State private var isExporting = false
     
+    // Auto Navigation
+    var autoNavigateToAI: Bool = false
+    @State private var isAIConfigActive = false
+    
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ZStack {
                 Color.bgPrimary.ignoresSafeArea()
                 
@@ -52,6 +56,7 @@ struct SettingsView: View {
                     ScrollView {
                         VStack(spacing: 24) {
                             accountSection
+                            aiCapabilitiesSection
                             dataSection
                             supportSection
                             signOutSection
@@ -62,6 +67,17 @@ struct SettingsView: View {
                 }
             }
             .navigationBarHidden(true)
+            .navigationDestination(isPresented: $isAIConfigActive) {
+                ChillRecipesView()
+            }
+            .onAppear {
+                if autoNavigateToAI {
+                    // Small delay to ensure View is fully loaded before triggering navigation
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        isAIConfigActive = true
+                    }
+                }
+            }
 
             .sheet(isPresented: $showPrivacy) {
                 LegalTextView(title: "Privacy Policy", bodyText: privacyText)
@@ -97,7 +113,8 @@ struct SettingsView: View {
                 Button("Delete", role: .destructive) {
                     isDeleting = true
                     Task {
-                        if await authService.deleteAccount() {
+                        let success = await authService.deleteAccount()
+                        if success {
                             hasGuestAccess = false
                             dismiss()
                         } else {
@@ -115,41 +132,16 @@ struct SettingsView: View {
                 Text(authService.errorMessage ?? "An unknown error occurred.")
             }
             .disabled(isDeleting)
-            .overlay {
-                if isDeleting {
-                    ZStack {
-                        Color.black.opacity(0.3).ignoresSafeArea()
-                        ProgressView("Deleting...")
-                            .controlSize(.large)
-                            .padding(24)
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(radius: 10)
-                    }
-                }
-            }
         }
     }
-    
-    // MARK: - Sections
+
+// MARK: - Sections
     
     private var accountSection: some View {
         VStack(spacing: 0) {
             if authService.isSignedIn {
                 VStack(spacing: 16) {
-                    HStack(spacing: 16) {
-                        ZStack {
-                            Circle()
-                                .fill(storeService.currentTier == .pro ? 
-                                      AnyShapeStyle(LinearGradient(colors: [Color.accentPrimary, Color.purple], startPoint: .topLeading, endPoint: .bottomTrailing)) :
-                                      AnyShapeStyle(Color.gray.opacity(0.1)))
-                                .frame(width: 56, height: 56)
-                            
-                            Image(systemName: storeService.currentTier == .pro ? "sparkles" : "person.fill")
-                                .font(.system(size: 24))
-                                .foregroundColor(storeService.currentTier == .pro ? .white : .gray)
-                        }
-                        
+                    HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
                                 Text("My Account")
@@ -164,22 +156,14 @@ struct SettingsView: View {
                                         .background(Capsule().fill(Color.accentPrimary))
                                 }
                             }
-                            if let email = authService.currentUser?.email {
-                                HStack(spacing: 4) {
-                                    let provider = authService.loginProvider
-                                    if provider.contains("google") {
-                                        Image(systemName: "globe")
-                                    } else if provider.contains("apple") {
-                                        Image(systemName: "apple.logo")
-                                    } else {
-                                        Image(systemName: "envelope")
-                                    }
-                                    
-                                    Text(email)
-                                }
-                                .font(.caption)
-                                .foregroundColor(.textSub)
+                            let rawEmail = authService.currentUser?.email ?? ""
+                            let emailLabel = rawEmail.isEmpty ? "Unknown email" : rawEmail
+                            HStack(spacing: 4) {
+                                Image(systemName: loginProviderIconName)
+                                Text(emailLabel)
                             }
+                            .font(.caption)
+                            .foregroundColor(.textSub)
                         }
                         Spacer()
                     }
@@ -249,6 +233,24 @@ struct SettingsView: View {
         .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
     }
     
+    private var aiCapabilitiesSection: some View {
+        VStack(spacing: 0) {
+            
+            // New Chill Recipes Link
+            Button {
+                isAIConfigActive = true
+            } label: {
+                SettingItem(icon: "book.closed", iconColor: .accentPrimary, label: "Chill Recipes")
+            }
+            .buttonStyle(.plain)
+            
+        }
+        .padding(.bottom, 8)
+        .background(Color.white)
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
+    }
+    
     private var dataSection: some View {
         VStack(spacing: 0) {
             Button(action: exportAllNotes) {
@@ -257,6 +259,13 @@ struct SettingsView: View {
             .buttonStyle(.plain)
             .disabled(isExporting)
             
+            Divider().padding(.leading, 56)
+
+            Button(action: openAppSettings) {
+                SettingItem(icon: "globe", iconColor: .accentPrimary, label: "settings.language")
+            }
+            .buttonStyle(.plain)
+
             Divider().padding(.leading, 56)
             
             Button(action: openAppSettings) {
@@ -271,13 +280,6 @@ struct SettingsView: View {
     
     private var supportSection: some View {
         VStack(spacing: 0) {
-            Button(action: openAppSettings) {
-                SettingItem(icon: "globe", iconColor: .accentPrimary, label: "settings.language")
-            }
-            .buttonStyle(.plain)
-            
-            Divider().padding(.leading, 56)
-
             Button(action: sendFeedback) {
                 SettingItem(icon: "envelope", iconColor: .accentPrimary, label: "Send Feedback")
             }
@@ -285,14 +287,16 @@ struct SettingsView: View {
             
             Divider().padding(.leading, 56)
             
-            Button(action: { showPrivacy = true }) {
+            Divider().padding(.leading, 56)
+            
+            Button(action: openPrivacyPolicy) {
                 SettingItem(icon: "hand.raised", iconColor: .accentPrimary, label: "Privacy Policy")
             }
             .buttonStyle(.plain)
             
             Divider().padding(.leading, 56)
             
-            Button(action: { showAgreement = true }) {
+            Button(action: openUserAgreement) {
                 SettingItem(icon: "doc.text", iconColor: .accentPrimary, label: "User Agreement")
             }
             .buttonStyle(.plain)
@@ -447,13 +451,24 @@ private extension SettingsView {
     }
     
     func sendFeedback() {
-        guard let url = URL(string: "mailto:skye@sponteoai.com?subject=ChillNote%20Feedback") else { return }
+        guard let url = URL(string: "mailto:support@chillnoteai.com?subject=ChillNote%20Feedback") else { return }
+        UIApplication.shared.open(url)
+    }
+    
+    func openPrivacyPolicy() {
+        guard let url = URL(string: "https://www.chillnoteai.com/privacy.html") else { return }
+        UIApplication.shared.open(url)
+    }
+    
+    func openUserAgreement() {
+        guard let url = URL(string: "https://www.chillnoteai.com/terms.html") else { return }
         UIApplication.shared.open(url)
     }
     
     func exportAllNotes() {
         isExporting = true
-        Task {
+        Task { @MainActor in
+            defer { isExporting = false }
             do {
                 // Ensure we are on main actor for modelContext access if strict, 
                 // but NoteExportService needs context passed to it.
@@ -466,7 +481,20 @@ private extension SettingsView {
                 print("Export failed: \(error)")
                 // In production, show error alert
             }
-            isExporting = false
+        }
+    }
+
+    var loginProviderIconName: String {
+        guard authService.isSignedIn else {
+            return "envelope"
+        }
+        let providerLiteral = authService.loginProvider.lowercased()
+        if providerLiteral.contains("google") {
+            return "globe"
+        } else if providerLiteral.contains("apple") {
+            return "apple.logo"
+        } else {
+            return "envelope"
         }
     }
 }

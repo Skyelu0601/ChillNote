@@ -7,8 +7,23 @@ struct HomeView: View {
     @EnvironmentObject private var syncManager: SyncManager
     @Environment(\.scenePhase) private var scenePhase
 
+    private var currentUserId: String {
+        authService.currentUserId ?? "unknown"
+    }
+
     @Query(filter: #Predicate<Note> { $0.deletedAt == nil }, sort: [SortDescriptor(\Note.createdAt, order: .reverse)])
     private var allNotes: [Note]
+    
+    @Query(filter: #Predicate<Note> { $0.deletedAt != nil }, sort: [SortDescriptor(\Note.deletedAt, order: .reverse)])
+    private var deletedNotes: [Note]
+    
+    private var userNotes: [Note] {
+        allNotes.filter { $0.userId == currentUserId }
+    }
+    
+    private var userDeletedNotes: [Note] {
+        deletedNotes.filter { $0.userId == currentUserId }
+    }
     
 
 
@@ -37,27 +52,83 @@ struct HomeView: View {
     @State private var showMergeSuccessAlert = false
     @State private var notesToDeleteAfterMerge: [Note] = []
     
+    // Batch Tagging State
+    @State private var showBatchTagSheet = false
+    @Query(sort: \Tag.name) private var availableTags: [Tag]
+    
+    // Agent Action Inputs
+    @State private var pendingAgentAction: AIAgentAction?
+    @State private var isCustomActionInputPresented = false
+    @State private var customActionPrompt = ""
+    @State private var isTranslateInputPresented = false
+    @State private var translateTargetLanguage = ""
+    @StateObject private var recipeManager = RecipeManager.shared
+    @State private var showChillRecipes = false
+    
+    // Selection Limits
+    private let askSoftLimit = 10
+    private let askHardLimit = 20
+    private let recipeSoftLimit = 5
+    private let recipeHardLimit = 8
+    @State private var showAskSoftLimitAlert = false
+    @State private var showAskHardLimitAlert = false
+    @State private var showRecipeSoftLimitAlert = false
+    @State private var showRecipeHardLimitAlert = false
+    @State private var pendingRecipeForConfirmation: AgentRecipe?
+
+    private let translateLanguages: [TranslateLanguage] = [
+        TranslateLanguage(id: "zh-Hans", name: "Simplified Chinese", displayName: "简体中文", flag: "🇨🇳"),
+        TranslateLanguage(id: "zh-Hant", name: "Traditional Chinese", displayName: "繁体中文", flag: "🇭🇰"),
+        TranslateLanguage(id: "fr", name: "French", displayName: "法语", flag: "🇫🇷"),
+        TranslateLanguage(id: "en", name: "English", displayName: "英语", flag: "🇺🇸"),
+        TranslateLanguage(id: "de", name: "German", displayName: "德语", flag: "🇩🇪"),
+        TranslateLanguage(id: "ja", name: "Japanese", displayName: "日语", flag: "🇯🇵"),
+        TranslateLanguage(id: "es", name: "Spanish", displayName: "西班牙语", flag: "🇪🇸"),
+        TranslateLanguage(id: "ko", name: "Korean", displayName: "韩语", flag: "🇰🇷")
+    ]
+    
+    // Sidebar & Filtering
+    
     // Sidebar & Filtering
     @State private var isSidebarPresented = false
     @State private var selectedTag: Tag? = nil
+    @State private var isTrashSelected = false
+    @State private var showEmptyTrashConfirmation = false
     
     // Search
     @State private var searchText = ""
     @State private var isSearchVisible = false
     @FocusState private var isSearchFocused: Bool
+    @State private var cachedVisibleNotes: [Note] = []
+    @State private var searchDebounceTask: Task<Void, Never>?
     
     // Recording Recovery
     @State private var pendingRecordings: [PendingRecording] = []
     @State private var showRecoveryAlert = false
     @State private var isRecoveringRecording = false
+
+    // Maintenance / Performance
+    @State private var hasScheduledInitialMaintenance = false
+    @State private var lastMaintenanceAt: Date?
+    private let minimumMaintenanceInterval: TimeInterval = 30
     
     // Voice Processing
     // (Handled server-side in /ai/voice-note)
     @ObservedObject private var voiceService = VoiceProcessingService.shared
 
-    private var recentNotes: [Note] {
-        let activeNotes = allNotes
-        var result = activeNotes
+    private func computeVisibleNotes() -> [Note] {
+        if isTrashSelected {
+            var result = userDeletedNotes
+            if !searchText.isEmpty {
+                result = result.filter { note in
+                    note.content.localizedCaseInsensitiveContains(searchText) ||
+                    note.tags.contains { $0.name.localizedCaseInsensitiveContains(searchText) }
+                }
+            }
+            return result
+        }
+        
+        var result = userNotes
         
         // 1. Tag Filter
         if let tag = selectedTag {
@@ -72,486 +143,311 @@ struct HomeView: View {
                 note.content.localizedCaseInsensitiveContains(searchText) ||
                 note.tags.contains { $0.name.localizedCaseInsensitiveContains(searchText) }
             }
-            return result // Return all matches when searching
+            return sortNotes(result)
         }
         
-        return Array(result.prefix(50))
+        return Array(sortNotes(result).prefix(50))
     }
 
+    private func refreshVisibleNotes() {
+        cachedVisibleNotes = computeVisibleNotes()
+        if !selectedNotes.isEmpty {
+            let visibleIds = Set(cachedVisibleNotes.map { $0.id })
+            selectedNotes = selectedNotes.intersection(visibleIds)
+        }
+    }
+
+    private func scheduleSearchRefresh() {
+        searchDebounceTask?.cancel()
+        searchDebounceTask = Task {
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            await MainActor.run {
+                refreshVisibleNotes()
+            }
+        }
+    }
+    
+    private func sortNotes(_ notes: [Note]) -> [Note] {
+        notes.sorted { lhs, rhs in
+            switch (lhs.pinnedAt, rhs.pinnedAt) {
+            case let (left?, right?):
+                if left == right {
+                    return lhs.createdAt > rhs.createdAt
+                }
+                return left > right
+            case (_?, nil):
+                return true
+            case (nil, _?):
+                return false
+            case (nil, nil):
+                return lhs.createdAt > rhs.createdAt
+            }
+        }
+    }
+    
+    private var headerTitle: String {
+        if isTrashSelected {
+            return "Recycle Bin"
+        }
+        return selectedTag?.name ?? "ChillNote"
+    }
+    
     var body: some View {
-        NavigationStack(path: $navigationPath) {
-            ZStack(alignment: .bottom) {
-                VStack(spacing: 0) {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                if !isSelectionMode {
-                                    // Sidebar Toggle
-                                    Button(action: {
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                            isSidebarPresented.toggle()
-                                        }
-                                    }) {
-                                        Image(systemName: "line.3.horizontal")
-                                            .font(.system(size: 22, weight: .medium)) // Slightly larger, cleaner weight
-                                            .foregroundColor(.textMain)
-                                            .frame(width: 44, height: 44)
-                                    }
-                                    .buttonStyle(.bouncy)
-                                    .padding(.leading, -10)
-                                    
-                                    Text(selectedTag?.name ?? "ChillNote")
-                                        .font(.displayMedium)
-                                        .foregroundColor(.textMain)
-                                    
-                                    Spacer()
-                                    
-                                    // RIGHT SIDE ACTIONS
-                                    HStack(spacing: 12) {
-                                        // 1. AI Context Button (Featured)
-                                        Button(action: enterSelectionMode) {
-                                            Image("chillohead_touming")
-                                                .resizable()
-                                                .scaledToFit()
-                                                .frame(width: 48, height: 48) // Back to slightly larger pop size
-                                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2) // Maintain the subtle lift
-                                                .opacity(speechRecognizer.isRecording ? 0.3 : 1.0)
-                                                .grayscale(speechRecognizer.isRecording ? 1.0 : 0.0)
-                                        }
-                                        .buttonStyle(.bouncy)
-                                        .disabled(speechRecognizer.isRecording)
-                                        .accessibilityLabel("Enter AI Context Mode")
-                                        
-                                        // 2. Search Button
-                                        Button(action: {
-                                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                                isSearchVisible.toggle()
-                                                if !isSearchVisible {
-                                                    searchText = ""
-                                                    hideKeyboard()
-                                                } else {
-                                                    isSearchFocused = true
-                                                }
-                                            }
-                                        }) {
-                                            Image(systemName: "magnifyingglass")
-                                                .font(.system(size: 20, weight: .regular))
-                                                .foregroundColor(isSearchVisible ? .accentPrimary : .textMain.opacity(0.8))
-                                                .frame(width: 40, height: 40)
-                                                .background(Color.white)
-                                                .clipShape(Circle())
-                                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                                                .opacity(speechRecognizer.isRecording ? 0.3 : 1.0)
-                                        }
-                                        .buttonStyle(.bouncy)
-                                        .disabled(speechRecognizer.isRecording)
-                                        .accessibilityLabel("Search")
-                                    }
-                                } else {
-                                    // Selection Mode Header (Clean Layout)
-                                    HStack {
-                                        // Left: Cancel
-                                        Button("common.cancel") {
-                                            exitSelectionMode()
-                                        }
-                                        .font(.bodyMedium)
-                                        .foregroundColor(.textSub)
-                                        
-                                        Spacer()
-                                        
-                                        // Right: Actions
-                                        HStack(spacing: 20) {
-                                            if selectedNotes.count < recentNotes.count {
-                                                Button("home.action.selectAll") {
-                                                    selectAllNotes()
-                                                }
-                                                .font(.bodyMedium)
-                                                .foregroundColor(.accentPrimary)
-                                            } else {
-                                                Button("home.action.deselectAll") {
-                                                    selectedNotes.removeAll()
-                                                }
-                                                .font(.bodyMedium)
-                                                .foregroundColor(.accentPrimary)
-                                            }
-                                            
-                                            Button(action: { showDeleteConfirmation = true }) {
-                                                Image(systemName: "trash")
-                                                    .font(.system(size: 18, weight: .medium)) // refined weight
-                                                    .foregroundColor(.red.opacity(0.8)) // slightly softer red
-                                            }
-                                            .disabled(selectedNotes.isEmpty)
-                                            .opacity(selectedNotes.isEmpty ? 0.3 : 1.0)
-                                        }
-                                    }
-                                    .padding(.vertical, 8)
-                                }
-                            }
-                            .padding(.horizontal, 24)
-                            .padding(.top, 20)
-                            
-                            // Search Bar
-                            if !isSelectionMode && isSearchVisible {
-                                searchBar
-                                    .padding(.horizontal, 24)
-                                    .padding(.top, 8)
-                            }
-                            
+        homeBodyView
+    }
 
-
-                            if recentNotes.isEmpty {
-                                Text("home.empty.title")
-                                    .font(.bodyMedium)
-                                    .foregroundColor(.textSub)
-                                    .padding(.horizontal, 24)
-                                    .padding(.top, 12)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            } else {
-                                LazyVStack(spacing: 16) {
-                                    ForEach(recentNotes) { note in
-                                        if isSelectionMode {
-                                            NoteCard(
-                                                note: note,
-                                                isSelectionMode: true,
-                                                isSelected: selectedNotes.contains(note.id),
-                                                onSelectionToggle: {
-                                                    toggleNoteSelection(note)
-                                                }
-                                            )
-                                        } else {
-                                            NavigationLink(value: note) {
-                                                NoteCard(note: note)
-                                            }
-                                            .buttonStyle(.plain)
-                                            .contextMenu {
-                                                Button(role: .destructive) {
-                                                    deleteNote(note)
-                                                } label: {
-                                                    Label("Delete", systemImage: "trash")
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 24)
-                                .padding(.bottom, 100) // Extra padding for floating mic button
-                            }
-                        }
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            hideKeyboard()
-                        }
-                    }
-                    .background(Color.bgPrimary)
-                    .scrollDismissesKeyboard(.interactively)
-                    .navigationDestination(for: Note.self) { note in
-                        NoteDetailView(note: note)
-                            .environmentObject(speechRecognizer)
-                    }
-                }
-                
-                // Floating Voice Input
-                if !isSelectionMode && !isSearchFocused && searchText.isEmpty {
-                    ChatInputBar(
-                        text: $inputText,
-                        isVoiceMode: $isVoiceMode,
-                        speechRecognizer: speechRecognizer,
-                        onSendText: {
-                            handleTextSubmit()
-                        },
-                        onCancelVoice: {
-                            speechRecognizer.stopRecording(reason: .cancelled)
-                        },
-                        onConfirmVoice: {
-                            speechRecognizer.stopRecording()
-                        },
-                        onCreateBlankNote: {
-                            createAndOpenBlankNote()
-                        }
-                    )
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-                
-                // Twin Floating Icons for Selection Mode
-                // Text-Based Floating Action Bar (The "Chill" Capsule)
-                if isSelectionMode {
-                    VStack {
-                        Spacer()
-                        
-                        // Action Menu (Text List) - Anchored above the bar
-                        if isAgentMenuOpen {
-                            VStack(spacing: 8) {
-                                ForEach(AIAgentAction.defaultActions) { action in
-                                    Button(action: {
-                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                            isAgentMenuOpen = false
-                                        }
-                                        Task { await executeAgentAction(action) }
-                                    }) {
-                                        HStack {
-                                            Text(action.title)
-                                                .font(.system(size: 16, weight: .medium, design: .rounded))
-                                                .foregroundColor(.accentPrimary)
-                                            
-                                            Spacer()
-                                            
-                                            // Optional: subtly keep the icon for visual anchor, or remove if strictly purist
-                                            // Keeping it small and subtle helps quick scanning
-                                            Image(systemName: action.icon)
-                                                .font(.system(size: 14))
-                                                .foregroundColor(.accentPrimary.opacity(0.6))
-                                        }
-                                        .padding(.vertical, 16)
-                                        .padding(.horizontal, 24)
-                                        .background(Color.white)
-                                        .cornerRadius(100) // Pill shape for individual actions
-                                        .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
-                                    }
-                                    .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.9)))
-                                }
-                            }
-                            .padding(.bottom, 12)
-                            .padding(.horizontal, 40) // Match approximate width of main bar
-                            .transition(.opacity)
-                        }
-                        
-                        // Main Control Capsule
-                        HStack(spacing: 0) {
-                            // Left: Ask
-                            Button(action: startAIChat) {
-                                Text("home.askChillo")
-                                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                    .foregroundColor(.accentPrimary)
-                                    .frame(maxWidth: .infinity)
-                                    .frame(height: 56)
-                            }
-                            
-                            // Divider
-                            Rectangle()
-                                .fill(Color.accentPrimary.opacity(0.15))
-                                .frame(width: 1, height: 24)
-                            
-                            // Right: Actions
-                            Button(action: {
-                                withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                                    isAgentMenuOpen.toggle()
-                                }
-                            }) {
-                                HStack(spacing: 4) {
-                                    Text("home.actions")
-                                        .font(.system(size: 16, weight: .semibold, design: .rounded))
-                                    
-                                    // Subtle chevron to indicate menu
-                                    Image(systemName: "chevron.up")
-                                        .font(.system(size: 12, weight: .bold))
-                                        .rotationEffect(.degrees(isAgentMenuOpen ? 180 : 0))
-                                }
-                                .foregroundColor(.accentPrimary)
-                                .frame(maxWidth: .infinity)
-                                .frame(height: 56)
-                            }
-                        }
-                        .background(Color.white) // Clean, premium white background
-                        .clipShape(Capsule())
-                        .shadow(color: Color.black.opacity(0.1), radius: 12, x: 0, y: 6) // Soft, premium shadow
-                        .padding(.horizontal, 40)
-                        .padding(.bottom, 32)
-                    }
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(100)
-                }
-                
-                // Agent Menu Overlay (Global Layer)
-                // (Old global menu overlay removed in favor of local stack)
-                if isSelectionMode && isAgentMenuOpen {
-                    // Just the dismiss background
-                     Color.black.opacity(0.001)
-                        .ignoresSafeArea()
-                        .onTapGesture {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                isAgentMenuOpen = false
-                            }
-                        }
-                        .zIndex(99) // Just below the text pill
-                }
-                
-                // Progress Overlay for Agent Actions
-                if isExecutingAction, let progress = actionProgress {
-                    ZStack {
-                        Color.black.opacity(0.4)
-                            .ignoresSafeArea()
-                        
-                        VStack(spacing: 16) {
-                            ProgressView()
-                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                                .scaleEffect(1.5)
-                            
-                            Text(progress)
-                                .font(.bodyMedium)
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                        }
-                        .padding(32)
-                        .background(Color.black.opacity(0.8))
-                        .cornerRadius(20)
-                    }
-                }
+    private var homeBodyView: some View {
+        let onToggleSidebar: () -> Void = {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                isSidebarPresented.toggle()
             }
-            // Screen Edge Swipe to Open Sidebar
-            .gesture(
-                DragGesture()
-                    .onEnded { value in
-                        // Detect swipe from left edge (first 50pts) moving right
-                        if value.startLocation.x < 50 && value.translation.width > 60 {
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                                isSidebarPresented = true
-                            }
-                        }
-                    }
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.bgPrimary.ignoresSafeArea())
-            .overlay {
-                // Sidebar Overlay
-                SidebarView(
-                    isPresented: $isSidebarPresented,
-                    selectedTag: $selectedTag,
-                    onSettingsTap: { showingSettings = true }
-                )
+        }
+        let onOpenSidebar: () -> Void = {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                isSidebarPresented = true
             }
-            .navigationBarHidden(true)
-            .fullScreenCover(isPresented: $showingSettings) {
-                SettingsView()
-            }
-
-            .fullScreenCover(isPresented: $showAIChat) {
-                AIContextChatView(contextNotes: getSelectedNotes())
-                    .environmentObject(syncManager)
-                    .onDisappear {
-                        exitSelectionMode()
-                    }
-            }
-            .sheet(isPresented: $showAgentActionsSheet) {
-                AIAgentActionsSheet(selectedCount: selectedNotes.count) { action in
-                    Task { await executeAgentAction(action) }
-                }
-            }
-            .alert("Delete Notes", isPresented: $showDeleteConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Delete \(selectedNotes.count) Note\(selectedNotes.count == 1 ? "" : "s")", role: .destructive) {
-                    deleteSelectedNotes()
-                }
-            } message: {
-                Text("Are you sure you want to delete \(selectedNotes.count) note\(selectedNotes.count == 1 ? "" : "s")? This action cannot be undone.")
-            }
-            .alert("Merge Successful", isPresented: $showMergeSuccessAlert) {
-                Button("Keep Original Notes", role: .cancel) {
-                    exitSelectionMode()
-                }
-                Button("Delete Originals", role: .destructive) {
-                    deleteNotes(notesToDeleteAfterMerge)
-                    exitSelectionMode()
-                }
-            } message: {
-                Text("The notes have been merged into a new note. Would you like to delete the original \(notesToDeleteAfterMerge.count) notes?")
-            }
-            .onChange(of: speechRecognizer.recordingState) { _, newState in
-                switch newState {
-                case .processing:
-                    // Only create a new note if we are on the home screen (not already in a note)
-                    // This prevents duplicate notes when Retrying from NoteDetailView
-                    guard navigationPath.isEmpty else { return }
-                    
-                    // Navigate immediately when user hits done
-                    let note = Note(content: "")
-                    
-                    // Apply current tag context if active
-                    if let currentTag = selectedTag {
-                        note.tags.append(currentTag)
-                        let now = Date()
-                        currentTag.lastUsedAt = now
-                        currentTag.updatedAt = now
-                        note.updatedAt = now
-                    }
-                    
-                    modelContext.insert(note)
-                    try? modelContext.save()
-                    
-                    VoiceProcessingService.shared.processingStates[note.id] = .processing
-                    currentRecordingNote = note
-                    navigationPath.append(note)
-                    
-                case .idle:
-                    // Post-processing update
-                    if let note = currentRecordingNote {
-                        let rawText = speechRecognizer.transcript
-                        if !rawText.isEmpty {
-                            Task {
-                                await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: rawText, context: modelContext)
-                                await syncManager.syncIfNeeded(context: modelContext)
-                            }
-                            
-                            // CRITICAL FIX: Mark recording as complete to clean up the file
-                            // This was missing, causing files to linger and trigger "Unfinished Recording" alerts
-                            speechRecognizer.completeRecording()
-                            
-                        } else {
-                            // Empty? Cancel state
-                            VoiceProcessingService.shared.processingStates.removeValue(forKey: note.id)
-                        }
-                        currentRecordingNote = nil
-                    }
-                    isVoiceMode = false
-                    
-                case .error(let msg):
-                    print("Error recording: \(msg)")
-                    currentRecordingNote = nil
-                    isVoiceMode = false
-                    
-                default: break
-                }
-            }
-            .onChange(of: authService.isSignedIn) { _, isSignedIn in
-                guard !isSignedIn else { return }
-                showingSettings = false
-                isVoiceMode = false
-            }
-            .task {
-                await syncManager.syncIfNeeded(context: modelContext)
-            }
-            .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("StartRecording"))) { _ in
-                isVoiceMode = true
-                speechRecognizer.startRecording()
-            }
-            .onChange(of: scenePhase) { _, newPhase in
-                guard newPhase == .active else { return }
-                Task { await syncManager.syncIfNeeded(context: modelContext) }
-            }
-            .onAppear {
-                checkForPendingRecordings()
-            }
-            .overlay {
-                if showRecoveryAlert && !pendingRecordings.isEmpty {
-                    Color.black.opacity(0.4)
-                        .ignoresSafeArea()
-                        .onTapGesture { /* Prevent dismissal by tapping background */ }
-                    
-                    RecordingRecoveryAlert(
-                        pendingRecordings: pendingRecordings,
-                        onRecover: { recording in
-                            recoverRecording(recording)
-                        },
-                        onDiscard: { recording in
-                            discardRecording(recording)
-                        },
-                        onDismiss: {
-                            showRecoveryAlert = false
-                        }
-                    )
-                    .transition(.scale(scale: 0.9).combined(with: .opacity))
+        }
+        let onToggleSearch: () -> Void = {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                isSearchVisible.toggle()
+                if !isSearchVisible {
+                    searchText = ""
+                    hideKeyboard()
+                } else {
+                    isSearchFocused = true
                 }
             }
         }
+        let onDeselectAll: () -> Void = { selectedNotes.removeAll() }
+        let onShowBatchTagSheet: () -> Void = { showBatchTagSheet = true }
+        let onShowDeleteConfirmation: () -> Void = { showDeleteConfirmation = true }
+        let onShowEmptyTrashConfirmation: () -> Void = { showEmptyTrashConfirmation = true }
+        let onCancelVoice: () -> Void = { speechRecognizer.stopRecording(reason: .cancelled) }
+        let onConfirmVoice: () -> Void = { speechRecognizer.stopRecording() }
+        let onDeleteNotesAfterMerge: () -> Void = {
+            deleteNotes(notesToDeleteAfterMerge)
+            exitSelectionMode()
+        }
+        let onExecutePendingAgentAction: (String) -> Void = { instruction in
+            if let action = pendingAgentAction {
+                Task { await executeAgentAction(action, instruction: instruction) }
+            }
+            pendingAgentAction = nil
+            isCustomActionInputPresented = false
+        }
+        let onTranslateSelect: (String) -> Void = { language in
+            let selectedLanguage = language
+            translateTargetLanguage = selectedLanguage
+            if let action = pendingAgentAction {
+                Task { await executeAgentAction(action, instruction: selectedLanguage) }
+            }
+            translateTargetLanguage = ""
+            pendingAgentAction = nil
+            isTranslateInputPresented = false
+        }
+        let onCloseTranslate: () -> Void = {
+            translateTargetLanguage = ""
+            pendingAgentAction = nil
+            isTranslateInputPresented = false
+        }
+        let onShowSettings: () -> Void = { showingSettings = true }
+        let onAIChatDisappear: () -> Void = { exitSelectionMode() }
+        let onOpenChillRecipes: () -> Void = { showChillRecipes = true }
+        let onCloseChillRecipes: () -> Void = { showChillRecipes = false }
+
+        return HomeBodyView(
+            navigationPath: $navigationPath,
+            isSelectionMode: $isSelectionMode,
+            isSearchFocused: $isSearchFocused,
+            searchText: $searchText,
+            isSearchVisible: $isSearchVisible,
+            isTrashSelected: $isTrashSelected,
+            isAgentMenuOpen: $isAgentMenuOpen,
+            showChillRecipes: $showChillRecipes,
+            showingSettings: $showingSettings,
+            showAIChat: $showAIChat,
+            showAgentActionsSheet: $showAgentActionsSheet,
+            isCustomActionInputPresented: $isCustomActionInputPresented,
+            customActionPrompt: $customActionPrompt,
+            isTranslateInputPresented: $isTranslateInputPresented,
+            translateTargetLanguage: $translateTargetLanguage,
+            showDeleteConfirmation: $showDeleteConfirmation,
+            showMergeSuccessAlert: $showMergeSuccessAlert,
+            showEmptyTrashConfirmation: $showEmptyTrashConfirmation,
+            showBatchTagSheet: $showBatchTagSheet,
+            isSidebarPresented: $isSidebarPresented,
+            selectedTag: $selectedTag,
+            selectedNotes: $selectedNotes,
+            notesToDeleteAfterMerge: $notesToDeleteAfterMerge,
+            inputText: $inputText,
+            isVoiceMode: $isVoiceMode,
+            cachedVisibleNotes: cachedVisibleNotes,
+            availableTags: availableTags,
+            translateLanguages: translateLanguages,
+            recipeManager: recipeManager,
+            speechRecognizer: speechRecognizer,
+            syncManager: syncManager,
+            headerTitle: headerTitle,
+            actionProgress: actionProgress,
+            isExecutingAction: isExecutingAction,
+            searchBar: AnyView(searchBar),
+            getSelectedNotes: { getSelectedNotes() },
+            showAskSoftLimitAlert: $showAskSoftLimitAlert,
+            showAskHardLimitAlert: $showAskHardLimitAlert,
+            showRecipeSoftLimitAlert: $showRecipeSoftLimitAlert,
+            showRecipeHardLimitAlert: $showRecipeHardLimitAlert,
+            askHardLimit: askHardLimit,
+            recipeHardLimit: recipeHardLimit,
+            onToggleSidebar: onToggleSidebar,
+            onOpenSidebar: onOpenSidebar,
+            onEnterSelectionMode: enterSelectionMode,
+            onToggleSearch: onToggleSearch,
+            onExitSelectionMode: exitSelectionMode,
+            onSelectAll: selectAllNotes,
+            onDeselectAll: onDeselectAll,
+            onShowBatchTagSheet: onShowBatchTagSheet,
+            onShowDeleteConfirmation: onShowDeleteConfirmation,
+            onShowEmptyTrashConfirmation: onShowEmptyTrashConfirmation,
+            onRestoreNote: restoreNote,
+            onDeleteNotePermanently: deleteNotePermanently,
+            onTogglePin: togglePin,
+            onDeleteNote: deleteNote,
+            onToggleNoteSelection: toggleNoteSelection,
+            onHandleAgentActionRequest: handleAgentActionRequest,
+            onStartAIChat: startAIChat,
+            onHandleTextSubmit: handleTextSubmit,
+            onCancelVoice: onCancelVoice,
+            onConfirmVoice: onConfirmVoice,
+            onCreateBlankNote: createAndOpenBlankNote,
+            onDeleteSelectedNotes: deleteSelectedNotes,
+            onDeleteNotesAfterMerge: onDeleteNotesAfterMerge,
+            onEmptyTrash: emptyTrash,
+            onApplyTagToSelected: applyTagToSelected,
+            onHideKeyboard: hideKeyboard,
+            onExecutePendingAgentAction: onExecutePendingAgentAction,
+            onTranslateSelect: onTranslateSelect,
+            onCloseTranslate: onCloseTranslate,
+            onShowSettings: onShowSettings,
+            onAIChatDisappear: onAIChatDisappear,
+            onOpenChillRecipes: onOpenChillRecipes,
+            onCloseChillRecipes: onCloseChillRecipes,
+            onConfirmAskSoftLimit: { showAIChat = true },
+            onConfirmRecipeSoftLimit: confirmPendingRecipeOverSoftLimit,
+            onCancelRecipeSoftLimit: { pendingRecipeForConfirmation = nil }
+        )
+        .onChange(of: speechRecognizer.recordingState) { _, newState in
+            switch newState {
+            case .processing:
+                guard navigationPath.isEmpty else { return }
+                let note = Note(content: "", userId: currentUserId)
+                applyCurrentTagContext(to: note)
+                modelContext.insert(note)
+                try? modelContext.save()
+                VoiceProcessingService.shared.processingStates[note.id] = .processing
+                currentRecordingNote = note
+                navigationPath.append(note)
+                
+            case .idle:
+                if let note = currentRecordingNote {
+                    let rawText = speechRecognizer.transcript
+                    if !rawText.isEmpty {
+                        Task {
+                            await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: rawText, context: modelContext)
+                            await syncManager.syncIfNeeded(context: modelContext)
+                        }
+                        speechRecognizer.completeRecording()
+                    } else {
+                        VoiceProcessingService.shared.processingStates.removeValue(forKey: note.id)
+                    }
+                    currentRecordingNote = nil
+                }
+                isVoiceMode = false
+                
+            case .error(let msg):
+                print("Error recording: \(msg)")
+                currentRecordingNote = nil
+                isVoiceMode = false
+                
+            default: break
+            }
+        }
+        .onChange(of: authService.isSignedIn) { _, isSignedIn in
+            guard !isSignedIn else { return }
+            showingSettings = false
+            isVoiceMode = false
+        }
+        .onChange(of: isTrashSelected) { _, newValue in
+            if newValue {
+                exitSelectionMode()
+            }
+            refreshVisibleNotes()
+        }
+        .onChange(of: selectedTag) { _, _ in
+            refreshVisibleNotes()
+        }
+        .onChange(of: searchText) { _, _ in
+            scheduleSearchRefresh()
+        }
+        .onChange(of: allNotes.map { $0.updatedAt }) { _, _ in
+            refreshVisibleNotes()
+        }
+        .onChange(of: deletedNotes.map { $0.deletedAt }) { _, _ in
+            refreshVisibleNotes()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("StartRecording"))) { _ in
+            isVoiceMode = true
+            speechRecognizer.startRecording()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            guard newPhase == .active else { return }
+            scheduleMaintenance(reason: .foreground)
+        }
+        .task {
+            scheduleInitialMaintenance()
+            refreshVisibleNotes()
+        }
+        .overlay {
+            if showRecoveryAlert && !pendingRecordings.isEmpty {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+                    .onTapGesture { }
+                
+                RecordingRecoveryAlert(
+                    pendingRecordings: pendingRecordings,
+                    onRecover: { recording in
+                        recoverRecording(recording)
+                    },
+                    onDiscard: { recording in
+                        discardRecording(recording)
+                    },
+                    onDismiss: {
+                        showRecoveryAlert = false
+                    }
+                )
+                .transition(.scale(scale: 0.9).combined(with: .opacity))
+            }
+        }
+    }
+
+    
+    private func applyTagToSelected(_ tag: Tag) {
+        let notes = getSelectedNotes()
+        guard !notes.isEmpty else { return }
+        
+        withAnimation {
+            for note in notes {
+                if !note.tags.contains(where: { $0.id == tag.id }) {
+                    note.tags.append(tag)
+                }
+            }
+            // Update tag metadata
+            touchTag(tag)
+        }
+        
+        persistAndSync()
+        
+        // Optional: Exit selection mode or give feedback
+        exitSelectionMode()
     }
 
     private func handleTextSubmit() {
@@ -565,24 +461,15 @@ struct HomeView: View {
     }
 
     private func createAndOpenBlankNote() {
-        let note = Note(content: "")
+        let note = Note(content: "", userId: currentUserId)
         
         // Apply current tag context if active
-        if let currentTag = selectedTag {
-            note.tags.append(currentTag)
-            let now = Date()
-            currentTag.lastUsedAt = now
-            currentTag.updatedAt = now
-            note.updatedAt = now
-        }
+        applyCurrentTagContext(to: note)
         
         modelContext.insert(note)
-        try? modelContext.save()
+        persistAndSync()
         
         // No tag generation needed for empty note
-        
-        // Trigger sync
-        Task { await syncManager.syncIfNeeded(context: modelContext) }
         
         // Navigate
         navigationPath.append(note)
@@ -593,16 +480,10 @@ struct HomeView: View {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
-        let note = Note(content: trimmed)
+        let note = Note(content: trimmed, userId: currentUserId)
         
         // Apply current tag context if active
-        if let currentTag = selectedTag {
-            note.tags.append(currentTag)
-            let now = Date()
-            currentTag.lastUsedAt = now
-            currentTag.updatedAt = now
-            note.updatedAt = now
-        }
+        applyCurrentTagContext(to: note)
         
         withAnimation {
             modelContext.insert(note)
@@ -613,8 +494,7 @@ struct HomeView: View {
             }
         }
         
-        try? modelContext.save()
-        Task { await syncManager.syncIfNeeded(context: modelContext) }
+        persistAndSync()
         
         if shouldNavigate {
             navigationPath.append(note)
@@ -658,8 +538,7 @@ struct HomeView: View {
             if !suggestions.isEmpty {
                 await MainActor.run {
                     note.suggestedTags = suggestions
-                    try? modelContext.save()
-                    Task { await syncManager.syncIfNeeded(context: modelContext) }
+                    persistAndSync()
                 }
             }
         } catch {
@@ -674,6 +553,7 @@ struct HomeView: View {
     // MARK: - Selection Mode Methods
     
     private func enterSelectionMode() {
+        guard !isTrashSelected else { return }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             isSelectionMode = true
             selectedNotes.removeAll()
@@ -699,16 +579,25 @@ struct HomeView: View {
     
     private func selectAllNotes() {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            selectedNotes = Set(recentNotes.map { $0.id })
+            selectedNotes = Set(cachedVisibleNotes.map { $0.id })
         }
     }
     
     private func getSelectedNotes() -> [Note] {
-        return recentNotes.filter { selectedNotes.contains($0.id) }
+        return cachedVisibleNotes.filter { selectedNotes.contains($0.id) }
     }
     
     private func startAIChat() {
         guard !selectedNotes.isEmpty else { return }
+        let selectedCount = selectedNotes.count
+        if selectedCount > askHardLimit {
+            showAskHardLimitAlert = true
+            return
+        }
+        if selectedCount > askSoftLimit {
+            showAskSoftLimitAlert = true
+            return
+        }
         showAIChat = true
     }
     
@@ -719,12 +608,121 @@ struct HomeView: View {
         withAnimation {
             note.markDeleted()
         }
-        try? modelContext.save()
-        TagService.shared.cleanupEmptyTags(context: modelContext)
-        Task { await syncManager.syncIfNeeded(context: modelContext) }
+        persistAndSync()
+        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
     }
     
-    private func executeAgentAction(_ action: AIAgentAction) async {
+    private func restoreNote(_ note: Note) {
+        guard note.deletedAt != nil else { return }
+        let now = Date()
+        withAnimation {
+            note.deletedAt = nil
+            note.updatedAt = now
+            for tag in note.tags where tag.deletedAt != nil {
+                tag.deletedAt = nil
+                tag.updatedAt = now
+            }
+        }
+        persistAndSync()
+    }
+    
+    private func deleteNotePermanently(_ note: Note) {
+        modelContext.delete(note)
+        persistAndSync()
+        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
+    }
+    
+    private func emptyTrash() {
+        guard !deletedNotes.isEmpty else { return }
+        let affectedTags = deletedNotes.flatMap { $0.tags }
+        withAnimation {
+            for note in deletedNotes {
+                modelContext.delete(note)
+            }
+        }
+        persistAndSync()
+        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: affectedTags)
+    }
+
+    private func togglePin(_ note: Note) {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            if note.pinnedAt == nil {
+                note.pinnedAt = Date()
+            } else {
+                note.pinnedAt = nil
+            }
+            note.updatedAt = Date()
+        }
+        persistAndSync()
+    }
+    
+    private func handleAgentActionRequest(_ action: AIAgentAction) {
+        if action.type == .custom {
+            pendingAgentAction = action
+            isCustomActionInputPresented = true
+        } else if action.type == .translate {
+            pendingAgentAction = action
+            isTranslateInputPresented = true
+        } else {
+            Task { await executeAgentAction(action) }
+        }
+    }
+
+    private func handleAgentActionRequest(_ recipe: AgentRecipe) {
+        let selectedCount = selectedNotes.count
+        if selectedCount > recipeHardLimit {
+            pendingRecipeForConfirmation = nil
+            showRecipeHardLimitAlert = true
+            return
+        }
+        if selectedCount > recipeSoftLimit {
+            pendingRecipeForConfirmation = recipe
+            showRecipeSoftLimitAlert = true
+            return
+        }
+        performAgentRecipe(recipe)
+    }
+    
+    private func confirmPendingRecipeOverSoftLimit() {
+        guard let recipe = pendingRecipeForConfirmation else { return }
+        pendingRecipeForConfirmation = nil
+        performAgentRecipe(recipe)
+    }
+    
+    private func performAgentRecipe(_ recipe: AgentRecipe) {
+        switch recipe.id {
+        case "merge_notes":
+            let action = AIAgentAction(
+                type: .merge,
+                title: recipe.name,
+                icon: recipe.systemIcon,
+                description: recipe.description,
+                requiresConfirmation: true
+            )
+            Task { await executeAgentAction(action) }
+        case "translate":
+            let action = AIAgentAction(
+                type: .translate,
+                title: recipe.name,
+                icon: recipe.systemIcon,
+                description: recipe.description,
+                requiresConfirmation: false
+            )
+            pendingAgentAction = action
+            isTranslateInputPresented = true
+        default:
+            let action = AIAgentAction(
+                type: .custom,
+                title: recipe.name,
+                icon: recipe.systemIcon,
+                description: recipe.description,
+                requiresConfirmation: false
+            )
+            Task { await executeAgentAction(action, instruction: recipe.prompt) }
+        }
+    }
+    
+    private func executeAgentAction(_ action: AIAgentAction, instruction: String? = nil) async {
         let notesToProcess = getSelectedNotes()
         guard !notesToProcess.isEmpty else { return }
         
@@ -734,11 +732,10 @@ struct HomeView: View {
         }
         
         do {
-            _ = try await action.execute(on: notesToProcess, context: modelContext)
+            _ = try await action.execute(on: notesToProcess, context: modelContext, userInstruction: instruction)
             
             await MainActor.run {
-                try? modelContext.save()
-                Task { await syncManager.syncIfNeeded(context: modelContext) }
+                persistAndSync()
                 
                 isExecutingAction = false
                 actionProgress = nil
@@ -760,6 +757,7 @@ struct HomeView: View {
             }
         }
     }
+
     
     private func deleteSelectedNotes() {
         let notesToDelete = getSelectedNotes()
@@ -774,33 +772,78 @@ struct HomeView: View {
                 note.markDeleted()
             }
         }
+        persistAndSync()
+        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: notes.flatMap { $0.tags })
+    }
+
+    private func persistAndSync() {
         try? modelContext.save()
-        TagService.shared.cleanupEmptyTags(context: modelContext)
         Task { await syncManager.syncIfNeeded(context: modelContext) }
+    }
+
+    private func touchTag(_ tag: Tag, note: Note? = nil) {
+        let now = Date()
+        tag.lastUsedAt = now
+        tag.updatedAt = now
+        note?.updatedAt = now
+    }
+
+    private func applyCurrentTagContext(to note: Note) {
+        guard let currentTag = selectedTag else { return }
+        note.tags.append(currentTag)
+        touchTag(currentTag, note: note)
     }
     
     // MARK: - Recording Recovery Methods
     
-    private func checkForPendingRecordings() {
-        // If we are currently recording or processing, DO NOT check for recovery
-        // The current file is valid and active, not a crash remnant.
-        guard speechRecognizer.recordingState == .idle else { return }
-        
-        // Clean up old recordings first (>24 hours)
-        RecordingFileManager.shared.cleanupOldRecordings()
-        
-        // Check for pending recordings
-        var pending = RecordingFileManager.shared.checkForPendingRecordings()
-        
-        // IMPORTANT: Filter out the file that might be currently held by SpeechRecognizer
-        // even if state is idle (e.g. just finished but not cleaned yet)
-        if let currentURL = speechRecognizer.getCurrentAudioFileURL() {
-            pending.removeAll { $0.fileURL.path == currentURL.path }
+    private enum MaintenanceReason {
+        case initial
+        case foreground
+    }
+
+    private func scheduleInitialMaintenance() {
+        guard !hasScheduledInitialMaintenance else { return }
+        hasScheduledInitialMaintenance = true
+        Task {
+            await Task.yield()
+            try? await Task.sleep(nanoseconds: 150_000_000)
+            await runMaintenance(reason: .initial)
         }
-        
-        if !pending.isEmpty {
+    }
+
+    private func scheduleMaintenance(reason: MaintenanceReason) {
+        Task {
+            await runMaintenance(reason: reason)
+        }
+    }
+
+    @MainActor
+    private func runMaintenance(reason: MaintenanceReason) async {
+        let now = Date()
+        if let lastMaintenanceAt, now.timeIntervalSince(lastMaintenanceAt) < minimumMaintenanceInterval {
+            return
+        }
+        lastMaintenanceAt = now
+        TrashPolicy.purgeExpiredNotes(context: modelContext)
+        await syncManager.syncIfNeeded(context: modelContext)
+        await checkForPendingRecordingsAsync()
+    }
+
+    private func checkForPendingRecordingsAsync() async {
+        guard speechRecognizer.recordingState == .idle else { return }
+        let currentPath = speechRecognizer.getCurrentAudioFileURL()?.path
+        let pending = await Task.detached(priority: .utility) {
+            RecordingFileManager.shared.cleanupOldRecordings()
+            var pending = RecordingFileManager.shared.checkForPendingRecordings()
+            if let currentPath {
+                pending.removeAll { $0.fileURL.path == currentPath }
+            }
+            return pending
+        }.value
+
+        guard !pending.isEmpty else { return }
+        await MainActor.run {
             pendingRecordings = pending
-            // Reduced to 0.1s just to ensure view hierarchy is ready, making it feel instant
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 withAnimation {
                     showRecoveryAlert = true
@@ -827,7 +870,7 @@ struct HomeView: View {
             do {
                 // Create a new note immediately and get its ID
                 let noteID = await MainActor.run {
-                    let newNote = Note(content: "")
+                    let newNote = Note(content: "", userId: currentUserId)
                     
                     // Apply current tag context if active
                     if let currentTag = selectedTag {
@@ -1004,7 +1047,6 @@ struct HomeView: View {
         }
     }
 
-
 }
 
 struct NoteCard: View {
@@ -1047,6 +1089,13 @@ struct NoteCard: View {
                     Text(note.createdAt.relativeFormatted())
                         .font(.chillCaption)
                         .foregroundColor(.textSub)
+                    if note.pinnedAt != nil {
+                        Image(systemName: "pin.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.accentPrimary)
+                            .padding(.leading, 4)
+                            .accessibilityLabel(Text("Pinned"))
+                    }
                     Spacer()
                 }
 
@@ -1138,4 +1187,12 @@ struct NoteCard: View {
         .modelContainer(DataService.shared.container!)
         .environmentObject(AuthService.shared)
         .environmentObject(SyncManager())
+}
+
+struct ScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
+            .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
+    }
 }

@@ -5,11 +5,19 @@ import UIKit
 
 struct SidebarView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query(filter: #Predicate<Tag> { $0.deletedAt == nil }, sort: \Tag.name) private var allTags: [Tag]
+    @EnvironmentObject private var authService: AuthService
+    @Query(filter: #Predicate<Tag> { $0.deletedAt == nil }, sort: \Tag.name) private var _allTags: [Tag]
     
     @Binding var isPresented: Bool
     @Binding var selectedTag: Tag?
+    @Binding var isTrashSelected: Bool
     var onSettingsTap: (() -> Void)?
+    
+    // Filter tags by current user
+    private var allTags: [Tag] {
+        guard let userId = authService.currentUserId else { return [] }
+        return _allTags.filter { $0.userId == userId }
+    }
     
     /// Root-level tags (those without a parent)
     private var rootTags: [Tag] {
@@ -64,8 +72,14 @@ struct SidebarView: View {
                     
                     // Main Navigation
                     VStack(spacing: 6) {
-                        SidebarItem(icon: "house", title: "All Notes", isSelected: selectedTag == nil) {
+                        SidebarItem(icon: "house", title: "All Notes", isSelected: selectedTag == nil && !isTrashSelected) {
                             selectedTag = nil
+                            isTrashSelected = false
+                            isPresented = false
+                        }
+                        SidebarItem(icon: "trash", title: "Recycle Bin", isSelected: isTrashSelected) {
+                            selectedTag = nil
+                            isTrashSelected = true
                             isPresented = false
                         }
                     }
@@ -79,13 +93,14 @@ struct SidebarView: View {
                         ScrollView(showsIndicators: false) {
                             VStack(alignment: .leading, spacing: 2) {
                                 ForEach(rootTags) { tag in
-                                    TagTreeItemView(
-                                        tag: tag,
-                                        selectedTag: $selectedTag,
-                                        isPresented: $isPresented,
-                                        modelContext: modelContext,
-                                        depth: 0
-                                    )
+                                        TagTreeItemView(
+                                            tag: tag,
+                                            selectedTag: $selectedTag,
+                                            isTrashSelected: $isTrashSelected,
+                                            isPresented: $isPresented,
+                                            modelContext: modelContext,
+                                            depth: 0
+                                        )
                                 }
                                 
                                 if allTags.isEmpty {
@@ -156,6 +171,7 @@ struct SidebarView: View {
 struct TagTreeItemView: View {
     let tag: Tag
     @Binding var selectedTag: Tag?
+    @Binding var isTrashSelected: Bool
     @Binding var isPresented: Bool
     let modelContext: ModelContext
     let depth: Int
@@ -171,6 +187,7 @@ struct TagTreeItemView: View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
                 selectedTag = tag
+                isTrashSelected = false
                 isPresented = false
             } label: {
                 HStack(spacing: 12) {
@@ -255,6 +272,7 @@ struct TagTreeItemView: View {
                         TagTreeItemView(
                             tag: child,
                             selectedTag: $selectedTag,
+                            isTrashSelected: $isTrashSelected,
                             isPresented: $isPresented,
                             modelContext: modelContext,
                             depth: depth + 1

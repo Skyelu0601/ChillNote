@@ -6,6 +6,7 @@ struct NoteDTO: Codable {
     let createdAt: String
     let updatedAt: String
     let deletedAt: String?
+    let pinnedAt: String?
     let tagIds: [String]? // Optional for backward compatibility
 }
 

@@ -9,7 +9,7 @@ struct AboutView: View {
                 VStack(alignment: .leading, spacing: 32) {
                     // Header Section
                     VStack(spacing: 16) {
-                        Image("chillo_touming")
+                        Image("chillohead_touming")
                             .resizable()
                             .scaledToFit()
                             .frame(width: 120, height: 120)

@@ -2,7 +2,6 @@ import Foundation
 
 /// Manages the lifecycle of recording files with crash recovery support
 /// Files are stored in a "safe" directory and cleaned up after successful transcription
-@MainActor
 final class RecordingFileManager {
     static let shared = RecordingFileManager()
     

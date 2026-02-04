@@ -46,32 +46,45 @@ final class SyncManager: ObservableObject {
             lastError = "Server URL is required."
             return
         }
-        let currentUserId = AuthService.shared.currentUserId
+        guard let currentUserId = AuthService.shared.currentUserId else {
+            lastError = "Sign in required to sync."
+            return
+        }
+        guard let container = DataService.shared.container else {
+            lastError = "Sync unavailable."
+            return
+        }
         WelcomeNoteFlagStore.syncGlobalFlag(for: currentUserId)
         let syncStartedAt = Date()
         var needsFollowUpSync = false
         isSyncing = true
         lastError = nil
-        let localNotesCount = (try? context.fetchCount(FetchDescriptor<Note>())) ?? 0
-        let shouldForceFullSync = !hasUploadedLocal && localNotesCount > 0
-        let sinceDate = shouldForceFullSync ? nil : lastSyncAt
         do {
-            let config = SyncConfig(baseURL: url, authToken: authToken, since: sinceDate)
-            let service: SyncService = RemoteSyncService(config: config)
-            try await service.syncAll(context: context)
-            TagService.shared.cleanupEmptyTags(context: context)
+            let lastSyncAt = lastSyncAt
+            let hasUploadedLocalSnapshot = hasUploadedLocal
+            let authToken = authToken
+            let postSyncNotesCount = try await Task.detached(priority: .utility) {
+                let backgroundContext = ModelContext(container)
+                let localNotesCount = (try? backgroundContext.fetchCount(FetchDescriptor<Note>())) ?? 0
+                let shouldForceFullSync = !hasUploadedLocalSnapshot && localNotesCount > 0
+                let sinceDate = shouldForceFullSync ? nil : lastSyncAt
+                let config = SyncConfig(baseURL: url, authToken: authToken, since: sinceDate, userId: currentUserId)
+                let service: SyncService = RemoteSyncService(config: config)
+                try await service.syncAll(context: backgroundContext)
+                TagService.shared.cleanupEmptyTags(context: backgroundContext)
+                return (try? backgroundContext.fetchCount(FetchDescriptor<Note>())) ?? 0
+            }.value
             WelcomeNoteFlagStore.setHasSeenWelcome(UserDefaults.standard.bool(forKey: "hasSeededWelcomeNote"), for: currentUserId)
             
-            let postSyncNotesCount = (try? context.fetchCount(FetchDescriptor<Note>())) ?? 0
             let seededWelcome = DataService.shared.seedDataIfNeeded(context: context, userId: currentUserId)
             
             if seededWelcome {
-                hasUploadedLocal = false
+                self.hasUploadedLocal = false
                 lastSyncAtTimestamp = 0
                 needsFollowUpSync = true
             } else {
                 lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
-                hasUploadedLocal = postSyncNotesCount > 0
+                self.hasUploadedLocal = postSyncNotesCount > 0
             }
         } catch {
             if case SyncError.unauthorized = error {

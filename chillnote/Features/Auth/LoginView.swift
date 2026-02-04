@@ -18,7 +18,7 @@ struct LoginView: View {
                 
                 // MARK: - Brand Header
                 VStack(spacing: 16) {
-                    Image("chillo_touming")
+                    Image("chillohead_touming")
                         .resizable()
                         .scaledToFit()
                         .frame(width: 120, height: 120)

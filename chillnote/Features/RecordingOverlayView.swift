@@ -11,8 +11,18 @@ struct RecordingOverlayView: View {
     @State private var elapsed: TimeInterval = 0
     @State private var didTriggerStartHaptic = false
     @State private var pendingSave = false
+    @State private var didTriggerLimit = false
+    @State private var showUpgradeSheet = false
+    @State private var showSubscription = false
     private let analytics = AnalyticsService.shared
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    
+    private func openSubscriptionFromUpgrade() {
+        showUpgradeSheet = false
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+            showSubscription = true
+        }
+    }
     
     var body: some View {
         ZStack {
@@ -172,6 +182,7 @@ struct RecordingOverlayView: View {
             case .recording:
                 startTime = Date()
                 elapsed = 0
+                didTriggerLimit = false
                 analytics.log(.recordStart)
                 if !didTriggerStartHaptic {
                     didTriggerStartHaptic = true
@@ -183,6 +194,7 @@ struct RecordingOverlayView: View {
                 startTime = nil
                 elapsed = 0
                 didTriggerStartHaptic = false
+                didTriggerLimit = false
                 if pendingSave {
                     finalizeSave()
                 }
@@ -202,7 +214,11 @@ struct RecordingOverlayView: View {
             
             // Enforce limit based on subscription
             let limit = StoreService.shared.recordingTimeLimit
-            if elapsed >= limit {
+            if elapsed >= limit && !didTriggerLimit {
+                didTriggerLimit = true
+                if StoreService.shared.currentTier == .free {
+                    showUpgradeSheet = true
+                }
                 finishRecording()
             }
         }
@@ -216,6 +232,20 @@ struct RecordingOverlayView: View {
             }
         }
         .banner(data: $bannerData)
+        .sheet(isPresented: $showUpgradeSheet) {
+            UpgradeBottomSheet(
+                title: "Recording limit reached",
+                message: "Upgrade to Pro to record up to 10 minutes per note.",
+                primaryButtonTitle: "Upgrade to Pro",
+                onUpgrade: openSubscriptionFromUpgrade,
+                onDismiss: { showUpgradeSheet = false }
+            )
+            .presentationDetents([.height(220)])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showSubscription) {
+            SubscriptionView()
+        }
     }
     
     func finishRecording() {
