@@ -4,134 +4,193 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="ChillNote captures your thoughts at the speed of speech, turning voice into clean, structured notes in minutes.">
     <title>ChillNote - Capture the Speed of Thought</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;700;800&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Manrope:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
 
 <body>
-
-    <header>
-        <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+    <header class="site-header">
+        <div class="container header-inner">
             <a href="index.html" class="logo">ChillNote</a>
             <nav class="nav-links">
+                <a href="#flow">How It Works</a>
                 <a href="#philosophy">Philosophy</a>
-                <a href="#waitlist">Join Waitlist</a>
+                <a href="#waitlist">Waitlist</a>
                 <a href="#support">Support</a>
             </nav>
+            <a href="#waitlist" class="btn btn-primary btn-sm">Get Early Access</a>
         </div>
     </header>
 
     <main>
-        <div class="container">
-            <section class="hero">
-                <h1>Capturing the speed of thought, one voice at a time.</h1>
-                <p>Use your voice to capture, process, and structure your thoughts. AI-driven organization for the
-                    hyper-active mind.</p>
-                <div class="hero-btns">
-                    <a href="#waitlist" class="btn btn-primary">Join the Waitlist</a>
-                    <a href="#" class="btn btn-secondary">Coming Soon to App Store</a>
-                </div>
-            </section>
-
-            <section id="philosophy" class="philosophy">
-                <div class="container">
-                    <h2 style="text-align: center; margin-bottom: 3rem;">Design Philosophy</h2>
-
-                    <!-- Who is it for? -->
-                    <div style="margin-bottom: 4rem;">
-                        <h3
-                            style="text-align: center; color: var(--color-text-sub); margin-bottom: 2rem; font-weight: 500;">
-                            Who is ChillNote For?</h3>
-                        <div class="philosophy-grid">
-                            <div class="card">
-                                <h3>For the ADHD Mind</h3>
-                                <p><strong>"My thoughts run faster than my fingers."</strong><br>
-                                    For those with racing minds, typing is a bottleneck. Voice is the path of least
-                                    resistance, ensuring no spark of genius is lost to the slowness of a keyboard.</p>
-                            </div>
-                            <div class="card">
-                                <h3>For the "Struggling Writer"</h3>
-                                <p><strong>"I have the idea, but I can't find the words."</strong><br>
-                                    Pour out chaotic, non-linear thoughts. Our AI acts as a skilled editor,
-                                    restructuring your "ramblings" into clear, articulate, and spreadable prose.</p>
-                            </div>
-                            <div class="card">
-                                <h3>For Creative Workers</h3>
-                                <p><strong>"Typing is unnatural; Speaking is instinct."</strong><br>
-                                    Save your hands (and your focus). Disconnect the act of input from the final
-                                    visualization. You speak; the system handles the rest.</p>
-                            </div>
-                            <div class="card">
-                                <h3>For Seekers of Self-Healing</h3>
-                                <p><strong>"Talk is a way to heal yourself."</strong><br>
-                                    Vocalizing externalizes internal conflicts. ChillNote serves as a safe space for
-                                    venting, journaling, and self-reflection.</p>
-                            </div>
-                            <div class="card">
-                                <h3>For the "Format Haters"</h3>
-                                <p><strong>"Life is too short to adjust margins."</strong><br>
-                                    Formatting is performative work. Focus entirely on the content, and let the app
-                                    apply professional-grade structure with a single tap.</p>
-                            </div>
+        <section class="hero">
+            <div class="container hero-grid">
+                <div class="hero-copy">
+                    <span class="hero-badge">Voice-first notes for fast minds</span>
+                    <h1>Capture the speed of thought, keep the calm of clarity.</h1>
+                    <p>ChillNote turns voice into structured notes in minutes. Speak freely, then let the app refine
+                        your ideas into clean, actionable writing.</p>
+                    <div class="hero-actions">
+                        <a href="#waitlist" class="btn btn-primary">Join the Waitlist</a>
+                        <a href="#flow" class="btn btn-secondary">See the Flow</a>
+                    </div>
+                    <div class="hero-meta">
+                        <div>
+                            <p class="meta-title">Fast capture</p>
+                            <p class="meta-detail">10-minute sessions max</p>
+                        </div>
+                        <div>
+                            <p class="meta-title">AI-crafted</p>
+                            <p class="meta-detail">Structure without the struggle</p>
                         </div>
                     </div>
-
-                    <!-- What is it NOT? -->
-                    <div style="border-top: 1px solid rgba(0,0,0,0.05); padding-top: 3rem;">
-                        <h3
-                            style="text-align: center; color: var(--color-text-sub); margin-bottom: 2rem; font-weight: 500;">
-                            What ChillNote is NOT</h3>
-                        <div class="philosophy-grid">
-                            <div class="card" style="background-color: rgba(253, 252, 248, 0.6);">
-                                <h3>Not for Meeting Minutes</h3>
-                                <p>ChillNote is not a corporate dictaphone. It is for <em>personal</em> reflections and
-                                    raw inspiration, not for recording hour-long boardroom drones.</p>
-                            </div>
-                            <div class="card" style="background-color: rgba(253, 252, 248, 0.6);">
-                                <h3>Not for Long-Form Writing</h3>
-                                <p>We are unapologetically <strong>Mobile-First</strong>. This is for capturing the
-                                    "seeds" of ideas before they evaporate, not for writing an entire novel.</p>
-                            </div>
-                            <div class="card" style="background-color: rgba(253, 252, 248, 0.6);">
-                                <h3>The 10-Minute Limit</h3>
-                                <p><strong>If it takes more than 10 minutes, it's not Chill.</strong><br>
-                                    Interaction needs to be swift. If you are editing a single note for too long, you've
-                                    crossed a line.</p>
-                            </div>
-                        </div>
-                    </div>
-
                 </div>
-            </section>
+                <div class="hero-visual">
+                    <div class="note-preview">
+                        <div class="note-header">
+                            <span class="note-pill">Live capture</span>
+                            <span class="note-pill muted">04:28</span>
+                        </div>
+                        <h3>Walking brainstorm</h3>
+                        <p>I want a note app that feels like thinking out loud: no filters, no friction, just flow.
+                            Later, shape it into something clear.</p>
+                        <div class="note-divider"></div>
+                        <p class="note-output-title">ChillNote AI summary</p>
+                        <ul class="note-output">
+                            <li>Capture raw voice, then refine into a clean outline.</li>
+                            <li>Keep sessions under 10 minutes to stay focused.</li>
+                            <li>Export or share instantly when it clicks.</li>
+                        </ul>
+                    </div>
+                    <div class="floating-card">
+                        <p>“My thoughts move too fast for typing. ChillNote keeps up.”</p>
+                        <span>— Early tester</span>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-            <section id="waitlist" class="waitlist-section">
+        <section id="flow" class="section flow">
+            <div class="container">
+                <div class="section-heading">
+                    <h2>From voice to clarity in three steps.</h2>
+                    <p>Built for minds that move fast, designed for moments when focus matters.</p>
+                </div>
+                <div class="feature-grid">
+                    <div class="feature-card">
+                        <span class="feature-index">01</span>
+                        <h3>Speak freely</h3>
+                        <p>Capture raw thoughts with zero formatting. Let ideas spill out while they’re fresh.</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-index">02</span>
+                        <h3>AI refines</h3>
+                        <p>ChillNote organizes, titles, and structures your notes into a clean layout.</p>
+                    </div>
+                    <div class="feature-card">
+                        <span class="feature-index">03</span>
+                        <h3>Act fast</h3>
+                        <p>Review, share, or export. If it takes longer than 10 minutes, it’s not Chill.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="philosophy" class="section philosophy">
+            <div class="container">
+                <div class="section-heading">
+                    <h2>Design Philosophy</h2>
+                    <p>ChillNote exists for people who think faster than they type.</p>
+                </div>
+
+                <div class="philosophy-grid">
+                    <div class="card">
+                        <h3>For the ADHD Mind</h3>
+                        <p><strong>“My thoughts run faster than my fingers.”</strong> Voice removes the bottleneck, so no
+                            spark of genius gets lost in typing.</p>
+                    </div>
+                    <div class="card">
+                        <h3>For the Struggling Writer</h3>
+                        <p><strong>“I have the idea, but I can’t find the words.”</strong> ChillNote acts like a
+                            collaborator, transforming chaos into clean prose.</p>
+                    </div>
+                    <div class="card">
+                        <h3>For Creative Workers</h3>
+                        <p><strong>“Typing is unnatural; speaking is instinct.”</strong> Speak first, structure later.
+                        </p>
+                    </div>
+                    <div class="card">
+                        <h3>For Seekers of Self-Healing</h3>
+                        <p><strong>“Talk is a way to heal yourself.”</strong> Record, reflect, and let ideas settle.</p>
+                    </div>
+                    <div class="card">
+                        <h3>For the Format Haters</h3>
+                        <p><strong>“Life is too short to adjust margins.”</strong> Focus on content; ChillNote handles the
+                            polish.</p>
+                    </div>
+                </div>
+
+                <div class="divider"></div>
+
+                <div class="section-heading compact">
+                    <h2>What ChillNote is NOT</h2>
+                    <p>We keep it personal, quick, and lightweight by design.</p>
+                </div>
+                <div class="feature-grid muted">
+                    <div class="feature-card">
+                        <h3>Not for meeting minutes</h3>
+                        <p>This isn’t a corporate dictaphone. ChillNote is for personal clarity.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>Not for long-form writing</h3>
+                        <p>We’re mobile-first. Capture the seed, then grow it elsewhere.</p>
+                    </div>
+                    <div class="feature-card">
+                        <h3>The 10-minute limit</h3>
+                        <p>If it takes longer than 10 minutes, you’ve crossed the line.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="waitlist" class="section waitlist-section">
+            <div class="container">
                 <div class="waitlist-card">
-                    <h2>Ready to capture your genius?</h2>
-                    <p>Join the inner circle. Get early access to ChillNote and start turning your voice into gold.</p>
+                    <div class="waitlist-copy">
+                        <h2>Ready to capture your genius?</h2>
+                        <p>Join the inner circle. Get early access and help shape the future of ChillNote.</p>
+                    </div>
                     <form id="waitlist-form" class="waitlist-form">
                         <input type="email" placeholder="Enter your email address" required>
-                        <button type="submit" class="btn btn-primary">Join the Waitlist</button>
+                        <button type="submit" class="btn btn-primary">Get Early Access</button>
                     </form>
                     <div id="waitlist-success" class="waitlist-success" style="display: none;">
-                        <p>Welcome to the family! 🎉 You're on the list.</p>
+                        <p>Welcome to the family. You’re on the list.</p>
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            <section id="support" style="text-align: center; padding: 4rem 0;">
-                <h2>Support</h2>
-                <p>Have questions or feedback? We'd love to hear from you.</p>
-                <a href="mailto:support@chillnoteai.com" class="btn btn-primary"
-                    style="background-color: var(--color-text-sub);">Contact Support</a>
-            </section>
-        </div>
+        <section id="support" class="section support">
+            <div class="container support-inner">
+                <div>
+                    <h2>Support</h2>
+                    <p>Have questions or feedback? We’d love to hear from you.</p>
+                </div>
+                <a href="mailto:support@chillnoteai.com" class="btn btn-secondary">Contact Support</a>
+            </div>
+        </section>
     </main>
 
     <footer>
-        <div class="container">
+        <div class="container footer-inner">
             <div class="footer-links">
                 <a href="privacy.html">Privacy Policy</a>
                 <a href="terms.html">User Agreement</a>
