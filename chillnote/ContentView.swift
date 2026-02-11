@@ -8,15 +8,19 @@ struct ContentView: View {
     // App Flow State
     // In a real app, these would probably check logic or Keychain on init
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
-    @AppStorage("hasGuestAccess") private var hasGuestAccess = false
     var body: some View {
         Group {
             if !hasSeenOnboarding {
                 OnboardingView(isCompleted: $hasSeenOnboarding)
             } else {
-                if authService.isSignedIn || hasGuestAccess {
+                switch authService.state {
+                case .checking:
+                    ProgressView("Checking session...")
+                case .signedIn:
                     HomeView()
-                } else {
+                case .signedOut:
+                    LoginView()
+                case .signingIn:
                     LoginView()
                 }
             }

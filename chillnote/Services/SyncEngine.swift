@@ -4,14 +4,14 @@ import SwiftData
 struct SyncEngine {
     private let mapper = SyncMapper()
 
-    func makePayload(context: ModelContext, since: Date?, userId: String) -> SyncPayload {
+    func makePayload(context: ModelContext, since: Date?, userId: String, cursor: String?, deviceId: String?) -> SyncPayload {
         let start = CFAbsoluteTimeGetCurrent()
         
         // 1. Notes (Incremental) - filtered by userId
         var noteDescriptor = FetchDescriptor<Note>()
         if let since {
             noteDescriptor.predicate = #Predicate<Note> { note in
-                note.userId == userId && note.updatedAt >= since
+                note.userId == userId && (note.updatedAt >= since || (note.deletedAt != nil && note.deletedAt! >= since))
             }
         } else {
             noteDescriptor.predicate = #Predicate<Note> { note in
@@ -25,10 +25,16 @@ struct SyncEngine {
             notes = []
         }
         
-        // 2. Tags (Full Sync with tombstones) - filtered by userId
+        // 2. Tags (Incremental) - filtered by userId
         var tagDescriptor = FetchDescriptor<Tag>()
-        tagDescriptor.predicate = #Predicate<Tag> { tag in
-            tag.userId == userId
+        if let since {
+            tagDescriptor.predicate = #Predicate<Tag> { tag in
+                tag.userId == userId && (tag.updatedAt >= since || (tag.deletedAt != nil && tag.deletedAt! >= since))
+            }
+        } else {
+            tagDescriptor.predicate = #Predicate<Tag> { tag in
+                tag.userId == userId
+            }
         }
         let tags = (try? context.fetch(tagDescriptor)) ?? []
         
@@ -42,6 +48,8 @@ struct SyncEngine {
         ]
 
         let payload = SyncPayload(
+            cursor: cursor,
+            deviceId: deviceId,
             notes: notes.map { mapper.noteDTO(from: $0) },
             tags: tags.map { mapper.tagDTO(from: $0) },
             preferences: prefs
@@ -50,26 +58,22 @@ struct SyncEngine {
         return payload
     }
 
-    func apply(remote: SyncPayload, context: ModelContext, userId: String) {
+    func apply(remote: SyncResponse, context: ModelContext, userId: String) {
         let start = CFAbsoluteTimeGetCurrent()
         
-        let remoteNotesCount = remote.notes.count
-        let remoteTagsCount = remote.tags?.count ?? 0
+        let remoteNotesCount = remote.changes.notes.count
+        let remoteTagsCount = remote.changes.tags?.count ?? 0
         print("[TIME] SyncEngine.apply: remote notes=\(remoteNotesCount), tags=\(remoteTagsCount)")
-        func shouldApply(remoteUpdatedAt: Date?, remoteDeletedAt: Date?, localUpdatedAt: Date?, localDeletedAt: Date?) -> Bool {
-            if let remoteDeletedAt {
-                if let localDeletedAt, localDeletedAt >= remoteDeletedAt { return false }
-                if let localUpdatedAt, localUpdatedAt > remoteDeletedAt { return false }
-                return true
-            }
+        func shouldApply(remoteVersion: Int?, remoteUpdatedAt: Date?, localVersion: Int, localUpdatedAt: Date?) -> Bool {
+            if let remoteVersion, remoteVersion > localVersion { return true }
+            if let remoteVersion, remoteVersion < localVersion { return false }
             guard let remoteUpdatedAt else { return false }
-            if let localDeletedAt, localDeletedAt >= remoteUpdatedAt { return false }
             guard let localUpdatedAt else { return true }
             return remoteUpdatedAt > localUpdatedAt
         }
 
         // 1. Preferences - now user-specific
-        if let prefs = remote.preferences {
+        if let prefs = remote.changes.preferences {
             if let val = prefs["hasSeededWelcomeNote"] {
                 let hasSeenWelcome = (val == "true")
                 WelcomeNoteFlagStore.setHasSeenWelcome(hasSeenWelcome, for: userId)
@@ -77,22 +81,43 @@ struct SyncEngine {
         }
         
         // 2. Tags & Actions (Pre-fetch for relationships) - filtered by userId
-        var tagDescriptor = FetchDescriptor<Tag>()
-        tagDescriptor.predicate = #Predicate<Tag> { tag in
-            tag.userId == userId
+        let remoteTags = remote.changes.tags ?? []
+        var tagIdSet = Set<UUID>()
+        for dto in remoteTags {
+            if let id = UUID(uuidString: dto.id) {
+                tagIdSet.insert(id)
+            }
+            if let parentIdStr = dto.parentId, let parentId = UUID(uuidString: parentIdStr) {
+                tagIdSet.insert(parentId)
+            }
         }
-        let localTags = (try? context.fetch(tagDescriptor)) ?? []
+        for noteDto in remote.changes.notes {
+            noteDto.tagIds?.forEach { tagIdStr in
+                if let id = UUID(uuidString: tagIdStr) {
+                    tagIdSet.insert(id)
+                }
+            }
+        }
+
+        var localTags: [Tag] = []
+        if !tagIdSet.isEmpty {
+            let tagIds = Array(tagIdSet)
+            var tagDescriptor = FetchDescriptor<Tag>()
+            tagDescriptor.predicate = #Predicate<Tag> { tag in
+                tag.userId == userId && tagIds.contains(tag.id)
+            }
+            localTags = (try? context.fetch(tagDescriptor)) ?? []
+        }
         print("[TIME] SyncEngine.apply: local tags=\(localTags.count)")
         var tagMap = Dictionary(uniqueKeysWithValues: localTags.map { ($0.id, $0) })
         
         // Apply Tags
-        if let remoteTags = remote.tags {
+        if !remoteTags.isEmpty {
             for dto in remoteTags {
                 guard let tagId = UUID(uuidString: dto.id) else { continue }
-                let remoteUpdatedAt = mapper.parseDate(dto.updatedAt)
-                let remoteDeletedAt = dto.deletedAt.flatMap { mapper.parseDate($0) }
+                let remoteUpdatedAt = dto.updatedAt.flatMap { mapper.parseDate($0) }
                 if let existing = tagMap[tagId] {
-                    if shouldApply(remoteUpdatedAt: remoteUpdatedAt, remoteDeletedAt: remoteDeletedAt, localUpdatedAt: existing.updatedAt, localDeletedAt: existing.deletedAt) {
+                    if shouldApply(remoteVersion: dto.version, remoteUpdatedAt: remoteUpdatedAt, localVersion: existing.version, localUpdatedAt: existing.serverUpdatedAt) {
                         mapper.apply(dto, to: existing)
                     }
                 } else {
@@ -124,15 +149,19 @@ struct SyncEngine {
 
 
         // 3. Notes - filtered by userId
-        var noteDescriptor = FetchDescriptor<Note>()
-        noteDescriptor.predicate = #Predicate<Note> { note in
-            note.userId == userId
+        let remoteNoteIds = remote.changes.notes.compactMap { UUID(uuidString: $0.id) }
+        var localNotes: [Note] = []
+        if !remoteNoteIds.isEmpty {
+            var noteDescriptor = FetchDescriptor<Note>()
+            noteDescriptor.predicate = #Predicate<Note> { note in
+                note.userId == userId && remoteNoteIds.contains(note.id)
+            }
+            localNotes = (try? context.fetch(noteDescriptor)) ?? []
         }
-        let localNotes = (try? context.fetch(noteDescriptor)) ?? []
         print("[TIME] SyncEngine.apply: local notes=\(localNotes.count)")
         var notesById: [UUID: Note] = Dictionary(uniqueKeysWithValues: localNotes.map { ($0.id, $0) })
 
-        for dto in remote.notes {
+        for dto in remote.changes.notes {
             guard let id = UUID(uuidString: dto.id) else { continue }
             
             // Helper to resolve tags
@@ -146,19 +175,8 @@ struct SyncEngine {
             }
 
             if let existing = notesById[id] {
-                let localUpdatedAt = existing.updatedAt
-                let remoteUpdatedAt = mapper.parseDate(dto.updatedAt) ?? localUpdatedAt
-
-                // Delete wins if it's newer than local updates.
-                if let remoteDeletedAt = dto.deletedAt, let remoteDeletedDate = mapper.parseDate(remoteDeletedAt) {
-                    if remoteDeletedDate >= localUpdatedAt {
-                        existing.deletedAt = remoteDeletedDate
-                        existing.updatedAt = remoteDeletedDate
-                    }
-                    continue
-                }
-
-                if remoteUpdatedAt > localUpdatedAt {
+                let remoteUpdatedAt = dto.updatedAt.flatMap { mapper.parseDate($0) }
+                if shouldApply(remoteVersion: dto.version, remoteUpdatedAt: remoteUpdatedAt, localVersion: existing.version, localUpdatedAt: existing.serverUpdatedAt) {
                     mapper.apply(dto, to: existing)
                     existing.syncContentStructure(with: context)
                     resolveTags(for: existing)
@@ -176,6 +194,29 @@ struct SyncEngine {
 
         purgeDeletedNotes(olderThan: TrashPolicy.cutoffDate(), context: context, userId: userId)
         print("[TIME] SyncEngine.apply total: \(String(format: "%.3f", CFAbsoluteTimeGetCurrent() - start))s")
+        applyConflicts(remote.conflicts, context: context, userId: userId)
+    }
+
+    private func applyConflicts(_ conflicts: [ConflictDTO], context: ModelContext, userId: String) {
+        guard !conflicts.isEmpty else { return }
+        let now = Date()
+        for conflict in conflicts where conflict.entityType == "note" {
+            let combinedContent = """
+            ## Conflict Copy
+            - Server version: \(conflict.serverVersion)
+            - Notes: \(conflict.message)
+
+            ### Server Content
+            \(conflict.serverContent ?? "")
+
+            ### Local Content
+            \(conflict.clientContent ?? "")
+            """
+            let note = Note(content: combinedContent, userId: userId)
+            note.updatedAt = now
+            note.version = 1
+            context.insert(note)
+        }
     }
 
     private func purgeDeletedNotes(olderThan cutoff: Date, context: ModelContext, userId: String) {

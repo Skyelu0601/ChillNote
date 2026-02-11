@@ -177,10 +177,10 @@ struct SubscriptionView: View {
     
     private var benefitsList: some View {
         VStack(spacing: 16) {
-            BenefitRow(icon: "waveform", iconColor: .orange, title: "Extended Recording", subtitle: "Record up to 10 minutes per note")
-            BenefitRow(icon: "sparkles", iconColor: .purple, title: "Unlimited AI Intelligence", subtitle: "Smart summaries & chat without limits")
-            BenefitRow(icon: "cloud.fill", iconColor: .blue, title: "Seamless Sync", subtitle: "Access your notes on all devices")
-            BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: "Custom Chill Recipe", subtitle: "Paid members can create personalized AI recipes")
+            BenefitRow(icon: "waveform", iconColor: .orange, title: "10-Minute Deep Dives", subtitle: "Capture long thoughts without interruption")
+            BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: .purple, title: "Unlimited Chat", subtitle: "Ask Chillo anything about your notes.")
+            BenefitRow(icon: "wand.and.stars", iconColor: .blue, title: "Infinite Tidy & Polish", subtitle: "Instantly turn messy ramblings into structured notes.")
+            BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: "Custom Chill Recipes", subtitle: "Create personalized AI recipes with Pro")
         }
         .padding(24)
         .background(Color.white)
@@ -262,9 +262,20 @@ struct SubscriptionView: View {
             .font(.caption)
             .foregroundColor(.textSub.opacity(0.6))
             
-            Text("Subscription auto-renews. Cancel anytime.")
-                 .font(.caption2)
-                 .foregroundColor(.textSub.opacity(0.4))
+            Text("Payment will be charged to your Apple ID account at confirmation of purchase.")
+                .font(.caption2)
+                .foregroundColor(.textSub.opacity(0.4))
+                .multilineTextAlignment(.center)
+            
+            Text("Subscription automatically renews unless canceled at least 24 hours before the end of the current period.")
+                .font(.caption2)
+                .foregroundColor(.textSub.opacity(0.4))
+                .multilineTextAlignment(.center)
+            
+            Text("Manage or cancel your subscription in Settings > Apple ID > Subscriptions.")
+                .font(.caption2)
+                .foregroundColor(.textSub.opacity(0.4))
+                .multilineTextAlignment(.center)
         }
     }
     

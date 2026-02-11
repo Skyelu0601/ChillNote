@@ -4,6 +4,9 @@
     " " : {
 
     },
+    "\"%@\"" : {
+
+    },
     "\"Capturing the speed of thought,\none voice at a time.\"" : {
 
     },
@@ -29,16 +32,29 @@
         }
       }
     },
+    "%lld/%lld • %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld • %3$@"
+          }
+        }
+      }
+    },
     "•" : {
 
     },
     "+%lld" : {
 
     },
-    "123456" : {
+    "⚠️ %@" : {
 
     },
-    "Actions" : {
+    "✨ Your Note" : {
+
+    },
+    "123456" : {
 
     },
     "Add" : {
@@ -51,6 +67,9 @@
 
     },
     "Add to My Recipes" : {
+
+    },
+    "Analyzing your knowledge base..." : {
 
     },
     "Are you sure you want to delete %lld note%@? This action cannot be undone." : {
@@ -72,13 +91,22 @@
     "Are you sure you want to sign out?" : {
 
     },
+    "Ask" : {
+
+    },
     "Ask Agent" : {
 
     },
-    "Ask AI" : {
+    "Ask Chillo..." : {
 
     },
-    "Ask Chillo..." : {
+    "Ask Your Notes" : {
+
+    },
+    "Ask: \"Summarize core values\"" : {
+
+    },
+    "Auto Detect" : {
 
     },
     "Back" : {
@@ -96,7 +124,19 @@
     "Cancel" : {
 
     },
+    "Cancel Export" : {
+
+    },
+    "Checking session..." : {
+
+    },
+    "Chill AI" : {
+
+    },
     "Chill Recipes" : {
+
+    },
+    "Chill Recipes can process up to %lld notes at a time. Please reduce your selection." : {
 
     },
     "ChillNote" : {
@@ -175,7 +215,19 @@
         }
       }
     },
+    "Complex tasks made instant" : {
+
+    },
+    "Continue" : {
+
+    },
     "Continue with Email" : {
+
+    },
+    "Couldn't Start ChillNote" : {
+
+    },
+    "Counting notes..." : {
 
     },
     "Create" : {
@@ -236,7 +288,13 @@
     "Do it" : {
 
     },
+    "Don't prompt\nJust tap" : {
+
+    },
     "Done" : {
+
+    },
+    "Draft an email to my boss" : {
 
     },
     "Drag here to delete" : {
@@ -263,16 +321,34 @@
     "Error: %@" : {
 
     },
+    "Estimated notes: %lld" : {
+
+    },
     "Expires today" : {
+
+    },
+    "Export" : {
+
+    },
+    "Export All Notes" : {
+
+    },
+    "Export Failed" : {
+
+    },
+    "Export Markdown" : {
 
     },
     "Finish recording" : {
 
     },
-    "Fixing grammar..." : {
+    "Fix messy thoughts, fast" : {
 
     },
     "FLEXIBLE" : {
+
+    },
+    "For minds that refuse to be boxed in." : {
 
     },
     "Free Plan" : {
@@ -281,13 +357,7 @@
     "Get Started" : {
 
     },
-    "Getting your vibe..." : {
-
-    },
     "Go ahead, I'm listening..." : {
-
-    },
-    "Grammar fixed." : {
 
     },
     "home.action.deselectAll" : {
@@ -627,25 +697,43 @@
     "Introductory notes..." : {
 
     },
-    "Jotting this down..." : {
+    "Keep Original Notes" : {
 
     },
-    "Keep Original Notes" : {
+    "Language will be inferred from audio. Mixed-language speech is preserved." : {
+
+    },
+    "Large Selection" : {
+
+    },
+    "Later" : {
 
     },
     "Let Chillo polish this up." : {
 
     },
-    "Magic applied" : {
+    "Local data initialization failed. Please try again. If it still fails, restart the app or free up device storage and try again." : {
 
     },
     "Manage" : {
+
+    },
+    "Manage or cancel your subscription in Settings > Apple ID > Subscriptions." : {
+
+    },
+    "Markdown (.zip)" : {
+
+    },
+    "Maybe Later" : {
 
     },
     "Merge Successful" : {
 
     },
     "Microphone and Speech access are required." : {
+
+    },
+    "Mode" : {
 
     },
     "More Actions" : {
@@ -663,16 +751,25 @@
     "Network Error" : {
 
     },
+    "Next Steps" : {
+
+    },
+    "Next: Ask AI" : {
+
+    },
     "No deleted notes yet. Notes stay for 30 days." : {
+
+    },
+    "No notes to export." : {
+
+    },
+    "No pending recordings" : {
 
     },
     "No recipes yet" : {
 
     },
     "No tags available" : {
-
-    },
-    "Not now" : {
 
     },
     "OK" : {
@@ -687,7 +784,16 @@
     "Opens the recording overlay." : {
 
     },
+    "Original" : {
+
+    },
     "Our Vision" : {
+
+    },
+    "Payment will be charged to your Apple ID account at confirmation of purchase." : {
+
+    },
+    "Pending Recordings" : {
 
     },
     "per month" : {
@@ -702,6 +808,12 @@
     "Pinned" : {
 
     },
+    "Preferred Language" : {
+
+    },
+    "Preferred language improves primary-language stability while preserving mixed-language speech." : {
+
+    },
     "Privacy" : {
 
     },
@@ -714,13 +826,16 @@
     "Process" : {
 
     },
+    "Processing audio..." : {
+
+    },
+    "Processing Note" : {
+
+    },
     "Processing..." : {
 
     },
     "Prompt" : {
-
-    },
-    "Read this aloud to try voice input:" : {
 
     },
     "Recipe Details" : {
@@ -738,7 +853,7 @@
     "Recovery Found" : {
 
     },
-    "Refining your thought..." : {
+    "Refined" : {
 
     },
     "Release to delete" : {
@@ -771,6 +886,9 @@
     "Retry" : {
 
     },
+    "Retry Initialization" : {
+
+    },
     "Retry Upload" : {
 
     },
@@ -786,10 +904,19 @@
     "Saved!" : {
 
     },
+    "Say it.\nSave it." : {
+
+    },
     "Search" : {
 
     },
+    "Search language" : {
+
+    },
     "Select Language" : {
+
+    },
+    "Select notes to ask questions" : {
 
     },
     "Select some notes to start" : {
@@ -863,6 +990,9 @@
     "Start Annual Plan" : {
 
     },
+    "Start Export" : {
+
+    },
     "Start Monthly Plan" : {
 
     },
@@ -872,13 +1002,10 @@
     "Start recording" : {
 
     },
-    "Still working on this. Feel free to do something else and return." : {
-
-    },
     "Stops recording and saves your note." : {
 
     },
-    "Subscription auto-renews. Cancel anytime." : {
+    "Subscription automatically renews unless canceled at least 24 hours before the end of the current period." : {
 
     },
     "Subscription Plan" : {
@@ -896,10 +1023,7 @@
     "TAGS" : {
 
     },
-    "Tap Koala > Ask to get the answer." : {
-
-    },
-    "Tap the Koala button to fix grammar." : {
+    "Tap to simulate" : {
 
     },
     "Terms" : {
@@ -920,6 +1044,18 @@
     "To-do" : {
 
     },
+    "Too Many Notes" : {
+
+    },
+    "Transcribe" : {
+
+    },
+    "Transcription Failed" : {
+
+    },
+    "Tweet about this launch" : {
+
+    },
     "Type a note..." : {
 
     },
@@ -930,6 +1066,9 @@
 
     },
     "Unpin" : {
+
+    },
+    "Unprocessed Recording" : {
 
     },
     "Upgrade" : {
@@ -944,7 +1083,16 @@
     "Voice Memo" : {
 
     },
+    "Voice Transcription" : {
+
+    },
     "We found an unfinished recording from a previous session." : {
+
+    },
+    "We’ll handle the rest." : {
+
+    },
+    "Welcome to ChillNote" : {
 
     },
     "What ChillNote is NOT" : {
@@ -954,6 +1102,27 @@
 
     },
     "What's on your mind?" : {
+
+    },
+    "You can also say..." : {
+
+    },
+    "You can ask AI about up to %lld notes at a time. Please reduce your selection." : {
+
+    },
+    "You can keep using ChillNote while we work." : {
+
+    },
+    "You have %@ waiting to be processed." : {
+
+    },
+    "You selected %lld notes. Asking AI with many notes may be slower and less accurate." : {
+
+    },
+    "You selected %lld notes. This may take a while to process." : {
+
+    },
+    "You're ready." : {
 
     }
   },

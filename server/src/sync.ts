@@ -1,5 +1,6 @@
-import type { SyncPayload, TagDTO } from "./types.js";
-import { upsertNote, upsertTag } from "./store.js";
+import type { ConflictDTO, NoteDTO, SyncPayload, TagDTO } from "./types.js";
+import { prisma } from "./db.js";
+import { logSyncChange, upsertNote, upsertTag } from "./store.js";
 
 function parseDate(value?: string | null): number | null {
   if (!value) return null;
@@ -7,78 +8,148 @@ function parseDate(value?: string | null): number | null {
   return Number.isNaN(time) ? null : time;
 }
 
-function shouldApply(remoteUpdatedAt?: string | null, remoteDeletedAt?: string | null, localUpdatedAt?: string | null, localDeletedAt?: string | null): boolean {
-  const remoteDeletedTime = parseDate(remoteDeletedAt);
-  const remoteUpdatedTime = parseDate(remoteUpdatedAt);
-  const localDeletedTime = parseDate(localDeletedAt);
-  const localUpdatedTime = parseDate(localUpdatedAt);
-
-  if (remoteDeletedTime !== null) {
-    if (localDeletedTime !== null && localDeletedTime >= remoteDeletedTime) {
-      return false;
-    }
-    if (localUpdatedTime !== null && localUpdatedTime > remoteDeletedTime) {
-      return false;
-    }
-    return true;
-  }
-
-  if (remoteUpdatedTime === null) return false;
-  if (localDeletedTime !== null && localDeletedTime >= remoteUpdatedTime) return false;
-  if (localUpdatedTime === null) return true;
-  return remoteUpdatedTime > localUpdatedTime;
-}
-
-export async function applySync(payload: SyncPayload, existing: SyncPayload, userId: string): Promise<void> {
-  // 1) Tags: upsert first so note->tag relations can connect safely.
-  const dedupedTags = new Map<string, TagDTO>();
-  for (const tag of payload.tags ?? []) {
-    const current = dedupedTags.get(tag.id);
-    const tagTimestamp = Math.max(parseDate(tag.deletedAt) ?? -Infinity, parseDate(tag.updatedAt) ?? -Infinity, parseDate(tag.createdAt) ?? -Infinity);
+function pickLatestByClientTime<T extends { id: string; clientUpdatedAt?: string | null; updatedAt?: string | null; deletedAt?: string | null }>(
+  items: T[]
+): Map<string, T> {
+  const deduped = new Map<string, T>();
+  for (const item of items) {
+    const current = deduped.get(item.id);
+    const itemTime = Math.max(
+      parseDate(item.clientUpdatedAt) ?? -Infinity,
+      parseDate(item.updatedAt) ?? -Infinity,
+      parseDate(item.deletedAt) ?? -Infinity
+    );
     if (!current) {
-      dedupedTags.set(tag.id, tag);
+      deduped.set(item.id, item);
       continue;
     }
-    const existingTimestamp = Math.max(parseDate(current.deletedAt) ?? -Infinity, parseDate(current.updatedAt) ?? -Infinity, parseDate(current.createdAt) ?? -Infinity);
-    if (tagTimestamp > existingTimestamp) {
-      dedupedTags.set(tag.id, tag);
+    const existingTime = Math.max(
+      parseDate(current.clientUpdatedAt) ?? -Infinity,
+      parseDate(current.updatedAt) ?? -Infinity,
+      parseDate(current.deletedAt) ?? -Infinity
+    );
+    if (itemTime > existingTime) {
+      deduped.set(item.id, item);
     }
+  }
+  return deduped;
+}
+
+function buildConflict(params: {
+  entityType: "note" | "tag";
+  id: string;
+  serverVersion: number;
+  serverContent?: string | null;
+  clientContent?: string | null;
+  message: string;
+}): ConflictDTO {
+  return {
+    entityType: params.entityType,
+    id: params.id,
+    serverVersion: params.serverVersion,
+    serverContent: params.serverContent ?? null,
+    clientContent: params.clientContent ?? null,
+    message: params.message
+  };
+}
+
+export async function applySync(payload: SyncPayload, userId: string): Promise<{ conflicts: ConflictDTO[] }> {
+  const conflicts: ConflictDTO[] = [];
+  const now = new Date();
+  const deviceId = payload.deviceId ?? null;
+
+  // 1) Tags: upsert first so note->tag relations can connect safely.
+  const dedupedTags = pickLatestByClientTime<TagDTO>(payload.tags ?? []);
+  const tagsToApply: TagDTO[] = [];
+
+  for (const tag of dedupedTags.values()) {
+    const existing = await prisma.tag.findFirst({
+      where: { id: tag.id, userId }
+    });
+    const baseVersion = tag.baseVersion ?? 0;
+    if (existing && baseVersion < (existing.version ?? 0)) {
+      conflicts.push(
+        buildConflict({
+          entityType: "tag",
+          id: tag.id,
+          serverVersion: existing.version ?? 0,
+          serverContent: existing.name,
+          clientContent: tag.name,
+          message: "Tag 在其他设备已更新，发生冲突。"
+        })
+      );
+      continue;
+    }
+    const nextVersion = (existing?.version ?? 0) + 1;
+    const isDelete = !!tag.deletedAt;
+    const serverDeletedAt = isDelete ? now.toISOString() : null;
+    tagsToApply.push({
+      ...tag,
+      updatedAt: now.toISOString(),
+      deletedAt: serverDeletedAt,
+      version: nextVersion,
+      lastModifiedByDeviceId: deviceId ?? null
+    });
   }
 
   // Stage 1: create/update tag core fields without parent links to avoid FK issues.
-  for (const tag of dedupedTags.values()) {
-    const local = existing.tags?.find((item) => item.id === tag.id);
-    if (!local || shouldApply(tag.updatedAt, tag.deletedAt ?? null, local.updatedAt, local.deletedAt ?? null)) {
-      await upsertTag(userId, { ...tag, parentId: tag.parentId ?? null }, { setParent: false });
-    }
+  for (const tag of tagsToApply) {
+    await upsertTag(userId, { ...tag, parentId: tag.parentId ?? null }, { setParent: false });
+    await logSyncChange({
+      userId,
+      entityType: "tag",
+      entityId: tag.id,
+      version: tag.version ?? 1,
+      serverUpdatedAt: now,
+      operation: tag.deletedAt ? "delete" : "upsert"
+    });
   }
   // Stage 2: apply parent relationships once all tags exist.
-  for (const tag of dedupedTags.values()) {
-    const local = existing.tags?.find((item) => item.id === tag.id);
-    if (!local || shouldApply(tag.updatedAt, tag.deletedAt ?? null, local.updatedAt, local.deletedAt ?? null)) {
-      await upsertTag(userId, tag, { setParent: true });
-    }
+  for (const tag of tagsToApply) {
+    await upsertTag(userId, tag, { setParent: true });
   }
 
   // 2) Notes: dedupe and apply changes with tag relations.
-  const deduped = new Map<string, typeof payload.notes[number]>();
-  for (const note of payload.notes) {
-    const existing = deduped.get(note.id);
-    const currentTimestamp = Math.max(parseDate(note.deletedAt) ?? -Infinity, parseDate(note.updatedAt) ?? -Infinity);
-    if (!existing) {
-      deduped.set(note.id, note);
+  const dedupedNotes = pickLatestByClientTime<NoteDTO>(payload.notes);
+  for (const note of dedupedNotes.values()) {
+    const existing = await prisma.note.findFirst({
+      where: { id: note.id, userId }
+    });
+    const baseVersion = note.baseVersion ?? 0;
+    if (existing && baseVersion < (existing.version ?? 0)) {
+      conflicts.push(
+        buildConflict({
+          entityType: "note",
+          id: note.id,
+          serverVersion: existing.version ?? 0,
+          serverContent: existing.content,
+          clientContent: note.content,
+          message: "笔记在其他设备已更新，发生冲突。"
+        })
+      );
       continue;
     }
-    const existingTimestamp = Math.max(parseDate(existing.deletedAt) ?? -Infinity, parseDate(existing.updatedAt) ?? -Infinity);
-    if (currentTimestamp > existingTimestamp) {
-      deduped.set(note.id, note);
-    }
+
+    const nextVersion = (existing?.version ?? 0) + 1;
+    const isDelete = !!note.deletedAt;
+    const serverDeletedAt = isDelete ? now.toISOString() : null;
+    const upsertPayload: NoteDTO = {
+      ...note,
+      updatedAt: now.toISOString(),
+      deletedAt: serverDeletedAt,
+      version: nextVersion,
+      lastModifiedByDeviceId: deviceId ?? null
+    };
+    await upsertNote(userId, upsertPayload);
+    await logSyncChange({
+      userId,
+      entityType: "note",
+      entityId: note.id,
+      version: nextVersion,
+      serverUpdatedAt: now,
+      operation: isDelete ? "delete" : "upsert"
+    });
   }
 
-  for (const note of deduped.values()) {
-    const local = existing.notes.find((item) => item.id === note.id);
-    if (!local || shouldApply(note.updatedAt, note.deletedAt, local.updatedAt, local.deletedAt)) {
-      await upsertNote(userId, note);
-    }
-  }
+  return { conflicts };
 }

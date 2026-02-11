@@ -11,7 +11,22 @@ enum AuthProvider: String, Codable {
     case email
 }
 
+private enum AuthServiceError: LocalizedError {
+    case invalidNonceLength
+    case nonceGenerationFailed(OSStatus)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidNonceLength:
+            return "Invalid nonce length."
+        case .nonceGenerationFailed:
+            return "Unable to prepare secure sign-in request."
+        }
+    }
+}
+
 enum AuthState: Equatable {
+    case checking
     case signedOut
     case signingIn
     case signedIn(userId: String)
@@ -32,7 +47,7 @@ final class AuthService: ObservableObject {
         )
     )
 
-    @Published private(set) var state: AuthState = .signedOut
+    @Published private(set) var state: AuthState = .checking
     @Published var errorMessage: String?
     @Published var isPro: Bool = false
     @Published var currentUser: User?
@@ -64,6 +79,10 @@ final class AuthService: ObservableObject {
                 await checkSession()
             }
         }
+        
+        Task {
+            await checkSession()
+        }
     }
 
     func checkSession() async {
@@ -88,7 +107,14 @@ final class AuthService: ObservableObject {
     
     // Call this from SignInWithAppleButton.onRequest
     func handleAppleRequest(_ request: ASAuthorizationAppleIDRequest) {
-        let nonce = randomNonceString()
+        let nonce: String
+        do {
+            nonce = try randomNonceString()
+        } catch {
+            currentNonce = nil
+            errorMessage = "Couldn't initialize Apple Sign In. Please try again."
+            return
+        }
         currentNonce = nonce
         request.requestedScopes = [.fullName, .email]
         request.nonce = sha256(nonce)
@@ -191,12 +217,14 @@ final class AuthService: ObservableObject {
     
     // MARK: - Helpers
     
-    private func randomNonceString(length: Int = 32) -> String {
-        precondition(length > 0)
+    private func randomNonceString(length: Int = 32) throws -> String {
+        guard length > 0 else {
+            throw AuthServiceError.invalidNonceLength
+        }
         var randomBytes = [UInt8](repeating: 0, count: length)
         let errorCode = SecRandomCopyBytes(kSecRandomDefault, randomBytes.count, &randomBytes)
         if errorCode != errSecSuccess {
-            fatalError("Unable to generate nonce. SecRandomCopyBytes failed with OSStatus \(errorCode)")
+            throw AuthServiceError.nonceGenerationFailed(errorCode)
         }
         
         let charset: [Character] = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVXYZabcdefghijklmnopqrstuvwxyz-._")
@@ -268,4 +296,3 @@ final class AuthService: ObservableObject {
         }
     }
 }
-

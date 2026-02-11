@@ -82,12 +82,12 @@ struct AboutView: View {
                     // Section 4
                     PhilosophySection(
                         number: "04",
-                        title: "For Seekers of Self-Healing",
-                        quote: "\"Talk is a way to heal yourself.\"",
+                        title: "For Reflective Thinkers",
+                        quote: "\"Talk helps untangle thoughts.\"",
                         content: [
                             "In a digital era of \"silent communication,\" we often suppress emotion.",
-                            "**Vocalizing as Therapy:** Speaking aloud externalizes internal conflicts. ChillNote serves as a safe space for journaling and retrospective.",
-                            "**The Psychology:** Voice carries emotional data that text cannot. Recording becomes a release, an affirmation, and a way to encourage oneself."
+                            "**Vocalizing for Clarity:** Speaking aloud externalizes internal conflicts. ChillNote provides a safe space for journaling and reflection.",
+                            "**The Experience:** Voice carries nuance that text can miss. Recording becomes a way to clarify and organize what you feel and think."
                         ]
                     )
                     

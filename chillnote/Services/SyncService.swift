@@ -10,12 +10,13 @@ enum SyncError: Error {
 }
 
 protocol SyncService {
-    func syncAll(context: ModelContext) async throws
+    func syncAll(context: ModelContext) async throws -> SyncResult
 }
 
 struct LocalSyncService: SyncService {
-    func syncAll(context: ModelContext) async throws {
+    func syncAll(context: ModelContext) async throws -> SyncResult {
         // Offline fallback: no-op sync for local testing.
+        return SyncResult(cursor: nil, serverTime: nil)
     }
 }
 
@@ -23,24 +24,23 @@ struct SyncConfig {
     let baseURL: URL
     let authToken: String?
     let since: Date?
+    let cursor: String?
     let userId: String
+    let deviceId: String
+}
+
+struct SyncResult {
+    let cursor: String?
+    let serverTime: Date?
 }
 
 struct RemoteSyncService: SyncService {
     let config: SyncConfig
     
-    func syncAll(context: ModelContext) async throws {
-        let payload = makeSyncPayload(context: context, since: config.since, userId: config.userId)
+    func syncAll(context: ModelContext) async throws -> SyncResult {
+        let payload = makeSyncPayload(context: context, since: config.since, userId: config.userId, cursor: config.cursor, deviceId: config.deviceId)
         
-        var urlComponents = URLComponents(url: config.baseURL.appendingPathComponent("sync"), resolvingAgainstBaseURL: false)
-        if let since = config.since {
-            let formatter = ISO8601DateFormatter()
-            formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-            urlComponents?.queryItems = [
-                URLQueryItem(name: "since", value: formatter.string(from: since))
-            ]
-        }
-        guard let url = urlComponents?.url else {
+        guard let url = URLComponents(url: config.baseURL.appendingPathComponent("sync"), resolvingAgainstBaseURL: false)?.url else {
             throw SyncError.invalidURL
         }
         var request = URLRequest(url: url)
@@ -67,20 +67,24 @@ struct RemoteSyncService: SyncService {
             throw SyncError.serverError
         }
         
-        let remotePayload = try await Task.detached(priority: .utility) {
+        let remoteResponse = try await Task.detached(priority: .utility) {
             let decoder = JSONDecoder()
-            return try decoder.decode(SyncPayload.self, from: data)
+            return try decoder.decode(SyncResponse.self, from: data)
         }.value
-        applyRemotePayload(context: context, payload: remotePayload, userId: config.userId)
+        applyRemotePayload(context: context, response: remoteResponse, userId: config.userId)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let serverTime = formatter.date(from: remoteResponse.serverTime) ?? ISO8601DateFormatter().date(from: remoteResponse.serverTime)
+        return SyncResult(cursor: remoteResponse.cursor, serverTime: serverTime)
     }
 }
 
-private func makeSyncPayload(context: ModelContext, since: Date?, userId: String) -> SyncPayload {
+private func makeSyncPayload(context: ModelContext, since: Date?, userId: String, cursor: String?, deviceId: String) -> SyncPayload {
     let engine = SyncEngine()
-    return engine.makePayload(context: context, since: since, userId: userId)
+    return engine.makePayload(context: context, since: since, userId: userId, cursor: cursor, deviceId: deviceId)
 }
 
-private func applyRemotePayload(context: ModelContext, payload: SyncPayload, userId: String) {
+private func applyRemotePayload(context: ModelContext, response: SyncResponse, userId: String) {
     let engine = SyncEngine()
-    engine.apply(remote: payload, context: context, userId: userId)
+    engine.apply(remote: response, context: context, userId: userId)
 }

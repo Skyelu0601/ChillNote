@@ -32,8 +32,8 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>ChillNote uses the microphone to record your voice notes.</string>
-	<key>UILaunchScreen</key>
-	<dict/>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

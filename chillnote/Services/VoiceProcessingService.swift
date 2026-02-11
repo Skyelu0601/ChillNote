@@ -3,7 +3,7 @@ import SwiftData
 
 enum VoiceNoteState: Equatable {
     case idle
-    case processing
+    case processing(stage: VoiceProcessingStage)
     case completed(originalText: String)
 }
 
@@ -19,13 +19,12 @@ class VoiceProcessingService: ObservableObject {
     /// Process the note in the background and update it dynamically
     func startProcessing(note: Note, rawTranscript: String, context: ModelContext) async {
         let noteID = note.id
-        processingStates[noteID] = .processing
+        processingStates[noteID] = .processing(stage: .refining)
         
         do {
             let processedText = try await processTranscript(rawTranscript)
             
-            // Artificial delay for effect (if too fast)
-            try? await Task.sleep(nanoseconds: 800_000_000) // 0.8s
+
             
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                 // Update the note content
@@ -52,7 +51,10 @@ class VoiceProcessingService: ObservableObject {
             
         } catch {
             print("⚠️ AI processing failed: \(error)")
-            // On error, just revert state to idle so user sees raw text
+            // Fallback to raw transcript if refining fails.
+            note.content = rawTranscript
+            note.updatedAt = Date()
+            try? context.save()
             processingStates[noteID] = .idle
         }
     }
@@ -62,47 +64,47 @@ class VoiceProcessingService: ObservableObject {
     func processTranscript(_ rawTranscript: String) async throws -> String {
         let trimmed = rawTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return trimmed }
-        
-        // Skip AI processing for very short inputs (likely just a word or two)
-        if trimmed.count < 5 { // Lowered threshold so even short commands might work
-            return trimmed
-        }
-        
+
+        let isShortInput = isMinimalEditInput(trimmed)
+        let toneTargetRule = toneTargetInstruction(for: trimmed)
+
         let prompt = """
         Process this voice transcript into clean, directly usable text.
-        
+
         Voice transcript:
         \(trimmed)
         """
-        
+
         let languageRule = LanguageDetection.languagePreservationRule(for: trimmed)
-        
+
         let systemInstruction = """
         You are a voice-to-text optimizer called "chillnote". Your job is to transform raw speech transcripts into polished, ready-to-use notes.
-        
-        Follow these CORE CAPABILITIES:
-        1. REMOVES FILLER: Automatically remove filler words like "um", "uh", "like", "you know", "basically", "so yeah".
-        2. REMOVES REPETITION: Detect and remove unnecessary repeated words or phrases to ensure the language is concise and easy to understand.
-        3. AUTO-EDITS (SELF-CORRECTION): Recognize when the speaker corrects themselves mid-sentence (e.g., "I want to go on Tuesday... no, Wednesday") and keep only the final intended message.
-        4. AUTO-FORMATS: Automatically organize spoken lists, steps, and key points into clear, structured text (Markdown).
-           - If the user mentions "todo", "task", or "remind me" -> Use checkboxes: - [ ] item
-           - If the user mentions "list" or "bullets" -> Use bullet points
-           - If the user implies a sequence -> Use numbered lists
-        5. FIND THE PERFECT WORDS: Effortlessly improve word choice and flow for clarity without changing the original meaning.
-        6. DIFFERENT TONES FOR DIFFERENT APPS: Adapt the tone based on mentioned targets:
-           - "Email": Professional format with greeting and closing.
-           - "Twitter/X/Tweet": Punchy, concise, and easy to scan.
-           - "Meeting Notes": Structured with headers and action items.
 
         STRICT RULES:
+        - PRIMARY OBJECTIVE: Preserve the user's intent, meaning, and factual content exactly.
         \(languageRule)
+        - NO TRANSLATION unless the user explicitly asks for translation.
+        - ALLOWED EDITS ONLY:
+          - Remove obvious filler words and accidental repetitions.
+          - Resolve explicit self-corrections to the user's final intended wording.
+          - Light grammar and punctuation cleanup for readability.
+        - FORBIDDEN EDITS:
+          - Do NOT add new facts, assumptions, dates, names, or commitments.
+          - Do NOT delete key information, constraints, conditions, or action items.
+          - Do NOT change the meaning, priority, or certainty level of statements.
+          - Do NOT rewrite in a different style unless the user explicitly requests a target format/tone.
+        \(toneTargetRule)
+        - If any part is ambiguous or uncertain, keep the original wording for that part instead of guessing.
+        - For short inputs (under 30 characters): use MINIMAL-EDIT mode and keep wording nearly verbatim.
+          - Current input short mode: \(isShortInput ? "ON" : "OFF")
         - NO EXPLANATIONS: Return ONLY the processed note text. Do not add "Here is your note" or any metadata.
-        - MINIMAL CHANGE: If the input is already clean and short, return it mostly unchanged.
+        - Keep markdown structure only when clearly implied by the user.
         """
-        
+
         return try await GeminiService.shared.generateContent(
             prompt: prompt,
-            systemInstruction: systemInstruction
+            systemInstruction: systemInstruction,
+            countUsage: false
         )
     }
     
@@ -118,6 +120,32 @@ class VoiceProcessingService: ObservableObject {
             action: .unknown,
             message: "Voice Agent received: \(trimmed)"
         )
+    }
+}
+
+private extension VoiceProcessingService {
+    func isMinimalEditInput(_ text: String) -> Bool {
+        text.count < 30
+    }
+
+    func toneTargetInstruction(for text: String) -> String {
+        let normalized = text.lowercased()
+        let hasEmail = normalized.contains("email") || normalized.contains("邮件") || normalized.contains("郵件")
+        let hasTweet = normalized.contains("twitter") || normalized.contains("tweet") || normalized.contains("x ")
+            || normalized.hasSuffix(" x") || normalized.contains("推特")
+        let hasMeeting = normalized.contains("meeting note") || normalized.contains("meeting notes")
+            || normalized.contains("会议纪要") || normalized.contains("會議紀要")
+
+        if hasEmail || hasTweet || hasMeeting {
+            return """
+            - TONE ADAPTATION: Enabled only because an explicit target was detected.
+              - Email: professional format with greeting and closing.
+              - Twitter/X/Tweet: concise and scan-friendly.
+              - Meeting Notes: structured with headers and action items.
+            """
+        }
+
+        return "- TONE ADAPTATION: Disabled by default. Keep the user's original tone and register."
     }
 }
 

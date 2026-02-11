@@ -36,12 +36,20 @@ struct WelcomeNoteFlagStore {
 }
 
 @MainActor
-class DataService {
+class DataService: ObservableObject {
     static let shared = DataService()
     
-    var container: ModelContainer?
+    @Published private(set) var container: ModelContainer?
+    @Published private(set) var initializationErrorMessage: String?
     
     private init() {
+        reloadContainer()
+    }
+
+    func reloadContainer() {
+        container = nil
+        initializationErrorMessage = nil
+
         do {
             let schema = Schema([
                 Note.self,
@@ -78,6 +86,7 @@ class DataService {
             }
         } catch {
             print("CRITICAL ERROR: Could not create ModelContainer: \(error)")
+            initializationErrorMessage = error.localizedDescription
         }
     }
     

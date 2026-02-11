@@ -18,6 +18,7 @@ struct HomeBodyView: View {
     @Binding var isAgentMenuOpen: Bool
     @Binding var showChillRecipes: Bool
     @Binding var showingSettings: Bool
+    @Binding var autoOpenPendingRecordings: Bool
     @Binding var showAIChat: Bool
     @Binding var showAgentActionsSheet: Bool
     @Binding var isCustomActionInputPresented: Bool
@@ -69,6 +70,7 @@ struct HomeBodyView: View {
     let onDeleteNotePermanently: (Note) -> Void
     let onTogglePin: (Note) -> Void
     let onDeleteNote: (Note) -> Void
+    let onLoadMoreIfNeeded: (Note) -> Void
     let onToggleNoteSelection: (Note) -> Void
     let onHandleAgentActionRequest: (AgentRecipe) -> Void
     let onStartAIChat: () -> Void
@@ -125,8 +127,10 @@ struct HomeBodyView: View {
             )
         }
         .navigationBarHidden(true)
-        .fullScreenCover(isPresented: $showingSettings) {
-            SettingsView()
+        .fullScreenCover(isPresented: $showingSettings, onDismiss: {
+            autoOpenPendingRecordings = false
+        }) {
+            SettingsView(autoNavigateToPendingRecordings: autoOpenPendingRecordings)
         }
         .fullScreenCover(isPresented: $showAIChat) {
             AIContextChatView(contextNotes: getSelectedNotes())
@@ -175,7 +179,7 @@ struct HomeBodyView: View {
         .alert("Too Many Notes", isPresented: $showAskHardLimitAlert) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Ask AI supports up to \(askHardLimit) notes. Please reduce your selection.")
+            Text("You can ask AI about up to \(askHardLimit) notes at a time. Please reduce your selection.")
         }
         .alert("Large Selection", isPresented: $showRecipeSoftLimitAlert) {
             Button("Cancel", role: .cancel) {
@@ -190,7 +194,7 @@ struct HomeBodyView: View {
         .alert("Too Many Notes", isPresented: $showRecipeHardLimitAlert) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Chill Recipes supports up to \(recipeHardLimit) notes. Please reduce your selection.")
+            Text("Chill Recipes can process up to \(recipeHardLimit) notes at a time. Please reduce your selection.")
         }
         .sheet(isPresented: $isTranslateInputPresented) {
             TranslateSheetView(
@@ -296,6 +300,7 @@ struct HomeBodyView: View {
                         isTrashSelected: isTrashSelected,
                         isSelectionMode: isSelectionMode,
                         selectedNotes: selectedNotes,
+                        onReachBottom: onLoadMoreIfNeeded,
                         onToggleNoteSelection: onToggleNoteSelection,
                         onRestoreNote: onRestoreNote,
                         onDeleteNotePermanently: onDeleteNotePermanently,
@@ -522,6 +527,7 @@ struct HomeNotesListView: View {
     let isTrashSelected: Bool
     let isSelectionMode: Bool
     let selectedNotes: Set<UUID>
+    let onReachBottom: (Note) -> Void
     let onToggleNoteSelection: (Note) -> Void
     let onRestoreNote: (Note) -> Void
     let onDeleteNotePermanently: (Note) -> Void
@@ -539,56 +545,62 @@ struct HomeNotesListView: View {
         } else {
             LazyVStack(spacing: 16) {
                 ForEach(cachedVisibleNotes) { note in
-                    if isTrashSelected {
-                        NavigationLink(value: note) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                NoteCard(note: note)
-                                TrashNoteFooterView(note: note)
+                    let item = NoteListItemViewData(note: note, usePlainPreview: FeatureFlags.usePlainPreviewInList)
+                    Group {
+                        if isTrashSelected {
+                            NavigationLink(value: note) {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    NoteCard(item: item)
+                                    TrashNoteFooterView(note: note)
+                                }
                             }
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button {
-                                onRestoreNote(note)
-                            } label: {
-                                Label("Restore", systemImage: "arrow.uturn.left")
+                            .buttonStyle(.plain)
+                            .contextMenu {
+                                Button {
+                                    onRestoreNote(note)
+                                } label: {
+                                    Label("Restore", systemImage: "arrow.uturn.left")
+                                }
+                                Button(role: .destructive) {
+                                    onDeleteNotePermanently(note)
+                                } label: {
+                                    Label("Delete Permanently", systemImage: "trash.slash")
+                                }
                             }
-                            Button(role: .destructive) {
-                                onDeleteNotePermanently(note)
-                            } label: {
-                                Label("Delete Permanently", systemImage: "trash.slash")
-                            }
-                        }
-                    } else if isSelectionMode {
-                        NoteCard(
-                            note: note,
-                            isSelectionMode: true,
-                            isSelected: selectedNotes.contains(note.id),
-                            onSelectionToggle: {
+                        } else if isSelectionMode {
+                            NoteCard(
+                                item: item,
+                                isSelectionMode: true,
+                                isSelected: selectedNotes.contains(note.id),
+                                onSelectionToggle: {
+                                    onToggleNoteSelection(note)
+                                }
+                            )
+                            .contentShape(Rectangle())
+                            .onTapGesture {
                                 onToggleNoteSelection(note)
                             }
-                        )
-                        .contentShape(Rectangle())
-                        .onTapGesture {
-                            onToggleNoteSelection(note)
-                        }
-                    } else {
-                        NavigationLink(value: note) {
-                            NoteCard(note: note)
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            Button {
-                                onTogglePin(note)
-                            } label: {
-                                Label(note.pinnedAt == nil ? "Pin" : "Unpin", systemImage: note.pinnedAt == nil ? "pin" : "pin.slash")
+                        } else {
+                            NavigationLink(value: note) {
+                                NoteCard(item: item)
                             }
-                            Button(role: .destructive) {
-                                onDeleteNote(note)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                            .buttonStyle(.plain)
+                            .contextMenu {
+                                Button {
+                                    onTogglePin(note)
+                                } label: {
+                                    Label(note.pinnedAt == nil ? "Pin" : "Unpin", systemImage: note.pinnedAt == nil ? "pin" : "pin.slash")
+                                }
+                                Button(role: .destructive) {
+                                    onDeleteNote(note)
+                                } label: {
+                                    Label("Delete", systemImage: "trash")
+                                }
                             }
                         }
+                    }
+                    .onAppear {
+                        onReachBottom(note)
                     }
                 }
             }
@@ -716,18 +728,28 @@ struct HomeSelectionOverlayView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)))
                     }
                     
-                    HStack(spacing: 0) {
+                    HStack(spacing: 16) {
                         Button(action: onStartAIChat) {
-                            HStack(spacing: 8) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 16))
-                                Text("Ask AI")
-                                    .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            HStack(spacing: 4) {
+                                Text("Ask")
+                                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                                Image("chillohead_touming")
+                                    .resizable()
+                                    .scaledToFit()
+                                    .frame(height: 28)
                             }
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
-                            .background(Color.accentPrimary)
+                            .background(
+                                LinearGradient(
+                                    colors: [Color.accentPrimary, Color.accentPrimary.opacity(0.9)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .clipShape(Capsule())
+                            .shadow(color: Color.accentPrimary.opacity(0.35), radius: 10, x: 0, y: 5)
                         }
                         
                         Button(action: onToggleAgentMenu) {
@@ -743,11 +765,11 @@ struct HomeSelectionOverlayView: View {
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)
                             .background(Color.white)
+                            .clipShape(Capsule())
+                            .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
                         }
                     }
-                    .clipShape(Capsule())
-                    .shadow(color: Color.black.opacity(0.15), radius: 15, x: 0, y: 8)
-                    .padding(.horizontal, 40)
+                    .padding(.horizontal, 24)
                     .padding(.bottom, 32)
                 }
             }

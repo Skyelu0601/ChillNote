@@ -1,33 +1,38 @@
 import SwiftUI
 
 struct ChatInputBar: View {
+    enum RecordTriggerMode {
+        case releaseBased
+        case tapToRecord
+    }
+
     @Binding var text: String
     @Binding var isVoiceMode: Bool
     @ObservedObject var speechRecognizer: SpeechRecognizer
     @StateObject private var storeService = StoreService.shared
-    
+
     var onSendText: () -> Void
     var onCancelVoice: () -> Void
     var onConfirmVoice: () -> Void
     var onCreateBlankNote: () -> Void
-    
+    var enforceVoiceQuota: Bool = true
+    var recordTriggerMode: RecordTriggerMode = .releaseBased
+
     @FocusState private var isTextFocused: Bool
-    @State private var isRecordingPulsing = false
     @State private var showTextInput = false
     @State private var isPressed = false
     @State private var isLongPressing = false
     @State private var isBreathing = false
     @State private var waveformHeights: [CGFloat] = Array(repeating: 6, count: 5)
-    
+    @State private var pressStartTime: Date?
+
     @State private var elapsed: TimeInterval = 0
     @State private var didTriggerLimit = false
     @State private var showUpgradeSheet = false
     @State private var showSubscription = false
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
+    private let longPressThreshold: TimeInterval = 0.5
 
-    // Haptic generators
-    private let impactGenerator = UIImpactFeedbackGenerator(style: .medium)
-    
     private var timeText: String {
         let formatter = DateComponentsFormatter()
         formatter.allowedUnits = [.minute, .second]
@@ -43,10 +48,9 @@ struct ChatInputBar: View {
             showSubscription = true
         }
     }
-    
+
     var body: some View {
         VStack(spacing: 0) {
-            // Expandable Text Input (Secondary)
             if showTextInput {
                 HStack(alignment: .bottom, spacing: 8) {
                     TextField("Type a note...", text: $text, axis: .vertical)
@@ -57,7 +61,7 @@ struct ChatInputBar: View {
                         .cornerRadius(20)
                         .focused($isTextFocused)
                         .lineLimit(1...5)
-                    
+
                     if !text.isEmpty {
                         Button(action: {
                             onSendText()
@@ -69,7 +73,7 @@ struct ChatInputBar: View {
                         .buttonStyle(.bouncy)
                         .transition(.scale.combined(with: .opacity))
                     }
-                    
+
                     Button(action: {
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             showTextInput = false
@@ -86,10 +90,8 @@ struct ChatInputBar: View {
                 .padding(.bottom, 12)
                 .transition(.move(edge: .top).combined(with: .opacity))
             }
-            
-// Main Voice-First Bar
+
             HStack(alignment: .center, spacing: 0) {
-                // Central Voice Button (Primary)
                 voiceCenterView
             }
             .padding(.horizontal, 20)
@@ -102,14 +104,13 @@ struct ChatInputBar: View {
         }
         .onReceive(timer) { _ in
             syncElapsed()
-            
-            // Enforce limit based on subscription
+
             if elapsed >= storeService.recordingTimeLimit, speechRecognizer.isRecording {
                 if storeService.currentTier == .free && !didTriggerLimit {
                     didTriggerLimit = true
                     showUpgradeSheet = true
                 }
-                onConfirmVoice() // Auto-finish
+                onConfirmVoice()
             }
         }
         .onChange(of: speechRecognizer.recordingState) { _, _ in
@@ -121,12 +122,12 @@ struct ChatInputBar: View {
         .sheet(isPresented: $showUpgradeSheet) {
             UpgradeBottomSheet(
                 title: "Recording limit reached",
-                message: "Upgrade to Pro to record up to 10 minutes per note.",
+                message: UpgradeBottomSheet.unifiedMessage,
                 primaryButtonTitle: "Upgrade to Pro",
                 onUpgrade: openSubscriptionFromUpgrade,
                 onDismiss: { showUpgradeSheet = false }
             )
-            .presentationDetents([.height(220)])
+            .presentationDetents([.height(350)])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSubscription) {
@@ -134,73 +135,47 @@ struct ChatInputBar: View {
         }
     }
 
-    
-    // MARK: - Central Voice View
-    
-    // MARK: - Central Voice View
-    
     private var voiceCenterView: some View {
         ZStack {
             if speechRecognizer.isRecording {
-                // Recording State (Expanded Capsule)
                 recordingGlassCapsule
                     .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .opacity))
-            } else if speechRecognizer.recordingState == .processing {
-                // Processing State
-                 idleGlassCapsule
-                    .opacity(0.6)
-                    .overlay {
-                        ProgressView()
-                            .tint(.accentPrimary)
-                    }
             } else if isErrorState() {
-                // Error State
                 if case .error(let message) = speechRecognizer.recordingState {
                     errorView(message: message)
                 }
             } else {
-                // Idle State - Glass Capsule
                 idleGlassCapsule
             }
         }
-        .padding(.top, 4) // Slight top offset to balance shadows
+        .padding(.top, 4)
         .frame(maxWidth: .infinity)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: speechRecognizer.recordingState)
     }
-    
-    private var isVoiceActive: Bool {
-        speechRecognizer.recordingState != .idle
-    }
-    
+
     private func isErrorState() -> Bool {
         if case .error = speechRecognizer.recordingState { return true }
         return false
     }
-    
-    // MARK: - New Components
-    
+
     private var idleGlassCapsule: some View {
         ZStack {
-            // 1. Back Layer (Brand Color / Hint)
-            // Rotated to show a sliver of color ("4-6 degrees")
             Capsule()
                 .fill(Color.accentPrimary)
                 .frame(width: 80, height: 56)
-                .rotationEffect(.degrees(isPressed ? 0 : 6)) // Align when pressed for "sinking" effect
-                .offset(y: isPressed ? 2 : 4) // Subtle depth
+                .rotationEffect(.degrees(isPressed ? 0 : 6))
+                .offset(y: isPressed ? 2 : 4)
                 .opacity(0.8)
                 .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isPressed)
-            
-            // "Type" Hint Icon (Hidden behind, revealed slightly)
-             if isPressed {
+
+            if isPressed {
                 Image(systemName: "keyboard")
                     .font(.system(size: 12, weight: .bold))
                     .foregroundColor(.white.opacity(0.8))
-                    .offset(x: 28, y: 16) // Positioned to peek out or be visible on layer
+                    .offset(x: 28, y: 16)
                     .transition(.opacity)
             }
-            
-            // 2. Glow / Breathing Aura
+
             if !isPressed {
                 Capsule()
                     .fill(Color.accentPrimary.opacity(0.3))
@@ -214,15 +189,13 @@ struct ChatInputBar: View {
                         }
                     }
             }
-            
-            // 3. Front Layer (Glass/White)
+
             Capsule()
-                .fill(Color.bgPrimary) // Solid background for clarity
+                .fill(Color.bgPrimary)
                 .frame(width: 90, height: 56)
                 .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
                 .overlay(
                     HStack(spacing: 8) {
-                        // Dynamic Icon: Changes to Plus on long press idea (simulated logic)
                         Image(systemName: isLongPressing ? "plus" : "mic.fill")
                             .font(.system(size: 24, weight: .semibold))
                             .foregroundColor(isLongPressing ? .accentPrimary : .textMain)
@@ -230,46 +203,25 @@ struct ChatInputBar: View {
                     }
                 )
                 .scaleEffect(isPressed ? 0.95 : 1.0)
-                .offset(y: isPressed ? 2 : 0) // Physical "press" movement
-            
+                .offset(y: isPressed ? 2 : 0)
         }
-        .contentShape(Rectangle()) // Hit area
-        .onTapGesture {
-            let impact = UIImpactFeedbackGenerator(style: .light)
-            impact.impactOccurred()
-            speechRecognizer.startRecording()
-        }
-        .onLongPressGesture(minimumDuration: 0.5, pressing: { pressing in
-            withAnimation(.spring(response: 0.3)) {
-                isPressed = pressing
-                if pressing { isLongPressing = true } // Start visual cue
-                else { isLongPressing = false }
-            }
-        }, perform: {
-            // Heavy haptic feedback for document creation
-            let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
-            heavyImpact.impactOccurred()
-            
-            // Reset visual states
-            withAnimation {
-                isPressed = false
-                isLongPressing = false
-            }
-            
-            // Execute action
-            onCreateBlankNote()
-        })
+        .contentShape(Rectangle())
+        .modifier(RecordGestureModifier(
+            recordTriggerMode: recordTriggerMode,
+            onTapRecord: handleTapRecord,
+            onChanged: handlePressChanged,
+            onEnded: handlePressEnded
+        ))
     }
-    
+
     private var recordingGlassCapsule: some View {
         ZStack {
-            // Glowing border/aura for recording
             Capsule()
                 .fill(Color.accentPrimary.opacity(0.1))
                 .frame(height: 64)
                 .frame(maxWidth: .infinity)
                 .blur(radius: 10)
-            
+
             Capsule()
                 .fill(Color.white)
                 .frame(height: 56)
@@ -277,7 +229,6 @@ struct ChatInputBar: View {
                 .shadow(color: Color.accentPrimary.opacity(0.15), radius: 12, x: 0, y: 8)
                 .overlay(
                     HStack(spacing: 16) {
-                        // Cancel Button (Left)
                         Button(action: onCancelVoice) {
                             Image(systemName: "xmark")
                                 .font(.system(size: 16, weight: .bold))
@@ -287,36 +238,31 @@ struct ChatInputBar: View {
                                 .clipShape(Circle())
                         }
                         .buttonStyle(.bouncy)
-                        
-                        // Center Info (Waveform + Time)
+
                         VStack(spacing: 2) {
-                            // Pseudo Waveform
-                             HStack(spacing: 3) {
+                            HStack(spacing: 3) {
                                 ForEach(0..<5) { index in
                                     RoundedRectangle(cornerRadius: 2)
                                         .fill(Color.accentPrimary)
                                         .frame(width: 4, height: waveformHeights[index])
                                         .animation(.easeInOut(duration: 0.2), value: waveformHeights[index])
-                                        .hueRotation(.degrees(elapsed * 5)) // Shift color over time
+                                        .hueRotation(.degrees(elapsed * 5))
                                 }
                             }
                             .frame(height: 24)
                             .onReceive(timer) { _ in
-                                // Update waveform randomly
                                 if speechRecognizer.isRecording {
-                                     updateWaveform()
+                                    updateWaveform()
                                 }
                             }
-                            
-                            // Timer
-                             Text(timeText)
+
+                            Text(timeText)
                                 .font(.caption2)
                                 .bold()
                                 .foregroundColor(.accentPrimary)
                                 .monospacedDigit()
                         }
-                        
-                        // Confirm Button (Right)
+
                         Button(action: onConfirmVoice) {
                             Image(systemName: "arrow.up")
                                 .font(.system(size: 18, weight: .bold))
@@ -335,9 +281,8 @@ struct ChatInputBar: View {
         }
         .padding(.horizontal, 24)
     }
-    
+
     private func updateWaveform() {
-        // Randomize heights to simulate voice activity
         for i in 0..<5 {
             waveformHeights[i] = CGFloat.random(in: 4...20)
         }
@@ -351,21 +296,71 @@ struct ChatInputBar: View {
         }
         elapsed = Date().timeIntervalSince(startTime)
     }
-    
 
-    
+    private func handlePressChanged(_ value: DragGesture.Value) {
+        if pressStartTime == nil {
+            pressStartTime = value.time
+        }
+
+        let duration = value.time.timeIntervalSince(pressStartTime ?? value.time)
+        withAnimation(.spring(response: 0.3)) {
+            isPressed = true
+            isLongPressing = duration >= longPressThreshold
+        }
+    }
+
+    private func handlePressEnded(_ value: DragGesture.Value) {
+        let duration = value.time.timeIntervalSince(pressStartTime ?? value.time)
+        let isLongPress = duration >= longPressThreshold
+        resetPressState()
+
+        if isLongPress {
+            let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
+            heavyImpact.impactOccurred()
+            onCreateBlankNote()
+        } else {
+            let lightImpact = UIImpactFeedbackGenerator(style: .light)
+            lightImpact.impactOccurred()
+            tryStartRecordingWithQuotaCheck()
+        }
+    }
+
+    private func handleTapRecord() {
+        guard !speechRecognizer.isRecording else { return }
+        let lightImpact = UIImpactFeedbackGenerator(style: .light)
+        lightImpact.impactOccurred()
+        withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+            isPressed = true
+            isLongPressing = false
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
+                isPressed = false
+            }
+        }
+        tryStartRecordingWithQuotaCheck()
+    }
+
+    private func resetPressState() {
+        pressStartTime = nil
+        withAnimation {
+            isPressed = false
+            isLongPressing = false
+        }
+    }
+
     private func errorView(message: String) -> some View {
         HStack {
             Text(message)
                 .font(.caption)
                 .foregroundColor(.red)
                 .lineLimit(1)
-            
+
             Button("Retry") {
                 if speechRecognizer.getCurrentAudioFileURL() != nil {
                     speechRecognizer.retryTranscription()
                 } else {
-                    speechRecognizer.startRecording()
+                    tryStartRecordingWithQuotaCheck()
                 }
             }
             .font(.caption)
@@ -375,6 +370,49 @@ struct ChatInputBar: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 44)
+    }
+
+    private func tryStartRecordingWithQuotaCheck() {
+        guard enforceVoiceQuota else {
+            speechRecognizer.startRecording(countsTowardQuota: false)
+            return
+        }
+
+        Task {
+            let canRecord = await storeService.checkDailyQuotaOnServer(feature: .voice)
+            await MainActor.run {
+                guard canRecord else {
+                    showUpgradeSheet = true
+                    return
+                }
+                speechRecognizer.startRecording(countsTowardQuota: true)
+            }
+        }
+    }
+}
+
+private struct RecordGestureModifier: ViewModifier {
+    let recordTriggerMode: ChatInputBar.RecordTriggerMode
+    let onTapRecord: () -> Void
+    let onChanged: (DragGesture.Value) -> Void
+    let onEnded: (DragGesture.Value) -> Void
+
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        switch recordTriggerMode {
+        case .tapToRecord:
+            content.onTapGesture(perform: onTapRecord)
+        case .releaseBased:
+            content.gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        onChanged(value)
+                    }
+                    .onEnded { value in
+                        onEnded(value)
+                    }
+            )
+        }
     }
 }
 

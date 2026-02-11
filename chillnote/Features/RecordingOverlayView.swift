@@ -14,6 +14,7 @@ struct RecordingOverlayView: View {
     @State private var didTriggerLimit = false
     @State private var showUpgradeSheet = false
     @State private var showSubscription = false
+    @State private var upgradeTitle = "Recording limit reached"
     private let analytics = AnalyticsService.shared
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
@@ -99,9 +100,11 @@ struct RecordingOverlayView: View {
                                 VStack(spacing: 16) {
                                     ProgressView()
                                         .scaleEffect(1.5)
-                                    Text("Refining your thought...")
-                                        .font(.bodyMedium)
-                                        .foregroundColor(.textSub)
+                                    VoiceProcessingWorkflowView(
+                                        currentStage: .transcribing,
+                                        style: .detailed,
+                                        showPersistentHint: false
+                                    )
                                 }
                                 .padding(.top, 20)
                             } else {
@@ -199,9 +202,16 @@ struct RecordingOverlayView: View {
                     finalizeSave()
                 }
             case .error(let message):
-                bannerData = BannerData(message: displayErrorMessage(message), style: .error)
+                if message.localizedCaseInsensitiveContains("daily free voice limit reached") {
+                    upgradeTitle = "Daily voice limit reached"
+                    showUpgradeSheet = true
+                } else {
+                    bannerData = BannerData(message: displayErrorMessage(message), style: .error)
+                    notificationHaptic(type: .error)
+                }
+                
                 analytics.log(.transcribeFail)
-                notificationHaptic(type: .error)
+                
                 if pendingSave {
                     pendingSave = false
                     isProcessing = false
@@ -217,6 +227,7 @@ struct RecordingOverlayView: View {
             if elapsed >= limit && !didTriggerLimit {
                 didTriggerLimit = true
                 if StoreService.shared.currentTier == .free {
+                    upgradeTitle = "Recording limit reached"
                     showUpgradeSheet = true
                 }
                 finishRecording()
@@ -234,13 +245,13 @@ struct RecordingOverlayView: View {
         .banner(data: $bannerData)
         .sheet(isPresented: $showUpgradeSheet) {
             UpgradeBottomSheet(
-                title: "Recording limit reached",
-                message: "Upgrade to Pro to record up to 10 minutes per note.",
+                title: upgradeTitle,
+                message: UpgradeBottomSheet.unifiedMessage,
                 primaryButtonTitle: "Upgrade to Pro",
                 onUpgrade: openSubscriptionFromUpgrade,
                 onDismiss: { showUpgradeSheet = false }
             )
-            .presentationDetents([.height(220)])
+            .presentationDetents([.height(350)])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSubscription) {
@@ -294,8 +305,14 @@ struct RecordingOverlayView: View {
     private func startIfNeeded() {
         guard speechRecognizer.permissionGranted, !speechRecognizer.isRecording else { return }
         Task { @MainActor in
+            let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
+            guard canRecord else {
+                upgradeTitle = "Daily voice limit reached"
+                showUpgradeSheet = true
+                return
+            }
             await Task.yield()
-            speechRecognizer.startRecording()
+            speechRecognizer.startRecording(countsTowardQuota: true)
         }
     }
 

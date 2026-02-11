@@ -24,9 +24,46 @@ enum GeminiError: LocalizedError {
     }
 }
 
+enum VoiceTranscriptionLanguageMode: String, CaseIterable {
+    case auto
+    case prefer
+}
+
+struct VoiceTranscriptionPreferences {
+    static let modeStorageKey = "voice_language_mode"
+    static let hintStorageKey = "voice_language_hint"
+
+    let mode: VoiceTranscriptionLanguageMode
+    let preferredLanguageHint: String?
+
+    static func load(from userDefaults: UserDefaults = .standard) -> VoiceTranscriptionPreferences {
+        let rawMode = userDefaults.string(forKey: modeStorageKey) ?? VoiceTranscriptionLanguageMode.auto.rawValue
+        let mode = VoiceTranscriptionLanguageMode(rawValue: rawMode) ?? .auto
+
+        let rawHint = userDefaults.string(forKey: hintStorageKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let hint = (rawHint?.isEmpty == false) ? rawHint : nil
+
+        return VoiceTranscriptionPreferences(mode: mode, preferredLanguageHint: hint)
+    }
+}
+
 struct GeminiService {
     static let shared = GeminiService()
-    
+
+    private func makeAuthorizedJSONRequest(url: URL, timeout: TimeInterval) async throws -> URLRequest {
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = timeout
+
+        guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else {
+            throw GeminiError.apiError("Sign in required")
+        }
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return request
+    }
+
     /// Generates content from prompt and optional media (Multimodal)
     /// - Parameters:
     ///   - prompt: The text prompt
@@ -34,16 +71,21 @@ struct GeminiService {
     ///   - systemInstruction: Optional system instruction (system prompt)
     ///   - jsonMode: If true, requests JSON output
     /// - Returns: Generated text content
-    func generateContent(prompt: String, audioFileURL: URL? = nil, systemInstruction: String? = nil, jsonMode: Bool = false) async throws -> String {
+    func generateContent(
+        prompt: String,
+        audioFileURL: URL? = nil,
+        systemInstruction: String? = nil,
+        jsonMode: Bool = false,
+        countUsage: Bool = false,
+        usageType: DailyQuotaFeature? = nil
+    ) async throws -> String {
+        _ = countUsage // Reserved for backward compatibility at call sites.
         let serverURL = AppConfig.backendBaseURL + "/ai/gemini"
         guard let url = URL(string: serverURL) else {
             throw GeminiError.invalidURL
         }
         
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.timeoutInterval = 60
+        var request = try await makeAuthorizedJSONRequest(url: url, timeout: 60)
         
         // Build payload for backend proxy
         var requestBody: [String: Any] = [
@@ -53,6 +95,9 @@ struct GeminiService {
         
         if let systemInstruction = systemInstruction {
             requestBody["systemPrompt"] = systemInstruction
+        }
+        if let usageType {
+            requestBody["usageType"] = usageType.rawValue
         }
         
         // Add Audio if present
@@ -108,18 +153,19 @@ struct GeminiService {
         }
     }
 
-    /// Voice note: transcribe + lightly polish, returning final text.
-    func transcribeAndPolish(audioFileURL: URL, locale: String? = nil) async throws -> String {
+    /// Voice note: STT only (no intent optimization, no rewriting).
+    func transcribeAudio(
+        audioFileURL: URL,
+        locale: String? = nil,
+        countUsage: Bool = true
+    ) async throws -> String {
         let serverURL = AppConfig.backendBaseURL + "/ai/voice-note"
         guard let url = URL(string: serverURL) else {
             throw GeminiError.invalidURL
         }
 
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         // Upload + model latency can exceed 60s for longer recordings.
-        request.timeoutInterval = 180
+        var request = try await makeAuthorizedJSONRequest(url: url, timeout: 180)
 
         guard let audioData = try? Data(contentsOf: audioFileURL) else {
             throw GeminiError.invalidResponse
@@ -128,13 +174,28 @@ struct GeminiService {
         let base64Audio = audioData.base64EncodedString()
         let ext = audioFileURL.pathExtension.lowercased()
         let mimeType = ext == "wav" ? "audio/wav" : (ext == "m4a" ? "audio/m4a" : (ext == "mp3" ? "audio/mp3" : "application/octet-stream"))
+        let transcriptionPreferences = VoiceTranscriptionPreferences.load()
+        let effectiveLocale: String? = {
+            if let locale {
+                let trimmed = locale.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmed.isEmpty { return trimmed }
+            }
+            let preferred = Locale.preferredLanguages.first?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let preferred, !preferred.isEmpty { return preferred }
+            return nil
+        }()
 
         var requestBody: [String: Any] = [
             "audioBase64": base64Audio,
-            "mimeType": mimeType
+            "mimeType": mimeType,
+            "spokenLanguageMode": transcriptionPreferences.mode.rawValue,
+            "countUsage": countUsage
         ]
-        if let locale, !locale.isEmpty {
-            requestBody["locale"] = locale
+        if let preferredLanguageHint = transcriptionPreferences.preferredLanguageHint {
+            requestBody["spokenLanguageHint"] = preferredLanguageHint
+        }
+        if let effectiveLocale {
+            requestBody["locale"] = effectiveLocale
         }
 
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
@@ -150,23 +211,24 @@ struct GeminiService {
 
             // Backward-compat: older backends don't have /ai/voice-note yet.
             if httpResponse.statusCode == 404 {
-                let localeHintLine: String
-                if let locale, !locale.isEmpty {
-                    localeHintLine = "Locale hint: \(locale)."
+                let languageHintLine: String
+                if let preferredLanguageHint = transcriptionPreferences.preferredLanguageHint {
+                    languageHintLine = "Preferred primary language hint: \(preferredLanguageHint). Keep code-switching exactly as spoken."
+                } else if let effectiveLocale {
+                    languageHintLine = "Locale hint: \(effectiveLocale)."
                 } else {
-                    localeHintLine = ""
+                    languageHintLine = ""
                 }
                 let fallbackPrompt = """
-                Transcribe the attached audio and return the final cleaned text.
+                Transcribe the attached audio verbatim and return plain text only.
                 Requirements:
-                - Remove filler words and disfluencies (e.g., um, uh, like, you know).
-                - Remove unnecessary repetition while preserving intentional emphasis.
-                - If the speaker corrects themselves mid-sentence, keep only the final intended wording.
-                - Auto-format lists/steps/key points into clear structured Markdown when appropriate.
-                - Lightly improve word choice for clarity without changing meaning.
-                - If the speaker indicates a target (email/twitter/support/chat), adapt tone and format accordingly.
-                - Do NOT translate; keep the original language spoken. \(localeHintLine)
-                Return ONLY the final text, no explanations.
+                - Preserve the speaker's original wording and order.
+                - Preserve fillers, repetitions, and self-corrections when present.
+                - Preserve multilingual/code-switched speech exactly as spoken.
+                - Do NOT summarize, rewrite, polish, or format as Markdown.
+                - Do NOT infer intent or adapt tone for any target app.
+                - Do NOT translate; keep the original spoken language(s). \(languageHintLine)
+                Return ONLY the transcript text, no explanations.
                 """
                 let text = try await generateContent(
                     prompt: fallbackPrompt,
@@ -174,14 +236,15 @@ struct GeminiService {
                     systemInstruction: """
                     You are a professional voice transcription assistant.
                     Rules:
-                    - Do NOT translate; keep the original language spoken. \(localeHintLine)
-                    - Preserve the speaker's meaning, tone, and intent.
-                    - Remove fillers and disfluencies, unnecessary repetition, and false starts.
-                    - When the speaker changes their mind mid-sentence, keep only the final intended message.
-                    - Auto-format lists/steps into clear structured Markdown when appropriate.
-                    - If the speaker indicates a target channel/app (email/twitter/support/chat), adapt tone and formatting accordingly.
-                    - Return ONLY the final text, no explanations.
-                    """
+                    - Do NOT translate; keep the original language(s) spoken. \(languageHintLine)
+                    - Preserve multilingual/code-switched speech exactly as spoken.
+                    - Preserve the speaker's original wording as faithfully as possible.
+                    - Keep fillers, repetitions, and false starts as spoken.
+                    - Do NOT clean up, summarize, or restructure.
+                    - Return ONLY the transcript text, no explanations.
+                    """,
+                    countUsage: false,
+                    usageType: countUsage ? .voice : nil
                 )
                 return text
             }
@@ -214,6 +277,11 @@ struct GeminiService {
             throw GeminiError.networkError(error)
         }
     }
+
+    /// Backward compatible alias. Intentionally returns STT-only text now.
+    func transcribeAndPolish(audioFileURL: URL, locale: String? = nil) async throws -> String {
+        try await transcribeAudio(audioFileURL: audioFileURL, locale: locale)
+    }
     
     /// Simple chat method for text-based AI interactions
     /// - Parameter prompt: The user's message/prompt
@@ -227,7 +295,11 @@ struct GeminiService {
     ///   - prompt: The text prompt
     ///   - systemInstruction: Optional system instruction
     /// - Returns: An async throwing stream of text chunks
-    func streamGenerateContent(prompt: String, systemInstruction: String? = nil) -> AsyncThrowingStream<String, Error> {
+    func streamGenerateContent(
+        prompt: String,
+        systemInstruction: String? = nil,
+        usageType: DailyQuotaFeature? = nil
+    ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             Task {
                 do {
@@ -236,10 +308,7 @@ struct GeminiService {
                         throw GeminiError.invalidURL
                     }
                     
-                    var request = URLRequest(url: url)
-                    request.httpMethod = "POST"
-                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                    request.timeoutInterval = 120 // Longer timeout for stream
+                    var request = try await makeAuthorizedJSONRequest(url: url, timeout: 120) // Longer timeout for stream
                     
                     var requestBody: [String: Any] = [
                         "prompt": prompt,
@@ -248,6 +317,9 @@ struct GeminiService {
                     
                     if let systemInstruction = systemInstruction {
                         requestBody["systemPrompt"] = systemInstruction
+                    }
+                    if let usageType {
+                        requestBody["usageType"] = usageType.rawValue
                     }
                     
                     request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)

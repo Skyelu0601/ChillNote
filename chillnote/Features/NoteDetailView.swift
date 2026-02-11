@@ -24,10 +24,6 @@ struct NoteDetailView: View {
     @State private var isProgrammaticContentUpdate = false
     @State private var isWriting = false
 
-    // Processing toast
-    @State private var showProcessingToast = false
-    @State private var hasShownProcessingToast = false
-    
     // Change Tracking
     @State private var initialContent: String = ""
     @State private var initialTags: Set<UUID> = []
@@ -35,11 +31,23 @@ struct NoteDetailView: View {
     // Manual Tag Input
     @State private var showAddTagAlert = false
     @State private var newTagName = ""
+    
+    // Export
+    @State private var showExportSheet = false
+    @State private var exportURL: URL?
+    @State private var showExportError = false
+    @State private var exportErrorMessage = ""
+
+    // Limits & Upsell
+    @State private var showUpgradeSheet = false
+    @State private var showSubscription = false
+    @State private var upgradeTitle = ""
 
     
     // Voice Input State
     // recordingStartTime is now in SpeechRecognizer
     @State private var recordingDuration: TimeInterval = 0
+    @State private var awaitingVoiceEditResult = false
     private let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
     
     private var isDeleted: Bool {
@@ -52,6 +60,12 @@ struct NoteDetailView: View {
             return true
         }
         return false
+    }
+
+    private var processingStage: VoiceProcessingStage? {
+        guard let state = voiceService.processingStates[note.id],
+              case .processing(let stage) = state else { return nil }
+        return stage
     }
     
     private var trashCountdownText: String? {
@@ -147,6 +161,10 @@ struct NoteDetailView: View {
                                         Label("Restore", systemImage: "arrow.uturn.left")
                                     }
                                 }
+
+                                Button(action: exportMarkdown) {
+                                    Label("Export Markdown", systemImage: "square.and.arrow.up")
+                                }
                                 
                                 Button(role: .destructive, action: { showDeleteConfirmation = true }) {
                                     Label("Delete Note", systemImage: "trash")
@@ -187,136 +205,73 @@ struct NoteDetailView: View {
                     .padding(.top, 8)
                 }
 
-                if let state = voiceService.processingStates[note.id],
-                   case .processing = state,
-                   note.content.isEmpty {
-                    
-                    // Stage 1: Jotting (Glass Capsule Top - Same Position as Stage 2)
-                    HStack(spacing: 12) {
-                        Image(systemName: "pencil.and.scribble")
-                            .font(.system(size: 16))
-                            .foregroundColor(.accentPrimary)
-                            .symbolEffect(.variableColor.iterative.reversing, options: .repeating)
-                        
-                        Text("Jotting this down...")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.textMain)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .phaseAnimator([false, true]) { content, phase in
-                        content
-                            .shadow(color: phase ? Color.accentPrimary.opacity(0.2) : Color.black.opacity(0.05), radius: phase ? 8 : 5, y: 2)
-                            .overlay(
-                                Capsule().stroke(Color.accentPrimary.opacity(phase ? 0.5 : 0.2), lineWidth: 1)
-                            )
-                    } animation: { _ in
-                            .easeInOut(duration: 1.5)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading) // Align left
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
-                    .transition(.opacity) // Smoother transition in place
-                    
-                } else {
-                    ScrollView(.vertical) {
-                        VStack(alignment: .leading, spacing: 0) {
-                            
-                            // Stage 2: Getting your vibe (Inline Header)
-                            // Stage 2: Getting your vibe (Glass Capsule Top)
-                            if let state = voiceService.processingStates[note.id],
-                               case .processing = state,
-                               !note.content.isEmpty {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "sparkles")
-                                        .font(.system(size: 14))
-                                        .foregroundStyle(
-                                            LinearGradient(
-                                                colors: [.accentPrimary, .purple],
-                                                startPoint: .topLeading,
-                                                endPoint: .bottomTrailing
-                                            )
-                                        )
-                                        .symbolEffect(.bounce, options: .repeating)
-                                    
-                                    Text("Getting your vibe...")
-                                        .font(.subheadline)
-                                        .fontWeight(.medium)
-                                        .foregroundStyle(.primary)
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(.ultraThinMaterial)
-                                .clipShape(Capsule())
-                                .shadow(color: Color.black.opacity(0.05), radius: 5, y: 2)
-                                .overlay(
-                                    Capsule()
-                                        .strokeBorder(
-                                            LinearGradient(
-                                                colors: [Color.accentPrimary.opacity(0.3), Color.purple.opacity(0.3)],
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            ),
-                                            lineWidth: 1
-                                        )
-                                )
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 16)
-                                .transition(.move(edge: .top).combined(with: .opacity))
-                            }
-                            
-                            Text(note.createdAt.relativeFormatted())
-                                .font(.bodySmall)
-                                .foregroundColor(.textSub)
-                                .padding(.horizontal, 20)
-                                .padding(.bottom, 8)
 
-                            // Tag Banner
-                            TagBannerView(
-                                tags: note.tags,
-                                suggestedTags: note.suggestedTags,
-                                onConfirm: { tagName in
-                                    confirmTag(tagName)
-                                },
-                                onRemove: { tag in
-                                    note.tags.removeAll { $0.id == tag.id }
-                                    note.updatedAt = Date()
-                                    TagService.shared.cleanupEmptyTags(context: modelContext)
-                                },
-                                onAddClick: {
-                                    newTagName = ""
-                                    showAddTagAlert = true
-                                }
-                            )
-                            .padding(.top, 0)
-                            .padding(.bottom, 16)
+
+                ScrollView(.vertical) {
+                    VStack(alignment: .leading, spacing: 0) {
+                        Text(note.createdAt.relativeFormatted())
+                            .font(.bodySmall)
+                            .foregroundColor(.textSub)
                             .padding(.horizontal, 20)
-                            .opacity(isDeleted ? 0.5 : 1.0)
-                            .allowsHitTesting(!isDeleted)
-                            
-                            // Rich Text Editor - renders markdown as formatted text
-                            RichTextEditorView(
-                                text: $note.content,
-                                isEditable: !isProcessing && voiceService.processingStates[note.id] != .processing && !isDeleted,
-                                font: .systemFont(ofSize: 17),
-                                textColor: UIColor(Color.textMain),
-                                bottomInset: 40,
-                                isScrollEnabled: false
-                            )
-                            .padding(.horizontal, 4)
-                            .opacity(isProcessing ? 0.6 : 1.0)
-                            .frame(minHeight: 400)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        }
+                            .padding(.bottom, 8)
+
+                        // Tag Banner
+                        TagBannerView(
+                            tags: note.tags,
+                            suggestedTags: note.suggestedTags,
+                            onConfirm: { tagName in
+                                confirmTag(tagName)
+                            },
+                            onRemove: { tag in
+                                note.tags.removeAll { $0.id == tag.id }
+                                note.updatedAt = Date()
+                                TagService.shared.cleanupEmptyTags(context: modelContext)
+                            },
+                            onAddClick: {
+                                newTagName = ""
+                                showAddTagAlert = true
+                            }
+                        )
+                        .padding(.top, 0)
+                        .padding(.bottom, 16)
+                        .padding(.horizontal, 20)
+                        .opacity(isDeleted ? 0.5 : 1.0)
+                        .allowsHitTesting(!isDeleted)
+                        
+                        // Rich Text Editor - renders markdown as formatted text
+                        RichTextEditorView(
+                            text: $note.content,
+                            isEditable: !isProcessing && !isVoiceProcessing && !isDeleted,
+                            font: .systemFont(ofSize: 17),
+                            textColor: UIColor(Color.textMain),
+                            bottomInset: 40,
+                            isScrollEnabled: false
+                        )
+                        .padding(.horizontal, 4)
+                        .opacity(isProcessing ? 0.6 : 1.0)
+                        .frame(minHeight: 400)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            
+            // Stage 2: Voice Processing (Moved to bottom)
+            if let stage = processingStage {
+                VStack {
+                    Spacer()
+                    VoiceProcessingWorkflowView(
+                        currentStage: stage,
+                        style: .detailed,
+                        showPersistentHint: true
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 20)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                .zIndex(50)
+            }
             
             // Stage 3: Magic Applied (Glass Capsule Bottom)
             if let state = voiceService.processingStates[note.id],
@@ -334,7 +289,7 @@ struct NoteDetailView: View {
                                 )
                             )
                         
-                        Text("Magic applied")
+                        Text("Refined")
                             .font(.subheadline)
                             .fontWeight(.semibold)
                             .foregroundColor(.primary)
@@ -350,7 +305,7 @@ struct NoteDetailView: View {
                                 voiceService.processingStates.removeValue(forKey: note.id)
                             }
                         }) {
-                            Text("Undo")
+                            Text("Original")
                                 .font(.subheadline)
                                 .fontWeight(.bold)
                                 .foregroundColor(.accentPrimary)
@@ -440,35 +395,6 @@ struct NoteDetailView: View {
                 .zIndex(100)
             }
 
-            // Processing Toast (temporary, auto-dismiss)
-            if showProcessingToast {
-                VStack {
-                    Spacer()
-                    HStack(spacing: 10) {
-                        Image(systemName: "clock.arrow.circlepath")
-                            .font(.system(size: 14))
-                            .foregroundColor(.textSub)
-                        Text("Still working on this. Feel free to do something else and return.")
-                            .font(.subheadline)
-                            .fontWeight(.medium)
-                            .foregroundColor(.textMain)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .shadow(color: Color.black.opacity(0.08), radius: 8, y: 4)
-                    .overlay(
-                        Capsule()
-                            .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
-                    )
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 18)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                }
-                .zIndex(90)
-            }
-            
             // AI Action Review Toolbar (Floats at bottom only when reviewing changes)
             if showAIToolbar {
                 VStack {
@@ -526,6 +452,35 @@ struct NoteDetailView: View {
         } message: {
             Text("This will permanently delete the note. This action cannot be undone.")
         }
+        .alert("Export Failed", isPresented: $showExportError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(exportErrorMessage)
+        }
+        .sheet(isPresented: $showExportSheet) {
+            if let exportURL {
+                ShareSheet(activityItems: [exportURL])
+            }
+        }
+        .sheet(isPresented: $showUpgradeSheet) {
+            UpgradeBottomSheet(
+                title: upgradeTitle,
+                message: UpgradeBottomSheet.unifiedMessage,
+                primaryButtonTitle: "Upgrade to Pro",
+                onUpgrade: {
+                    showUpgradeSheet = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showSubscription = true
+                    }
+                },
+                onDismiss: { showUpgradeSheet = false }
+            )
+            .presentationDetents([.height(350)])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showSubscription) {
+            SubscriptionView()
+        }
 
         .onReceive(timer) { _ in
             if speechRecognizer.isRecording, let startTime = speechRecognizer.recordingStartTime {
@@ -535,54 +490,34 @@ struct NoteDetailView: View {
         .onChange(of: speechRecognizer.recordingState) { _, newState in
             switch newState {
             case .processing:
-                isProcessing = true
+                if awaitingVoiceEditResult {
+                    isProcessing = true
+                }
             case .idle:
-                isVoiceMode = false
-                if let transcript = Optional(speechRecognizer.transcript), !transcript.isEmpty {
-                    Task {
-                        await handleAIInput(voiceInput: transcript)
+                if awaitingVoiceEditResult {
+                    isVoiceMode = false
+                    if let transcript = Optional(speechRecognizer.transcript), !transcript.isEmpty {
+                        Task {
+                            await handleAIInput(voiceInput: transcript)
+                        }
+                    } else {
+                        isProcessing = false
                     }
-                } else {
-                    isProcessing = false
+                    awaitingVoiceEditResult = false
                 }
             case .error:
-                isVoiceMode = false
-                isProcessing = false
+                if awaitingVoiceEditResult {
+                    isVoiceMode = false
+                    isProcessing = false
+                    awaitingVoiceEditResult = false
+                }
             case .recording:
                 isProcessing = false
-            }
-        }
-        .onChange(of: isVoiceProcessing) { _, processing in
-            if processing {
-                guard !hasShownProcessingToast else { return }
-                hasShownProcessingToast = true
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                    showProcessingToast = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        showProcessingToast = false
-                    }
-                }
-            } else {
-                hasShownProcessingToast = false
             }
         }
         .onAppear {
             initialContent = note.content
             initialTags = Set(note.tags.map { $0.id })
-
-            if isVoiceProcessing, !hasShownProcessingToast {
-                hasShownProcessingToast = true
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
-                    showProcessingToast = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        showProcessingToast = false
-                    }
-                }
-            }
             
             // If the note has no tags and no suggestions, trigger once
             if note.tags.isEmpty && note.suggestedTags.isEmpty && !note.content.isEmpty {
@@ -624,13 +559,25 @@ struct NoteDetailView: View {
     // MARK: - Voice Input Logic
     
     private func startRecording() {
-        isVoiceMode = true
-        recordingDuration = 0
-        speechRecognizer.transcript = "" // Reset
-        speechRecognizer.startRecording()
+        Task {
+            let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
+            await MainActor.run {
+                guard canRecord else {
+                    upgradeTitle = "Daily voice limit reached"
+                    showUpgradeSheet = true
+                    return
+                }
+                isVoiceMode = true
+                recordingDuration = 0
+                awaitingVoiceEditResult = false
+                speechRecognizer.transcript = "" // Reset
+                speechRecognizer.startRecording(countsTowardQuota: true)
+            }
+        }
     }
     
     private func stopRecording() {
+        awaitingVoiceEditResult = true
         speechRecognizer.stopRecording()
     }
     
@@ -676,6 +623,11 @@ struct NoteDetailView: View {
             print("⚠️ Tidy action failed: \(error)")
             await MainActor.run {
                 isProcessing = false
+                let message = error.localizedDescription
+                if message.localizedCaseInsensitiveContains("daily free tidy limit reached") {
+                    upgradeTitle = "Daily Tidy limit reached"
+                    showUpgradeSheet = true
+                }
             }
         }
     }
@@ -867,6 +819,53 @@ struct NoteDetailView: View {
     private func persistAndSync() {
         try? modelContext.save()
         Task { await syncManager.syncIfNeeded(context: modelContext) }
+    }
+    
+    private func exportMarkdown() {
+        let markdown = note.content
+        let fileName = makeExportFilename(from: markdown, createdAt: note.createdAt, noteId: note.id)
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+        do {
+            try markdown.write(to: url, atomically: true, encoding: .utf8)
+            exportURL = url
+            showExportSheet = true
+        } catch {
+            exportErrorMessage = "Unable to export this note. Please try again."
+            showExportError = true
+        }
+    }
+    
+    private func makeExportFilename(from markdown: String, createdAt: Date, noteId: UUID) -> String {
+        let rawTitle = markdown
+            .split(whereSeparator: \.isNewline)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty } ?? ""
+        
+        var base = rawTitle.isEmpty ? "ChillNote" : rawTitle
+        base = base.replacingOccurrences(
+            of: #"[\\/:*?"<>|]"#,
+            with: "-",
+            options: .regularExpression
+        )
+        base = base.replacingOccurrences(
+            of: #"\s+"#,
+            with: " ",
+            options: .regularExpression
+        ).trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        if base.isEmpty {
+            base = "ChillNote"
+        }
+        
+        if base.count > 60 {
+            base = String(base.prefix(60))
+        }
+        
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyyMMdd-HHmmss"
+        let timestamp = formatter.string(from: createdAt)
+        let suffix = noteId.uuidString.prefix(6)
+        return "\(base)-\(timestamp)-\(suffix).md"
     }
 
     private func touchTag(_ tag: Tag, note: Note? = nil) {

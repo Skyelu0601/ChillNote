@@ -9,10 +9,9 @@ module.exports = {
       env: {
         NODE_ENV: "production"
       },
-      env_file: "/root/chillnote-api/.env",
+      env_file: "/root/chillnote-api/current/.env",
       kill_timeout: 5000,
       max_restarts: 10
     }
   ]
 };
-

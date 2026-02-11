@@ -38,8 +38,8 @@ final class chillnoteIntegrationTests: XCTestCase {
     /// 测试：删除标签时，关联的笔记**不应该**被删除
     func testDeletingTagDoesNotDeleteNotes() throws {
         // Arrange
-        let note = Note(content: "Important Note")
-        let tag = Tag(name: "Work")
+        let note = Note(content: "Important Note", userId: "u1")
+        let tag = Tag(name: "Work", userId: "u1")
         
         modelContext.insert(note)
         modelContext.insert(tag)
@@ -64,13 +64,14 @@ final class chillnoteIntegrationTests: XCTestCase {
         XCTAssertEqual(activeTagsCheck.count, 0, "活动标签应该被隐藏/删除")
         XCTAssertEqual(notesCheck.count, 1, "笔记应该保留")
         XCTAssertEqual(notesCheck.first?.content, "Important Note", "笔记内容应保持不变")
-        XCTAssertEqual(notesCheck.first?.tags.count, 0, "笔记的标签列表应为空")
+        let activeTagRelations = notesCheck.first?.tags.filter { $0.deletedAt == nil } ?? []
+        XCTAssertEqual(activeTagRelations.count, 0, "笔记不应再关联任何活跃标签")
     }
     
     /// 测试：删除笔记时，关联的 ChecklistItems **应该** 级联删除
     func testChecklistItemCascadeDelete() throws {
         // Arrange
-        let note = Note(content: "- [ ] Item 1\n- [ ] Item 2")
+        let note = Note(content: "- [ ] Item 1\n- [ ] Item 2", userId: "u1")
         // 手动触发解析以生成 checkItems (因为逻辑在 init 或 syncContentStructure)
         // Note(content:) init 中会调用 parsing，所以此时 checklistItems 应该已经生成
         
@@ -101,9 +102,9 @@ final class chillnoteIntegrationTests: XCTestCase {
     /// 测试：Cleanup 应该删除没有任何笔记的空标签
     func testCleanupEmptyTagsDeletesUnusedTags() throws {
         // Arrange
-        let emptyTag = Tag(name: "Empty")
-        let usedTag = Tag(name: "Used")
-        let note = Note(content: "Note")
+        let emptyTag = Tag(name: "Empty", userId: "u1")
+        let usedTag = Tag(name: "Used", userId: "u1")
+        let note = Note(content: "Note", userId: "u1")
         
         modelContext.insert(emptyTag)
         modelContext.insert(usedTag)
@@ -127,8 +128,8 @@ final class chillnoteIntegrationTests: XCTestCase {
     /// 测试：Cleanup **不应该** 删除有活跃笔记的标签
     func testCleanupEmptyTagsPreservesTagsWithActiveNotes() throws {
         // Arrange
-        let tag = Tag(name: "Important")
-        let note = Note(content: "My Data")
+        let tag = Tag(name: "Important", userId: "u1")
+        let note = Note(content: "My Data", userId: "u1")
         
         modelContext.insert(tag)
         modelContext.insert(note)
@@ -148,8 +149,8 @@ final class chillnoteIntegrationTests: XCTestCase {
     /// 测试：Cleanup **应该** 删除那些只有软删除笔记的标签
     func testCleanupEmptyTagsDeletesTagsWithOnlySoftDeletedNotes() throws {
         // Arrange
-        let tag = Tag(name: "Ghost Tag")
-        let note = Note(content: "Deleted Note")
+        let tag = Tag(name: "Ghost Tag", userId: "u1")
+        let note = Note(content: "Deleted Note", userId: "u1")
         
         modelContext.insert(tag)
         modelContext.insert(note)
@@ -165,14 +166,15 @@ final class chillnoteIntegrationTests: XCTestCase {
         
         // Assert
         let tags = try modelContext.fetch(FetchDescriptor<Tag>())
-        XCTAssertEqual(tags.count, 0, "如果标签只关联了已删除的笔记，该标签也应该被清理")
+        XCTAssertEqual(tags.count, 1, "标签应保留墓碑记录以支持同步")
+        XCTAssertNotNil(tags.first?.deletedAt, "只有软删除笔记关联时，标签应被软删除")
     }
     
     /// 测试：软删除笔记过滤逻辑验证
     func testFetchActiveNotesExcludesSoftDeleted() throws {
         // Arrange
-        let activeNote = Note(content: "Active")
-        let deletedNote = Note(content: "Deleted")
+        let activeNote = Note(content: "Active", userId: "u1")
+        let deletedNote = Note(content: "Deleted", userId: "u1")
         deletedNote.markDeleted()
         
         modelContext.insert(activeNote)

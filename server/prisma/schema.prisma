@@ -19,37 +19,74 @@ model User {
   
   notes     Note[]
   tags      Tag[]
+  dailyUsages DailyUsage[]
+}
+
+model DailyUsage {
+  id        Int      @id @default(autoincrement())
+  userId    String
+  dateKey   String
+  feature   String
+  count     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dateKey, feature])
+  @@index([userId, dateKey])
 }
 
 model Note {
-  id        String   @id
-  userId    String
-  content   String
-  createdAt DateTime
-  updatedAt DateTime
-  deletedAt DateTime?
-  pinnedAt DateTime?
-  tags      Tag[]
+  id                  String   @id
+  userId              String
+  content             String
+  createdAt           DateTime
+  updatedAt           DateTime
+  deletedAt           DateTime?
+  pinnedAt            DateTime?
+  version             Int      @default(1)
+  serverUpdatedAt     DateTime @default(now())
+  serverDeletedAt     DateTime?
+  lastModifiedByDeviceId String?
+  tags                Tag[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Tag {
-  id         String   @id
-  userId     String
-  name       String
-  colorHex   String
-  createdAt  DateTime
-  updatedAt  DateTime
-  lastUsedAt DateTime?
-  sortOrder  Int
-  parentId   String?
-  deletedAt  DateTime?
+  id                  String   @id
+  userId              String
+  name                String
+  colorHex            String
+  createdAt           DateTime
+  updatedAt           DateTime
+  lastUsedAt          DateTime?
+  sortOrder           Int
+  parentId            String?
+  deletedAt           DateTime?
+  version             Int      @default(1)
+  serverUpdatedAt     DateTime @default(now())
+  serverDeletedAt     DateTime?
+  lastModifiedByDeviceId String?
 
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent   Tag?   @relation("TagHierarchy", fields: [parentId], references: [id])
   children Tag[]  @relation("TagHierarchy")
   notes    Note[]
+}
+
+model SyncLog {
+  id              Int      @id @default(autoincrement())
+  userId          String
+  entityType      String
+  entityId        String
+  version         Int
+  serverUpdatedAt DateTime
+  operation       String
+
+  @@index([userId, id])
+  @@index([userId, entityType, entityId])
 }
 
 model Waitlist {

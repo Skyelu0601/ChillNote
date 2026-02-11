@@ -6,6 +6,8 @@ import SwiftUI
 final class SyncManager: ObservableObject {
     @AppStorage("syncEnabled") var isEnabled: Bool = true
     @AppStorage("syncLastAt") private var lastSyncAtTimestamp: Double = 0
+    @AppStorage("syncCursor") private var syncCursor: String = ""
+    @AppStorage("syncDeviceId") private var syncDeviceId: String = ""
     @AppStorage("syncServerURL") var serverURLString: String = AppConfig.backendBaseURL
     @AppStorage("syncAuthToken") var authToken: String = ""
     @AppStorage("syncHasUploadedLocal") private var hasUploadedLocal: Bool = false
@@ -21,6 +23,9 @@ final class SyncManager: ObservableObject {
         }
         // Server URL is not user-configurable; it comes from AppConfig.
         serverURLString = AppConfig.backendBaseURL
+        if syncDeviceId.isEmpty {
+            syncDeviceId = UUID().uuidString
+        }
     }
     
     var lastSyncAt: Date? {
@@ -63,16 +68,20 @@ final class SyncManager: ObservableObject {
             let lastSyncAt = lastSyncAt
             let hasUploadedLocalSnapshot = hasUploadedLocal
             let authToken = authToken
-            let postSyncNotesCount = try await Task.detached(priority: .utility) {
+            let cursorSnapshot = syncCursor
+            let deviceIdSnapshot = syncDeviceId
+            let syncOutcome = try await Task.detached(priority: .utility) {
                 let backgroundContext = ModelContext(container)
                 let localNotesCount = (try? backgroundContext.fetchCount(FetchDescriptor<Note>())) ?? 0
                 let shouldForceFullSync = !hasUploadedLocalSnapshot && localNotesCount > 0
                 let sinceDate = shouldForceFullSync ? nil : lastSyncAt
-                let config = SyncConfig(baseURL: url, authToken: authToken, since: sinceDate, userId: currentUserId)
+                let cursorValue = shouldForceFullSync ? nil : (cursorSnapshot.isEmpty ? nil : cursorSnapshot)
+                let config = SyncConfig(baseURL: url, authToken: authToken, since: sinceDate, cursor: cursorValue, userId: currentUserId, deviceId: deviceIdSnapshot)
                 let service: SyncService = RemoteSyncService(config: config)
-                try await service.syncAll(context: backgroundContext)
+                let result = try await service.syncAll(context: backgroundContext)
                 TagService.shared.cleanupEmptyTags(context: backgroundContext)
-                return (try? backgroundContext.fetchCount(FetchDescriptor<Note>())) ?? 0
+                let postSyncNotesCount = (try? backgroundContext.fetchCount(FetchDescriptor<Note>())) ?? 0
+                return (result, postSyncNotesCount)
             }.value
             WelcomeNoteFlagStore.setHasSeenWelcome(UserDefaults.standard.bool(forKey: "hasSeededWelcomeNote"), for: currentUserId)
             
@@ -81,10 +90,22 @@ final class SyncManager: ObservableObject {
             if seededWelcome {
                 self.hasUploadedLocal = false
                 lastSyncAtTimestamp = 0
+                syncCursor = ""
                 needsFollowUpSync = true
             } else {
-                lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
-                self.hasUploadedLocal = postSyncNotesCount > 0
+                if let serverTime = syncOutcome.0.serverTime {
+                    lastSyncAtTimestamp = serverTime.timeIntervalSince1970
+                } else {
+                    lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
+                }
+                if let cursor = syncOutcome.0.cursor, !cursor.isEmpty {
+                    syncCursor = cursor
+                }
+                self.hasUploadedLocal = syncOutcome.1 > 0
+            }
+
+            if FeatureFlags.useLocalFTSSearch {
+                await NotesSearchIndexer.shared.syncIncremental(context: context, userId: currentUserId)
             }
         } catch {
             if case SyncError.unauthorized = error {

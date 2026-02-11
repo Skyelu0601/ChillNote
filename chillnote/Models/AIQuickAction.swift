@@ -62,7 +62,8 @@ struct AIQuickAction: Identifiable {
             - Your job is ONLY visual formatting - never change the meaning or rewrite content.
             - Use markdown formatting: # headers, **bold**, *italic*, - bullets, - [ ] checkboxes, > quotes, --- dividers
             - Always return only the formatted content without explanations or meta-commentary.
-            """
+            """,
+            usageType: .tidy
         )
     }
 }

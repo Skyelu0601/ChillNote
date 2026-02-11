@@ -6,34 +6,18 @@ struct HomeView: View {
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var syncManager: SyncManager
     @Environment(\.scenePhase) private var scenePhase
+    @StateObject private var homeViewModel = HomeViewModel()
 
     private var currentUserId: String {
         authService.currentUserId ?? "unknown"
     }
-
-    @Query(filter: #Predicate<Note> { $0.deletedAt == nil }, sort: [SortDescriptor(\Note.createdAt, order: .reverse)])
-    private var allNotes: [Note]
-    
-    @Query(filter: #Predicate<Note> { $0.deletedAt != nil }, sort: [SortDescriptor(\Note.deletedAt, order: .reverse)])
-    private var deletedNotes: [Note]
-    
-    private var userNotes: [Note] {
-        allNotes.filter { $0.userId == currentUserId }
-    }
-    
-    private var userDeletedNotes: [Note] {
-        deletedNotes.filter { $0.userId == currentUserId }
-    }
-    
-
 
     @StateObject private var speechRecognizer = SpeechRecognizer()
     @State private var navigationPath = NavigationPath()
     @State private var showingSettings = false
     @State private var inputText = ""
     @State private var isVoiceMode = true
-    @State private var pendingNoteText: String? = nil
-    @State private var currentRecordingNote: Note? // Track note being recorded for immediate nav
+    @State private var pendingVoiceNoteByPath: [String: UUID] = [:]
 
     
     // Multi-selection mode for AI context
@@ -75,16 +59,21 @@ struct HomeView: View {
     @State private var showRecipeSoftLimitAlert = false
     @State private var showRecipeHardLimitAlert = false
     @State private var pendingRecipeForConfirmation: AgentRecipe?
+    
+    // Limits & Upsell
+    @State private var showUpgradeSheet = false
+    @State private var showSubscription = false
+    @State private var upgradeTitle = ""
 
     private let translateLanguages: [TranslateLanguage] = [
         TranslateLanguage(id: "zh-Hans", name: "Simplified Chinese", displayName: "简体中文", flag: "🇨🇳"),
-        TranslateLanguage(id: "zh-Hant", name: "Traditional Chinese", displayName: "繁体中文", flag: "🇭🇰"),
-        TranslateLanguage(id: "fr", name: "French", displayName: "法语", flag: "🇫🇷"),
-        TranslateLanguage(id: "en", name: "English", displayName: "英语", flag: "🇺🇸"),
-        TranslateLanguage(id: "de", name: "German", displayName: "德语", flag: "🇩🇪"),
-        TranslateLanguage(id: "ja", name: "Japanese", displayName: "日语", flag: "🇯🇵"),
-        TranslateLanguage(id: "es", name: "Spanish", displayName: "西班牙语", flag: "🇪🇸"),
-        TranslateLanguage(id: "ko", name: "Korean", displayName: "韩语", flag: "🇰🇷")
+        TranslateLanguage(id: "zh-Hant", name: "Traditional Chinese", displayName: "繁體中文", flag: "🇭🇰"),
+        TranslateLanguage(id: "fr", name: "French", displayName: "Français", flag: "🇫🇷"),
+        TranslateLanguage(id: "en", name: "English", displayName: "English", flag: "🇺🇸"),
+        TranslateLanguage(id: "de", name: "German", displayName: "Deutsch", flag: "🇩🇪"),
+        TranslateLanguage(id: "ja", name: "Japanese", displayName: "日本語", flag: "🇯🇵"),
+        TranslateLanguage(id: "es", name: "Spanish", displayName: "Español", flag: "🇪🇸"),
+        TranslateLanguage(id: "ko", name: "Korean", displayName: "한국어", flag: "🇰🇷")
     ]
     
     // Sidebar & Filtering
@@ -99,13 +88,11 @@ struct HomeView: View {
     @State private var searchText = ""
     @State private var isSearchVisible = false
     @FocusState private var isSearchFocused: Bool
-    @State private var cachedVisibleNotes: [Note] = []
-    @State private var searchDebounceTask: Task<Void, Never>?
     
     // Recording Recovery
     @State private var pendingRecordings: [PendingRecording] = []
     @State private var showRecoveryAlert = false
-    @State private var isRecoveringRecording = false
+    @State private var autoOpenPendingRecordings = false
 
     // Maintenance / Performance
     @State private var hasScheduledInitialMaintenance = false
@@ -116,75 +103,6 @@ struct HomeView: View {
     // (Handled server-side in /ai/voice-note)
     @ObservedObject private var voiceService = VoiceProcessingService.shared
 
-    private func computeVisibleNotes() -> [Note] {
-        if isTrashSelected {
-            var result = userDeletedNotes
-            if !searchText.isEmpty {
-                result = result.filter { note in
-                    note.content.localizedCaseInsensitiveContains(searchText) ||
-                    note.tags.contains { $0.name.localizedCaseInsensitiveContains(searchText) }
-                }
-            }
-            return result
-        }
-        
-        var result = userNotes
-        
-        // 1. Tag Filter
-        if let tag = selectedTag {
-            result = result.filter { note in
-                note.tags.contains { t in t.id == tag.id }
-            }
-        }
-        
-        // 2. Search Filter
-        if !searchText.isEmpty {
-            result = result.filter { note in
-                note.content.localizedCaseInsensitiveContains(searchText) ||
-                note.tags.contains { $0.name.localizedCaseInsensitiveContains(searchText) }
-            }
-            return sortNotes(result)
-        }
-        
-        return Array(sortNotes(result).prefix(50))
-    }
-
-    private func refreshVisibleNotes() {
-        cachedVisibleNotes = computeVisibleNotes()
-        if !selectedNotes.isEmpty {
-            let visibleIds = Set(cachedVisibleNotes.map { $0.id })
-            selectedNotes = selectedNotes.intersection(visibleIds)
-        }
-    }
-
-    private func scheduleSearchRefresh() {
-        searchDebounceTask?.cancel()
-        searchDebounceTask = Task {
-            try? await Task.sleep(nanoseconds: 150_000_000)
-            await MainActor.run {
-                refreshVisibleNotes()
-            }
-        }
-    }
-    
-    private func sortNotes(_ notes: [Note]) -> [Note] {
-        notes.sorted { lhs, rhs in
-            switch (lhs.pinnedAt, rhs.pinnedAt) {
-            case let (left?, right?):
-                if left == right {
-                    return lhs.createdAt > rhs.createdAt
-                }
-                return left > right
-            case (_?, nil):
-                return true
-            case (nil, _?):
-                return false
-            case (nil, nil):
-                return lhs.createdAt > rhs.createdAt
-            }
-        }
-    }
-    
     private var headerTitle: String {
         if isTrashSelected {
             return "Recycle Bin"
@@ -223,7 +141,7 @@ struct HomeView: View {
         let onShowDeleteConfirmation: () -> Void = { showDeleteConfirmation = true }
         let onShowEmptyTrashConfirmation: () -> Void = { showEmptyTrashConfirmation = true }
         let onCancelVoice: () -> Void = { speechRecognizer.stopRecording(reason: .cancelled) }
-        let onConfirmVoice: () -> Void = { speechRecognizer.stopRecording() }
+        let onConfirmVoice: () -> Void = { handleVoiceConfirmation() }
         let onDeleteNotesAfterMerge: () -> Void = {
             deleteNotes(notesToDeleteAfterMerge)
             exitSelectionMode()
@@ -265,6 +183,7 @@ struct HomeView: View {
             isAgentMenuOpen: $isAgentMenuOpen,
             showChillRecipes: $showChillRecipes,
             showingSettings: $showingSettings,
+            autoOpenPendingRecordings: $autoOpenPendingRecordings,
             showAIChat: $showAIChat,
             showAgentActionsSheet: $showAgentActionsSheet,
             isCustomActionInputPresented: $isCustomActionInputPresented,
@@ -281,7 +200,7 @@ struct HomeView: View {
             notesToDeleteAfterMerge: $notesToDeleteAfterMerge,
             inputText: $inputText,
             isVoiceMode: $isVoiceMode,
-            cachedVisibleNotes: cachedVisibleNotes,
+            cachedVisibleNotes: homeViewModel.items,
             availableTags: availableTags,
             translateLanguages: translateLanguages,
             recipeManager: recipeManager,
@@ -312,6 +231,9 @@ struct HomeView: View {
             onDeleteNotePermanently: deleteNotePermanently,
             onTogglePin: togglePin,
             onDeleteNote: deleteNote,
+            onLoadMoreIfNeeded: { note in
+                homeViewModel.loadMoreIfNeeded(currentItem: note)
+            },
             onToggleNoteSelection: toggleNoteSelection,
             onHandleAgentActionRequest: handleAgentActionRequest,
             onStartAIChat: startAIChat,
@@ -336,40 +258,13 @@ struct HomeView: View {
             onCancelRecipeSoftLimit: { pendingRecipeForConfirmation = nil }
         )
         .onChange(of: speechRecognizer.recordingState) { _, newState in
-            switch newState {
-            case .processing:
-                guard navigationPath.isEmpty else { return }
-                let note = Note(content: "", userId: currentUserId)
-                applyCurrentTagContext(to: note)
-                modelContext.insert(note)
-                try? modelContext.save()
-                VoiceProcessingService.shared.processingStates[note.id] = .processing
-                currentRecordingNote = note
-                navigationPath.append(note)
-                
-            case .idle:
-                if let note = currentRecordingNote {
-                    let rawText = speechRecognizer.transcript
-                    if !rawText.isEmpty {
-                        Task {
-                            await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: rawText, context: modelContext)
-                            await syncManager.syncIfNeeded(context: modelContext)
-                        }
-                        speechRecognizer.completeRecording()
-                    } else {
-                        VoiceProcessingService.shared.processingStates.removeValue(forKey: note.id)
-                    }
-                    currentRecordingNote = nil
-                }
-                isVoiceMode = false
-                
-            case .error(let msg):
+            if case .error(let msg) = newState {
                 print("Error recording: \(msg)")
-                currentRecordingNote = nil
                 isVoiceMode = false
-                
-            default: break
             }
+        }
+        .onChange(of: speechRecognizer.completedTranscriptions) { _, _ in
+            handleCompletedTranscriptions()
         }
         .onChange(of: authService.isSignedIn) { _, isSignedIn in
             guard !isSignedIn else { return }
@@ -380,23 +275,49 @@ struct HomeView: View {
             if newValue {
                 exitSelectionMode()
             }
-            refreshVisibleNotes()
+            Task {
+                await homeViewModel.switchMode(newValue ? .trash : .active)
+                clampSelectionToCurrentFilter()
+            }
         }
         .onChange(of: selectedTag) { _, _ in
-            refreshVisibleNotes()
+            Task {
+                await homeViewModel.switchTag(selectedTag?.id)
+                clampSelectionToCurrentFilter()
+            }
         }
         .onChange(of: searchText) { _, _ in
-            scheduleSearchRefresh()
+            homeViewModel.scheduleDebouncedSearchUpdate(searchText)
         }
-        .onChange(of: allNotes.map { $0.updatedAt }) { _, _ in
-            refreshVisibleNotes()
+        .onChange(of: authService.currentUserId) { _, newUserId in
+            guard let userId = newUserId else { return }
+            Task {
+                homeViewModel.configure(context: modelContext, userId: userId)
+                await homeViewModel.reload()
+                await NotesSearchIndexer.shared.rebuildIfNeeded(context: modelContext, userId: userId)
+            }
         }
-        .onChange(of: deletedNotes.map { $0.deletedAt }) { _, _ in
-            refreshVisibleNotes()
+        .onChange(of: showingSettings) { _, isPresented in
+            guard !isPresented else { return }
+            Task {
+                homeViewModel.configure(context: modelContext, userId: currentUserId)
+                await homeViewModel.reload()
+                clampSelectionToCurrentFilter()
+            }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("StartRecording"))) { _ in
-            isVoiceMode = true
-            speechRecognizer.startRecording()
+            Task {
+                let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
+                await MainActor.run {
+                    guard canRecord else {
+                        upgradeTitle = "Daily voice limit reached"
+                        showUpgradeSheet = true
+                        return
+                    }
+                    isVoiceMode = true
+                    speechRecognizer.startRecording(countsTowardQuota: true)
+                }
+            }
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
@@ -404,7 +325,12 @@ struct HomeView: View {
         }
         .task {
             scheduleInitialMaintenance()
-            refreshVisibleNotes()
+            homeViewModel.configure(context: modelContext, userId: currentUserId)
+            await homeViewModel.switchMode(isTrashSelected ? .trash : .active)
+            await homeViewModel.switchTag(selectedTag?.id)
+            await homeViewModel.updateSearchQuery(searchText)
+            await homeViewModel.reload()
+            await NotesSearchIndexer.shared.rebuildIfNeeded(context: modelContext, userId: currentUserId)
         }
         .overlay {
             if showRecoveryAlert && !pendingRecordings.isEmpty {
@@ -412,13 +338,12 @@ struct HomeView: View {
                     .ignoresSafeArea()
                     .onTapGesture { }
                 
-                RecordingRecoveryAlert(
-                    pendingRecordings: pendingRecordings,
-                    onRecover: { recording in
-                        recoverRecording(recording)
-                    },
-                    onDiscard: { recording in
-                        discardRecording(recording)
+                PendingRecordingsNotice(
+                    pendingCount: pendingRecordings.count,
+                    onOpenSettings: {
+                        autoOpenPendingRecordings = true
+                        showRecoveryAlert = false
+                        showingSettings = true
                     },
                     onDismiss: {
                         showRecoveryAlert = false
@@ -426,6 +351,25 @@ struct HomeView: View {
                 )
                 .transition(.scale(scale: 0.9).combined(with: .opacity))
             }
+        }
+        .sheet(isPresented: $showUpgradeSheet) {
+            UpgradeBottomSheet(
+                title: upgradeTitle,
+                message: UpgradeBottomSheet.unifiedMessage,
+                primaryButtonTitle: "Upgrade to Pro",
+                onUpgrade: {
+                    showUpgradeSheet = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        showSubscription = true
+                    }
+                },
+                onDismiss: { showUpgradeSheet = false }
+            )
+            .presentationDetents([.height(350)])
+            .presentationDragIndicator(.visible)
+        }
+        .sheet(isPresented: $showSubscription) {
+            SubscriptionView()
         }
     }
 
@@ -435,10 +379,12 @@ struct HomeView: View {
         guard !notes.isEmpty else { return }
         
         withAnimation {
+            let now = Date()
             for note in notes {
                 if !note.tags.contains(where: { $0.id == tag.id }) {
                     note.tags.append(tag)
                 }
+                note.updatedAt = now
             }
             // Update tag metadata
             touchTag(tag)
@@ -450,6 +396,48 @@ struct HomeView: View {
         exitSelectionMode()
     }
 
+    private func clampSelectionToCurrentFilter() {
+        guard !selectedNotes.isEmpty else { return }
+        let validIds = fetchFilteredNotes().map(\.id)
+        selectedNotes = selectedNotes.intersection(Set(validIds))
+    }
+
+    private func fetchFilteredNotes() -> [Note] {
+        let userId = currentUserId
+        var descriptor = FetchDescriptor<Note>()
+        if isTrashSelected {
+            descriptor.predicate = #Predicate<Note> { note in
+                note.userId == userId && note.deletedAt != nil
+            }
+        } else {
+            descriptor.predicate = #Predicate<Note> { note in
+                note.userId == userId && note.deletedAt == nil
+            }
+        }
+
+        guard let fetched = try? modelContext.fetch(descriptor) else { return [] }
+
+        let trimmedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return fetched.filter { note in
+            let passesTag: Bool
+            if let selectedTag {
+                passesTag = note.tags.contains(where: { $0.id == selectedTag.id })
+            } else {
+                passesTag = true
+            }
+
+            let passesSearch: Bool
+            if trimmedQuery.isEmpty {
+                passesSearch = true
+            } else {
+                passesSearch = note.content.localizedCaseInsensitiveContains(trimmedQuery)
+                    || note.tags.contains { $0.name.localizedCaseInsensitiveContains(trimmedQuery) }
+            }
+
+            return passesTag && passesSearch
+        }
+    }
+
     private func handleTextSubmit() {
         let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
@@ -458,6 +446,84 @@ struct HomeView: View {
         // But for now, just save a new note.
         _ = saveNote(text: trimmed)
         inputText = ""
+    }
+
+    private func handleVoiceConfirmation() {
+        guard speechRecognizer.isRecording else { return }
+        guard let fileURL = speechRecognizer.getCurrentAudioFileURL() else {
+            speechRecognizer.stopRecording()
+            isVoiceMode = false
+            return
+        }
+
+        let note = Note(content: "", userId: currentUserId)
+        applyCurrentTagContext(to: note)
+        modelContext.insert(note)
+        try? modelContext.save()
+
+        pendingVoiceNoteByPath[fileURL.path] = note.id
+        VoiceProcessingService.shared.processingStates[note.id] = .processing(stage: .transcribing)
+
+        if navigationPath.isEmpty {
+            navigationPath.append(note)
+        }
+
+        Task {
+            await homeViewModel.reload()
+            clampSelectionToCurrentFilter()
+        }
+
+        speechRecognizer.stopRecording()
+        isVoiceMode = false
+    }
+
+    private func handleCompletedTranscriptions() {
+        let events = speechRecognizer.completedTranscriptions
+        guard !events.isEmpty else { return }
+
+        for event in events {
+            guard let noteID = pendingVoiceNoteByPath[event.fileURL.path] else {
+                continue
+            }
+
+            speechRecognizer.consumeCompletedTranscription(eventID: event.id)
+
+            switch event.result {
+            case .success(let rawText):
+                pendingVoiceNoteByPath.removeValue(forKey: event.fileURL.path)
+                speechRecognizer.completeRecording(fileURL: event.fileURL)
+
+                let trimmed = rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else {
+                    VoiceProcessingService.shared.processingStates.removeValue(forKey: noteID)
+                    continue
+                }
+                guard let note = resolveNote(noteID) else {
+                    VoiceProcessingService.shared.processingStates.removeValue(forKey: noteID)
+                    continue
+                }
+
+                Task {
+                    await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: trimmed, context: modelContext)
+                    await homeViewModel.reload()
+                    clampSelectionToCurrentFilter()
+                    await syncManager.syncIfNeeded(context: modelContext)
+                }
+
+            case .failure(let message):
+                print("⚠️ Home voice transcription failed: \(message)")
+                VoiceProcessingService.shared.processingStates[noteID] = .idle
+            }
+        }
+    }
+
+    private func resolveNote(_ noteID: UUID) -> Note? {
+        if let note = homeViewModel.note(with: noteID) {
+            return note
+        }
+        let targetID = noteID
+        let descriptor = FetchDescriptor<Note>(predicate: #Predicate<Note> { $0.id == targetID })
+        return try? modelContext.fetch(descriptor).first
     }
 
     private func createAndOpenBlankNote() {
@@ -508,20 +574,27 @@ struct HomeView: View {
         let trimmed = rawTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        // NEW FLOW: Immediate navigation + Background Processing
-        // 1. Save and navigate immediately with Raw Text
+        // Save an empty note and only reveal the refined result when ready.
         let noteID = await MainActor.run {
-            let note = saveNote(text: trimmed, shouldNavigate: true)
-            return note?.id
+            let note = Note(content: "", userId: currentUserId)
+            applyCurrentTagContext(to: note)
+            modelContext.insert(note)
+            try? modelContext.save()
+            VoiceProcessingService.shared.processingStates[note.id] = .processing(stage: .refining)
+            navigationPath.append(note)
+            return note.id
         }
-        
-        guard let noteID = noteID else { return }
-        
-        // 2. Trigger AI processing in background
+
+        await homeViewModel.reload()
+        clampSelectionToCurrentFilter()
+
+        // Trigger AI processing in background.
         Task {
             // Find the note by ID to avoid Sendable issues
-            if let note = allNotes.first(where: { $0.id == noteID }) {
+            if let note = resolveNote(noteID) {
                 await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: trimmed, context: modelContext)
+                await homeViewModel.reload()
+                clampSelectionToCurrentFilter()
                 await syncManager.syncIfNeeded(context: modelContext)
             }
         }
@@ -578,13 +651,21 @@ struct HomeView: View {
     }
     
     private func selectAllNotes() {
+        let allIDs = Set(fetchFilteredNotes().map(\.id))
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            selectedNotes = Set(cachedVisibleNotes.map { $0.id })
+            selectedNotes = allIDs
         }
     }
     
     private func getSelectedNotes() -> [Note] {
-        return cachedVisibleNotes.filter { selectedNotes.contains($0.id) }
+        guard !selectedNotes.isEmpty else { return [] }
+        let ids = Array(selectedNotes)
+        let userId = currentUserId
+        var descriptor = FetchDescriptor<Note>()
+        descriptor.predicate = #Predicate<Note> { note in
+            note.userId == userId && ids.contains(note.id)
+        }
+        return (try? modelContext.fetch(descriptor)) ?? []
     }
     
     private func startAIChat() {
@@ -627,21 +708,35 @@ struct HomeView: View {
     }
     
     private func deleteNotePermanently(_ note: Note) {
+        let noteId = note.id
         modelContext.delete(note)
+        Task { await NotesSearchIndexer.shared.remove(noteIDs: [noteId]) }
         persistAndSync()
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
     }
     
     private func emptyTrash() {
-        guard !deletedNotes.isEmpty else { return }
-        let affectedTags = deletedNotes.flatMap { $0.tags }
+        let deleted = fetchDeletedNotesForCurrentUser()
+        guard !deleted.isEmpty else { return }
+        let affectedTags = deleted.flatMap { $0.tags }
+        let deletedIds = deleted.map { $0.id }
         withAnimation {
-            for note in deletedNotes {
+            for note in deleted {
                 modelContext.delete(note)
             }
         }
+        Task { await NotesSearchIndexer.shared.remove(noteIDs: deletedIds) }
         persistAndSync()
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: affectedTags)
+    }
+
+    private func fetchDeletedNotesForCurrentUser() -> [Note] {
+        var descriptor = FetchDescriptor<Note>()
+        let userId = currentUserId
+        descriptor.predicate = #Predicate<Note> { note in
+            note.userId == userId && note.deletedAt != nil
+        }
+        return (try? modelContext.fetch(descriptor)) ?? []
     }
 
     private func togglePin(_ note: Note) {
@@ -753,7 +848,11 @@ struct HomeView: View {
             await MainActor.run {
                 isExecutingAction = false
                 actionProgress = nil
-                // Could show error alert here
+                let message = error.localizedDescription
+                if message.localizedCaseInsensitiveContains("daily free agent recipe limit reached") {
+                    upgradeTitle = "Daily Agent Recipe limit reached"
+                    showUpgradeSheet = true
+                }
             }
         }
     }
@@ -778,7 +877,14 @@ struct HomeView: View {
 
     private func persistAndSync() {
         try? modelContext.save()
-        Task { await syncManager.syncIfNeeded(context: modelContext) }
+        Task {
+            if FeatureFlags.useLocalFTSSearch {
+                await NotesSearchIndexer.shared.syncIncremental(context: modelContext, userId: currentUserId)
+            }
+            await syncManager.syncIfNeeded(context: modelContext)
+            await homeViewModel.reload()
+            clampSelectionToCurrentFilter()
+        }
     }
 
     private func touchTag(_ tag: Tag, note: Note? = nil) {
@@ -825,7 +931,11 @@ struct HomeView: View {
         }
         lastMaintenanceAt = now
         TrashPolicy.purgeExpiredNotes(context: modelContext)
-        await syncManager.syncIfNeeded(context: modelContext)
+
+        Task {
+            await syncManager.syncIfNeeded(context: modelContext)
+        }
+
         await checkForPendingRecordingsAsync()
     }
 
@@ -850,103 +960,6 @@ struct HomeView: View {
                 }
             }
         }
-    }
-    
-    private func recoverRecording(_ recording: PendingRecording) {
-        guard !isRecoveringRecording else { return }
-        isRecoveringRecording = true
-        
-        // Remove from list
-        if let index = pendingRecordings.firstIndex(where: { $0.id == recording.id }) {
-            pendingRecordings.remove(at: index)
-        }
-        
-        // Close alert if no more recordings
-        if pendingRecordings.isEmpty {
-            showRecoveryAlert = false
-        }
-        
-        Task {
-            do {
-                // Create a new note immediately and get its ID
-                let noteID = await MainActor.run {
-                    let newNote = Note(content: "", userId: currentUserId)
-                    
-                    // Apply current tag context if active
-                    if let currentTag = selectedTag {
-                        newNote.tags.append(currentTag)
-                        let now = Date()
-                        currentTag.lastUsedAt = now
-                        currentTag.updatedAt = now
-                        newNote.updatedAt = now
-                    }
-                    
-                    modelContext.insert(newNote)
-                    try? modelContext.save()
-                    return newNote.id
-                }
-                
-                // Set processing state and navigate
-                await MainActor.run {
-                    VoiceProcessingService.shared.processingStates[noteID] = .processing
-                    // Find the note to navigate
-                    if let note = allNotes.first(where: { $0.id == noteID }) {
-                        navigationPath.append(note)
-                    }
-                }
-                
-                // Transcribe the recovered audio
-                print("🔄 Recovering recording from: \(recording.fileURL.path)")
-                let text = try await GeminiService.shared.transcribeAndPolish(
-                    audioFileURL: recording.fileURL,
-                    locale: Locale.current.identifier
-                )
-                
-                await MainActor.run {
-                    // Find the note by ID and update it
-                    if let note = allNotes.first(where: { $0.id == noteID }) {
-                        note.content = text.trimmingCharacters(in: .whitespacesAndNewlines)
-                        note.updatedAt = Date()
-                        try? modelContext.save()
-                        
-                        // Start 2nd pass processing
-                        Task {
-                            await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: text, context: modelContext)
-                            await syncManager.syncIfNeeded(context: modelContext)
-                        }
-                    }
-                    
-                    // Clean up the recording file
-                    RecordingFileManager.shared.completeRecording(fileURL: recording.fileURL)
-                    
-                    isRecoveringRecording = false
-                }
-                
-            } catch {
-                print("❌ Recovery failed: \(error)")
-                await MainActor.run {
-                    // Clean up the failed recording
-                    RecordingFileManager.shared.cancelRecording(fileURL: recording.fileURL)
-                    isRecoveringRecording = false
-                }
-            }
-        }
-    }
-    
-    private func discardRecording(_ recording: PendingRecording) {
-        // Remove from list
-        if let index = pendingRecordings.firstIndex(where: { $0.id == recording.id }) {
-            pendingRecordings.remove(at: index)
-        }
-        
-        // Close alert if no more recordings
-        if pendingRecordings.isEmpty {
-            showRecoveryAlert = false
-        }
-        
-        // Delete the recording file
-        RecordingFileManager.shared.cancelRecording(fileURL: recording.fileURL)
-        print("🗑️ Discarded recording: \(recording.fileName)")
     }
     
     // MARK: - Search Components
@@ -988,58 +1001,19 @@ struct HomeView: View {
     
     // MARK: - Processing Status Badge
     
-    private enum ProcessingStage {
-        case jotting
-        case polishing
-    }
-    
-    private func processingStage(for note: Note) -> ProcessingStage? {
+    private func processingStage(for note: Note) -> VoiceProcessingStage? {
         guard let state = voiceService.processingStates[note.id],
-              case .processing = state else {
+              case .processing(let stage) = state else {
             return nil
         }
-        
-        let isEmpty = note.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return isEmpty ? .jotting : .polishing
+        return stage
     }
     
     @ViewBuilder
     private func processingBadge(for note: Note) -> some View {
         if let stage = processingStage(for: note) {
-            HStack(spacing: 6) {
-                switch stage {
-                case .jotting:
-                    Image(systemName: "pencil.and.scribble")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(.accentPrimary)
-                    Text("Jotting this down...")
-                        .font(.bodySmall)
-                        .foregroundColor(.textMain)
-                case .polishing:
-                    Image(systemName: "sparkles")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(
-                            LinearGradient(
-                                colors: [.accentPrimary, .purple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
-                        )
-                    Text("Getting your vibe...")
-                        .font(.bodySmall)
-                        .foregroundColor(.textMain)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(.ultraThinMaterial)
-            .clipShape(Capsule())
-            .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
-            .overlay(
-                Capsule()
-                    .stroke(Color.accentPrimary.opacity(0.2), lineWidth: 1)
-            )
-            .padding(12)
+            VoiceProcessingWorkflowView(currentStage: stage, style: .compact)
+                .padding(12)
             .allowsHitTesting(false)
             .transition(.opacity)
         } else {
@@ -1049,25 +1023,54 @@ struct HomeView: View {
 
 }
 
+struct NoteListTagViewData: Identifiable {
+    let id: UUID
+    let name: String
+    let color: Color
+}
+
+struct NoteListItemViewData: Identifiable {
+    let id: UUID
+    let createdAt: Date
+    let pinnedAt: Date?
+    let previewText: String
+    let isEmpty: Bool
+    let tags: [NoteListTagViewData]
+    let hiddenTagCount: Int
+
+    init(note: Note, usePlainPreview: Bool = true) {
+        id = note.id
+        createdAt = note.createdAt
+        pinnedAt = note.pinnedAt
+
+        let trimmed = note.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        isEmpty = trimmed.isEmpty
+        if usePlainPreview {
+            previewText = note.displayText
+        } else {
+            previewText = trimmed
+        }
+
+        let prefixTags = Array(note.tags.prefix(3))
+        tags = prefixTags.map { tag in
+            NoteListTagViewData(id: tag.id, name: tag.name, color: tag.color)
+        }
+        hiddenTagCount = max(0, note.tags.count - prefixTags.count)
+    }
+}
+
 struct NoteCard: View {
-    let note: Note
+    let item: NoteListItemViewData
     var isSelectionMode: Bool = false
     var isSelected: Bool = false
     var onSelectionToggle: (() -> Void)? = nil
 
-    private enum ProcessingStage {
-        case jotting
-        case polishing
-    }
-
-    private var processingStage: ProcessingStage? {
-        guard let state = VoiceProcessingService.shared.processingStates[note.id],
-              case .processing = state else {
+    private var processingStage: VoiceProcessingStage? {
+        guard let state = VoiceProcessingService.shared.processingStates[item.id],
+              case .processing(let stage) = state else {
             return nil
         }
-        
-        let isEmpty = note.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        return isEmpty ? .jotting : .polishing
+        return stage
     }
 
     var body: some View {
@@ -1086,10 +1089,10 @@ struct NoteCard: View {
             VStack(alignment: .leading, spacing: 8) {
                 // Always show Timestamp
                 HStack(alignment: .firstTextBaseline) {
-                    Text(note.createdAt.relativeFormatted())
+                    Text(item.createdAt.relativeFormatted())
                         .font(.chillCaption)
                         .foregroundColor(.textSub)
-                    if note.pinnedAt != nil {
+                    if item.pinnedAt != nil {
                         Image(systemName: "pin.fill")
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.accentPrimary)
@@ -1100,61 +1103,26 @@ struct NoteCard: View {
                 }
 
                 if let stage = processingStage {
-                    // Processing State: Show Badge INLINE
-                    HStack(spacing: 6) {
-                        switch stage {
-                        case .jotting:
-                            Image(systemName: "pencil.and.scribble")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundColor(.accentPrimary)
-                            Text("Jotting this down...")
-                                .font(.bodySmall)
-                                .foregroundColor(.textMain)
-                        case .polishing:
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 12, weight: .semibold))
-                                .foregroundStyle(
-                                    LinearGradient(
-                                        colors: [.accentPrimary, .purple],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                            Text("Getting your vibe...")
-                                .font(.bodySmall)
-                                .foregroundColor(.textMain)
-                        }
-                    }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(.ultraThinMaterial)
-                    .clipShape(Capsule())
-                    .shadow(color: Color.black.opacity(0.08), radius: 6, y: 2)
-                    .overlay(
-                        Capsule()
-                            .stroke(Color.accentPrimary.opacity(0.2), lineWidth: 1)
-                    )
-                    // Slightly reduce top padding to align nicely where text would be
+                    VoiceProcessingWorkflowView(currentStage: stage, style: .compact)
                     .padding(.top, 2)
                     
                 } else {
                     // Normal Content State
-                    if note.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    if item.isEmpty {
                         Text("home.empty.title")
                             .font(.bodyMedium)
                             .foregroundColor(.textSub)
                     } else {
-                        RichTextPreview(
-                            content: note.content,
-                            lineLimit: 3,
-                            font: .bodyMedium,
-                            textColor: .textMain
-                        )
+                        Text(item.previewText)
+                            .font(.bodyMedium)
+                            .foregroundColor(.textMain)
+                            .lineLimit(3)
+                            .multilineTextAlignment(.leading)
                     }
 
-                    if !note.tags.isEmpty {
+                    if !item.tags.isEmpty {
                         HStack(spacing: 6) {
-                            ForEach(note.tags.prefix(3)) { tag in
+                            ForEach(item.tags) { tag in
                                 Text(tag.name)
                                     .font(.chillCaption)
                                     .foregroundColor(tag.color)
@@ -1163,8 +1131,8 @@ struct NoteCard: View {
                                     .background(tag.color.opacity(0.12))
                                     .clipShape(Capsule())
                             }
-                            if note.tags.count > 3 {
-                                Text("+\(note.tags.count - 3)")
+                            if item.hiddenTagCount > 0 {
+                                Text("+\(item.hiddenTagCount)")
                                     .font(.chillCaption)
                                     .foregroundColor(.textSub)
                             }

@@ -2,6 +2,18 @@ import Foundation
 import AVFoundation
 import UIKit
 
+struct TranscriptionEvent: Identifiable, Equatable {
+    enum Result: Equatable {
+        case success(String)
+        case failure(String)
+    }
+
+    let id: UUID
+    let fileURL: URL
+    let result: Result
+    let createdAt: Date
+}
+
 @MainActor
 final class SpeechRecognizer: NSObject, ObservableObject {
     // MARK: - Types
@@ -28,13 +40,22 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     @Published var recordingState: RecordingState = .idle
     @Published var recordingStartTime: Date?
     @Published var shouldStop: Bool = false
+    @Published private(set) var completedTranscriptions: [TranscriptionEvent] = []
+    @Published private(set) var processingQueueCount: Int = 0
     
     // MARK: - Private Properties
     
     private var audioRecorder: AVAudioRecorder?
     private var audioFileURL: URL?
+    private var transcriptionCountUsageByFilePath: [String: Bool] = [:]
     private var isStopping = false
-    private var isTranscribing = false
+    private var activeTranscriptionJobIDs: Set<UUID> = []
+    private var lastPrewarmAt: Date?
+    private var sessionPrimed = false
+    private var primedRecordingURL: URL?
+    private var primedRecorder: AVAudioRecorder?
+    private var recorderPrimeWorkItem: DispatchWorkItem?
+    private var prewarmDeactivateTask: DispatchWorkItem?
     private let maxAudioBytes = 25 * 1024 * 1024 // 25MB limit (plenty for M4A)
     private let fileManager = RecordingFileManager.shared
     
@@ -42,6 +63,10 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     
     var isRecording: Bool {
         recordingState == .recording
+    }
+
+    var isProcessing: Bool {
+        processingQueueCount > 0
     }
     
     func getCurrentAudioFileURL() -> URL? {
@@ -102,17 +127,29 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     
     /// Call this after successfully saving the transcription to clean up the recording file
     func completeRecording() {
-        if let fileURL = audioFileURL {
-            fileManager.completeRecording(fileURL: fileURL)
+        guard let fileURL = audioFileURL else { return }
+        completeRecording(fileURL: fileURL)
+    }
+
+    /// Complete and clean up a specific recording file.
+    func completeRecording(fileURL: URL) {
+        fileManager.completeRecording(fileURL: fileURL)
+        transcriptionCountUsageByFilePath.removeValue(forKey: fileURL.path)
+        if audioFileURL?.path == fileURL.path {
             audioFileURL = nil
         }
     }
+
+    func consumeCompletedTranscription(eventID: UUID) {
+        completedTranscriptions.removeAll { $0.id == eventID }
+    }
     
-    func startRecording() {
+    func startRecording(countsTowardQuota: Bool = true) {
         print("🎙️ Starting recording...")
         
         // Validation
         guard permissionGranted else {
+            checkPermissions()
             setError("Microphone permission required")
             return
         }
@@ -123,13 +160,18 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         }
         
         // Reset state
-        isTranscribing = false
-        transcript = ""
+        let shouldClearTranscript = !transcript.isEmpty
 
         do {
             try startRecordingInternal()
+            if let path = audioFileURL?.path {
+                transcriptionCountUsageByFilePath[path] = countsTowardQuota
+            }
             recordingState = .recording
             recordingStartTime = Date()
+            if shouldClearTranscript {
+                transcript = ""
+            }
             print("✅ Recording started successfully")
         } catch {
             print("❌ Recording failed: \(describeError(error))")
@@ -138,22 +180,60 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             setError("Failed to start recording: \(error.localizedDescription)")
         }
     }
+
+    func prewarmRecordingSession() {
+        guard permissionGranted else {
+            return
+        }
+
+        if let lastPrewarmAt, Date().timeIntervalSince(lastPrewarmAt) < 20 {
+            if primedRecorder == nil {
+                primeRecorderIfNeededAsync()
+            }
+            return
+        }
+
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(
+                .playAndRecord,
+                mode: .spokenAudio,
+                options: [.duckOthers, .defaultToSpeaker]
+            )
+            try? audioSession.setPreferredInputNumberOfChannels(1)
+            try? audioSession.setPreferredSampleRate(16_000)
+            preferBuiltInMicIfAvailable(audioSession)
+            try audioSession.setActive(true)
+            primeRecordingURLIfNeeded()
+            primeRecorderIfNeededAsync()
+            sessionPrimed = true
+            lastPrewarmAt = Date()
+            schedulePrewarmDeactivation()
+        } catch {}
+    }
     
     /// Retry transcribing the existing audio file without re-recording
     /// Useful for network errors or timeouts
     func retryTranscription() {
-        guard let fileURL = audioFileURL else {
-            setError("No recording available to retry")
+        if let fileURL = audioFileURL {
+            retryTranscription(fileURL: fileURL)
             return
         }
-        
-        print("🔄 Retrying transcription...")
-        recordingState = .processing
-        isTranscribing = true
-        
-        Task {
-            await transcribeAudio(fileURL: fileURL)
+
+        if let failedFileURL = completedTranscriptions.last(where: {
+            if case .failure = $0.result { return true }
+            return false
+        })?.fileURL {
+            retryTranscription(fileURL: failedFileURL)
+            return
         }
+
+        setError("No recording available to retry")
+    }
+
+    func retryTranscription(fileURL: URL) {
+        print("🔄 Retrying transcription for \(fileURL.lastPathComponent)...")
+        scheduleTranscription(for: fileURL)
     }
     
     func stopRecording(reason: StopReason = .user) {
@@ -167,20 +247,24 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         audioRecorder?.stop()
         audioRecorder = nil
         cleanupRecordingSession()
+        recordingStartTime = nil
 
         isStopping = false
+
+        if recordingState == .recording {
+            recordingState = activeTranscriptionJobIDs.isEmpty ? .idle : .processing
+        }
         
         // Handle different stop reasons
         switch reason {
         case .cancelled:
-            recordingState = .idle
-            recordingStartTime = nil
-            isTranscribing = false
             // Clean up the cancelled recording
             if let fileURL = fileURL {
                 fileManager.cancelRecording(fileURL: fileURL)
+                transcriptionCountUsageByFilePath.removeValue(forKey: fileURL.path)
                 audioFileURL = nil
             }
+            refreshRecordingStateAfterBackgroundWork()
             return
             
         case .interruption:
@@ -189,7 +273,6 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             break // Fall through to processing logic
             
         case .error(let message):
-            isTranscribing = false
             setError(message)
             // If we have a valid file url, we might want to try to keep it as a pending recording
             // instead of deleting it immediately, depending on the error severity.
@@ -201,6 +284,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
                      print("⚠️ Error occurred but file seems valid. Keeping for recovery.")
                  } else {
                      fileManager.cancelRecording(fileURL: fileURL)
+                     transcriptionCountUsageByFilePath.removeValue(forKey: fileURL.path)
                      audioFileURL = nil
                  }
             }
@@ -210,32 +294,28 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             break
         }
         
-        // Start transcription
-        recordingState = .processing
-        
-        guard !isTranscribing, let fileURL = fileURL else {
-            recordingState = .idle
+        guard let fileURL else {
+            refreshRecordingStateAfterBackgroundWork()
             return
         }
-        
-        isTranscribing = true
-        Task { [weak self] in
-            // Give the OS a moment to flush the final audio chunks to disk.
-            try? await Task.sleep(nanoseconds: 150_000_000)
-            await self?.transcribeAudio(fileURL: fileURL)
-        }
+
+        // Give the OS a moment to flush the final audio chunks to disk.
+        scheduleTranscription(for: fileURL, initialDelayNanoseconds: 150_000_000)
     }
     
     // MARK: - Transcription
     
-    private func transcribeAudio(fileURL: URL) async {
+    private func transcribeAudio(jobID: UUID, fileURL: URL) async {
         print("🎤 Starting transcription...")
-        
+        defer {
+            finishTranscriptionJob(jobID)
+        }
+
         // Validate file
         guard let fileSize = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? NSNumber else {
             // Only discard if we truly can't read it
             discardUnusableRecording(fileURL: fileURL)
-            setError("Could not read audio file")
+            publishFailureEvent(fileURL: fileURL, message: "Could not read audio file")
             return
         }
         
@@ -243,7 +323,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         
         if size < 512 {
             discardUnusableRecording(fileURL: fileURL)
-            setError("No audio captured. Please try again.")
+            publishFailureEvent(fileURL: fileURL, message: "No audio captured. Please try again.")
             return
         }
         
@@ -257,58 +337,52 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         
         // Transcribe using Gemini
         do {
+            let countUsage = transcriptionCountUsageByFilePath[fileURL.path] ?? true
             let text = try await withTimeout(seconds: 300) {
-                try await GeminiService.shared.transcribeAndPolish(
+                try await GeminiService.shared.transcribeAudio(
                     audioFileURL: fileURL,
-                    locale: Locale.current.identifier
+                    countUsage: countUsage
                 )
             }
             
             print("✅ Transcription complete")
             
-            isTranscribing = false
             transcript = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            recordingState = .idle
-            recordingStartTime = nil
+            completedTranscriptions.append(
+                TranscriptionEvent(
+                    id: UUID(),
+                    fileURL: fileURL,
+                    result: .success(transcript),
+                    createdAt: Date()
+                )
+            )
             
         } catch is TimeoutError {
-            await handleTranscriptionError("Transcription timed out. Please try again.")
+            publishFailureEvent(fileURL: fileURL, message: "Transcription timed out. Please try again.")
             
         } catch let error as GeminiError {
-            await handleGeminiError(error)
+            publishFailureEvent(fileURL: fileURL, message: message(for: error))
             
         } catch {
-            await handleTranscriptionError("Transcription failed: \(error.localizedDescription)")
+            publishFailureEvent(fileURL: fileURL, message: "Transcription failed: \(error.localizedDescription)")
         }
     }
     
     // MARK: - Error Handling
-    
-    private func handleTranscriptionError(_ message: String) async {
-        isTranscribing = false
-        clearRecoveryFlagForCurrentRecording()
-        setError(message)
-    }
-    
-    private func handleGeminiError(_ error: GeminiError) async {
-        let message: String
-        
+
+    private func message(for error: GeminiError) -> String {
         switch error {
         case .missingAPIKey:
-            message = "Chillo service key not configured. Please contact support."
+            return "Chillo service key not configured. Please contact support."
         case .apiError(let apiMessage):
-            message = "Chillo service error: \(apiMessage)"
+            return "Chillo service error: \(apiMessage)"
         case .networkError(let networkError):
-            message = "Network error: \(networkError.localizedDescription)"
+            return "Network error: \(networkError.localizedDescription)"
         case .invalidResponse:
-            message = "Invalid response from Chillo."
+            return "Invalid response from Chillo."
         case .invalidURL:
-            message = "Invalid configuration URL."
+            return "Invalid configuration URL."
         }
-        
-        isTranscribing = false
-        clearRecoveryFlagForCurrentRecording()
-        setError(message)
     }
     
     private func setError(_ message: String) {
@@ -316,17 +390,59 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         recordingState = .error(message)
     }
 
-    private func clearRecoveryFlagForCurrentRecording() {
-        if let fileURL = audioFileURL {
-            fileManager.clearPendingReference(fileURL: fileURL)
+    private func publishFailureEvent(fileURL: URL, message: String) {
+        completedTranscriptions.append(
+            TranscriptionEvent(
+                id: UUID(),
+                fileURL: fileURL,
+                result: .failure(message),
+                createdAt: Date()
+            )
+        )
+        if recordingState != .recording {
+            setError(message)
         }
     }
-    
+
     private func discardUnusableRecording(fileURL: URL) {
         fileManager.cancelRecording(fileURL: fileURL)
+        transcriptionCountUsageByFilePath.removeValue(forKey: fileURL.path)
         if audioFileURL?.path == fileURL.path {
             audioFileURL = nil
         }
+    }
+
+    private func scheduleTranscription(for fileURL: URL, initialDelayNanoseconds: UInt64 = 0) {
+        let jobID = UUID()
+        activeTranscriptionJobIDs.insert(jobID)
+        processingQueueCount = activeTranscriptionJobIDs.count
+        if recordingState != .recording {
+            recordingState = .processing
+        }
+
+        Task { [weak self] in
+            guard let self else { return }
+            if initialDelayNanoseconds > 0 {
+                try? await Task.sleep(nanoseconds: initialDelayNanoseconds)
+            }
+            await self.transcribeAudio(jobID: jobID, fileURL: fileURL)
+        }
+    }
+
+    private func finishTranscriptionJob(_ jobID: UUID) {
+        activeTranscriptionJobIDs.remove(jobID)
+        processingQueueCount = activeTranscriptionJobIDs.count
+        refreshRecordingStateAfterBackgroundWork()
+    }
+
+    private func refreshRecordingStateAfterBackgroundWork() {
+        if recordingState == .recording {
+            return
+        }
+        if case .error = recordingState, activeTranscriptionJobIDs.isEmpty {
+            return
+        }
+        recordingState = activeTranscriptionJobIDs.isEmpty ? .idle : .processing
     }
     
     // MARK: - Timeout Helper
@@ -376,19 +492,26 @@ final class SpeechRecognizer: NSObject, ObservableObject {
 
 private extension SpeechRecognizer {
     func startRecordingInternal() throws {
-        cleanupRecordingSession()
+        prewarmDeactivateTask?.cancel()
+        prewarmDeactivateTask = nil
 
         let audioSession = AVAudioSession.sharedInstance()
-        try audioSession.setCategory(
-            .playAndRecord,
-            mode: .spokenAudio,
-            options: [.duckOthers, .defaultToSpeaker, .allowBluetoothHFP]
-        )
-        try? audioSession.setPreferredInputNumberOfChannels(1)
-        // 16kHz mono is sufficient for speech and keeps uploads small (important for server/proxy limits).
-        // Note: `setPreferredSampleRate` is a best-effort hint; we still set the recorder sample rate below.
-        try? audioSession.setPreferredSampleRate(16_000)
-        try audioSession.setActive(true)
+        if !sessionPrimed {
+            try audioSession.setCategory(
+                .playAndRecord,
+                mode: .spokenAudio,
+                options: [.duckOthers, .defaultToSpeaker]
+            )
+        }
+
+        if !sessionPrimed {
+            try? audioSession.setPreferredInputNumberOfChannels(1)
+            // 16kHz mono is sufficient for speech and keeps uploads small (important for server/proxy limits).
+            // Note: `setPreferredSampleRate` is a best-effort hint; we still set the recorder sample rate below.
+            try? audioSession.setPreferredSampleRate(16_000)
+            preferBuiltInMicIfAvailable(audioSession)
+            try audioSession.setActive(true)
+        }
 
         guard audioSession.isInputAvailable else {
             throw NSError(
@@ -398,29 +521,38 @@ private extension SpeechRecognizer {
             )
         }
 
-        let fileURL = makeTempAudioURL(ext: "m4a")
-        print("📁 Recording to: \(fileURL.path)")
-        try? FileManager.default.removeItem(at: fileURL)
-
-        // AAC (M4A) compression for much smaller file sizes while maintaining quality.
-        let settings: [String: Any] = [
-            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
-            AVSampleRateKey: 16_000,
-            AVNumberOfChannelsKey: 1,
-            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
-        ]
-
-        let recorder = try AVAudioRecorder(url: fileURL, settings: settings)
-        recorder.delegate = self
-        recorder.isMeteringEnabled = true
-
-        guard recorder.prepareToRecord() else {
-            throw NSError(
-                domain: "SpeechRecognizer",
-                code: 11,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to prepare recorder"]
-            )
+        let fileURL: URL
+        if let primed = primedRecordingURL {
+            fileURL = primed
+            primedRecordingURL = nil
+        } else {
+            fileURL = makeTempAudioURL(ext: "m4a")
         }
+        print("📁 Recording to: \(fileURL.path)")
+        let recorder: AVAudioRecorder
+        if let primedRecorder {
+            recorder = primedRecorder
+            self.primedRecorder = nil
+            recorderPrimeWorkItem?.cancel()
+            recorderPrimeWorkItem = nil
+        } else {
+            // Safe cleanup only when creating a brand-new recorder.
+            // If we unlink a file already opened by a primed recorder, the final path disappears
+            // after stop (first-recording race in onboarding).
+            try? FileManager.default.removeItem(at: fileURL)
+            recorder = try Self.makeRecorder(fileURL: fileURL)
+            recorder.delegate = self
+            recorder.isMeteringEnabled = true
+
+            guard recorder.prepareToRecord() else {
+                throw NSError(
+                    domain: "SpeechRecognizer",
+                    code: 11,
+                    userInfo: [NSLocalizedDescriptionKey: "Failed to prepare recorder"]
+                )
+            }
+        }
+
         guard recorder.record() else {
             throw NSError(
                 domain: "SpeechRecognizer",
@@ -430,12 +562,114 @@ private extension SpeechRecognizer {
         }
 
         audioRecorder = recorder
+        fileManager.markPending(fileURL: fileURL)
         audioFileURL = fileURL
+        sessionPrimed = true
     }
 
     func cleanupRecordingSession() {
         let session = AVAudioSession.sharedInstance()
         try? session.setActive(false, options: .notifyOthersOnDeactivation)
+        sessionPrimed = false
+        primedRecorder = nil
+        recorderPrimeWorkItem?.cancel()
+        recorderPrimeWorkItem = nil
+    }
+
+    func schedulePrewarmDeactivation() {
+        prewarmDeactivateTask?.cancel()
+        let task = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            guard self.recordingState == .idle else { return }
+            if let primedURL = self.primedRecordingURL {
+                try? FileManager.default.removeItem(at: primedURL)
+                self.primedRecordingURL = nil
+            }
+            self.primedRecorder = nil
+            self.recorderPrimeWorkItem?.cancel()
+            self.recorderPrimeWorkItem = nil
+            self.cleanupRecordingSession()
+        }
+        prewarmDeactivateTask = task
+        DispatchQueue.main.asyncAfter(deadline: .now() + 12, execute: task)
+    }
+
+    func preferBuiltInMicIfAvailable(_ audioSession: AVAudioSession) {
+        guard let inputs = audioSession.availableInputs else { return }
+        if let builtInMic = inputs.first(where: { $0.portType == .builtInMic }) {
+            try? audioSession.setPreferredInput(builtInMic)
+        }
+    }
+
+    func primeRecordingURLIfNeeded() {
+        guard primedRecordingURL == nil else {
+            return
+        }
+        do {
+            let url = try fileManager.createRecordingURL(ext: "m4a", markPending: false)
+            primedRecordingURL = url
+        } catch {}
+    }
+
+    func primeRecorderIfNeededAsync() {
+        guard primedRecorder == nil else {
+            return
+        }
+        guard recorderPrimeWorkItem == nil else {
+            return
+        }
+        guard let primedRecordingURL else {
+            return
+        }
+
+        let targetPath = primedRecordingURL.path
+        var workItem: DispatchWorkItem?
+        workItem = DispatchWorkItem { [weak self] in
+            guard let self else { return }
+            do {
+                let url = URL(fileURLWithPath: targetPath)
+                let recorder = try Self.makeRecorder(fileURL: url)
+                guard recorder.prepareToRecord() else {
+                    DispatchQueue.main.async {
+                        guard let workItem, !workItem.isCancelled else { return }
+                        self.recorderPrimeWorkItem = nil
+                    }
+                    return
+                }
+                DispatchQueue.main.async {
+                    guard let workItem, !workItem.isCancelled else { return }
+                    defer { self.recorderPrimeWorkItem = nil }
+                    guard self.recordingState == .idle else { return }
+                    guard self.primedRecordingURL?.path == targetPath else { return }
+                    if self.primedRecorder == nil {
+                        recorder.delegate = self
+                        recorder.isMeteringEnabled = true
+                        self.primedRecorder = recorder
+                    }
+                }
+            } catch {
+                DispatchQueue.main.async {
+                    guard let workItem, !workItem.isCancelled else { return }
+                    self.recorderPrimeWorkItem = nil
+                    self.primedRecorder = nil
+                }
+            }
+        }
+        if let workItem {
+            recorderPrimeWorkItem = workItem
+            DispatchQueue.global(qos: .userInitiated).async(execute: workItem)
+        }
+    }
+
+    nonisolated static func makeRecorder(fileURL: URL) throws -> AVAudioRecorder {
+        // AAC (M4A) compression for much smaller file sizes while maintaining quality.
+        let settings: [String: Any] = [
+            AVFormatIDKey: Int(kAudioFormatMPEG4AAC),
+            AVSampleRateKey: 16_000,
+            AVNumberOfChannelsKey: 1,
+            AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue
+        ]
+        return try AVAudioRecorder(url: fileURL, settings: settings)
     }
 
     func makeTempAudioURL(ext: String) -> URL {

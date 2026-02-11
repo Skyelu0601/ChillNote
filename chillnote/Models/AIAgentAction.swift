@@ -90,7 +90,8 @@ struct AIAgentAction: Identifiable {
         
         let result = try await GeminiService.shared.generateContent(
             prompt: prompt,
-            systemInstruction: systemInstruction
+            systemInstruction: systemInstruction,
+            usageType: .agentRecipe
         )
         
         let userId = AuthService.shared.currentUserId ?? "unknown"

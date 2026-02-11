@@ -10,13 +10,23 @@ enum NoteContentFormat: String {
 final class Note {
     var id: UUID
     var userId: String
-    var content: String  // Markdown format - single source of truth
+    var content: String {  // Markdown format - single source of truth
+        didSet {
+            refreshPreviewPlainText()
+        }
+    }
     var contentFormat: String
     var checklistNotes: String
+    var previewPlainText: String
     var createdAt: Date
     var updatedAt: Date
     var deletedAt: Date?
     var pinnedAt: Date?
+    var version: Int
+    var serverUpdatedAt: Date
+    var serverDeletedAt: Date?
+    var lastModifiedByDeviceId: String?
+    var contentParseBackup: String?
     
     @Relationship
     var tags: [Tag] = []
@@ -25,18 +35,10 @@ final class Note {
     
     /// Get display text for previews (strips Markdown formatting)
     var displayText: String {
-        let sourceText: String
-        if isChecklist {
-            sourceText = ChecklistMarkdown.serializePlainText(notes: checklistNotes, items: checklistItems)
-        } else {
-            sourceText = stripMarkdownFormatting(content)
+        if !previewPlainText.isEmpty {
+            return previewPlainText
         }
-        let limit = 200
-        if sourceText.count <= limit {
-            return sourceText
-        }
-        let prefixText = sourceText.prefix(limit)
-        return "\(prefixText)..."
+        return makePreviewPlainText()
     }
     
     /// Strip basic Markdown formatting for plain text display
@@ -69,10 +71,16 @@ final class Note {
         self.content = content
         self.contentFormat = NoteContentFormat.text.rawValue
         self.checklistNotes = ""
+        self.previewPlainText = ""
         self.createdAt = now
         self.updatedAt = now
         self.deletedAt = nil
         self.pinnedAt = nil
+        self.version = 1
+        self.serverUpdatedAt = now
+        self.serverDeletedAt = nil
+        self.lastModifiedByDeviceId = nil
+        self.contentParseBackup = nil
         self.tags = []
         self.suggestedTags = []
 
@@ -84,6 +92,8 @@ final class Note {
             }
             self.content = ChecklistMarkdown.serialize(notes: self.checklistNotes, items: self.checklistItems)
         }
+
+        self.refreshPreviewPlainText()
     }
 
     var isChecklist: Bool {
@@ -92,17 +102,15 @@ final class Note {
 
     func syncContentStructure(with context: ModelContext) {
         guard let parsed = ChecklistMarkdown.parse(content) else {
-            guard isChecklist else { return }
-            contentFormat = NoteContentFormat.text.rawValue
-            checklistNotes = ""
-            if !checklistItems.isEmpty {
-                for item in checklistItems {
-                    context.delete(item)
-                }
-                checklistItems.removeAll()
+            contentParseBackup = content
+            if isChecklist {
+                contentFormat = NoteContentFormat.text.rawValue
             }
+            refreshPreviewPlainText()
             return
         }
+
+        contentParseBackup = nil
 
         contentFormat = NoteContentFormat.checklist.rawValue
         checklistNotes = parsed.notes
@@ -131,28 +139,39 @@ final class Note {
         }
 
         checklistItems = updatedItems
+        refreshPreviewPlainText()
     }
 
     func rebuildContentFromChecklist() {
         content = ChecklistMarkdown.serialize(notes: checklistNotes, items: checklistItems)
+        contentParseBackup = nil
+        refreshPreviewPlainText()
     }
     
     func markDeleted() {
         deletedAt = Date()
         updatedAt = deletedAt ?? updatedAt
     }
-    
-    // MARK: - Export Functions
-    
-    /// Export note as Markdown (original format)
-    func exportAsMarkdown() -> String {
-        return content
+
+    func refreshPreviewPlainText() {
+        previewPlainText = makePreviewPlainText()
+    }
+
+    private func makePreviewPlainText() -> String {
+        let sourceText: String
+        if isChecklist {
+            sourceText = ChecklistMarkdown.serializePlainText(notes: checklistNotes, items: checklistItems)
+        } else {
+            sourceText = stripMarkdownFormatting(content)
+        }
+        let limit = 200
+        if sourceText.count <= limit {
+            return sourceText
+        }
+        let prefixText = sourceText.prefix(limit)
+        return "\(prefixText)..."
     }
     
-    /// Export note as plain text (all formatting stripped)
-    func exportAsPlainText() -> String {
-        return stripMarkdownFormatting(content)
-    }
 }
 
 extension Note: Hashable {

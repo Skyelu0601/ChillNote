@@ -115,6 +115,7 @@ struct RichTextEditorView: UIViewRepresentable {
             
             // Check for "Backspace" (Handle deleting list prefix)
             if text == "" && range.length == 1 {
+                // Returning true from handleBackspace means we already mutated text manually.
                 if handleBackspace(textView, range: range) {
                     return false
                 }
@@ -147,7 +148,7 @@ struct RichTextEditorView: UIViewRepresentable {
                         textView.textStorage.replaceCharacters(in: absolutePrefixRange, with: "")
                         textView.textStorage.endEditing()
                         textViewDidChange(textView)
-                        return false // blocked original mutation
+                        return true // handled manually; block original mutation
                     }
                 }
             }
@@ -162,11 +163,11 @@ struct RichTextEditorView: UIViewRepresentable {
                      textView.textStorage.replaceCharacters(in: absolutePrefixRange, with: "")
                      textView.textStorage.endEditing()
                      textViewDidChange(textView)
-                     return false
+                     return true // handled manually; block original mutation
                 }
             }
             
-            return true
+            return false // let UITextView handle normal deletion
         }
         
         private func handleAutoFormatting(_ textView: UITextView, range: NSRange) -> Bool {
@@ -438,11 +439,37 @@ struct RichTextEditorView: UIViewRepresentable {
         }
 
         private func toggleTrait(_ trait: UIFontDescriptor.SymbolicTraits, in textView: UITextView, range: NSRange) {
+            // No selection: toggle the typing attributes so upcoming characters inherit the style.
+            if range.length == 0 {
+                let baseFont =
+                    (textView.typingAttributes[.font] as? UIFont)
+                    ?? (textView.textStorage.length > 0
+                        ? (textView.textStorage.attribute(.font, at: max(range.location - 1, 0), effectiveRange: nil) as? UIFont)
+                        : nil)
+                    ?? parent.font
+                
+                var traits = baseFont.fontDescriptor.symbolicTraits
+                if traits.contains(trait) {
+                    traits.remove(trait)
+                } else {
+                    traits.insert(trait)
+                }
+                
+                let newFont = resolvedFont(for: baseFont, traits: traits)
+                var typingAttrs = textView.typingAttributes
+                typingAttrs[.font] = newFont
+                typingAttrs[.foregroundColor] = typingAttrs[.foregroundColor] ?? parent.textColor
+                typingAttrs[.paragraphStyle] = typingAttrs[.paragraphStyle] ?? RichTextConverter.Config.baseStyle()
+                textView.typingAttributes = typingAttrs
+                return
+            }
+            
             textView.textStorage.beginEditing()
+            let fallbackFont = (textView.typingAttributes[.font] as? UIFont) ?? textView.font ?? parent.font
             
             // Use enumerate to handle multi-font selections
             textView.textStorage.enumerateAttribute(.font, in: range, options: []) { (value, subRange, _) in
-                guard let currentFont = value as? UIFont else { return }
+                let currentFont = (value as? UIFont) ?? fallbackFont
                 
                 var traits = currentFont.fontDescriptor.symbolicTraits
                 if traits.contains(trait) {
@@ -451,13 +478,22 @@ struct RichTextEditorView: UIViewRepresentable {
                     traits.insert(trait)
                 }
                 
-                if let newDescriptor = currentFont.fontDescriptor.withSymbolicTraits(traits) {
-                    let newFont = UIFont(descriptor: newDescriptor, size: currentFont.pointSize)
-                    textView.textStorage.addAttribute(.font, value: newFont, range: subRange)
-                }
+                let newFont = resolvedFont(for: currentFont, traits: traits)
+                textView.textStorage.addAttribute(.font, value: newFont, range: subRange)
             }
             
             textView.textStorage.endEditing()
+        }
+
+        private func resolvedFont(for baseFont: UIFont, traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
+            if let descriptor = baseFont.fontDescriptor.withSymbolicTraits(traits) {
+                return UIFont(descriptor: descriptor, size: baseFont.pointSize)
+            }
+            let systemDescriptor = UIFont.systemFont(ofSize: baseFont.pointSize).fontDescriptor
+            if let descriptor = systemDescriptor.withSymbolicTraits(traits) {
+                return UIFont(descriptor: descriptor, size: baseFont.pointSize)
+            }
+            return baseFont
         }
         
         private func applyBlockStyle(level: Int, in textView: UITextView, range: NSRange) {

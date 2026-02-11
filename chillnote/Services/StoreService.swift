@@ -6,6 +6,13 @@ enum SubscriptionTier: String, CaseIterable {
     case pro
 }
 
+enum DailyQuotaFeature: String {
+    case voice
+    case tidy
+    case agentRecipe = "agent_recipe"
+    case chat
+}
+
 @MainActor
 class StoreService: ObservableObject {
     static let shared = StoreService()
@@ -19,43 +26,189 @@ class StoreService: ObservableObject {
     var recordingTimeLimit: TimeInterval {
         currentTier == .pro ? 600 : 60 // 10 mins vs 1 min
     }
-    
-    var dailyMessageLimit: Int {
+
+    var dailyVoiceLimit: Int {
         currentTier == .pro ? Int.max : 5
     }
 
-    // MARK: - Usage Tracking
-    private let usageKey = "daily_ai_usage"
-    
-    var remainingFreeMessages: Int {
-        if currentTier == .pro { return 999 }
-        return max(0, dailyMessageLimit - currentDailyUsage)
+    var dailyTidyLimit: Int {
+        currentTier == .pro ? Int.max : 5
     }
+
+    var dailyAgentRecipeLimit: Int {
+        currentTier == .pro ? Int.max : 3
+    }
+
+    var dailyAIChatLimit: Int {
+        currentTier == .pro ? Int.max : 10
+    }
+
+    // MARK: - Usage Tracking
+    private let voiceUsageKey = "daily_voice_ai_usage"
+    private let tidyUsageKey = "daily_tidy_ai_usage"
+    private let agentRecipeUsageKey = "daily_agent_recipe_ai_usage"
+    private let chatUsageKey = "daily_chat_ai_usage"
     
-    private var currentDailyUsage: Int {
+    var remainingFreeVoiceCount: Int {
+        if currentTier == .pro { return 999 }
+        return max(0, dailyVoiceLimit - currentDailyVoiceUsage)
+    }
+
+    private var currentDailyVoiceUsage: Int {
         let defaults = UserDefaults.standard
-        let key = usageKeyForToday
+        let key = usageKeyForToday(baseKey: voiceUsageKey)
+        return defaults.integer(forKey: key)
+    }
+
+    private var currentDailyTidyUsage: Int {
+        let defaults = UserDefaults.standard
+        let key = usageKeyForToday(baseKey: tidyUsageKey)
+        return defaults.integer(forKey: key)
+    }
+
+    private var currentDailyAgentRecipeUsage: Int {
+        let defaults = UserDefaults.standard
+        let key = usageKeyForToday(baseKey: agentRecipeUsageKey)
+        return defaults.integer(forKey: key)
+    }
+
+    private var currentDailyAIChatUsage: Int {
+        let defaults = UserDefaults.standard
+        let key = usageKeyForToday(baseKey: chatUsageKey)
         return defaults.integer(forKey: key)
     }
     
-    private var usageKeyForToday: String {
+    private func usageKeyForToday(baseKey: String) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
         let dateStr = formatter.string(from: Date())
-        return "\(usageKey)_\(dateStr)"
+        return "\(baseKey)_\(dateStr)"
     }
     
-    func canSendMessage() -> Bool {
+    func canUseVoiceAI() -> Bool {
         if currentTier == .pro { return true }
-        return currentDailyUsage < dailyMessageLimit
+        return currentDailyVoiceUsage < dailyVoiceLimit
     }
-    
-    func incrementMessageUsage() {
+
+    func canUseTidyAI() -> Bool {
+        if currentTier == .pro { return true }
+        return currentDailyTidyUsage < dailyTidyLimit
+    }
+
+    func canUseAgentRecipeAI() -> Bool {
+        if currentTier == .pro { return true }
+        return currentDailyAgentRecipeUsage < dailyAgentRecipeLimit
+    }
+
+    func canUseAIChat() -> Bool {
+        if currentTier == .pro { return true }
+        return currentDailyAIChatUsage < dailyAIChatLimit
+    }
+
+    func incrementTidyAIUsage() {
         if currentTier == .pro { return }
         let defaults = UserDefaults.standard
-        let key = usageKeyForToday
+        let key = usageKeyForToday(baseKey: tidyUsageKey)
         let current = defaults.integer(forKey: key)
         defaults.set(current + 1, forKey: key)
+    }
+
+    func incrementAgentRecipeAIUsage() {
+        if currentTier == .pro { return }
+        let defaults = UserDefaults.standard
+        let key = usageKeyForToday(baseKey: agentRecipeUsageKey)
+        let current = defaults.integer(forKey: key)
+        defaults.set(current + 1, forKey: key)
+    }
+
+    func incrementAIChatUsage() {
+        if currentTier == .pro { return }
+        let defaults = UserDefaults.standard
+        let key = usageKeyForToday(baseKey: chatUsageKey)
+        let current = defaults.integer(forKey: key)
+        defaults.set(current + 1, forKey: key)
+    }
+
+    func incrementVoiceAIUsage() {
+        if currentTier == .pro { return }
+        let defaults = UserDefaults.standard
+        let key = usageKeyForToday(baseKey: voiceUsageKey)
+        let current = defaults.integer(forKey: key)
+        defaults.set(current + 1, forKey: key)
+    }
+
+    @discardableResult
+    func consumeTidyAIUsage() -> Bool {
+        guard canUseTidyAI() else { return false }
+        incrementTidyAIUsage()
+        return true
+    }
+
+    @discardableResult
+    func consumeAgentRecipeAIUsage() -> Bool {
+        guard canUseAgentRecipeAI() else { return false }
+        incrementAgentRecipeAIUsage()
+        return true
+    }
+
+    @discardableResult
+    func consumeAIChatUsage() -> Bool {
+        guard canUseAIChat() else { return false }
+        incrementAIChatUsage()
+        return true
+    }
+
+    @discardableResult
+    func consumeVoiceAIUsage() -> Bool {
+        guard canUseVoiceAI() else { return false }
+        incrementVoiceAIUsage()
+        return true
+    }
+
+    private func performDailyQuotaRequest(
+        feature: DailyQuotaFeature,
+        action: String
+    ) async -> Bool {
+        guard AuthService.shared.isSignedIn else { return true }
+        guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else { return true }
+
+        let url = URL(string: "\(AppConfig.backendBaseURL)/quota/daily")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        let payload: [String: Any] = [
+            "feature": feature.rawValue,
+            "action": action
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return true }
+
+            if http.statusCode == 429 {
+                if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let message = json["error"] as? String {
+                    self.errorMessage = message
+                }
+                return false
+            }
+
+            return (200...299).contains(http.statusCode)
+        } catch {
+            // Network failure fallback: don't hard-block user locally.
+            return true
+        }
+    }
+
+    func checkDailyQuotaOnServer(feature: DailyQuotaFeature) async -> Bool {
+        await performDailyQuotaRequest(feature: feature, action: "check")
+    }
+
+    func consumeDailyQuotaOnServer(feature: DailyQuotaFeature) async -> Bool {
+        await performDailyQuotaRequest(feature: feature, action: "consume")
     }
     
     // Product Identifiers
@@ -205,6 +358,9 @@ class StoreService: ObservableObject {
     private func verifySubscriptionWithBackend(_ transaction: Transaction) async throws {
         guard AuthService.shared.isSignedIn else { return }
         guard let token = await AuthService.shared.getSessionToken() else { return }
+        guard let receiptData = try await fetchAppReceiptData() else {
+            throw URLError(.dataNotAllowed)
+        }
         
         let url = URL(string: "\(AppConfig.backendBaseURL)/subscription/verify")!
         var request = URLRequest(url: url)
@@ -216,7 +372,8 @@ class StoreService: ObservableObject {
             "transactionId": String(transaction.id), // UInt64 to String
             "originalTransactionId": String(transaction.originalID),
             "productId": transaction.productID,
-            "expiresDate": transaction.expirationDate?.ISO8601Format() ?? ""
+            "expiresDate": transaction.expirationDate?.ISO8601Format() ?? "",
+            "receiptData": receiptData
         ]
         
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -237,6 +394,26 @@ class StoreService: ObservableObject {
         
         // Success
         print("✅ Subscription verified with backend")
+    }
+
+    private func fetchAppReceiptData() async throws -> String? {
+        let appTransactionResult = try await AppTransaction.shared
+        _ = try checkVerified(appTransactionResult)
+        var transactions: [String] = []
+
+        for await result in Transaction.all {
+            if case .verified = result {
+                transactions.append(result.jwsRepresentation)
+            }
+        }
+
+        let payload: [String: Any] = [
+            "appTransaction": appTransactionResult.jwsRepresentation,
+            "transactions": transactions
+        ]
+
+        let data = try JSONSerialization.data(withJSONObject: payload)
+        return data.base64EncodedString()
     }
     
     nonisolated private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {

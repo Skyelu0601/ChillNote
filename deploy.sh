@@ -72,6 +72,12 @@ if [ -f "/tmp/chillnote-api.env" ]; then
   rm -f "/tmp/chillnote-api.env"
 fi
 
+# 向后兼容：若旧路径存在 .env，则复制到 current 供 PM2 使用
+if [ ! -f "$APP_DIR/.env" ] && [ -f "$BASE_DIR/.env" ]; then
+  echo "ℹ️ 检测到旧路径 $BASE_DIR/.env，复制到 $APP_DIR/.env..."
+  install -m 600 "$BASE_DIR/.env" "$APP_DIR/.env"
+fi
+
 if [ ! -f "$APP_DIR/.env" ]; then
   echo "❌ 错误: 未检测到 $APP_DIR/.env"
   exit 1

@@ -290,26 +290,6 @@ extension AgentRecipe {
             Output only the simplified explanation.
             """,
             category: .organize
-        ),
-        // MARK: - Care
-        AgentRecipe(
-            id: "reflect",
-            icon: "🪞",
-            systemIcon: "sparkles",
-            name: "Reflect",
-            description: "Self-healing clarity from a compassionate mirror.",
-            prompt: """
-            You are reflecting on a user’s existing note (not a chat message). Offer a gentle, non-judgmental reflection that helps the user see their experience more clearly.
-
-            - Keep the output in the same language as the note.
-            - Summarize the emotions or themes you can reasonably infer.
-            - Highlight any patterns or tensions in a soft, respectful way.
-            - Avoid diagnosis or certainty; keep it supportive and grounded.
-            - End with a brief, gentle insight that invites self-reflection.
-
-            Output only the reflection.
-            """,
-            category: .care
         )
     ]
 }

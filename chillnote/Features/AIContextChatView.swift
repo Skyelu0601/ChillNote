@@ -217,12 +217,12 @@ struct AIContextChatView: View {
         .sheet(isPresented: $showUpgradeSheet) {
             UpgradeBottomSheet(
                 title: "Daily free limit reached",
-                message: "Upgrade to Pro for unlimited AI chat and 10-minute recordings.",
+                message: UpgradeBottomSheet.unifiedMessage,
                 primaryButtonTitle: "Upgrade to Pro",
                 onUpgrade: openSubscriptionFromUpgrade,
                 onDismiss: { showUpgradeSheet = false }
             )
-            .presentationDetents([.height(280)])
+            .presentationDetents([.height(350)])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSubscription) {
@@ -325,25 +325,23 @@ struct AIContextChatView: View {
     
     func startVoiceInput() {
         guard !isLoading else { return }
-        isVoiceMode = true
-        isInputFocused = false
-        speechRecognizer.startRecording()
+        Task {
+            let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
+            await MainActor.run {
+                guard canRecord else {
+                    showUpgradeSheet = true
+                    return
+                }
+                isVoiceMode = true
+                isInputFocused = false
+                speechRecognizer.startRecording(countsTowardQuota: true)
+            }
+        }
     }
     
     func sendMessage() {
         let trimmed = userInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        
-        // Enforce daily message limit
-        let store = StoreService.shared
-        if !store.canSendMessage() {
-             errorMessage = nil
-             showUpgradeSheet = true
-             return
-        }
-        
-        // Track usage
-        store.incrementMessageUsage()
         
         // Add user message
         let userMessage = ChatMessage(role: .user, content: trimmed)
@@ -386,7 +384,8 @@ struct AIContextChatView: View {
                     CRITICAL:
                     \(languageRule)
                     - Always prioritize the language of the User's question for your response, even if the notes are in a different language.
-                    """
+                    """,
+                    usageType: .chat
                 )
                 
                 for try await chunk in stream {
@@ -416,7 +415,13 @@ struct AIContextChatView: View {
                         messages.removeLast()
                     }
                     isLoading = false
-                    errorMessage = "Chillo ran into an issue: \(error.localizedDescription)"
+                    let message = error.localizedDescription
+                    if message.localizedCaseInsensitiveContains("daily free ai chat limit reached") {
+                        errorMessage = nil
+                        showUpgradeSheet = true
+                    } else {
+                        errorMessage = "Chillo ran into an issue: \(message)"
+                    }
                 }
             }
         }

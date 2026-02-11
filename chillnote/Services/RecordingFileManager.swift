@@ -8,7 +8,7 @@ final class RecordingFileManager {
     // MARK: - Constants
     
     private let pendingRecordingsKey = "PendingRecordings"
-    private let maxFileAgeHours: TimeInterval = 24
+    private let maxFileAgeHours: TimeInterval = 24 * 7
     
     // MARK: - Directory
     
@@ -38,17 +38,24 @@ final class RecordingFileManager {
     
     // MARK: - Public API
     
-    /// Creates a new recording file URL and marks it as pending
-    func createRecordingURL(ext: String = "m4a") throws -> URL {
+    /// Creates a new recording file URL.
+    /// - parameter markPending: whether to immediately add this path to recovery tracking.
+    func createRecordingURL(ext: String = "m4a", markPending: Bool = true) throws -> URL {
         let directory = try pendingRecordingsDirectory
         let fileName = "\(UUID().uuidString)_\(Date().timeIntervalSince1970).\(ext)"
         let fileURL = directory.appendingPathComponent(fileName)
         
-        // Mark as pending
-        markAsPending(fileURL: fileURL)
+        if markPending {
+            markAsPending(fileURL: fileURL)
+        }
         
         print("📁 Created recording at: \(fileURL.path)")
         return fileURL
+    }
+
+    /// Marks an existing recording file path as pending (for crash recovery).
+    func markPending(fileURL: URL) {
+        markAsPending(fileURL: fileURL)
     }
     
     /// Marks a recording as successfully processed and deletes it

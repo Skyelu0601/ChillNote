@@ -36,14 +36,14 @@ Humanity has spoken for hundreds of thousands of years; we have only been typing
     *   *A Personal Journey*: The creator experienced severe finger pain from coding, where medication failed. Switching to voice input for code and ideation provided not just relief, but a return to productivity.
 *   **The ChillNote Solution**: A disconnect between the *act of input* and the *final visualization*. You speak; the system handles the rest.
 
-## 4. For Seekers of Self-Healing
-**"Talk is a way to heal yourself."**
+## 4. For Reflective Thinkers
+**"Talk helps untangle thoughts."**
 
 In our modern digital era, we have become accustomed to "silent communication"—texting, typing, reading. This silence can lead to a suppression of character and emotion.
 
-*   **Vocalizing as Therapy**: There is power in the physical act of using one's voice. Speaking aloud—even to an app—externalizes internal conflicts in a way that typing does not.
-*   **The "Therapist" in the Pocket**: ChillNote serves as a safe space for journaling and retrospective. Users can vent negative emotions or reflect on their day.
-*   **The Psychology**: As the saying goes, *"Talk is a way to heal yourself."* By articulating our struggles, we engage in self-reflection, affirmation, and ultimately, encouragement. The voice carries emotional data that text alone cannot capture, making the act of recording a release in itself.
+*   **Vocalizing for Clarity**: There is power in the physical act of using one's voice. Speaking aloud—even to an app—externalizes internal conflicts in a way that typing does not.
+*   **A Quiet Space for Reflection**: ChillNote serves as a safe space for journaling and retrospective. Users can vent negative emotions or reflect on their day.
+*   **The Psychology**: By articulating our struggles, we engage in self-reflection and clarity. The voice carries emotional nuance that text alone cannot capture, making the act of recording a way to organize what we feel.
 
 ## 5. For the "Format Haters"
 **"Life is too short to adjust margins."**

@@ -12,6 +12,10 @@ final class Tag {
     var updatedAt: Date
     var lastUsedAt: Date
     var deletedAt: Date?
+    var version: Int
+    var serverUpdatedAt: Date
+    var serverDeletedAt: Date?
+    var lastModifiedByDeviceId: String?
     
     var aiSummary: String?
     
@@ -42,6 +46,10 @@ final class Tag {
         self.children = []
         self.sortOrder = 0
         self.deletedAt = nil
+        self.version = 1
+        self.serverUpdatedAt = now
+        self.serverDeletedAt = nil
+        self.lastModifiedByDeviceId = nil
     }
     
     // MARK: - Computed Properties

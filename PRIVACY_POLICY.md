@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Last Updated:** [Date]
+**Last Updated:** February 5, 2026
 
 **Sponteoai** ("we," "our," or "us") respects your privacy and is committed to protecting it through our compliance with this policy. This Privacy Policy describes the types of information we may collect from you or that you may provide when you use the **ChillNote** mobile application (the "App") and our practices for collecting, using, maintaining, protecting, and disclosing that information.
 
@@ -15,7 +15,7 @@ We collect limited information to provide the core functionality of ChillNote.
 *   **User Content (Notes & Text):** The text notes you create are stored securely on our servers to enable synchronization between your devices.
 *   **Audio Data (Ephemeral Processing Only):** We collect audio data **only when you actively record a voice note**. 
 
-    > **Important:** Your raw audio files are processed using **Ephemeral In-Memory Technology**. This means your audio is streamed to our processors for the sole purpose of transcription and summarization and is **immediately permanently deleted** from our memory once the text is generated. We do **not** store, archive, or retain your raw audio recordings on our servers' disk storage.
+    > **Important:** Your raw audio is processed for transcription and then discarded. We do **not** store, archive, or retain your raw audio recordings on our servers' disk storage.
 
 ### B. Information Collected Automatically
 *   **Device Information:** We may collect generic device information (e.g., model, OS version) to ensure app compatibility.
@@ -43,7 +43,8 @@ We do not sell, trade, or otherwise transfer your personally identifiable inform
 
 ## 4. Data Retention & Security
 
-*   **Zero Audio Retention:** As stated, raw audio files are never stored on our disks. They are transiently processed in RAM and discarded.
+*   **Zero Audio Retention:** As stated, raw audio files are never stored on our servers' disks. They are transiently processed and discarded.
+*   **Local Temporary Storage:** For crash recovery and pending transcription, audio recordings may be stored locally on your device and are deleted after successful processing or within 7 days.
 *   **Note Retention:** Your text notes remain stored on our secure servers until you delete them or your account.
 *   **Encryption:** All data transmitted between your device, our servers, and third-party APIs is encrypted using **TLS/SSL (HTTPS)** protocols.
 
@@ -65,6 +66,5 @@ We may update our Privacy Policy from time to time. If we make material changes 
 To ask questions or comment about this privacy policy and our privacy practices, contact us at:
 
 **Sponteoai**  
-[Address / City, State, Zip]  
 Email: support@chillnoteai.com  
-Website: [Website URL]
+Website: https://www.chillnoteai.com/privacy.html

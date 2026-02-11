@@ -44,7 +44,8 @@ class TagService {
         do {
             let response = try await GeminiService.shared.generateContent(
                 prompt: prompt,
-                systemInstruction: systemInstruction
+                systemInstruction: systemInstruction,
+                countUsage: false
             )
             
             // Clean up response

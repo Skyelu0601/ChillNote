@@ -35,12 +35,9 @@ npm run dev
 - `POST /auth/refresh`
 - `POST /sync`
   - Optional query: `?since=ISO8601` to return only changes since that time
-- `POST /media/upload` (multipart `file`)
-- `GET /media/:id` (requires auth)
-- `POST /ai/voice-note` - Voice transcription and polishing
+- `POST /ai/voice-note` - Voice transcription only (no polishing)
 - `POST /ai/gemini` - General AI text processing
 
-Uploads are stored on disk under `server/uploads/<userId>/`.
 
 ## Configuration
 

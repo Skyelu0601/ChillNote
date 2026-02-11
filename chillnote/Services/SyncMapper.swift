@@ -12,12 +12,16 @@ struct SyncMapper {
             id: note.id.uuidString,
             content: note.content,
             createdAt: dateFormatter.string(from: note.createdAt),
-            updatedAt: dateFormatter.string(from: note.updatedAt),
+            updatedAt: nil,
             deletedAt: note.deletedAt.map { dateFormatter.string(from: $0) },
             pinnedAt: note.pinnedAt.map { dateFormatter.string(from: $0) },
             tagIds: note.tags
                 .filter { $0.deletedAt == nil }
-                .map { $0.id.uuidString }
+                .map { $0.id.uuidString },
+            version: nil,
+            baseVersion: note.version,
+            clientUpdatedAt: dateFormatter.string(from: note.updatedAt),
+            lastModifiedByDeviceId: note.lastModifiedByDeviceId
         )
     }
 
@@ -27,11 +31,15 @@ struct SyncMapper {
             name: tag.name,
             colorHex: tag.colorHex,
             createdAt: dateFormatter.string(from: tag.createdAt),
-            updatedAt: dateFormatter.string(from: tag.updatedAt),
+            updatedAt: nil,
             lastUsedAt: dateFormatter.string(from: tag.lastUsedAt),
             sortOrder: tag.sortOrder,
             parentId: tag.parent?.id.uuidString,
-            deletedAt: tag.deletedAt.map { dateFormatter.string(from: $0) }
+            deletedAt: tag.deletedAt.map { dateFormatter.string(from: $0) },
+            version: nil,
+            baseVersion: tag.version,
+            clientUpdatedAt: dateFormatter.string(from: tag.updatedAt),
+            lastModifiedByDeviceId: tag.lastModifiedByDeviceId
         )
     }
 
@@ -46,18 +54,27 @@ struct SyncMapper {
         if let createdAt = parseDate(dto.createdAt) {
             note.createdAt = createdAt
         }
-        if let updatedAt = parseDate(dto.updatedAt) {
-            note.updatedAt = updatedAt
+        if let updatedAt = dto.updatedAt, let date = parseDate(updatedAt) {
+            note.serverUpdatedAt = date
+            note.updatedAt = date
         }
         if let deletedAt = dto.deletedAt, let date = parseDate(deletedAt) {
             note.deletedAt = date
+            note.serverDeletedAt = date
         } else {
             note.deletedAt = nil
+            note.serverDeletedAt = nil
         }
         if let pinnedAt = dto.pinnedAt, let date = parseDate(pinnedAt) {
             note.pinnedAt = date
         } else {
             note.pinnedAt = nil
+        }
+        if let version = dto.version {
+            note.version = version
+        }
+        if let deviceId = dto.lastModifiedByDeviceId {
+            note.lastModifiedByDeviceId = deviceId
         }
         // Tags are handled separately in SyncEngine to resolve relationships
     }
@@ -68,18 +85,27 @@ struct SyncMapper {
         if let createdAt = parseDate(dto.createdAt) {
             tag.createdAt = createdAt
         }
-        if let updatedAt = parseDate(dto.updatedAt) {
-            tag.updatedAt = updatedAt
+        if let updatedAt = dto.updatedAt, let date = parseDate(updatedAt) {
+            tag.serverUpdatedAt = date
+            tag.updatedAt = date
         }
         if let lastUsedAt = dto.lastUsedAt, let date = parseDate(lastUsedAt) {
             tag.lastUsedAt = date
         }
         if let deletedAt = dto.deletedAt, let date = parseDate(deletedAt) {
             tag.deletedAt = date
+            tag.serverDeletedAt = date
         } else {
             tag.deletedAt = nil
+            tag.serverDeletedAt = nil
         }
         tag.sortOrder = dto.sortOrder
+        if let version = dto.version {
+            tag.version = version
+        }
+        if let deviceId = dto.lastModifiedByDeviceId {
+            tag.lastModifiedByDeviceId = deviceId
+        }
         // Parent/Child relationship is handled in SyncEngine
     }
 

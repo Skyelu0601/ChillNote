@@ -10,6 +10,7 @@ enum BannerStyle {
     case error
     case success
     case info
+    case warning
     
     var iconName: String {
         switch self {
@@ -19,17 +20,21 @@ enum BannerStyle {
             return "checkmark.circle.fill"
         case .info:
             return "info.circle.fill"
+        case .warning:
+            return "exclamationmark.triangle.fill"
         }
     }
     
-    var color: Color {
+    var primaryColor: Color {
         switch self {
         case .error:
             return .red
         case .success:
-            return .green
+            return .accentPrimary // Assuming this exists, otherwise .green
         case .info:
-            return .black
+            return .blue
+        case .warning:
+            return .orange
         }
     }
 }
@@ -38,22 +43,31 @@ struct BannerView: View {
     let data: BannerData
     
     var body: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: 12) {
             Image(systemName: data.style.iconName)
-                .foregroundColor(.white)
+                .font(.system(size: 16))
+                .foregroundColor(data.style.primaryColor)
+                .symbolEffect(.pulse, isActive: data.style == .error || data.style == .warning)
+            
             Text(data.message)
-                .font(.bodySmall)
-                .foregroundColor(.white)
+                .font(.subheadline)
+                .fontWeight(.medium)
+                .foregroundColor(.primary)
                 .lineLimit(2)
+            
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(data.style.color.opacity(0.9))
-        .clipShape(Capsule())
-        .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
         .padding(.horizontal, 16)
-        .padding(.top, 12)
+        .padding(.vertical, 12)
+        .background(.ultraThinMaterial)
+        .clipShape(Capsule())
+        .shadow(color: Color.black.opacity(0.1), radius: 10, y: 5)
+        .overlay(
+            Capsule()
+                .strokeBorder(data.style.primaryColor.opacity(0.2), lineWidth: 1)
+        )
+        .padding(.horizontal, 24)
+        .padding(.bottom, 20)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(data.message)
     }
@@ -64,14 +78,23 @@ struct BannerModifier: ViewModifier {
     let autoDismissSeconds: TimeInterval
     
     func body(content: Content) -> some View {
-        ZStack(alignment: .top) {
+        ZStack(alignment: .bottom) {
             content
+            
             if let data = data {
                 BannerView(data: data)
-                    .transition(.move(edge: .top).combined(with: .opacity))
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .zIndex(100) // Ensure it's on top
                     .onAppear {
+                        // Haptic feedback
+                        if data.style == .error {
+                            UINotificationFeedbackGenerator().notificationOccurred(.error)
+                        } else if data.style == .success {
+                            UINotificationFeedbackGenerator().notificationOccurred(.success)
+                        }
+                        
                         DispatchQueue.main.asyncAfter(deadline: .now() + autoDismissSeconds) {
-                            withAnimation(.easeInOut) {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                                 self.data = nil
                             }
                         }
@@ -88,10 +111,13 @@ extension View {
 }
 
 #Preview {
-    VStack(spacing: 20) {
-        BannerView(data: BannerData(message: "Microphone access is required.", style: .error))
-        BannerView(data: BannerData(message: "Saved to Inbox.", style: .success))
-        BannerView(data: BannerData(message: "Processing your note...", style: .info))
+    ZStack {
+        Color.gray.opacity(0.1).ignoresSafeArea()
+        
+        VStack(spacing: 20) {
+            BannerView(data: BannerData(message: "Network Error", style: .error))
+            BannerView(data: BannerData(message: "Saved successfully", style: .success))
+            BannerView(data: BannerData(message: "Processing...", style: .info))
+        }
     }
-    .padding()
 }

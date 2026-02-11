@@ -7,6 +7,10 @@ enum AnalyticsEvent: String {
     case transcribeFail = "transcribe_fail"
     case aiActionUsed = "ai_action_used"
     case reviewGenerated = "review_generated"
+    case exportAllStart = "export_all_start"
+    case exportAllSuccess = "export_all_success"
+    case exportAllFail = "export_all_fail"
+    case exportAllCancel = "export_all_cancel"
 }
 
 final class AnalyticsService {
