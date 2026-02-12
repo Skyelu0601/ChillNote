@@ -188,16 +188,14 @@ struct OnboardingView: View {
 
                 TabView(selection: $currentPage) {
                     welcomePage.tag(0)
-                    voiceIntroPage.tag(1)
-                    voiceDemoPage.tag(2)
-                    recipesIntroPage.tag(3)
-                    grammarDemoPage.tag(4)
-                    // askIntroPage removed
-                    finalStepView.tag(5)
+                    voiceDemoPage.tag(1)
+                    recipesIntroPage.tag(2)
+                    grammarDemoPage.tag(3)
+                    finalStepView.tag(4)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 
-                if currentPage < 5 {
+                if currentPage < 4 {
                     pageIndicator
                 }
             }
@@ -230,7 +228,7 @@ struct OnboardingView: View {
             handlePageChange(to: newValue)
         }
         .onChange(of: speechRecognizer.permissionGranted) { _, granted in
-            guard granted, currentPage == 2 else { return }
+            guard granted, currentPage == 1 else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 speechRecognizer.prewarmRecordingSession()
             }
@@ -251,21 +249,21 @@ struct OnboardingView: View {
             isFixGrammarPulsing = false
         }
 
-        if page == 2 {
+        if page == 1 {
             speechRecognizer.checkPermissions()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
                 speechRecognizer.prewarmRecordingSession()
             }
         }
         
-        if page == 4 { // Recipes Demo
+        if page == 3 { // Recipes Demo
             // Don't show bar immediately. Guide user to Koala.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 withAnimation {
                     showKoalaHint = true
                 }
             }
-        } else if page == 5 { // Final
+        } else if page == 4 { // Final
             //  No specific setup needed for new Ask flow, 
             //  as it starts in .idle state driven by user interaction.
         }
@@ -366,7 +364,7 @@ struct OnboardingView: View {
     
     private var pageIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(0..<5, id: \.self) { index in
+            ForEach(0..<4, id: \.self) { index in
                 Circle()
                     .fill(currentPage == index ? Color.accentPrimary : Color.accentPrimary.opacity(0.2))
                     .frame(width: 8, height: 8)
@@ -381,14 +379,14 @@ struct OnboardingView: View {
             Button("Skip") { completeOnboarding() }
             .font(.bodyMedium)
             .foregroundColor(.textSub)
-            .opacity(currentPage == 5 ? 0 : 1)
+            .opacity(currentPage == 4 ? 0 : 1)
             
             Spacer()
             
-            if currentPage == 4 || currentPage == 5 {
+            if currentPage == 3 || currentPage == 4 {
                 Button {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                        if currentPage == 4 { 
+                        if currentPage == 3 { 
                             showRecipesBar = true
                             showKoalaHint = false
                             isRecipesButtonPulsing = true
@@ -454,41 +452,40 @@ struct OnboardingView: View {
         }
     }
     
-    // MARK: - Phase 1: Voice Intro
-    private var voiceIntroPage: some View {
-        VStack(spacing: 30) {
-            Spacer()
-            CustomMicIcon().frame(width: 100, height: 100)
-                .padding(30)
-                .background(Circle().fill(Color.accentPrimary.opacity(0.1)))
-            
-            VStack(spacing: 16) {
-                Text("Say it.\nSave it.")
-                    .font(.system(size: 40, weight: .bold, design: .rounded))
-                    .foregroundColor(.textMain)
-                    .multilineTextAlignment(.center)
-                Text("We’ll handle the rest.")
-                    .font(.body)
-                    .foregroundColor(.textSub)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                    .lineSpacing(4)
-            }
-            Spacer()
-            primaryButton(title: "Record Now", icon: "arrow.right") {
-                withAnimation { currentPage = 2 }
-            }
-            .padding(.bottom, 40)
-        }
-    }
-    
-    // MARK: - Phase 2: Voice Demo (Morphing Animation)
+    // MARK: - Phase 1: Voice Demo (Merged with Intro)
     private var voiceDemoPage: some View {
         VStack {
             Spacer()
             
             VStack(spacing: 24) {
                 if voicePhaseState == .idle {
+                    // Icon
+                    CustomMicIcon()
+                        .frame(width: 90, height: 90)
+                        .padding(24)
+                        .background(
+                            Circle()
+                                .fill(Color.accentPrimary.opacity(0.1))
+                                .background(
+                                    Circle()
+                                        .stroke(Color.accentPrimary.opacity(0.2), lineWidth: 1)
+                                )
+                        )
+                        .padding(.bottom, 16)
+
+                    // Intro Header
+                    VStack(spacing: 16) {
+                        Text("Say it.\nSave it.")
+                            .font(.system(size: 40, weight: .bold, design: .rounded))
+                            .foregroundColor(.textMain)
+                            .multilineTextAlignment(.center)
+                        Text("We’ll handle the rest.")
+                            .font(.body)
+                            .foregroundColor(.textSub)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 40)
+                    }
+                    
                     // Initial Prompt
                     VStack(alignment: .leading, spacing: 16) {
                         sectionHeader(title: "Read this aloud")
@@ -544,13 +541,10 @@ struct OnboardingView: View {
                             Divider().background(Color.black.opacity(0.05))
                             
                             // Display AI processed result with proper markdown rendering
-                            RichTextEditorView(
-                                text: .constant(processedResult),
-                                isEditable: false,
+                            JustifiedMarkdownText(
+                                content: processedResult,
                                 font: .systemFont(ofSize: 17),
-                                textColor: UIColor(Color.textMain),
-                                bottomInset: 8,
-                                isScrollEnabled: false
+                                textColor: UIColor(Color.textMain)
                             )
                             .frame(minHeight: 120)
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -594,7 +588,7 @@ struct OnboardingView: View {
                                 .foregroundColor(.textMain)
                                 
                                 Button {
-                                    withAnimation { currentPage = 3 }
+                                    withAnimation { currentPage = 2 }
                                 } label: {
                                     HStack {
                                         Text("Next Steps")
@@ -666,7 +660,7 @@ struct OnboardingView: View {
         }
     }
     
-    // MARK: - Phase 3: Recipes Intro (Wall)
+    // MARK: - Phase 2: Recipes Intro (Wall)
     private var recipesIntroPage: some View {
         ZStack {
             // Recipe Wall Background
@@ -705,14 +699,14 @@ struct OnboardingView: View {
                 }
                 Spacer()
                 primaryButton(title: "Try Recipes", icon: "arrow.right", action: {
-                    withAnimation { currentPage = 4 }
+                    withAnimation { currentPage = 3 }
                 })
                 .padding(.bottom, 40)
             }
         }
     }
     
-    // MARK: - Phase 4: Recipes Demo (Grammar Scan)
+    // MARK: - Phase 3: Recipes Demo (Grammar Scan)
     private var grammarDemoPage: some View {
         VStack {
             Spacer()
@@ -772,7 +766,7 @@ struct OnboardingView: View {
                     }
                     
                     if grammarResult != nil {
-                        Button { withAnimation { currentPage = 5 } } label: {
+                        Button { withAnimation { currentPage = 4 } } label: {
                             HStack { Text("Next: Ask AI"); Image(systemName: "arrow.right") }
                                 .font(.subheadline.weight(.medium))
                                 .foregroundColor(.accentPrimary)
@@ -1106,8 +1100,8 @@ struct OnboardingView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             
-            // Only show Recipes Button Bar on Page 4 (Recipes Demo)
-            if currentPage == 4 {
+            // Only show Recipes Button Bar on Page 3 (Recipes Demo)
+            if currentPage == 3 {
                 // Recipes Button
                 Button { withAnimation { 
                     isRecipesMenuOpen.toggle()

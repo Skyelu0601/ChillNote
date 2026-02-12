@@ -389,8 +389,15 @@ enum LanguageDetection {
 
     static func languagePreservationRule(for text: String) -> String {
         if let tag = dominantLanguageTag(for: text) {
-            return "- Keep the output in the same language as the input (language hint: \(tag)); do NOT translate unless explicitly requested."
+            return """
+            - Keep the output in the same language as the input (language hint: \(tag)).
+            - Do NOT translate unless explicitly requested.
+            """
         }
-        return "- Keep the output in the same language(s) as the input; do NOT translate unless explicitly requested."
+        return """
+        - Keep the output in the same language(s) as the input.
+        - If the input is mixed-language, preserve each segment's original language instead of normalizing to a single language.
+        - Do NOT translate unless explicitly requested.
+        """
     }
 }

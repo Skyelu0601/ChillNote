@@ -37,10 +37,12 @@ struct AIAgentAction: Identifiable {
             \(combinedContent)
             """
             
+            let mergeLanguageRule = mergeLanguageLockRule(for: notes)
             systemInstruction = """
             You are a professional editor.
             Rules:
             \(languageRule)
+            \(mergeLanguageRule)
             - Merge the content into a single, well-structured markdown document.
             - Remove redundancy and improve flow.
             - Use markdown for styling (# Headers, **bold**, - list).
@@ -98,5 +100,19 @@ struct AIAgentAction: Identifiable {
         let note = Note(content: result, userId: userId)
         context.insert(note)
         return note
+    }
+
+    private func mergeLanguageLockRule(for notes: [Note]) -> String {
+        let normalizedTags = notes.compactMap { note in
+            let tag = LanguageDetection.dominantLanguageTag(for: note.content)
+            return tag?.split(separator: "-").first.map(String.init)
+        }
+
+        let uniqueTags = Set(normalizedTags)
+        if uniqueTags.count == 1, let onlyTag = uniqueTags.first {
+            return "- LANGUAGE LOCK: Keep the merged output in \(onlyTag). Do NOT translate unless explicitly requested."
+        }
+
+        return "- LANGUAGE LOCK: If notes contain multiple languages, preserve each language as-is (including code-switching). Do NOT translate unless explicitly requested."
     }
 }

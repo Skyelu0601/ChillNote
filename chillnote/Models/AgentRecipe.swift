@@ -117,6 +117,7 @@ extension AgentRecipe {
             You are merging multiple existing notes from the same user (these notes were not written for a chat). Combine them into one cohesive note while preserving the user’s intent and tone.
 
             - Keep the merged note in the same language as the originals.
+            - If notes are mixed-language, preserve each segment's original language rather than unifying to one language.
             - Remove true duplicates but keep distinct details.
             - Preserve decisions, action items, dates, and numbers.
             - If notes disagree or use different versions, briefly note the discrepancy instead of choosing a side.

@@ -255,7 +255,16 @@ struct HomeView: View {
             onCloseChillRecipes: onCloseChillRecipes,
             onConfirmAskSoftLimit: { showAIChat = true },
             onConfirmRecipeSoftLimit: confirmPendingRecipeOverSoftLimit,
-            onCancelRecipeSoftLimit: { pendingRecipeForConfirmation = nil }
+            onCancelRecipeSoftLimit: { pendingRecipeForConfirmation = nil },
+            onNoteDetailDisappear: { note in
+                if note.deletedAt != nil {
+                    homeViewModel.removeNoteLocally(id: note.id)
+                }
+                Task {
+                    await homeViewModel.reload()
+                    clampSelectionToCurrentFilter()
+                }
+            }
         )
         .onChange(of: speechRecognizer.recordingState) { _, newState in
             if case .error(let msg) = newState {
@@ -1109,9 +1118,7 @@ struct NoteCard: View {
                 } else {
                     // Normal Content State
                     if item.isEmpty {
-                        Text("home.empty.title")
-                            .font(.bodyMedium)
-                            .foregroundColor(.textSub)
+                        EmptyView()
                     } else {
                         Text(item.previewText)
                             .font(.bodyMedium)

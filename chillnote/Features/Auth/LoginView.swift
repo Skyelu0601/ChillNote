@@ -8,6 +8,8 @@ struct LoginView: View {
     @State private var email = ""
     @State private var otpCode = ""
     @State private var sentCode = false
+    @State private var isSendingCode = false
+    @State private var isVerifyingCode = false
     
     var body: some View {
         ZStack {
@@ -155,6 +157,8 @@ struct LoginView: View {
                 
                 Button(action: {
                     Task {
+                        isSendingCode = true
+                        defer { isSendingCode = false }
                         let success = await authService.signInWithEmailOTP(email: email)
                         if success {
                             withAnimation {
@@ -163,7 +167,7 @@ struct LoginView: View {
                         }
                     }
                 }) {
-                    if authService.state == .signingIn && !sentCode {
+                    if isSendingCode {
                          ProgressView()
                              .progressViewStyle(CircularProgressViewStyle(tint: .white))
                              .frame(maxWidth: .infinity)
@@ -180,6 +184,7 @@ struct LoginView: View {
                             .cornerRadius(12)
                     }
                 }
+                .disabled(isSendingCode || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
             } else {
                 VStack(spacing: 8) {
@@ -202,6 +207,8 @@ struct LoginView: View {
                 
                 Button(action: {
                     Task {
+                        isVerifyingCode = true
+                        defer { isVerifyingCode = false }
                         let success = await authService.verifyEmailOTP(email: email, code: otpCode)
                         if !success {
                            // Error is handled in AuthService and published via errorMessage
@@ -209,7 +216,7 @@ struct LoginView: View {
                         }
                     }
                 }) {
-                    if authService.state == .signingIn && sentCode {
+                    if isVerifyingCode {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .frame(maxWidth: .infinity)
@@ -226,6 +233,7 @@ struct LoginView: View {
                             .cornerRadius(12)
                     }
                 }
+                .disabled(isVerifyingCode || otpCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
             }
             

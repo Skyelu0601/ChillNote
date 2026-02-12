@@ -251,24 +251,19 @@ final class AuthService: ObservableObject {
     
     func signInWithEmailOTP(email: String) async -> Bool {
         errorMessage = nil
-        state = .signingIn
         
         do {
             try await supabase.auth.signInWithOTP(email: email)
-            // Reset state to .signedOut so the UI doesn't show a spinner while waiting for user input
-            state = .signedOut
             return true
         } catch {
             print("❌ Email OTP Error: \(error)")
             errorMessage = error.localizedDescription
-            state = .signedOut
             return false
         }
     }
     
     func verifyEmailOTP(email: String, code: String) async -> Bool {
         errorMessage = nil
-        state = .signingIn
         
         do {
             try await supabase.auth.verifyOTP(
@@ -281,7 +276,6 @@ final class AuthService: ObservableObject {
         } catch {
             print("❌ Verify OTP Error: \(error)")
             errorMessage = error.localizedDescription
-            state = .signedOut
             return false
         }
     }

@@ -157,6 +157,11 @@ final class HomeViewModel: ObservableObject {
         items.first(where: { $0.id == id })
     }
 
+    func removeNoteLocally(id: UUID) {
+        items.removeAll { $0.id == id }
+        totalCount = max(0, totalCount - 1)
+    }
+
     private func resetPagination(keepItems: Bool = false) {
         cursor = nil
         hasMore = true

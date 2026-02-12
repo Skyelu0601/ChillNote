@@ -93,6 +93,7 @@ struct HomeBodyView: View {
     let onConfirmAskSoftLimit: () -> Void
     let onConfirmRecipeSoftLimit: () -> Void
     let onCancelRecipeSoftLimit: () -> Void
+    let onNoteDetailDisappear: (Note) -> Void
     
     var body: some View {
         NavigationStack(path: $navigationPath) {
@@ -318,6 +319,9 @@ struct HomeBodyView: View {
             .navigationDestination(for: Note.self) { note in
                 NoteDetailView(note: note)
                     .environmentObject(speechRecognizer)
+                    .onDisappear {
+                        onNoteDetailDisappear(note)
+                    }
             }
         }
     }
@@ -536,12 +540,16 @@ struct HomeNotesListView: View {
     
     var body: some View {
         if cachedVisibleNotes.isEmpty {
-            Text(isTrashSelected ? "No deleted notes yet. Notes stay for 30 days." : "home.empty.title")
-                .font(.bodyMedium)
-                .foregroundColor(.textSub)
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            if isTrashSelected {
+                Text("No deleted notes yet. Notes stay for 30 days.")
+                    .font(.bodyMedium)
+                    .foregroundColor(.textSub)
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                EmptyView()
+            }
         } else {
             LazyVStack(spacing: 16) {
                 ForEach(cachedVisibleNotes) { note in
