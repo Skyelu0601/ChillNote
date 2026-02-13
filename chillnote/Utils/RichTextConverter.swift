@@ -229,7 +229,7 @@ struct RichTextConverter {
         result.append(NSAttributedString(string: "│ ", attributes: barAttrs))
         
         // Content
-        let quoteFont = UIFont.italicSystemFont(ofSize: baseFont.pointSize)
+        let quoteFont = UIFont.systemFont(ofSize: baseFont.pointSize)
         // Note: Inline formatting might override these info, but we apply base first
         let content = parseInlineFormatting(text, baseFont: quoteFont, textColor: UIColor.secondaryLabel, paragraphStyle: style)
         // Re-apply background to ensure it covers
@@ -279,13 +279,10 @@ struct RichTextConverter {
                 continue
             }
             
-            // Italic *
+            // Legacy italic markdown *text* -> plain text (italic feature removed)
             if remaining.hasPrefix("*"), !remaining.hasPrefix("**"), let end = text.range(of: "*", range: text.index(currentIndex, offsetBy: 1)..<text.endIndex)?.lowerBound {
                 let content = String(text[text.index(currentIndex, offsetBy: 1)..<end])
-                let italicFont = applyTrait(.traitItalic, to: baseFont)
-                var attrs = baseAttrs
-                attrs[.font] = italicFont
-                result.append(NSAttributedString(string: content, attributes: attrs))
+                result.append(NSAttributedString(string: content, attributes: baseAttrs))
                 currentIndex = text.index(end, offsetBy: 1)
                 continue
             }
@@ -418,14 +415,9 @@ struct RichTextConverter {
             
             if let font = attrs[.font] as? UIFont {
                 let isBold = font.fontDescriptor.symbolicTraits.contains(.traitBold)
-                let isItalic = font.fontDescriptor.symbolicTraits.contains(.traitItalic)
                 
-                if isBold && isItalic && !ignoreBold {
-                    chunk = "***\(chunk)***"
-                } else if isBold && !ignoreBold {
+                if isBold && !ignoreBold {
                      chunk = "**\(chunk)**"
-                } else if isItalic {
-                     chunk = "*\(chunk)*"
                 }
             }
             

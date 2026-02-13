@@ -20,6 +20,10 @@ model User {
   notes     Note[]
   tags      Tag[]
   dailyUsages DailyUsage[]
+  inviteCode InviteCode?
+  sentInvites Invite[] @relation("InviteInviter")
+  receivedInvite Invite? @relation("InviteInvitee")
+  membershipGrants MembershipGrantLedger[]
 }
 
 model DailyUsage {
@@ -94,4 +98,58 @@ model Waitlist {
   email     String   @unique
   createdAt DateTime @default(now())
   source    String?  // e.g., "twitter", "website"
+}
+
+model InviteCode {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  code      String   @unique
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invites Invite[]
+}
+
+model Invite {
+  id           String   @id @default(cuid())
+  inviterId    String
+  inviteeId    String   @unique
+  inviteCodeId String
+  inviteCode   String
+  status       String
+  rewardDays   Int      @default(7)
+  boundAt      DateTime @default(now())
+  rewardedAt   DateTime?
+  rejectReason String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  inviter       User                  @relation("InviteInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee       User                  @relation("InviteInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+  inviteCodeRef InviteCode            @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
+  grants        MembershipGrantLedger[]
+
+  @@index([inviterId, rewardedAt])
+  @@index([inviteCode])
+}
+
+model MembershipGrantLedger {
+  id              Int      @id @default(autoincrement())
+  userId          String
+  inviteId        String
+  role            String
+  days            Int
+  beforeTier      String
+  beforeExpiresAt DateTime?
+  afterTier       String
+  afterExpiresAt  DateTime?
+  createdAt       DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  invite Invite @relation(fields: [inviteId], references: [id], onDelete: Cascade)
+
+  @@unique([inviteId, role])
+  @@index([userId, createdAt])
 }

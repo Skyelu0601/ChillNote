@@ -9,13 +9,21 @@ struct SubscriptionView: View {
     @State private var showContent = false
     @State private var isAnnual: Bool = true // Default to Annual
     
+    private var yearlyProduct: Product? {
+        storeService.availableProducts.first(where: { $0.subscription?.subscriptionPeriod.unit == .year })
+        ?? storeService.availableProducts.first(where: { $0.id.lowercased().contains("year") })
+    }
+
+    private var monthlyProduct: Product? {
+        storeService.availableProducts.first(where: { $0.subscription?.subscriptionPeriod.unit == .month })
+        ?? storeService.availableProducts.first(where: { $0.id.lowercased().contains("month") })
+    }
+
     var selectedProduct: Product? {
-        // Simple logic to toggle between year and month
         if isAnnual {
-            return storeService.availableProducts.first(where: { $0.id.lowercased().contains("year") })
-        } else {
-            return storeService.availableProducts.first(where: { !$0.id.lowercased().contains("year") })
+            return yearlyProduct ?? monthlyProduct
         }
+        return monthlyProduct ?? yearlyProduct
     }
     
     var body: some View {
@@ -100,6 +108,9 @@ struct SubscriptionView: View {
                     showContent = true
                 }
             }
+            .task {
+                await storeService.refreshProducts()
+            }
         }
     }
     
@@ -137,18 +148,11 @@ struct SubscriptionView: View {
     
     private var heroSection: some View {
         VStack(spacing: 20) {
-            // Logo / Image
-            ZStack {
-                Circle()
-                    .fill(Color.white)
-                    .frame(width: 88, height: 88)
-                    .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 4)
-                
-                Image("chillohead_touming")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 64, height: 64)
-            }
+            Image("coffee")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 106, height: 106)
+                .offset(y: 8)
             
             VStack(spacing: 8) {
                 Text("Upgrade to Pro")
@@ -208,13 +212,32 @@ struct SubscriptionView: View {
                 ProductHeroCard(product: product, isAnnual: isAnnual)
                     .id(product.id)
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
-            } else if storeService.availableProducts.isEmpty && storeService.errorMessage == nil {
-                 ProgressView()
-                     .padding()
-            } else if let error = storeService.errorMessage {
-                Text("Error: \(error)")
-                    .font(.caption)
-                    .foregroundColor(.red)
+            } else if storeService.isLoadingProducts {
+                ProgressView("Loading prices...")
+                    .padding()
+            } else if let error = storeService.productsErrorMessage {
+                VStack(spacing: 10) {
+                    Text(error)
+                        .font(.caption)
+                        .foregroundColor(.red)
+                        .multilineTextAlignment(.center)
+                    Button("Retry") {
+                        Task { await storeService.refreshProducts() }
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.accentPrimary)
+                }
+            } else {
+                VStack(spacing: 10) {
+                    Text("No subscription product is currently available.")
+                        .font(.caption)
+                        .foregroundColor(.textSub)
+                    Button("Retry") {
+                        Task { await storeService.refreshProducts() }
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundColor(.accentPrimary)
+                }
             }
         }
     }

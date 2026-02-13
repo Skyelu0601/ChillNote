@@ -125,9 +125,10 @@ struct LoginView: View {
                 Spacer()
                 
                 // MARK: - Terms
-                Text("By continuing, you agree to our Terms & Privacy Policy.")
+                Text(.init("By continuing, you agree to our [Terms](https://www.chillnoteai.com/terms.html) & [Privacy Policy](https://www.chillnoteai.com/privacy.html)."))
                     .font(.caption)
                     .foregroundColor(.textSub.opacity(0.8))
+                    .tint(.textSub.opacity(0.95))
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 40)
                     .padding(.bottom, 20)

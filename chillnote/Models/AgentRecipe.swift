@@ -74,7 +74,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
 enum AgentRecipeCategory: String, CaseIterable, Identifiable, Codable {
     case organize = "Organize"
     case publish = "Media"
-    case care = "Care"
     
     var id: String { rawValue }
     
@@ -82,7 +81,6 @@ enum AgentRecipeCategory: String, CaseIterable, Identifiable, Codable {
         switch self {
         case .organize: return "tray.full"
         case .publish: return "megaphone"
-        case .care: return "heart"
         }
     }
 }
@@ -212,7 +210,7 @@ extension AgentRecipe {
 
             Output only the checklist.
             """,
-            category: .care
+            category: .organize
         ),
         // MARK: - Media
         AgentRecipe(

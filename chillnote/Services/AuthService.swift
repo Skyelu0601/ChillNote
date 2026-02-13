@@ -98,8 +98,10 @@ final class AuthService: ObservableObject {
             self.state = .signedIn(userId: session.user.id.uuidString)
             self.currentUser = session.user
             UserDefaults.standard.set(session.accessToken, forKey: "syncAuthToken")
+            await StoreService.shared.refreshSubscriptionStatus()
         } catch {
             self.state = .signedOut
+            StoreService.shared.currentTier = .free
         }
     }
     
@@ -186,6 +188,7 @@ final class AuthService: ObservableObject {
             state = .signedOut
             currentUser = nil
             UserDefaults.standard.removeObject(forKey: "syncAuthToken")
+            StoreService.shared.currentTier = .free
         }
     }
     

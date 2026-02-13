@@ -174,6 +174,11 @@ struct RecordingOverlayView: View {
             if speechRecognizer.isRecording {
                 speechRecognizer.stopRecording(reason: .cancelled)
             }
+            // If overlay is dismissed while in error state, preserve the file
+            // for recovery and clear the error so it doesn't leak to other views.
+            if case .error = speechRecognizer.recordingState {
+                speechRecognizer.dismissError()
+            }
         }
         .onChange(of: speechRecognizer.permissionGranted) { _, newValue in
             if newValue {

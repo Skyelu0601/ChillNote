@@ -21,7 +21,7 @@ struct UpgradeBottomSheet: View {
             
             VStack(spacing: 20) {
                 // Icon / Header
-                Image("chillohead_touming")
+                Image("coffee")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 110, height: 110)

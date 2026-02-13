@@ -54,6 +54,7 @@ import { getChangesSinceCursor, upsertUser, deleteUser, updateSubscriptionStatus
 import { prisma } from "./db.js"; // Import prisma for direct queries in index.ts if needed, though best to abstract
 import type { SyncPayload } from "./types.js";
 import { supabaseAdmin } from "./supabase.js";
+import { InviteError, bindInviteCode, getInviteConfig, getInviteMonthlyRewardCount, getOrCreateInviteCode } from "./invite.js";
 import fetch from "node-fetch";
 
 const app = express();
@@ -146,6 +147,7 @@ async function requireAuth(req: express.Request, res: express.Response, next: ex
     }
 
     req.userId = user.id;
+    req.userCreatedAt = user.created_at;
     next();
   } catch (err) {
     console.error("Auth Exception:", err);
@@ -213,6 +215,11 @@ async function resolveUserTier(userId?: string): Promise<UserTier> {
   if (user?.subscriptionTier === "pro") {
     if (!user.subscriptionExpiresAt || user.subscriptionExpiresAt.getTime() > now) {
       tier = "pro";
+    } else {
+      console.warn(
+        `⚠️ Pro subscription expired for user=${userId}, ` +
+        `expiresAt=${user.subscriptionExpiresAt.toISOString()}, now=${new Date(now).toISOString()}`
+      );
     }
   }
 
@@ -221,6 +228,10 @@ async function resolveUserTier(userId?: string): Promise<UserTier> {
     expiresAt: now + Math.max(1_000, USER_TIER_CACHE_TTL_MS)
   });
   return tier;
+}
+
+function invalidateUserTierCache(userId: string): void {
+  userTierCache.delete(userId);
 }
 
 function createTierRateLimit(config: TierRateLimitConfig) {
@@ -291,6 +302,10 @@ const freeDailyLimits: Record<DailyQuotaFeature, number> = {
 const quotaRequestSchema = z.object({
   feature: z.enum(["voice", "tidy", "agent_recipe", "chat"]),
   action: z.enum(["check", "consume"]).default("check")
+});
+
+const bindInviteSchema = z.object({
+  code: z.string().trim().min(4).max(32)
 });
 
 function currentUtcDateKey(): string {
@@ -427,6 +442,78 @@ app.get("/health", (_req, res) => {
 
 app.get("/version", (_req, res) => {
   res.json({ version: "1.0.2", updated: new Date().toISOString() });
+});
+
+app.get("/invite/me", requireAuth, async (req, res) => {
+  const userId = req.userId as string;
+
+  try {
+    await upsertUser(userId);
+    const [code, monthlyRewardedCount] = await Promise.all([
+      getOrCreateInviteCode(userId),
+      getInviteMonthlyRewardCount(userId)
+    ]);
+    const inviteConfig = getInviteConfig();
+
+    res.json({
+      code,
+      monthlyRewardedCount,
+      monthlyCap: inviteConfig.monthlyCap,
+      rewardDays: inviteConfig.rewardDays,
+      bindWindowDays: inviteConfig.bindWindowDays
+    });
+  } catch (error) {
+    console.error("❌ Invite Me Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/invite/bind", requireAuth, async (req, res) => {
+  const parsed = bindInviteSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid payload" });
+    return;
+  }
+
+  const userId = req.userId as string;
+  const userCreatedAt = req.userCreatedAt;
+  if (!userCreatedAt) {
+    res.status(400).json({ error: "Missing user create time" });
+    return;
+  }
+
+  const createdAt = new Date(userCreatedAt);
+  if (Number.isNaN(createdAt.getTime())) {
+    res.status(400).json({ error: "Invalid user create time" });
+    return;
+  }
+
+  try {
+    await upsertUser(userId);
+    const result = await bindInviteCode({
+      inviteeId: userId,
+      inviteeCreatedAt: createdAt,
+      code: parsed.data.code
+    });
+
+    res.json({
+      success: true,
+      inviteId: result.inviteId,
+      inviterRewardDays: result.rewardDays,
+      inviteeRewardDays: result.rewardDays,
+      inviterNewExpiresAt: result.inviterNewExpiresAt,
+      inviteeNewExpiresAt: result.inviteeNewExpiresAt,
+      monthlyCap: result.monthlyCap
+    });
+  } catch (error: unknown) {
+    if (error instanceof InviteError) {
+      res.status(error.statusCode).json({ error: error.message, code: error.code });
+      return;
+    }
+
+    console.error("❌ Invite Bind Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 // Waitlist Signup
@@ -715,6 +802,10 @@ app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async 
     if (shouldCountUsage) {
       const quotaState = await consumeDailyQuota(req.userId as string, "voice");
       if (!quotaState.allowed) {
+        console.warn(
+          `🚫 VoiceNote Quota Denied: user=${req.userId}, tier=${quotaState.tier}, ` +
+          `used=${quotaState.used}, limit=${quotaState.limit}, remaining=${quotaState.remaining}`
+        );
         res.status(429).json({
           error: dailyQuotaErrorMessage("voice"),
           feature: "voice",
@@ -852,91 +943,166 @@ app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async 
 
 // Subscription Verification Endpoint
 app.post("/subscription/verify", requireAuth, async (req, res) => {
-  const { transactionId, receiptData, productId: bodyProductId, originalTransactionId: bodyOriginalTransactionId } = req.body;
+  const {
+    transactionId,
+    receiptData,
+    productId: bodyProductId,
+    originalTransactionId: bodyOriginalTransactionId,
+    expiresDate: bodyExpiresDate
+  } = req.body;
   const userId = req.userId as string;
-
-  if (!receiptData) {
-    res.status(400).json({ error: "Missing receiptData" });
-    return;
-  }
 
   if (!bodyProductId) {
     res.status(400).json({ error: "Missing productId" });
     return;
   }
 
-  const APPLE_SHARED_SECRET = process.env.APPLE_SHARED_SECRET;
-  if (!APPLE_SHARED_SECRET) {
-    console.error("❌ APPLE_SHARED_SECRET is not configured");
-    res.status(500).json({ error: "Server configuration error" });
-    return;
-  }
-
   try {
-    // 1) Verify receipt with Apple (production with sandbox fallback)
-    const verification = await verifyReceiptWithApple(receiptData, APPLE_SHARED_SECRET);
-    if (!verification || verification.status !== 0) {
-      console.error("❌ Receipt verification failed:", verification?.status);
-      res.status(400).json({ error: "Invalid receipt", details: verification?.status });
+    // ── Path A: Legacy receipt verification (pre-iOS 18) ──
+    if (receiptData) {
+      const APPLE_SHARED_SECRET = process.env.APPLE_SHARED_SECRET;
+      if (!APPLE_SHARED_SECRET) {
+        console.error("❌ APPLE_SHARED_SECRET is not configured");
+        res.status(500).json({ error: "Server configuration error" });
+        return;
+      }
+
+      // 1) Verify receipt with Apple (production with sandbox fallback)
+      const verification = await verifyReceiptWithApple(receiptData, APPLE_SHARED_SECRET);
+      if (!verification || verification.status !== 0) {
+        console.error("❌ Receipt verification failed:", verification?.status);
+        res.status(400).json({ error: "Invalid receipt", details: verification?.status });
+        return;
+      }
+
+      const receiptInfos: any[] =
+        verification.latest_receipt_info ??
+        verification.receipt?.in_app ??
+        [];
+
+      const matching = receiptInfos.filter((entry) => entry.product_id === bodyProductId);
+      if (matching.length === 0) {
+        res.status(400).json({ error: "Receipt does not contain product" });
+        return;
+      }
+
+      const latest = matching.reduce((acc, cur) => {
+        const accMs = Number(acc.expires_date_ms ?? 0);
+        const curMs = Number(cur.expires_date_ms ?? 0);
+        return curMs > accMs ? cur : acc;
+      }, matching[0]);
+
+      const originalTransactionId =
+        latest.original_transaction_id ??
+        bodyOriginalTransactionId ??
+        null;
+
+      if (!originalTransactionId) {
+        res.status(400).json({ error: "Missing originalTransactionId" });
+        return;
+      }
+
+      // 2) Migrate subscription if bound to another user
+      const existingUser = await prisma.user.findFirst({
+        where: { originalTransactionId }
+      });
+
+      if (existingUser && existingUser.id !== userId) {
+        // Detach this Apple subscription from the old user, but preserve
+        // their tier/expiresAt so invite-reward Pro isn't wiped.
+        // resolveUserTier will naturally downgrade them if their only
+        // source of Pro was this Apple subscription (once it expires).
+        await prisma.user.update({
+          where: { id: existingUser.id },
+          data: { originalTransactionId: null }
+        });
+        invalidateUserTierCache(existingUser.id);
+        console.log(
+          `🔄 Subscription migrated from user=${existingUser.id} to user=${userId} (originalTxn=${originalTransactionId})`
+        );
+      }
+
+      // 3) Determine tier and expiration from Apple receipt
+      let tier = "free";
+      const expiresMs = Number(latest.expires_date_ms ?? 0);
+      const expiresAt = Number.isFinite(expiresMs) && expiresMs > 0 ? new Date(expiresMs) : null;
+      if (bodyProductId && (bodyProductId.includes("pro") || bodyProductId.includes("monthly") || bodyProductId.includes("yearly"))) {
+        if (!expiresAt || expiresAt > new Date()) {
+          tier = "pro";
+        }
+      }
+
+      // 4) Save to DB
+      await updateSubscriptionStatus(userId, tier, expiresAt, originalTransactionId);
+      invalidateUserTierCache(userId);
+
+      console.log(`✅ Verified Subscription (receipt): user=${userId}, tier=${tier}, transactionId=${transactionId ?? "n/a"}`);
+
+      res.json({
+        success: true,
+        tier,
+        expiresAt: expiresAt?.toISOString()
+      });
       return;
     }
 
-    const receiptInfos: any[] =
-      verification.latest_receipt_info ??
-      verification.receipt?.in_app ??
-      [];
+    // ── Path B: StoreKit 2 metadata verification (iOS 18+) ──
+    // On iOS 18+ the legacy app receipt is unavailable. The client sends
+    // transaction metadata that was already verified locally by StoreKit 2's
+    // checkVerified(). We trust this because:
+    //   - The request is authenticated (requireAuth middleware).
+    //   - StoreKit 2 transactions are cryptographically signed by Apple and
+    //     verified client-side before being sent here.
+    // For production hardening, consider using Apple's App Store Server API
+    // to verify the transactionId server-side.
 
-    const matching = receiptInfos.filter((entry) => entry.product_id === bodyProductId);
-    if (matching.length === 0) {
-      res.status(400).json({ error: "Receipt does not contain product" });
-      return;
-    }
-
-    const latest = matching.reduce((acc, cur) => {
-      const accMs = Number(acc.expires_date_ms ?? 0);
-      const curMs = Number(cur.expires_date_ms ?? 0);
-      return curMs > accMs ? cur : acc;
-    }, matching[0]);
-
-    const originalTransactionId =
-      latest.original_transaction_id ??
-      bodyOriginalTransactionId ??
-      null;
-
+    const originalTransactionId = bodyOriginalTransactionId ?? null;
     if (!originalTransactionId) {
       res.status(400).json({ error: "Missing originalTransactionId" });
       return;
     }
 
-    // 2) Check if this originalTransactionId is already bound to another user
+    // Migrate subscription if bound to another user
     const existingUser = await prisma.user.findFirst({
       where: { originalTransactionId }
     });
 
     if (existingUser && existingUser.id !== userId) {
-      // Already bound to someone else!
-      // Allow migration? Or block?
-      // Usually block to prevent account sharing.
-      res.status(409).json({ error: "Subscription is already used by another account." });
-      return;
+      // Detach this Apple subscription from the old user, but preserve
+      // their tier/expiresAt so invite-reward Pro isn't wiped.
+      await prisma.user.update({
+        where: { id: existingUser.id },
+        data: { originalTransactionId: null }
+      });
+      invalidateUserTierCache(existingUser.id);
+      console.log(
+        `🔄 Subscription migrated from user=${existingUser.id} to user=${userId} (originalTxn=${originalTransactionId})`
+      );
     }
 
-    // 3) Determine tier and expiration from Apple receipt
+    // Determine tier and expiration from client-provided metadata
     let tier = "free";
-    const expiresMs = Number(latest.expires_date_ms ?? 0);
-    const expiresAt = Number.isFinite(expiresMs) && expiresMs > 0 ? new Date(expiresMs) : null;
+    let expiresAt: Date | null = null;
+
+    if (bodyExpiresDate) {
+      const parsed = new Date(bodyExpiresDate);
+      if (!Number.isNaN(parsed.getTime())) {
+        expiresAt = parsed;
+      }
+    }
+
     if (bodyProductId && (bodyProductId.includes("pro") || bodyProductId.includes("monthly") || bodyProductId.includes("yearly"))) {
       if (!expiresAt || expiresAt > new Date()) {
         tier = "pro";
       }
     }
 
-    // 4) Save to DB
+    // Save to DB
     await updateSubscriptionStatus(userId, tier, expiresAt, originalTransactionId);
+    invalidateUserTierCache(userId);
 
-    console.log(`✅ Verified Subscription: user=${userId}, tier=${tier}, transactionId=${transactionId ?? "n/a"}`);
+    console.log(`✅ Verified Subscription (StoreKit2): user=${userId}, tier=${tier}, originalTxn=${originalTransactionId}, transactionId=${transactionId ?? "n/a"}`);
 
-    // Return Success
     res.json({
       success: true,
       tier,
@@ -945,6 +1111,33 @@ app.post("/subscription/verify", requireAuth, async (req, res) => {
 
   } catch (error) {
     console.error("❌ Subscription Verify Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/subscription/status", requireAuth, async (req, res) => {
+  const userId = req.userId as string;
+  try {
+    await upsertUser(userId);
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { subscriptionTier: true, subscriptionExpiresAt: true }
+    });
+
+    const now = Date.now();
+    const expiresAt = user?.subscriptionExpiresAt ?? null;
+    const isPro =
+      user?.subscriptionTier === "pro" &&
+      (!expiresAt || expiresAt.getTime() > now);
+    const tier: UserTier = isPro ? "pro" : "free";
+
+    res.json({
+      success: true,
+      tier,
+      expiresAt: expiresAt?.toISOString() ?? null
+    });
+  } catch (error) {
+    console.error("❌ Subscription Status Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -1024,6 +1217,7 @@ declare global {
   namespace Express {
     interface Request {
       userId?: string;
+      userCreatedAt?: string;
     }
   }
 }

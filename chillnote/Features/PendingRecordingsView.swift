@@ -1,5 +1,61 @@
 import SwiftUI
 import SwiftData
+import AVFoundation
+
+@MainActor
+final class PendingRecordingPlaybackController: NSObject, ObservableObject, AVAudioPlayerDelegate {
+    @Published private(set) var playingPath: String?
+
+    private var player: AVAudioPlayer?
+
+    func togglePlayback(fileURL: URL) throws {
+        let path = fileURL.path
+        if playingPath == path {
+            stop()
+            return
+        }
+
+        stop()
+
+        let player = try AVAudioPlayer(contentsOf: fileURL)
+        player.delegate = self
+        guard player.prepareToPlay() else {
+            throw NSError(
+                domain: "PendingRecordingPlaybackController",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: "Unable to prepare recording playback."]
+            )
+        }
+        guard player.play() else {
+            throw NSError(
+                domain: "PendingRecordingPlaybackController",
+                code: 2,
+                userInfo: [NSLocalizedDescriptionKey: "Unable to start recording playback."]
+            )
+        }
+
+        self.player = player
+        playingPath = path
+    }
+
+    func stop() {
+        player?.stop()
+        player = nil
+        playingPath = nil
+    }
+
+    func stopIfPlaying(path: String) {
+        guard playingPath == path else { return }
+        stop()
+    }
+
+    nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) {
+        Task { @MainActor [weak self] in
+            self?.player = nil
+            self?.playingPath = nil
+        }
+    }
+}
 
 struct PendingRecordingsView: View {
     @Environment(\.modelContext) private var modelContext
@@ -8,6 +64,7 @@ struct PendingRecordingsView: View {
     @State private var processingPaths: Set<String> = []
     @State private var alertMessage: String?
     @State private var showAlert = false
+    @StateObject private var playbackController = PendingRecordingPlaybackController()
 
     private var currentUserId: String {
         authService.currentUserId ?? "unknown"
@@ -39,6 +96,9 @@ struct PendingRecordingsView: View {
         .onAppear {
             refreshRecordings()
         }
+        .onDisappear {
+            playbackController.stop()
+        }
         .alert("Transcription Failed", isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -61,6 +121,7 @@ struct PendingRecordingsView: View {
 
     private func recordingRow(_ recording: PendingRecording) -> some View {
         let isProcessing = processingPaths.contains(recording.fileURL.path)
+        let isPlaying = playbackController.playingPath == recording.fileURL.path
 
         return VStack(alignment: .leading, spacing: 10) {
             HStack(spacing: 12) {
@@ -84,6 +145,17 @@ struct PendingRecordingsView: View {
             }
 
             HStack(spacing: 12) {
+                Button(action: { togglePlayback(recording) }) {
+                    Text(isPlaying ? "Pause" : "Play")
+                        .font(.bodySmall)
+                        .foregroundColor(.textMain)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 10)
+                        .background(Color.gray.opacity(0.12))
+                        .cornerRadius(10)
+                }
+                .buttonStyle(.plain)
+
                 Button(action: { deleteRecording(recording) }) {
                     Text("Delete")
                         .font(.bodySmall)
@@ -125,29 +197,48 @@ struct PendingRecordingsView: View {
     }
 
     private func deleteRecording(_ recording: PendingRecording) {
+        playbackController.stopIfPlaying(path: recording.fileURL.path)
         RecordingFileManager.shared.cancelRecording(fileURL: recording.fileURL)
         recordings.removeAll { $0.id == recording.id }
+    }
+
+    private func togglePlayback(_ recording: PendingRecording) {
+        do {
+            try playbackController.togglePlayback(fileURL: recording.fileURL)
+        } catch {
+            alertMessage = error.localizedDescription
+            showAlert = true
+        }
     }
 
     private func transcribeRecording(_ recording: PendingRecording) {
         let path = recording.fileURL.path
         guard !processingPaths.contains(path) else { return }
 
+        playbackController.stopIfPlaying(path: path)
         processingPaths.insert(path)
         Task {
             do {
                 let text = try await GeminiService.shared.transcribeAudio(
                     audioFileURL: recording.fileURL
                 )
+                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else {
+                    throw NSError(
+                        domain: "PendingRecordingsView",
+                        code: 3,
+                        userInfo: [NSLocalizedDescriptionKey: "Transcription result was empty. Please retry."]
+                    )
+                }
 
                 await MainActor.run {
-                    let note = Note(content: "", userId: currentUserId)
+                    let note = Note(content: trimmed, userId: currentUserId)
                     modelContext.insert(note)
                     try? modelContext.save()
                     VoiceProcessingService.shared.processingStates[note.id] = .processing(stage: .refining)
 
                     Task {
-                        await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: text, context: modelContext)
+                        await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: trimmed, context: modelContext)
                     }
 
                     RecordingFileManager.shared.completeRecording(fileURL: recording.fileURL)

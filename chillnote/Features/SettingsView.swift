@@ -334,12 +334,7 @@ struct SettingsView: View {
 
             Divider().padding(.leading, 56)
 
-            Button(action: openAppSettings) {
-                SettingItem(icon: "globe", iconColor: .accentPrimary, label: "settings.language")
-            }
-            .buttonStyle(.plain)
 
-            Divider().padding(.leading, 56)
             
             Button(action: openAppSettings) {
                 SettingItem(icon: "shield", iconColor: .accentPrimary, label: "Permissions")
@@ -359,8 +354,7 @@ struct SettingsView: View {
             .buttonStyle(.plain)
             
             Divider().padding(.leading, 56)
-            
-            Divider().padding(.leading, 56)
+
             
             Button(action: openPrivacyPolicy) {
                 SettingItem(icon: "hand.raised", iconColor: .accentPrimary, label: "Privacy Policy")
@@ -640,6 +634,8 @@ private struct VoiceLanguagePreferenceSheet: View {
         }
     }
 }
+
+
 
 private struct ExportAllNotesSheet: View {
     @Environment(\.dismiss) private var dismiss

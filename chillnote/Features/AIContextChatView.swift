@@ -301,7 +301,7 @@ struct AIContextChatView: View {
             Spacer()
             
             VStack(spacing: 12) {
-                Image("chillohead_touming")
+                Image("askchillo")
                     .resizable()
                     .scaledToFit()
                     .frame(width: 140, height: 140)

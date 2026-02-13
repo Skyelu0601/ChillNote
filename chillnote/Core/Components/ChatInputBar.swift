@@ -140,10 +140,6 @@ struct ChatInputBar: View {
             if speechRecognizer.isRecording {
                 recordingGlassCapsule
                     .transition(.asymmetric(insertion: .scale(scale: 0.9).combined(with: .opacity), removal: .opacity))
-            } else if isErrorState() {
-                if case .error(let message) = speechRecognizer.recordingState {
-                    errorView(message: message)
-                }
             } else {
                 idleGlassCapsule
             }
@@ -151,11 +147,6 @@ struct ChatInputBar: View {
         .padding(.top, 4)
         .frame(maxWidth: .infinity)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: speechRecognizer.recordingState)
-    }
-
-    private func isErrorState() -> Bool {
-        if case .error = speechRecognizer.recordingState { return true }
-        return false
     }
 
     private var idleGlassCapsule: some View {
@@ -349,28 +340,7 @@ struct ChatInputBar: View {
         }
     }
 
-    private func errorView(message: String) -> some View {
-        HStack {
-            Text(message)
-                .font(.caption)
-                .foregroundColor(.red)
-                .lineLimit(1)
 
-            Button("Retry") {
-                if speechRecognizer.getCurrentAudioFileURL() != nil {
-                    speechRecognizer.retryTranscription()
-                } else {
-                    tryStartRecordingWithQuotaCheck()
-                }
-            }
-            .font(.caption)
-            .fontWeight(.bold)
-            .foregroundColor(.accentPrimary)
-            .buttonStyle(.bouncy)
-        }
-        .frame(maxWidth: .infinity)
-        .frame(height: 44)
-    }
 
     private func tryStartRecordingWithQuotaCheck() {
         guard enforceVoiceQuota else {

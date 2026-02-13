@@ -17,6 +17,7 @@ struct RichTextEditorView: UIViewRepresentable {
         textView.delegate = context.coordinator
         textView.backgroundColor = .clear
         textView.isEditable = isEditable
+        textView.allowsEditingTextAttributes = true
         textView.isScrollEnabled = isScrollEnabled
         
         // Set default font and text color - ensures cursor has correct height when empty
@@ -78,12 +79,21 @@ struct RichTextEditorView: UIViewRepresentable {
         var parent: RichTextEditorView
         // Cache to prevent circular updates
         var lastKnownMarkdown: String = ""
+        private var pendingInputStyle: PendingInputStyle?
+
+        private struct PendingInputStyle {
+            let range: NSRange
+            let replacementText: String
+            let oldLength: Int
+            let typingAttributes: [NSAttributedString.Key: Any]
+        }
         
         init(_ parent: RichTextEditorView) {
             self.parent = parent
         }
         
         func textViewDidChange(_ textView: UITextView) {
+            applyPendingInputStyleIfNeeded(in: textView)
             let markdown = RichTextConverter.attributedStringToMarkdown(textView.attributedText)
             lastKnownMarkdown = markdown
             parent.text = markdown
@@ -93,6 +103,7 @@ struct RichTextEditorView: UIViewRepresentable {
         }
 
         func textViewDidChangeSelection(_ textView: UITextView) {
+            normalizeTypingAttributesForListPrefixIfNeeded(in: textView)
             if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
                 updateToolbarState(in: textView, toolbar: toolbar)
             }
@@ -120,8 +131,46 @@ struct RichTextEditorView: UIViewRepresentable {
                     return false
                 }
             }
+
+            // Keep a snapshot of typing attributes so IME commit text can inherit style reliably.
+            if !text.isEmpty {
+                pendingInputStyle = PendingInputStyle(
+                    range: range,
+                    replacementText: text,
+                    oldLength: textView.textStorage.length,
+                    typingAttributes: textView.typingAttributes
+                )
+            } else {
+                pendingInputStyle = nil
+            }
             
             return true
+        }
+
+        private func applyPendingInputStyleIfNeeded(in textView: UITextView) {
+            guard let pending = pendingInputStyle else { return }
+            guard textView.markedTextRange == nil else { return } // wait until IME composition commits
+
+            defer { pendingInputStyle = nil }
+
+            let insertLength = (pending.replacementText as NSString).length
+            guard insertLength > 0 else { return }
+
+            let expectedLength = pending.oldLength - pending.range.length + insertLength
+            guard textView.textStorage.length == expectedLength else { return }
+
+            let applyRange = NSRange(location: pending.range.location, length: insertLength)
+            guard applyRange.location >= 0,
+                  applyRange.upperBound <= textView.textStorage.length else { return }
+
+            // Only enforce when typing style carries inline emphasis.
+            let wantsBold = (pending.typingAttributes[.font] as? UIFont)?
+                .fontDescriptor
+                .symbolicTraits
+                .contains(.traitBold) ?? false
+            guard wantsBold else { return }
+
+            textView.textStorage.addAttributes(pending.typingAttributes, range: applyRange)
         }
         
         private func handleBackspace(_ textView: UITextView, range: NSRange) -> Bool {
@@ -147,6 +196,8 @@ struct RichTextEditorView: UIViewRepresentable {
                         textView.textStorage.beginEditing()
                         textView.textStorage.replaceCharacters(in: absolutePrefixRange, with: "")
                         textView.textStorage.endEditing()
+                        textView.selectedRange = NSRange(location: lineRange.location, length: 0)
+                        applyDefaultTypingAttributes(to: textView)
                         textViewDidChange(textView)
                         return true // handled manually; block original mutation
                     }
@@ -162,6 +213,8 @@ struct RichTextEditorView: UIViewRepresentable {
                      textView.textStorage.beginEditing()
                      textView.textStorage.replaceCharacters(in: absolutePrefixRange, with: "")
                      textView.textStorage.endEditing()
+                     textView.selectedRange = NSRange(location: lineRange.location, length: 0)
+                     applyDefaultTypingAttributes(to: textView)
                      textViewDidChange(textView)
                      return true // handled manually; block original mutation
                 }
@@ -371,12 +424,7 @@ struct RichTextEditorView: UIViewRepresentable {
             
             // Force reset typing attributes to Clean State (Black Text, No Strikethrough)
             // This ensures the next character typed by the user is clean
-            let cleanAttributes: [NSAttributedString.Key: Any] = [
-                .font: parent.font,
-                .foregroundColor: parent.textColor,
-                .paragraphStyle: RichTextConverter.Config.baseStyle()
-            ]
-            textView.typingAttributes = cleanAttributes
+            applyDefaultTypingAttributes(to: textView)
             
             textViewDidChange(textView)
             return false
@@ -390,8 +438,6 @@ struct RichTextEditorView: UIViewRepresentable {
             switch action {
             case .bold:
                 toggleTrait(.traitBold, in: textView, range: selectedRange)
-            case .italic:
-                toggleTrait(.traitItalic, in: textView, range: selectedRange)
             case .h1:
                 applyBlockStyle(level: 1, in: textView, range: selectedRange)
             case .h2:
@@ -416,10 +462,8 @@ struct RichTextEditorView: UIViewRepresentable {
             
             if let font = attrs[.font] as? UIFont {
                 toolbar.setActive(.bold, isActive: font.fontDescriptor.symbolicTraits.contains(.traitBold))
-                toolbar.setActive(.italic, isActive: font.fontDescriptor.symbolicTraits.contains(.traitItalic))
             } else {
                 toolbar.setActive(.bold, isActive: false)
-                toolbar.setActive(.italic, isActive: false)
             }
             
             if let level = attrs[RichTextConverter.Key.headerLevel] as? Int {
@@ -441,26 +485,29 @@ struct RichTextEditorView: UIViewRepresentable {
         private func toggleTrait(_ trait: UIFontDescriptor.SymbolicTraits, in textView: UITextView, range: NSRange) {
             // No selection: toggle the typing attributes so upcoming characters inherit the style.
             if range.length == 0 {
+                let typingAttrs = textView.typingAttributes
                 let baseFont =
-                    (textView.typingAttributes[.font] as? UIFont)
+                    (typingAttrs[.font] as? UIFont)
                     ?? (textView.textStorage.length > 0
                         ? (textView.textStorage.attribute(.font, at: max(range.location - 1, 0), effectiveRange: nil) as? UIFont)
                         : nil)
                     ?? parent.font
                 
                 var traits = baseFont.fontDescriptor.symbolicTraits
-                if traits.contains(trait) {
-                    traits.remove(trait)
-                } else {
+                let shouldEnable = !traits.contains(trait)
+                
+                if shouldEnable {
                     traits.insert(trait)
+                } else {
+                    traits.remove(trait)
                 }
                 
                 let newFont = resolvedFont(for: baseFont, traits: traits)
-                var typingAttrs = textView.typingAttributes
-                typingAttrs[.font] = newFont
-                typingAttrs[.foregroundColor] = typingAttrs[.foregroundColor] ?? parent.textColor
-                typingAttrs[.paragraphStyle] = typingAttrs[.paragraphStyle] ?? RichTextConverter.Config.baseStyle()
-                textView.typingAttributes = typingAttrs
+                var updatedTypingAttrs = typingAttrs
+                updatedTypingAttrs[.font] = newFont
+                updatedTypingAttrs[.foregroundColor] = updatedTypingAttrs[.foregroundColor] ?? parent.textColor
+                updatedTypingAttrs[.paragraphStyle] = updatedTypingAttrs[.paragraphStyle] ?? RichTextConverter.Config.baseStyle()
+                textView.typingAttributes = updatedTypingAttrs
                 return
             }
             
@@ -468,14 +515,16 @@ struct RichTextEditorView: UIViewRepresentable {
             let fallbackFont = (textView.typingAttributes[.font] as? UIFont) ?? textView.font ?? parent.font
             
             // Use enumerate to handle multi-font selections
-            textView.textStorage.enumerateAttribute(.font, in: range, options: []) { (value, subRange, _) in
-                let currentFont = (value as? UIFont) ?? fallbackFont
+            textView.textStorage.enumerateAttributes(in: range, options: []) { (attrs, subRange, _) in
+                let currentFont = (attrs[.font] as? UIFont) ?? fallbackFont
                 
                 var traits = currentFont.fontDescriptor.symbolicTraits
-                if traits.contains(trait) {
-                    traits.remove(trait)
-                } else {
+                let shouldEnable = !traits.contains(trait)
+                
+                if shouldEnable {
                     traits.insert(trait)
+                } else {
+                    traits.remove(trait)
                 }
                 
                 let newFont = resolvedFont(for: currentFont, traits: traits)
@@ -535,6 +584,8 @@ struct RichTextEditorView: UIViewRepresentable {
                 textView.textStorage.replaceCharacters(in: NSRange(location: lineRange.location, length: 2), with: "")
                 let newFullRange = NSRange(location: lineRange.location, length: lineRange.length - 2)
                 textView.textStorage.removeAttribute(RichTextConverter.Key.checkbox, range: newFullRange)
+                let shiftedLocation = max(lineRange.location, range.location - 2)
+                textView.selectedRange = NSRange(location: shiftedLocation, length: 0)
             } else {
                 // Add checkbox symbol at start of line
                 let symbol = "☐ "
@@ -545,9 +596,11 @@ struct RichTextEditorView: UIViewRepresentable {
                 textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: false, range: symbolRange)
                 textView.textStorage.addAttribute(.foregroundColor, value: RichTextConverter.Config.checkboxUncheckedColor, range: symbolRange)
                 textView.textStorage.addAttribute(.font, value: UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium), range: symbolRange)
+                textView.selectedRange = NSRange(location: symbolRange.upperBound, length: 0)
             }
             
             textView.textStorage.endEditing()
+            applyDefaultTypingAttributes(to: textView)
         }
         
         // Existing toggleCheckbox from previous turn, updated for range
@@ -582,7 +635,37 @@ struct RichTextEditorView: UIViewRepresentable {
             }
             
             textView.textStorage.endEditing()
+            textView.selectedRange = NSRange(location: newRange.upperBound, length: 0)
+            applyDefaultTypingAttributes(to: textView)
             textViewDidChange(textView)
+        }
+
+        private func defaultTypingAttributes() -> [NSAttributedString.Key: Any] {
+            [
+                .font: parent.font,
+                .foregroundColor: parent.textColor,
+                .paragraphStyle: RichTextConverter.Config.baseStyle()
+            ]
+        }
+
+        private func applyDefaultTypingAttributes(to textView: UITextView) {
+            textView.typingAttributes = defaultTypingAttributes()
+        }
+
+        private func normalizeTypingAttributesForListPrefixIfNeeded(in textView: UITextView) {
+            let selectedRange = textView.selectedRange
+            guard selectedRange.length == 0 else { return }
+            guard textView.textStorage.length > 0, selectedRange.location > 0 else { return }
+
+            let prevIndex = min(selectedRange.location - 1, textView.textStorage.length - 1)
+            let prevAttrs = textView.textStorage.attributes(at: prevIndex, effectiveRange: nil)
+            let isListPrefixChar =
+                prevAttrs[RichTextConverter.Key.checkbox] != nil
+                || prevAttrs[RichTextConverter.Key.bullet] != nil
+                || prevAttrs[RichTextConverter.Key.orderedList] != nil
+            guard isListPrefixChar else { return }
+
+            applyDefaultTypingAttributes(to: textView)
         }
     }
 }
@@ -590,7 +673,7 @@ struct RichTextEditorView: UIViewRepresentable {
 // MARK: - Toolbar Component
 
 enum EditorAction {
-    case bold, italic, h1, h2, checklist, undo, redo
+    case bold, h1, h2, checklist, undo, redo
 }
 
 class EditorFormattingToolbar: UIView {
@@ -625,7 +708,6 @@ class EditorFormattingToolbar: UIView {
         
         let buttons: [(String, EditorAction)] = [
             ("bold", .bold),
-            ("italic", .italic),
             ("h1.circle", .h1),
             ("h2.circle", .h2),
             ("checklist", .checklist),

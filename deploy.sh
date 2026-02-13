@@ -5,6 +5,8 @@
 #   ./deploy.sh
 #   PUSH_ENV=1 ./deploy.sh              # 同步本地 server/.env 到服务器
 #   PUSH_ENV=1 LOCAL_ENV_FILE=./server/.env ./deploy.sh
+#   RESOLVE_ROLLED_BACK=20260211194000_invite_rewards_mvp ./deploy.sh
+#     # 在服务器执行 migrate deploy 前，先对指定 migration 执行 resolve --rolled-back
 
 set -euo pipefail
 
@@ -13,6 +15,7 @@ SERVER_USER="root"
 LOCAL_SERVER_DIR="./server"
 LOCAL_ENV_FILE="${LOCAL_ENV_FILE:-$LOCAL_SERVER_DIR/.env}"
 PUSH_ENV="${PUSH_ENV:-0}"
+RESOLVE_ROLLED_BACK="${RESOLVE_ROLLED_BACK:-}"
 
 echo "🚀 开始部署 ChillNote 后端..."
 
@@ -24,7 +27,7 @@ fi
 
 echo "🔨 本地编译 TypeScript..."
 pushd "$LOCAL_SERVER_DIR" >/dev/null
-npm install
+npm ci
 npm run build
 popd >/dev/null
 
@@ -56,11 +59,12 @@ scp server-deploy.tar.gz ${SERVER_USER}@${SERVER_IP}:/tmp/
 
 # 4. 服务器端部署
 echo "🔧 在服务器上安装和启动..."
-ssh ${SERVER_USER}@${SERVER_IP} << 'ENDSSH'
+ssh ${SERVER_USER}@${SERVER_IP} "RESOLVE_ROLLED_BACK='${RESOLVE_ROLLED_BACK}' bash -s" << 'ENDSSH'
 set -euo pipefail
 
 BASE_DIR="/root/chillnote-api"
 APP_DIR="$BASE_DIR/current"
+RESOLVE_ROLLED_BACK="${RESOLVE_ROLLED_BACK:-}"
 
 mkdir -p "$APP_DIR"
 cd "$BASE_DIR"
@@ -92,9 +96,19 @@ cd "$APP_DIR"
 
 echo "📥 安装生产依赖..."
 export NODE_ENV=production
-npm ci --only=production || npm install --only=production
+npm ci --omit=dev || npm install --omit=dev
 
-echo "🔧 生成 Prisma 客户端并迁移..."
+echo "🔧 应用 Prisma 迁移并生成客户端..."
+if [ -n "$RESOLVE_ROLLED_BACK" ]; then
+  echo "🧯 预处理失败迁移记录: $RESOLVE_ROLLED_BACK"
+  IFS=',' read -r -a MIGRATIONS <<< "$RESOLVE_ROLLED_BACK"
+  for migration in "${MIGRATIONS[@]}"; do
+    migration="$(echo "$migration" | xargs)"
+    [ -z "$migration" ] && continue
+    npx prisma migrate resolve --rolled-back "$migration" || true
+  done
+fi
+npx prisma migrate deploy
 npx prisma generate
 # npx prisma db push --accept-data-loss
 
@@ -111,6 +125,10 @@ pm2 delete chillnote-api 2>/dev/null || true
 # 启动新进程（名字现在是 chillnote）
 pm2 start "$APP_DIR/ecosystem.config.cjs" --only chillnote --update-env
 pm2 save
+
+echo "🩺 健康检查..."
+sleep 2
+curl -fsS "http://127.0.0.1:4000/health" >/dev/null
 
 echo "✅ 部署完成！"
 ENDSSH

@@ -1,6 +1,30 @@
 import Foundation
 
 extension Date {
+    private static let timeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+
+    private static let weekdayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE"
+        return formatter
+    }()
+
+    private static let sameYearFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d HH:mm"
+        return formatter
+    }()
+
+    private static let fullDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/MM/dd"
+        return formatter
+    }()
+
     /// Returns a human-friendly relative time string
     /// - Today: "14:30"
     /// - Yesterday: "Yesterday 14:30"
@@ -13,39 +37,27 @@ extension Date {
         
         // Check if it's today
         if calendar.isDateInToday(self) {
-            let timeFormatter = DateFormatter()
-            timeFormatter.dateFormat = "HH:mm"
-            return timeFormatter.string(from: self)
+            return Self.timeFormatter.string(from: self)
         }
         
         // Check if it's yesterday
         if calendar.isDateInYesterday(self) {
-            let timeFormatter = DateFormatter()
-            timeFormatter.dateFormat = "HH:mm"
-            return "Yesterday \(timeFormatter.string(from: self))"
+            return "Yesterday \(Self.timeFormatter.string(from: self))"
         }
         
         // Check if it's within the last 6 days (this week)
         let daysDifference = calendar.dateComponents([.day], from: self, to: now).day ?? 0
         if daysDifference <= 6 {
-            let weekdayFormatter = DateFormatter()
-            weekdayFormatter.dateFormat = "EEEE" // Full weekday name
-            let timeFormatter = DateFormatter()
-            timeFormatter.dateFormat = "HH:mm"
-            return "\(weekdayFormatter.string(from: self)) \(timeFormatter.string(from: self))"
+            return "\(Self.weekdayFormatter.string(from: self)) \(Self.timeFormatter.string(from: self))"
         }
         
         // Check if it's within the same year
         let yearsDifference = calendar.dateComponents([.year], from: self, to: now).year ?? 0
         if yearsDifference == 0 {
-            let dateFormatter = DateFormatter()
-            dateFormatter.dateFormat = "MMM d HH:mm"
-            return dateFormatter.string(from: self)
+            return Self.sameYearFormatter.string(from: self)
         }
         
         // Over a year ago - show full date
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy/MM/dd"
-        return dateFormatter.string(from: self)
+        return Self.fullDateFormatter.string(from: self)
     }
 }

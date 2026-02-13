@@ -118,9 +118,6 @@
     "BEST VALUE" : {
 
     },
-    "By continuing, you agree to our Terms & Privacy Policy." : {
-
-    },
     "Cancel" : {
 
     },
@@ -316,9 +313,6 @@
 
     },
     "Enter your instruction for these notes." : {
-
-    },
-    "Error: %@" : {
 
     },
     "Estimated notes: %lld" : {
@@ -557,7 +551,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No notes yet. Start typing or recording below."
+            "value" : "No notes yet. Use the voice button to create your first note."
           }
         },
         "es" : {
@@ -712,6 +706,9 @@
     "Let Chillo polish this up." : {
 
     },
+    "Loading prices..." : {
+
+    },
     "Local data initialization failed. Please try again. If it still fails, restart the app or free up device storage and try again." : {
 
     },
@@ -748,9 +745,6 @@
     "name@example.com" : {
 
     },
-    "Network Error" : {
-
-    },
     "Next Steps" : {
 
     },
@@ -769,6 +763,9 @@
     "No recipes yet" : {
 
     },
+    "No subscription product is currently available." : {
+
+    },
     "No tags available" : {
 
     },
@@ -784,10 +781,10 @@
     "Opens the recording overlay." : {
 
     },
-    "Original" : {
+    "Our Vision" : {
 
     },
-    "Our Vision" : {
+    "Pause" : {
 
     },
     "Payment will be charged to your Apple ID account at confirmation of purchase." : {
@@ -806,6 +803,9 @@
 
     },
     "Pinned" : {
+
+    },
+    "Play" : {
 
     },
     "Preferred Language" : {
@@ -839,9 +839,6 @@
 
     },
     "Recipe Details" : {
-
-    },
-    "Recording Failed" : {
 
     },
     "Recording status or duration" : {
@@ -975,6 +972,9 @@
         }
       }
     },
+    "Show Original" : {
+
+    },
     "Sign In to ChillNote" : {
 
     },
@@ -1021,9 +1021,6 @@
 
     },
     "TAGS" : {
-
-    },
-    "Tap to simulate" : {
 
     },
     "Terms" : {
@@ -1087,9 +1084,6 @@
 
     },
     "We found an unfinished recording from a previous session." : {
-
-    },
-    "We’ll handle the rest." : {
 
     },
     "Welcome to ChillNote" : {

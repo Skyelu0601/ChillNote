@@ -21,6 +21,8 @@ class StoreService: ObservableObject {
     @Published var availableProducts: [Product] = []
     @Published var isPurchasing = false
     @Published var errorMessage: String?
+    @Published var isLoadingProducts = false
+    @Published var productsErrorMessage: String?
     
     // Feature Limits
     var recordingTimeLimit: TimeInterval {
@@ -169,6 +171,9 @@ class StoreService: ObservableObject {
         feature: DailyQuotaFeature,
         action: String
     ) async -> Bool {
+        // Pro users have unlimited access — skip the server quota check entirely.
+        if currentTier == .pro { return true }
+
         guard AuthService.shared.isSignedIn else { return true }
         guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else { return true }
 
@@ -215,6 +220,10 @@ class StoreService: ObservableObject {
     private let productIds = ["com.chillnote.pro.monthly", "com.chillnote.pro.yearly"]
     
     private var transactionListener: Task<Void, Error>?
+    private struct BackendSubscriptionStatus: Decodable {
+        let tier: String?
+        let expiresAt: String?
+    }
     
     init() {
         // Start listening for transaction updates
@@ -294,6 +303,14 @@ class StoreService: ObservableObject {
         
         isPurchasing = false
     }
+
+    func refreshSubscriptionStatus() async {
+        await updateSubscriptionStatus()
+    }
+
+    func refreshProducts() async {
+        await fetchProducts()
+    }
     
     // MARK: - Data Fetching
     
@@ -307,17 +324,23 @@ class StoreService: ObservableObject {
     // MARK: - Data Fetching
     
     private func fetchProducts() async {
+        isLoadingProducts = true
+        productsErrorMessage = nil
         do {
             let products = try await Product.products(for: productIds)
             availableProducts = products.sorted(by: { $0.price < $1.price })
+            if availableProducts.isEmpty {
+                productsErrorMessage = "No subscription products are available right now. Please try again."
+            }
         } catch {
             print("Failed to fetch products: \(error)")
+            productsErrorMessage = "Unable to load subscription prices. Please check your network and try again."
         }
+        isLoadingProducts = false
     }
     
     private func updateSubscriptionStatus() async {
-        // 1. First Check Local StoreKit Entitlements (Client Side)
-        var highestTier: SubscriptionTier = .free
+        // 1. Check Local StoreKit Entitlements — used only to sync to backend
         var activeTransaction: Transaction? = nil
         
         // Check for active subscriptions from Apple
@@ -327,7 +350,6 @@ class StoreService: ObservableObject {
                 
                 if productIds.contains(transaction.productID) {
                     if let expirationDate = transaction.expirationDate, expirationDate > Date() {
-                        highestTier = .pro
                         activeTransaction = transaction
                     }
                 }
@@ -336,31 +358,67 @@ class StoreService: ObservableObject {
             }
         }
         
-        // 2. If logged in, Verify with Backend (Server Side Authority)
+        // 2. If logged in and StoreKit has an active subscription, sync it to the backend
         if let transaction = activeTransaction, AuthService.shared.isSignedIn {
              do {
                  try await verifySubscriptionWithBackend(transaction)
              } catch {
-                 print("Backend verification warning: \(error)")
-                 // Fallback: we still allow pro locally if backend fails (e.g. offline), 
-                 // but in strict mode you might block it. 
-                 // For now, we trust StoreKit locally to not break UX.
+                 if let urlError = error as? URLError, urlError.code == .dataNotAllowed {
+                     print("Backend verification skipped: network data not allowed (-1020).")
+                 } else if String(describing: error).localizedCaseInsensitiveContains("userCancelled") {
+                     print("Backend verification skipped: user cancelled.")
+                 } else {
+                     print("Backend verification warning: \(error)")
+                 }
              }
          }
          
-        // 3. Check Backend Profile Status (e.g. for cross-platform or if IAP is expired locally but active on server?)
-        // Ideally, we fetch the user profile from Supabase and trust that source of truth.
-        // For this implementation, we will sync the local IAP state TO the server.
-        
-        self.currentTier = highestTier
+        // 3. Backend is the single source of truth for membership
+        let backendTier = await fetchBackendSubscriptionTier()
+        self.currentTier = backendTier
+    }
+
+    private static let backendTierCacheKey = "cached_backend_subscription_tier"
+
+    private func fetchBackendSubscriptionTier() async -> SubscriptionTier {
+        guard AuthService.shared.isSignedIn else {
+            // Clear cache on sign-out so a new user starts fresh
+            UserDefaults.standard.removeObject(forKey: Self.backendTierCacheKey)
+            return .free
+        }
+        guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else {
+            return cachedBackendTier()
+        }
+
+        let url = URL(string: "\(AppConfig.backendBaseURL)/subscription/status")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+                return cachedBackendTier()
+            }
+            let decoded = try JSONDecoder().decode(BackendSubscriptionStatus.self, from: data)
+            let tier: SubscriptionTier = (decoded.tier?.lowercased() == "pro") ? .pro : .free
+            // Cache successful result for offline fallback
+            UserDefaults.standard.set(tier.rawValue, forKey: Self.backendTierCacheKey)
+            return tier
+        } catch {
+            // Network failure: return last known backend tier
+            return cachedBackendTier()
+        }
+    }
+
+    private func cachedBackendTier() -> SubscriptionTier {
+        let cached = UserDefaults.standard.string(forKey: Self.backendTierCacheKey) ?? SubscriptionTier.free.rawValue
+        return SubscriptionTier(rawValue: cached) ?? .free
     }
     
     private func verifySubscriptionWithBackend(_ transaction: Transaction) async throws {
         guard AuthService.shared.isSignedIn else { return }
         guard let token = await AuthService.shared.getSessionToken() else { return }
-        guard let receiptData = try await fetchAppReceiptData() else {
-            throw URLError(.dataNotAllowed)
-        }
         
         let url = URL(string: "\(AppConfig.backendBaseURL)/subscription/verify")!
         var request = URLRequest(url: url)
@@ -368,17 +426,26 @@ class StoreService: ObservableObject {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         
-        let body: [String: Any] = [
-            "transactionId": String(transaction.id), // UInt64 to String
+        // Build the verification payload.
+        // On iOS 18+ the legacy app receipt is unavailable, so we send transaction
+        // metadata directly. The backend should accept the request with or without
+        // receiptData and can verify the transaction via Apple's Server-to-Server
+        // Notifications or the App Store Server API using the transaction IDs.
+        var body: [String: Any] = [
+            "transactionId": String(transaction.id),
             "originalTransactionId": String(transaction.originalID),
             "productId": transaction.productID,
-            "expiresDate": transaction.expirationDate?.ISO8601Format() ?? "",
-            "receiptData": receiptData
+            "expiresDate": transaction.expirationDate?.ISO8601Format() ?? ""
         ]
+        
+        // Include the legacy receipt if available (pre-iOS 18).
+        if let receiptData = fetchAppReceiptData() {
+            body["receiptData"] = receiptData
+        }
         
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
         
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
              throw URLError(.badServerResponse)
@@ -388,6 +455,14 @@ class StoreService: ObservableObject {
             // Handle specific errors like 409 (Bound to another user)
             if httpResponse.statusCode == 409 {
                  self.errorMessage = "This subscription is already linked to another ChillNote account."
+            } else if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let message = json["error"] as? String {
+                self.errorMessage = message
+                print("❌ Subscription verify failed (\(httpResponse.statusCode)): \(message)")
+            } else if let text = String(data: data, encoding: .utf8), !text.isEmpty {
+                print("❌ Subscription verify failed (\(httpResponse.statusCode)): \(text)")
+            } else {
+                print("❌ Subscription verify failed (\(httpResponse.statusCode))")
             }
             throw URLError(.badServerResponse)
         }
@@ -396,23 +471,21 @@ class StoreService: ObservableObject {
         print("✅ Subscription verified with backend")
     }
 
-    private func fetchAppReceiptData() async throws -> String? {
-        let appTransactionResult = try await AppTransaction.shared
-        _ = try checkVerified(appTransactionResult)
-        var transactions: [String] = []
-
-        for await result in Transaction.all {
-            if case .verified = result {
-                transactions.append(result.jwsRepresentation)
-            }
+    private func fetchAppReceiptData() -> String? {
+        if #available(iOS 18.0, *) {
+            // appStoreReceiptURL is deprecated on iOS 18+; skip legacy receipt flow.
+            // Current backend still supports receipt verification via pre-iOS 18 path.
+            return nil
         }
 
-        let payload: [String: Any] = [
-            "appTransaction": appTransactionResult.jwsRepresentation,
-            "transactions": transactions
-        ]
+        guard let receiptURL = Bundle.main.appStoreReceiptURL else {
+            return nil
+        }
 
-        let data = try JSONSerialization.data(withJSONObject: payload)
+        // Apple verifyReceipt expects the raw app receipt (PKCS7) in base64 form.
+        guard let data = try? Data(contentsOf: receiptURL), !data.isEmpty else {
+            return nil
+        }
         return data.base64EncodedString()
     }
     

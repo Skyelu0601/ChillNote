@@ -455,14 +455,14 @@ struct OnboardingView: View {
     // MARK: - Phase 1: Voice Demo (Merged with Intro)
     private var voiceDemoPage: some View {
         VStack {
-            Spacer()
+            Spacer(minLength: 12)
             
             VStack(spacing: 24) {
                 if voicePhaseState == .idle {
                     // Icon
                     CustomMicIcon()
-                        .frame(width: 90, height: 90)
-                        .padding(24)
+                        .frame(width: 72, height: 72)
+                        .padding(18)
                         .background(
                             Circle()
                                 .fill(Color.accentPrimary.opacity(0.1))
@@ -471,19 +471,14 @@ struct OnboardingView: View {
                                         .stroke(Color.accentPrimary.opacity(0.2), lineWidth: 1)
                                 )
                         )
-                        .padding(.bottom, 16)
+                        .padding(.bottom, 8)
 
                     // Intro Header
-                    VStack(spacing: 16) {
+                    VStack(spacing: 8) {
                         Text("Say it.\nSave it.")
                             .font(.system(size: 40, weight: .bold, design: .rounded))
                             .foregroundColor(.textMain)
                             .multilineTextAlignment(.center)
-                        Text("We’ll handle the rest.")
-                            .font(.body)
-                            .foregroundColor(.textSub)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
                     }
                     
                     // Initial Prompt
@@ -607,7 +602,7 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, 20)
             
-            Spacer()
+            Spacer(minLength: 120)
             
             // Mic Control
             if voicePhaseState == .idle {
@@ -890,14 +885,9 @@ struct OnboardingView: View {
                     Button {
                         startAskDemo()
                     } label: {
-                        VStack(spacing: 8) {
-                            Text("Ask: \"Summarize core values\"")
-                                .font(.headline)
-                                .foregroundColor(.accentPrimary)
-                            Text("Tap to simulate")
-                                .font(.caption)
-                                .foregroundColor(.textSub)
-                        }
+                        Text("Ask: \"Summarize core values\"")
+                            .font(.headline)
+                            .foregroundColor(.accentPrimary)
                         .padding(.vertical, 16)
                         .padding(.horizontal, 32)
                         .background(Color.accentPrimary.opacity(0.1))
@@ -1346,7 +1336,7 @@ struct AnimatedGrammarTextView: View {
                 )
             }
         }
-        .onChange(of: isFixing) { newValue in
+        .onChange(of: isFixing) { _, newValue in
              if newValue {
                  startFixingAnimation()
              } else {

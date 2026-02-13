@@ -11,6 +11,7 @@ struct SidebarView: View {
     @Binding var isPresented: Bool
     @Binding var selectedTag: Tag?
     @Binding var isTrashSelected: Bool
+    var hasPendingRecordings: Bool = false
     var onSettingsTap: (() -> Void)?
     
     // Filter tags by current user
@@ -64,6 +65,14 @@ struct SidebarView: View {
                                 .frame(width: 32, height: 32)
                                 .background(Color.textMain.opacity(0.05))
                                 .clipShape(Circle())
+                                .overlay(alignment: .topTrailing) {
+                                    if hasPendingRecordings {
+                                        Circle()
+                                            .fill(Color.red)
+                                            .frame(width: 8, height: 8)
+                                            .offset(x: 2, y: -2)
+                                    }
+                                }
                         }
                         .accessibilityLabel("Open Settings")
                     }

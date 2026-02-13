@@ -1,0 +1,4 @@
+-- Duplicate migration placeholder.
+-- The invite reward tables/indexes were already created by:
+-- 20260211193000_invite_rewards_mvp
+-- Keep this migration as a no-op to preserve migration history consistency.

@@ -235,6 +235,17 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         print("🔄 Retrying transcription for \(fileURL.lastPathComponent)...")
         scheduleTranscription(for: fileURL)
     }
+
+    /// Dismisses the current error state without deleting the recording file.
+    /// The recording file remains in the pending recordings list for later recovery
+    /// via Settings → Pending Recordings.
+    func dismissError() {
+        guard case .error = recordingState else { return }
+        // Detach the file URL so it becomes a standalone pending recording
+        audioFileURL = nil
+        recordingState = activeTranscriptionJobIDs.isEmpty ? .idle : .processing
+        print("ℹ️ Error dismissed. Recording preserved in pending.")
+    }
     
     func stopRecording(reason: StopReason = .user) {
         print("🛑 Stopping recording, reason: \(reason)")
