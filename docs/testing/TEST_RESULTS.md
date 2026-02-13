@@ -260,10 +260,10 @@ testPerformanceMarkdownToHTML   (0.266s)
 ## 📁 相关文件
 
 - **测试代码**: `chillnoteTests/chillnoteTests.swift`
-- **测试指南**: `docs/TESTING_GUIDE.md`
-- **快速参考**: `docs/TESTING_QUICK_REF.md`
-- **工作总结**: `docs/TESTING_SUMMARY.md`
-- **本报告**: `docs/TEST_RESULTS.md`
+- **测试指南**: `docs/testing/TESTING_GUIDE.md`
+- **快速参考**: `docs/testing/TESTING_QUICK_REF.md`
+- **工作总结**: `docs/testing/TESTING_SUMMARY.md`
+- **本报告**: `docs/testing/TEST_RESULTS.md`
 
 ---
 

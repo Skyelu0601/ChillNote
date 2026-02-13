@@ -54,7 +54,7 @@
 
 2. **医疗/心理暗示文案**
    - 处理: 移除/改写相关措辞。
-   - 证据: `docs/DESIGN_PHILOSOPHY.md`, `chillnote/Features/AboutView.swift`, `chillnote/Features/SettingsView.swift`
+   - 证据: `docs/product/DESIGN_PHILOSOPHY.md`, `chillnote/Features/AboutView.swift`, `chillnote/Features/SettingsView.swift`
 
 ### P3（已修复）
 1. **隐私政策占位符**
@@ -70,7 +70,7 @@
 - 订阅校验: `server/src/index.ts`, `chillnote/Services/StoreService.swift`
 - 隐私政策: `PRIVACY_POLICY.md`, `website/privacy.html`
 - 应用内隐私提示: `chillnote/Features/SettingsView.swift`
-- 文案合规: `docs/DESIGN_PHILOSOPHY.md`, `chillnote/Features/AboutView.swift`
+- 文案合规: `docs/product/DESIGN_PHILOSOPHY.md`, `chillnote/Features/AboutView.swift`
 - Reflection 相关 recipes 已移除: `chillnote/Models/AgentRecipe.swift`
 
 ## 5. App Store 提交材料建议（需准备）
