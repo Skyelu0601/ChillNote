@@ -13,3 +13,5 @@
 - 测试指南: `docs/testing/TESTING_GUIDE.md`
 - 合规报告: `docs/compliance/APP_STORE_COMPLIANCE_REPORT.md`
 - 合规复测: `docs/compliance/APP_STORE_RETEST_RESULTS.md`
+- 隐私政策: `docs/compliance/legal/PRIVACY_POLICY.md`
+- 服务条款: `docs/compliance/legal/TERMS_OF_SERVICE.md`

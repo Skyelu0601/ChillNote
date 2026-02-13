@@ -45,7 +45,7 @@
 
 2. **隐私政策与本地录音存储不一致**
    - 处理: 政策与应用内提示同步声明本地临时存储与 7 天清理策略。
-   - 证据: `PRIVACY_POLICY.md`, `website/privacy.html`, `chillnote/Features/SettingsView.swift`
+   - 证据: `docs/compliance/legal/PRIVACY_POLICY.md`, `website/privacy.html`, `chillnote/Features/SettingsView.swift`
 
 ### P2（已修复）
 1. **订阅后端验证缺失**
@@ -59,7 +59,7 @@
 ### P3（已修复）
 1. **隐私政策占位符**
    - 处理: 补齐日期与官网链接。
-   - 证据: `PRIVACY_POLICY.md`
+   - 证据: `docs/compliance/legal/PRIVACY_POLICY.md`
 
 2. **后端文档与实现不一致**
    - 处理: 移除未实现的上传接口描述。
@@ -68,7 +68,7 @@
 ## 4. 证据与定位（关键文件）
 - 订阅披露: `chillnote/Features/SubscriptionView.swift`
 - 订阅校验: `server/src/index.ts`, `chillnote/Services/StoreService.swift`
-- 隐私政策: `PRIVACY_POLICY.md`, `website/privacy.html`
+- 隐私政策: `docs/compliance/legal/PRIVACY_POLICY.md`, `website/privacy.html`
 - 应用内隐私提示: `chillnote/Features/SettingsView.swift`
 - 文案合规: `docs/product/DESIGN_PHILOSOPHY.md`, `chillnote/Features/AboutView.swift`
 - Reflection 相关 recipes 已移除: `chillnote/Models/AgentRecipe.swift`
