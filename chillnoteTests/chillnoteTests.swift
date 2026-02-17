@@ -104,6 +104,13 @@ final class chillnoteTests: XCTestCase {
         XCTAssertEqual(note.displayText, shortText)
     }
 
+    func testNoteDisplayTextUsesLatestContentWhenPreviewCacheIsStale() {
+        let note = Note(content: "- [x] Buy milk", userId: "u1")
+        note.previewPlainText = "☐ Buy milk"
+
+        XCTAssertEqual(note.displayText, "☑ Buy milk")
+    }
+
     func testNoteMarkDeletedSetsDeletedAt() {
         let note = Note(content: "Test", userId: "u1")
         XCTAssertNil(note.deletedAt)

@@ -14,4 +14,6 @@ enum FeatureFlags {
     static var usePlainPreviewInList: Bool {
         defaults.object(forKey: "usePlainPreviewInList") as? Bool ?? true
     }
+
+
 }

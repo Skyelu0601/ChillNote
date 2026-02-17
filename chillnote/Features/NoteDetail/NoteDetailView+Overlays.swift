@@ -31,6 +31,11 @@ struct NoteDetailOverlaysView: View {
                     .zIndex(100)
             }
 
+            if let message = viewModel.voiceProcessingErrorMessage {
+                voiceProcessingFailureOverlay(message: message)
+                    .zIndex(95)
+            }
+
             if viewModel.showAIToolbar {
                 aiToolbarOverlay
             }
@@ -146,12 +151,51 @@ struct NoteDetailOverlaysView: View {
         }
     }
 
+    private func voiceProcessingFailureOverlay(message: String) -> some View {
+        VStack {
+            Spacer()
+            HStack(spacing: 10) {
+                Image(systemName: "wifi.exclamationmark")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.orange)
+
+                Text(message)
+                    .font(.caption)
+                    .foregroundColor(.primary)
+                    .lineLimit(2)
+
+                Spacer(minLength: 8)
+
+                Button("OK") {
+                    viewModel.send(.dismissVoiceProcessingErrorTapped)
+                }
+                .font(.caption)
+                .fontWeight(.semibold)
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(Color.accentPrimary))
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .strokeBorder(Color.orange.opacity(0.25), lineWidth: 1)
+            )
+            .padding(.horizontal, 20)
+            .padding(.bottom, 86)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+    }
+
     private var aiToolbarOverlay: some View {
         VStack {
             Spacer()
             HStack {
                 Spacer()
-                AIActionToolbar(
+                AIPreviewCard(
                     onRetry: {
                         viewModel.send(.aiRetryTapped)
                     },

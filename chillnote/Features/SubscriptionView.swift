@@ -3,6 +3,7 @@ import StoreKit
 
 struct SubscriptionView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @StateObject private var storeService = StoreService.shared
     
     // Animation States
@@ -64,7 +65,24 @@ struct SubscriptionView: View {
                 // 6. Sticky CTA Button
                 VStack {
                     Spacer()
-                    if let product = selectedProduct {
+                    if storeService.currentTier == .pro {
+                        Button {
+                            guard let url = URL(string: "https://apps.apple.com/account/subscriptions") else { return }
+                            openURL(url)
+                        } label: {
+                            Text("Manage in App Store")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 16)
+                                .background(Color.accentPrimary)
+                                .cornerRadius(16)
+                                .shadow(color: .accentPrimary.opacity(0.3), radius: 10, x: 0, y: 5)
+                        }
+                        .padding(.horizontal, 24)
+                        .padding(.bottom, 20)
+                        .opacity(showContent ? 1 : 0)
+                    } else if let product = selectedProduct {
                         Button {
                             Task { await storeService.purchase(product) }
                         } label: {

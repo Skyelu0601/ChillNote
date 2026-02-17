@@ -59,6 +59,12 @@ final class AuthService: ObservableObject {
         if case .signedIn = state { return true }
         return false
     }
+
+    /// If we have a local auth token, we can show home first while verifying session in background.
+    var canOptimisticallyEnterHome: Bool {
+        guard case .checking = state else { return false }
+        return hasCachedSessionToken
+    }
     
     var currentUserId: String? {
         if case .signedIn(let userId) = state {
@@ -70,6 +76,11 @@ final class AuthService: ObservableObject {
     var loginProvider: String {
         guard let user = currentUser else { return "email" }
         return user.identities?.first?.provider ?? "email"
+    }
+
+    private var hasCachedSessionToken: Bool {
+        guard let token = UserDefaults.standard.string(forKey: "syncAuthToken") else { return false }
+        return !token.isEmpty
     }
 
     private init() {
@@ -101,6 +112,7 @@ final class AuthService: ObservableObject {
             await StoreService.shared.refreshSubscriptionStatus()
         } catch {
             self.state = .signedOut
+            UserDefaults.standard.removeObject(forKey: "syncAuthToken")
             StoreService.shared.currentTier = .free
         }
     }

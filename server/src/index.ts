@@ -861,13 +861,14 @@ app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async 
       "- Do NOT transliterate or romanize. Keep native script when the speaker uses a native script.",
       "- Transcribe exactly what is said, word for word.",
       "- Keep fillers, repetitions, and self-corrections as spoken.",
+      "- Do NOT include timestamps, speaker labels, or line numbers.",
       "- Do NOT summarize, rewrite, polish, or restructure the content.",
       "- Output format: STRICT JSON only, no extra keys.",
       "- JSON schema: {\"text\": string}"
     ].join("\n");
 
     const userPrompt = [
-      "Transcribe the audio verbatim in the original spoken language(s). Do NOT translate.",
+      "Transcribe the audio verbatim in the original spoken language(s). Do NOT translate. Do NOT include timestamps.",
       hasPreferredLanguageHint
         ? `Primary language is likely ${normalizedLanguageHint}, but keep words from all spoken languages exactly as heard.`
         : undefined,

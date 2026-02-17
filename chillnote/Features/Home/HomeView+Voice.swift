@@ -69,7 +69,11 @@ extension HomeView {
 
             case .failure(let message):
                 print("⚠️ Home voice transcription failed: \(message)")
-                VoiceProcessingService.shared.processingStates[noteID] = .idle
+                let guidance = "Transcription failed. Audio was saved to Pending Records."
+                VoiceProcessingService.shared.processingStates[noteID] = .failed(message: guidance)
+                Task { @MainActor in
+                    await checkForPendingRecordingsAsync()
+                }
             }
         }
     }
@@ -113,31 +117,6 @@ extension HomeView {
         }
 
         return note
-    }
-
-    func processAndSaveVoiceNote(rawTranscript: String) async {
-        let trimmed = rawTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-
-        let noteID = await MainActor.run {
-            let note = Note(content: "", userId: currentUserId)
-            applyCurrentTagContext(to: note)
-            modelContext.insert(note)
-            try? modelContext.save()
-            VoiceProcessingService.shared.processingStates[note.id] = .processing(stage: .refining)
-            navigationPath.append(note)
-            return note.id
-        }
-
-        requestReload()
-
-        Task {
-            if let note = resolveNote(noteID) {
-                await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: trimmed, context: modelContext)
-                requestReload()
-                await syncManager.syncIfNeeded(context: modelContext)
-            }
-        }
     }
 
     func generateTags(for note: Note) async {

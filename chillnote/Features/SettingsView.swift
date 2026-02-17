@@ -1,18 +1,6 @@
 import SwiftUI
 import UIKit
 
-struct SettingsAutoNavigationPolicy {
-    private var hasConsumedPendingAutoNavigation = false
-
-    mutating func shouldAutoNavigatePending(autoNavigateToPendingRecordings: Bool) -> Bool {
-        guard autoNavigateToPendingRecordings, !hasConsumedPendingAutoNavigation else {
-            return false
-        }
-        hasConsumedPendingAutoNavigation = true
-        return true
-    }
-}
-
 struct SettingsView: View {
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject private var authService: AuthService
@@ -30,16 +18,12 @@ struct SettingsView: View {
     @State private var showDeleteAlert = false
     @State private var isDeleting = false
     @State private var showDeleteError = false
-    @State private var isPendingRecordingsActive = false
-    @State private var pendingRecordingsCount = 0
     @StateObject private var exportViewModel = ExportViewModel()
     @State private var showExportAllSheet = false
     @State private var showVoiceLanguageSheet = false
     // Auto Navigation
     var autoNavigateToAI: Bool = false
-    var autoNavigateToPendingRecordings: Bool = false
     @State private var isAIConfigActive = false
-    @State private var autoNavigationPolicy = SettingsAutoNavigationPolicy()
     
     var body: some View {
         NavigationStack {
@@ -59,6 +43,7 @@ struct SettingsView: View {
                         Text("Settings")
                         .font(.bodyLarge)
                         .fontWeight(.bold)
+                        .foregroundColor(.black)
                         Spacer()
                         // invisible spacer to balance
                         Image(systemName: "arrow.left").opacity(0)
@@ -83,28 +68,12 @@ struct SettingsView: View {
             .navigationDestination(isPresented: $isAIConfigActive) {
                 ChillRecipesView()
             }
-            .navigationDestination(isPresented: $isPendingRecordingsActive) {
-                PendingRecordingsView()
-            }
             .onAppear {
-                refreshPendingRecordingsCount()
                 if autoNavigateToAI {
                     // Small delay to ensure View is fully loaded before triggering navigation
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                         isAIConfigActive = true
                     }
-                }
-                if autoNavigateToPendingRecordings {
-                    if autoNavigationPolicy.shouldAutoNavigatePending(autoNavigateToPendingRecordings: autoNavigateToPendingRecordings) {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            isPendingRecordingsActive = true
-                        }
-                    }
-                }
-            }
-            .onChange(of: isPendingRecordingsActive) { _, isActive in
-                if !isActive {
-                    refreshPendingRecordingsCount()
                 }
             }
 
@@ -310,18 +279,6 @@ struct SettingsView: View {
 
             Divider().padding(.leading, 56)
 
-            Button(action: { isPendingRecordingsActive = true }) {
-                SettingItem(
-                    icon: "waveform",
-                    iconColor: .accentPrimary,
-                    label: "Pending Recordings",
-                    value: pendingRecordingsCount == 0 ? nil : "\(pendingRecordingsCount)"
-                )
-            }
-            .buttonStyle(.plain)
-
-            Divider().padding(.leading, 56)
-
             Button(action: { showVoiceLanguageSheet = true }) {
                 SettingItem(
                     icon: "waveform.and.mic",
@@ -418,7 +375,9 @@ struct SettingItem: View {
     let iconColor: Color
     let label: String
     var value: String? = nil
+    var showsBadgeDot: Bool = false
     var labelColor: Color = .textMain
+    var valueColor: Color = .textSub
     var showChevron: Bool = true
     
     var body: some View {
@@ -437,13 +396,21 @@ struct SettingItem: View {
             if let value = value {
                 Text(value)
                     .font(.bodySmall)
-                    .foregroundColor(.textSub)
+                    .foregroundColor(valueColor)
+            }
+
+            if showsBadgeDot {
+                Circle()
+                    .fill(Color.red)
+                    .frame(width: 7, height: 7)
+                    .offset(y: -0.5)
             }
             
             if showChevron {
                 Image(systemName: "chevron.right")
                     .font(.caption)
                     .foregroundColor(.textSub.opacity(0.7))
+                    .padding(.leading, showsBadgeDot ? 4 : 0)
             }
         }
         .padding(.vertical, 12)
@@ -644,63 +611,134 @@ private struct ExportAllNotesSheet: View {
 
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    VStack(alignment: .leading, spacing: 6) {
-                        Text("Export All Notes")
-                            .font(.bodyLarge)
-                            .foregroundColor(.textMain)
-                        Text("Markdown (.zip)")
-                            .font(.bodySmall)
-                            .foregroundColor(.textSub)
-                    }
-
-                    Group {
-                        if viewModel.isLoadingEstimate {
-                            HStack(spacing: 10) {
-                                ProgressView()
-                                Text("Counting notes...")
-                                    .font(.bodySmall)
-                                    .foregroundColor(.textSub)
+            VStack(spacing: 0) {
+                ScrollView {
+                    VStack(spacing: 32) {
+                        // 1. Header Illustration
+                        VStack(spacing: 20) {
+                            ZStack {
+                                Circle()
+                                    .fill(Color.accentPrimary.opacity(0.1))
+                                    .frame(width: 80, height: 80)
+                                
+                                Image(systemName: "folder.badge.gear")
+                                    .font(.system(size: 32))
+                                    .foregroundColor(.accentPrimary)
                             }
-                        } else {
-                            let count = viewModel.estimatedNoteCount ?? 0
-                            Text("Estimated notes: \(count)")
+                            
+                            VStack(spacing: 12) {
+                                Text("Export Your Knowledge Base")
+                                    .font(.bodyLarge)
+                                    .fontWeight(.bold)
+                                    .foregroundColor(.black)
+                                    .multilineTextAlignment(.center)
+                                
+                                Text("Generate a comprehensive Markdown archive of all your notes, organized by date. Perfect for backup or importing into other tools.")
+                                    .font(.bodyMedium)
+                                    .foregroundColor(.textSub)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 24)
+                                    .lineSpacing(4)
+                            }
+                        }
+                        .padding(.top, 20)
+                        
+                        // 2. Info Card
+                        VStack(spacing: 12) {
+                            HStack {
+                                Text("SUMMARY")
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundColor(.textSub)
+                                    .tracking(1)
+                                Spacer()
+                            }
+                            .padding(.horizontal, 4)
+                            
+                            VStack(spacing: 0) {
+                                // Row 1: Note Count
+                                HStack {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "doc.text.fill")
+                                            .foregroundColor(.accentPrimary)
+                                            .font(.system(size: 16))
+                                        Text("Total Notes")
+                                            .font(.bodyMedium)
+                                            .foregroundColor(.textMain)
+                                    }
+                                    Spacer()
+                                    if viewModel.isLoadingEstimate {
+                                        ProgressView()
+                                            .scaleEffect(0.8)
+                                    } else {
+                                        Text("\(viewModel.estimatedNoteCount ?? 0)")
+                                            .font(.bodyMedium)
+                                            .fontWeight(.semibold)
+                                            .foregroundColor(.textMain)
+                                    }
+                                }
+                                .padding(16)
+                                
+                                Divider().padding(.leading, 44)
+                                
+                                // Row 2: Format
+                                HStack {
+                                    HStack(spacing: 12) {
+                                        Image(systemName: "doc.zipper")
+                                            .foregroundColor(.accentPrimary)
+                                            .font(.system(size: 16))
+                                        Text("Export Format")
+                                            .font(.bodyMedium)
+                                            .foregroundColor(.textMain)
+                                    }
+                                    Spacer()
+                                    Text("Markdown")
+                                        .font(.bodyMedium)
+                                        .foregroundColor(.textSub)
+                                }
+                                .padding(16)
+                            }
+                            .background(Color.white)
+                            .cornerRadius(16)
+                            .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
+                        }
+                        .padding(.horizontal, 20)
+
+                        // 3. Status/Progress Area
+                        if viewModel.isExporting || viewModel.progress.processed > 0 {
+                            ExportProgressView(
+                                progress: viewModel.progress,
+                                isExporting: viewModel.isExporting,
+                                onCancel: { viewModel.cancelExport() }
+                            )
+                            .padding(.horizontal, 20)
+                        } else if let successMessage = viewModel.successMessage {
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.title3)
+                                Text(successMessage)
+                                    .font(.bodyMedium)
+                                    .foregroundColor(.textMain)
+                            }
+                            .padding()
+                            .frame(maxWidth: .infinity)
+                            .background(Color.green.opacity(0.1))
+                            .cornerRadius(16)
+                            .padding(.horizontal, 20)
+                        } else if !viewModel.isLoadingEstimate && (viewModel.estimatedNoteCount ?? 0) == 0 {
+                             Text("No notes found to export.")
                                 .font(.bodyMedium)
-                                .foregroundColor(.textMain)
-                        }
-                    }
-
-                    if viewModel.isExporting || viewModel.progress.processed > 0 {
-                        ExportProgressView(
-                            progress: viewModel.progress,
-                            isExporting: viewModel.isExporting,
-                            onCancel: { viewModel.cancelExport() }
-                        )
-                    }
-
-                    if let successMessage = viewModel.successMessage, !viewModel.isExporting {
-                        HStack(spacing: 8) {
-                            Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.accentPrimary)
-                            Text(successMessage)
-                                .font(.bodySmall)
                                 .foregroundColor(.textSub)
+                                .padding(.top, 10)
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 10)
-                        .background(Color.bgSecondary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
-
-                    if !viewModel.isLoadingEstimate,
-                       (viewModel.estimatedNoteCount ?? 0) == 0,
-                       !viewModel.isExporting {
-                        Text("No notes to export.")
-                            .font(.bodySmall)
-                            .foregroundColor(.textSub)
-                    }
-
+                    .padding(.bottom, 40)
+                }
+                
+                // 4. Bottom Button
+                VStack {
+                    Divider()
                     Button(action: {
                         var transaction = Transaction()
                         transaction.disablesAnimations = true
@@ -708,25 +746,30 @@ private struct ExportAllNotesSheet: View {
                             viewModel.startExport(userId: userId)
                         }
                     }) {
-                        Text("Start Export")
-                            .font(.bodyMedium)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                        HStack {
+                            if viewModel.isExporting {
+                                ProgressView()
+                                    .tint(.white)
+                                    .padding(.trailing, 8)
+                            }
+                            Text(viewModel.isExporting ? "Exporting..." : "Start Export")
+                                .font(.headline)
+                                .fontWeight(.semibold)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            (viewModel.isLoadingEstimate || viewModel.isExporting || (viewModel.estimatedNoteCount ?? 0) == 0) 
+                            ? Color.gray.opacity(0.3) 
+                            : Color.accentPrimary
+                        )
+                        .foregroundColor(.white)
+                        .cornerRadius(16)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(.accentPrimary)
                     .disabled(viewModel.isLoadingEstimate || viewModel.isExporting || (viewModel.estimatedNoteCount ?? 0) == 0)
-
-                    Button(action: { dismiss() }) {
-                        Text("Cancel")
-                            .font(.bodyMedium)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                    }
-                    .buttonStyle(.bordered)
-                    .disabled(viewModel.isExporting)
+                    .padding(20)
                 }
-                .padding(20)
+                .background(Color.bgPrimary.ignoresSafeArea(edges: .bottom))
             }
             .background(Color.bgPrimary.ignoresSafeArea())
             .navigationTitle("Export")
@@ -774,12 +817,6 @@ private extension SettingsView {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
         let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "1"
         return "v\(version) (\(build))"
-    }
-
-    func refreshPendingRecordingsCount() {
-        RecordingFileManager.shared.cleanupOldRecordings()
-        let pending = RecordingFileManager.shared.checkForPendingRecordings()
-        pendingRecordingsCount = pending.count
     }
 
     func handleExportAllTap() {

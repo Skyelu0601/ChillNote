@@ -286,7 +286,7 @@ class StoreService: ObservableObject {
         } catch {
             errorMessage = "Purchase failed: \(error.localizedDescription)"
         }
-        
+
         isPurchasing = false
     }
     
@@ -397,7 +397,10 @@ class StoreService: ObservableObject {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else {
+            guard let http = response as? HTTPURLResponse else {
+                return cachedBackendTier()
+            }
+            guard (200...299).contains(http.statusCode) else {
                 return cachedBackendTier()
             }
             let decoded = try JSONDecoder().decode(BackendSubscriptionStatus.self, from: data)
@@ -476,17 +479,17 @@ class StoreService: ObservableObject {
             // appStoreReceiptURL is deprecated on iOS 18+; skip legacy receipt flow.
             // Current backend still supports receipt verification via pre-iOS 18 path.
             return nil
-        }
+        } else {
+            guard let receiptURL = Bundle.main.appStoreReceiptURL else {
+                return nil
+            }
 
-        guard let receiptURL = Bundle.main.appStoreReceiptURL else {
-            return nil
+            // Apple verifyReceipt expects the raw app receipt (PKCS7) in base64 form.
+            guard let data = try? Data(contentsOf: receiptURL), !data.isEmpty else {
+                return nil
+            }
+            return data.base64EncodedString()
         }
-
-        // Apple verifyReceipt expects the raw app receipt (PKCS7) in base64 form.
-        guard let data = try? Data(contentsOf: receiptURL), !data.isEmpty else {
-            return nil
-        }
-        return data.base64EncodedString()
     }
     
     nonisolated private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
@@ -497,6 +500,7 @@ class StoreService: ObservableObject {
             return safe
         }
     }
+
 }
 
 enum StoreError: Error {

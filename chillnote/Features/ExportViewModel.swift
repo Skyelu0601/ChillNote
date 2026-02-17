@@ -72,10 +72,8 @@ final class ExportViewModel: ObservableObject {
 
         beginBackgroundTask()
 
-        AnalyticsService.shared.log(
-            .exportAllStart,
-            properties: ["note_count": "\(estimatedNoteCount ?? -1)"]
-        )
+        // Analytics removed
+
 
         exportTask = Task(priority: .utility) { [weak self] in
             guard let self else { return }
@@ -86,7 +84,8 @@ final class ExportViewModel: ObservableObject {
     func cancelExport() {
         guard isExporting else { return }
         exportTask?.cancel()
-        AnalyticsService.shared.log(.exportAllCancel)
+        // Analytics removed
+
     }
 
     func resetEstimate() {
@@ -127,24 +126,16 @@ final class ExportViewModel: ObservableObject {
             showShareSheet = true
             scheduleDeferredCleanup(for: url)
 
-            AnalyticsService.shared.log(
-                .exportAllSuccess,
-                properties: [
-                    "note_count": "\(estimatedNoteCount ?? progress.processed)",
-                    "duration_ms": "\(Int(duration * 1000))",
-                    "zip_size_bytes": "\(fileSize)"
-                ]
-            )
+            // Analytics removed
+
         } catch {
             if isCancellation(error) {
                 successMessage = "Export cancelled"
             } else {
                 let message = readableMessage(for: error)
                 showError(message: message)
-                AnalyticsService.shared.log(
-                    .exportAllFail,
-                    properties: ["error_code": errorCode(for: error)]
-                )
+                // Analytics removed
+
             }
         }
 

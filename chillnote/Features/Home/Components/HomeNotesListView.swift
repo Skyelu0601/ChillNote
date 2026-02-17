@@ -135,6 +135,8 @@ struct NoteListItemViewData: Identifiable {
     let createdAtRelativeText: String
     let pinnedAt: Date?
     let previewText: String
+    let markdownPreviewText: String
+    let usePlainPreview: Bool
     let isEmpty: Bool
     let tags: [NoteListTagViewData]
     let hiddenTagCount: Int
@@ -147,7 +149,9 @@ struct NoteListItemViewData: Identifiable {
 
         let trimmed = note.content.trimmingCharacters(in: .whitespacesAndNewlines)
         isEmpty = trimmed.isEmpty
-        previewText = usePlainPreview ? note.displayText : trimmed
+        self.usePlainPreview = usePlainPreview
+        previewText = note.displayText
+        markdownPreviewText = trimmed
 
         let prefixTags = Array(note.tags.prefix(3))
         tags = prefixTags.map { tag in
@@ -204,11 +208,22 @@ struct NoteCard: View {
                         .padding(.top, 2)
                 } else {
                     if !item.isEmpty {
-                        Text(item.previewText)
-                            .font(.bodyMedium)
-                            .foregroundColor(.textMain)
-                            .lineLimit(3)
-                            .multilineTextAlignment(.leading)
+                        Group {
+                            if item.usePlainPreview {
+                                Text(item.previewText)
+                                    .font(.bodyMedium)
+                                    .foregroundColor(.textMain)
+                                    .lineLimit(3)
+                                    .multilineTextAlignment(.leading)
+                            } else {
+                                RichTextPreview(
+                                    content: item.markdownPreviewText,
+                                    lineLimit: 3,
+                                    font: .bodyMedium,
+                                    textColor: .textMain
+                                )
+                            }
+                        }
                     }
 
                     if !item.tags.isEmpty {

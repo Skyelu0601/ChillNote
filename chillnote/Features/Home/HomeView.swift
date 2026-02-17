@@ -25,7 +25,6 @@ struct HomeView: View {
     @State var cachedContextNotes: [Note] = []
     @State var showDeleteConfirmation = false
 
-    @State var showAgentActionsSheet = false
     @State var isAgentMenuOpen = false
     @State var isExecutingAction = false
     @State var actionProgress: String?
@@ -36,7 +35,7 @@ struct HomeView: View {
     @State var showBatchTagSheet = false
     @Query(sort: \Tag.name) var availableTags: [Tag]
 
-    @State var pendingAgentAction: AIAgentAction?
+    @State var pendingAgentAction: AgentRecipe?
     @State var isCustomActionInputPresented = false
     @State var customActionPrompt = ""
     @State var isTranslateInputPresented = false
@@ -79,7 +78,7 @@ struct HomeView: View {
     @FocusState var isSearchFocused: Bool
 
     @State var pendingRecordings: [PendingRecording] = []
-    @State var showRecoveryAlert = false
+    @State var showPendingRecordings = false
     @State var autoOpenPendingRecordings = false
 
     @State var hasScheduledInitialMaintenance = false
@@ -88,8 +87,6 @@ struct HomeView: View {
 
     @ObservedObject var voiceService = VoiceProcessingService.shared
 
-    @AppStorage("lastDismissedRecordingDate") var lastDismissedRecordingDate: Double = 0
-
     @State var scheduledReloadTask: Task<Void, Never>?
 
     var headerTitle: String {
@@ -97,6 +94,10 @@ struct HomeView: View {
             return "Recycle Bin"
         }
         return selectedTag?.name ?? "ChillNote"
+    }
+
+    var hasPendingRecordings: Bool {
+        !pendingRecordings.isEmpty
     }
 
     var screenState: HomeScreenState {
@@ -111,7 +112,6 @@ struct HomeView: View {
             showingSettings: showingSettings,
             autoOpenPendingRecordings: autoOpenPendingRecordings,
             showAIChat: showAIChat,
-            showAgentActionsSheet: showAgentActionsSheet,
             isCustomActionInputPresented: isCustomActionInputPresented,
             customActionPrompt: customActionPrompt,
             isTranslateInputPresented: isTranslateInputPresented,
@@ -142,7 +142,9 @@ struct HomeView: View {
             showRecipeHardLimitAlert: showRecipeHardLimitAlert,
             askHardLimit: askHardLimit,
             recipeHardLimit: recipeHardLimit,
-            hasPendingRecordings: !pendingRecordings.isEmpty
+            hasPendingRecordings: hasPendingRecordings,
+            pendingRecordingsCount: pendingRecordings.count,
+            showPendingRecordings: showPendingRecordings
         )
     }
 
@@ -158,9 +160,22 @@ struct HomeView: View {
                 isVoiceMode = false
                 speechRecognizer.dismissError()
             }
+
+            if case .recording = newState {
+                return
+            }
+
+            Task { @MainActor in
+                await checkForPendingRecordingsAsync()
+            }
         }
         .onChange(of: speechRecognizer.completedTranscriptions) { _, _ in
             handleCompletedTranscriptions()
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .pendingRecordingsDidChange)) { _ in
+            Task { @MainActor in
+                await checkForPendingRecordingsAsync()
+            }
         }
         .onChange(of: authService.isSignedIn) { _, isSignedIn in
             guard !isSignedIn else { return }
@@ -220,6 +235,7 @@ struct HomeView: View {
             scheduleMaintenance(reason: .foreground)
         }
         .task {
+            await checkForPendingRecordingsAsync()
             scheduleInitialMaintenance()
             homeViewModel.configure(context: modelContext, userId: currentUserId)
             await homeViewModel.switchMode(isTrashSelected ? .trash : .active)
@@ -229,30 +245,6 @@ struct HomeView: View {
             Task(priority: .utility) {
                 try? await Task.sleep(nanoseconds: 1_200_000_000)
                 await NotesSearchIndexer.shared.rebuildIfNeeded(context: modelContext, userId: currentUserId)
-            }
-        }
-        .overlay {
-            if showRecoveryAlert && !pendingRecordings.isEmpty {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .onTapGesture { }
-
-                PendingRecordingsNotice(
-                    pendingCount: pendingRecordings.count,
-                    onOpenSettings: {
-                        let maxDate = pendingRecordings.map { $0.createdAt.timeIntervalSince1970 }.max() ?? 0
-                        lastDismissedRecordingDate = maxDate
-                        autoOpenPendingRecordings = true
-                        showRecoveryAlert = false
-                        showingSettings = true
-                    },
-                    onDismiss: {
-                        let maxDate = pendingRecordings.map { $0.createdAt.timeIntervalSince1970 }.max() ?? 0
-                        lastDismissedRecordingDate = maxDate
-                        showRecoveryAlert = false
-                    }
-                )
-                .transition(.scale(scale: 0.9).combined(with: .opacity))
             }
         }
         .sheet(isPresented: $showUpgradeSheet) {
@@ -290,10 +282,10 @@ struct HomeView: View {
             showingSettings = value
         case .setAutoOpenPendingRecordings(let value):
             autoOpenPendingRecordings = value
+        case .setShowPendingRecordings(let value):
+            showPendingRecordings = value
         case .setShowAIChat(let value):
             showAIChat = value
-        case .setShowAgentActionsSheet(let value):
-            showAgentActionsSheet = value
         case .setCustomActionInputPresented(let value):
             isCustomActionInputPresented = value
         case .setCustomActionPrompt(let value):
@@ -385,15 +377,15 @@ struct HomeView: View {
             hideKeyboard()
 
         case .executePendingAgentAction(let instruction):
-            if let action = pendingAgentAction {
-                Task { await executeAgentAction(action, instruction: instruction) }
+            if let recipe = pendingAgentAction {
+                Task { await executeAgentAction(recipe, instruction: instruction) }
             }
             pendingAgentAction = nil
             isCustomActionInputPresented = false
         case .translateSelect(let language):
             translateTargetLanguage = language
-            if let action = pendingAgentAction {
-                Task { await executeAgentAction(action, instruction: language) }
+            if let recipe = pendingAgentAction {
+                Task { await executeAgentAction(recipe, instruction: language) }
             }
             translateTargetLanguage = ""
             pendingAgentAction = nil

@@ -248,7 +248,10 @@ actor NotesExportService: NotesExporting {
                 try? fileManager.removeItem(at: zipURL)
             }
 
-            guard let archive = Archive(url: zipURL, accessMode: .create) else {
+            let archive: Archive
+            do {
+                archive = try Archive(url: zipURL, accessMode: .create)
+            } catch {
                 throw ExportError.invalidArchive
             }
 
@@ -399,10 +402,18 @@ enum NotesExportFormatter {
     }
 
     static func makeMarkdownDocument(note: Note, isoFormatter: ISO8601DateFormatter) -> String {
+        let stableSortLocale = Locale(identifier: "en_US_POSIX")
         let tags = note.tags
             .filter { $0.deletedAt == nil }
             .map { $0.name }
-            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+            .sorted { lhs, rhs in
+                let leftKey = lhs.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: stableSortLocale)
+                let rightKey = rhs.folding(options: [.caseInsensitive, .diacriticInsensitive], locale: stableSortLocale)
+                if leftKey == rightKey {
+                    return lhs < rhs
+                }
+                return leftKey < rightKey
+            }
 
         let tagsValue = tags.map { "\"\(escapeYAMLString($0))\"" }.joined(separator: ", ")
 

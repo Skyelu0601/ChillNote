@@ -72,7 +72,7 @@ struct HomeSelectionOverlayView: View {
                                 }
                                 if recipeManager.savedRecipes.isEmpty {
                                     VStack(spacing: 8) {
-                                        Image(systemName: "sparkles")
+                                        Image(systemName: "book.closed")
                                             .font(.system(size: 20))
                                             .foregroundColor(.secondary)
                                         Text("No recipes yet")
@@ -95,14 +95,8 @@ struct HomeSelectionOverlayView: View {
 
                     HStack(spacing: 16) {
                         Button(action: onStartAIChat) {
-                            HStack(spacing: 4) {
-                                Text("Ask")
-                                    .font(.system(size: 18, weight: .bold, design: .rounded))
-                                Image("chillohead_touming")
-                                    .resizable()
-                                    .scaledToFit()
-                                    .frame(height: 28)
-                            }
+                            Text("Ask AI")
+                                .font(.system(size: 18, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
                             .frame(height: 56)

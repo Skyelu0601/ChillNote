@@ -118,7 +118,7 @@ struct OnboardingView: View {
     @State private var showVoiceIntents = false // New state for showing extra intents
 
     
-    private let voicePrompt = "Remind me to buy beef, tomatoes, and pasta for Saturday's dinner"
+    private let voicePrompt = "Remind me to buy beef, tomatoes, and pasta"
     
     private let typoText = OnboardingGrammarDemoContent.typoText
     // private let askQuestion = "Who is ChillNote designed for?" // Removed

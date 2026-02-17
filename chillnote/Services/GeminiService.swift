@@ -228,6 +228,7 @@ struct GeminiService {
                 - Do NOT summarize, rewrite, polish, or format as Markdown.
                 - Do NOT infer intent or adapt tone for any target app.
                 - Do NOT translate; keep the original spoken language(s). \(languageHintLine)
+                - Do NOT include timestamps, speaker labels, or line numbers.
                 Return ONLY the transcript text, no explanations.
                 """
                 let text = try await generateContent(
@@ -241,6 +242,7 @@ struct GeminiService {
                     - Preserve the speaker's original wording as faithfully as possible.
                     - Keep fillers, repetitions, and false starts as spoken.
                     - Do NOT clean up, summarize, or restructure.
+                    - Do NOT include timestamps, speaker labels, or line numbers.
                     - Return ONLY the transcript text, no explanations.
                     """,
                     countUsage: false,

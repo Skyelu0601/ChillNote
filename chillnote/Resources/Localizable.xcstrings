@@ -16,21 +16,14 @@
     "#" : {
 
     },
+    "%lld" : {
+
+    },
     "%lld Context Notes" : {
 
     },
     "%lld days left" : {
 
-    },
-    "%lld note%@ selected" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "new",
-            "value" : "%1$lld note%2$@ selected"
-          }
-        }
-      }
     },
     "%lld/%lld • %@" : {
       "localizations" : {
@@ -91,10 +84,10 @@
     "Are you sure you want to sign out?" : {
 
     },
-    "Ask" : {
+    "Ask Agent" : {
 
     },
-    "Ask Agent" : {
+    "Ask AI" : {
 
     },
     "Ask Chillo..." : {
@@ -152,9 +145,6 @@
 
     },
     "Chillo's Magic" : {
-
-    },
-    "Chillo's Toolkit" : {
 
     },
     "Choose a language to translate your note" : {
@@ -222,9 +212,6 @@
 
     },
     "Couldn't Start ChillNote" : {
-
-    },
-    "Counting notes..." : {
 
     },
     "Create" : {
@@ -315,22 +302,25 @@
     "Enter your instruction for these notes." : {
 
     },
-    "Estimated notes: %lld" : {
-
-    },
     "Expires today" : {
 
     },
     "Export" : {
 
     },
-    "Export All Notes" : {
-
-    },
     "Export Failed" : {
 
     },
+    "Export Format" : {
+
+    },
     "Export Markdown" : {
+
+    },
+    "Export Your Knowledge Base" : {
+
+    },
+    "Exporting..." : {
 
     },
     "Finish recording" : {
@@ -346,6 +336,9 @@
 
     },
     "Free Plan" : {
+
+    },
+    "Generate a comprehensive Markdown archive of all your notes, organized by date. Perfect for backup or importing into other tools." : {
 
     },
     "Get Started" : {
@@ -688,9 +681,6 @@
     "Icon" : {
 
     },
-    "Introductory notes..." : {
-
-    },
     "Keep Original Notes" : {
 
     },
@@ -698,12 +688,6 @@
 
     },
     "Large Selection" : {
-
-    },
-    "Later" : {
-
-    },
-    "Let Chillo polish this up." : {
 
     },
     "Loading prices..." : {
@@ -715,10 +699,13 @@
     "Manage" : {
 
     },
+    "Manage in App Store" : {
+
+    },
     "Manage or cancel your subscription in Settings > Apple ID > Subscriptions." : {
 
     },
-    "Markdown (.zip)" : {
+    "Markdown" : {
 
     },
     "Maybe Later" : {
@@ -754,7 +741,7 @@
     "No deleted notes yet. Notes stay for 30 days." : {
 
     },
-    "No notes to export." : {
+    "No notes found to export." : {
 
     },
     "No pending recordings" : {
@@ -778,13 +765,7 @@
     "Opens system Settings for permissions." : {
 
     },
-    "Opens the recording overlay." : {
-
-    },
     "Our Vision" : {
-
-    },
-    "Pause" : {
 
     },
     "Payment will be charged to your Apple ID account at confirmation of purchase." : {
@@ -805,9 +786,6 @@
     "Pinned" : {
 
     },
-    "Play" : {
-
-    },
     "Preferred Language" : {
 
     },
@@ -821,9 +799,6 @@
 
     },
     "Pro Active" : {
-
-    },
-    "Process" : {
 
     },
     "Processing audio..." : {
@@ -845,9 +820,6 @@
 
     },
     "Recording..." : {
-
-    },
-    "Recovery Found" : {
 
     },
     "Refined" : {
@@ -901,7 +873,13 @@
     "Saved!" : {
 
     },
+    "Saving..." : {
+
+    },
     "Say it.\nSave it." : {
+
+    },
+    "Say it. Save it." : {
 
     },
     "Search" : {
@@ -999,9 +977,6 @@
     "Start organizing with tags" : {
 
     },
-    "Start recording" : {
-
-    },
     "Stops recording and saves your note." : {
 
     },
@@ -1011,7 +986,7 @@
     "Subscription Plan" : {
 
     },
-    "Sync your thoughts.\nUnclutter your mind." : {
+    "SUMMARY" : {
 
     },
     "Tag" : {
@@ -1038,13 +1013,10 @@
     "This will permanently delete this custom recipe." : {
 
     },
-    "To-do" : {
-
-    },
     "Too Many Notes" : {
 
     },
-    "Transcribe" : {
+    "Total Notes" : {
 
     },
     "Transcription Failed" : {
@@ -1065,9 +1037,6 @@
     "Unpin" : {
 
     },
-    "Unprocessed Recording" : {
-
-    },
     "Upgrade" : {
 
     },
@@ -1077,13 +1046,7 @@
     "Verify & Login" : {
 
     },
-    "Voice Memo" : {
-
-    },
     "Voice Transcription" : {
-
-    },
-    "We found an unfinished recording from a previous session." : {
 
     },
     "Welcome to ChillNote" : {
@@ -1105,9 +1068,6 @@
 
     },
     "You can keep using ChillNote while we work." : {
-
-    },
-    "You have %@ waiting to be processed." : {
 
     },
     "You selected %lld notes. Asking AI with many notes may be slower and less accurate." : {

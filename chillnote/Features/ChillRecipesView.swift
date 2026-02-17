@@ -197,8 +197,7 @@ struct ChillRecipesView: View {
     }
 
     private func recipes(for category: AgentRecipeCategory) -> [AgentRecipe] {
-        let all = AgentRecipe.allRecipes + recipeManager.customRecipes
-        return all.filter { $0.category == category }
+        AgentRecipe.allRecipes.filter { $0.category == category }
     }
 
     private func saveCustomRecipe() {
@@ -495,11 +494,8 @@ private struct CreateRecipeSheet: View {
                             Text("Icon")
                                 .foregroundColor(.textMain)
                             Spacer()
-                            if icon.isEmpty || icon == "sparkles" { 
-                                Image(systemName: "sparkles")
-                            } else {
-                                Text(icon) 
-                            }
+                            Image(systemName: icon.isEmpty ? "sparkles" : icon)
+                                .foregroundColor(.textMain)
                         }
                     }
                 }

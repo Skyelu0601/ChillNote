@@ -123,44 +123,31 @@ struct PendingRecordingsView: View {
         let isProcessing = processingPaths.contains(recording.fileURL.path)
         let isPlaying = playbackController.playingPath == recording.fileURL.path
 
-        return VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 12) {
-                Image(systemName: "mic.fill")
-                    .font(.bodyMedium)
-                    .foregroundColor(.textSub)
-                    .padding(10)
-                    .background(Color.gray.opacity(0.1))
-                    .clipShape(Circle())
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Voice Memo")
-                        .font(.bodyMedium)
-                        .fontWeight(.semibold)
-                        .foregroundColor(.textMain)
-                    Text(recording.durationText)
-                        .font(.bodySmall)
-                        .foregroundColor(.textSub)
-                }
-                Spacer()
-            }
-
+        return VStack(alignment: .leading, spacing: 12) {
             HStack(spacing: 12) {
                 Button(action: { togglePlayback(recording) }) {
-                    Text(isPlaying ? "Pause" : "Play")
-                        .font(.bodySmall)
-                        .foregroundColor(.textMain)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 10)
-                        .background(Color.gray.opacity(0.12))
-                        .cornerRadius(10)
+                    Image(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundColor(isPlaying ? .accentPrimary : .textSub)
+                        .frame(width: 36, height: 36)
+                        .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
 
+                Text(recording.durationText)
+                    .font(.bodyMedium)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.textMain)
+
+                Spacer()
+            }
+
+            HStack(spacing: 10) {
                 Button(action: { deleteRecording(recording) }) {
                     Text("Delete")
                         .font(.bodySmall)
                         .foregroundColor(.red.opacity(0.85))
-                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 18)
                         .padding(.vertical, 10)
                         .background(Color.red.opacity(0.08))
                         .cornerRadius(10)
@@ -168,7 +155,7 @@ struct PendingRecordingsView: View {
                 .buttonStyle(.plain)
 
                 Button(action: { transcribeRecording(recording) }) {
-                    Text(isProcessing ? "Processing..." : "Transcribe")
+                    Text(isProcessing ? "Saving..." : "Save as Note")
                         .font(.bodySmall)
                         .fontWeight(.semibold)
                         .foregroundColor(.white)
@@ -191,9 +178,7 @@ struct PendingRecordingsView: View {
     }
 
     private func refreshRecordings() {
-        RecordingFileManager.shared.cleanupOldRecordings()
-        recordings = RecordingFileManager.shared.checkForPendingRecordings()
-            .sorted { $0.createdAt > $1.createdAt }
+        recordings = RecordingFileManager.shared.pendingRecordings(sortedByNewest: true)
     }
 
     private func deleteRecording(_ recording: PendingRecording) {

@@ -117,6 +117,19 @@ class DataService: ObservableObject {
                 return false
             }
             
+            // Double-check: ensure no welcome note already exists (including trashed)
+            // This prevents duplicates even if the flag was inadvertently reset
+            let welcomePrefix = "Welcome to ChillNote"
+            var welcomeDescriptor = FetchDescriptor<Note>()
+            welcomeDescriptor.predicate = #Predicate<Note> { note in
+                note.userId == userId && note.content.localizedStandardContains(welcomePrefix)
+            }
+            let existingWelcomeCount = try context.fetchCount(welcomeDescriptor)
+            if existingWelcomeCount > 0 {
+                WelcomeNoteFlagStore.setHasSeenWelcome(true, for: effectiveUserId)
+                return false
+            }
+            
             // Insert Welcome Note
             context.insert(Note(content: "Welcome to ChillNote! Tap the yellow button to record a voice note.", userId: userId))
             try? context.save()

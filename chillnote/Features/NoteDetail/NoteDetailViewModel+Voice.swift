@@ -8,6 +8,11 @@ extension NoteDetailViewModel {
         guard let originalText = completedOriginalText else { return }
         withAnimation {
             note.content = originalText
+            if let modelContext {
+                note.syncContentStructure(with: modelContext)
+                note.updatedAt = dependencies.now()
+                persistAndSync()
+            }
             voiceService.processingStates.removeValue(forKey: note.id)
         }
     }

@@ -12,7 +12,9 @@ struct SidebarView: View {
     @Binding var selectedTag: Tag?
     @Binding var isTrashSelected: Bool
     var hasPendingRecordings: Bool = false
+    var pendingRecordingsCount: Int = 0
     var onSettingsTap: (() -> Void)?
+    var onPendingRecordingsTap: (() -> Void)?
     
     // Filter tags by current user
     private var allTags: [Tag] {
@@ -49,7 +51,7 @@ struct SidebarView: View {
                             .frame(width: 8, height: 8)
                         Text("ChillNote")
                             .font(.system(size: 22, weight: .bold, design: .serif))
-                            .foregroundColor(.textMain)
+                            .foregroundColor(.black)
                             .tracking(0.5)
                         
                         Spacer()
@@ -65,14 +67,6 @@ struct SidebarView: View {
                                 .frame(width: 32, height: 32)
                                 .background(Color.textMain.opacity(0.05))
                                 .clipShape(Circle())
-                                .overlay(alignment: .topTrailing) {
-                                    if hasPendingRecordings {
-                                        Circle()
-                                            .fill(Color.red)
-                                            .frame(width: 8, height: 8)
-                                            .offset(x: 2, y: -2)
-                                    }
-                                }
                         }
                         .accessibilityLabel("Open Settings")
                     }
@@ -90,6 +84,18 @@ struct SidebarView: View {
                             selectedTag = nil
                             isTrashSelected = true
                             isPresented = false
+                        }
+
+                        if pendingRecordingsCount > 0 {
+                            SidebarItem(
+                                icon: "waveform",
+                                title: "Pending Records",
+                                isSelected: false,
+                                badgeCount: pendingRecordingsCount
+                            ) {
+                                isPresented = false
+                                onPendingRecordingsTap?()
+                            }
                         }
                     }
                     .padding(.horizontal, 16)
@@ -467,6 +473,7 @@ struct SidebarItem: View {
     let icon: String
     let title: String
     let isSelected: Bool
+    var badgeCount: Int = 0
     let action: () -> Void
     
     var body: some View {
@@ -482,6 +489,15 @@ struct SidebarItem: View {
                     .foregroundColor(isSelected ? .textMain : .textMain.opacity(0.8)) // increased opacity slightly for serif readability
                 
                 Spacer()
+                
+                if badgeCount > 0 {
+                    Text("\(badgeCount)")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                        .background(Capsule().fill(Color.red))
+                }
             }
             .padding(.vertical, 12)
             .padding(.horizontal, 12)

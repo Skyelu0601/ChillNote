@@ -111,18 +111,7 @@ extension AgentRecipe {
             systemIcon: "doc.on.doc.fill",
             name: "Merge Notes",
             description: "Combine selected notes into one cohesive document.",
-            prompt: """
-            You are merging multiple existing notes from the same user (these notes were not written for a chat). Combine them into one cohesive note while preserving the user’s intent and tone.
-
-            - Keep the merged note in the same language as the originals.
-            - If notes are mixed-language, preserve each segment's original language rather than unifying to one language.
-            - Remove true duplicates but keep distinct details.
-            - Preserve decisions, action items, dates, and numbers.
-            - If notes disagree or use different versions, briefly note the discrepancy instead of choosing a side.
-            - If the notes already have headings or sections, reuse that structure when possible.
-
-            Output only the merged note.
-            """,
+            prompt: "(Built-in Logic) Uses advanced internal logic to merge notes intelligently, preserving structure and handling multi-language content.",
             category: .organize
         ),
         AgentRecipe(
@@ -131,14 +120,7 @@ extension AgentRecipe {
             systemIcon: "globe",
             name: "Translate",
             description: "Translate notes into another language.",
-            prompt: """
-            You are translating a user’s existing note (not a chat message). Translate it into the target language while preserving the note’s intent and tone.
-
-            - Keep the original meaning and level of formality.
-            - Preserve formatting (headings, lists, bullet points, spacing).
-            - Keep proper nouns, URLs, and code unchanged unless there is a widely accepted translation.
-            - If a phrase is ambiguous or culturally specific, pick the most likely meaning and keep the original in parentheses when helpful.
-            """,
+            prompt: "(Built-in Logic) Uses a dynamic translation engine. The target language is selected at runtime.",
             category: .organize
         ),
         AgentRecipe(
@@ -291,4 +273,112 @@ extension AgentRecipe {
             category: .organize
         )
     ]
+}
+
+// MARK: - Execution Logic
+import SwiftData
+
+extension AgentRecipe {
+    /// Execute the recipe on given notes
+    @MainActor
+    func execute(on notes: [Note], context: ModelContext, userInstruction: String? = nil) async throws -> Note {
+        // Just join the content directly without adding metadata wrappers which confuse the AI
+        let combinedContent = notes.map { $0.content }.joined(separator: "\n\n---\n\n")
+        
+        let prompt: String
+        let systemInstruction: String
+        
+        // Helper to detect language
+        let languageRule = LanguageDetection.languagePreservationRule(for: combinedContent)
+        
+        switch id {
+        case "merge_notes":
+            prompt = """
+            Merge the following notes into a single, cohesive document.
+            
+            Original Notes:
+            \(combinedContent)
+            """
+            
+            let mergeLanguageRule = mergeLanguageLockRule(for: notes)
+            systemInstruction = """
+            You are a professional editor.
+            Rules:
+            \(languageRule)
+            \(mergeLanguageRule)
+            - Merge the content into a single, well-structured markdown document.
+            - Remove redundancy and improve flow.
+            - Use markdown for styling (# Headers, **bold**, - list).
+            - DO NOT wrap the output in markdown code blocks (```).
+            - DO NOT include meta-headers like "Merged Note", "Creation Date", or "[Note 1]".
+            - Start directly with the content.
+            """
+            
+        case "translate":
+            let targetLanguage = (userInstruction?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+                ? userInstruction!
+                : "English"
+            prompt = """
+            Translate the following notes into \(targetLanguage).
+            
+            Notes:
+            \(combinedContent)
+            """
+            
+            systemInstruction = """
+            You are a professional translator.
+            Rules:
+            - Translate into \(targetLanguage).
+            - Preserve meaning, tone, and formatting (including markdown).
+            - Keep proper nouns, product names, URLs, code, and hashtags intact unless a standard translation exists.
+            - Do not localize units, dates, or numbers unless explicitly requested.
+            - Return only the translated content.
+            """
+            
+        default:
+            // For all other recipes (custom or other built-ins), use the recipe's prompt as the instruction
+            let instruction = self.prompt
+            
+            prompt = """
+            Instruction:
+            \(instruction)
+            
+            Notes:
+            \(combinedContent)
+            """
+            
+            systemInstruction = """
+            You are a helpful assistant.
+            Rules:
+            \(languageRule)
+            - Follow the user's instruction precisely.
+            - Return only the result without any extra commentary.
+            """
+        }
+        
+        let result = try await GeminiService.shared.generateContent(
+            prompt: prompt,
+            systemInstruction: systemInstruction,
+            usageType: .agentRecipe
+        )
+        
+        let userId = AuthService.shared.currentUserId ?? "unknown"
+        let note = Note(content: result, userId: userId)
+        context.insert(note)
+        return note
+    }
+
+    private func mergeLanguageLockRule(for notes: [Note]) -> String {
+        let normalizedTags = notes.compactMap { note in
+            let tag = LanguageDetection.dominantLanguageTag(for: note.content)
+            return tag?.split(separator: "-").first.map(String.init)
+        }
+
+        let uniqueTags = Set(normalizedTags)
+        if uniqueTags.count == 1, let onlyTag = uniqueTags.first {
+            return "- LANGUAGE LOCK: Keep the merged output in \(onlyTag). Do NOT translate unless explicitly requested."
+        }
+
+        return "- LANGUAGE LOCK: If notes contain multiple languages, preserve each language as-is (including code-switching). Do NOT translate unless explicitly requested."
+    }
 }

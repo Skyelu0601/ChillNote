@@ -63,6 +63,7 @@ final class NoteDetailViewModel: ObservableObject {
         case confirmTagTapped(String)
         case retryTranscriptionTapped
         case dismissRecordingErrorTapped
+        case dismissVoiceProcessingErrorTapped
     }
 
     @Published var showDeleteConfirmation = false
@@ -170,6 +171,14 @@ final class NoteDetailViewModel: ObservableObject {
         return originalText
     }
 
+    var voiceProcessingErrorMessage: String? {
+        guard let state = voiceService.processingStates[note.id],
+              case .failed(let message) = state else {
+            return nil
+        }
+        return message
+    }
+
     var recordingErrorMessage: String? {
         // Only show recording errors if this note initiated the recording
         guard noteInitiatedRecording else { return nil }
@@ -192,7 +201,7 @@ final class NoteDetailViewModel: ObservableObject {
         !isDeleted && !isProcessing && !isVoiceProcessing
     }
 
-    var isMagicButtonEnabled: Bool {
+    var isTidyEnabled: Bool {
         isInteractionEnabled && !note.content.isEmpty
     }
 
@@ -230,6 +239,8 @@ final class NoteDetailViewModel: ObservableObject {
         case .dismissRecordingErrorTapped:
             noteInitiatedRecording = false
             speechRecognizer?.dismissError()
+        case .dismissVoiceProcessingErrorTapped:
+            voiceService.processingStates.removeValue(forKey: note.id)
         }
     }
 
@@ -335,7 +346,7 @@ final class NoteDetailViewModel: ObservableObject {
         let currentTags = Set(note.tags.map { $0.id })
         let hasChanged = note.content != initialContent || currentTags != initialTags
 
-        if note.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !isVoiceProcessing {
+        if note.isEmptyNote && !isVoiceProcessing {
             deleteNote()
             return
         }
@@ -370,6 +381,11 @@ final class NoteDetailViewModel: ObservableObject {
     private func deleteNote() {
         guard note.deletedAt == nil else {
             dismissAction?()
+            return
+        }
+
+        if note.isEmptyNote {
+            deleteNotePermanently()
             return
         }
 

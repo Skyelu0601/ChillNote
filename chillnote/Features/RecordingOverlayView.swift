@@ -15,7 +15,7 @@ struct RecordingOverlayView: View {
     @State private var showUpgradeSheet = false
     @State private var showSubscription = false
     @State private var upgradeTitle = "Recording limit reached"
-    private let analytics = AnalyticsService.shared
+
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     private func openSubscriptionFromUpgrade() {
@@ -191,7 +191,7 @@ struct RecordingOverlayView: View {
                 startTime = Date()
                 elapsed = 0
                 didTriggerLimit = false
-                analytics.log(.recordStart)
+
                 if !didTriggerStartHaptic {
                     didTriggerStartHaptic = true
                     impactHaptic(style: .medium)
@@ -215,7 +215,7 @@ struct RecordingOverlayView: View {
                     notificationHaptic(type: .error)
                 }
                 
-                analytics.log(.transcribeFail)
+
                 
                 if pendingSave {
                     pendingSave = false
@@ -330,11 +330,8 @@ struct RecordingOverlayView: View {
             // Clean up the recording file after successful save
             speechRecognizer.completeRecording()
             
-            // Analytics
-            if !trimmed.isEmpty {
-                analytics.log(.transcribeSuccess, properties: ["length": "\(trimmed.count)"])
-            }
-            analytics.log(.recordEnd)
+            // Analytics removed
+
             notificationHaptic(type: .success)
             
             isProcessing = false

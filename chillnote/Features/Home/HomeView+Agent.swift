@@ -2,18 +2,6 @@ import SwiftUI
 import SwiftData
 
 extension HomeView {
-    func handleAgentActionRequest(_ action: AIAgentAction) {
-        if action.type == .custom {
-            pendingAgentAction = action
-            isCustomActionInputPresented = true
-        } else if action.type == .translate {
-            pendingAgentAction = action
-            isTranslateInputPresented = true
-        } else {
-            Task { await executeAgentAction(action) }
-        }
-    }
-
     func handleAgentActionRequest(_ recipe: AgentRecipe) {
         let selectedCount = selectedNotes.count
         if selectedCount > recipeHardLimit {
@@ -36,56 +24,35 @@ extension HomeView {
     }
 
     func performAgentRecipe(_ recipe: AgentRecipe) {
-        switch recipe.id {
-        case "merge_notes":
-            let action = AIAgentAction(
-                type: .merge,
-                title: recipe.name,
-                icon: recipe.systemIcon,
-                description: recipe.description,
-                requiresConfirmation: true
-            )
-            Task { await executeAgentAction(action) }
-        case "translate":
-            let action = AIAgentAction(
-                type: .translate,
-                title: recipe.name,
-                icon: recipe.systemIcon,
-                description: recipe.description,
-                requiresConfirmation: false
-            )
-            pendingAgentAction = action
+        if recipe.id == "translate" {
+            pendingAgentAction = recipe
             isTranslateInputPresented = true
-        default:
-            let action = AIAgentAction(
-                type: .custom,
-                title: recipe.name,
-                icon: recipe.systemIcon,
-                description: recipe.description,
-                requiresConfirmation: false
-            )
-            Task { await executeAgentAction(action, instruction: recipe.prompt) }
+        } else {
+            // For merge_notes and all other recipes (including custom ones),
+            // we can execute directly. The instruction is handled inside AgentRecipe.execute
+            // or passed as nil for custom recipes (though custom recipes uses self.prompt inside execute)
+            Task { await executeAgentAction(recipe) }
         }
     }
 
-    func executeAgentAction(_ action: AIAgentAction, instruction: String? = nil) async {
+    func executeAgentAction(_ recipe: AgentRecipe, instruction: String? = nil) async {
         let notesToProcess = getSelectedNotes()
         guard !notesToProcess.isEmpty else { return }
 
         await MainActor.run {
             isExecutingAction = true
-            actionProgress = "Executing \(action.title)..."
+            actionProgress = "Executing \(recipe.name)..."
         }
 
         do {
-            _ = try await action.execute(on: notesToProcess, context: modelContext, userInstruction: instruction)
+            _ = try await recipe.execute(on: notesToProcess, context: modelContext, userInstruction: instruction)
 
             await MainActor.run {
                 persistAndSync()
                 isExecutingAction = false
                 actionProgress = nil
 
-                if action.type == .merge {
+                if recipe.id == "merge_notes" {
                     notesToDeleteAfterMerge = notesToProcess
                     showMergeSuccessAlert = true
                 } else {

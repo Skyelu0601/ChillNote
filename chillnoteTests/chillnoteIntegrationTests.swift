@@ -190,4 +190,29 @@ final class chillnoteIntegrationTests: XCTestCase {
         XCTAssertEqual(fetchedNotes.count, 1)
         XCTAssertEqual(fetchedNotes.first?.content, "Active")
     }
+
+    /// 测试：语音 Refine 产出的 checklist markdown 能被 syncContentStructure 正确同步
+    func testSyncContentStructureParsesRefineChecklistOutput() throws {
+        let note = Note(content: "临时文本", userId: "u1")
+        modelContext.insert(note)
+
+        note.content = """
+        版本发布收尾
+
+        - [ ] 联系设计确认最终图
+        - [ ] 提交 App Store 审核
+        """
+
+        note.syncContentStructure(with: modelContext)
+        try modelContext.save()
+
+        XCTAssertEqual(note.contentFormat, NoteContentFormat.checklist.rawValue)
+        XCTAssertEqual(note.checklistNotes, "版本发布收尾")
+        XCTAssertEqual(note.checklistItems.count, 2)
+        let sortedItems = note.checklistItems.sorted(by: { $0.sortOrder < $1.sortOrder })
+        XCTAssertEqual(sortedItems[0].text, "联系设计确认最终图")
+        XCTAssertEqual(sortedItems[1].text, "提交 App Store 审核")
+        XCTAssertFalse(sortedItems[0].isDone)
+        XCTAssertFalse(sortedItems[1].isDone)
+    }
 }

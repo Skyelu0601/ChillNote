@@ -40,28 +40,12 @@ extension HomeView {
 
     func checkForPendingRecordingsAsync() async {
         if case .recording = speechRecognizer.recordingState { return }
-        let currentPath = speechRecognizer.getCurrentAudioFileURL()?.path
-        let pending = await Task.detached(priority: .utility) {
-            RecordingFileManager.shared.cleanupOldRecordings()
-            var pending = RecordingFileManager.shared.checkForPendingRecordings()
-            if let currentPath {
-                pending.removeAll { $0.fileURL.path == currentPath }
-            }
-            return pending
+        let pending = await Task.detached(priority: .userInitiated) {
+            RecordingFileManager.shared.pendingRecordings()
         }.value
 
         await MainActor.run {
             pendingRecordings = pending
-            guard !pending.isEmpty else { return }
-
-            let maxDate = pending.map { $0.createdAt.timeIntervalSince1970 }.max() ?? 0
-            if maxDate > lastDismissedRecordingDate {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                    withAnimation {
-                        showRecoveryAlert = true
-                    }
-                }
-            }
         }
     }
 }

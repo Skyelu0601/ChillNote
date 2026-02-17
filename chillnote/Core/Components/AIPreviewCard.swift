@@ -1,16 +1,16 @@
 import SwiftUI
 
-/// Compact toolbar showing AI action controls after content replacement
-struct AIActionToolbar: View {
+/// Compact AI preview card shown after AI content replacement.
+struct AIPreviewCard: View {
     let onRetry: () -> Void
     let onUndo: () -> Void
     let onSave: () -> Void
     
     var body: some View {
         HStack(spacing: 0) {
-            // Action Buttons
+            // Card action buttons
             HStack(spacing: 4) {
-                // Retry Button
+                // Retry action
                 Button(action: onRetry) {
                     VStack(spacing: 2) {
                         Image(systemName: "arrow.clockwise")
@@ -26,7 +26,7 @@ struct AIActionToolbar: View {
                     .frame(height: 30)
                     .background(Color.textSub.opacity(0.2))
 
-                // Undo Button
+                // Undo action
                 Button(action: onUndo) {
                     VStack(spacing: 2) {
                         Image(systemName: "arrow.uturn.backward")
@@ -42,7 +42,7 @@ struct AIActionToolbar: View {
                     .frame(height: 30)
                     .background(Color.textSub.opacity(0.2))
                 
-                // Save Button
+                // Save action
                 Button(action: onSave) {
                     VStack(spacing: 2) {
                         Image(systemName: "checkmark")
@@ -85,7 +85,7 @@ struct AIActionToolbar: View {
         
         VStack {
             Spacer()
-            AIActionToolbar(
+            AIPreviewCard(
                 onRetry: { print("Retry") },
                 onUndo: { print("Undo") },
                 onSave: { print("Save") }

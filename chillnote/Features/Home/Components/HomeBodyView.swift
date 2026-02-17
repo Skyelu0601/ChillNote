@@ -28,17 +28,17 @@ struct HomeBodyView: View {
         )
     }
 
-    private var showAgentActionsSheetBinding: Binding<Bool> {
-        Binding(
-            get: { state.showAgentActionsSheet },
-            set: { dispatch(.setShowAgentActionsSheet($0)) }
-        )
-    }
-
     private var showChillRecipesBinding: Binding<Bool> {
         Binding(
             get: { state.showChillRecipes },
             set: { dispatch(.setShowChillRecipes($0)) }
+        )
+    }
+
+    private var showPendingRecordingsBinding: Binding<Bool> {
+        Binding(
+            get: { state.showPendingRecordings },
+            set: { dispatch(.setShowPendingRecordings($0)) }
         )
     }
 
@@ -155,14 +155,28 @@ struct HomeBodyView: View {
                 selectedTag: selectedTagBinding,
                 isTrashSelected: trashSelectedBinding,
                 hasPendingRecordings: state.hasPendingRecordings,
-                onSettingsTap: { dispatch(.showSettings) }
+                pendingRecordingsCount: state.pendingRecordingsCount,
+                onSettingsTap: { dispatch(.showSettings) },
+                onPendingRecordingsTap: { dispatch(.setShowPendingRecordings(true)) }
             )
         }
         .navigationBarHidden(true)
         .fullScreenCover(isPresented: showingSettingsBinding, onDismiss: {
             dispatch(.setAutoOpenPendingRecordings(false))
         }) {
-            SettingsView(autoNavigateToPendingRecordings: state.autoOpenPendingRecordings)
+            SettingsView()
+        }
+        .sheet(isPresented: showPendingRecordingsBinding) {
+            NavigationStack {
+                PendingRecordingsView()
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Close") {
+                                dispatch(.setShowPendingRecordings(false))
+                            }
+                        }
+                    }
+            }
         }
         .fullScreenCover(isPresented: showAIChatBinding) {
             AIContextChatView(contextNotes: state.cachedContextNotes)
@@ -170,11 +184,6 @@ struct HomeBodyView: View {
                 .onDisappear {
                     dispatch(.aiChatDisappear)
                 }
-        }
-        .sheet(isPresented: showAgentActionsSheetBinding) {
-            AIAgentActionsSheet(selectedCount: state.selectedNotes.count) { recipe in
-                dispatch(.handleAgentRecipeRequest(recipe))
-            }
         }
         .sheet(isPresented: showChillRecipesBinding) {
             NavigationStack {

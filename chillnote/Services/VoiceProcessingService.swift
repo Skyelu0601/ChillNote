@@ -5,6 +5,7 @@ enum VoiceNoteState: Equatable {
     case idle
     case processing(stage: VoiceProcessingStage)
     case completed(originalText: String)
+    case failed(message: String)
 }
 
 /// Service for processing voice transcripts with intent recognition and structuring
@@ -19,24 +20,22 @@ class VoiceProcessingService: ObservableObject {
     /// Process the note in the background and update it dynamically
     func startProcessing(note: Note, rawTranscript: String, context: ModelContext) async {
         let noteID = note.id
+        let cleanTranscript = removeTimestamps(from: rawTranscript)
         processingStates[noteID] = .processing(stage: .refining)
         
         do {
-            let processedText = try await processTranscript(rawTranscript)
+            let processedText = try await processTranscript(cleanTranscript)
             
 
             
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                 // Update the note content
                 note.content = processedText
+                note.syncContentStructure(with: context)
                 note.updatedAt = Date()
                 try? context.save()
-                
-                // If it looks like a checklist, we might need to sync structure
-                // (Note: Syncing structure is tricky here as it might disrupt the animation, 
-                //  but Note.editableHTML logic should handle display)
-                
-                processingStates[noteID] = .completed(originalText: rawTranscript)
+
+                processingStates[noteID] = .completed(originalText: cleanTranscript)
             }
             
             // Clear the specific state after 10 seconds (hides Undo option)
@@ -51,11 +50,10 @@ class VoiceProcessingService: ObservableObject {
             
         } catch {
             print("⚠️ AI processing failed: \(error)")
-            // Fallback to raw transcript if refining fails.
-            note.content = rawTranscript
-            note.updatedAt = Date()
-            try? context.save()
-            processingStates[noteID] = .idle
+            // AI processing failed; do not apply local fallback.
+            // Leave the note content as is (or handled by caller/UI).
+            // Reset state so UI knows we are done (or failed).
+            processingStates[noteID] = .failed(message: "AI refinement failed. You can keep editing this note.")
         }
     }
 
@@ -97,15 +95,28 @@ class VoiceProcessingService: ObservableObject {
         - If any part is ambiguous or uncertain, keep the original wording for that part instead of guessing.
         - For short inputs (under 30 characters): use MINIMAL-EDIT mode and keep wording nearly verbatim.
           - Current input short mode: \(isShortInput ? "ON" : "OFF")
+        - IMPLICIT STRUCTURING:
+          - Even without explicit keywords, detect structural intent (topic shifts, sequence, steps, conclusions, action items).
+          - If structure is clearly implied: split into clean paragraphs, and optionally add short one-line subheadings.
+          - If structure is weak: do light paragraphing only, avoid forced headings.
+        - TODO / CHECKLIST:
+          - If content is task-oriented (next steps, action items, commitments), format tasks as Markdown checklist items:
+            - [ ] Task
+          - For mixed content, keep short context notes first, then one blank line, then checklist.
+          - Do NOT invent tasks; only convert/reorganize user-provided intent.
+        - SHORT-INPUT SAFETY:
+          - If short mode is ON, do not force structuring or checklist conversion.
         - NO EXPLANATIONS: Return ONLY the processed note text. Do not add "Here is your note" or any metadata.
-        - Keep markdown structure only when clearly implied by the user.
+        - Keep markdown style simple and directly editable.
         """
 
-        return try await GeminiService.shared.generateContent(
+        let refined = try await GeminiService.shared.generateContent(
             prompt: prompt,
             systemInstruction: systemInstruction,
             countUsage: false
         )
+
+        return refined
     }
     
     /// Process voice command for the Voice Agent (placeholder for future expansion)
@@ -146,6 +157,20 @@ private extension VoiceProcessingService {
         }
 
         return "- TONE ADAPTATION: Disabled by default. Keep the user's original tone and register."
+    }
+
+    func removeTimestamps(from text: String) -> String {
+        // Matches timestamps like 00:00, [00:00], 00:00 00:01 at the start of lines
+        // Pattern: Start of line, optional brackets, digits:digits, optional seconds, optional brackets, whitespace
+        let pattern = #"^(?:\[?\d{1,2}:\d{2}(?::\d{2})?\]?\s*)+"#
+        
+        do {
+            let regex = try NSRegularExpression(pattern: pattern, options: .anchorsMatchLines)
+            let range = NSRange(text.startIndex..<text.endIndex, in: text)
+            return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
+        } catch {
+            return text
+        }
     }
 }
 

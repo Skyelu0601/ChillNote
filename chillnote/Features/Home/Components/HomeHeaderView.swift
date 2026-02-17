@@ -42,7 +42,7 @@ struct HomeHeaderView: View {
 
                 Text(headerTitle)
                     .font(.displayMedium)
-                    .foregroundColor(.textMain)
+                    .foregroundColor(.black)
 
                 Spacer()
 

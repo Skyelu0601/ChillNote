@@ -29,9 +29,9 @@ struct LoginView: View {
                         .font(.system(size: 32, weight: .bold, design: .serif))
                         .foregroundColor(.textMain)
                     
-                    Text("Sync your thoughts.\nUnclutter your mind.")
+                    Text("Say it. Save it.")
                         .multilineTextAlignment(.center)
-                        .font(.system(size: 16))
+                        .font(.system(size: 20, weight: .medium))
                         .foregroundColor(.textSub)
                 }
                 .padding(.bottom, 20)

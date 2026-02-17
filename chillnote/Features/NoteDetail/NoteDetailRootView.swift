@@ -26,11 +26,11 @@ struct NoteDetailView: View {
                     isDeleted: viewModel.isDeleted,
                     isRecording: speechRecognizer.isRecording,
                     recordingTimeString: viewModel.timeString(from: viewModel.recordingDuration),
-                    canUseMagic: viewModel.isMagicButtonEnabled,
+                    isTidyEnabled: viewModel.isTidyEnabled,
                     onBack: { viewModel.send(.backTapped) },
                     onRestore: { viewModel.send(.restoreTapped) },
                     onStopRecording: { viewModel.send(.stopRecordingTapped) },
-                    onMagic: { viewModel.send(.tidyTapped) },
+                    onTidy: { viewModel.send(.tidyTapped) },
                     onExport: { viewModel.send(.exportTapped) },
                     onDelete: { viewModel.send(.deleteTapped) },
                     onDeletePermanently: { viewModel.send(.deletePermanentlyTapped) }

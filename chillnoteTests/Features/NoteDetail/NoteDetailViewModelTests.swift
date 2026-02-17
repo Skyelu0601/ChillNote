@@ -55,7 +55,8 @@ final class NoteDetailViewModelTests: XCTestCase {
         note.content = "   \n"
         viewModel.updateTimestampAndDismiss()
 
-        XCTAssertNotNil(note.deletedAt)
+        let notes = (try? context.fetch(FetchDescriptor<Note>())) ?? []
+        XCTAssertEqual(notes.count, 0)
         XCTAssertTrue(didDismiss)
     }
 

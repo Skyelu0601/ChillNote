@@ -127,6 +127,10 @@ extension HomeView {
 
     func deleteNote(_ note: Note) {
         guard note.deletedAt == nil else { return }
+        if note.isEmptyNote {
+            deleteNotePermanently(note)
+            return
+        }
         withAnimation {
             note.markDeleted()
         }
@@ -199,13 +203,28 @@ extension HomeView {
     }
 
     func deleteNotes(_ notes: [Note]) {
+        let activeNotes = notes.filter { $0.deletedAt == nil }
+        guard !activeNotes.isEmpty else { return }
+
+        let emptyNotes = activeNotes.filter(\.isEmptyNote)
+        let nonEmptyNotes = activeNotes.filter { !$0.isEmptyNote }
+        let deletedIds = emptyNotes.map(\.id)
+        let affectedTags = activeNotes.flatMap { $0.tags }
+
         withAnimation {
-            for note in notes where note.deletedAt == nil {
+            for note in nonEmptyNotes {
                 note.markDeleted()
             }
+            for note in emptyNotes {
+                modelContext.delete(note)
+            }
+        }
+
+        if !deletedIds.isEmpty {
+            Task { await NotesSearchIndexer.shared.remove(noteIDs: deletedIds) }
         }
         persistAndSync()
-        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: notes.flatMap { $0.tags })
+        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: affectedTags)
     }
 
     func persistAndSync() {

@@ -15,7 +15,11 @@ struct ContentView: View {
             } else {
                 switch authService.state {
                 case .checking:
-                    ProgressView("Checking session...")
+                    if authService.canOptimisticallyEnterHome {
+                        HomeView()
+                    } else {
+                        ProgressView("Checking session...")
+                    }
                 case .signedIn:
                     HomeView()
                 case .signedOut:

@@ -498,7 +498,7 @@ struct ChatMessageBubble: View {
             VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 8) {
                 // Message content
                 VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
-                    // Use MarkdownText for AI responses to properly render markdown
+                    // Use typewriter markdown rendering for AI responses.
                     if message.role == .assistant {
                         TypewriterMarkdownText(
                             content: message.content,

@@ -35,9 +35,6 @@ final class Note {
     
     /// Get display text for previews (strips Markdown formatting)
     var displayText: String {
-        if !previewPlainText.isEmpty {
-            return previewPlainText
-        }
         return makePreviewPlainText()
     }
     
@@ -52,10 +49,10 @@ final class Note {
         result = result.replacingOccurrences(of: "*", with: "")
         // Remove code
         result = result.replacingOccurrences(of: "`", with: "")
-        // Remove checkbox markers
-        result = result.replacingOccurrences(of: "- [ ] ", with: "")
-        result = result.replacingOccurrences(of: "- [x] ", with: "")
-        result = result.replacingOccurrences(of: "- [X] ", with: "")
+        // Keep checklist intent in home preview using visual checkboxes
+        result = result.replacingOccurrences(of: "- [ ] ", with: "☐ ")
+        result = result.replacingOccurrences(of: "- [x] ", with: "☑ ")
+        result = result.replacingOccurrences(of: "- [X] ", with: "☑ ")
         // Remove bullet markers
         result = result.replacingOccurrences(of: #"^[\-\•]\s+"#, with: "", options: .regularExpression)
         return result
@@ -98,6 +95,10 @@ final class Note {
 
     var isChecklist: Bool {
         contentFormat == NoteContentFormat.checklist.rawValue
+    }
+
+    var isEmptyNote: Bool {
+        content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     func syncContentStructure(with context: ModelContext) {
@@ -158,12 +159,7 @@ final class Note {
     }
 
     private func makePreviewPlainText() -> String {
-        let sourceText: String
-        if isChecklist {
-            sourceText = ChecklistMarkdown.serializePlainText(notes: checklistNotes, items: checklistItems)
-        } else {
-            sourceText = stripMarkdownFormatting(content)
-        }
+        let sourceText = stripMarkdownFormatting(content)
         let limit = 200
         if sourceText.count <= limit {
             return sourceText

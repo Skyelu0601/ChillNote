@@ -1,4 +1,9 @@
 import Foundation
+import AVFoundation
+
+extension Notification.Name {
+    static let pendingRecordingsDidChange = Notification.Name("PendingRecordingsDidChange")
+}
 
 /// Manages the lifecycle of recording files with crash recovery support
 /// Files are stored in a "safe" directory and cleaned up after successful transcription
@@ -90,12 +95,30 @@ final class RecordingFileManager {
                 
                 validRecordings.append(PendingRecording(
                     fileURL: url,
-                    createdAt: creationDate
+                    createdAt: creationDate,
+                    duration: recordingDuration(for: url) ?? 0
                 ))
             }
         }
         
         return validRecordings
+    }
+
+    /// Returns current pending recordings after cleanup, with optional filtering and sorting.
+    func pendingRecordings(excludingPath: String? = nil, sortedByNewest: Bool = false) -> [PendingRecording] {
+        cleanupOldRecordings()
+
+        var pending = checkForPendingRecordings()
+
+        if let excludingPath {
+            pending.removeAll { $0.fileURL.path == excludingPath }
+        }
+
+        if sortedByNewest {
+            pending.sort { $0.createdAt > $1.createdAt }
+        }
+
+        return pending
     }
     
     /// Removes a recording from recovery tracking without deleting the file.
@@ -148,6 +171,7 @@ final class RecordingFileManager {
             pending.append(path)
             UserDefaults.standard.set(pending, forKey: pendingRecordingsKey)
             print("🔒 Marked as pending: \(fileURL.lastPathComponent)")
+            NotificationCenter.default.post(name: .pendingRecordingsDidChange, object: nil)
         }
     }
     
@@ -159,7 +183,17 @@ final class RecordingFileManager {
             pending.remove(at: index)
             UserDefaults.standard.set(pending, forKey: pendingRecordingsKey)
             print("🔓 Cleared pending: \(fileURL.lastPathComponent)")
+            NotificationCenter.default.post(name: .pendingRecordingsDidChange, object: nil)
         }
+    }
+
+    private func recordingDuration(for fileURL: URL) -> TimeInterval? {
+        guard let audioPlayer = try? AVAudioPlayer(contentsOf: fileURL) else {
+            return nil
+        }
+        let seconds = audioPlayer.duration
+        guard seconds.isFinite, seconds > 0 else { return nil }
+        return seconds
     }
 }
 
@@ -169,19 +203,16 @@ struct PendingRecording: Identifiable {
     let id = UUID()
     let fileURL: URL
     let createdAt: Date
+    let duration: TimeInterval
     
     var fileName: String {
         fileURL.lastPathComponent
     }
     
     var durationText: String {
-        let interval = Date().timeIntervalSince(createdAt)
-        let minutes = Int(interval / 60)
-        if minutes < 60 {
-            return "\(minutes) minutes ago"
-        } else {
-            let hours = minutes / 60
-            return "\(hours) hours ago"
-        }
+        let totalSeconds = max(0, Int(duration.rounded()))
+        let minutes = totalSeconds / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%d:%02d", minutes, seconds)
     }
 }

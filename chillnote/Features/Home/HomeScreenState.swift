@@ -19,7 +19,6 @@ struct HomeScreenState {
     let showingSettings: Bool
     let autoOpenPendingRecordings: Bool
     let showAIChat: Bool
-    let showAgentActionsSheet: Bool
     let isCustomActionInputPresented: Bool
     let customActionPrompt: String
     let isTranslateInputPresented: Bool
@@ -55,6 +54,8 @@ struct HomeScreenState {
     let recipeHardLimit: Int
 
     let hasPendingRecordings: Bool
+    let pendingRecordingsCount: Int
+    let showPendingRecordings: Bool
 }
 
 enum HomeScreenAction {
@@ -64,8 +65,8 @@ enum HomeScreenAction {
     case setVoiceMode(Bool)
     case setShowingSettings(Bool)
     case setAutoOpenPendingRecordings(Bool)
+    case setShowPendingRecordings(Bool)
     case setShowAIChat(Bool)
-    case setShowAgentActionsSheet(Bool)
     case setCustomActionInputPresented(Bool)
     case setCustomActionPrompt(String)
     case setTranslateInputPresented(Bool)

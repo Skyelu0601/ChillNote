@@ -4,11 +4,11 @@ struct NoteDetailHeaderView: View {
     let isDeleted: Bool
     let isRecording: Bool
     let recordingTimeString: String
-    let canUseMagic: Bool
+    let isTidyEnabled: Bool
     let onBack: () -> Void
     let onRestore: () -> Void
     let onStopRecording: () -> Void
-    let onMagic: () -> Void
+    let onTidy: () -> Void
     let onExport: () -> Void
     let onDelete: () -> Void
     let onDeletePermanently: () -> Void
@@ -64,7 +64,7 @@ struct NoteDetailHeaderView: View {
                 .transition(.scale(scale: 0.9).combined(with: .opacity))
             } else {
                 HStack(spacing: 8) {
-                    Button(action: onMagic) {
+                    Button(action: onTidy) {
                         Image(systemName: "wand.and.stars")
                             .font(.system(size: 16))
                             .foregroundColor(.accentPrimary)
@@ -73,8 +73,8 @@ struct NoteDetailHeaderView: View {
                             .clipShape(Circle())
                     }
                     .accessibilityLabel("Chillo's Magic")
-                    .disabled(!canUseMagic)
-                    .opacity(canUseMagic ? 1 : 0.5)
+                    .disabled(!isTidyEnabled)
+                    .opacity(isTidyEnabled ? 1 : 0.5)
 
                     Menu {
                         Button(action: onExport) {
