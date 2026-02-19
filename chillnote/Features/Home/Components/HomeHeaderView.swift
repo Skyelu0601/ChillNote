@@ -25,7 +25,7 @@ struct HomeHeaderView: View {
             if !isSelectionMode {
                 Button(action: onToggleSidebar) {
                     Image(systemName: "line.3.horizontal")
-                        .font(.system(size: 22, weight: .medium))
+                        .font(.system(size: 24, weight: .medium))
                         .foregroundColor(.textMain)
                         .frame(width: 44, height: 44)
                         .overlay(alignment: .topTrailing) {
@@ -41,7 +41,7 @@ struct HomeHeaderView: View {
                 .padding(.leading, -10)
 
                 Text(headerTitle)
-                    .font(.displayMedium)
+                    .font(.system(size: 24, weight: .semibold, design: .serif))
                     .foregroundColor(.black)
 
                 Spacer()
@@ -52,7 +52,7 @@ struct HomeHeaderView: View {
                             Image("chillohead_touming")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 48, height: 48)
+                                .frame(width: 44, height: 44)
                                 .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
                                 .opacity(isRecording ? 0.3 : 1.0)
                                 .grayscale(isRecording ? 1.0 : 0.0)

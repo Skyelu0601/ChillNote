@@ -127,6 +127,8 @@ struct HomeView: View {
             inputText: inputText,
             isVoiceMode: isVoiceMode,
             cachedVisibleNotes: homeViewModel.items,
+            isLoadingNotes: homeViewModel.isLoading,
+            hasLoadedNotesAtLeastOnce: homeViewModel.hasLoadedAtLeastOnce,
             availableTags: availableTags,
             translateLanguages: translateLanguages,
             recipeManager: recipeManager,
@@ -175,6 +177,23 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .pendingRecordingsDidChange)) { _ in
             Task { @MainActor in
                 await checkForPendingRecordingsAsync()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .pendingRecordingNoteCreated)) { notification in
+            // 1. Close the pending recordings sheet immediately
+            showPendingRecordings = false
+
+            // 2. Reload the home feed right away (keep existing items visible while loading)
+            Task { @MainActor in
+                await homeViewModel.reload(keepItemsWhileLoading: true)
+
+                // 3. Navigate to the new note's detail page once the list has refreshed
+                if let noteID = notification.userInfo?["noteID"] as? UUID,
+                   let note = homeViewModel.note(with: noteID) {
+                    // Small delay so the sheet dismiss animation completes first
+                    try? await Task.sleep(nanoseconds: 350_000_000)
+                    navigationPath.append(note)
+                }
             }
         }
         .onChange(of: authService.isSignedIn) { _, isSignedIn in
@@ -415,10 +434,11 @@ struct HomeView: View {
             pendingRecipeForConfirmation = nil
             showRecipeSoftLimitAlert = false
         case .noteDetailDisappear(let note):
-            if note.deletedAt != nil {
+            let isVisibleInCurrentMode = isTrashSelected ? (note.deletedAt != nil) : (note.deletedAt == nil)
+            if !isVisibleInCurrentMode {
                 homeViewModel.removeNoteLocally(id: note.id)
             }
-            requestReload()
+            requestReload(keepItemsWhileLoading: true)
         }
     }
 
@@ -460,14 +480,14 @@ struct HomeView: View {
         )
     }
 
-    func requestReload(delayNanoseconds: UInt64 = 120_000_000) {
+    func requestReload(delayNanoseconds: UInt64 = 120_000_000, keepItemsWhileLoading: Bool = false) {
         scheduledReloadTask?.cancel()
         scheduledReloadTask = Task {
             if delayNanoseconds > 0 {
                 try? await Task.sleep(nanoseconds: delayNanoseconds)
             }
             guard !Task.isCancelled else { return }
-            await homeViewModel.reload()
+            await homeViewModel.reload(keepItemsWhileLoading: keepItemsWhileLoading)
             clampSelectionToCurrentFilter()
         }
     }

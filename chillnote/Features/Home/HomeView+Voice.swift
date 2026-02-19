@@ -23,6 +23,8 @@ extension HomeView {
         try? modelContext.save()
 
         pendingVoiceNoteByPath[fileURL.path] = note.id
+        // Persist the link so PendingRecordingsView can find this Note after a crash/restart
+        RecordingFileManager.shared.setNoteID(note.id, for: fileURL)
         VoiceProcessingService.shared.processingStates[note.id] = .processing(stage: .transcribing)
 
         if navigationPath.isEmpty {

@@ -301,6 +301,10 @@ final class AuthService: ObservableObject {
             let session = try await supabase.auth.session
             return session.accessToken
         } catch {
+            let cached = UserDefaults.standard.string(forKey: "syncAuthToken")
+            if let cached, !cached.isEmpty {
+                return cached
+            }
             return nil
         }
     }

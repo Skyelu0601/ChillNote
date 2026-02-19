@@ -50,6 +50,9 @@
     "123456" : {
 
     },
+    "Active" : {
+
+    },
     "Add" : {
 
     },
@@ -63,6 +66,9 @@
 
     },
     "Analyzing your knowledge base..." : {
+
+    },
+    "Annual Plan" : {
 
     },
     "Are you sure you want to delete %lld note%@? This action cannot be undone." : {
@@ -136,6 +142,9 @@
 
     },
     "ChillNote is not just another note-taking app. It is a tool designed to realign the way we capture, process, and structure our thoughts. By prioritizing voice input and AI-driven organization, ChillNote addresses the friction between the human mind's speed and the limitations of traditional input methods." : {
+
+    },
+    "ChillNote Pro" : {
 
     },
     "Chillo" : {
@@ -693,16 +702,19 @@
     "Loading prices..." : {
 
     },
+    "Loading..." : {
+
+    },
     "Local data initialization failed. Please try again. If it still fails, restart the app or free up device storage and try again." : {
 
     },
     "Manage" : {
 
     },
-    "Manage in App Store" : {
+    "Manage or cancel your subscription in Settings > Apple ID > Subscriptions." : {
 
     },
-    "Manage or cancel your subscription in Settings > Apple ID > Subscriptions." : {
+    "Manage Subscription" : {
 
     },
     "Markdown" : {
@@ -718,6 +730,9 @@
 
     },
     "Mode" : {
+
+    },
+    "Monthly Plan" : {
 
     },
     "More Actions" : {
@@ -835,6 +850,9 @@
 
     },
     "Remove from My Recipes" : {
+
+    },
+    "Renews on" : {
 
     },
     "Request Access" : {
@@ -1077,6 +1095,9 @@
 
     },
     "You're ready." : {
+
+    },
+    "Your Active Privileges" : {
 
     }
   },

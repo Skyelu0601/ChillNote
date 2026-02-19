@@ -3,6 +3,8 @@ import SwiftData
 
 struct HomeNotesListView: View {
     let cachedVisibleNotes: [Note]
+    let isLoading: Bool
+    let hasLoadedAtLeastOnce: Bool
     let isTrashSelected: Bool
     let isSelectionMode: Bool
     let selectedNotes: Set<UUID>
@@ -15,7 +17,9 @@ struct HomeNotesListView: View {
 
     var body: some View {
         if cachedVisibleNotes.isEmpty {
-            if isTrashSelected {
+            if isLoading || !hasLoadedAtLeastOnce {
+                HomeNotesLoadingView()
+            } else if isTrashSelected {
                 Text("No deleted notes yet. Notes stay for 30 days.")
                     .font(.bodyMedium)
                     .foregroundColor(.textSub)
@@ -91,10 +95,55 @@ struct HomeNotesListView: View {
                         onReachBottom(note)
                     }
                 }
+
+                if isLoading {
+                    HStack(spacing: 10) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Loading...")
+                            .font(.chillCaption)
+                            .foregroundColor(.textSub)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, 6)
+                }
             }
             .padding(.horizontal, 24)
             .padding(.bottom, isTrashSelected ? 24 : 100)
         }
+    }
+}
+
+private struct HomeNotesLoadingView: View {
+    var body: some View {
+        LazyVStack(spacing: 16) {
+            ForEach(0..<4, id: \.self) { _ in
+                VStack(alignment: .leading, spacing: 12) {
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.secondary.opacity(0.25))
+                        .frame(width: 90, height: 10)
+
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.secondary.opacity(0.2))
+                        .frame(height: 14)
+
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.secondary.opacity(0.16))
+                        .frame(height: 14)
+
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.secondary.opacity(0.12))
+                        .frame(width: 140, height: 14)
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Color.cardBackground)
+                .cornerRadius(16)
+                .redacted(reason: .placeholder)
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 100)
     }
 }
 

@@ -20,13 +20,15 @@ struct AIContextChatView: View {
     var onAnswer: ((String) -> Void)? = nil
 
     
-    // Voice input
-    @StateObject private var speechRecognizer = SpeechRecognizer()
-    @State private var isVoiceMode = false
+
     
     // Save note feedback
     @State private var savedMessageId: UUID?
     @EnvironmentObject private var syncManager: SyncManager
+    
+    private let recentHistoryLimit = 8
+    private let summaryMessageLimit = 12
+    private let summarySnippetLimit = 160
     
     private func openSubscriptionFromUpgrade() {
         showUpgradeSheet = false
@@ -36,7 +38,7 @@ struct AIContextChatView: View {
     }
     
     var body: some View {
-        NavigationStack {
+        return NavigationStack {
             VStack(spacing: 0) {
                 // Context Preview Section
                 contextPreviewSection
@@ -96,6 +98,9 @@ struct AIContextChatView: View {
                             }
                         }
                     }
+                    .safeAreaInset(edge: .bottom, spacing: 0) {
+                        chatInputBar
+                    }
                 }
                 
                 // Error Display
@@ -117,63 +122,6 @@ struct AIContextChatView: View {
                     .background(Color.red.opacity(0.1))
                 }
                 
-                // Input Bar
-                if isVoiceMode {
-                    VoiceInputBar(
-                        speechRecognizer: speechRecognizer,
-                        onCancel: {
-                            speechRecognizer.stopRecording(reason: .cancelled)
-                            isVoiceMode = false
-                        },
-                        onConfirm: {
-                            speechRecognizer.stopRecording()
-                            isVoiceMode = false
-                        }
-                    )
-                    .transition(.move(edge: .bottom))
-                } else {
-                    HStack(alignment: .bottom, spacing: 12) {
-                        // Text Input
-                        TextField("Ask Chillo...", text: $userInput, axis: .vertical)
-                            .font(.bodyMedium)
-                            .foregroundColor(.textMain)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 14) // Slightly taller for better touch target
-                            .background(Color.bgSecondary)
-                            .cornerRadius(24)
-                            .lineLimit(1...5)
-                            .focused($isInputFocused)
-                            .submitLabel(.send)
-                            .onSubmit {
-                                sendMessage()
-                            }
-                        
-                        // Primary Action Button (Voice or Send)
-                        Button(action: {
-                            if userInput.isEmpty {
-                                startVoiceInput()
-                            } else {
-                                sendMessage()
-                            }
-                        }) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.accentPrimary)
-                                    .frame(width: 52, height: 52)
-                                    .shadow(color: Color.accentPrimary.opacity(0.3), radius: 4, y: 2)
-                                
-                                Image(systemName: userInput.isEmpty ? "mic.fill" : "arrow.up")
-                                    .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(.white) // Always white for contrast on accent color
-                                    .contentTransition(.symbolEffect(.replace))
-                            }
-                        }
-                        .disabled(isLoading)
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                    .background(.ultraThinMaterial)
-                }
             }
             .navigationTitle("Chillo")
             .navigationBarTitleDisplayMode(.inline)
@@ -195,23 +143,15 @@ struct AIContextChatView: View {
         .onAppear {
             if let initial = initialQuery {
                 userInput = initial
-                // Small delay to allow view to appear before sending
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                     sendMessage()
                 }
             } else {
-                isInputFocused = true
-            }
-        }
-        .onChange(of: speechRecognizer.transcript) { _, newValue in
-            if !newValue.isEmpty {
-                userInput = newValue
-                speechRecognizer.transcript = ""
-                
-                // Mark recording as complete to clean up the file so it doesn't trigger "Unsaved Recording" checks
-                speechRecognizer.completeRecording()
-                
-                sendMessage()
+                // 延迟弹出键盘，等 fullScreenCover 转场动画完成（约 0.4s）
+                // 这样可以避免 "System gesture gate timed out" 警告和初始卡顿
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    isInputFocused = true
+                }
             }
         }
         .sheet(isPresented: $showUpgradeSheet) {
@@ -232,70 +172,60 @@ struct AIContextChatView: View {
 }
     
     var contextPreviewSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button(action: { withAnimation(.spring(response: 0.3)) { isContextExpanded.toggle() } }) {
-                HStack {
-                    Image(systemName: "doc.text.fill")
-                        .foregroundColor(.accentPrimary)
-                        .font(.system(size: 14))
-                    
-                    Text("\(contextNotes.count) Context Notes")
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                        .foregroundColor(.textMain)
-                    
-                    Spacer()
-                    
-                    Image(systemName: "chevron.down")
-                        .font(.caption)
-                        .foregroundColor(.textSub)
-                        .rotationEffect(.degrees(isContextExpanded ? 180 : 0))
-                }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 12)
-                .background(Color.bgSecondary.opacity(0.5))
-            }
-            
-            if isContextExpanded {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(contextNotes) { note in
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text(note.displayText)
-                                    .font(.caption)
-                                    .foregroundColor(.textMain)
-                                    .lineLimit(3)
-                                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                                
-                                Spacer()
-                                
-                                Text(note.createdAt.formatted(date: .abbreviated, time: .omitted))
-                                    .font(.system(size: 9))
-                                    .foregroundColor(.textSub)
-                            }
-                            .padding(10)
-                            .frame(width: 140, height: 100)
-                            .background(Color.white)
-                            .cornerRadius(12)
-                            .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.black.opacity(0.05), lineWidth: 1)
-                            )
-                        }
-                    }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 12)
-                }
-                .background(Color.bgPrimary.opacity(0.5))
-                .transition(.move(edge: .top).combined(with: .opacity))
-            }
-        }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: isContextExpanded ? 0 : 0))
-        .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
+        ContextPreviewView(notes: contextNotes, isExpanded: $isContextExpanded)
     }
-    
+
+    // MARK: - Chat Input Bar (Text-only, floating, no background)
+    var chatInputBar: some View {
+        return HStack(alignment: .bottom, spacing: 10) {
+            // Multi-line text field
+            TextField("Ask Chillo...", text: $userInput, axis: .vertical)
+                .font(.bodyMedium)
+                .foregroundColor(.textMain)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 11)
+                .background(Color.bgSecondary)
+                .cornerRadius(22)
+                .lineLimit(1...5)
+                .focused($isInputFocused)
+                .submitLabel(.send)
+                .onSubmit {
+                    sendMessage()
+                }
+
+            // Send button — always visible, disabled when empty
+            Button(action: sendMessage) {
+                ZStack {
+                    Circle()
+                        .fill(userInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                              ? Color.textSub.opacity(0.2)
+                              : Color.accentPrimary)
+                        .frame(width: 36, height: 36)
+                        .shadow(
+                            color: userInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? .clear
+                                : Color.accentPrimary.opacity(0.35),
+                            radius: 6, y: 3
+                        )
+
+                    Image(systemName: "arrow.up")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(
+                            userInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                                ? Color.textSub.opacity(0.5)
+                                : .white
+                        )
+                }
+            }
+            .disabled(userInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || isLoading)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: userInput.isEmpty)
+        }
+        .padding(.horizontal, 16)
+        .padding(.top, 10)
+        .padding(.bottom, 8)
+        .background(Color.bgPrimary.opacity(0.001)) // transparent but tappable
+    }
+
     var emptyStateView: some View {
         VStack(spacing: 24) {
             Spacer()
@@ -323,21 +253,6 @@ struct AIContextChatView: View {
         }
     }
     
-    func startVoiceInput() {
-        guard !isLoading else { return }
-        Task {
-            let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
-            await MainActor.run {
-                guard canRecord else {
-                    showUpgradeSheet = true
-                    return
-                }
-                isVoiceMode = true
-                isInputFocused = false
-                speechRecognizer.startRecording(countsTowardQuota: true)
-            }
-        }
-    }
     
     func sendMessage() {
         let trimmed = userInput.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -354,17 +269,37 @@ struct AIContextChatView: View {
             do {
                 // Build context from notes
                 let context = buildContext()
-                
-                // Create prompt with context
+                let conversationHistory = buildConversationHistory(excludingLatestUserMessage: true)
+
+                // Create prompt with context and history
                 let fullPrompt = """
-                You are an intelligent assistant helping users understand and analyze their notes.
+                You are an AI assistant with access to user notes as long-term memory.
                 
-                User's notes:
+                Follow these rules in order:
+                1) Prioritize facts from User Notes whenever possible.
+                2) If User Notes are insufficient, you may use general knowledge.
+                3) Never present general knowledge or guesses as if they came from notes.
+                4) The first line of your response must be exactly one of:
+                   - Source: Notes (Note X, Note Y)
+                   - Source: General Knowledge
+                   - Source: Mixed (Note X + General Knowledge)
+                5) Only when Source is "General Knowledge" or "Mixed", you may add one short line: Inference: ...
+                   If Source is "Notes", do not include any "Inference:" line.
+                6) Keep a natural conversational tone and support follow-up questions.
+                
+                Conversation Summary:
+                \(conversationHistory.summary)
+                
+                Recent Conversation Turns:
+                \(conversationHistory.recentTurns)
+                
+                User Notes:
                 \(context)
                 
-                User's question: \(trimmed)
+                Current User Question:
+                \(trimmed)
                 
-                Please answer the user's question based on the notes above. If the notes don't contain relevant information, please tell the user honestly.
+                If the notes do not contain relevant facts, answer helpfully with general knowledge and label it correctly.
                 """
                 
                 let languageRule = LanguageDetection.languagePreservationRule(for: trimmed)
@@ -383,7 +318,10 @@ struct AIContextChatView: View {
                     
                     CRITICAL:
                     \(languageRule)
-                    - Always prioritize the language of the User's question for your response, even if the notes are in a different language.
+                    - Always prioritize the language of the User's question for your response, even if notes are in another language.
+                    - Act as a proactive partner. If the user's notes are brief, feel free to ask follow-up questions or offer creative suggestions.
+                    - The first line of every answer must be one Source label in the exact required format.
+                    - Do not output any "Inference:" line when Source is "Notes".
                     """,
                     usageType: .chat
                 )
@@ -435,6 +373,42 @@ struct AIContextChatView: View {
             Content: \(note.content)
             """
         }.joined(separator: "\n\n")
+    }
+    
+    func buildConversationHistory(excludingLatestUserMessage: Bool) -> (summary: String, recentTurns: String) {
+        var history = messages
+        if excludingLatestUserMessage, let last = history.last, last.role == .user {
+            history.removeLast()
+        }
+        
+        if history.isEmpty {
+            return (
+                summary: "No prior conversation yet.",
+                recentTurns: "No recent turns."
+            )
+        }
+        
+        let recent = Array(history.suffix(recentHistoryLimit))
+        let older = Array(history.dropLast(min(recentHistoryLimit, history.count)).suffix(summaryMessageLimit))
+        
+        let summary: String = older.isEmpty ? "No older turns to summarize." : older.map { message in
+            let role = message.role == .user ? "User" : "Assistant"
+            let snippet = summarizeSnippet(message.content, limit: summarySnippetLimit)
+            return "- \(role): \(snippet)"
+        }.joined(separator: "\n")
+        
+        let recentTurns = recent.map { message in
+            let role = message.role == .user ? "User" : "Assistant"
+            return "\(role): \(message.content)"
+        }.joined(separator: "\n\n")
+        
+        return (summary: summary, recentTurns: recentTurns)
+    }
+    
+    func summarizeSnippet(_ text: String, limit: Int) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > limit else { return trimmed }
+        return String(trimmed.prefix(limit)) + "..."
     }
     
     func saveMessageAsNote(_ message: ChatMessage) {
@@ -506,8 +480,6 @@ struct ChatMessageBubble: View {
                             shouldAnimate: isLast && !message.isAnimated && !message.isStreaming,
                             onAnimationComplete: onAnimationComplete
                         )
-                        .font(.bodyMedium)
-                        .foregroundColor(.textMain)
                         .padding(12)
                         .background(Color.bgSecondary)
                         .cornerRadius(16)
@@ -548,6 +520,83 @@ struct ChatMessageBubble: View {
             
 
         }
+    }
+}
+
+// MARK: - Context Preview (Equatable to skip re-renders when userInput changes)
+private struct ContextPreviewView: View, Equatable {
+    let notes: [Note]
+    @Binding var isExpanded: Bool
+
+    static func == (lhs: ContextPreviewView, rhs: ContextPreviewView) -> Bool {
+        // Only re-render when the note list changes (count or IDs)
+        lhs.notes.map(\.id) == rhs.notes.map(\.id)
+        && lhs.isExpanded == rhs.isExpanded
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: { withAnimation(.spring(response: 0.3)) { isExpanded.toggle() } }) {
+                HStack {
+                    Image(systemName: "doc.text.fill")
+                        .foregroundColor(.accentPrimary)
+                        .font(.system(size: 14))
+                    
+                    Text("\(notes.count) Context Notes")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundColor(.textMain)
+                    
+                    Spacer()
+                    
+                    Image(systemName: "chevron.down")
+                        .font(.caption)
+                        .foregroundColor(.textSub)
+                        .rotationEffect(.degrees(isExpanded ? 180 : 0))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+                .background(Color.bgSecondary.opacity(0.5))
+            }
+            
+            if isExpanded {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 12) {
+                        ForEach(notes) { note in
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text(note.displayText)
+                                    .font(.caption)
+                                    .foregroundColor(.textMain)
+                                    .lineLimit(3)
+                                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                                
+                                Spacer()
+                                
+                                Text(note.createdAt.formatted(date: .abbreviated, time: .omitted))
+                                    .font(.system(size: 9))
+                                    .foregroundColor(.textSub)
+                            }
+                            .padding(10)
+                            .frame(width: 140, height: 100)
+                            .background(Color.white)
+                            .cornerRadius(12)
+                            .shadow(color: Color.black.opacity(0.03), radius: 4, y: 2)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                            )
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 12)
+                }
+                .background(Color.bgPrimary.opacity(0.5))
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 0))
+        .shadow(color: Color.black.opacity(0.05), radius: 2, y: 1)
     }
 }
 

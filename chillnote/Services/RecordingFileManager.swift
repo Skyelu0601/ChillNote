@@ -3,6 +3,9 @@ import AVFoundation
 
 extension Notification.Name {
     static let pendingRecordingsDidChange = Notification.Name("PendingRecordingsDidChange")
+    /// Posted after a pending recording is successfully saved as a Note.
+    /// userInfo key "noteID": UUID of the newly created Note.
+    static let pendingRecordingNoteCreated = Notification.Name("PendingRecordingNoteCreated")
 }
 
 /// Manages the lifecycle of recording files with crash recovery support
@@ -13,6 +16,8 @@ final class RecordingFileManager {
     // MARK: - Constants
     
     private let pendingRecordingsKey = "PendingRecordings"
+    /// Maps fileURL.path → Note UUID string for crash-recovery linking.
+    private let pendingNoteIDsKey = "PendingRecordingNoteIDs"
     private let maxFileAgeHours: TimeInterval = 24 * 7
     
     // MARK: - Directory
@@ -61,6 +66,20 @@ final class RecordingFileManager {
     /// Marks an existing recording file path as pending (for crash recovery).
     func markPending(fileURL: URL) {
         markAsPending(fileURL: fileURL)
+    }
+
+    /// Associates a Note ID with a pending recording so it can be found on recovery.
+    func setNoteID(_ noteID: UUID, for fileURL: URL) {
+        var mapping = noteIDMapping()
+        mapping[fileURL.path] = noteID.uuidString
+        UserDefaults.standard.set(mapping, forKey: pendingNoteIDsKey)
+        print("🔗 Linked note \(noteID) to recording: \(fileURL.lastPathComponent)")
+    }
+
+    /// Returns the Note ID previously linked to this recording file, if any.
+    func noteID(for fileURL: URL) -> UUID? {
+        guard let uuidString = noteIDMapping()[fileURL.path] else { return nil }
+        return UUID(uuidString: uuidString)
     }
     
     /// Marks a recording as successfully processed and deletes it
@@ -182,9 +201,19 @@ final class RecordingFileManager {
         if let index = pending.firstIndex(of: path) {
             pending.remove(at: index)
             UserDefaults.standard.set(pending, forKey: pendingRecordingsKey)
+
+            // Also remove the noteID link
+            var mapping = noteIDMapping()
+            mapping.removeValue(forKey: path)
+            UserDefaults.standard.set(mapping, forKey: pendingNoteIDsKey)
+
             print("🔓 Cleared pending: \(fileURL.lastPathComponent)")
             NotificationCenter.default.post(name: .pendingRecordingsDidChange, object: nil)
         }
+    }
+
+    private func noteIDMapping() -> [String: String] {
+        UserDefaults.standard.dictionary(forKey: pendingNoteIDsKey) as? [String: String] ?? [:]
     }
 
     private func recordingDuration(for fileURL: URL) -> TimeInterval? {

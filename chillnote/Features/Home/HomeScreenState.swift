@@ -35,6 +35,8 @@ struct HomeScreenState {
     let isVoiceMode: Bool
 
     let cachedVisibleNotes: [Note]
+    let isLoadingNotes: Bool
+    let hasLoadedNotesAtLeastOnce: Bool
     let availableTags: [Tag]
     let translateLanguages: [TranslateLanguage]
     let recipeManager: RecipeManager

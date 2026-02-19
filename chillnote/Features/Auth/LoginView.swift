@@ -19,20 +19,27 @@ struct LoginView: View {
                 Spacer()
                 
                 // MARK: - Brand Header
-                VStack(spacing: 16) {
+                VStack(spacing: 0) {
                     Image("chillohead_touming")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 120, height: 120)
+                        .frame(width: 100, height: 100)
+                    
+                    Spacer()
+                        .frame(height: 32)
                     
                     Text("ChillNote")
-                        .font(.system(size: 32, weight: .bold, design: .serif))
+                        .font(.system(size: 38, weight: .bold, design: .serif))
                         .foregroundColor(.textMain)
+                    
+                    Spacer()
+                        .frame(height: 8)
                     
                     Text("Say it. Save it.")
                         .multilineTextAlignment(.center)
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundColor(.textSub)
+                        .font(.system(size: 16, weight: .regular))
+                        .kerning(1.2)
+                        .foregroundColor(.textSub.opacity(0.9))
                 }
                 .padding(.bottom, 20)
                 

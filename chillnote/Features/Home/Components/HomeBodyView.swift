@@ -321,28 +321,30 @@ struct HomeBodyView: View {
 
     private var mainContent: some View {
         VStack(spacing: 0) {
+            HomeHeaderView(
+                isSelectionMode: state.isSelectionMode,
+                isTrashSelected: state.isTrashSelected,
+                isSearchVisible: state.isSearchVisible,
+                isRecording: state.speechRecognizer.isRecording,
+                headerTitle: state.headerTitle,
+                selectedNotesCount: state.selectedNotes.count,
+                visibleNotesCount: state.cachedVisibleNotes.count,
+                hasPendingRecordings: state.hasPendingRecordings,
+                onToggleSidebar: { dispatch(.toggleSidebar) },
+                onEnterSelectionMode: { dispatch(.enterSelectionMode) },
+                onToggleSearch: { dispatch(.toggleSearch) },
+                onExitSelectionMode: { dispatch(.exitSelectionMode) },
+                onSelectAll: { dispatch(.selectAll) },
+                onDeselectAll: { dispatch(.deselectAll) },
+                onShowBatchTagSheet: { dispatch(.setShowBatchTagSheet(true)) },
+                onShowDeleteConfirmation: { dispatch(.setShowDeleteConfirmation(true)) },
+                onShowEmptyTrashConfirmation: { dispatch(.setShowEmptyTrashConfirmation(true)) }
+            )
+            .background(Color.bgPrimary)
+            .zIndex(1)
+
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    HomeHeaderView(
-                        isSelectionMode: state.isSelectionMode,
-                        isTrashSelected: state.isTrashSelected,
-                        isSearchVisible: state.isSearchVisible,
-                        isRecording: state.speechRecognizer.isRecording,
-                        headerTitle: state.headerTitle,
-                        selectedNotesCount: state.selectedNotes.count,
-                        visibleNotesCount: state.cachedVisibleNotes.count,
-                        hasPendingRecordings: state.hasPendingRecordings,
-                        onToggleSidebar: { dispatch(.toggleSidebar) },
-                        onEnterSelectionMode: { dispatch(.enterSelectionMode) },
-                        onToggleSearch: { dispatch(.toggleSearch) },
-                        onExitSelectionMode: { dispatch(.exitSelectionMode) },
-                        onSelectAll: { dispatch(.selectAll) },
-                        onDeselectAll: { dispatch(.deselectAll) },
-                        onShowBatchTagSheet: { dispatch(.setShowBatchTagSheet(true)) },
-                        onShowDeleteConfirmation: { dispatch(.setShowDeleteConfirmation(true)) },
-                        onShowEmptyTrashConfirmation: { dispatch(.setShowEmptyTrashConfirmation(true)) }
-                    )
-
                     if !state.isSelectionMode && state.isSearchVisible {
                         searchBar
                             .padding(.horizontal, 24)
@@ -351,6 +353,8 @@ struct HomeBodyView: View {
 
                     HomeNotesListView(
                         cachedVisibleNotes: state.cachedVisibleNotes,
+                        isLoading: state.isLoadingNotes,
+                        hasLoadedAtLeastOnce: state.hasLoadedNotesAtLeastOnce,
                         isTrashSelected: state.isTrashSelected,
                         isSelectionMode: state.isSelectionMode,
                         selectedNotes: state.selectedNotes,
@@ -362,6 +366,7 @@ struct HomeBodyView: View {
                         onDeleteNote: { dispatch(.deleteNote($0)) }
                     )
                 }
+                .padding(.top, 16)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     dispatch(.hideKeyboard)

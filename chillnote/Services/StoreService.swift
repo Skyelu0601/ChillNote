@@ -24,6 +24,10 @@ class StoreService: ObservableObject {
     @Published var isLoadingProducts = false
     @Published var productsErrorMessage: String?
     
+    // Subscription Details
+    @Published var subscriptionExpirationDate: Date?
+    @Published var activeSubscriptionProductId: String?
+    
     // Feature Limits
     var recordingTimeLimit: TimeInterval {
         currentTier == .pro ? 600 : 60 // 10 mins vs 1 min
@@ -351,6 +355,8 @@ class StoreService: ObservableObject {
                 if productIds.contains(transaction.productID) {
                     if let expirationDate = transaction.expirationDate, expirationDate > Date() {
                         activeTransaction = transaction
+                        self.subscriptionExpirationDate = expirationDate
+                        self.activeSubscriptionProductId = transaction.productID
                     }
                 }
             } catch {

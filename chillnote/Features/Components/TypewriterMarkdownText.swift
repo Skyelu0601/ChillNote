@@ -1,110 +1,202 @@
 import SwiftUI
 import UIKit
 
+/// A high-performance text view that renders Markdown content with an optional typewriter animation.
+///
+/// **Performance design**:
+/// - Streaming mode: shows full text immediately as it arrives (no re-render per character).
+/// - Typewriter mode: animates via `CADisplayLink` entirely in UIKit, zero SwiftUI re-renders during animation.
+/// - SwiftUI `body` is only called when `content` or mode flags change.
 struct TypewriterMarkdownText: View {
     let content: String
     var isStreaming: Bool = false
     let shouldAnimate: Bool
     var onAnimationComplete: (() -> Void)? = nil
-    
-    @State private var displayedContent: String = ""
-    @State private var isAnimating = false
-    
-    // Buffering for smooth streaming
-    @State private var targetContent: String = ""
-    @State private var isTypingBuffer = false
-    
+
     var body: some View {
-        JustifiedMarkdownText(
-            content: shouldUseDisplayedContent ? displayedContent : content,
-            font: UIFont.preferredFont(forTextStyle: .callout),
-            textColor: UIColor(Color.textMain)
+        return _TypewriterUIView(
+            content: content,
+            isStreaming: isStreaming,
+            shouldAnimate: shouldAnimate,
+            onAnimationComplete: onAnimationComplete
         )
-        .onAppear {
-            targetContent = content
-            if shouldAnimate {
-                startTypewriterEffect()
-            } else if isStreaming {
-                displayedContent = ""
-                triggerStreamingTypewriter()
-            } else {
-                displayedContent = content
-            }
+    }
+}
+
+// MARK: - UIViewRepresentable wrapper
+
+private struct _TypewriterUIView: UIViewRepresentable {
+    let content: String
+    let isStreaming: Bool
+    let shouldAnimate: Bool
+    var onAnimationComplete: (() -> Void)?
+
+    func makeCoordinator() -> Coordinator {
+        Coordinator()
+    }
+
+    func makeUIView(context: Context) -> _TypewriterTextView {
+        let view = _TypewriterTextView()
+        view.onAnimationComplete = onAnimationComplete
+        return view
+    }
+
+    func updateUIView(_ uiView: _TypewriterTextView, context: Context) {
+        uiView.onAnimationComplete = onAnimationComplete
+        uiView.update(content: content, isStreaming: isStreaming, shouldAnimate: shouldAnimate)
+    }
+
+    class Coordinator {}
+}
+
+// MARK: - The actual UIView
+
+final class _TypewriterTextView: UIView {
+    var onAnimationComplete: (() -> Void)?
+
+    // MARK: Subviews
+    private let textView: UITextView = {
+        let tv = UITextView()
+        tv.isEditable = false
+        tv.isScrollEnabled = false
+        tv.backgroundColor = .clear
+        tv.textContainerInset = .zero
+        tv.textContainer.lineFragmentPadding = 0
+        tv.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        tv.setContentCompressionResistancePriority(.required, for: .vertical)
+        return tv
+    }()
+
+    // MARK: Animation state
+    private var fullContent: String = ""
+    private var displayedCharCount: Int = 0
+    private var displayLink: CADisplayLink?
+    private var charDelay: TimeInterval = 1.0 / 60.0  // target ~60 chars/sec
+
+    // Character-level cache so we don't recompute Array() every frame
+    private var fullContentChars: [Character] = []
+
+    // Track last rendered content to avoid redundant AttributedString work
+    private var lastRenderedContent: String = ""
+    private var lastRenderedLength: Int = -1
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setup()
+    }
+
+    required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        setup()
+    }
+
+    private func setup() {
+        addSubview(textView)
+        textView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            textView.topAnchor.constraint(equalTo: topAnchor),
+            textView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            textView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            textView.trailingAnchor.constraint(equalTo: trailingAnchor),
+        ])
+    }
+
+    override var intrinsicContentSize: CGSize {
+        let width = bounds.width > 0 ? bounds.width : UIScreen.main.bounds.width - 40
+        let size = textView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        return CGSize(width: UIView.noIntrinsicMetric, height: size.height)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        invalidateIntrinsicContentSize()
+    }
+
+    // MARK: - Update from SwiftUI
+
+    func update(content: String, isStreaming: Bool, shouldAnimate: Bool) {
+        if isStreaming {
+            // Streaming: show full received content immediately, no animation needed.
+            stopTypewriter()
+            renderText(content, charCount: content.count)
+        } else if shouldAnimate && content != fullContent {
+            // New content arrived & typewriter requested
+            startTypewriter(for: content)
+        } else if !shouldAnimate && !isStreaming {
+            // Static display
+            stopTypewriter()
+            renderText(content, charCount: content.count)
         }
-        .onChange(of: content) { _, newContent in
-            targetContent = newContent
-            if isStreaming || displayedContent.count < newContent.count {
-                triggerStreamingTypewriter()
-            } else if !isAnimating && !isStreaming {
-                displayedContent = newContent
-            }
+        // Always track the latest full content for streaming catch-up
+        if content != fullContent {
+            fullContent = content
+            fullContentChars = Array(content)
         }
     }
-    
-    private var shouldUseDisplayedContent: Bool {
-        if shouldAnimate && isAnimating { return true }
-        if isStreaming { return true }
-        // Continue showing partial text if catching up (prevents jump at end)
-        if displayedContent.count < content.count && !displayedContent.isEmpty { return true }
-        return false
+
+    // MARK: - Typewriter
+
+    private func startTypewriter(for newContent: String) {
+        stopTypewriter()
+        fullContent = newContent
+        fullContentChars = Array(newContent)
+        displayedCharCount = 0
+        renderText("", charCount: 0)
+
+        let link = CADisplayLink(target: self, selector: #selector(typewriterTick))
+        link.preferredFrameRateRange = CAFrameRateRange(minimum: 30, maximum: 60, preferred: 60)
+        link.add(to: .main, forMode: .common)
+        displayLink = link
     }
-    
-    private func startTypewriterEffect() {
-        guard !isAnimating else { return }
-        isAnimating = true
-        displayedContent = ""
-        
-        let chars = Array(content)
-        let baseDelay = 0.01
-        
-        Task {
-            for (_, char) in chars.enumerated() {
-                try? await Task.sleep(nanoseconds: UInt64(baseDelay * 1_000_000_000))
-                
-                await MainActor.run {
-                    displayedContent.append(char)
-                }
+
+    private func stopTypewriter() {
+        displayLink?.invalidate()
+        displayLink = nil
+    }
+
+    @objc private func typewriterTick(_ link: CADisplayLink) {
+        let targetCount = fullContentChars.count
+        guard displayedCharCount < targetCount else {
+            // Animation complete
+            stopTypewriter()
+            renderText(fullContent, charCount: targetCount)
+            DispatchQueue.main.async { [weak self] in
+                self?.onAnimationComplete?()
             }
-            await MainActor.run {
-                isAnimating = false
-                displayedContent = content
-                onAnimationComplete?()
+            return
+        }
+
+        // Advance ~2 chars per frame for smooth feel (≈ 120 chars/sec at 60fps)
+        let step = max(1, Int(Double(targetCount) / 30.0))  // finish in ~30 frames
+        displayedCharCount = min(displayedCharCount + step, targetCount)
+        let slice = String(fullContentChars.prefix(displayedCharCount))
+        renderText(slice, charCount: displayedCharCount)
+    }
+
+    // MARK: - Render
+
+    private func renderText(_ text: String, charCount: Int) {
+        // Skip redundant re-renders
+        guard charCount != lastRenderedLength || text != lastRenderedContent else { return }
+        lastRenderedContent = text
+        lastRenderedLength = charCount
+
+        let font = UIFont.preferredFont(forTextStyle: .callout)
+        let color = UIColor(Color.textMain)
+        let attributed = NSMutableAttributedString(
+            attributedString: RichTextConverter.markdownToAttributedString(text, baseFont: font, textColor: color)
+        )
+        attributed.enumerateAttribute(.paragraphStyle, in: NSRange(location: 0, length: attributed.length), options: []) { value, range, _ in
+            if let style = value as? NSParagraphStyle {
+                let mutableStyle = style.mutableCopy() as! NSMutableParagraphStyle
+                mutableStyle.alignment = .natural
+                attributed.addAttribute(.paragraphStyle, value: mutableStyle, range: range)
             }
         }
-    }
-    
-    private func triggerStreamingTypewriter() {
-        guard !isTypingBuffer else { return }
-        isTypingBuffer = true
-        
-        Task {
-            // Continue typing until we catch up to targetContent
-            while displayedContent.count < targetContent.count {
-                // Determine next character to append
-                // Use Array conversion for safety if indices are tricky, but direct access is faster
-                let currentCount = displayedContent.count
-                let targetChars = Array(targetContent) // Creating array potentially expensive in loop, but safe
-                
-                if currentCount < targetChars.count {
-                    let char = targetChars[currentCount]
-                    await MainActor.run {
-                        displayedContent.append(char)
-                    }
-                }
-                
-                // Dynamic speed adjustment based on lag
-                let lag = targetContent.count - displayedContent.count
-                // Faster if lagging behind, slower for smooth "thinking" feel
-                let delay: UInt64 = lag > 50 ? 5_000_000 : (lag > 20 ? 15_000_000 : 30_000_000)
-                try? await Task.sleep(nanoseconds: delay)
-            }
-            
-            isTypingBuffer = false
-            
-            // Double check if more content arrived
-            if displayedContent.count < targetContent.count {
-                triggerStreamingTypewriter()
-            }
+
+        if textView.attributedText != attributed {
+            textView.attributedText = attributed
+            invalidateIntrinsicContentSize()
         }
     }
 }

@@ -5,6 +5,7 @@ import SwiftData
 final class HomeViewModel: ObservableObject {
     @Published private(set) var items: [Note] = []
     @Published private(set) var isLoading: Bool = false
+    @Published private(set) var hasLoadedAtLeastOnce: Bool = false
     @Published private(set) var hasMore: Bool = true
     @Published private(set) var totalCount: Int = 0
 
@@ -65,14 +66,14 @@ final class HomeViewModel: ObservableObject {
         }
     }
 
-    func reload() async {
+    func reload(keepItemsWhileLoading: Bool = false) async {
         guard let repository, let userId else { return }
 
         let startedAt = PerformanceTelemetry.begin(query.isEmpty ? "home_feed.reload" : "home_feed.search_reload")
         isLoading = true
         defer { isLoading = false }
 
-        resetPagination(keepItems: false)
+        resetPagination(keepItems: keepItemsWhileLoading)
         do {
             let page: NotesPage
             if query.isEmpty {
@@ -98,6 +99,7 @@ final class HomeViewModel: ObservableObject {
             cursor = page.nextCursor
             hasMore = page.nextCursor != nil
             totalCount = page.total
+            hasLoadedAtLeastOnce = true
             PerformanceTelemetry.end(query.isEmpty ? "home_feed.reload" : "home_feed.search_reload", from: startedAt, extra: "count=\(items.count)")
         } catch {
             PerformanceTelemetry.mark("home_feed.reload_failed", detail: error.localizedDescription)
@@ -105,6 +107,7 @@ final class HomeViewModel: ObservableObject {
             cursor = nil
             hasMore = false
             totalCount = 0
+            hasLoadedAtLeastOnce = true
         }
     }
 

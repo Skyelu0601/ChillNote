@@ -34,75 +34,21 @@ struct SubscriptionView: View {
                 cleanBackground
                     .ignoresSafeArea()
                 
-                ScrollView {
-                    VStack(spacing: 32) {
-                        // 2. Hero Section
-                        heroSection
+                if storeService.currentTier == .pro {
+                    // Member View
+                    ScrollView {
+                        memberView
                             .padding(.top, 20)
-                            .opacity(showContent ? 1 : 0)
-                            .offset(y: showContent ? 0 : 20)
-                        
-                        // 3. Features Benefits
-                        benefitsList
-                            .opacity(showContent ? 1 : 0)
-                            .offset(y: showContent ? 0 : 30)
-                        
-                        // 4. Pricing Section
-                        pricingSection
-                            .opacity(showContent ? 1 : 0)
-                            .offset(y: showContent ? 0 : 40)
-                        
-                        // 5. Footer
-                        footerSection
-                            .opacity(showContent ? 1 : 0)
-                            .offset(y: showContent ? 0 : 50)
-                            .padding(.bottom, 100) // Space for floating button
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 100)
                     }
-                    .padding(.horizontal, 24)
-                }
-                .scrollIndicators(.hidden)
-                
-                // 6. Sticky CTA Button
-                VStack {
-                    Spacer()
-                    if storeService.currentTier == .pro {
-                        Button {
-                            guard let url = URL(string: "https://apps.apple.com/account/subscriptions") else { return }
-                            openURL(url)
-                        } label: {
-                            Text("Manage in App Store")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color.accentPrimary)
-                                .cornerRadius(16)
-                                .shadow(color: .accentPrimary.opacity(0.3), radius: 10, x: 0, y: 5)
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 20)
-                        .opacity(showContent ? 1 : 0)
-                    } else if let product = selectedProduct {
-                        Button {
-                            Task { await storeService.purchase(product) }
-                        } label: {
-                            Text(isAnnual ? "Start Annual Plan" : "Start Monthly Plan")
-                                .font(.headline)
-                                .foregroundColor(.white)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 16)
-                                .background(Color.accentPrimary)
-                                .cornerRadius(16)
-                                .shadow(color: .accentPrimary.opacity(0.3), radius: 10, x: 0, y: 5)
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.bottom, 20)
-                        .disabled(storeService.isPurchasing)
-                        .opacity(showContent ? 1 : 0)
-                    }
+                    .scrollIndicators(.hidden)
+                } else {
+                    // Upgrade View
+                    upgradeView
                 }
                 
-                // 7. Loading Overlay
+                // Loading Overlay
                 if storeService.isPurchasing {
                     loadingOverlay
                 }
@@ -128,11 +74,168 @@ struct SubscriptionView: View {
             }
             .task {
                 await storeService.refreshProducts()
+                // Refresh subscription status to get latest expiration date
+                await storeService.refreshSubscriptionStatus()
+            }
+        }
+    }
+
+    // MARK: - Views
+    
+    private var upgradeView: some View {
+        ZStack {
+            ScrollView {
+                VStack(spacing: 32) {
+                    // 2. Hero Section
+                    heroSection
+                        .padding(.top, 20)
+                        .opacity(showContent ? 1 : 0)
+                        .offset(y: showContent ? 0 : 20)
+                    
+                    // 3. Features Benefits
+                    benefitsList
+                        .opacity(showContent ? 1 : 0)
+                        .offset(y: showContent ? 0 : 30)
+                    
+                    // 4. Pricing Section
+                    pricingSection
+                        .opacity(showContent ? 1 : 0)
+                        .offset(y: showContent ? 0 : 40)
+                    
+                    // 5. Footer
+                    footerSection
+                        .opacity(showContent ? 1 : 0)
+                        .offset(y: showContent ? 0 : 50)
+                        .padding(.bottom, 100) // Space for floating button
+                }
+                .padding(.horizontal, 24)
+            }
+            .scrollIndicators(.hidden)
+            
+            // Sticky CTA Button
+            VStack {
+                Spacer()
+                if let product = selectedProduct {
+                    Button {
+                        Task { await storeService.purchase(product) }
+                    } label: {
+                        Text(isAnnual ? "Start Annual Plan" : "Start Monthly Plan")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color.accentPrimary)
+                            .cornerRadius(16)
+                            .shadow(color: .accentPrimary.opacity(0.3), radius: 10, x: 0, y: 5)
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 20)
+                    .disabled(storeService.isPurchasing)
+                    .opacity(showContent ? 1 : 0)
+                }
             }
         }
     }
     
-    // MARK: - Views
+    private var memberView: some View {
+        VStack(spacing: 32) {
+            // Header
+            VStack(spacing: 16) {
+                Image("pro")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 108, height: 108)
+                    .shadow(color: .yellow.opacity(0.2), radius: 10, x: 0, y: 5)
+                
+                VStack(spacing: 8) {
+                    Text("ChillNote Pro")
+                        .font(.system(size: 28, weight: .bold, design: .serif))
+                        .foregroundColor(.textMain)
+                }
+            }
+            .padding(.top, 20)
+            
+            // Membership Card
+            VStack(spacing: 20) {
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(storeService.activeSubscriptionProductId?.localizedCaseInsensitiveContains("year") == true ? "Annual Plan" : "Monthly Plan")
+                            .font(.headline)
+                            .foregroundColor(.textMain)
+                        
+                        HStack(spacing: 6) {
+                            Circle()
+                                .fill(Color.green)
+                                .frame(width: 8, height: 8)
+                            Text("Active")
+                                .font(.subheadline)
+                                .foregroundColor(.green)
+                        }
+                    }
+                    
+                    Spacer()
+                    
+                    Image(systemName: "checkmark.seal.fill")
+                        .font(.title2)
+                        .foregroundColor(.accentPrimary)
+                }
+                
+                Divider()
+                
+                if let expirationDate = storeService.subscriptionExpirationDate {
+                    HStack {
+                        Text("Renews on")
+                            .font(.subheadline)
+                            .foregroundColor(.textSub)
+                        Spacer()
+                        Text(expirationDate.formatted(date: .long, time: .omitted))
+                            .font(.subheadline.weight(.medium))
+                            .foregroundColor(.textMain)
+                    }
+                }
+            }
+            .padding(20)
+            .background(Color.white)
+            .cornerRadius(20)
+            .shadow(color: .black.opacity(0.05), radius: 15, x: 0, y: 5)
+            
+            // Active Benefits
+            VStack(alignment: .leading, spacing: 20) {
+                Text("Your Active Privileges")
+                    .font(.headline)
+                    .foregroundColor(.textMain)
+                    .padding(.leading, 4)
+                
+                benefitsList
+            }
+            
+            // Actions
+            VStack(spacing: 16) {
+                Button {
+                    guard let url = URL(string: "https://apps.apple.com/account/subscriptions") else { return }
+                    openURL(url)
+                } label: {
+                    Text("Manage Subscription")
+                        .font(.headline)
+                        .foregroundColor(.accentPrimary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(Color.accentPrimary.opacity(0.1))
+                        .cornerRadius(16)
+                }
+                
+                Button {
+                    Task { await storeService.restorePurchases() }
+                } label: {
+                    Text("Restore Purchases")
+                        .font(.footnote.weight(.medium))
+                        .foregroundColor(.textSub)
+                        .underline()
+                }
+            }
+            .padding(.top, 10)
+        }
+    }
     
     private var cleanBackground: some View {
         ZStack {

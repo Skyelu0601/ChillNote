@@ -26,7 +26,7 @@ struct JustifiedMarkdownText: UIViewRepresentable {
         let attributedText = NSMutableAttributedString(
             attributedString: RichTextConverter.markdownToAttributedString(content, baseFont: font, textColor: textColor)
         )
-        
+
         // Apply Justified Alignment into paragraph styles
         attributedText.enumerateAttribute(.paragraphStyle, in: NSRange(location: 0, length: attributedText.length), options: []) { value, range, _ in
             if let style = value as? NSParagraphStyle {
