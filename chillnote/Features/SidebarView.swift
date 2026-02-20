@@ -46,9 +46,6 @@ struct SidebarView: View {
                 VStack(alignment: .leading, spacing: 32) { // 增加间距
                     // Header - Minimalist
                     HStack(spacing: 12) {
-                        Circle()
-                            .fill(Color.accentPrimary)
-                            .frame(width: 8, height: 8)
                         Text("ChillNote")
                             .font(.system(size: 22, weight: .bold, design: .serif))
                             .foregroundColor(.black)
@@ -184,6 +181,7 @@ struct SidebarView: View {
 // MARK: - Tag Tree Item View
 
 struct TagTreeItemView: View {
+    @EnvironmentObject private var syncManager: SyncManager
     let tag: Tag
     @Binding var selectedTag: Tag?
     @Binding var isTrashSelected: Bool
@@ -200,58 +198,69 @@ struct TagTreeItemView: View {
     
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Button {
-                selectedTag = tag
-                isTrashSelected = false
-                isPresented = false
-            } label: {
-                HStack(spacing: 12) {
-                    // Indentation
-                    if depth > 0 {
-                        Spacer().frame(width: CGFloat(depth * 18))
-                    }
-                    
-                    // Selection/State Indicator (Minimalist dot instead of #)
-                    ZStack {
-                        if hasChildren {
+            HStack(spacing: 12) {
+                // Indentation
+                if depth > 0 {
+                    Spacer().frame(width: CGFloat(depth * 18))
+                }
+
+                // Selection/State Indicator (Minimalist dot instead of #)
+                ZStack {
+                    if hasChildren {
+                        Button {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                isExpanded.toggle()
+                            }
+                        } label: {
                             Image(systemName: "chevron.right")
                                 .font(.system(size: 9, weight: .black))
                                 .foregroundColor(tag.color.opacity(0.6))
                                 .rotationEffect(.degrees(isExpanded ? 90 : 0))
-                                .onTapGesture {
-                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                        isExpanded.toggle()
-                                    }
-                                }
-                        } else {
+                                .frame(width: 20, height: 20)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        ZStack {
                             Circle()
-                                .fill(tag.color.opacity(0.4))
+                                .fill(tag.color.opacity(0.28))
+                                .frame(width: 10, height: 10)
+                            Circle()
+                                .fill(tag.color.opacity(0.92))
+                                .frame(width: 6, height: 6)
+                        }
+                    }
+                }
+                .frame(width: 12)
+
+                Button {
+                    selectedTag = tag
+                    isTrashSelected = false
+                    isPresented = false
+                } label: {
+                    HStack(spacing: 0) {
+                        Text(tag.name)
+                            .font(.system(size: 15, weight: selectedTag?.id == tag.id ? .semibold : .medium, design: .serif))
+                            .foregroundColor(selectedTag?.id == tag.id ? .textMain : .textMain.opacity(0.7))
+                            .lineLimit(1)
+
+                        Spacer()
+
+                        if selectedTag?.id == tag.id {
+                            Circle()
+                                .fill(Color.accentPrimary)
                                 .frame(width: 4, height: 4)
                         }
                     }
-                    .frame(width: 12)
-                    
-                    Text(tag.name)
-                        .font(.system(size: 15, weight: selectedTag?.id == tag.id ? .semibold : .medium, design: .serif))
-                        .foregroundColor(selectedTag?.id == tag.id ? .textMain : .textMain.opacity(0.7))
-                        .lineLimit(1)
-                    
-                    Spacer()
-                    
-                    if selectedTag?.id == tag.id {
-                        Circle()
-                            .fill(Color.accentPrimary)
-                            .frame(width: 4, height: 4)
-                    }
                 }
-                .padding(.vertical, 10)
-                .padding(.horizontal, 12)
-                .background(
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(selectedTag?.id == tag.id ? Color.textMain.opacity(0.04) : Color.clear)
-                )
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
+            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(selectedTag?.id == tag.id ? Color.textMain.opacity(0.04) : Color.clear)
+            )
             .contentShape(Rectangle())
             // Drag and Drop
             .draggable(tag.id.uuidString) {
@@ -320,6 +329,9 @@ struct TagTreeItemView: View {
             tag.deletedAt = Date()
             tag.updatedAt = tag.deletedAt ?? Date()
             try? modelContext.save()
+        }
+        Task {
+            await syncManager.syncIfNeeded(context: modelContext)
         }
     }
 
@@ -409,6 +421,7 @@ struct RootDropZone: View {
 // MARK: - Trash Drop Zone
 
 struct TrashDropZone: View {
+    @EnvironmentObject private var syncManager: SyncManager
     let modelContext: ModelContext
     @State private var isTargeted: Bool = false
     
@@ -457,6 +470,9 @@ struct TrashDropZone: View {
             droppedTag.deletedAt = Date()
             droppedTag.updatedAt = droppedTag.deletedAt ?? Date()
             try? modelContext.save()
+        }
+        Task {
+            await syncManager.syncIfNeeded(context: modelContext)
         }
         
         // Haptic feedback

@@ -2,6 +2,12 @@ import SwiftUI
 import SwiftData
 
 struct HomeBodyView: View {
+    private enum TagApplyState {
+        case none
+        case partial
+        case all
+    }
+
     let state: HomeScreenState
     let dispatch: (HomeScreenAction) -> Void
     @FocusState.Binding var isSearchFocused: Bool
@@ -124,6 +130,25 @@ struct HomeBodyView: View {
             get: { state.isVoiceMode },
             set: { dispatch(.setVoiceMode($0)) }
         )
+    }
+
+    private var selectedVisibleNotes: [Note] {
+        state.cachedVisibleNotes.filter { state.selectedNotes.contains($0.id) }
+    }
+
+    private func applyState(for tag: Tag) -> TagApplyState {
+        guard !selectedVisibleNotes.isEmpty else { return .none }
+        let matchedCount = selectedVisibleNotes.filter { note in
+            note.tags.contains(where: { $0.id == tag.id })
+        }.count
+
+        if matchedCount == 0 {
+            return .none
+        }
+        if matchedCount == selectedVisibleNotes.count {
+            return .all
+        }
+        return .partial
     }
 
     var body: some View {
@@ -288,17 +313,29 @@ struct HomeBodyView: View {
                             .foregroundColor(.textSub)
                     } else {
                         ForEach(state.availableTags) { tag in
+                            let tagApplyState = applyState(for: tag)
                             Button {
-                                dispatch(.applyTagToSelected(tag))
+                                if tagApplyState != .all {
+                                    dispatch(.applyTagToSelected(tag))
+                                }
                                 dispatch(.setShowBatchTagSheet(false))
                             } label: {
                                 HStack {
-                                    Image(systemName: "tag.fill")
-                                        .foregroundColor(.accentPrimary)
+                                    Image(systemName: tagApplyState == .all ? "checkmark.circle.fill" : (tagApplyState == .partial ? "minus.circle.fill" : "tag.fill"))
+                                        .foregroundColor(tagApplyState == .all ? .green : .accentPrimary)
                                     Text(tag.name)
                                         .font(.bodyMedium)
                                         .foregroundColor(.textMain)
                                     Spacer()
+                                    if tagApplyState == .all {
+                                        Text("Added")
+                                            .font(.caption)
+                                            .foregroundColor(.textSub)
+                                    } else if tagApplyState == .partial {
+                                        Text("Partial")
+                                            .font(.caption)
+                                            .foregroundColor(.textSub)
+                                    }
                                 }
                                 .padding(.vertical, 4)
                             }

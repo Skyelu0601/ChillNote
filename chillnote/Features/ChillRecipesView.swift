@@ -33,9 +33,7 @@ struct ChillRecipesView: View {
                     HStack(spacing: 0) {
                         ForEach(RecipeSection.allCases) { section in
                             Button {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    selectedSection = section
-                                }
+                                selectedSection = section
                             } label: {
                                 Text(section.title)
                                     .font(.system(size: 14, weight: .semibold))
@@ -56,6 +54,7 @@ struct ChillRecipesView: View {
                     .padding(4)
                     .background(Color.bgSecondary)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: selectedSection)
                     .padding(.horizontal, 20)
                     .padding(.top, 10)
                 }
@@ -531,8 +530,8 @@ private enum RecipeSection: String, CaseIterable, Identifiable {
     
     var title: String {
         switch self {
-        case .library: return "Library"
-        case .myRecipes: return "My Recipes"
+        case .library: return NSLocalizedString("Library", comment: "")
+        case .myRecipes: return NSLocalizedString("My Recipes", comment: "")
         }
     }
 }

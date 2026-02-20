@@ -12,6 +12,10 @@ struct HomeView: View {
         authService.currentUserId ?? "unknown"
     }
 
+    var availableTagsForCurrentUser: [Tag] {
+        availableTags.filter { $0.userId == currentUserId }
+    }
+
     @StateObject var speechRecognizer = SpeechRecognizer()
     @State var navigationPath = NavigationPath()
     @State var showingSettings = false
@@ -33,7 +37,7 @@ struct HomeView: View {
     @State var notesToDeleteAfterMerge: [Note] = []
 
     @State var showBatchTagSheet = false
-    @Query(sort: \Tag.name) var availableTags: [Tag]
+    @Query(filter: #Predicate<Tag> { $0.deletedAt == nil }, sort: \Tag.name) var availableTags: [Tag]
 
     @State var pendingAgentAction: AgentRecipe?
     @State var isCustomActionInputPresented = false
@@ -130,7 +134,7 @@ struct HomeView: View {
             isLoadingNotes: homeViewModel.isLoading,
             isSyncingNotes: syncManager.isSyncing,
             hasLoadedNotesAtLeastOnce: homeViewModel.hasLoadedAtLeastOnce,
-            availableTags: availableTags,
+            availableTags: availableTagsForCurrentUser,
             translateLanguages: translateLanguages,
             recipeManager: recipeManager,
             speechRecognizer: speechRecognizer,

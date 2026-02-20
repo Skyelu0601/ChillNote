@@ -32,7 +32,7 @@ final class Tag {
     @Relationship(inverse: \Note.tags)
     var notes: [Note] = []
     
-    init(name: String, userId: String, colorHex: String = "#E6A355") {
+    init(name: String, userId: String, colorHex: String = TagColorService.defaultColorHex) {
         let now = Date()
         self.id = UUID()
         self.userId = userId
@@ -54,9 +54,9 @@ final class Tag {
     
     // MARK: - Computed Properties
     
-    var color: Color {
-        Color(hex: colorHex)
-    }
+    var color: Color { TagColorService.color(for: colorHex) }
+    var labelColor: Color { TagColorService.textColor(for: colorHex) }
+    var badgeBackgroundColor: Color { color.opacity(TagColorService.tagBackgroundOpacity) }
     
     /// Whether this tag is a root-level tag (no parent)
     var isRoot: Bool {

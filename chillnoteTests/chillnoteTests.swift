@@ -149,6 +149,23 @@ final class chillnoteTests: XCTestCase {
         XCTAssertEqual(leaf.ancestors.map(\.name), ["Work", "AI"])
     }
 
+    func testTagColorServiceAutoColorSkipsDeletedTagsInRotation() {
+        let keep1 = Tag(name: "Keep 1", userId: "u1", colorHex: TagColorService.paletteHexes[0])
+        let keep2 = Tag(name: "Keep 2", userId: "u1", colorHex: TagColorService.paletteHexes[1])
+        let deleted = Tag(name: "Deleted", userId: "u1", colorHex: TagColorService.paletteHexes[8])
+        deleted.deletedAt = Date()
+
+        let existing = [keep1, keep2, deleted]
+        let assigned = TagColorService.autoColorHex(for: "New Tag", existingTags: existing)
+
+        XCTAssertEqual(assigned, TagColorService.paletteHexes[2])
+    }
+
+    func testTagColorServiceNormalizesHexInput() {
+        XCTAssertEqual(TagColorService.normalizedHex("  e6a355 "), "#E6A355")
+        XCTAssertEqual(TagColorService.normalizedHex("invalid"), TagColorService.defaultColorHex)
+    }
+
     // MARK: - Date Extension Tests
 
     func testDateRelativeFormattedReturnsSomething() {

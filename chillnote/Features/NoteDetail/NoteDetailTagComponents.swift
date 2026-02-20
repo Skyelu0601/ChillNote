@@ -11,13 +11,18 @@ struct TagBannerView: View {
         VStack(alignment: .leading, spacing: 12) {
             FlowLayout(spacing: 8) {
                 ForEach(tags.filter { $0.deletedAt == nil }) { tag in
-                    TagPill(title: tag.name, color: tag.color, isSuggested: false) {
+                    TagPill(
+                        title: tag.name,
+                        color: tag.color,
+                        textColor: tag.labelColor,
+                        isSuggested: false
+                    ) {
                         onRemove(tag)
                     }
                 }
 
                 ForEach(suggestedTags, id: \.self) { tagName in
-                    TagPill(title: tagName, color: .gray, isSuggested: true) {
+                    TagPill(title: tagName, color: .gray, textColor: .textSub, isSuggested: true) {
                         onConfirm(tagName)
                     }
                 }
@@ -42,6 +47,7 @@ struct TagBannerView: View {
 struct TagPill: View {
     let title: String
     let color: Color
+    let textColor: Color
     let isSuggested: Bool
     let action: () -> Void
 
@@ -59,9 +65,9 @@ struct TagPill: View {
             .padding(.vertical, 6)
             .background(
                 Capsule()
-                    .fill(isSuggested ? color.opacity(0.12) : color.opacity(0.15))
+                    .fill(isSuggested ? color.opacity(0.12) : color.opacity(TagColorService.tagBackgroundOpacity))
             )
-            .foregroundColor(isSuggested ? .textSub : color)
+            .foregroundColor(isSuggested ? .textSub : textColor)
             .overlay(
                 Capsule()
                     .stroke(isSuggested ? color.opacity(0.2) : Color.clear, lineWidth: 1)

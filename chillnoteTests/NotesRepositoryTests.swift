@@ -88,4 +88,39 @@ final class NotesRepositoryTests: XCTestCase {
         XCTAssertEqual(page.items.count, 1)
         XCTAssertEqual(page.items.first?.id, note1.id)
     }
+
+    func testFetchPageWithTagFilterPaginatesByMatchedOffset() async throws {
+        let tag = Tag(name: "Project", userId: "u1")
+        context.insert(tag)
+
+        var taggedNotes: [Note] = []
+        for index in 0..<30 {
+            let note = Note(content: "note-\(index)", userId: "u1")
+            note.createdAt = Date(timeIntervalSince1970: TimeInterval(1_700_000_000 + index))
+            if index % 6 == 0 {
+                note.tags.append(tag)
+                taggedNotes.append(note)
+            }
+            context.insert(note)
+        }
+        try context.save()
+
+        let expectedTaggedCount = taggedNotes.count
+        XCTAssertEqual(expectedTaggedCount, 5)
+
+        let first = try await repository.fetchPage(userId: "u1", mode: .active, tagId: tag.id, cursor: nil, limit: 2)
+        XCTAssertEqual(first.items.count, 2)
+        XCTAssertEqual(first.total, expectedTaggedCount)
+        XCTAssertEqual(first.nextCursor, 2)
+
+        let second = try await repository.fetchPage(userId: "u1", mode: .active, tagId: tag.id, cursor: first.nextCursor, limit: 2)
+        XCTAssertEqual(second.items.count, 2)
+        XCTAssertEqual(second.total, expectedTaggedCount)
+        XCTAssertEqual(second.nextCursor, 4)
+
+        let third = try await repository.fetchPage(userId: "u1", mode: .active, tagId: tag.id, cursor: second.nextCursor, limit: 2)
+        XCTAssertEqual(third.items.count, 1)
+        XCTAssertEqual(third.total, expectedTaggedCount)
+        XCTAssertNil(third.nextCursor)
+    }
 }

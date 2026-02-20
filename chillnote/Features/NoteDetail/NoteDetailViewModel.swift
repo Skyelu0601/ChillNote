@@ -81,6 +81,7 @@ final class NoteDetailViewModel: ObservableObject {
 
     @Published var showAddTagAlert = false
     @Published var newTagName = ""
+    @Published var newTagColorHex = TagColorService.defaultColorHex
 
     @Published var showExportSheet = false
     @Published var exportURL: URL?
@@ -327,13 +328,21 @@ final class NoteDetailViewModel: ObservableObject {
 
     func resetNewTagInput() {
         newTagName = ""
+        if let modelContext {
+            let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
+            let allTags = (try? modelContext.fetch(fetchDescriptor)) ?? []
+            newTagColorHex = TagColorService.autoColorHex(for: "", existingTags: allTags)
+        } else {
+            newTagColorHex = TagColorService.defaultColorHex
+        }
         showAddTagAlert = true
     }
 
     func confirmNewTagFromAlert() {
         let trimmed = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
-        confirmTag(trimmed)
+        confirmTag(trimmed, preferredColorHex: newTagColorHex)
+        showAddTagAlert = false
     }
 
     func recordingErrorTitle(from message: String) -> String {

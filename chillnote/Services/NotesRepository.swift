@@ -33,14 +33,22 @@ final class SwiftDataNotesRepository: NotesRepository {
             return NotesPage(items: [], nextCursor: nil, total: 0)
         }
 
-        let total = try await count(userId: userId, mode: mode, tagId: tagId, query: nil)
         let startOffset = cursor ?? 0
-        guard total > startOffset else {
-            return NotesPage(items: [], nextCursor: nil, total: total)
-        }
 
         if let tagId {
-            return try fetchPageWithTagFilter(context: context, userId: userId, mode: mode, tagId: tagId, startOffset: startOffset, limit: limit, total: total)
+            return try fetchPageWithTagFilter(
+                context: context,
+                userId: userId,
+                mode: mode,
+                tagId: tagId,
+                startOffset: startOffset,
+                limit: limit
+            )
+        }
+
+        let total = try await count(userId: userId, mode: mode, tagId: nil, query: nil)
+        guard total > startOffset else {
+            return NotesPage(items: [], nextCursor: nil, total: total)
         }
 
         var descriptor = FetchDescriptor<Note>(sortBy: sortDescriptors())
@@ -166,37 +174,23 @@ final class SwiftDataNotesRepository: NotesRepository {
         mode: NotesFeedMode,
         tagId: UUID,
         startOffset: Int,
-        limit: Int,
-        total: Int
+        limit: Int
     ) throws -> NotesPage {
-        let chunk = max(limit * 2, 100)
-        var scanOffset = startOffset
-        var result: [Note] = []
-
-        while result.count < limit {
-            var descriptor = FetchDescriptor<Note>(sortBy: sortDescriptors())
-            descriptor.fetchOffset = scanOffset
-            descriptor.fetchLimit = chunk
-            descriptor.predicate = basePredicate(userId: userId, mode: mode)
-
-            let batch = try context.fetch(descriptor)
-            if batch.isEmpty {
-                break
-            }
-
-            let filtered = batch.filter { note in
-                note.tags.contains(where: { $0.id == tagId })
-            }
-            result.append(contentsOf: filtered)
-            scanOffset += batch.count
-
-            if batch.count < chunk {
-                break
-            }
+        let tagDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.id == tagId })
+        guard let tag = try context.fetch(tagDescriptor).first, tag.deletedAt == nil else {
+            return NotesPage(items: [], nextCursor: nil, total: 0)
         }
 
-        let finalItems = Array(result.prefix(limit))
-        return NotesPage(items: finalItems, nextCursor: scanOffset < total ? scanOffset : nil, total: total)
+        let filtered = filteredAndSortedNotes(for: tag, userId: userId, mode: mode)
+        let total = filtered.count
+        guard total > startOffset else {
+            return NotesPage(items: [], nextCursor: nil, total: total)
+        }
+
+        let end = min(total, startOffset + limit)
+        let page = Array(filtered[startOffset..<end])
+        let nextCursor = end < total ? end : nil
+        return NotesPage(items: page, nextCursor: nextCursor, total: total)
     }
 
     private func fallbackSearchPage(
@@ -253,5 +247,33 @@ final class SwiftDataNotesRepository: NotesRepository {
             SortDescriptor(\Note.createdAt, order: .reverse),
             SortDescriptor(\Note.id, order: .reverse)
         ]
+    }
+
+    private func filteredAndSortedNotes(for tag: Tag, userId: String, mode: NotesFeedMode) -> [Note] {
+        let filtered = tag.notes.filter { note in
+            guard note.userId == userId else { return false }
+            switch mode {
+            case .active:
+                return note.deletedAt == nil
+            case .trash:
+                return note.deletedAt != nil
+            }
+        }
+
+        return filtered.sorted(by: isOrderedForFeed(_:_:))
+    }
+
+    private func isOrderedForFeed(_ lhs: Note, _ rhs: Note) -> Bool {
+        let lhsPinned = lhs.pinnedAt?.timeIntervalSinceReferenceDate ?? -Double.greatestFiniteMagnitude
+        let rhsPinned = rhs.pinnedAt?.timeIntervalSinceReferenceDate ?? -Double.greatestFiniteMagnitude
+        if lhsPinned != rhsPinned {
+            return lhsPinned > rhsPinned
+        }
+
+        if lhs.createdAt != rhs.createdAt {
+            return lhs.createdAt > rhs.createdAt
+        }
+
+        return lhs.id.uuidString > rhs.id.uuidString
     }
 }

@@ -123,7 +123,7 @@ extension HomeView {
 
     func generateTags(for note: Note) async {
         do {
-            let fetchDescriptor = FetchDescriptor<Tag>()
+            let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
             let allTags = (try? modelContext.fetch(fetchDescriptor))?.map { $0.name } ?? []
 
             let suggestions = try await TagService.shared.suggestTags(for: note.content, existingTags: allTags)

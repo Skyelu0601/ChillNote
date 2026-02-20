@@ -188,7 +188,8 @@ struct TrashNoteFooterView: View {
 struct NoteListTagViewData: Identifiable {
     let id: UUID
     let name: String
-    let color: Color
+    let textColor: Color
+    let backgroundColor: Color
 }
 
 struct NoteListItemViewData: Identifiable {
@@ -217,7 +218,12 @@ struct NoteListItemViewData: Identifiable {
 
         let prefixTags = Array(note.tags.prefix(3))
         tags = prefixTags.map { tag in
-            NoteListTagViewData(id: tag.id, name: tag.name, color: tag.color)
+            NoteListTagViewData(
+                id: tag.id,
+                name: tag.name,
+                textColor: tag.labelColor,
+                backgroundColor: tag.badgeBackgroundColor
+            )
         }
         hiddenTagCount = max(0, note.tags.count - prefixTags.count)
     }
@@ -293,10 +299,10 @@ struct NoteCard: View {
                             ForEach(item.tags) { tag in
                                 Text(tag.name)
                                     .font(.chillCaption)
-                                    .foregroundColor(tag.color)
+                                    .foregroundColor(tag.textColor)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
-                                    .background(tag.color.opacity(0.12))
+                                    .background(tag.backgroundColor)
                                     .clipShape(Capsule())
                             }
                             if item.hiddenTagCount > 0 {

@@ -29,14 +29,15 @@ extension NoteDetailViewModel {
     func removeTag(_ tag: Tag) {
         guard let modelContext else { return }
         note.tags.removeAll { $0.id == tag.id }
+        note.suggestedTags.removeAll { $0.compare(tag.name, options: .caseInsensitive) == .orderedSame }
         note.updatedAt = dependencies.now()
-        TagService.shared.cleanupEmptyTags(context: modelContext)
+        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: [tag])
     }
 
-    func confirmTag(_ tagName: String) {
+    func confirmTag(_ tagName: String, preferredColorHex: String? = nil) {
         guard let modelContext else { return }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            note.suggestedTags.removeAll { $0 == tagName }
+            note.suggestedTags.removeAll { $0.compare(tagName, options: .caseInsensitive) == .orderedSame }
 
             let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
             let allTags = (try? modelContext.fetch(fetchDescriptor)) ?? []
@@ -49,7 +50,9 @@ extension NoteDetailViewModel {
                 }
             } else {
                 guard let userId = AuthService.shared.currentUserId else { return }
-                let newTag = Tag(name: tagName, userId: userId)
+                let colorHex = preferredColorHex.map(TagColorService.normalizedHex)
+                    ?? TagColorService.autoColorHex(for: tagName, existingTags: allTags)
+                let newTag = Tag(name: tagName, userId: userId, colorHex: colorHex)
                 modelContext.insert(newTag)
                 note.tags.append(newTag)
                 note.updatedAt = dependencies.now()
