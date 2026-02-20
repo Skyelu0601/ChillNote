@@ -40,23 +40,23 @@ final class SyncManager: ObservableObject {
     
     func syncNow(context: ModelContext) async {
         guard isEnabled else {
-            lastError = "Sync is disabled."
+            lastError = AppErrorCode.syncDisabled.message
             return
         }
         guard !authToken.isEmpty else {
-            lastError = "Sign in required to sync."
+            lastError = AppErrorCode.syncSignInRequired.message
             return
         }
         guard let url = URL(string: serverURLString), !serverURLString.isEmpty else {
-            lastError = "Server URL is required."
+            lastError = AppErrorCode.syncServerURLRequired.message
             return
         }
         guard let currentUserId = AuthService.shared.currentUserId else {
-            lastError = "Sign in required to sync."
+            lastError = AppErrorCode.syncSignInRequired.message
             return
         }
         guard let container = DataService.shared.container else {
-            lastError = "Sync unavailable."
+            lastError = AppErrorCode.syncUnavailable.message
             return
         }
         WelcomeNoteFlagStore.syncGlobalFlag(for: currentUserId)
@@ -114,13 +114,13 @@ final class SyncManager: ObservableObject {
                 // We should prompt user to sign in again.
                 await AuthService.shared.checkSession() // Try one last check
                 if !AuthService.shared.isSignedIn {
-                    lastError = "Session expired. Please sign in again."
+                    lastError = AppErrorCode.syncSessionExpired.message
                 } else {
                      // If checkSession says we are signed in, maybe just a temporary glitch
-                    lastError = "Sync authorization failed."
+                    lastError = AppErrorCode.syncAuthorizationFailed.message
                 }
             } else {
-                lastError = "Sync failed: \(error.localizedDescription)"
+                lastError = AppErrorCode.syncFailedWithReason.message(error.localizedDescription)
             }
         }
         isSyncing = false

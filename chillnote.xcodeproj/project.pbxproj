@@ -312,8 +312,15 @@
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				de,
 				en,
+				es,
+				fr,
+				ja,
 				Base,
+				"zh-Hans",
+				"zh-Hant",
+				ko,
 			);
 			mainGroup = 499583BD2F0BD2730053760D;
 			minimizedProjectReferenceProxies = 1;

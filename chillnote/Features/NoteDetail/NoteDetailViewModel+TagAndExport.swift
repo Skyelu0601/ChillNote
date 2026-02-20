@@ -69,7 +69,7 @@ extension NoteDetailViewModel {
             exportURL = url
             showExportSheet = true
         } catch {
-            exportErrorMessage = "Unable to export this note. Please try again."
+            exportErrorMessage = String(localized: "Unable to export this note. Please try again.")
             showExportError = true
         }
     }

@@ -25,14 +25,14 @@ final class PendingRecordingPlaybackController: NSObject, ObservableObject, AVAu
             throw NSError(
                 domain: "PendingRecordingPlaybackController",
                 code: 1,
-                userInfo: [NSLocalizedDescriptionKey: "Unable to prepare recording playback."]
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "Unable to prepare recording playback.")]
             )
         }
         guard player.play() else {
             throw NSError(
                 domain: "PendingRecordingPlaybackController",
                 code: 2,
-                userInfo: [NSLocalizedDescriptionKey: "Unable to start recording playback."]
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "Unable to start recording playback.")]
             )
         }
 
@@ -369,7 +369,7 @@ struct PendingRecordingsView: View {
                     throw NSError(
                         domain: "PendingRecordingsView",
                         code: 3,
-                        userInfo: [NSLocalizedDescriptionKey: "Transcription result was empty. Please retry."]
+                        userInfo: [NSLocalizedDescriptionKey: String(localized: "Transcription result was empty. Please retry.")]
                     )
                 }
 
@@ -415,7 +415,7 @@ struct PendingRecordingsView: View {
                     )
 
                     // 4. Show toast
-                    showToast("Note saved!")
+                    showToast(String(localized: "Note saved!"))
 
                     // 5. Remove the row after a short delay so user sees the "Saved!" confirmation
                     Task {
@@ -436,7 +436,7 @@ struct PendingRecordingsView: View {
                         rowSaveStates[path] = .idle
                     }
                     processingPaths.remove(path)
-                    showToast("Save failed. Please retry.", isSuccess: false)
+                    showToast(String(localized: "Save failed. Please retry."), isSuccess: false)
                 }
             }
         }

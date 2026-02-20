@@ -196,7 +196,12 @@ struct LoginView: View {
 
             } else {
                 VStack(spacing: 8) {
-                    Text("Enter code sent to \(email)")
+                    Text(
+                        String(
+                            format: String(localized: "Enter code sent to %@"),
+                            email
+                        )
+                    )
                         .font(.caption)
                         .foregroundColor(.textSub)
                     

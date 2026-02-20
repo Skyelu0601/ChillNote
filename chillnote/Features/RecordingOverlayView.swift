@@ -14,7 +14,7 @@ struct RecordingOverlayView: View {
     @State private var didTriggerLimit = false
     @State private var showUpgradeSheet = false
     @State private var showSubscription = false
-    @State private var upgradeTitle = "Recording limit reached"
+    @State private var upgradeTitle = AppErrorCode.recordingLimitReached.message
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
@@ -54,7 +54,7 @@ struct RecordingOverlayView: View {
                     .font(.title2)
                     .fontWeight(.bold)
                     .foregroundColor(.textMain)
-                    .accessibilityLabel("Recording status or duration")
+                    .accessibilityLabel(L10n.text("recording.accessibility.status_or_duration"))
                     .accessibilityValue(statusTitle)
                 
                 WaveformView(isActive: speechRecognizer.isRecording)
@@ -108,7 +108,7 @@ struct RecordingOverlayView: View {
                                 }
                                 .padding(.top, 20)
                             } else {
-                                Text(speechRecognizer.transcript.isEmpty ? "Go ahead, I'm listening..." : " ")
+                                Text(speechRecognizer.transcript.isEmpty ? L10n.text("recording.listening_prompt") : " ")
                                     .font(.bodyLarge)
                                     .foregroundColor(.textSub)
                                     .padding()
@@ -208,7 +208,7 @@ struct RecordingOverlayView: View {
                 }
             case .error(let message):
                 if message.localizedCaseInsensitiveContains("daily free voice limit reached") {
-                    upgradeTitle = "Daily voice limit reached"
+                    upgradeTitle = AppErrorCode.recordingDailyLimitReached.message
                     showUpgradeSheet = true
                 } else {
                     bannerData = BannerData(message: displayErrorMessage(message), style: .error)
@@ -232,7 +232,7 @@ struct RecordingOverlayView: View {
             if elapsed >= limit && !didTriggerLimit {
                 didTriggerLimit = true
                 if StoreService.shared.currentTier == .free {
-                    upgradeTitle = "Recording limit reached"
+                    upgradeTitle = AppErrorCode.recordingLimitReached.message
                     showUpgradeSheet = true
                 }
                 finishRecording()
@@ -252,7 +252,7 @@ struct RecordingOverlayView: View {
             UpgradeBottomSheet(
                 title: upgradeTitle,
                 message: UpgradeBottomSheet.unifiedMessage,
-                primaryButtonTitle: "Upgrade to Pro",
+                primaryButtonTitle: L10n.text("subscription.upgrade_to_pro"),
                 onUpgrade: openSubscriptionFromUpgrade,
                 onDismiss: { showUpgradeSheet = false }
             )
@@ -276,17 +276,17 @@ struct RecordingOverlayView: View {
 
     private var statusTitle: String {
         if !speechRecognizer.permissionGranted {
-            return "Permission Needed"
+            return AppErrorCode.recordingPermissionNeeded.message
         }
         switch speechRecognizer.recordingState {
         case .recording:
             return timeText
         case .processing:
-            return "Processing..."
+            return AppErrorCode.recordingStateProcessing.message
         case .error:
-            return "Recording Error"
+            return AppErrorCode.recordingStateError.message
         case .idle:
-            return "Ready"
+            return AppErrorCode.recordingStateReady.message
         }
     }
     
@@ -312,7 +312,7 @@ struct RecordingOverlayView: View {
         Task { @MainActor in
             let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
             guard canRecord else {
-                upgradeTitle = "Daily voice limit reached"
+                upgradeTitle = AppErrorCode.recordingDailyLimitReached.message
                 showUpgradeSheet = true
                 return
             }
@@ -341,13 +341,13 @@ struct RecordingOverlayView: View {
 
     private func displayErrorMessage(_ message: String) -> String {
         if message.lowercased().contains("network error") {
-            return "Network unavailable. Transcription failed."
+            return AppErrorCode.recordingNetworkUnavailable.message
         }
         if message.lowercased().contains("timed out") || message.lowercased().contains("timeout") {
-            return "Transcription timed out. Please try again."
+            return AppErrorCode.recordingTimeout.message
         }
         if message.lowercased().contains("transcription failed") {
-            return "Transcription failed."
+            return AppErrorCode.recordingFailed.message
         }
         return message
     }

@@ -53,7 +53,7 @@ class VoiceProcessingService: ObservableObject {
             // AI processing failed; do not apply local fallback.
             // Leave the note content as is (or handled by caller/UI).
             // Reset state so UI knows we are done (or failed).
-            processingStates[noteID] = .failed(message: "AI refinement failed. You can keep editing this note.")
+            processingStates[noteID] = .failed(message: String(localized: "AI refinement failed. You can keep editing this note."))
         }
     }
 

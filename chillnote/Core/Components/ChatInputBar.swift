@@ -121,9 +121,9 @@ struct ChatInputBar: View {
         }
         .sheet(isPresented: $showUpgradeSheet) {
             UpgradeBottomSheet(
-                title: "Recording limit reached",
+                title: String(localized: "Recording limit reached"),
                 message: UpgradeBottomSheet.unifiedMessage,
-                primaryButtonTitle: "Upgrade to Pro",
+                primaryButtonTitle: String(localized: "Upgrade to Pro"),
                 onUpgrade: openSubscriptionFromUpgrade,
                 onDismiss: { showUpgradeSheet = false }
             )

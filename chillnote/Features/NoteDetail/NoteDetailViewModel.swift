@@ -192,9 +192,12 @@ final class NoteDetailViewModel: ObservableObject {
         guard let deletedAt = note.deletedAt else { return nil }
         let daysRemaining = TrashPolicy.daysRemaining(from: deletedAt)
         if daysRemaining == 0 {
-            return "This note will be permanently deleted today."
+            return String(localized: "This note will be permanently deleted today.")
         }
-        return "This note will be permanently deleted in \(daysRemaining) days."
+        return String(
+            format: String(localized: "This note will be permanently deleted in %lld days."),
+            Int64(daysRemaining)
+        )
     }
 
     var isInteractionEnabled: Bool {
@@ -334,7 +337,9 @@ final class NoteDetailViewModel: ObservableObject {
     }
 
     func recordingErrorTitle(from message: String) -> String {
-        message.localizedCaseInsensitiveContains("network") ? "Network Error" : "Recording Failed"
+        message.localizedCaseInsensitiveContains("network")
+            ? String(localized: "Network Error")
+            : String(localized: "Recording Failed")
     }
 
     func updateTimestampAndDismiss() {

@@ -363,7 +363,7 @@ struct SubscriptionView: View {
         }
     }
     
-    private func pricingToggleButton(title: String, isSelected: Bool, discountTag: String? = nil, action: @escaping () -> Void) -> some View {
+    private func pricingToggleButton(title: LocalizedStringKey, isSelected: Bool, discountTag: LocalizedStringKey? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(title)
@@ -443,8 +443,8 @@ struct SubscriptionView: View {
 struct BenefitRow: View {
     let icon: String
     let iconColor: Color
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
     
     var body: some View {
         HStack(spacing: 16) {

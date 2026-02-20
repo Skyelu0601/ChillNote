@@ -1,0 +1,2 @@
+"NSMicrophoneUsageDescription" = "ChillNote 需要麦克风权限来记录你的想法。";
+"NSSpeechRecognitionUsageDescription" = "ChillNote 使用语音识别将你的语音转写为文字。";

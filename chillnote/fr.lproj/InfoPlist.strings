@@ -1,0 +1,2 @@
+"NSMicrophoneUsageDescription" = "ChillNote a besoin de l'accès au micro pour enregistrer vos idées.";
+"NSSpeechRecognitionUsageDescription" = "ChillNote utilise la reconnaissance vocale pour transcrire votre voix en texte.";

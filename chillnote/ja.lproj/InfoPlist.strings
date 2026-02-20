@@ -1,0 +1,2 @@
+"NSMicrophoneUsageDescription" = "ChillNote はあなたの考えを録音するためにマイクへのアクセスが必要です。";
+"NSSpeechRecognitionUsageDescription" = "ChillNote は音声をテキストに変換するために音声認識を使用します。";

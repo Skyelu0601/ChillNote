@@ -18,9 +18,9 @@ private enum AuthServiceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidNonceLength:
-            return "Invalid nonce length."
+            return L10n.text("error.auth.invalid_nonce_length")
         case .nonceGenerationFailed:
-            return "Unable to prepare secure sign-in request."
+            return L10n.text("error.auth.nonce_generation_failed")
         }
     }
 }
@@ -126,7 +126,7 @@ final class AuthService: ObservableObject {
             nonce = try randomNonceString()
         } catch {
             currentNonce = nil
-            errorMessage = "Couldn't initialize Apple Sign In. Please try again."
+            errorMessage = AppErrorCode.authAppleInitFailed.message
             return
         }
         currentNonce = nonce
@@ -141,7 +141,7 @@ final class AuthService: ObservableObject {
         guard let idTokenData = credential.identityToken,
               let idToken = String(data: idTokenData, encoding: .utf8),
               let nonce = currentNonce else {
-            errorMessage = "Invalid Apple credentials"
+            errorMessage = AppErrorCode.authInvalidAppleCredential.message
             state = .signedOut
             return false
         }
@@ -168,7 +168,7 @@ final class AuthService: ObservableObject {
         
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootViewController = windowScene.windows.first?.rootViewController else {
-            errorMessage = "Could not find root view controller."
+            errorMessage = AppErrorCode.authRootViewControllerMissing.message
             state = .signedOut
             return false
         }
@@ -176,7 +176,7 @@ final class AuthService: ObservableObject {
         do {
             let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
             guard let idToken = result.user.idToken?.tokenString else {
-                errorMessage = "Missing Google ID Token"
+                errorMessage = AppErrorCode.authGoogleTokenMissing.message
                 state = .signedOut
                 return false
             }

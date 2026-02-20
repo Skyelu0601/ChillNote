@@ -218,7 +218,7 @@ struct HomeBodyView: View {
                 dispatch(.confirmAskSoftLimit)
             }
         } message: {
-            Text("You selected \(state.selectedNotes.count) notes. Asking AI with many notes may be slower and less accurate.")
+            Text(L10n.text("home.alert.ask_soft_limit.message", state.selectedNotes.count))
         }
         .alert("Too Many Notes", isPresented: Binding(
             get: { state.showAskHardLimitAlert },
@@ -226,7 +226,7 @@ struct HomeBodyView: View {
         )) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("You can ask AI about up to \(state.askHardLimit) notes at a time. Please reduce your selection.")
+            Text(L10n.text("home.alert.ask_hard_limit.message", state.askHardLimit))
         }
         .alert("Large Selection", isPresented: Binding(
             get: { state.showRecipeSoftLimitAlert },
@@ -239,7 +239,7 @@ struct HomeBodyView: View {
                 dispatch(.confirmRecipeSoftLimit)
             }
         } message: {
-            Text("You selected \(state.selectedNotes.count) notes. This may take a while to process.")
+            Text(L10n.text("home.alert.recipe_soft_limit.message", state.selectedNotes.count))
         }
         .alert("Too Many Notes", isPresented: Binding(
             get: { state.showRecipeHardLimitAlert },
@@ -247,7 +247,7 @@ struct HomeBodyView: View {
         )) {
             Button("OK", role: .cancel) { }
         } message: {
-            Text("Chill Recipes can process up to \(state.recipeHardLimit) notes at a time. Please reduce your selection.")
+            Text(L10n.text("home.alert.recipe_hard_limit.message", state.recipeHardLimit))
         }
         .sheet(isPresented: translateInputPresentedBinding) {
             TranslateSheetView(
@@ -258,11 +258,11 @@ struct HomeBodyView: View {
         }
         .alert("Delete Notes", isPresented: showDeleteConfirmationBinding) {
             Button("Cancel", role: .cancel) { }
-            Button("Delete \(state.selectedNotes.count) Note\(state.selectedNotes.count == 1 ? "" : "s")", role: .destructive) {
+            Button(deleteNotesButtonTitle, role: .destructive) {
                 dispatch(.deleteSelectedNotes)
             }
         } message: {
-            Text("Are you sure you want to delete \(state.selectedNotes.count) note\(state.selectedNotes.count == 1 ? "" : "s")? This action cannot be undone.")
+            Text(deleteNotesMessage)
         }
         .alert("Merge Successful", isPresented: showMergeSuccessAlertBinding) {
             Button("Keep Original Notes", role: .cancel) { }
@@ -270,7 +270,7 @@ struct HomeBodyView: View {
                 dispatch(.deleteNotesAfterMerge)
             }
         } message: {
-            Text("The notes have been merged into a new note. Would you like to delete the original \(state.notesToDeleteAfterMerge.count) notes?")
+            Text(L10n.text("home.alert.merge_success.message", state.notesToDeleteAfterMerge.count))
         }
         .alert("Empty Recycle Bin", isPresented: showEmptyTrashConfirmationBinding) {
             Button("Cancel", role: .cancel) { }
@@ -354,6 +354,7 @@ struct HomeBodyView: View {
                     HomeNotesListView(
                         cachedVisibleNotes: state.cachedVisibleNotes,
                         isLoading: state.isLoadingNotes,
+                        isSyncing: state.isSyncingNotes,
                         hasLoadedAtLeastOnce: state.hasLoadedNotesAtLeastOnce,
                         isTrashSelected: state.isTrashSelected,
                         isSelectionMode: state.isSelectionMode,
@@ -382,6 +383,20 @@ struct HomeBodyView: View {
                     }
             }
         }
+    }
+
+    private var deleteNotesButtonTitle: String {
+        if state.selectedNotes.count == 1 {
+            return L10n.text("home.alert.delete_notes.button.one")
+        }
+        return L10n.text("home.alert.delete_notes.button.other", state.selectedNotes.count)
+    }
+
+    private var deleteNotesMessage: String {
+        if state.selectedNotes.count == 1 {
+            return L10n.text("home.alert.delete_notes.message.one")
+        }
+        return L10n.text("home.alert.delete_notes.message.other", state.selectedNotes.count)
     }
 
     private var floatingVoiceInput: some View {

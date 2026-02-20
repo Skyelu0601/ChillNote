@@ -288,7 +288,10 @@ class StoreService: ObservableObject {
                 break
             }
         } catch {
-            errorMessage = "Purchase failed: \(error.localizedDescription)"
+            errorMessage = String(
+                format: String(localized: "Purchase failed: %@"),
+                error.localizedDescription
+            )
         }
 
         isPurchasing = false
@@ -302,7 +305,10 @@ class StoreService: ObservableObject {
             try await AppStore.sync()
             await updateSubscriptionStatus()
         } catch {
-            errorMessage = "Restore failed: \(error.localizedDescription)"
+            errorMessage = String(
+                format: String(localized: "Restore failed: %@"),
+                error.localizedDescription
+            )
         }
         
         isPurchasing = false
@@ -334,11 +340,11 @@ class StoreService: ObservableObject {
             let products = try await Product.products(for: productIds)
             availableProducts = products.sorted(by: { $0.price < $1.price })
             if availableProducts.isEmpty {
-                productsErrorMessage = "No subscription products are available right now. Please try again."
+                productsErrorMessage = String(localized: "No subscription products are available right now. Please try again.")
             }
         } catch {
             print("Failed to fetch products: \(error)")
-            productsErrorMessage = "Unable to load subscription prices. Please check your network and try again."
+            productsErrorMessage = String(localized: "Unable to load subscription prices. Please check your network and try again.")
         }
         isLoadingProducts = false
     }
@@ -463,7 +469,7 @@ class StoreService: ObservableObject {
         if httpResponse.statusCode != 200 {
             // Handle specific errors like 409 (Bound to another user)
             if httpResponse.statusCode == 409 {
-                 self.errorMessage = "This subscription is already linked to another ChillNote account."
+                 self.errorMessage = String(localized: "This subscription is already linked to another ChillNote account.")
             } else if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let message = json["error"] as? String {
                 self.errorMessage = message

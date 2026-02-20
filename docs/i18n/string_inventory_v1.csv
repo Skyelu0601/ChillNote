@@ -1,0 +1,252 @@
+key,file,line,context,is_dynamic,in_catalog,risk
+Couldn't Start ChillNote,chillnote/ChillNoteApp.swift,61,Text,False,True,low
+"Local data initialization failed. Please try again. If it still fails, restart the app or free up device storage and try again.",chillnote/ChillNoteApp.swift,64,Text,False,True,medium
+Retry Initialization,chillnote/ChillNoteApp.swift,75,Button,False,True,low
+ChillNote,chillnote/Features/AboutView.swift,18,Text,False,True,low
+Design Philosophy & Vision,chillnote/Features/AboutView.swift,22,Text,False,True,low
+"""Capturing the speed of thought,
+one voice at a time.""",chillnote/Features/AboutView.swift,27,Text,False,True,medium
+"ChillNote is not just another note-taking app. It is a tool designed to realign the way we capture, process, and structure our thoughts. By prioritizing voice input and AI-driven organization, ChillNote addresses the friction between the human mind's speed and the limitations of traditional input methods.",chillnote/Features/AboutView.swift,39,Text,False,True,medium
+What ChillNote is NOT,chillnote/Features/AboutView.swift,110,Text,False,True,low
+"""Defining the boundaries to preserve the 'Chill'.""",chillnote/Features/AboutView.swift,115,Text,False,True,medium
+Our Vision,chillnote/Features/AboutView.swift,144,Text,False,True,low
+"ChillNote is an attempt to use technology to return us to a more natural, healthy, and efficient state of being.
+
+It is for the dreamers who talk fast, the creators who hurt from typing, and anyone who believes their ideas deserve to be heard, not just written.",chillnote/Features/AboutView.swift,149,Text,False,True,medium
+Pending Recordings,chillnote/Features/PendingRecordingsView.swift,155,modifier,False,True,low
+Transcription Failed,chillnote/Features/PendingRecordingsView.swift,163,modifier,False,True,low
+OK,chillnote/Features/PendingRecordingsView.swift,164,Button,False,True,low
+No pending recordings,chillnote/Features/PendingRecordingsView.swift,177,Text,False,True,low
+Delete,chillnote/Features/PendingRecordingsView.swift,214,Text,False,True,low
+Save as Note,chillnote/Features/PendingRecordingsView.swift,246,Text,False,True,low
+Saving...,chillnote/Features/PendingRecordingsView.swift,262,Text,False,True,low
+Saved!,chillnote/Features/PendingRecordingsView.swift,277,Text,False,True,low
+Settings,chillnote/Features/SettingsView.swift,43,Text,False,True,low
+Sign Out,chillnote/Features/SettingsView.swift,110,modifier,False,True,low
+Cancel,chillnote/Features/SettingsView.swift,111,Button,False,True,low
+Sign Out,chillnote/Features/SettingsView.swift,112,Button,False,True,low
+Are you sure you want to sign out?,chillnote/Features/SettingsView.swift,117,Text,False,True,low
+Delete Account,chillnote/Features/SettingsView.swift,119,modifier,False,True,low
+Cancel,chillnote/Features/SettingsView.swift,120,Button,False,True,low
+Delete,chillnote/Features/SettingsView.swift,121,Button,False,True,low
+Are you sure you want to delete your account? All your data will be permanently removed. This action cannot be undone.,chillnote/Features/SettingsView.swift,134,Text,False,True,medium
+Deletion Failed,chillnote/Features/SettingsView.swift,136,modifier,False,True,low
+OK,chillnote/Features/SettingsView.swift,137,Button,False,True,low
+Export Failed,chillnote/Features/SettingsView.swift,141,modifier,False,True,low
+Cancel,chillnote/Features/SettingsView.swift,142,Button,False,True,low
+Retry,chillnote/Features/SettingsView.swift,143,Button,False,True,low
+My Account,chillnote/Features/SettingsView.swift,162,Text,False,True,low
+PRO,chillnote/Features/SettingsView.swift,166,Text,False,True,low
+Subscription Plan,chillnote/Features/SettingsView.swift,193,Text,False,True,low
+Sign In to ChillNote,chillnote/Features/SettingsView.swift,232,Text,False,True,low
+Auto Detect,chillnote/Features/SettingsView.swift,539,Text,False,True,low
+Preferred Language,chillnote/Features/SettingsView.swift,540,Text,False,True,low
+Language will be inferred from audio. Mixed-language speech is preserved.,chillnote/Features/SettingsView.swift,546,Text,False,True,medium
+Preferred language improves primary-language stability while preserving mixed-language speech.,chillnote/Features/SettingsView.swift,552,Text,False,True,medium
+Search language,chillnote/Features/SettingsView.swift,557,TextField,False,True,low
+Voice Transcription,chillnote/Features/SettingsView.swift,594,modifier,False,True,low
+Close,chillnote/Features/SettingsView.swift,598,Button,False,True,low
+Export Your Knowledge Base,chillnote/Features/SettingsView.swift,630,Text,False,True,low
+"Generate a comprehensive Markdown archive of all your notes, organized by date. Perfect for backup or importing into other tools.",chillnote/Features/SettingsView.swift,636,Text,False,True,medium
+SUMMARY,chillnote/Features/SettingsView.swift,649,Text,False,True,low
+Total Notes,chillnote/Features/SettingsView.swift,665,Text,False,True,low
+\(viewModel.estimatedNoteCount ?? 0),chillnote/Features/SettingsView.swift,674,Text,True,False,high
+Export Format,chillnote/Features/SettingsView.swift,690,Text,False,True,low
+Markdown,chillnote/Features/SettingsView.swift,695,Text,False,True,low
+No notes found to export.,chillnote/Features/SettingsView.swift,730,Text,False,True,low
+Export,chillnote/Features/SettingsView.swift,775,modifier,False,True,low
+Close,chillnote/Features/SettingsView.swift,779,Button,False,True,low
+Done,chillnote/Features/SettingsView.swift,933,Button,False,True,low
+Discard,chillnote/Features/RecordingOverlayView.swift,75,Button,False,True,low
+Retry Upload,chillnote/Features/RecordingOverlayView.swift,83,Button,False,True,low
+Microphone and Speech access are required.,chillnote/Features/RecordingOverlayView.swift,121,Text,False,True,low
+Request Access,chillnote/Features/RecordingOverlayView.swift,125,Button,False,True,low
+Requests microphone permission.,chillnote/Features/RecordingOverlayView.swift,130,modifier,False,True,low
+Open Settings,chillnote/Features/RecordingOverlayView.swift,131,Button,False,True,low
+Opens system Settings for permissions.,chillnote/Features/RecordingOverlayView.swift,136,modifier,False,True,low
+Done,chillnote/Features/RecordingOverlayView.swift,151,Text,False,True,low
+Finish recording,chillnote/Features/RecordingOverlayView.swift,165,modifier,False,True,low
+Stops recording and saves your note.,chillnote/Features/RecordingOverlayView.swift,166,modifier,False,True,low
+Create,chillnote/Features/ChillRecipesView.swift,145,Text,False,True,low
+Chill Recipes,chillnote/Features/ChillRecipesView.swift,162,modifier,False,True,low
+Delete Recipe,chillnote/Features/ChillRecipesView.swift,183,modifier,False,True,low
+Cancel,chillnote/Features/ChillRecipesView.swift,187,Button,False,True,low
+Delete,chillnote/Features/ChillRecipesView.swift,188,Button,False,True,low
+This will permanently delete this custom recipe.,chillnote/Features/ChillRecipesView.swift,195,Text,False,True,low
+Remove,chillnote/Features/ChillRecipesView.swift,317,Label,False,True,low
+Delete Permanently,chillnote/Features/ChillRecipesView.swift,322,Label,False,True,low
+Prompt,chillnote/Features/ChillRecipesView.swift,426,Text,False,True,low
+Name (e.g. Summarize),chillnote/Features/ChillRecipesView.swift,490,TextField,False,True,low
+Icon,chillnote/Features/ChillRecipesView.swift,494,Text,False,True,low
+Create Recipe,chillnote/Features/ChillRecipesView.swift,508,modifier,False,True,low
+Cancel,chillnote/Features/ChillRecipesView.swift,512,Button,False,True,low
+Save,chillnote/Features/ChillRecipesView.swift,515,Button,False,True,low
+ChillNote,chillnote/Features/SidebarView.swift,52,Text,False,True,low
+Open Settings,chillnote/Features/SidebarView.swift,71,modifier,False,True,low
+Start organizing with tags,chillnote/Features/SidebarView.swift,122,Text,False,True,low
+TAGS,chillnote/Features/SidebarView.swift,358,Text,False,True,low
+Release to unnest,chillnote/Features/SidebarView.swift,366,Text,False,True,low
+\(badgeCount),chillnote/Features/SidebarView.swift,494,Text,True,False,high
+ChillNote Pro,chillnote/Features/SubscriptionView.swift,151,Text,False,True,low
+Active,chillnote/Features/SubscriptionView.swift,170,Text,False,True,low
+Renews on,chillnote/Features/SubscriptionView.swift,187,Text,False,True,low
+Your Active Privileges,chillnote/Features/SubscriptionView.swift,204,Text,False,True,low
+Manage Subscription,chillnote/Features/SubscriptionView.swift,218,Text,False,True,low
+Restore Purchases,chillnote/Features/SubscriptionView.swift,230,Text,False,True,low
+Upgrade to Pro,chillnote/Features/SubscriptionView.swift,279,Text,False,True,low
+Unlock the full power of ChillNote,chillnote/Features/SubscriptionView.swift,283,Text,False,True,low
+Current Plan,chillnote/Features/SubscriptionView.swift,292,Text,False,True,low
+Retry,chillnote/Features/SubscriptionView.swift,345,Button,False,True,low
+No subscription product is currently available.,chillnote/Features/SubscriptionView.swift,353,Text,False,True,low
+Retry,chillnote/Features/SubscriptionView.swift,356,Button,False,True,low
+Restore Purchases,chillnote/Features/SubscriptionView.swift,396,Text,False,True,low
+Payment will be charged to your Apple ID account at confirmation of purchase.,chillnote/Features/SubscriptionView.swift,409,Text,False,True,medium
+Subscription automatically renews unless canceled at least 24 hours before the end of the current period.,chillnote/Features/SubscriptionView.swift,414,Text,False,True,medium
+Manage or cancel your subscription in Settings > Apple ID > Subscriptions.,chillnote/Features/SubscriptionView.swift,419,Text,False,True,medium
+Save ~40% vs Monthly,chillnote/Features/SubscriptionView.swift,499,Text,False,True,low
+Chillo is climbing the tree of knowledge...,chillnote/Features/AIContextChatView.swift,75,Text,False,True,low
+Dismiss,chillnote/Features/AIContextChatView.swift,115,Button,False,True,low
+Chillo,chillnote/Features/AIContextChatView.swift,126,modifier,False,True,low
+Close,chillnote/Features/AIContextChatView.swift,130,Button,False,True,low
+Ask Chillo...,chillnote/Features/AIContextChatView.swift,182,TextField,False,True,low
+\(notes.count) Context Notes,chillnote/Features/AIContextChatView.swift,545,Text,True,False,high
+Skip,chillnote/Features/OnboardingView.swift,379,Button,False,True,low
+Welcome to ChillNote,chillnote/Features/OnboardingView.swift,436,Text,False,True,low
+For minds that refuse to be boxed in.,chillnote/Features/OnboardingView.swift,440,Text,False,True,low
+"Say it.
+Save it.",chillnote/Features/OnboardingView.swift,478,Text,False,True,low
+"""\(voicePrompt)""",chillnote/Features/OnboardingView.swift,487,Text,True,False,high
+Processing audio...,chillnote/Features/OnboardingView.swift,513,Text,False,True,low
+✨ Your Note,chillnote/Features/OnboardingView.swift,529,Text,False,True,low
+⚠️ \(error),chillnote/Features/OnboardingView.swift,548,Text,True,False,high
+You can also say...,chillnote/Features/OnboardingView.swift,557,Text,False,True,low
+Draft an email to my boss,chillnote/Features/OnboardingView.swift,565,Text,False,True,low
+Tweet about this launch,chillnote/Features/OnboardingView.swift,575,Text,False,True,low
+Next Steps,chillnote/Features/OnboardingView.swift,589,Text,False,True,low
+"Don't prompt
+Just tap",chillnote/Features/OnboardingView.swift,683,Text,False,True,low
+Complex tasks made instant,chillnote/Features/OnboardingView.swift,688,Text,False,True,low
+"Fix messy thoughts, fast",chillnote/Features/OnboardingView.swift,716,Text,False,True,low
+Next: Ask AI,chillnote/Features/OnboardingView.swift,765,Text,False,True,low
+You're ready.,chillnote/Features/OnboardingView.swift,800,Text,False,True,low
+Ask Your Notes,chillnote/Features/OnboardingView.swift,806,Text,False,True,low
+Chill AI,chillnote/Features/OnboardingView.swift,832,Text,False,True,low
+Save as Note,chillnote/Features/OnboardingView.swift,850,Text,False,True,low
+"Ask: ""Summarize core values""",chillnote/Features/OnboardingView.swift,888,Text,False,True,low
+Get Started,chillnote/Features/OnboardingView.swift,901,Text,False,True,low
+Search notes...,chillnote/Features/OnboardingView.swift,1009,TextField,False,True,low
+Chill Recipes,chillnote/Features/OnboardingView.swift,1058,Text,False,True,low
+Chill Recipes,chillnote/Features/OnboardingView.swift,1101,Text,False,True,low
+Search notes...,chillnote/Features/Home/HomeView.swift,451,TextField,False,True,low
+ChillNote,chillnote/Features/Auth/LoginView.swift,31,Text,False,True,low
+Say it. Save it.,chillnote/Features/Auth/LoginView.swift,38,Text,False,True,low
+Sign in with Google,chillnote/Features/Auth/LoginView.swift,104,Text,False,True,low
+Continue with Email,chillnote/Features/Auth/LoginView.swift,123,Text,False,True,low
+name@example.com,chillnote/Features/Auth/LoginView.swift,154,TextField,False,True,low
+Send Verification Code,chillnote/Features/Auth/LoginView.swift,186,Text,False,True,low
+Enter code sent to \(email),chillnote/Features/Auth/LoginView.swift,199,Text,True,False,high
+123456,chillnote/Features/Auth/LoginView.swift,203,TextField,False,True,low
+Verify & Login,chillnote/Features/Auth/LoginView.swift,235,Text,False,True,low
+Back to Options,chillnote/Features/Auth/LoginView.swift,248,Button,False,True,low
+Add Tag,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,8,modifier,False,True,low
+Tag name,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,9,TextField,False,True,low
+Cancel,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,12,Button,False,True,low
+Add,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,13,Button,False,True,low
+Enter a name for your custom tag.,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,17,Text,False,True,low
+Delete Note,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,19,modifier,False,True,low
+Cancel,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,20,Button,False,True,low
+Delete,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,21,Button,False,True,low
+Are you sure you want to delete this note? This action cannot be undone.,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,25,Text,False,True,medium
+Delete Permanently,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,27,modifier,False,True,low
+Cancel,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,28,Button,False,True,low
+Delete Permanently,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,29,Button,False,True,low
+This will permanently delete the note. This action cannot be undone.,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,33,Text,False,True,medium
+Export Failed,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,35,modifier,False,True,low
+OK,chillnote/Features/NoteDetail/NoteDetailAlertsAndSheets.swift,36,Button,False,True,low
+Back,chillnote/Features/NoteDetail/NoteDetailHeaderView.swift,24,modifier,False,True,low
+Restore,chillnote/Features/NoteDetail/NoteDetailHeaderView.swift,30,Label,False,True,low
+Restore Note,chillnote/Features/NoteDetail/NoteDetailHeaderView.swift,38,modifier,False,True,low
+Chillo's Magic,chillnote/Features/NoteDetail/NoteDetailHeaderView.swift,75,modifier,False,True,low
+Export Markdown,chillnote/Features/NoteDetail/NoteDetailHeaderView.swift,81,Label,False,True,low
+Delete Note,chillnote/Features/NoteDetail/NoteDetailHeaderView.swift,85,Label,False,True,low
+Delete Permanently,chillnote/Features/NoteDetail/NoteDetailHeaderView.swift,89,Label,False,True,low
+More Actions,chillnote/Features/NoteDetail/NoteDetailHeaderView.swift,99,modifier,False,True,low
+Tag,chillnote/Features/NoteDetail/NoteDetailTagComponents.swift,29,Text,False,True,low
+#,chillnote/Features/NoteDetail/NoteDetailTagComponents.swift,52,Text,False,True,low
+Refined,chillnote/Features/NoteDetail/NoteDetailView+Overlays.swift,59,Text,False,True,low
+Show Original,chillnote/Features/NoteDetail/NoteDetailView+Overlays.swift,70,Text,False,True,low
+Retry,chillnote/Features/NoteDetail/NoteDetailView+Overlays.swift,120,Text,False,True,low
+OK,chillnote/Features/NoteDetail/NoteDetailView+Overlays.swift,169,Button,False,True,low
+Close,chillnote/Features/Home/Components/HomeBodyView.swift,174,Button,False,True,low
+Close,chillnote/Features/Home/Components/HomeBodyView.swift,193,Button,False,True,low
+Ask Agent,chillnote/Features/Home/Components/HomeBodyView.swift,200,modifier,False,True,low
+What should I do?,chillnote/Features/Home/Components/HomeBodyView.swift,201,TextField,False,True,low
+Cancel,chillnote/Features/Home/Components/HomeBodyView.swift,202,Button,False,True,low
+Do it,chillnote/Features/Home/Components/HomeBodyView.swift,205,Button,False,True,low
+Enter your instruction for these notes.,chillnote/Features/Home/Components/HomeBodyView.swift,210,Text,False,True,low
+Large Selection,chillnote/Features/Home/Components/HomeBodyView.swift,212,modifier,False,True,low
+Cancel,chillnote/Features/Home/Components/HomeBodyView.swift,216,Button,False,True,low
+Continue,chillnote/Features/Home/Components/HomeBodyView.swift,217,Button,False,True,low
+Too Many Notes,chillnote/Features/Home/Components/HomeBodyView.swift,223,modifier,False,True,low
+OK,chillnote/Features/Home/Components/HomeBodyView.swift,227,Button,False,True,low
+Large Selection,chillnote/Features/Home/Components/HomeBodyView.swift,231,modifier,False,True,low
+Cancel,chillnote/Features/Home/Components/HomeBodyView.swift,235,Button,False,True,low
+Continue,chillnote/Features/Home/Components/HomeBodyView.swift,238,Button,False,True,low
+Too Many Notes,chillnote/Features/Home/Components/HomeBodyView.swift,244,modifier,False,True,low
+OK,chillnote/Features/Home/Components/HomeBodyView.swift,248,Button,False,True,low
+Delete Notes,chillnote/Features/Home/Components/HomeBodyView.swift,259,modifier,False,True,low
+Cancel,chillnote/Features/Home/Components/HomeBodyView.swift,260,Button,False,True,low
+Merge Successful,chillnote/Features/Home/Components/HomeBodyView.swift,267,modifier,False,True,low
+Keep Original Notes,chillnote/Features/Home/Components/HomeBodyView.swift,268,Button,False,True,low
+Delete Originals,chillnote/Features/Home/Components/HomeBodyView.swift,269,Button,False,True,low
+Empty Recycle Bin,chillnote/Features/Home/Components/HomeBodyView.swift,275,modifier,False,True,low
+Cancel,chillnote/Features/Home/Components/HomeBodyView.swift,276,Button,False,True,low
+Empty,chillnote/Features/Home/Components/HomeBodyView.swift,277,Button,False,True,low
+This will permanently delete all notes in the recycle bin.,chillnote/Features/Home/Components/HomeBodyView.swift,281,Text,False,True,medium
+No tags available,chillnote/Features/Home/Components/HomeBodyView.swift,287,Text,False,True,low
+Add Tag,chillnote/Features/Home/Components/HomeBodyView.swift,308,modifier,False,True,low
+Cancel,chillnote/Features/Home/Components/HomeBodyView.swift,312,Button,False,True,low
+Select Language,chillnote/Features/Home/Components/TranslateSheetView.swift,21,Text,False,True,low
+Choose a language to translate your note,chillnote/Features/Home/Components/TranslateSheetView.swift,25,Text,False,True,low
+Cancel,chillnote/Features/Home/Components/TranslateSheetView.swift,71,Button,False,True,low
+Chill Recipes,chillnote/Features/Home/Components/HomeSelectionOverlayView.swift,29,Text,False,True,low
+Add Recipes,chillnote/Features/Home/Components/HomeSelectionOverlayView.swift,42,modifier,False,True,low
+No recipes yet,chillnote/Features/Home/Components/HomeSelectionOverlayView.swift,78,Text,False,True,low
+Ask AI,chillnote/Features/Home/Components/HomeSelectionOverlayView.swift,98,Text,False,True,low
+Chill Recipes,chillnote/Features/Home/Components/HomeSelectionOverlayView.swift,116,Text,False,True,low
+Enter AI Context Mode,chillnote/Features/Home/Components/HomeHeaderView.swift,62,modifier,False,True,low
+Search,chillnote/Features/Home/Components/HomeHeaderView.swift,77,modifier,False,True,low
+Empty Recycle Bin,chillnote/Features/Home/Components/HomeHeaderView.swift,89,modifier,False,True,low
+Cancel,chillnote/Features/Home/Components/HomeHeaderView.swift,94,Button,False,True,low
+Select All,chillnote/Features/Home/Components/HomeHeaderView.swift,104,Button,False,True,low
+Deselect All,chillnote/Features/Home/Components/HomeHeaderView.swift,110,Button,False,True,low
+No deleted notes yet. Notes stay for 30 days.,chillnote/Features/Home/Components/HomeNotesListView.swift,23,Text,False,True,low
+No notes yet. Use the voice button to create your first note.,chillnote/Features/Home/Components/HomeNotesListView.swift,30,Text,False,True,medium
+Restore,chillnote/Features/Home/Components/HomeNotesListView.swift,54,Label,False,True,low
+Delete Permanently,chillnote/Features/Home/Components/HomeNotesListView.swift,59,Label,False,True,low
+Delete,chillnote/Features/Home/Components/HomeNotesListView.swift,89,Label,False,True,low
+Loading...,chillnote/Features/Home/Components/HomeNotesListView.swift,103,Text,False,True,low
+Deleted \(deletedAt.relativeFormatted()),chillnote/Features/Home/Components/HomeNotesListView.swift,160,Text,True,False,high
+•,chillnote/Features/Home/Components/HomeNotesListView.swift,163,Text,False,True,low
+Pinned,chillnote/Features/Home/Components/HomeNotesListView.swift,250,Text,False,True,low
++\(item.hiddenTagCount),chillnote/Features/Home/Components/HomeNotesListView.swift,290,Text,True,False,high
+Display Large,chillnote/Core/DesignSystem/Font+Chill.swift,21,Text,False,True,low
+Display Medium,chillnote/Core/DesignSystem/Font+Chill.swift,22,Text,False,True,low
+Body Large,chillnote/Core/DesignSystem/Font+Chill.swift,23,Text,False,True,low
+Body Medium,chillnote/Core/DesignSystem/Font+Chill.swift,24,Text,False,True,low
+Body Small,chillnote/Core/DesignSystem/Font+Chill.swift,25,Text,False,True,low
+Caption,chillnote/Core/DesignSystem/Font+Chill.swift,26,Text,False,True,low
+Processing Note,chillnote/Core/Components/VoiceProcessingWorkflowView.swift,103,Text,False,True,low
+You can keep using ChillNote while we work.,chillnote/Core/Components/VoiceProcessingWorkflowView.swift,142,Text,False,True,low
+\(progress.processed)/\(progress.total) • \(percentageText),chillnote/Core/Components/ExportProgressView.swift,27,Text,True,False,high
+Cancel Export,chillnote/Core/Components/ExportProgressView.swift,43,Text,False,True,low
+Type a note...,chillnote/Core/Components/ChatInputBar.swift,56,TextField,False,True,low
+Choose Icon,chillnote/Core/Components/IconPickerView.swift,82,modifier,False,True,low
+Done,chillnote/Core/Components/IconPickerView.swift,86,Button,False,True,low
+Recording...,chillnote/Core/Components/VoiceInputBar.swift,31,Text,False,True,low
+Processing...,chillnote/Core/Components/VoiceInputBar.swift,51,Text,False,True,low
+Retry,chillnote/Core/Components/VoiceInputBar.swift,65,Button,False,True,low
+Retry,chillnote/Core/Components/AIPreviewCard.swift,18,Text,False,True,low
+Undo,chillnote/Core/Components/AIPreviewCard.swift,34,Text,False,True,low
+Save,chillnote/Core/Components/AIPreviewCard.swift,50,Text,False,True,low
+Maybe Later,chillnote/Core/Components/UpgradeBottomSheet.swift,72,Text,False,True,low

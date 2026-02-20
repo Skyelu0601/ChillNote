@@ -177,9 +177,9 @@ struct AboutView: View {
 
 struct PhilosophySection: View {
     let number: String
-    let title: String
-    let quote: String
-    let content: [String]
+    let title: LocalizedStringKey
+    let quote: LocalizedStringKey
+    let content: [LocalizedStringKey]
     
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -201,8 +201,8 @@ struct PhilosophySection: View {
                 .padding(.leading, 4)
                 .padding(.bottom, 4)
             
-            ForEach(content, id: \.self) { paragraph in
-                Text(LocalizedStringKey(paragraph))
+            ForEach(Array(content.enumerated()), id: \.offset) { item in
+                Text(item.element)
                     .font(.body)
                     .foregroundColor(.textMain.opacity(0.9))
                     .fixedSize(horizontal: false, vertical: true)
@@ -215,8 +215,8 @@ struct PhilosophySection: View {
 
 struct NotSection: View {
     let icon: String
-    let title: String
-    let bodyText: String
+    let title: LocalizedStringKey
+    let bodyText: LocalizedStringKey
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {

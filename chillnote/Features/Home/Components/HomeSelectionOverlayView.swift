@@ -59,7 +59,7 @@ struct HomeSelectionOverlayView: View {
                                         VStack(spacing: 10) {
                                             RecipeGridIcon(recipe: recipe, size: 22, container: 52)
 
-                                            Text(recipe.name)
+                                            Text(recipe.localizedName)
                                                 .font(.system(size: 12, weight: .medium))
                                                 .foregroundColor(.primary)
                                                 .multilineTextAlignment(.center)

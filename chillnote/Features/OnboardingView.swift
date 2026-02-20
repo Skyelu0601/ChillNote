@@ -118,7 +118,7 @@ struct OnboardingView: View {
     @State private var showVoiceIntents = false // New state for showing extra intents
 
     
-    private let voicePrompt = "Remind me to buy beef, tomatoes, and pasta"
+    private let voicePrompt = String(localized: "Remind me to buy beef, tomatoes, and pasta")
     
     private let typoText = OnboardingGrammarDemoContent.typoText
     // private let askQuestion = "Who is ChillNote designed for?" // Removed
@@ -308,7 +308,7 @@ struct OnboardingView: View {
                         withAnimation {
                             voicePhaseState = .done
                             processedResult = text // Fallback to raw text
-                            processingError = "AI processing unavailable"
+                            processingError = String(localized: "AI processing unavailable")
                         }
                     }
                 }
@@ -352,7 +352,7 @@ struct OnboardingView: View {
                         withAnimation {
                             voicePhaseState = .done
                             processedResult = text // Fallback to raw text
-                            processingError = "AI processing unavailable"
+                            processingError = String(localized: "AI processing unavailable")
                         }
                     }
                 }
@@ -484,7 +484,7 @@ struct OnboardingView: View {
                     // Initial Prompt
                     VStack(alignment: .leading, spacing: 16) {
                         sectionHeader(title: "Read this aloud")
-                        Text("\"\(voicePrompt)\"")
+                        Text(verbatim: "\"\(voicePrompt)\"")
                             .font(.system(size: 18, weight: .medium, design: .rounded))
                             .lineSpacing(6)
                             .foregroundColor(.textMain)
@@ -545,7 +545,12 @@ struct OnboardingView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                             
                             if let error = processingError {
-                                Text("⚠️ \(error)")
+                                Text(
+                                    String(
+                                        format: String(localized: "⚠️ %@"),
+                                        error
+                                    )
+                                )
                                     .font(.caption)
                                     .foregroundColor(.orange)
                             }
@@ -989,7 +994,7 @@ struct OnboardingView: View {
     
 
     
-    private func primaryButton(title: String, icon: String, action: @escaping () -> Void) -> some View {
+    private func primaryButton(title: LocalizedStringKey, icon: String, action: @escaping () -> Void) -> some View {
         Button(action: action) {
              HStack { Text(title).font(.title3.weight(.bold)); Image(systemName: icon).font(.body.weight(.bold)) }
             .foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 18)
@@ -999,14 +1004,14 @@ struct OnboardingView: View {
         .padding(.horizontal, 32)
     }
     
-    private func sectionHeader(title: String) -> some View {
+    private func sectionHeader(title: LocalizedStringKey) -> some View {
         Text(title).font(.title3.weight(.bold)).foregroundColor(.textMain)
     }
     
     private var searchBar: some View {
         HStack(spacing: 12) {
             Image(systemName: "magnifyingglass").foregroundColor(.textSub)
-            TextField("home.search.placeholder", text: .constant("")).disabled(true)
+            TextField("Search notes...", text: .constant("")).disabled(true)
         }
         .padding(12).background(Color.white.opacity(0.6)).cornerRadius(16)
     }
@@ -1079,7 +1084,7 @@ struct OnboardingView: View {
                                             }
                                         Text(recipe.icon).font(.largeTitle)
                                     }
-                                    Text(recipe.name).font(.caption).foregroundColor(recipe.id == "fix" ? .primary : .secondary).lineLimit(1)
+                                    Text(recipe.localizedName).font(.caption).foregroundColor(recipe.id == "fix" ? .primary : .secondary).lineLimit(1)
                                 }
                             }
                             .buttonStyle(.plain)

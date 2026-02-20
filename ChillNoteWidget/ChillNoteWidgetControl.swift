@@ -16,11 +16,14 @@ struct ChillNoteWidgetControl: ControlWidget {
             provider: Provider()
         ) { value in
             ControlWidgetToggle(
-                "Start Timer",
+                String(localized: "Start Timer"),
                 isOn: value,
                 action: StartTimerIntent()
             ) { isRunning in
-                Label(isRunning ? "On" : "Off", systemImage: "timer")
+                Label(
+                    isRunning ? String(localized: "On") : String(localized: "Off"),
+                    systemImage: "timer"
+                )
             }
         }
         .displayName("Timer")

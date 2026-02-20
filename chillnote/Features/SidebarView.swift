@@ -471,7 +471,7 @@ struct TrashDropZone: View {
 
 struct SidebarItem: View {
     let icon: String
-    let title: String
+    let title: LocalizedStringKey
     let isSelected: Bool
     var badgeCount: Int = 0
     let action: () -> Void

@@ -156,9 +156,9 @@ struct AIContextChatView: View {
         }
         .sheet(isPresented: $showUpgradeSheet) {
             UpgradeBottomSheet(
-                title: "Daily free limit reached",
+                title: String(localized: "Daily free limit reached"),
                 message: UpgradeBottomSheet.unifiedMessage,
-                primaryButtonTitle: "Upgrade to Pro",
+                primaryButtonTitle: String(localized: "Upgrade to Pro"),
                 onUpgrade: openSubscriptionFromUpgrade,
                 onDismiss: { showUpgradeSheet = false }
             )
@@ -358,7 +358,10 @@ struct AIContextChatView: View {
                         errorMessage = nil
                         showUpgradeSheet = true
                     } else {
-                        errorMessage = "Chillo ran into an issue: \(message)"
+                        errorMessage = String(
+                            format: String(localized: "Chillo ran into an issue: %@"),
+                            message
+                        )
                     }
                 }
             }
@@ -542,7 +545,12 @@ private struct ContextPreviewView: View, Equatable {
                         .foregroundColor(.accentPrimary)
                         .font(.system(size: 14))
                     
-                    Text("\(notes.count) Context Notes")
+                    Text(
+                        String(
+                            format: String(localized: "%lld Context Notes"),
+                            Int64(notes.count)
+                        )
+                    )
                         .font(.subheadline)
                         .fontWeight(.medium)
                         .foregroundColor(.textMain)

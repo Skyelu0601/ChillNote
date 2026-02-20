@@ -229,7 +229,7 @@ private struct CategoryChip: View {
     
     var body: some View {
         Button(action: action) {
-            Text(category.rawValue)
+            Text(category.localizedTitle)
                 .font(.system(size: 13, weight: isSelected ? .semibold : .medium))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
@@ -264,12 +264,12 @@ private struct RecipeCard: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(recipe.name)
+                Text(recipe.localizedName)
                     .font(.headline)
                     .lineLimit(1)
                     .foregroundColor(.textMain)
                 
-                Text(recipe.description)
+                Text(recipe.localizedDescription)
                     .font(.caption)
                     .foregroundColor(.textSub)
                     .lineLimit(3)
@@ -301,10 +301,10 @@ private struct MyRecipeCardRow: View {
             RecipeIcon(recipe: recipe, size: 24, container: 44)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(recipe.name)
+                Text(recipe.localizedName)
                     .font(.body.weight(.semibold))
                     .foregroundColor(.textMain)
-                Text(recipe.description)
+                Text(recipe.localizedDescription)
                     .font(.subheadline)
                     .foregroundColor(.textSub)
                     .lineLimit(1)
@@ -341,8 +341,8 @@ private struct MyRecipeCardRow: View {
 
 private struct EmptyStateView: View {
     let icon: String
-    let title: String
-    let message: String
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
     
     var body: some View {
         VStack(spacing: 12) {
@@ -408,10 +408,10 @@ private struct RecipeDetailSheet: View {
             HStack(spacing: 16) {
                 RecipeIcon(recipe: recipe, size: 36, container: 56)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(recipe.name)
+                    Text(recipe.localizedName)
                         .font(.title2.bold())
                         .foregroundColor(.textMain)
-                    Text(recipe.description)
+                    Text(recipe.localizedDescription)
                         .font(.subheadline)
                         .foregroundColor(.textSub)
                 }
@@ -427,7 +427,7 @@ private struct RecipeDetailSheet: View {
                         .font(.headline)
                         .foregroundColor(.textMain)
                     
-                    Text(recipe.prompt)
+                    Text(recipe.localizedPrompt)
                         .font(.body.monospaced())
                         .foregroundColor(.textSub)
                         .padding(16)

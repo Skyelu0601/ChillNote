@@ -11,15 +11,15 @@ enum GeminiError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingAPIKey:
-            return "Chillo service key is not configured."
+            return AppErrorCode.geminiServiceKeyMissing.message
         case .invalidURL:
-            return "Invalid Chillo configuration."
+            return AppErrorCode.geminiInvalidConfiguration.message
         case .networkError(let error):
-            return "Network error: \(error.localizedDescription)"
+            return AppErrorCode.geminiNetworkError.message(error.localizedDescription)
         case .apiError(let message):
-            return "Chillo Service Error: \(message)"
+            return AppErrorCode.geminiServiceError.message(message)
         case .invalidResponse:
-            return "Invalid response from Chillo."
+            return AppErrorCode.geminiInvalidResponse.message
         }
     }
 }
@@ -58,7 +58,7 @@ struct GeminiService {
         request.timeoutInterval = timeout
 
         guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else {
-            throw GeminiError.apiError("Sign in required")
+            throw GeminiError.apiError(AppErrorCode.geminiSignInRequired.message)
         }
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         return request

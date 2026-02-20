@@ -150,7 +150,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         // Validation
         guard permissionGranted else {
             checkPermissions()
-            setError("Microphone permission required")
+            setError(String(localized: "Microphone permission required"))
             return
         }
         
@@ -177,7 +177,12 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             print("❌ Recording failed: \(describeError(error))")
             print(debugAudioSessionSnapshot())
             cleanupRecordingSession()
-            setError("Failed to start recording: \(error.localizedDescription)")
+            setError(
+                String(
+                    format: String(localized: "Failed to start recording: %@"),
+                    error.localizedDescription
+                )
+            )
         }
     }
 
@@ -228,7 +233,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             return
         }
 
-        setError("No recording available to retry")
+        setError(String(localized: "No recording available to retry"))
     }
 
     func retryTranscription(fileURL: URL) {
@@ -326,7 +331,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         guard let fileSize = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? NSNumber else {
             // Only discard if we truly can't read it
             discardUnusableRecording(fileURL: fileURL)
-            publishFailureEvent(fileURL: fileURL, message: "Could not read audio file")
+            publishFailureEvent(fileURL: fileURL, message: String(localized: "Could not read audio file"))
             return
         }
         
@@ -334,7 +339,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         
         if size < 512 {
             discardUnusableRecording(fileURL: fileURL)
-            publishFailureEvent(fileURL: fileURL, message: "No audio captured. Please try again.")
+            publishFailureEvent(fileURL: fileURL, message: String(localized: "No audio captured. Please try again."))
             return
         }
         
@@ -369,13 +374,16 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             )
             
         } catch is TimeoutError {
-            publishFailureEvent(fileURL: fileURL, message: "Transcription timed out. Please try again.")
+            publishFailureEvent(fileURL: fileURL, message: String(localized: "Transcription timed out. Please try again."))
             
         } catch let error as GeminiError {
             publishFailureEvent(fileURL: fileURL, message: message(for: error))
             
         } catch {
-            publishFailureEvent(fileURL: fileURL, message: "Transcription failed: \(error.localizedDescription)")
+            publishFailureEvent(
+                fileURL: fileURL,
+                message: String(format: String(localized: "Transcription failed: %@"), error.localizedDescription)
+            )
         }
     }
     
@@ -384,15 +392,15 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     private func message(for error: GeminiError) -> String {
         switch error {
         case .missingAPIKey:
-            return "Chillo service key not configured. Please contact support."
+            return String(localized: "Chillo service key not configured. Please contact support.")
         case .apiError(let apiMessage):
-            return "Chillo service error: \(apiMessage)"
+            return String(format: String(localized: "Chillo service error: %@"), apiMessage)
         case .networkError(let networkError):
-            return "Network error: \(networkError.localizedDescription)"
+            return String(format: String(localized: "Network error: %@"), networkError.localizedDescription)
         case .invalidResponse:
-            return "Invalid response from Chillo."
+            return String(localized: "Invalid response from Chillo.")
         case .invalidURL:
-            return "Invalid configuration URL."
+            return String(localized: "Invalid configuration URL.")
         }
     }
     
@@ -528,7 +536,7 @@ private extension SpeechRecognizer {
             throw NSError(
                 domain: "SpeechRecognizer",
                 code: 10,
-                userInfo: [NSLocalizedDescriptionKey: "No microphone available"]
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "No microphone available")]
             )
         }
 
@@ -559,7 +567,7 @@ private extension SpeechRecognizer {
                 throw NSError(
                     domain: "SpeechRecognizer",
                     code: 11,
-                    userInfo: [NSLocalizedDescriptionKey: "Failed to prepare recorder"]
+                    userInfo: [NSLocalizedDescriptionKey: String(localized: "Failed to prepare recorder")]
                 )
             }
         }
@@ -568,7 +576,7 @@ private extension SpeechRecognizer {
             throw NSError(
                 domain: "SpeechRecognizer",
                 code: 12,
-                userInfo: [NSLocalizedDescriptionKey: "Failed to start recording"]
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "Failed to start recording")]
             )
         }
 

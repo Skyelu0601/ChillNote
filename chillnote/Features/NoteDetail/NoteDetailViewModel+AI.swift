@@ -32,7 +32,7 @@ extension NoteDetailViewModel {
             isProcessing = false
             let message = error.localizedDescription
             if message.localizedCaseInsensitiveContains("daily free tidy limit reached") {
-                upgradeTitle = "Daily Tidy limit reached"
+                upgradeTitle = String(localized: "Daily Tidy limit reached")
                 showUpgradeSheet = true
             }
         }

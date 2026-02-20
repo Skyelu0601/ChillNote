@@ -91,7 +91,7 @@ struct HomeHeaderView: View {
                 }
             } else {
                 HStack {
-                    Button("common.cancel") {
+                    Button("Cancel") {
                         onExitSelectionMode()
                     }
                     .font(.bodyMedium)
@@ -101,13 +101,13 @@ struct HomeHeaderView: View {
 
                     HStack(spacing: 20) {
                         if selectedNotesCount < visibleNotesCount {
-                            Button("home.action.selectAll") {
+                            Button("Select All") {
                                 onSelectAll()
                             }
                             .font(.bodyMedium)
                             .foregroundColor(.accentPrimary)
                         } else {
-                            Button("home.action.deselectAll") {
+                            Button("Deselect All") {
                                 onDeselectAll()
                             }
                             .font(.bodyMedium)

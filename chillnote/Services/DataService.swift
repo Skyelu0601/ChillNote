@@ -119,7 +119,7 @@ class DataService: ObservableObject {
             
             // Double-check: ensure no welcome note already exists (including trashed)
             // This prevents duplicates even if the flag was inadvertently reset
-            let welcomePrefix = "Welcome to ChillNote"
+            let welcomePrefix = String(localized: "Welcome to ChillNote")
             var welcomeDescriptor = FetchDescriptor<Note>()
             welcomeDescriptor.predicate = #Predicate<Note> { note in
                 note.userId == userId && note.content.localizedStandardContains(welcomePrefix)
@@ -131,7 +131,12 @@ class DataService: ObservableObject {
             }
             
             // Insert Welcome Note
-            context.insert(Note(content: "Welcome to ChillNote! Tap the yellow button to record a voice note.", userId: userId))
+            context.insert(
+                Note(
+                    content: String(localized: "Welcome to ChillNote! Tap the yellow button to record a voice note."),
+                    userId: userId
+                )
+            )
             try? context.save()
             
             // Mark as seeded

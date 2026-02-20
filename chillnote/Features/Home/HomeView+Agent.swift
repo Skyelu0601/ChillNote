@@ -41,7 +41,10 @@ extension HomeView {
 
         await MainActor.run {
             isExecutingAction = true
-            actionProgress = "Executing \(recipe.name)..."
+            actionProgress = String(
+                format: String(localized: "Executing %@..."),
+                recipe.localizedName
+            )
         }
 
         do {
@@ -66,7 +69,7 @@ extension HomeView {
                 actionProgress = nil
                 let message = error.localizedDescription
                 if message.localizedCaseInsensitiveContains("daily free agent recipe limit reached") {
-                    upgradeTitle = "Daily Agent Recipe limit reached"
+                    upgradeTitle = String(localized: "Daily Agent Recipe limit reached")
                     showUpgradeSheet = true
                 }
             }

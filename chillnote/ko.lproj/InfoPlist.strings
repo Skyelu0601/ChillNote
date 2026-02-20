@@ -1,0 +1,2 @@
+"NSMicrophoneUsageDescription" = "ChillNote는 생각을 녹음하기 위해 마이크 접근 권한이 필요합니다.";
+"NSSpeechRecognitionUsageDescription" = "ChillNote는 음성을 텍스트로 변환하기 위해 음성 인식을 사용합니다.";

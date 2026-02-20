@@ -71,7 +71,7 @@ extension HomeView {
 
             case .failure(let message):
                 print("⚠️ Home voice transcription failed: \(message)")
-                let guidance = "Transcription failed. Audio was saved to Pending Records."
+                let guidance = String(localized: "Transcription failed. Audio was saved to Pending Records.")
                 VoiceProcessingService.shared.processingStates[noteID] = .failed(message: guidance)
                 Task { @MainActor in
                     await checkForPendingRecordingsAsync()

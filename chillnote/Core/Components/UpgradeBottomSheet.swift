@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct UpgradeBottomSheet: View {
-    static let unifiedMessage = "Upgrade to Pro to unlock more with ChillNote."
+    static let unifiedMessage = String(localized: "Upgrade to Pro to unlock more with ChillNote.")
 
     let title: String
     let message: String

@@ -91,7 +91,7 @@ struct HomeView: View {
 
     var headerTitle: String {
         if isTrashSelected {
-            return "Recycle Bin"
+            return String(localized: "Recycle Bin")
         }
         return selectedTag?.name ?? "ChillNote"
     }
@@ -128,6 +128,7 @@ struct HomeView: View {
             isVoiceMode: isVoiceMode,
             cachedVisibleNotes: homeViewModel.items,
             isLoadingNotes: homeViewModel.isLoading,
+            isSyncingNotes: syncManager.isSyncing,
             hasLoadedNotesAtLeastOnce: homeViewModel.hasLoadedAtLeastOnce,
             availableTags: availableTags,
             translateLanguages: translateLanguages,
@@ -146,7 +147,7 @@ struct HomeView: View {
             recipeHardLimit: recipeHardLimit,
             hasPendingRecordings: hasPendingRecordings,
             pendingRecordingsCount: pendingRecordings.count,
-            showPendingRecordings: showPendingRecordings
+                               showPendingRecordings: showPendingRecordings
         )
     }
 
@@ -240,7 +241,7 @@ struct HomeView: View {
                 let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
                 await MainActor.run {
                     guard canRecord else {
-                        upgradeTitle = "Daily voice limit reached"
+                        upgradeTitle = String(localized: "Daily voice limit reached")
                         showUpgradeSheet = true
                         return
                     }
@@ -270,7 +271,7 @@ struct HomeView: View {
             UpgradeBottomSheet(
                 title: upgradeTitle,
                 message: UpgradeBottomSheet.unifiedMessage,
-                primaryButtonTitle: "Upgrade to Pro",
+                primaryButtonTitle: String(localized: "Upgrade to Pro"),
                 onUpgrade: {
                     showUpgradeSheet = false
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
@@ -448,7 +449,7 @@ struct HomeView: View {
                 .foregroundColor(.textSub)
                 .font(.system(size: 16, weight: .semibold))
 
-            TextField("home.search.placeholder", text: Binding(
+            TextField("Search notes...", text: Binding(
                 get: { searchText },
                 set: { dispatch(.setSearchText($0)) }
             ))

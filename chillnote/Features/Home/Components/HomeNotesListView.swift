@@ -4,6 +4,7 @@ import SwiftData
 struct HomeNotesListView: View {
     let cachedVisibleNotes: [Note]
     let isLoading: Bool
+    let isSyncing: Bool
     let hasLoadedAtLeastOnce: Bool
     let isTrashSelected: Bool
     let isSelectionMode: Bool
@@ -17,7 +18,7 @@ struct HomeNotesListView: View {
 
     var body: some View {
         if cachedVisibleNotes.isEmpty {
-            if isLoading || !hasLoadedAtLeastOnce {
+            if isLoading || isSyncing || !hasLoadedAtLeastOnce {
                 HomeNotesLoadingView()
             } else if isTrashSelected {
                 Text("No deleted notes yet. Notes stay for 30 days.")
@@ -27,7 +28,7 @@ struct HomeNotesListView: View {
                     .padding(.top, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
-                Text("home.empty.title")
+                Text("No notes yet. Use the voice button to create your first note.")
                     .font(.bodyMedium)
                     .foregroundColor(.textSub)
                     .padding(.horizontal, 24)
@@ -157,13 +158,25 @@ struct TrashNoteFooterView: View {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 12))
                     .foregroundColor(.textSub)
-                Text("Deleted \(deletedAt.relativeFormatted())")
+                Text(
+                    String(
+                        format: String(localized: "Deleted %@"),
+                        deletedAt.relativeFormatted()
+                    )
+                )
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.textSub)
                 Text("•")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.textSub)
-                Text(daysRemaining == 0 ? "Expires today" : "\(daysRemaining) days left")
+                Text(
+                    daysRemaining == 0
+                    ? String(localized: "Expires today")
+                    : String(
+                        format: String(localized: "%lld days left"),
+                        Int64(daysRemaining)
+                    )
+                )
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.textSub)
             }

@@ -37,7 +37,7 @@ struct ExportProgress: Sendable {
         processed: 0,
         total: 0,
         elapsed: 0,
-        message: "Preparing export..."
+        message: String(localized: "Preparing export...")
     )
 
     var fraction: Double {
@@ -66,19 +66,19 @@ enum ExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingContainer:
-            return "Export service is unavailable right now."
+            return String(localized: "Export service is unavailable right now.")
         case .noNotes:
-            return "No notes to export."
+            return String(localized: "No notes to export.")
         case .insufficientStorage:
-            return "Not enough storage to create export file."
+            return String(localized: "Not enough storage to create export file.")
         case .cancelled:
-            return "Export was cancelled."
+            return String(localized: "Export was cancelled.")
         case .invalidArchive:
-            return "Unable to create zip archive."
+            return String(localized: "Unable to create zip archive.")
         case .writeFailed:
-            return "Failed to write markdown files."
+            return String(localized: "Failed to write markdown files.")
         case .zipFailed:
-            return "Failed to package markdown files."
+            return String(localized: "Failed to package markdown files.")
         case .unknown(let message):
             return message
         }
@@ -135,7 +135,7 @@ actor NotesExportService: NotesExporting {
                 processed: 0,
                 total: total,
                 startedAt: startedAt,
-                message: "Preparing export package..."
+                message: String(localized: "Preparing export package...")
             )
 
             try ensureSufficientStorage(totalNotes: total)
@@ -178,7 +178,7 @@ actor NotesExportService: NotesExporting {
                     processed: processed,
                     total: total,
                     startedAt: startedAt,
-                    message: "Reading notes..."
+                    message: String(localized: "Reading notes...")
                 )
 
                 var writeFailed = false
@@ -217,7 +217,7 @@ actor NotesExportService: NotesExporting {
                                 processed: processed,
                                 total: total,
                                 startedAt: startedAt,
-                                message: "Writing markdown files..."
+                                message: String(localized: "Writing markdown files...")
                             )
                         }
                     }
@@ -239,7 +239,7 @@ actor NotesExportService: NotesExporting {
                 processed: processed,
                 total: total,
                 startedAt: startedAt,
-                message: "Packaging zip file..."
+                message: String(localized: "Packaging zip file...")
             )
 
             let zipURL = fileManager.temporaryDirectory
@@ -265,7 +265,7 @@ actor NotesExportService: NotesExporting {
                 processed: total,
                 total: total,
                 startedAt: startedAt,
-                message: "Export ready"
+                message: String(localized: "Export ready")
             )
 
             return zipURL

@@ -48,7 +48,7 @@ final class ExportViewModel: ObservableObject {
     func startExport(userId: String?) {
         guard !isExporting else { return }
         guard let userId, !userId.isEmpty else {
-            showError(message: "Sign in required to export.")
+            showError(message: String(localized: "Sign in required to export."))
             return
         }
 
@@ -58,7 +58,7 @@ final class ExportViewModel: ObservableObject {
             processed: 0,
             total: estimatedNoteCount ?? 0,
             elapsed: 0,
-            message: "Preparing export..."
+            message: String(localized: "Preparing export...")
         )
         successMessage = nil
         showErrorAlert = false
@@ -119,9 +119,13 @@ final class ExportViewModel: ObservableObject {
                 processed: max(progress.processed, estimatedNoteCount ?? progress.processed),
                 total: max(progress.total, estimatedNoteCount ?? progress.total),
                 elapsed: duration,
-                message: "Export complete"
+                message: String(localized: "Export complete")
             )
-            successMessage = "\(estimatedNoteCount ?? progress.processed) notes • \(formatByteCount(fileSize))"
+            successMessage = String(
+                format: String(localized: "%lld notes • %@"),
+                Int64(estimatedNoteCount ?? progress.processed),
+                formatByteCount(fileSize)
+            )
             exportURL = url
             showShareSheet = true
             scheduleDeferredCleanup(for: url)
@@ -130,7 +134,7 @@ final class ExportViewModel: ObservableObject {
 
         } catch {
             if isCancellation(error) {
-                successMessage = "Export cancelled"
+                successMessage = String(localized: "Export cancelled")
             } else {
                 let message = readableMessage(for: error)
                 showError(message: message)
@@ -151,9 +155,9 @@ final class ExportViewModel: ObservableObject {
 
     private func readableMessage(for error: Error) -> String {
         if let exportError = error as? ExportError {
-            return exportError.errorDescription ?? "Unable to export notes. Please try again."
+            return exportError.errorDescription ?? String(localized: "Unable to export notes. Please try again.")
         }
-        return "Unable to export notes. Please try again."
+        return String(localized: "Unable to export notes. Please try again.")
     }
 
     private func errorCode(for error: Error) -> String {

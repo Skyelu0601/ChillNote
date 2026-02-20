@@ -9,8 +9,8 @@ struct ChillNoteWidget: Widget {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
             QuickCaptureWidgetEntryView(entry: entry)
         }
-        .configurationDisplayName("Quick Capture")
-        .description("Instantly start recording your thoughts.")
+        .configurationDisplayName(String(localized: "Quick Capture"))
+        .description(String(localized: "Instantly start recording your thoughts."))
         .supportedFamilies([.accessoryCircular, .accessoryRectangular, .systemSmall])
     }
 }
@@ -70,7 +70,7 @@ struct QuickCaptureWidgetEntryView : View {
                             .foregroundColor(.white)
                             .font(.title)
                     )
-                Text("Record")
+                Text(String(localized: "Record"))
                     .font(.caption)
                     .fontWeight(.medium)
             }
@@ -79,4 +79,3 @@ struct QuickCaptureWidgetEntryView : View {
         }
     }
 }
-
