@@ -95,6 +95,7 @@ struct HomeView: View {
     @State var scheduledReloadTask: Task<Void, Never>?
     @State var bootstrappingUserId: String?
     @State var lastBootstrappedUserId: String?
+    @State var shouldReloadAfterSync = false
 
     var headerTitle: String {
         if isTrashSelected {
@@ -234,6 +235,15 @@ struct HomeView: View {
             Task {
                 await bootstrapHome(for: userId, source: .authChanged)
             }
+        }
+        .onChange(of: syncManager.isSyncing) { _, isSyncing in
+            if isSyncing {
+                shouldReloadAfterSync = true
+                return
+            }
+            guard shouldReloadAfterSync else { return }
+            shouldReloadAfterSync = false
+            requestReload(delayNanoseconds: 60_000_000, keepItemsWhileLoading: true)
         }
         .onChange(of: showingSettings) { _, isPresented in
             guard !isPresented else { return }
