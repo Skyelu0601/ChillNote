@@ -72,6 +72,7 @@ struct RemoteSyncService: SyncService {
             return try decoder.decode(SyncResponse.self, from: data)
         }.value
         applyRemotePayload(context: context, response: remoteResponse, userId: config.userId)
+        try context.save()
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         let serverTime = formatter.date(from: remoteResponse.serverTime) ?? ISO8601DateFormatter().date(from: remoteResponse.serverTime)

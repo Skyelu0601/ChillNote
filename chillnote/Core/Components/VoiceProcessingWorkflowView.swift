@@ -98,23 +98,6 @@ struct VoiceProcessingWorkflowView: View {
     // MARK: - Detailed View
     private var detailedView: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // Header
-            HStack {
-                Text("Processing Note")
-                    .font(.system(.headline, design: .rounded))
-                    .foregroundStyle(.primary)
-                
-                Spacer()
-                
-                if currentStage == .refining {
-                    ProgressView()
-                        .controlSize(.small)
-                }
-            }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
-            .padding(.bottom, 16)
-            
             // Steps
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(Array(VoiceProcessingStage.allCases.enumerated()), id: \.element) { index, stage in
@@ -126,6 +109,7 @@ struct VoiceProcessingWorkflowView: View {
                      .padding(.horizontal, 20)
                 }
             }
+            .padding(.top, 20)
             .padding(.bottom, 16)
             
             // Footer Hint

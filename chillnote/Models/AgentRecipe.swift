@@ -378,7 +378,13 @@ extension AgentRecipe {
             usageType: .agentRecipe
         )
         
-        let userId = AuthService.shared.currentUserId ?? "unknown"
+        guard let userId = AuthService.shared.currentUserId else {
+            throw NSError(
+                domain: "AgentRecipe",
+                code: 1,
+                userInfo: [NSLocalizedDescriptionKey: String(localized: "Sign in required.")]
+            )
+        }
         let note = Note(content: result, userId: userId)
         context.insert(note)
         return note

@@ -5,7 +5,6 @@ struct ChillRecipesView: View {
     @StateObject private var storeService = StoreService.shared
     @State private var selectedSection: RecipeSection = .library
     @State private var selectedCategory: AgentRecipeCategory? = nil // nil means "All" effectively, or we default to first
-    @State private var showingRecipeDetail: AgentRecipe?
     @State private var showingCreateRecipe = false
     @State private var showingSubscription = false
     @State private var pendingDeleteRecipe: AgentRecipe?
@@ -87,9 +86,6 @@ struct ChillRecipesView: View {
                                             recipeManager.toggleRecipe(recipe)
                                         }
                                     }
-                                    .onTapGesture {
-                                        showingRecipeDetail = recipe
-                                    }
                                 }
                             }
                             .padding(.horizontal, 20)
@@ -112,9 +108,6 @@ struct ChillRecipesView: View {
                                             onRemove: { withAnimation { recipeManager.removeRecipe(recipe) } },
                                             onDelete: recipe.isCustom ? { pendingDeleteRecipe = recipe } : nil
                                         )
-                                        .onTapGesture {
-                                            showingRecipeDetail = recipe
-                                        }
                                     }
                                 }
                                 .padding(.horizontal, 20)
@@ -159,11 +152,6 @@ struct ChillRecipesView: View {
             }
         }
         .navigationTitle("Chill Recipes")
-        .sheet(item: $showingRecipeDetail) { recipe in
-            RecipeDetailSheet(recipe: recipe, isAdded: recipeManager.isAdded(recipe)) {
-                recipeManager.toggleRecipe(recipe)
-            }
-        }
         .sheet(isPresented: $showingCreateRecipe) {
             CreateRecipeSheet(
                 name: $newRecipeName,
@@ -384,73 +372,6 @@ private struct RecipeIcon: View {
                 Text(recipe.icon)
                     .font(.system(size: size))
             }
-        }
-    }
-}
-
-private struct RecipeDetailSheet: View {
-    let recipe: AgentRecipe
-    let isAdded: Bool
-    let onToggle: () -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Sheet Handle
-            Capsule()
-                .fill(Color.gray.opacity(0.3))
-                .frame(width: 40, height: 4)
-                .frame(maxWidth: .infinity)
-                .padding(.top, 12)
-                .padding(.bottom, 8)
-            
-            HStack(spacing: 16) {
-                RecipeIcon(recipe: recipe, size: 36, container: 56)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(recipe.localizedName)
-                        .font(.title2.bold())
-                        .foregroundColor(.textMain)
-                    Text(recipe.localizedDescription)
-                        .font(.subheadline)
-                        .foregroundColor(.textSub)
-                }
-            }
-            .padding(.horizontal, 24)
-
-            Divider()
-                .padding(.horizontal, 24)
-            
-            ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Prompt")
-                        .font(.headline)
-                        .foregroundColor(.textMain)
-                    
-                    Text(recipe.localizedPrompt)
-                        .font(.body.monospaced())
-                        .foregroundColor(.textSub)
-                        .padding(16)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.bgSecondary)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .padding(24)
-            }
-            
-            Button(action: {
-                onToggle()
-                dismiss() // Optional: dismiss after action
-            }) {
-                Text(isAdded ? "Remove from My Recipes" : "Add to My Recipes")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(isAdded ? Color.red.opacity(0.1) : Color.accentPrimary)
-                    .foregroundColor(isAdded ? .red : .white)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-            }
-            .buttonStyle(.recipeScale)
-            .padding(24)
         }
     }
 }

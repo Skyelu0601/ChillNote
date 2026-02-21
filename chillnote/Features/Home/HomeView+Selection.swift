@@ -28,7 +28,7 @@ extension HomeView {
     }
 
     func fetchFilteredNotes() -> [Note] {
-        let userId = currentUserId
+        guard let userId = currentUserId else { return [] }
         var descriptor = FetchDescriptor<Note>()
         if isTrashSelected {
             descriptor.predicate = #Predicate<Note> { note in
@@ -101,8 +101,8 @@ extension HomeView {
 
     func getSelectedNotes() -> [Note] {
         guard !selectedNotes.isEmpty else { return [] }
+        guard let userId = currentUserId else { return [] }
         let ids = Array(selectedNotes)
-        let userId = currentUserId
         var descriptor = FetchDescriptor<Note>()
         descriptor.predicate = #Predicate<Note> { note in
             note.userId == userId && ids.contains(note.id)
@@ -176,8 +176,8 @@ extension HomeView {
     }
 
     func fetchDeletedNotesForCurrentUser() -> [Note] {
+        guard let userId = currentUserId else { return [] }
         var descriptor = FetchDescriptor<Note>()
-        let userId = currentUserId
         descriptor.predicate = #Predicate<Note> { note in
             note.userId == userId && note.deletedAt != nil
         }
@@ -230,8 +230,8 @@ extension HomeView {
     func persistAndSync() {
         try? modelContext.save()
         Task {
-            if FeatureFlags.useLocalFTSSearch {
-                await NotesSearchIndexer.shared.syncIncremental(context: modelContext, userId: currentUserId)
+            if let userId = currentUserId, FeatureFlags.useLocalFTSSearch {
+                await NotesSearchIndexer.shared.syncIncremental(context: modelContext, userId: userId)
             }
             await syncManager.syncIfNeeded(context: modelContext)
             requestReload(delayNanoseconds: 80_000_000)

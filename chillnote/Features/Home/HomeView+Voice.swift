@@ -16,8 +16,13 @@ extension HomeView {
             isVoiceMode = false
             return
         }
+        guard let userId = currentUserId else {
+            speechRecognizer.stopRecording()
+            isVoiceMode = false
+            return
+        }
 
-        let note = Note(content: "", userId: currentUserId)
+        let note = Note(content: "", userId: userId)
         applyCurrentTagContext(to: note)
         modelContext.insert(note)
         try? modelContext.save()
@@ -90,7 +95,8 @@ extension HomeView {
     }
 
     func createAndOpenBlankNote() {
-        let note = Note(content: "", userId: currentUserId)
+        guard let userId = currentUserId else { return }
+        let note = Note(content: "", userId: userId)
         applyCurrentTagContext(to: note)
         modelContext.insert(note)
         persistAndSync()
@@ -101,8 +107,9 @@ extension HomeView {
     func saveNote(text: String, shouldNavigate: Bool = false) -> Note? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
+        guard let userId = currentUserId else { return nil }
 
-        let note = Note(content: trimmed, userId: currentUserId)
+        let note = Note(content: trimmed, userId: userId)
         applyCurrentTagContext(to: note)
 
         withAnimation {

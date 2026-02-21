@@ -102,8 +102,8 @@ struct PendingRecordingsView: View {
 
     @StateObject private var playbackController = PendingRecordingPlaybackController()
 
-    private var currentUserId: String {
-        authService.currentUserId ?? "unknown"
+    private var currentUserId: String? {
+        authService.currentUserId
     }
 
     var body: some View {
@@ -372,6 +372,16 @@ struct PendingRecordingsView: View {
                         userInfo: [NSLocalizedDescriptionKey: String(localized: "Transcription result was empty. Please retry.")]
                     )
                 }
+                let userId = try await MainActor.run { () throws -> String in
+                    guard let userId = currentUserId else {
+                        throw NSError(
+                            domain: "PendingRecordingsView",
+                            code: 4,
+                            userInfo: [NSLocalizedDescriptionKey: String(localized: "Sign in required.")]
+                        )
+                    }
+                    return userId
+                }
 
                 await MainActor.run {
                     // 1. Resolve note: update existing linked Note, or create a new one
@@ -385,7 +395,7 @@ struct PendingRecordingsView: View {
                         note = existingNote
                     } else {
                         // Fallback: no prior Note found, create a fresh one
-                        note = Note(content: trimmed, userId: currentUserId)
+                        note = Note(content: trimmed, userId: userId)
                         modelContext.insert(note)
                     }
                     try? modelContext.save()

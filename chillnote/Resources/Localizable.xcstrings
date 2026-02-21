@@ -1929,6 +1929,7 @@
       }
     },
     "Add to My Recipes" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -15266,6 +15267,7 @@
       }
     },
     "Processing Note" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16372,7 +16374,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Raffiniert"
+            "value" : "Überarbeitet"
           }
         },
         "en" : {
@@ -16384,37 +16386,37 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Refinado"
+            "value" : "Mejorado"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Raffiné"
+            "value" : "Amélioré"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "洗練された"
+            "value" : "整え済み"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "세련된"
+            "value" : "다듬은"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "精制"
+            "value" : "润色"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "精製"
+            "value" : "潤色"
           }
         }
       }
@@ -16628,6 +16630,7 @@
       }
     },
     "Remove from My Recipes" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -18282,13 +18285,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "显示原件"
+            "value" : "显示原文"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "顯示原件"
+            "value" : "顯示原文"
           }
         }
       }
@@ -18344,6 +18347,9 @@
           }
         }
       }
+    },
+    "Sign in required." : {
+
     },
     "Sign In to ChillNote" : {
       "localizations" : {

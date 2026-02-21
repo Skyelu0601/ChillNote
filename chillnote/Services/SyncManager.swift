@@ -70,17 +70,23 @@ final class SyncManager: ObservableObject {
             let authToken = authToken
             let cursorSnapshot = syncCursor
             let deviceIdSnapshot = syncDeviceId
+            let userIdForSync = currentUserId
             let syncOutcome = try await Task.detached(priority: .utility) {
                 let backgroundContext = ModelContext(container)
-                let localNotesCount = (try? backgroundContext.fetchCount(FetchDescriptor<Note>())) ?? 0
+                var userNotesDescriptor = FetchDescriptor<Note>()
+                userNotesDescriptor.predicate = #Predicate<Note> { note in
+                    note.userId == userIdForSync
+                }
+                let localNotesCount = (try? backgroundContext.fetchCount(userNotesDescriptor)) ?? 0
                 let shouldForceFullSync = !hasUploadedLocalSnapshot && localNotesCount > 0
                 let sinceDate = shouldForceFullSync ? nil : lastSyncAt
                 let cursorValue = shouldForceFullSync ? nil : (cursorSnapshot.isEmpty ? nil : cursorSnapshot)
-                let config = SyncConfig(baseURL: url, authToken: authToken, since: sinceDate, cursor: cursorValue, userId: currentUserId, deviceId: deviceIdSnapshot)
+                let config = SyncConfig(baseURL: url, authToken: authToken, since: sinceDate, cursor: cursorValue, userId: userIdForSync, deviceId: deviceIdSnapshot)
                 let service: SyncService = RemoteSyncService(config: config)
                 let result = try await service.syncAll(context: backgroundContext)
                 TagService.shared.cleanupEmptyTags(context: backgroundContext)
-                let postSyncNotesCount = (try? backgroundContext.fetchCount(FetchDescriptor<Note>())) ?? 0
+                try backgroundContext.save()
+                let postSyncNotesCount = (try? backgroundContext.fetchCount(userNotesDescriptor)) ?? 0
                 return (result, postSyncNotesCount)
             }.value
             WelcomeNoteFlagStore.setHasSeenWelcome(UserDefaults.standard.bool(forKey: "hasSeededWelcomeNote"), for: currentUserId)

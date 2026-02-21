@@ -8,12 +8,13 @@ struct HomeView: View {
     @Environment(\.scenePhase) var scenePhase
     @StateObject var homeViewModel = HomeViewModel()
 
-    var currentUserId: String {
-        authService.currentUserId ?? "unknown"
+    var currentUserId: String? {
+        authService.currentUserId
     }
 
     var availableTagsForCurrentUser: [Tag] {
-        availableTags.filter { $0.userId == currentUserId }
+        guard let userId = currentUserId else { return [] }
+        return availableTags.filter { $0.userId == userId }
     }
 
     @StateObject var speechRecognizer = SpeechRecognizer()
@@ -234,8 +235,9 @@ struct HomeView: View {
         }
         .onChange(of: showingSettings) { _, isPresented in
             guard !isPresented else { return }
+            guard let userId = currentUserId else { return }
             Task {
-                homeViewModel.configure(context: modelContext, userId: currentUserId)
+                homeViewModel.configure(context: modelContext, userId: userId)
                 await homeViewModel.reload()
                 clampSelectionToCurrentFilter()
             }
@@ -261,14 +263,15 @@ struct HomeView: View {
         .task {
             await checkForPendingRecordingsAsync()
             scheduleInitialMaintenance()
-            homeViewModel.configure(context: modelContext, userId: currentUserId)
+            guard let userId = currentUserId else { return }
+            homeViewModel.configure(context: modelContext, userId: userId)
             await homeViewModel.switchMode(isTrashSelected ? .trash : .active)
             await homeViewModel.switchTag(selectedTag?.id)
             await homeViewModel.updateSearchQuery(searchText)
             await homeViewModel.reload()
             Task(priority: .utility) {
                 try? await Task.sleep(nanoseconds: 1_200_000_000)
-                await NotesSearchIndexer.shared.rebuildIfNeeded(context: modelContext, userId: currentUserId)
+                await NotesSearchIndexer.shared.rebuildIfNeeded(context: modelContext, userId: userId)
             }
         }
         .sheet(isPresented: $showUpgradeSheet) {
