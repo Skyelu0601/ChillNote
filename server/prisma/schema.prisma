@@ -93,6 +93,17 @@ model SyncLog {
   @@index([userId, entityType, entityId])
 }
 
+model HardDeleteTombstone {
+  id         Int      @id @default(autoincrement())
+  userId     String
+  entityType String
+  entityId   String
+  deletedAt  DateTime @default(now())
+
+  @@unique([userId, entityType, entityId])
+  @@index([userId, deletedAt])
+}
+
 model Waitlist {
   id        String   @id @default(cuid())
   email     String   @unique

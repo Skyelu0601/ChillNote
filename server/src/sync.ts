@@ -53,16 +53,129 @@ function buildConflict(params: {
   };
 }
 
-export async function applySync(payload: SyncPayload, userId: string): Promise<{ conflicts: ConflictDTO[] }> {
+export async function applySync(payload: SyncPayload, userId: string): Promise<{
+  conflicts: ConflictDTO[];
+  forcedHardDeletedNoteIds: string[];
+  forcedHardDeletedTagIds: string[];
+}> {
   const conflicts: ConflictDTO[] = [];
+  const forcedHardDeletedNoteIds = new Set<string>();
+  const forcedHardDeletedTagIds = new Set<string>();
   const now = new Date();
   const deviceId = payload.deviceId ?? null;
+  const nowIso = now.toISOString();
+
+  const hardDeletedNoteIds = Array.from(new Set((payload.hardDeletedNoteIds ?? []).filter((id): id is string => !!id)));
+  const hardDeletedTagIds = Array.from(new Set((payload.hardDeletedTagIds ?? []).filter((id): id is string => !!id)));
+
+  // 0) Apply hard deletes first and persist tombstones to prevent resurrection.
+  for (const noteId of hardDeletedNoteIds) {
+    const existing = await prisma.note.findFirst({
+      where: { id: noteId, userId }
+    });
+
+    if (existing) {
+      await prisma.note.delete({
+        where: { id: noteId }
+      });
+    }
+
+    await prisma.hardDeleteTombstone.upsert({
+      where: {
+        userId_entityType_entityId: {
+          userId,
+          entityType: "note",
+          entityId: noteId
+        }
+      },
+      update: { deletedAt: now },
+      create: {
+        userId,
+        entityType: "note",
+        entityId: noteId,
+        deletedAt: now
+      }
+    });
+
+    await logSyncChange({
+      userId,
+      entityType: "note",
+      entityId: noteId,
+      version: (existing?.version ?? 0) + 1,
+      serverUpdatedAt: now,
+      operation: "hard_delete"
+    });
+  }
+
+  for (const tagId of hardDeletedTagIds) {
+    const existing = await prisma.tag.findFirst({
+      where: { id: tagId, userId }
+    });
+
+    if (existing) {
+      await prisma.tag.delete({
+        where: { id: tagId }
+      });
+    }
+
+    await prisma.hardDeleteTombstone.upsert({
+      where: {
+        userId_entityType_entityId: {
+          userId,
+          entityType: "tag",
+          entityId: tagId
+        }
+      },
+      update: { deletedAt: now },
+      create: {
+        userId,
+        entityType: "tag",
+        entityId: tagId,
+        deletedAt: now
+      }
+    });
+
+    await logSyncChange({
+      userId,
+      entityType: "tag",
+      entityId: tagId,
+      version: (existing?.version ?? 0) + 1,
+      serverUpdatedAt: now,
+      operation: "hard_delete"
+    });
+  }
 
   // 1) Tags: upsert first so note->tag relations can connect safely.
   const dedupedTags = pickLatestByClientTime<TagDTO>(payload.tags ?? []);
   const tagsToApply: TagDTO[] = [];
 
   for (const tag of dedupedTags.values()) {
+    const tombstone = await prisma.hardDeleteTombstone.findUnique({
+      where: {
+        userId_entityType_entityId: {
+          userId,
+          entityType: "tag",
+          entityId: tag.id
+        }
+      }
+    });
+    if (tombstone) {
+      // Tombstone already exists: no need to write another hard_delete log entry.
+      // Repeated stale payloads should return conflicts without growing sync logs.
+      forcedHardDeletedTagIds.add(tag.id);
+      conflicts.push(
+        buildConflict({
+          entityType: "tag",
+          id: tag.id,
+          serverVersion: 0,
+          serverContent: null,
+          clientContent: tag.name,
+          message: "Tag 在其他设备已被永久删除。"
+        })
+      );
+      continue;
+    }
+
     const existing = await prisma.tag.findFirst({
       where: { id: tag.id, userId }
     });
@@ -82,10 +195,10 @@ export async function applySync(payload: SyncPayload, userId: string): Promise<{
     }
     const nextVersion = (existing?.version ?? 0) + 1;
     const isDelete = !!tag.deletedAt;
-    const serverDeletedAt = isDelete ? now.toISOString() : null;
+    const serverDeletedAt = isDelete ? nowIso : null;
     tagsToApply.push({
       ...tag,
-      updatedAt: now.toISOString(),
+      updatedAt: nowIso,
       deletedAt: serverDeletedAt,
       version: nextVersion,
       lastModifiedByDeviceId: deviceId ?? null
@@ -112,6 +225,31 @@ export async function applySync(payload: SyncPayload, userId: string): Promise<{
   // 2) Notes: dedupe and apply changes with tag relations.
   const dedupedNotes = pickLatestByClientTime<NoteDTO>(payload.notes);
   for (const note of dedupedNotes.values()) {
+    const tombstone = await prisma.hardDeleteTombstone.findUnique({
+      where: {
+        userId_entityType_entityId: {
+          userId,
+          entityType: "note",
+          entityId: note.id
+        }
+      }
+    });
+    if (tombstone) {
+      // Tombstone already exists: keep this idempotent and avoid duplicate sync logs.
+      forcedHardDeletedNoteIds.add(note.id);
+      conflicts.push(
+        buildConflict({
+          entityType: "note",
+          id: note.id,
+          serverVersion: 0,
+          serverContent: null,
+          clientContent: note.content,
+          message: "笔记在其他设备已被永久删除。"
+        })
+      );
+      continue;
+    }
+
     const existing = await prisma.note.findFirst({
       where: { id: note.id, userId }
     });
@@ -132,10 +270,10 @@ export async function applySync(payload: SyncPayload, userId: string): Promise<{
 
     const nextVersion = (existing?.version ?? 0) + 1;
     const isDelete = !!note.deletedAt;
-    const serverDeletedAt = isDelete ? now.toISOString() : null;
+    const serverDeletedAt = isDelete ? nowIso : null;
     const upsertPayload: NoteDTO = {
       ...note,
-      updatedAt: now.toISOString(),
+      updatedAt: nowIso,
       deletedAt: serverDeletedAt,
       version: nextVersion,
       lastModifiedByDeviceId: deviceId ?? null
@@ -151,5 +289,9 @@ export async function applySync(payload: SyncPayload, userId: string): Promise<{
     });
   }
 
-  return { conflicts };
+  return {
+    conflicts,
+    forcedHardDeletedNoteIds: Array.from(forcedHardDeletedNoteIds),
+    forcedHardDeletedTagIds: Array.from(forcedHardDeletedTagIds)
+  };
 }

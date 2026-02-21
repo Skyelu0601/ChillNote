@@ -6,6 +6,7 @@ import UIKit
 struct SidebarView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var authService: AuthService
+    @EnvironmentObject private var syncManager: SyncManager
     @Query(filter: #Predicate<Tag> { $0.deletedAt == nil }, sort: \Tag.name) private var _allTags: [Tag]
     
     @Binding var isPresented: Bool
@@ -166,13 +167,18 @@ struct SidebarView: View {
         // Only proceed if tag is not already root
         if droppedTag.parent == nil { return false }
         
+        let now = Date()
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             if let oldParent = droppedTag.parent {
                 oldParent.children.removeAll { $0.id == droppedTag.id }
+                oldParent.updatedAt = now
             }
             droppedTag.parent = nil
-            droppedTag.updatedAt = Date()
+            droppedTag.updatedAt = now
             try? modelContext.save()
+        }
+        Task {
+            await syncManager.syncNow(context: modelContext)
         }
         return true
     }
@@ -311,11 +317,16 @@ struct TagTreeItemView: View {
     private func moveToRoot() {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             if let parent = tag.parent {
+                let now = Date()
                 parent.children.removeAll { $0.id == tag.id }
+                parent.updatedAt = now
                 tag.parent = nil
-                tag.updatedAt = Date()
+                tag.updatedAt = now
                 try? modelContext.save()
             }
+        }
+        Task {
+            await syncManager.syncNow(context: modelContext)
         }
     }
     
@@ -331,7 +342,7 @@ struct TagTreeItemView: View {
             try? modelContext.save()
         }
         Task {
-            await syncManager.syncIfNeeded(context: modelContext)
+            await syncManager.syncNow(context: modelContext)
         }
     }
 
@@ -342,18 +353,22 @@ struct TagTreeItemView: View {
         guard droppedTag.id != targetTag.id else { return false }
         guard !droppedTag.isAncestor(of: targetTag) else { return false }
         
+        let now = Date()
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             if let oldParent = droppedTag.parent {
                 oldParent.children.removeAll { $0.id == droppedTag.id }
+                oldParent.updatedAt = now
             }
             droppedTag.parent = targetTag
             if !targetTag.children.contains(where: { $0.id == droppedTag.id }) {
                 targetTag.children.append(droppedTag)
             }
-            let now = Date()
             droppedTag.updatedAt = now
             targetTag.updatedAt = now
             try? modelContext.save()
+        }
+        Task {
+            await syncManager.syncNow(context: modelContext)
         }
         return true
     }
@@ -362,6 +377,7 @@ struct TagTreeItemView: View {
 // MARK: - Root Drop Zone (Improved)
 
 struct RootDropZone: View {
+    @EnvironmentObject private var syncManager: SyncManager
     let modelContext: ModelContext
     @State private var isDropTargeted: Bool = false
     
@@ -406,13 +422,18 @@ struct RootDropZone: View {
         
         if droppedTag.parent == nil { return false }
         
+        let now = Date()
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             if let oldParent = droppedTag.parent {
                 oldParent.children.removeAll { $0.id == droppedTag.id }
+                oldParent.updatedAt = now
             }
             droppedTag.parent = nil
-            droppedTag.updatedAt = Date()
+            droppedTag.updatedAt = now
             try? modelContext.save()
+        }
+        Task {
+            await syncManager.syncNow(context: modelContext)
         }
         return true
     }
@@ -472,7 +493,7 @@ struct TrashDropZone: View {
             try? modelContext.save()
         }
         Task {
-            await syncManager.syncIfNeeded(context: modelContext)
+            await syncManager.syncNow(context: modelContext)
         }
         
         // Haptic feedback

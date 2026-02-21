@@ -229,6 +229,7 @@ struct HomeView: View {
             guard let userId = newUserId else { return }
             Task {
                 homeViewModel.configure(context: modelContext, userId: userId)
+                await syncManager.syncNow(context: modelContext)
                 await homeViewModel.reload()
                 await NotesSearchIndexer.shared.rebuildIfNeeded(context: modelContext, userId: userId)
             }
@@ -265,6 +266,7 @@ struct HomeView: View {
             scheduleInitialMaintenance()
             guard let userId = currentUserId else { return }
             homeViewModel.configure(context: modelContext, userId: userId)
+            await syncManager.syncNow(context: modelContext)
             await homeViewModel.switchMode(isTrashSelected ? .trash : .active)
             await homeViewModel.switchTag(selectedTag?.id)
             await homeViewModel.updateSearchQuery(searchText)

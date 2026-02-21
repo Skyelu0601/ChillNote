@@ -134,8 +134,8 @@ extension HomeView {
         withAnimation {
             note.markDeleted()
         }
-        persistAndSync()
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
+        persistAndSync()
     }
 
     func restoreNote(_ note: Note) {
@@ -154,10 +154,12 @@ extension HomeView {
 
     func deleteNotePermanently(_ note: Note) {
         let noteId = note.id
+        let candidateTags = Array(note.tags)
+        enqueueHardDeleteNoteIDs([noteId])
         modelContext.delete(note)
         Task { await NotesSearchIndexer.shared.remove(noteIDs: [noteId]) }
+        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: candidateTags)
         persistAndSync()
-        TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
     }
 
     func emptyTrash() {
@@ -165,14 +167,15 @@ extension HomeView {
         guard !deleted.isEmpty else { return }
         let affectedTags = deleted.flatMap { $0.tags }
         let deletedIds = deleted.map { $0.id }
+        enqueueHardDeleteNoteIDs(deletedIds)
         withAnimation {
             for note in deleted {
                 modelContext.delete(note)
             }
         }
         Task { await NotesSearchIndexer.shared.remove(noteIDs: deletedIds) }
-        persistAndSync()
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: affectedTags)
+        persistAndSync()
     }
 
     func fetchDeletedNotesForCurrentUser() -> [Note] {
@@ -221,10 +224,11 @@ extension HomeView {
         }
 
         if !deletedIds.isEmpty {
+            enqueueHardDeleteNoteIDs(deletedIds)
             Task { await NotesSearchIndexer.shared.remove(noteIDs: deletedIds) }
         }
-        persistAndSync()
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: affectedTags)
+        persistAndSync()
     }
 
     func persistAndSync() {
@@ -233,7 +237,7 @@ extension HomeView {
             if let userId = currentUserId, FeatureFlags.useLocalFTSSearch {
                 await NotesSearchIndexer.shared.syncIncremental(context: modelContext, userId: userId)
             }
-            await syncManager.syncIfNeeded(context: modelContext)
+            await syncManager.syncNow(context: modelContext)
             requestReload(delayNanoseconds: 80_000_000)
         }
     }
@@ -249,5 +253,10 @@ extension HomeView {
         guard let currentTag = selectedTag else { return }
         note.tags.append(currentTag)
         touchTag(currentTag, note: note)
+    }
+
+    private func enqueueHardDeleteNoteIDs(_ ids: [UUID]) {
+        guard !ids.isEmpty, let userId = currentUserId else { return }
+        HardDeleteQueueStore.enqueue(noteIDs: ids, for: userId)
     }
 }

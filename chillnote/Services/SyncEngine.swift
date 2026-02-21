@@ -4,14 +4,23 @@ import SwiftData
 struct SyncEngine {
     private let mapper = SyncMapper()
 
-    func makePayload(context: ModelContext, since: Date?, userId: String, cursor: String?, deviceId: String?) -> SyncPayload {
+    func makePayload(
+        context: ModelContext,
+        since: Date?,
+        userId: String,
+        cursor: String?,
+        deviceId: String?,
+        hardDeletedNoteIds: [String],
+        hardDeletedTagIds: [String]
+    ) -> SyncPayload {
         let start = CFAbsoluteTimeGetCurrent()
+        let sinceText = since.map { ISO8601DateFormatter().string(from: $0) } ?? "nil"
         
         // 1. Notes (Incremental) - filtered by userId
         var noteDescriptor = FetchDescriptor<Note>()
         if let since {
             noteDescriptor.predicate = #Predicate<Note> { note in
-                note.userId == userId && (note.updatedAt >= since || (note.deletedAt != nil && note.deletedAt! >= since))
+                note.userId == userId && note.updatedAt >= since
             }
         } else {
             noteDescriptor.predicate = #Predicate<Note> { note in
@@ -22,6 +31,7 @@ struct SyncEngine {
         do {
             notes = try context.fetch(noteDescriptor)
         } catch {
+            print("⚠️ SyncEngine.makePayload notes fetch failed: \(error.localizedDescription)")
             notes = []
         }
         
@@ -29,14 +39,20 @@ struct SyncEngine {
         var tagDescriptor = FetchDescriptor<Tag>()
         if let since {
             tagDescriptor.predicate = #Predicate<Tag> { tag in
-                tag.userId == userId && (tag.updatedAt >= since || (tag.deletedAt != nil && tag.deletedAt! >= since))
+                tag.userId == userId && tag.updatedAt >= since
             }
         } else {
             tagDescriptor.predicate = #Predicate<Tag> { tag in
                 tag.userId == userId
             }
         }
-        let tags = (try? context.fetch(tagDescriptor)) ?? []
+        let tags: [Tag]
+        do {
+            tags = try context.fetch(tagDescriptor)
+        } catch {
+            print("⚠️ SyncEngine.makePayload tags fetch failed: \(error.localizedDescription)")
+            tags = []
+        }
         
 
         
@@ -52,8 +68,11 @@ struct SyncEngine {
             deviceId: deviceId,
             notes: notes.map { mapper.noteDTO(from: $0) },
             tags: tags.map { mapper.tagDTO(from: $0) },
+            hardDeletedNoteIds: hardDeletedNoteIds.isEmpty ? nil : hardDeletedNoteIds,
+            hardDeletedTagIds: hardDeletedTagIds.isEmpty ? nil : hardDeletedTagIds,
             preferences: prefs
         )
+        print("[SYNC] makePayload since=\(sinceText) notes=\(notes.count) tags=\(tags.count) hardDeletedNotes=\(hardDeletedNoteIds.count) hardDeletedTags=\(hardDeletedTagIds.count)")
         print("[TIME] SyncEngine.makePayload total: \(String(format: "%.3f", CFAbsoluteTimeGetCurrent() - start))s")
         return payload
     }
@@ -77,6 +96,33 @@ struct SyncEngine {
             if let val = prefs["hasSeededWelcomeNote"] {
                 let hasSeenWelcome = (val == "true")
                 WelcomeNoteFlagStore.setHasSeenWelcome(hasSeenWelcome, for: userId)
+            }
+        }
+
+        // 1.5 Hard deletes - remove local records immediately.
+        let hardDeletedTagIds = (remote.changes.hardDeletedTagIds ?? []).compactMap(UUID.init(uuidString:))
+        if !hardDeletedTagIds.isEmpty {
+            var descriptor = FetchDescriptor<Tag>()
+            descriptor.predicate = #Predicate<Tag> { tag in
+                tag.userId == userId && hardDeletedTagIds.contains(tag.id)
+            }
+            if let tagsToDelete = try? context.fetch(descriptor) {
+                for tag in tagsToDelete {
+                    context.delete(tag)
+                }
+            }
+        }
+
+        let hardDeletedNoteIds = (remote.changes.hardDeletedNoteIds ?? []).compactMap(UUID.init(uuidString:))
+        if !hardDeletedNoteIds.isEmpty {
+            var descriptor = FetchDescriptor<Note>()
+            descriptor.predicate = #Predicate<Note> { note in
+                note.userId == userId && hardDeletedNoteIds.contains(note.id)
+            }
+            if let notesToDelete = try? context.fetch(descriptor) {
+                for note in notesToDelete {
+                    context.delete(note)
+                }
             }
         }
         
@@ -108,7 +154,7 @@ struct SyncEngine {
             }
             localTags = (try? context.fetch(tagDescriptor)) ?? []
         }
-        print("[TIME] SyncEngine.apply: local tags=\(localTags.count)")
+        print("[TIME] SyncEngine.apply: matched local tags=\(localTags.count)/\(tagIdSet.count)")
         var tagMap = Dictionary(uniqueKeysWithValues: localTags.map { ($0.id, $0) })
         
         // Apply Tags
@@ -117,7 +163,7 @@ struct SyncEngine {
                 guard let tagId = UUID(uuidString: dto.id) else { continue }
                 let remoteUpdatedAt = dto.updatedAt.flatMap { mapper.parseDate($0) }
                 if let existing = tagMap[tagId] {
-                    if shouldApply(remoteVersion: dto.version, remoteUpdatedAt: remoteUpdatedAt, localVersion: existing.version, localUpdatedAt: existing.serverUpdatedAt) {
+                    if shouldApply(remoteVersion: dto.version, remoteUpdatedAt: remoteUpdatedAt, localVersion: existing.version, localUpdatedAt: existing.updatedAt) {
                         mapper.apply(dto, to: existing)
                     }
                 } else {
@@ -141,8 +187,13 @@ struct SyncEngine {
             
             // Purge soft-deleted tags older than 30 days
             let cutoff = TrashPolicy.cutoffDate()
+            var expiredSoftDeletedTagIDs = Set<UUID>()
             for tag in tagMap.values where (tag.deletedAt ?? Date.distantPast) < cutoff && tag.deletedAt != nil {
+                expiredSoftDeletedTagIDs.insert(tag.id)
                 context.delete(tag)
+            }
+            if !expiredSoftDeletedTagIDs.isEmpty {
+                HardDeleteQueueStore.enqueue(tagIDs: Array(expiredSoftDeletedTagIDs), for: userId)
             }
         }
 
@@ -158,7 +209,7 @@ struct SyncEngine {
             }
             localNotes = (try? context.fetch(noteDescriptor)) ?? []
         }
-        print("[TIME] SyncEngine.apply: local notes=\(localNotes.count)")
+        print("[TIME] SyncEngine.apply: matched local notes=\(localNotes.count)/\(remoteNoteIds.count)")
         var notesById: [UUID: Note] = Dictionary(uniqueKeysWithValues: localNotes.map { ($0.id, $0) })
 
         for dto in remote.changes.notes {
@@ -176,7 +227,7 @@ struct SyncEngine {
 
             if let existing = notesById[id] {
                 let remoteUpdatedAt = dto.updatedAt.flatMap { mapper.parseDate($0) }
-                if shouldApply(remoteVersion: dto.version, remoteUpdatedAt: remoteUpdatedAt, localVersion: existing.version, localUpdatedAt: existing.serverUpdatedAt) {
+                if shouldApply(remoteVersion: dto.version, remoteUpdatedAt: remoteUpdatedAt, localVersion: existing.version, localUpdatedAt: existing.updatedAt) {
                     mapper.apply(dto, to: existing)
                     existing.syncContentStructure(with: context)
                     resolveTags(for: existing)
@@ -192,7 +243,6 @@ struct SyncEngine {
             }
         }
 
-        purgeDeletedNotes(olderThan: TrashPolicy.cutoffDate(), context: context, userId: userId)
         print("[TIME] SyncEngine.apply total: \(String(format: "%.3f", CFAbsoluteTimeGetCurrent() - start))s")
         applyConflicts(remote.conflicts, context: context, userId: userId)
     }
@@ -200,9 +250,17 @@ struct SyncEngine {
     private func applyConflicts(_ conflicts: [ConflictDTO], context: ModelContext, userId: String) {
         guard !conflicts.isEmpty else { return }
         let now = Date()
-        for conflict in conflicts where conflict.entityType == "note" {
+        for conflict in conflicts where conflict.entityType == "note" || conflict.entityType == "tag" {
+            // Ignore idempotent replay conflicts (same content on both sides),
+            // which can happen when duplicate sync requests overlap.
+            let serverText = conflict.serverContent?.trimmingCharacters(in: .whitespacesAndNewlines)
+            let clientText = conflict.clientContent?.trimmingCharacters(in: .whitespacesAndNewlines)
+            if serverText == clientText {
+                continue
+            }
             let combinedContent = """
-            ## Conflict Copy
+            ## Conflict Copy (\(conflict.entityType.uppercased()))
+            - Entity ID: \(conflict.id)
             - Server version: \(conflict.serverVersion)
             - Notes: \(conflict.message)
 
@@ -216,18 +274,6 @@ struct SyncEngine {
             note.updatedAt = now
             note.version = 1
             context.insert(note)
-        }
-    }
-
-    private func purgeDeletedNotes(olderThan cutoff: Date, context: ModelContext, userId: String) {
-        var descriptor = FetchDescriptor<Note>()
-        descriptor.predicate = #Predicate<Note> { note in
-            note.userId == userId && note.deletedAt != nil && note.deletedAt! < cutoff
-        }
-
-        guard let staleNotes = try? context.fetch(descriptor) else { return }
-        for note in staleNotes {
-            context.delete(note)
         }
     }
 }

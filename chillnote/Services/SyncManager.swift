@@ -8,12 +8,13 @@ final class SyncManager: ObservableObject {
     @AppStorage("syncLastAt") private var lastSyncAtTimestamp: Double = 0
     @AppStorage("syncCursor") private var syncCursor: String = ""
     @AppStorage("syncDeviceId") private var syncDeviceId: String = ""
-    @AppStorage("syncServerURL") var serverURLString: String = AppConfig.backendBaseURL
+    private let serverURLString: String = AppConfig.backendBaseURL
     @AppStorage("syncAuthToken") var authToken: String = ""
     @AppStorage("syncHasUploadedLocal") private var hasUploadedLocal: Bool = false
     
     @Published private(set) var isSyncing: Bool = false
     @Published private(set) var lastError: String?
+    private var hasPendingSyncRequest: Bool = false
     
     private let minimumSyncInterval: TimeInterval = 60
 
@@ -21,8 +22,6 @@ final class SyncManager: ObservableObject {
         if !isEnabled {
             isEnabled = true
         }
-        // Server URL is not user-configurable; it comes from AppConfig.
-        serverURLString = AppConfig.backendBaseURL
         if syncDeviceId.isEmpty {
             syncDeviceId = UUID().uuidString
         }
@@ -39,6 +38,11 @@ final class SyncManager: ObservableObject {
     }
     
     func syncNow(context: ModelContext) async {
+        if isSyncing {
+            hasPendingSyncRequest = true
+            print("[SYNC] syncNow skipped because a sync is already running; queued follow-up sync.")
+            return
+        }
         guard isEnabled else {
             lastError = AppErrorCode.syncDisabled.message
             return
@@ -47,7 +51,7 @@ final class SyncManager: ObservableObject {
             lastError = AppErrorCode.syncSignInRequired.message
             return
         }
-        guard let url = URL(string: serverURLString), !serverURLString.isEmpty else {
+        guard let url = URL(string: serverURLString) else {
             lastError = AppErrorCode.syncServerURLRequired.message
             return
         }
@@ -71,6 +75,9 @@ final class SyncManager: ObservableObject {
             let cursorSnapshot = syncCursor
             let deviceIdSnapshot = syncDeviceId
             let userIdForSync = currentUserId
+            let hardDeletedNoteIdsSnapshot = HardDeleteQueueStore.noteIDs(for: userIdForSync)
+            let hardDeletedTagIdsSnapshot = HardDeleteQueueStore.tagIDs(for: userIdForSync)
+            print("[SYNC] syncNow user=\(userIdForSync) since=\(lastSyncAt?.description ?? "nil") cursor=\(cursorSnapshot.isEmpty ? "nil" : cursorSnapshot) hardDeletedNotes=\(hardDeletedNoteIdsSnapshot.count) hardDeletedTags=\(hardDeletedTagIdsSnapshot.count)")
             let syncOutcome = try await Task.detached(priority: .utility) {
                 let backgroundContext = ModelContext(container)
                 var userNotesDescriptor = FetchDescriptor<Note>()
@@ -81,7 +88,16 @@ final class SyncManager: ObservableObject {
                 let shouldForceFullSync = !hasUploadedLocalSnapshot && localNotesCount > 0
                 let sinceDate = shouldForceFullSync ? nil : lastSyncAt
                 let cursorValue = shouldForceFullSync ? nil : (cursorSnapshot.isEmpty ? nil : cursorSnapshot)
-                let config = SyncConfig(baseURL: url, authToken: authToken, since: sinceDate, cursor: cursorValue, userId: userIdForSync, deviceId: deviceIdSnapshot)
+                let config = SyncConfig(
+                    baseURL: url,
+                    authToken: authToken,
+                    since: sinceDate,
+                    cursor: cursorValue,
+                    userId: userIdForSync,
+                    deviceId: deviceIdSnapshot,
+                    hardDeletedNoteIds: hardDeletedNoteIdsSnapshot,
+                    hardDeletedTagIds: hardDeletedTagIdsSnapshot
+                )
                 let service: SyncService = RemoteSyncService(config: config)
                 let result = try await service.syncAll(context: backgroundContext)
                 TagService.shared.cleanupEmptyTags(context: backgroundContext)
@@ -89,6 +105,8 @@ final class SyncManager: ObservableObject {
                 let postSyncNotesCount = (try? backgroundContext.fetchCount(userNotesDescriptor)) ?? 0
                 return (result, postSyncNotesCount)
             }.value
+            HardDeleteQueueStore.dequeue(noteIDs: hardDeletedNoteIdsSnapshot, for: currentUserId)
+            HardDeleteQueueStore.dequeue(tagIDs: hardDeletedTagIdsSnapshot, for: currentUserId)
             WelcomeNoteFlagStore.setHasSeenWelcome(UserDefaults.standard.bool(forKey: "hasSeededWelcomeNote"), for: currentUserId)
             
             let seededWelcome = DataService.shared.seedDataIfNeeded(context: context, userId: currentUserId)
@@ -99,10 +117,13 @@ final class SyncManager: ObservableObject {
                 syncCursor = ""
                 needsFollowUpSync = true
             } else {
+                // Use local time anchor to avoid device/server clock skew skipping local updates.
+                lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
                 if let serverTime = syncOutcome.0.serverTime {
-                    lastSyncAtTimestamp = serverTime.timeIntervalSince1970
-                } else {
-                    lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
+                    let skewSeconds = serverTime.timeIntervalSince(syncStartedAt)
+                    if skewSeconds > 60 {
+                        print("⚠️ SyncManager detected server clock ahead by \(Int(skewSeconds))s; using local sync time as incremental anchor.")
+                    }
                 }
                 if let cursor = syncOutcome.0.cursor, !cursor.isEmpty {
                     syncCursor = cursor
@@ -111,6 +132,10 @@ final class SyncManager: ObservableObject {
             }
 
             if FeatureFlags.useLocalFTSSearch {
+                let hardDeletedNoteUUIDs = syncOutcome.0.remoteHardDeletedNoteIds.compactMap(UUID.init(uuidString:))
+                if !hardDeletedNoteUUIDs.isEmpty {
+                    await NotesSearchIndexer.shared.remove(noteIDs: hardDeletedNoteUUIDs)
+                }
                 await NotesSearchIndexer.shared.syncIncremental(context: context, userId: currentUserId)
             }
         } catch {
@@ -130,16 +155,22 @@ final class SyncManager: ObservableObject {
             }
         }
         isSyncing = false
-        
+
         if needsFollowUpSync {
             await syncIfNeeded(context: context)
+            return
+        }
+
+        if hasPendingSyncRequest {
+            hasPendingSyncRequest = false
+            await syncNow(context: context)
         }
     }
     
     private func shouldSyncNow() -> Bool {
         guard isEnabled, !isSyncing else { return false }
         guard !authToken.isEmpty else { return false }
-        guard !serverURLString.isEmpty else { return false }
+        guard URL(string: serverURLString) != nil else { return false }
         if let lastSyncAt, Date().timeIntervalSince(lastSyncAt) < minimumSyncInterval {
             return false
         }

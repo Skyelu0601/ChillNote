@@ -78,28 +78,53 @@ export async function getChangesSinceCursor(userId: string, cursor?: string | nu
     const tags = await prisma.tag.findMany({
       where: { userId }
     });
+    const tombstones = await prisma.hardDeleteTombstone.findMany({
+      where: { userId }
+    });
+    const hardDeletedNoteIds = tombstones
+      .filter((item) => item.entityType === "note")
+      .map((item) => item.entityId);
+    const hardDeletedTagIds = tombstones
+      .filter((item) => item.entityType === "tag")
+      .map((item) => item.entityId);
     return {
       cursor: String(newCursor),
       changes: {
         notes: notes.map(mapNoteToDTO),
-        tags: tags.map(mapTagToDTO)
+        tags: tags.map(mapTagToDTO),
+        hardDeletedNoteIds,
+        hardDeletedTagIds
       }
     };
   }
 
-  const latestByEntity = new Map<string, { entityType: string; entityId: string }>();
+  const latestByEntity = new Map<string, { entityType: string; entityId: string; operation: string }>();
   for (const log of logs) {
     const key = `${log.entityType}:${log.entityId}`;
-    latestByEntity.set(key, { entityType: log.entityType, entityId: log.entityId });
+    latestByEntity.set(key, {
+      entityType: log.entityType,
+      entityId: log.entityId,
+      operation: log.operation
+    });
   }
 
   const noteIds: string[] = [];
   const tagIds: string[] = [];
+  const hardDeletedNoteIds: string[] = [];
+  const hardDeletedTagIds: string[] = [];
   for (const entry of latestByEntity.values()) {
     if (entry.entityType === "note") {
-      noteIds.push(entry.entityId);
+      if (entry.operation === "hard_delete") {
+        hardDeletedNoteIds.push(entry.entityId);
+      } else {
+        noteIds.push(entry.entityId);
+      }
     } else if (entry.entityType === "tag") {
-      tagIds.push(entry.entityId);
+      if (entry.operation === "hard_delete") {
+        hardDeletedTagIds.push(entry.entityId);
+      } else {
+        tagIds.push(entry.entityId);
+      }
     }
   }
 
@@ -119,7 +144,9 @@ export async function getChangesSinceCursor(userId: string, cursor?: string | nu
     cursor: String(newCursor),
     changes: {
       notes: notes.map(mapNoteToDTO),
-      tags: tags.map(mapTagToDTO)
+      tags: tags.map(mapTagToDTO),
+      hardDeletedNoteIds,
+      hardDeletedTagIds
     }
   };
 }
@@ -207,7 +234,7 @@ export async function logSyncChange(params: {
   entityId: string;
   version: number;
   serverUpdatedAt: Date;
-  operation: "upsert" | "delete";
+  operation: "upsert" | "delete" | "hard_delete";
 }): Promise<void> {
   await prisma.syncLog.create({
     data: {

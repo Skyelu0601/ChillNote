@@ -12,6 +12,10 @@ struct HomeBodyView: View {
     let dispatch: (HomeScreenAction) -> Void
     @FocusState.Binding var isSearchFocused: Bool
     let searchBar: AnyView
+    
+    private let sidebarOpenEdgeWidth: CGFloat = 110
+    private let sidebarOpenMinTranslation: CGFloat = 36
+    private let sidebarOpenHorizontalBias: CGFloat = 12
 
     private var navigationPathBinding: Binding<NavigationPath> {
         Binding(
@@ -164,14 +168,7 @@ struct HomeBodyView: View {
             selectionModeOverlay
             agentProgressOverlay
         }
-        .gesture(
-            DragGesture()
-                .onEnded { value in
-                    if value.startLocation.x < 50 && value.translation.width > 60 {
-                        dispatch(.openSidebar)
-                    }
-                }
-        )
+        .simultaneousGesture(sidebarOpenGesture)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.bgPrimary.ignoresSafeArea())
         .overlay {
@@ -354,6 +351,30 @@ struct HomeBodyView: View {
             }
             .presentationDetents([.medium, .large])
         }
+    }
+
+    private var sidebarOpenGesture: some Gesture {
+        DragGesture(minimumDistance: 16)
+            .onEnded { value in
+                guard shouldOpenSidebar(from: value) else { return }
+                dispatch(.openSidebar)
+            }
+    }
+
+    private func shouldOpenSidebar(from value: DragGesture.Value) -> Bool {
+        guard !state.isSidebarPresented else { return false }
+        guard value.startLocation.x <= sidebarOpenEdgeWidth else { return false }
+
+        let horizontal = value.translation.width
+        let vertical = abs(value.translation.height)
+        let predictedHorizontal = value.predictedEndTranslation.width
+
+        let hasEnoughHorizontalDistance =
+            horizontal >= sidebarOpenMinTranslation ||
+            predictedHorizontal >= sidebarOpenMinTranslation * 1.3
+        let isMostlyHorizontal = horizontal > vertical + sidebarOpenHorizontalBias
+
+        return hasEnoughHorizontalDistance && isMostlyHorizontal
     }
 
     private var mainContent: some View {

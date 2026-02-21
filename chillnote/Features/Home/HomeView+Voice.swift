@@ -71,7 +71,7 @@ extension HomeView {
                 Task {
                     await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: trimmed, context: modelContext)
                     requestReload()
-                    await syncManager.syncIfNeeded(context: modelContext)
+                    await syncManager.syncNow(context: modelContext)
                 }
 
             case .failure(let message):

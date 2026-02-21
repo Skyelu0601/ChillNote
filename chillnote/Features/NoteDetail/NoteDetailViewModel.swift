@@ -367,10 +367,10 @@ final class NoteDetailViewModel: ObservableObject {
 
         if hasChanged {
             note.updatedAt = dependencies.now()
-            persistAndSync()
             if let modelContext {
                 TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
             }
+            persistAndSync()
         }
 
         dismissAction?()
@@ -388,7 +388,7 @@ final class NoteDetailViewModel: ObservableObject {
         guard let modelContext else { return }
         try? modelContext.save()
         if let syncManager {
-            Task { await syncManager.syncIfNeeded(context: modelContext) }
+            Task { await syncManager.syncNow(context: modelContext) }
         }
     }
 
@@ -404,11 +404,10 @@ final class NoteDetailViewModel: ObservableObject {
         }
 
         note.markDeleted()
-        persistAndSync()
-
         if let modelContext {
             TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
         }
+        persistAndSync()
 
         dismissAction?()
     }
@@ -428,9 +427,10 @@ final class NoteDetailViewModel: ObservableObject {
     private func deleteNotePermanently() {
         guard let modelContext else { return }
         let candidateTags = Array(note.tags)
+        HardDeleteQueueStore.enqueue(noteIDs: [note.id], for: note.userId)
         modelContext.delete(note)
-        persistAndSync()
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: candidateTags)
+        persistAndSync()
         dismissAction?()
     }
 

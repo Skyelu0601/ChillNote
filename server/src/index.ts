@@ -125,6 +125,8 @@ const syncSchema = z.object({
       lastModifiedByDeviceId: z.string().nullish()
     })
   ).optional(),
+  hardDeletedNoteIds: z.array(z.string().min(1)).nullish(),
+  hardDeletedTagIds: z.array(z.string().min(1)).nullish(),
   preferences: z.record(z.string(), z.string()).optional()
 });
 
@@ -598,11 +600,27 @@ app.post("/sync", requireAuth, async (req, res) => {
   await upsertUser(userId);
 
   const incoming = parsed.data as SyncPayload;
-  const { conflicts } = await applySync(incoming, userId);
+  const {
+    conflicts,
+    forcedHardDeletedNoteIds,
+    forcedHardDeletedTagIds
+  } = await applySync(incoming, userId);
   const { changes, cursor: newCursor } = await getChangesSinceCursor(userId, cursor);
+  const mergedHardDeletedNoteIds = Array.from(new Set([
+    ...(changes.hardDeletedNoteIds ?? []),
+    ...forcedHardDeletedNoteIds
+  ]));
+  const mergedHardDeletedTagIds = Array.from(new Set([
+    ...(changes.hardDeletedTagIds ?? []),
+    ...forcedHardDeletedTagIds
+  ]));
   res.json({
     cursor: newCursor,
-    changes,
+    changes: {
+      ...changes,
+      hardDeletedNoteIds: mergedHardDeletedNoteIds,
+      hardDeletedTagIds: mergedHardDeletedTagIds
+    },
     conflicts,
     serverTime: new Date().toISOString()
   });

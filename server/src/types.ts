@@ -33,12 +33,16 @@ export type SyncPayload = {
   deviceId?: string | null;
   notes: NoteDTO[];
   tags?: TagDTO[] | null;
+  hardDeletedNoteIds?: string[] | null;
+  hardDeletedTagIds?: string[] | null;
   preferences?: Record<string, string> | null;
 };
 
 export type SyncChanges = {
   notes: NoteDTO[];
   tags?: TagDTO[] | null;
+  hardDeletedNoteIds?: string[] | null;
+  hardDeletedTagIds?: string[] | null;
   preferences?: Record<string, string> | null;
 };
 
