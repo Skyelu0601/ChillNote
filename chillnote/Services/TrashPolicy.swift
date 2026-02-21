@@ -27,4 +27,19 @@ struct TrashPolicy {
             try? context.save()
         }
     }
+
+    @MainActor
+    static func purgeExpiredTags(context: ModelContext, userId: String) {
+        let cutoff = cutoffDate()
+        let descriptor = FetchDescriptor<Tag>(predicate: #Predicate { tag in
+            tag.userId == userId && tag.deletedAt != nil && tag.deletedAt! < cutoff
+        })
+        guard let tags = try? context.fetch(descriptor), !tags.isEmpty else { return }
+        let ids = tags.map(\.id)
+        for tag in tags {
+            context.delete(tag)
+        }
+        HardDeleteQueueStore.enqueue(tagIDs: ids, for: userId)
+        try? context.save()
+    }
 }

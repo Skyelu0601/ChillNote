@@ -57,6 +57,8 @@ final class SyncEngineTests: XCTestCase {
                     )
                 ],
                 tags: nil,
+                hardDeletedNoteIds: nil,
+                hardDeletedTagIds: nil,
                 preferences: nil
             ),
             conflicts: [],
@@ -107,6 +109,8 @@ final class SyncEngineTests: XCTestCase {
                     )
                 ],
                 tags: nil,
+                hardDeletedNoteIds: nil,
+                hardDeletedTagIds: nil,
                 preferences: nil
             ),
             conflicts: [],
@@ -159,6 +163,8 @@ final class SyncEngineTests: XCTestCase {
                         lastModifiedByDeviceId: nil
                     )
                 ],
+                hardDeletedNoteIds: nil,
+                hardDeletedTagIds: nil,
                 preferences: nil
             ),
             conflicts: [],
@@ -170,6 +176,75 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertNotNil(tag.deletedAt)
         XCTAssertEqual(tag.name, "local-tag")
         XCTAssertEqual(tag.version, 5)
+    }
+
+    func testMakePayloadSkipsRecordsAtExactlySinceBoundary() throws {
+        let userId = "u1"
+        let boundary = Date(timeIntervalSince1970: 1_700_000_000)
+
+        let note = Note(content: "boundary-note", userId: userId)
+        note.updatedAt = boundary
+        context.insert(note)
+
+        let tag = Tag(name: "boundary-tag", userId: userId)
+        tag.updatedAt = boundary
+        context.insert(tag)
+        try context.save()
+
+        let payload = engine.makePayload(
+            context: context,
+            since: boundary,
+            userId: userId,
+            cursor: nil,
+            deviceId: nil,
+            hardDeletedNoteIds: [],
+            hardDeletedTagIds: []
+        )
+
+        XCTAssertEqual(payload.notes.count, 0)
+        XCTAssertEqual(payload.tags?.count ?? 0, 0)
+    }
+
+    func testApplyRemoteClampsUpdatedAtToLocalSyncAnchor() throws {
+        let userId = "u1"
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+        let anchor = base.addingTimeInterval(60)
+        let remoteUpdateAt = base.addingTimeInterval(300)
+        let noteId = UUID()
+
+        let response = SyncResponse(
+            cursor: "1",
+            changes: SyncChanges(
+                notes: [
+                    NoteDTO(
+                        id: noteId.uuidString,
+                        content: "remote note",
+                        createdAt: iso(base),
+                        updatedAt: iso(remoteUpdateAt),
+                        deletedAt: nil,
+                        pinnedAt: nil,
+                        tagIds: [],
+                        version: 1,
+                        baseVersion: nil,
+                        clientUpdatedAt: nil,
+                        lastModifiedByDeviceId: nil
+                    )
+                ],
+                tags: nil,
+                hardDeletedNoteIds: nil,
+                hardDeletedTagIds: nil,
+                preferences: nil
+            ),
+            conflicts: [],
+            serverTime: iso(remoteUpdateAt)
+        )
+
+        engine.apply(remote: response, context: context, userId: userId, localSyncAnchor: anchor)
+
+        let fetched = try context.fetch(FetchDescriptor<Note>())
+        XCTAssertEqual(fetched.count, 1)
+        XCTAssertEqual(fetched[0].serverUpdatedAt, remoteUpdateAt)
+        XCTAssertEqual(fetched[0].updatedAt, anchor)
     }
 
     private func iso(_ date: Date) -> String {

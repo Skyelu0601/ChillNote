@@ -20,7 +20,7 @@ struct SyncEngine {
         var noteDescriptor = FetchDescriptor<Note>()
         if let since {
             noteDescriptor.predicate = #Predicate<Note> { note in
-                note.userId == userId && note.updatedAt >= since
+                note.userId == userId && note.updatedAt > since
             }
         } else {
             noteDescriptor.predicate = #Predicate<Note> { note in
@@ -39,7 +39,7 @@ struct SyncEngine {
         var tagDescriptor = FetchDescriptor<Tag>()
         if let since {
             tagDescriptor.predicate = #Predicate<Tag> { tag in
-                tag.userId == userId && tag.updatedAt >= since
+                tag.userId == userId && tag.updatedAt > since
             }
         } else {
             tagDescriptor.predicate = #Predicate<Tag> { tag in
@@ -77,7 +77,7 @@ struct SyncEngine {
         return payload
     }
 
-    func apply(remote: SyncResponse, context: ModelContext, userId: String) {
+    func apply(remote: SyncResponse, context: ModelContext, userId: String, localSyncAnchor: Date = Date()) {
         let start = CFAbsoluteTimeGetCurrent()
         
         let remoteNotesCount = remote.changes.notes.count
@@ -165,11 +165,13 @@ struct SyncEngine {
                 if let existing = tagMap[tagId] {
                     if shouldApply(remoteVersion: dto.version, remoteUpdatedAt: remoteUpdatedAt, localVersion: existing.version, localUpdatedAt: existing.updatedAt) {
                         mapper.apply(dto, to: existing)
+                        existing.updatedAt = normalizeSyncedUpdatedAt(existing.updatedAt, localSyncAnchor: localSyncAnchor)
                     }
                 } else {
                     let newTag = Tag(name: dto.name, userId: userId)
                     newTag.id = tagId
                     mapper.apply(dto, to: newTag)
+                    newTag.updatedAt = normalizeSyncedUpdatedAt(newTag.updatedAt, localSyncAnchor: localSyncAnchor)
                     context.insert(newTag)
                     tagMap[tagId] = newTag
                 }
@@ -185,16 +187,6 @@ struct SyncEngine {
                 }
             }
             
-            // Purge soft-deleted tags older than 30 days
-            let cutoff = TrashPolicy.cutoffDate()
-            var expiredSoftDeletedTagIDs = Set<UUID>()
-            for tag in tagMap.values where (tag.deletedAt ?? Date.distantPast) < cutoff && tag.deletedAt != nil {
-                expiredSoftDeletedTagIDs.insert(tag.id)
-                context.delete(tag)
-            }
-            if !expiredSoftDeletedTagIDs.isEmpty {
-                HardDeleteQueueStore.enqueue(tagIDs: Array(expiredSoftDeletedTagIDs), for: userId)
-            }
         }
 
 
@@ -229,6 +221,7 @@ struct SyncEngine {
                 let remoteUpdatedAt = dto.updatedAt.flatMap { mapper.parseDate($0) }
                 if shouldApply(remoteVersion: dto.version, remoteUpdatedAt: remoteUpdatedAt, localVersion: existing.version, localUpdatedAt: existing.updatedAt) {
                     mapper.apply(dto, to: existing)
+                    existing.updatedAt = normalizeSyncedUpdatedAt(existing.updatedAt, localSyncAnchor: localSyncAnchor)
                     existing.syncContentStructure(with: context)
                     resolveTags(for: existing)
                 }
@@ -236,6 +229,7 @@ struct SyncEngine {
                 let note = Note(content: dto.content, userId: userId)
                 note.id = id
                 mapper.apply(dto, to: note)
+                note.updatedAt = normalizeSyncedUpdatedAt(note.updatedAt, localSyncAnchor: localSyncAnchor)
                 note.syncContentStructure(with: context)
                 resolveTags(for: note)
                 context.insert(note)
@@ -275,5 +269,9 @@ struct SyncEngine {
             note.version = 1
             context.insert(note)
         }
+    }
+
+    private func normalizeSyncedUpdatedAt(_ updatedAt: Date, localSyncAnchor: Date) -> Date {
+        min(updatedAt, localSyncAnchor)
     }
 }

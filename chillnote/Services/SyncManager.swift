@@ -93,6 +93,7 @@ final class SyncManager: ObservableObject {
                     authToken: authToken,
                     since: sinceDate,
                     cursor: cursorValue,
+                    localSyncAnchor: syncStartedAt,
                     userId: userIdForSync,
                     deviceId: deviceIdSnapshot,
                     hardDeletedNoteIds: hardDeletedNoteIdsSnapshot,
@@ -100,7 +101,7 @@ final class SyncManager: ObservableObject {
                 )
                 let service: SyncService = RemoteSyncService(config: config)
                 let result = try await service.syncAll(context: backgroundContext)
-                TagService.shared.cleanupEmptyTags(context: backgroundContext)
+                TagService.shared.cleanupEmptyTags(context: backgroundContext, shouldSave: false)
                 try backgroundContext.save()
                 let postSyncNotesCount = (try? backgroundContext.fetchCount(userNotesDescriptor)) ?? 0
                 return (result, postSyncNotesCount)

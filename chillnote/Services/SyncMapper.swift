@@ -6,6 +6,11 @@ struct SyncMapper {
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter
     }()
+    private let fallbackDateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
 
     func noteDTO(from note: Note) -> NoteDTO {
         NoteDTO(
@@ -46,7 +51,7 @@ struct SyncMapper {
 
 
     func parseDate(_ string: String) -> Date? {
-        dateFormatter.date(from: string) ?? ISO8601DateFormatter().date(from: string)
+        dateFormatter.date(from: string) ?? fallbackDateFormatter.date(from: string)
     }
 
     func apply(_ dto: NoteDTO, to note: Note) {

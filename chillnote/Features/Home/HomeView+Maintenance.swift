@@ -4,6 +4,7 @@ extension HomeView {
     enum MaintenanceReason {
         case initial
         case foreground
+        case userChanged
     }
 
     func scheduleInitialMaintenance() {
@@ -25,14 +26,25 @@ extension HomeView {
     @MainActor
     func runMaintenance(reason: MaintenanceReason) async {
         let now = Date()
-        if let lastMaintenanceAt, now.timeIntervalSince(lastMaintenanceAt) < minimumMaintenanceInterval {
+        let bypassIntervalLimit = reason == .userChanged
+        if !bypassIntervalLimit,
+           let lastMaintenanceAt,
+           now.timeIntervalSince(lastMaintenanceAt) < minimumMaintenanceInterval {
             return
         }
         lastMaintenanceAt = now
         TrashPolicy.purgeExpiredNotes(context: modelContext)
+        if let userId = AuthService.shared.currentUserId {
+            TrashPolicy.purgeExpiredTags(context: modelContext, userId: userId)
+        }
 
         Task {
-            await syncManager.syncIfNeeded(context: modelContext)
+            switch reason {
+            case .userChanged:
+                await syncManager.syncNow(context: modelContext)
+            case .initial, .foreground:
+                await syncManager.syncIfNeeded(context: modelContext)
+            }
         }
 
         await checkForPendingRecordingsAsync()

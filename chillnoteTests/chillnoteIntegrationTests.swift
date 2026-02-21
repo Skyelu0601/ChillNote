@@ -215,4 +215,37 @@ final class chillnoteIntegrationTests: XCTestCase {
         XCTAssertFalse(sortedItems[0].isDone)
         XCTAssertFalse(sortedItems[1].isDone)
     }
+
+    /// 测试：全局维护应清理过期软删除标签，并写入 hard delete 队列
+    func testPurgeExpiredTagsDeletesOldSoftDeletedTagsGlobally() throws {
+        let userId = "u-tags-\(UUID().uuidString)"
+        let cutoff = TrashPolicy.cutoffDate()
+
+        let expired = Tag(name: "expired", userId: userId)
+        expired.deletedAt = cutoff.addingTimeInterval(-1)
+        expired.updatedAt = expired.deletedAt!
+
+        let recent = Tag(name: "recent", userId: userId)
+        recent.deletedAt = cutoff.addingTimeInterval(60)
+        recent.updatedAt = recent.deletedAt!
+
+        let active = Tag(name: "active", userId: userId)
+
+        modelContext.insert(expired)
+        modelContext.insert(recent)
+        modelContext.insert(active)
+        try modelContext.save()
+
+        TrashPolicy.purgeExpiredTags(context: modelContext, userId: userId)
+
+        let remaining = try modelContext.fetch(FetchDescriptor<Tag>(predicate: #Predicate { $0.userId == userId }))
+        let remainingNames = Set(remaining.map(\.name))
+        XCTAssertEqual(remaining.count, 2)
+        XCTAssertTrue(remainingNames.contains("recent"))
+        XCTAssertTrue(remainingNames.contains("active"))
+        XCTAssertFalse(remainingNames.contains("expired"))
+
+        let queuedIds = Set(HardDeleteQueueStore.tagIDs(for: userId))
+        XCTAssertTrue(queuedIds.contains(expired.id.uuidString))
+    }
 }

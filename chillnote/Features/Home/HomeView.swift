@@ -93,6 +93,8 @@ struct HomeView: View {
     @ObservedObject var voiceService = VoiceProcessingService.shared
 
     @State var scheduledReloadTask: Task<Void, Never>?
+    @State var bootstrappingUserId: String?
+    @State var lastBootstrappedUserId: String?
 
     var headerTitle: String {
         if isTrashSelected {
@@ -206,6 +208,8 @@ struct HomeView: View {
             guard !isSignedIn else { return }
             showingSettings = false
             isVoiceMode = false
+            bootstrappingUserId = nil
+            lastBootstrappedUserId = nil
         }
         .onChange(of: isTrashSelected) { _, newValue in
             if newValue {
@@ -228,10 +232,7 @@ struct HomeView: View {
         .onChange(of: authService.currentUserId) { _, newUserId in
             guard let userId = newUserId else { return }
             Task {
-                homeViewModel.configure(context: modelContext, userId: userId)
-                await syncManager.syncNow(context: modelContext)
-                await homeViewModel.reload()
-                await NotesSearchIndexer.shared.rebuildIfNeeded(context: modelContext, userId: userId)
+                await bootstrapHome(for: userId, source: .authChanged)
             }
         }
         .onChange(of: showingSettings) { _, isPresented in
@@ -265,16 +266,7 @@ struct HomeView: View {
             await checkForPendingRecordingsAsync()
             scheduleInitialMaintenance()
             guard let userId = currentUserId else { return }
-            homeViewModel.configure(context: modelContext, userId: userId)
-            await syncManager.syncNow(context: modelContext)
-            await homeViewModel.switchMode(isTrashSelected ? .trash : .active)
-            await homeViewModel.switchTag(selectedTag?.id)
-            await homeViewModel.updateSearchQuery(searchText)
-            await homeViewModel.reload()
-            Task(priority: .utility) {
-                try? await Task.sleep(nanoseconds: 1_200_000_000)
-                await NotesSearchIndexer.shared.rebuildIfNeeded(context: modelContext, userId: userId)
-            }
+            await bootstrapHome(for: userId, source: .initialTask)
         }
         .sheet(isPresented: $showUpgradeSheet) {
             UpgradeBottomSheet(
@@ -499,6 +491,40 @@ struct HomeView: View {
             guard !Task.isCancelled else { return }
             await homeViewModel.reload(keepItemsWhileLoading: keepItemsWhileLoading)
             clampSelectionToCurrentFilter()
+        }
+    }
+
+    enum HomeBootstrapSource {
+        case initialTask
+        case authChanged
+    }
+
+    @MainActor
+    func bootstrapHome(for userId: String, source: HomeBootstrapSource) async {
+        if bootstrappingUserId == userId { return }
+        if source == .initialTask, lastBootstrappedUserId == userId { return }
+
+        bootstrappingUserId = userId
+        defer {
+            bootstrappingUserId = nil
+            lastBootstrappedUserId = userId
+        }
+
+        homeViewModel.configure(context: modelContext, userId: userId)
+        await homeViewModel.switchMode(isTrashSelected ? .trash : .active)
+        await homeViewModel.switchTag(selectedTag?.id)
+        await homeViewModel.updateSearchQuery(searchText)
+        await homeViewModel.reload()
+        clampSelectionToCurrentFilter()
+
+        if source == .authChanged {
+            scheduleMaintenance(reason: .userChanged)
+        }
+
+        Task(priority: .utility) {
+            let delay: UInt64 = source == .initialTask ? 1_200_000_000 : 300_000_000
+            try? await Task.sleep(nanoseconds: delay)
+            await NotesSearchIndexer.shared.rebuildIfNeeded(context: modelContext, userId: userId)
         }
     }
 }

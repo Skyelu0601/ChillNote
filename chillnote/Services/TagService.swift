@@ -63,7 +63,7 @@ class TagService {
     
     /// Marks tags that are no longer associated with any active notes as deleted (soft-delete for sync).
     /// If candidates are provided, only those tags are checked.
-    func cleanupEmptyTags(context: ModelContext, candidates: [Tag]? = nil) {
+    func cleanupEmptyTags(context: ModelContext, candidates: [Tag]? = nil, shouldSave: Bool = true) {
         let tagsToCheck: [Tag]
         if let candidates, !candidates.isEmpty {
             var seen = Set<UUID>()
@@ -78,12 +78,13 @@ class TagService {
         }
         for tag in tagsToCheck {
             let activeNotes = tag.notes.filter { $0.deletedAt == nil }
-            if activeNotes.isEmpty {
+            if activeNotes.isEmpty && tag.deletedAt == nil {
                 let now = Date()
                 tag.deletedAt = now
                 tag.updatedAt = now
             }
         }
+        guard shouldSave else { return }
         do {
             try context.save()
         } catch {

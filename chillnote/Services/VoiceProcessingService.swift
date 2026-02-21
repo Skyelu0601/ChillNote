@@ -116,7 +116,11 @@ class VoiceProcessingService: ObservableObject {
             countUsage: false
         )
 
-        return refined
+        return RefinePostProcessor.process(
+            refinedText: refined,
+            originalTranscript: trimmed,
+            isShortInput: isShortInput
+        )
     }
     
     /// Process voice command for the Voice Agent (placeholder for future expansion)

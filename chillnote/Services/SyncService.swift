@@ -18,6 +18,7 @@ struct SyncConfig {
     let authToken: String?
     let since: Date?
     let cursor: String?
+    let localSyncAnchor: Date
     let userId: String
     let deviceId: String
     let hardDeletedNoteIds: [String]
@@ -76,11 +77,17 @@ struct RemoteSyncService: SyncService {
             let decoder = JSONDecoder()
             return try decoder.decode(SyncResponse.self, from: data)
         }.value
-        applyRemotePayload(context: context, response: remoteResponse, userId: config.userId)
-        try context.save()
+        applyRemotePayload(
+            context: context,
+            response: remoteResponse,
+            userId: config.userId,
+            localSyncAnchor: config.localSyncAnchor
+        )
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let serverTime = formatter.date(from: remoteResponse.serverTime) ?? ISO8601DateFormatter().date(from: remoteResponse.serverTime)
+        let fallbackFormatter = ISO8601DateFormatter()
+        fallbackFormatter.formatOptions = [.withInternetDateTime]
+        let serverTime = formatter.date(from: remoteResponse.serverTime) ?? fallbackFormatter.date(from: remoteResponse.serverTime)
         return SyncResult(
             cursor: remoteResponse.cursor,
             serverTime: serverTime,
@@ -111,7 +118,7 @@ private func makeSyncPayload(
     )
 }
 
-private func applyRemotePayload(context: ModelContext, response: SyncResponse, userId: String) {
+private func applyRemotePayload(context: ModelContext, response: SyncResponse, userId: String, localSyncAnchor: Date) {
     let engine = SyncEngine()
-    engine.apply(remote: response, context: context, userId: userId)
+    engine.apply(remote: response, context: context, userId: userId, localSyncAnchor: localSyncAnchor)
 }
