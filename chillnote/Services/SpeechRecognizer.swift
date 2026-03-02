@@ -5,13 +5,25 @@ import UIKit
 struct TranscriptionEvent: Identifiable, Equatable {
     enum Result: Equatable {
         case success(String)
-        case failure(String)
+        case failure(reason: TranscriptionFailureReason, message: String)
     }
 
     let id: UUID
     let fileURL: URL
     let result: Result
     let createdAt: Date
+}
+
+enum TranscriptionFailureReason: Equatable {
+    case networkUnavailable
+    case timeout
+    case authenticationRequired
+    case serviceUnavailable
+    case serviceConfiguration
+    case quotaReached
+    case audioEmpty
+    case localFileIssue
+    case unknown
 }
 
 @MainActor
@@ -42,6 +54,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     @Published var shouldStop: Bool = false
     @Published private(set) var completedTranscriptions: [TranscriptionEvent] = []
     @Published private(set) var processingQueueCount: Int = 0
+    @Published private(set) var activeTranscriptionFilePaths: Set<String> = []
     
     // MARK: - Private Properties
     
@@ -324,14 +337,18 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     private func transcribeAudio(jobID: UUID, fileURL: URL) async {
         print("🎤 Starting transcription...")
         defer {
-            finishTranscriptionJob(jobID)
+            finishTranscriptionJob(jobID, filePath: fileURL.path)
         }
 
         // Validate file
         guard let fileSize = try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size] as? NSNumber else {
             // Only discard if we truly can't read it
             discardUnusableRecording(fileURL: fileURL)
-            publishFailureEvent(fileURL: fileURL, message: String(localized: "Could not read audio file"))
+            publishFailureEvent(
+                fileURL: fileURL,
+                reason: .localFileIssue,
+                message: String(localized: "Could not read audio file")
+            )
             return
         }
         
@@ -339,7 +356,11 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         
         if size < 512 {
             discardUnusableRecording(fileURL: fileURL)
-            publishFailureEvent(fileURL: fileURL, message: String(localized: "No audio captured. Please try again."))
+            publishFailureEvent(
+                fileURL: fileURL,
+                reason: .audioEmpty,
+                message: String(localized: "No audio captured. Please try again.")
+            )
             return
         }
         
@@ -374,14 +395,30 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             )
             
         } catch is TimeoutError {
-            publishFailureEvent(fileURL: fileURL, message: String(localized: "Transcription timed out. Please try again."))
+            publishFailureEvent(
+                fileURL: fileURL,
+                reason: .timeout,
+                message: String(localized: "Transcription timed out. Please try again.")
+            )
             
         } catch let error as GeminiError {
-            publishFailureEvent(fileURL: fileURL, message: message(for: error))
+            let reason: TranscriptionFailureReason
+            switch error {
+            case .networkError:
+                reason = .networkUnavailable
+            case .missingAPIKey, .invalidURL:
+                reason = .serviceConfiguration
+            case .invalidResponse:
+                reason = .serviceUnavailable
+            case .apiError(let apiMessage):
+                reason = classifyAPIErrorMessage(apiMessage)
+            }
+            publishFailureEvent(fileURL: fileURL, reason: reason, message: message(for: error))
             
         } catch {
             publishFailureEvent(
                 fileURL: fileURL,
+                reason: .unknown,
                 message: String(format: String(localized: "Transcription failed: %@"), error.localizedDescription)
             )
         }
@@ -409,18 +446,65 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         recordingState = .error(message)
     }
 
-    private func publishFailureEvent(fileURL: URL, message: String) {
+    private func publishFailureEvent(fileURL: URL, reason: TranscriptionFailureReason, message: String) {
         completedTranscriptions.append(
             TranscriptionEvent(
                 id: UUID(),
                 fileURL: fileURL,
-                result: .failure(message),
+                result: .failure(reason: reason, message: message),
                 createdAt: Date()
             )
         )
         if recordingState != .recording {
             setError(message)
         }
+    }
+
+    private func classifyAPIErrorMessage(_ message: String) -> TranscriptionFailureReason {
+        let lowered = message.lowercased()
+        if lowered.contains("network error") {
+            return .networkUnavailable
+        }
+        if lowered.contains("timed out") || lowered.contains("timeout") || lowered.contains("504") {
+            return .timeout
+        }
+        if lowered.contains("sign in required")
+            || lowered.contains("missing token")
+            || lowered.contains("invalid token")
+            || lowered.contains("unauthorized")
+            || lowered.contains("session expired")
+            || lowered.contains("auth") {
+            return .authenticationRequired
+        }
+        if lowered.contains("daily free voice limit reached")
+            || lowered.contains("daily voice limit reached")
+            || lowered.contains("too many requests")
+            || lowered.contains("rate limit")
+            || lowered.contains("quota")
+            || lowered.contains("429") {
+            return .quotaReached
+        }
+        if lowered.contains("service key")
+            || lowered.contains("api key")
+            || lowered.contains("not configured")
+            || lowered.contains("invalid configuration") {
+            return .serviceConfiguration
+        }
+        if lowered.contains("no audio captured")
+            || lowered.contains("audio empty")
+            || lowered.contains("transcription result was empty")
+            || TranscriptionContentValidator.looksLikeProviderEmptyResponse(lowered) {
+            return .audioEmpty
+        }
+        if lowered.contains("provider error")
+            || lowered.contains("internal server error")
+            || lowered.contains("status code: 5")
+            || lowered.contains("500")
+            || lowered.contains("502")
+            || lowered.contains("503") {
+            return .serviceUnavailable
+        }
+        return .unknown
     }
 
     private func discardUnusableRecording(fileURL: URL) {
@@ -434,6 +518,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     private func scheduleTranscription(for fileURL: URL, initialDelayNanoseconds: UInt64 = 0) {
         let jobID = UUID()
         activeTranscriptionJobIDs.insert(jobID)
+        activeTranscriptionFilePaths.insert(fileURL.path)
         processingQueueCount = activeTranscriptionJobIDs.count
         if recordingState != .recording {
             recordingState = .processing
@@ -448,8 +533,9 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         }
     }
 
-    private func finishTranscriptionJob(_ jobID: UUID) {
+    private func finishTranscriptionJob(_ jobID: UUID, filePath: String) {
         activeTranscriptionJobIDs.remove(jobID)
+        activeTranscriptionFilePaths.remove(filePath)
         processingQueueCount = activeTranscriptionJobIDs.count
         refreshRecordingStateAfterBackgroundWork()
     }

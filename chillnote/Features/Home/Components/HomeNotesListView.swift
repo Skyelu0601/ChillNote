@@ -243,6 +243,14 @@ struct NoteCard: View {
         return stage
     }
 
+    private var processingFailureMessage: String? {
+        guard let state = VoiceProcessingService.shared.processingStates[item.id],
+              case .failed(let message) = state else {
+            return nil
+        }
+        return message
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             if isSelectionMode {
@@ -274,6 +282,18 @@ struct NoteCard: View {
                 if let stage = processingStage {
                     VoiceProcessingWorkflowView(currentStage: stage, style: .compact)
                         .padding(.top, 2)
+                } else if let failure = processingFailureMessage {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.orange)
+                        Text(failure)
+                            .font(.chillCaption)
+                            .foregroundColor(.textSub)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding(.top, 2)
                 } else {
                     if !item.isEmpty {
                         Group {

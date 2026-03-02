@@ -2,6 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>APP_REVIEW_LOGIN_ENABLED</key>
+	<true/>
+	<key>APP_REVIEW_VERIFICATION_CODE</key>
+	<string>202602</string>
+	<key>APP_REVIEW_WHITELIST_EMAILS</key>
+	<string>appreview@chillnoteai.com</string>
 	<key>CFBundleDisplayName</key>
 	<string>ChillNote</string>
 	<key>GIDClientID</key>

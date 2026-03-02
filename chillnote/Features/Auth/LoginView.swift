@@ -249,7 +249,7 @@ struct LoginView: View {
                 .disabled(isVerifyingCode || otpCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
             }
-            
+
             Button("Back to Options") {
                 withAnimation {
                     showEmailLogin = false

@@ -85,6 +85,8 @@ struct HomeView: View {
     @State var pendingRecordings: [PendingRecording] = []
     @State var showPendingRecordings = false
     @State var autoOpenPendingRecordings = false
+    @State var latestTranscriptionFailureMessage = ""
+    @State var showTranscriptionFailureAlert = false
 
     @State var hasScheduledInitialMaintenance = false
     @State var lastMaintenanceAt: Date?
@@ -296,6 +298,14 @@ struct HomeView: View {
         }
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
+        }
+        .alert(VoiceErrorPresentation.transcriptionFailedTitle, isPresented: $showTranscriptionFailureAlert) {
+            Button("Pending Records") {
+                showPendingRecordings = true
+            }
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(latestTranscriptionFailureMessage)
         }
     }
 

@@ -52,12 +52,13 @@ extension HomeView {
 
     func checkForPendingRecordingsAsync() async {
         if case .recording = speechRecognizer.recordingState { return }
+        let activeProcessingPaths = await MainActor.run { speechRecognizer.activeTranscriptionFilePaths }
         let pending = await Task.detached(priority: .userInitiated) {
             RecordingFileManager.shared.pendingRecordings()
         }.value
 
         await MainActor.run {
-            pendingRecordings = pending
+            pendingRecordings = pending.filter { !activeProcessingPaths.contains($0.fileURL.path) }
         }
     }
 }

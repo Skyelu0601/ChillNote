@@ -263,12 +263,50 @@ final class AuthService: ObservableObject {
     }
     
     // MARK: - Email OTP Sign In
+
+    private func normalizeEmail(_ email: String) -> String {
+        email.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+    }
+
+    private func normalizeCode(_ code: String) -> String {
+        code.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    private func isAppReviewQuickCredential(email: String, code: String) -> Bool {
+        guard AppConfig.isAppReviewQuickLoginEnabled else { return false }
+        let inWhitelist = AppConfig.appReviewWhitelistEmails.contains(email)
+        return inWhitelist && code == AppConfig.appReviewVerificationCode
+    }
+
+    private func isAppReviewWhitelistedEmail(_ email: String) -> Bool {
+        guard AppConfig.isAppReviewQuickLoginEnabled else { return false }
+        return AppConfig.appReviewWhitelistEmails.contains(email)
+    }
+
+    private func signInWithAppReviewCredential(email: String, code: String) async -> Bool {
+        state = .signingIn
+        do {
+            try await supabase.auth.signIn(email: email, password: code)
+            return true
+        } catch {
+            print("❌ App Review Quick Login Error: \(error)")
+            errorMessage = error.localizedDescription
+            state = .signedOut
+            return false
+        }
+    }
     
     func signInWithEmailOTP(email: String) async -> Bool {
         errorMessage = nil
+        let normalizedEmail = normalizeEmail(email)
+
+        if isAppReviewWhitelistedEmail(normalizedEmail) {
+            // For App Review accounts, skip sending real email OTP.
+            return true
+        }
         
         do {
-            try await supabase.auth.signInWithOTP(email: email)
+            try await supabase.auth.signInWithOTP(email: normalizedEmail)
             return true
         } catch {
             print("❌ Email OTP Error: \(error)")
@@ -279,11 +317,17 @@ final class AuthService: ObservableObject {
     
     func verifyEmailOTP(email: String, code: String) async -> Bool {
         errorMessage = nil
+        let normalizedEmail = normalizeEmail(email)
+        let normalizedCode = normalizeCode(code)
+
+        if isAppReviewQuickCredential(email: normalizedEmail, code: normalizedCode) {
+            return await signInWithAppReviewCredential(email: normalizedEmail, code: normalizedCode)
+        }
         
         do {
             try await supabase.auth.verifyOTP(
-                email: email,
-                token: code,
+                email: normalizedEmail,
+                token: normalizedCode,
                 type: .email
             )
             // Session listener will flip state to .signedIn automatically

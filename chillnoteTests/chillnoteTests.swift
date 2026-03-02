@@ -196,6 +196,30 @@ final class chillnoteTests: XCTestCase {
         XCTAssertTrue(tag?.hasPrefix("en") == true)
     }
 
+    // MARK: - Transcription Content Validation Tests
+
+    func testTranscriptionValidatorRejectsProviderEmptyPrompt() {
+        let raw = "This transcript appears to be empty or contains only timestamps. Please provide actual speech content for processing."
+        let normalized = TranscriptionContentValidator.normalizedTranscriptOrNil(raw)
+        XCTAssertNil(normalized)
+    }
+
+    func testTranscriptionValidatorRejectsTimestampOnlyLines() {
+        let raw = """
+        00:00
+        [00:12]
+        01:03:33
+        """
+        let normalized = TranscriptionContentValidator.normalizedTranscriptOrNil(raw)
+        XCTAssertNil(normalized)
+    }
+
+    func testTranscriptionValidatorKeepsNormalTranscript() {
+        let raw = "今天复盘一下上周项目，先看发布节奏，再看用户反馈。"
+        let normalized = TranscriptionContentValidator.normalizedTranscriptOrNil(raw)
+        XCTAssertEqual(normalized, raw)
+    }
+
     // MARK: - Performance Tests
 
     func testPerformanceChecklistParsing() {

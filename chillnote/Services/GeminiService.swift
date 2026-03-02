@@ -248,7 +248,10 @@ struct GeminiService {
                     countUsage: false,
                     usageType: countUsage ? .voice : nil
                 )
-                return text
+                if let normalized = TranscriptionContentValidator.normalizedTranscriptOrNil(text) {
+                    return normalized
+                }
+                throw GeminiError.apiError(TranscriptionContentValidator.fallbackEmptyTranscriptionMessage())
             }
 
             if !(200...299).contains(httpResponse.statusCode) {
@@ -269,7 +272,10 @@ struct GeminiService {
 
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let text = json["text"] as? String {
-                return text
+                if let normalized = TranscriptionContentValidator.normalizedTranscriptOrNil(text) {
+                    return normalized
+                }
+                throw GeminiError.apiError(TranscriptionContentValidator.fallbackEmptyTranscriptionMessage())
             }
 
             throw GeminiError.invalidResponse

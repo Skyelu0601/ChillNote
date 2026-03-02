@@ -11,6 +11,7 @@ struct HomeHeaderView: View {
     let hasPendingRecordings: Bool
 
     let onToggleSidebar: () -> Void
+    let onCreateBlankNote: () -> Void
     let onEnterSelectionMode: () -> Void
     let onToggleSearch: () -> Void
     let onExitSelectionMode: () -> Void
@@ -46,15 +47,36 @@ struct HomeHeaderView: View {
 
                 Spacer()
 
-                HStack(spacing: 12) {
+                HStack(spacing: 2) {
+                    Button(action: onToggleSearch) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 17, weight: .medium))
+                            .foregroundColor(isSearchVisible ? .accentPrimary : .textMain)
+                            .frame(width: 36, height: 36)
+                            .contentShape(Circle())
+                    }
+                    .buttonStyle(.bouncy)
+                    .disabled(isRecording)
+                    .accessibilityLabel("Search")
+
                     if !isTrashSelected {
+                        Button(action: onCreateBlankNote) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .medium))
+                                .foregroundColor(.textMain)
+                                .frame(width: 36, height: 36)
+                                .contentShape(Circle())
+                        }
+                        .buttonStyle(.bouncy)
+                        .disabled(isRecording)
+                        .accessibilityLabel("Create Blank Note")
+
                         Button(action: onEnterSelectionMode) {
                             Image("chillohead_touming")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 44, height: 44)
-                                .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                                .opacity(isRecording ? 0.3 : 1.0)
+                                .frame(width: 30, height: 30)
+                                .frame(width: 36, height: 36)
                                 .grayscale(isRecording ? 1.0 : 0.0)
                         }
                         .buttonStyle(.bouncy)
@@ -62,33 +84,23 @@ struct HomeHeaderView: View {
                         .accessibilityLabel("Enter AI Context Mode")
                     }
 
-                    Button(action: onToggleSearch) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 20, weight: .regular))
-                            .foregroundColor(isSearchVisible ? .accentPrimary : .textMain.opacity(0.8))
-                            .frame(width: 40, height: 40)
-                            .background(Color.white)
-                            .clipShape(Circle())
-                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                            .opacity(isRecording ? 0.3 : 1.0)
-                    }
-                    .buttonStyle(.bouncy)
-                    .disabled(isRecording)
-                    .accessibilityLabel("Search")
-
                     if isTrashSelected {
                         Button(action: onShowEmptyTrashConfirmation) {
                             Image(systemName: "trash.slash")
-                                .font(.system(size: 18, weight: .regular))
+                                .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.red.opacity(0.85))
-                                .frame(width: 40, height: 40)
-                                .background(Color.red.opacity(0.08))
-                                .clipShape(Circle())
+                                .frame(width: 36, height: 36)
+                                .contentShape(Circle())
                         }
                         .buttonStyle(.bouncy)
                         .accessibilityLabel("Empty Recycle Bin")
                     }
                 }
+                .padding(.horizontal, 4)
+                .padding(.vertical, 4)
+                .background(Color.primary.opacity(0.05))
+                .clipShape(Capsule())
+                .opacity(isRecording ? 0.3 : 1.0)
             } else {
                 HStack {
                     Button("Cancel") {

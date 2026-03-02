@@ -2,6 +2,18 @@ import SwiftUI
 import SwiftData
 
 struct NoteDetailView: View {
+    private enum VoiceAlertAction {
+        case retryTranscription
+        case dismissOnly
+    }
+
+    private struct VoiceAlertState: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
+        let action: VoiceAlertAction
+    }
+
     @Bindable var note: Note
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -9,6 +21,7 @@ struct NoteDetailView: View {
     @EnvironmentObject private var speechRecognizer: SpeechRecognizer
 
     @StateObject private var viewModel: NoteDetailViewModel
+    @State private var activeVoiceAlert: VoiceAlertState?
 
     private let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
@@ -68,7 +81,7 @@ struct NoteDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-            NoteDetailOverlaysView(viewModel: viewModel, speechRecognizer: speechRecognizer)
+            NoteDetailOverlaysView(viewModel: viewModel)
         }
         .navigationBarHidden(true)
         .noteDetailAlertsAndSheets(viewModel: viewModel)
@@ -77,6 +90,46 @@ struct NoteDetailView: View {
         }
         .onChange(of: speechRecognizer.recordingState) { _, newState in
             viewModel.onRecordingStateChange(newState)
+        }
+        .onChange(of: viewModel.recordingErrorMessage) { _, message in
+            guard let message else { return }
+            activeVoiceAlert = VoiceAlertState(
+                title: VoiceErrorPresentation.transcriptionFailedTitle,
+                message: VoiceErrorPresentation.userMessage(for: message),
+                action: .retryTranscription
+            )
+        }
+        .onChange(of: viewModel.voiceProcessingErrorMessage) { _, message in
+            guard let message else { return }
+            activeVoiceAlert = VoiceAlertState(
+                title: VoiceErrorPresentation.transcriptionFailedTitle,
+                message: VoiceErrorPresentation.userMessage(for: message),
+                action: .dismissOnly
+            )
+        }
+        .alert(item: $activeVoiceAlert) { alert in
+            switch alert.action {
+            case .retryTranscription:
+                Alert(
+                    title: Text(alert.title),
+                    message: Text(alert.message),
+                    primaryButton: .default(Text("Retry")) {
+                        viewModel.triggerRetryHaptic()
+                        viewModel.send(.retryTranscriptionTapped)
+                    },
+                    secondaryButton: .cancel {
+                        viewModel.send(.dismissRecordingErrorTapped)
+                    }
+                )
+            case .dismissOnly:
+                Alert(
+                    title: Text(alert.title),
+                    message: Text(alert.message),
+                    dismissButton: .default(Text("OK")) {
+                        viewModel.send(.dismissVoiceProcessingErrorTapped)
+                    }
+                )
+            }
         }
         .onAppear {
             viewModel.configure(

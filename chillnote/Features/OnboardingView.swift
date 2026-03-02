@@ -210,7 +210,6 @@ struct OnboardingView: View {
                 }
             }
         }
-        .animation(.spring(response: 0.5, dampingFraction: 0.8), value: currentPage)
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: askPhase)
         
         // Voice Logic Triggers
@@ -229,7 +228,8 @@ struct OnboardingView: View {
         }
         .onChange(of: speechRecognizer.permissionGranted) { _, granted in
             guard granted, currentPage == 1 else { return }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                guard currentPage == 1 else { return }
                 speechRecognizer.prewarmRecordingSession()
             }
         }
@@ -238,20 +238,19 @@ struct OnboardingView: View {
     // MARK: - Logic & Sequencing
     
     private func handlePageChange(to page: Int) {
-        withAnimation {
-            showVoiceIntents = false // Reset
-            isRecipesMenuOpen = false
-            isRecipesButtonPulsing = false
-            isErrorPulsing = false
-            isAskButtonPulsing = false
-            showRecipesBar = false
-            showKoalaHint = false
-            isFixGrammarPulsing = false
-        }
+        showVoiceIntents = false // Reset
+        isRecipesMenuOpen = false
+        isRecipesButtonPulsing = false
+        isErrorPulsing = false
+        isAskButtonPulsing = false
+        showRecipesBar = false
+        showKoalaHint = false
+        isFixGrammarPulsing = false
 
         if page == 1 {
             speechRecognizer.checkPermissions()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
+                guard currentPage == 1, speechRecognizer.permissionGranted else { return }
                 speechRecognizer.prewarmRecordingSession()
             }
         }
@@ -487,6 +486,9 @@ struct OnboardingView: View {
                         Text(verbatim: "\"\(voicePrompt)\"")
                             .font(.system(size: 18, weight: .medium, design: .rounded))
                             .lineSpacing(6)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .foregroundColor(.textMain)
                             .padding(20)
                             .background(Color.bgSecondary.opacity(0.5))
@@ -649,7 +651,6 @@ struct OnboardingView: View {
                             }
                         }
                     },
-                    onCreateBlankNote: {},
                     enforceVoiceQuota: false,
                     recordTriggerMode: .tapToRecord
                 )

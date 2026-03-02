@@ -345,12 +345,6 @@ final class NoteDetailViewModel: ObservableObject {
         showAddTagAlert = false
     }
 
-    func recordingErrorTitle(from message: String) -> String {
-        message.localizedCaseInsensitiveContains("network")
-            ? String(localized: "Network Error")
-            : String(localized: "Recording Failed")
-    }
-
     func updateTimestampAndDismiss() {
         if isDeleted {
             dismissAction?()

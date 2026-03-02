@@ -5170,6 +5170,9 @@
         }
       }
     },
+    "Create Blank Note" : {
+
+    },
     "Create personalized AI recipes with Pro" : {
       "localizations" : {
         "de" : {
@@ -7837,6 +7840,483 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "網路不可用，轉寫失敗。"
+          }
+        }
+      }
+    },
+    "error.recording.pending.audio_empty" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Es wurde keine verwertbare Sprache erkannt. Audio wurde unter Pending Records gespeichert. Bitte prüfen und erneut versuchen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No clear speech was detected. Audio was saved to Pending Records. Please review and retry."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se detectó audio de voz claro. El audio se guardó en Registros pendientes. Revísalo y vuelve a intentarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune voix exploitable n’a été détectée. L’audio a été enregistré dans les enregistrements en attente. Vérifiez puis réessayez."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "有効な音声が検出できませんでした。音声は保留中のレコードに保存されました。確認して再試行してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "유효한 음성이 감지되지 않았습니다. 오디오는 보류 중인 레코드에 저장되었습니다. 확인 후 다시 시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未检测到有效语音。音频已保存到待处理记录，请检查后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未偵測到有效語音。音訊已儲存到待處理記錄，請檢查後重試。"
+          }
+        }
+      }
+    },
+    "error.recording.pending.auth_required" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sitzung abgelaufen. Audio wurde unter Pending Records gespeichert. Bitte erneut anmelden und dann wiederholen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your session expired. Audio was saved to Pending Records. Please sign in again and retry."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La sesión expiró. El audio se guardó en Registros pendientes. Inicia sesión de nuevo y vuelve a intentarlo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Votre session a expiré. L’audio a été enregistré dans les enregistrements en attente. Reconnectez-vous puis réessayez."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ログイン状態の有効期限が切れました。音声は保留中のレコードに保存されました。再ログイン後に再試行してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "로그인 세션이 만료되었습니다. 오디오는 보류 중인 레코드에 저장되었습니다. 다시 로그인한 뒤 재시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登录状态已失效。音频已保存到待处理记录，请重新登录后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "登入狀態已失效。音訊已儲存到待處理記錄，請重新登入後重試。"
+          }
+        }
+      }
+    },
+    "error.recording.pending.local_file" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Aufnahmedatei konnte nicht gelesen werden. Bitte neu aufnehmen und erneut versuchen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to read the recording file. Please record again and retry."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo leer el archivo de grabación. Graba de nuevo e inténtalo otra vez."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de lire le fichier d’enregistrement. Veuillez enregistrer à nouveau puis réessayer."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "録音ファイルを読み取れませんでした。もう一度録音して再試行してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "녹음 파일을 읽을 수 없습니다. 다시 녹음한 뒤 재시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法读取录音文件，请重新录音后再试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法讀取錄音檔，請重新錄音後再試。"
+          }
+        }
+      }
+    },
+    "error.recording.pending.network" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Netzwerkproblem erkannt. Audio wurde unter Pending Records gespeichert. Bitte bei stabiler Verbindung erneut versuchen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Network issue detected. Audio was saved to Pending Records. Please retry when your connection is stable."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se detectó un problema de red. El audio se guardó en Registros pendientes. Inténtalo de nuevo con una conexión estable."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un problème réseau a été détecté. L’audio a été enregistré dans les enregistrements en attente. Réessayez quand la connexion est stable."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ネットワークに問題があります。音声は保留中のレコードに保存されました。接続が安定してから再試行してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "네트워크 문제가 감지되었습니다. 오디오는 보류 중인 레코드에 저장되었습니다. 연결이 안정되면 다시 시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "网络异常，暂时无法转录。音频已保存到待处理记录，请在网络稳定后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "網路異常，暫時無法轉錄。音訊已儲存到待處理記錄，請在網路穩定後重試。"
+          }
+        }
+      }
+    },
+    "error.recording.pending.quota_reached" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tägliches Sprachlimit erreicht. Audio wurde unter Pending Records gespeichert. Upgrade durchführen oder morgen erneut versuchen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Daily voice limit reached. Audio was saved to Pending Records. Upgrade or retry tomorrow."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Se alcanzó el límite diario de voz. El audio se guardó en Registros pendientes. Actualiza o vuelve a intentarlo mañana."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La limite vocale quotidienne est atteinte. L’audio a été enregistré dans les enregistrements en attente. Mettez à niveau ou réessayez demain."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本日の音声上限に達しました。音声は保留中のレコードに保存されました。アップグレードするか、明日再試行してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "일일 음성 한도에 도달했습니다. 오디오는 보류 중인 레코드에 저장되었습니다. 업그레이드하거나 내일 다시 시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日语音额度已用完。音频已保存到待处理记录，升级后可继续，或明天再试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今日語音額度已用完。音訊已儲存到待處理記錄，升級後可繼續，或明天再試。"
+          }
+        }
+      }
+    },
+    "error.recording.pending.service_configuration" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Transkriptionsdienst ist derzeit nicht korrekt konfiguriert. Audio wurde unter Pending Records gespeichert. Bitte später erneut versuchen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The transcription service is not configured correctly right now. Audio was saved to Pending Records. Please retry later."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El servicio de transcripción no está bien configurado por ahora. El audio se guardó en Registros pendientes. Inténtalo más tarde."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le service de transcription est mal configuré pour le moment. L’audio a été enregistré dans les enregistrements en attente. Réessayez plus tard."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字起こしサービスの設定に問題があります。音声は保留中のレコードに保存されました。後でもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전사 서비스 설정에 문제가 있습니다. 오디오는 보류 중인 레코드에 저장되었습니다. 잠시 후 다시 시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转录服务当前配置异常。音频已保存到待处理记录，请稍后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轉錄服務目前設定異常。音訊已儲存到待處理記錄，請稍後重試。"
+          }
+        }
+      }
+    },
+    "error.recording.pending.service_unavailable" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Der Transkriptionsdienst ist vorübergehend nicht verfügbar. Audio wurde unter Pending Records gespeichert. Bitte später erneut versuchen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The transcription service is temporarily unavailable. Audio was saved to Pending Records. Please retry later."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El servicio de transcripción no está disponible temporalmente. El audio se guardó en Registros pendientes. Inténtalo más tarde."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le service de transcription est temporairement indisponible. L’audio a été enregistré dans les enregistrements en attente. Réessayez plus tard."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字起こしサービスは一時的に利用できません。音声は保留中のレコードに保存されました。後でもう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전사 서비스가 일시적으로 사용할 수 없습니다. 오디오는 보류 중인 레코드에 저장되었습니다. 나중에 다시 시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转录服务暂时不可用。音频已保存到待处理记录，请稍后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轉錄服務暫時不可用。音訊已儲存到待處理記錄，請稍後重試。"
+          }
+        }
+      }
+    },
+    "error.recording.pending.timeout" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transkription hat zu lange gedauert. Audio wurde unter Pending Records gespeichert. Bitte später erneut versuchen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcription timed out. Audio was saved to Pending Records. Please retry shortly."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La transcripción agotó el tiempo. El audio se guardó en Registros pendientes. Inténtalo de nuevo en unos minutos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La transcription a dépassé le délai. L’audio a été enregistré dans les enregistrements en attente. Réessayez dans quelques instants."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字起こしがタイムアウトしました。音声は保留中のレコードに保存されました。しばらくしてから再試行してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전사가 시간 초과되었습니다. 오디오는 보류 중인 레코드에 저장되었습니다. 잠시 후 다시 시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转录超时。音频已保存到待处理记录，请稍后重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轉錄逾時。音訊已儲存到待處理記錄，請稍後重試。"
+          }
+        }
+      }
+    },
+    "error.recording.pending.unknown" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transkription fehlgeschlagen. Audio wurde unter Pending Records gespeichert. Bitte erneut versuchen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transcription failed. Audio was saved to Pending Records. Please retry."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La transcripción falló. El audio se guardó en Registros pendientes. Inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La transcription a échoué. L’audio a été enregistré dans les enregistrements en attente. Veuillez réessayer."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文字起こしに失敗しました。音声は保留中のレコードに保存されました。再試行してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "전사에 실패했습니다. 오디오는 보류 중인 레코드에 저장되었습니다. 다시 시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "转录失败。音频已保存到待处理记录，请重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "轉錄失敗。音訊已儲存到待處理記錄，請重試。"
           }
         }
       }
@@ -12759,6 +13239,7 @@
       }
     },
     "Network Error" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -15738,6 +16219,7 @@
       }
     },
     "Recording Failed" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -20391,6 +20873,7 @@
       }
     },
     "Transcription failed. Audio was saved to Pending Records." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

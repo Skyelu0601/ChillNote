@@ -47,9 +47,13 @@ extension HomeView {
         guard !events.isEmpty else { return }
 
         for event in events {
-            guard let noteID = pendingVoiceNoteByPath[event.fileURL.path] else {
+            let recoveredNoteID = pendingVoiceNoteByPath[event.fileURL.path]
+                ?? RecordingFileManager.shared.noteID(for: event.fileURL)
+            guard let noteID = recoveredNoteID else {
+                speechRecognizer.consumeCompletedTranscription(eventID: event.id)
                 continue
             }
+            pendingVoiceNoteByPath[event.fileURL.path] = noteID
 
             speechRecognizer.consumeCompletedTranscription(eventID: event.id)
 
@@ -73,10 +77,12 @@ extension HomeView {
                     persistAndSync()
                 }
 
-            case .failure(let message):
+            case .failure(let reason, let message):
                 print("⚠️ Home voice transcription failed: \(message)")
-                let guidance = String(localized: "Transcription failed. Audio was saved to Pending Records.")
-                VoiceProcessingService.shared.processingStates[noteID] = .failed(message: guidance)
+                let userFacing = reason.pendingRecoveryMessage
+                VoiceProcessingService.shared.processingStates[noteID] = .failed(message: userFacing)
+                latestTranscriptionFailureMessage = userFacing
+                showTranscriptionFailureAlert = true
                 Task { @MainActor in
                     await checkForPendingRecordingsAsync()
                 }

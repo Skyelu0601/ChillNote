@@ -17,6 +17,9 @@ struct SidebarView: View {
     var onSettingsTap: (() -> Void)?
     var onPendingRecordingsTap: (() -> Void)?
     
+    private let sidebarCloseMinTranslation: CGFloat = 30
+    private let sidebarCloseHorizontalBias: CGFloat = 12
+    
     // Filter tags by current user
     private var allTags: [Tag] {
         guard let userId = authService.currentUserId else { return [] }
@@ -150,10 +153,36 @@ struct SidebarView: View {
             }
         }
         .ignoresSafeArea(.all, edges: .vertical)
+        .simultaneousGesture(sidebarCloseGesture)
         .zIndex(1000)
     }
     
     // MARK: - Helper Methods
+    
+    private var sidebarCloseGesture: some Gesture {
+        DragGesture(minimumDistance: 14)
+            .onEnded { value in
+                guard shouldCloseSidebar(from: value) else { return }
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                    isPresented = false
+                }
+            }
+    }
+    
+    private func shouldCloseSidebar(from value: DragGesture.Value) -> Bool {
+        guard isPresented else { return false }
+        
+        let horizontal = value.translation.width
+        let vertical = abs(value.translation.height)
+        let predictedHorizontal = value.predictedEndTranslation.width
+        
+        let hasEnoughLeftDistance =
+            horizontal <= -sidebarCloseMinTranslation ||
+            predictedHorizontal <= -sidebarCloseMinTranslation * 1.3
+        let isMostlyHorizontal = abs(horizontal) > vertical + sidebarCloseHorizontalBias
+        
+        return hasEnoughLeftDistance && isMostlyHorizontal
+    }
     
     private func handleRootDrop(items: [String]) -> Bool {
         guard let droppedIdString = items.first,

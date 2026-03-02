@@ -160,7 +160,7 @@ struct PendingRecordingsView: View {
         .onDisappear {
             playbackController.stop()
         }
-        .alert("Transcription Failed", isPresented: $showAlert) {
+        .alert(VoiceErrorPresentation.transcriptionFailedTitle, isPresented: $showAlert) {
             Button("OK", role: .cancel) { }
         } message: {
             Text(alertMessage ?? "An unknown error occurred.")
@@ -343,7 +343,7 @@ struct PendingRecordingsView: View {
         do {
             try playbackController.togglePlayback(fileURL: recording.fileURL)
         } catch {
-            alertMessage = error.localizedDescription
+            alertMessage = VoiceErrorPresentation.userMessage(for: error.localizedDescription)
             showAlert = true
         }
     }
@@ -440,7 +440,7 @@ struct PendingRecordingsView: View {
                 }
             } catch {
                 await MainActor.run {
-                    alertMessage = error.localizedDescription
+                    alertMessage = VoiceErrorPresentation.userMessage(for: error.localizedDescription)
                     showAlert = true
                     withAnimation {
                         rowSaveStates[path] = .idle

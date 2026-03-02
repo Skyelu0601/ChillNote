@@ -389,6 +389,7 @@ struct HomeBodyView: View {
                 visibleNotesCount: state.cachedVisibleNotes.count,
                 hasPendingRecordings: state.hasPendingRecordings,
                 onToggleSidebar: { dispatch(.toggleSidebar) },
+                onCreateBlankNote: { dispatch(.createBlankNote) },
                 onEnterSelectionMode: { dispatch(.enterSelectionMode) },
                 onToggleSearch: { dispatch(.toggleSearch) },
                 onExitSelectionMode: { dispatch(.exitSelectionMode) },
@@ -473,9 +474,7 @@ struct HomeBodyView: View {
                     onConfirmVoice: {
                         dispatch(.confirmVoice)
                     },
-                    onCreateBlankNote: {
-                        dispatch(.createBlankNote)
-                    }
+                    recordTriggerMode: .tapToRecord
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }

@@ -6,7 +6,6 @@ struct RecordingOverlayView: View {
     var onDismiss: () -> Void
     var onSave: (String) async -> Void
     @State private var isProcessing = false
-    @State private var bannerData: BannerData?
     @State private var startTime: Date?
     @State private var elapsed: TimeInterval = 0
     @State private var didTriggerStartHaptic = false
@@ -207,11 +206,11 @@ struct RecordingOverlayView: View {
                     finalizeSave()
                 }
             case .error(let message):
-                if message.localizedCaseInsensitiveContains("daily free voice limit reached") {
+                if message.localizedCaseInsensitiveContains("daily free voice limit reached")
+                    || message.localizedCaseInsensitiveContains("daily voice limit reached") {
                     upgradeTitle = AppErrorCode.recordingDailyLimitReached.message
                     showUpgradeSheet = true
                 } else {
-                    bannerData = BannerData(message: displayErrorMessage(message), style: .error)
                     notificationHaptic(type: .error)
                 }
                 
@@ -247,7 +246,6 @@ struct RecordingOverlayView: View {
                 speechRecognizer.shouldStop = false
             }
         }
-        .banner(data: $bannerData)
         .sheet(isPresented: $showUpgradeSheet) {
             UpgradeBottomSheet(
                 title: upgradeTitle,
@@ -340,16 +338,7 @@ struct RecordingOverlayView: View {
     }
 
     private func displayErrorMessage(_ message: String) -> String {
-        if message.lowercased().contains("network error") {
-            return AppErrorCode.recordingNetworkUnavailable.message
-        }
-        if message.lowercased().contains("timed out") || message.lowercased().contains("timeout") {
-            return AppErrorCode.recordingTimeout.message
-        }
-        if message.lowercased().contains("transcription failed") {
-            return AppErrorCode.recordingFailed.message
-        }
-        return message
+        VoiceErrorPresentation.userMessage(for: message)
     }
 
     private func impactHaptic(style: UIImpactFeedbackGenerator.FeedbackStyle) {

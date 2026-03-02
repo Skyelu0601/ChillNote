@@ -14,24 +14,20 @@ struct ChatInputBar: View {
     var onSendText: () -> Void
     var onCancelVoice: () -> Void
     var onConfirmVoice: () -> Void
-    var onCreateBlankNote: () -> Void
     var enforceVoiceQuota: Bool = true
-    var recordTriggerMode: RecordTriggerMode = .releaseBased
+    var recordTriggerMode: RecordTriggerMode = .tapToRecord
 
     @FocusState private var isTextFocused: Bool
     @State private var showTextInput = false
     @State private var isPressed = false
-    @State private var isLongPressing = false
     @State private var isBreathing = false
     @State private var waveformHeights: [CGFloat] = Array(repeating: 6, count: 5)
-    @State private var pressStartTime: Date?
 
     @State private var elapsed: TimeInterval = 0
     @State private var didTriggerLimit = false
     @State private var showUpgradeSheet = false
     @State private var showSubscription = false
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    private let longPressThreshold: TimeInterval = 0.5
 
     private var timeText: String {
         let formatter = DateComponentsFormatter()
@@ -187,10 +183,9 @@ struct ChatInputBar: View {
                 .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
                 .overlay(
                     HStack(spacing: 8) {
-                        Image(systemName: isLongPressing ? "plus" : "mic.fill")
+                        Image(systemName: "mic.fill")
                             .font(.system(size: 24, weight: .semibold))
-                            .foregroundColor(isLongPressing ? .accentPrimary : .textMain)
-                            .contentTransition(.symbolEffect(.replace))
+                            .foregroundColor(.textMain)
                     }
                 )
                 .scaleEffect(isPressed ? 0.95 : 1.0)
@@ -288,32 +283,17 @@ struct ChatInputBar: View {
         elapsed = Date().timeIntervalSince(startTime)
     }
 
-    private func handlePressChanged(_ value: DragGesture.Value) {
-        if pressStartTime == nil {
-            pressStartTime = value.time
-        }
-
-        let duration = value.time.timeIntervalSince(pressStartTime ?? value.time)
+    private func handlePressChanged(_: DragGesture.Value) {
         withAnimation(.spring(response: 0.3)) {
             isPressed = true
-            isLongPressing = duration >= longPressThreshold
         }
     }
 
-    private func handlePressEnded(_ value: DragGesture.Value) {
-        let duration = value.time.timeIntervalSince(pressStartTime ?? value.time)
-        let isLongPress = duration >= longPressThreshold
+    private func handlePressEnded(_: DragGesture.Value) {
         resetPressState()
-
-        if isLongPress {
-            let heavyImpact = UIImpactFeedbackGenerator(style: .heavy)
-            heavyImpact.impactOccurred()
-            onCreateBlankNote()
-        } else {
-            let lightImpact = UIImpactFeedbackGenerator(style: .light)
-            lightImpact.impactOccurred()
-            tryStartRecordingWithQuotaCheck()
-        }
+        let lightImpact = UIImpactFeedbackGenerator(style: .light)
+        lightImpact.impactOccurred()
+        tryStartRecordingWithQuotaCheck()
     }
 
     private func handleTapRecord() {
@@ -322,7 +302,6 @@ struct ChatInputBar: View {
         lightImpact.impactOccurred()
         withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
             isPressed = true
-            isLongPressing = false
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
             withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
@@ -333,10 +312,8 @@ struct ChatInputBar: View {
     }
 
     private func resetPressState() {
-        pressStartTime = nil
         withAnimation {
             isPressed = false
-            isLongPressing = false
         }
     }
 
@@ -397,8 +374,7 @@ struct ChatInputBar_Previews: PreviewProvider {
                 speechRecognizer: SpeechRecognizer(),
                 onSendText: {},
                 onCancelVoice: {},
-                onConfirmVoice: {},
-                onCreateBlankNote: {}
+                onConfirmVoice: {}
             )
         }
         .background(Color.bgPrimary)
