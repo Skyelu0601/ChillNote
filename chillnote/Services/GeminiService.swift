@@ -156,7 +156,6 @@ struct GeminiService {
     /// Voice note: STT only (no intent optimization, no rewriting).
     func transcribeAudio(
         audioFileURL: URL,
-        locale: String? = nil,
         countUsage: Bool = true
     ) async throws -> String {
         let serverURL = AppConfig.backendBaseURL + "/ai/voice-note"
@@ -175,15 +174,6 @@ struct GeminiService {
         let ext = audioFileURL.pathExtension.lowercased()
         let mimeType = ext == "wav" ? "audio/wav" : (ext == "m4a" ? "audio/m4a" : (ext == "mp3" ? "audio/mp3" : "application/octet-stream"))
         let transcriptionPreferences = VoiceTranscriptionPreferences.load()
-        let effectiveLocale: String? = {
-            if let locale {
-                let trimmed = locale.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmed.isEmpty { return trimmed }
-            }
-            let preferred = Locale.preferredLanguages.first?.trimmingCharacters(in: .whitespacesAndNewlines)
-            if let preferred, !preferred.isEmpty { return preferred }
-            return nil
-        }()
 
         var requestBody: [String: Any] = [
             "audioBase64": base64Audio,
@@ -193,9 +183,6 @@ struct GeminiService {
         ]
         if let preferredLanguageHint = transcriptionPreferences.preferredLanguageHint {
             requestBody["spokenLanguageHint"] = preferredLanguageHint
-        }
-        if let effectiveLocale {
-            requestBody["locale"] = effectiveLocale
         }
 
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
@@ -214,8 +201,6 @@ struct GeminiService {
                 let languageHintLine: String
                 if let preferredLanguageHint = transcriptionPreferences.preferredLanguageHint {
                     languageHintLine = "Preferred primary language hint: \(preferredLanguageHint). Keep code-switching exactly as spoken."
-                } else if let effectiveLocale {
-                    languageHintLine = "Locale hint: \(effectiveLocale)."
                 } else {
                     languageHintLine = ""
                 }
@@ -287,8 +272,8 @@ struct GeminiService {
     }
 
     /// Backward compatible alias. Intentionally returns STT-only text now.
-    func transcribeAndPolish(audioFileURL: URL, locale: String? = nil) async throws -> String {
-        try await transcribeAudio(audioFileURL: audioFileURL, locale: locale)
+    func transcribeAndPolish(audioFileURL: URL) async throws -> String {
+        try await transcribeAudio(audioFileURL: audioFileURL)
     }
     
     /// Simple chat method for text-based AI interactions

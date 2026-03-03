@@ -40,6 +40,10 @@ struct LoginView: View {
                         .font(.system(size: 16, weight: .regular))
                         .kerning(1.2)
                         .foregroundColor(.textSub.opacity(0.9))
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.85)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
                 }
                 .padding(.bottom, 20)
                 

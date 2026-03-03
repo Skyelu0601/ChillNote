@@ -73,7 +73,8 @@ class VoiceProcessingService: ObservableObject {
         \(trimmed)
         """
 
-        let languageRule = LanguageDetection.languagePreservationRule(for: trimmed)
+        let voicePreferences = VoiceTranscriptionPreferences.load()
+        let languageRule = languageFidelityRule(hint: voicePreferences.preferredLanguageHint)
 
         let systemInstruction = """
         You are a voice-to-text optimizer called "chillnote". Your job is to transform raw speech transcripts into polished, ready-to-use notes.
@@ -81,7 +82,6 @@ class VoiceProcessingService: ObservableObject {
         STRICT RULES:
         - PRIMARY OBJECTIVE: Preserve the user's intent, meaning, and factual content exactly.
         \(languageRule)
-        - NO TRANSLATION unless the user explicitly asks for translation.
         - ALLOWED EDITS ONLY:
           - Remove obvious filler words and accidental repetitions.
           - Resolve explicit self-corrections to the user's final intended wording.
@@ -141,6 +141,30 @@ class VoiceProcessingService: ObservableObject {
 private extension VoiceProcessingService {
     func isMinimalEditInput(_ text: String) -> Bool {
         text.count < 30
+    }
+
+    /// Builds a strict language-fidelity rule for the polish stage.
+    /// Uses a universal "preserve all languages" approach (covers any code-switching combination)
+    /// and optionally adds context about the user's primary spoken language if they've configured one.
+    func languageFidelityRule(hint: String?) -> String {
+        let primaryContext: String
+        if let hint, !hint.isEmpty {
+            primaryContext = """
+              - Context: the user's primary spoken language is \(hint). Any words or phrases in other languages are intentional code-switching, not transcription errors—preserve them exactly as they appear.
+            """
+        } else {
+            primaryContext = ""
+        }
+
+        return """
+        - LANGUAGE FIDELITY (STRICT):
+          - Preserve every word and phrase in the exact language it appears in.
+          - If the text contains multiple languages (code-switching), keep each segment in its original language. Do NOT normalize to a single language.
+          - Do NOT translate any word, phrase, or segment—this includes replacing foreign words with local equivalents (e.g., do NOT replace "meeting" → "会议", "deadline" → "截止日期", or any similar substitution).
+          - Keep proper nouns, brand names, technical terms, and idiomatic expressions in the language they appear in.
+          - Do NOT translate unless the user explicitly requests a translation in the transcript itself.
+        \(primaryContext)
+        """
     }
 
     func toneTargetInstruction(for text: String) -> String {

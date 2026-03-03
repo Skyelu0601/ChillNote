@@ -281,7 +281,7 @@ struct SettingsView: View {
 
             Button(action: { showVoiceLanguageSheet = true }) {
                 SettingItem(
-                    icon: "waveform.and.mic",
+                    icon: "globe",
                     iconColor: .accentPrimary,
                     label: "Voice Language",
                     value: voiceTranscriptionLanguageSummary
@@ -419,7 +419,7 @@ struct SettingItem: View {
     }
 }
 
-private struct VoiceLanguageOption: Identifiable {
+struct VoiceLanguageOption: Identifiable {
     let code: String
     let name: String
 
@@ -502,7 +502,7 @@ private struct VoiceLanguageOption: Identifiable {
     }
 }
 
-private struct VoiceLanguagePreferenceSheet: View {
+struct VoiceLanguagePreferenceSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var modeRawValue: String
     @Binding var preferredLanguageHint: String

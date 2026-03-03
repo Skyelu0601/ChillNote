@@ -81,9 +81,14 @@ struct OnboardingView: View {
     @State private var inputText: String = ""
     @State private var isVoiceMode: Bool = true
     
+    // Voice Language Selection (Onboarding Step 1)
+    @AppStorage(VoiceTranscriptionPreferences.modeStorageKey) private var voiceLanguageModeRawValue = VoiceTranscriptionLanguageMode.auto.rawValue
+    @AppStorage(VoiceTranscriptionPreferences.hintStorageKey) private var voiceLanguageHint = ""
+    @State private var languageSearchText = ""
+    @FocusState private var isLanguageSearchFocused: Bool
+    
     // Voice / Vibe Phase State
     @State private var voicePhaseState: VoicePhase = .idle // idle -> transcribing -> refining -> done
-    @State private var rawTranscript: String = ""
     @State private var processedResult: String = ""
     @State private var processingError: String?
     
@@ -93,6 +98,10 @@ struct OnboardingView: View {
 
     private var onboardingProcessingStage: VoiceProcessingStage {
         voicePhaseState == .transcribing ? .transcribing : .refining
+    }
+
+    private var isVoiceProcessingPhase: Bool {
+        voicePhaseState == .transcribing || voicePhaseState == .refining
     }
     
     // Recipes Phase State
@@ -150,11 +159,31 @@ struct OnboardingView: View {
         let color: Color
     }
     
-    private let demoNotes: [DemoNote] = [
-        DemoNote(title: "Memory.note", content: "Ask helps you recall details instantly. No more digging through folders.", offset: CGSize(width: -100, height: -80), rotation: -6, color: .blue),
-        DemoNote(title: "Connection.note", content: "Connects dots across different topics to synthesize new insights.", offset: CGSize(width: 100, height: -50), rotation: 4, color: .purple),
-        DemoNote(title: "Creation.note", content: "Don't let answers disappear—save them as new notes instantly.", offset: CGSize(width: 0, height: 80), rotation: -2, color: .orange)
-    ]
+    private var demoNotes: [DemoNote] {
+        [
+            DemoNote(
+                title: String(localized: "onboarding.ask.note.context.title"),
+                content: String(localized: "onboarding.ask.note.context.content"),
+                offset: CGSize(width: -100, height: -80),
+                rotation: -6,
+                color: .blue
+            ),
+            DemoNote(
+                title: String(localized: "onboarding.ask.note.source.title"),
+                content: String(localized: "onboarding.ask.note.source.content"),
+                offset: CGSize(width: 100, height: -50),
+                rotation: 4,
+                color: .purple
+            ),
+            DemoNote(
+                title: String(localized: "onboarding.ask.note.flow.title"),
+                content: String(localized: "onboarding.ask.note.flow.content"),
+                offset: CGSize(width: 0, height: 80),
+                rotation: -2,
+                color: .orange
+            )
+        ]
+    }
     
     enum AskPhase {
         case idle       // Showing floating notes
@@ -178,7 +207,7 @@ struct OnboardingView: View {
             
             VStack(spacing: 0) {
                 topBar
-                    .opacity(currentPage == 6 ? 0 : 1)
+                    .opacity(currentPage == 5 ? 0 : 1)
                 
                 if isSearchVisible {
                     searchBar
@@ -188,14 +217,15 @@ struct OnboardingView: View {
 
                 TabView(selection: $currentPage) {
                     welcomePage.tag(0)
-                    voiceDemoPage.tag(1)
-                    recipesIntroPage.tag(2)
-                    grammarDemoPage.tag(3)
-                    finalStepView.tag(4)
+                    voiceLanguagePage.tag(1)
+                    voiceDemoPage.tag(2)
+                    recipesIntroPage.tag(3)
+                    grammarDemoPage.tag(4)
+                    finalStepView.tag(5)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 
-                if currentPage < 4 {
+                if currentPage < 5 {
                     pageIndicator
                 }
             }
@@ -227,9 +257,9 @@ struct OnboardingView: View {
             handlePageChange(to: newValue)
         }
         .onChange(of: speechRecognizer.permissionGranted) { _, granted in
-            guard granted, currentPage == 1 else { return }
+            guard granted, currentPage == 2 else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                guard currentPage == 1 else { return }
+                guard currentPage == 2 else { return }
                 speechRecognizer.prewarmRecordingSession()
             }
         }
@@ -246,24 +276,26 @@ struct OnboardingView: View {
         showRecipesBar = false
         showKoalaHint = false
         isFixGrammarPulsing = false
+        dismissLanguageSearchKeyboard()
+        languageSearchText = "" // Reset language search when leaving page
 
-        if page == 1 {
+        if page == 2 { // Voice Demo (was 1)
             speechRecognizer.checkPermissions()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                guard currentPage == 1, speechRecognizer.permissionGranted else { return }
+                guard currentPage == 2, speechRecognizer.permissionGranted else { return }
                 speechRecognizer.prewarmRecordingSession()
             }
         }
         
-        if page == 3 { // Recipes Demo
+        if page == 4 { // Recipes Demo (was 3)
             // Don't show bar immediately. Guide user to Koala.
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 withAnimation {
                     showKoalaHint = true
                 }
             }
-        } else if page == 4 { // Final
-            //  No specific setup needed for new Ask flow, 
+        } else if page == 5 { // Final (was 4)
+            //  No specific setup needed for new Ask flow,
             //  as it starts in .idle state driven by user interaction.
         }
     }
@@ -273,7 +305,6 @@ struct OnboardingView: View {
         
         // Phase 1: Transcribing
         withAnimation { voicePhaseState = .transcribing }
-        rawTranscript = text
         
         // Phase 2: Refining (Call real AI)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
@@ -317,7 +348,6 @@ struct OnboardingView: View {
     
     private func continueVoiceProcessing(text: String) {
         speechRecognizer.completeRecording()
-        rawTranscript = text
         
         // Phase 2: Refining (Call real AI)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
@@ -363,10 +393,11 @@ struct OnboardingView: View {
     
     private var pageIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(0..<4, id: \.self) { index in
-                Circle()
+            ForEach(0..<5, id: \.self) { index in
+                Capsule()
                     .fill(currentPage == index ? Color.accentPrimary : Color.accentPrimary.opacity(0.2))
-                    .frame(width: 8, height: 8)
+                    .frame(width: currentPage == index ? 20 : 8, height: 8)
+                    .animation(.spring(response: 0.4, dampingFraction: 0.7), value: currentPage)
             }
         }
         .padding(.bottom, 20)
@@ -378,14 +409,14 @@ struct OnboardingView: View {
             Button("Skip") { completeOnboarding() }
             .font(.bodyMedium)
             .foregroundColor(.textSub)
-            .opacity(currentPage == 4 ? 0 : 1)
+            .opacity(currentPage == 5 ? 0 : 1)
             
             Spacer()
             
-            if currentPage == 3 || currentPage == 4 {
+            if currentPage == 4 || currentPage == 5 {
                 Button {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                        if currentPage == 3 { 
+                        if currentPage == 4 { 
                             showRecipesBar = true
                             showKoalaHint = false
                             isRecipesButtonPulsing = true
@@ -451,10 +482,181 @@ struct OnboardingView: View {
         }
     }
     
+    // MARK: - Phase 1: Voice Language Selection
+    private var voiceLanguagePage: some View {
+        VStack(spacing: 0) {
+            // Header
+            VStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color.accentPrimary.opacity(0.1))
+                        .frame(width: 80, height: 80)
+                    Image(systemName: "globe")
+                        .font(.system(size: 32))
+                        .foregroundColor(.accentPrimary)
+                }
+                .padding(.top, 20)
+                
+                    VStack(spacing: 6) {
+                        Text("Which language do\nyou usually speak?")
+                            .font(.system(size: 28, weight: .bold, design: .rounded))
+                            .foregroundColor(.textMain)
+                            .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.85)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .layoutPriority(1)
+                }
+            }
+            .padding(.bottom, 16)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                dismissLanguageSearchKeyboard()
+            }
+            
+            // Search Bar
+            HStack(spacing: 10) {
+                Image(systemName: "magnifyingglass")
+                    .foregroundColor(.textSub)
+                    .font(.system(size: 15))
+                TextField("Search language...", text: $languageSearchText)
+                    .textInputAutocapitalization(.never)
+                    .disableAutocorrection(true)
+                    .font(.bodyMedium)
+                    .focused($isLanguageSearchFocused)
+                    .submitLabel(.search)
+                if !languageSearchText.isEmpty {
+                    Button { languageSearchText = "" } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .foregroundColor(.textSub)
+                    }
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .background(Color.bgSecondary.opacity(0.7))
+            .cornerRadius(12)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 8)
+            
+            // Language List
+            let filteredLangs = voiceLanguageListFiltered
+            ScrollViewReader { proxy in
+                ScrollView {
+                    LazyVStack(spacing: 0) {
+                        ForEach(filteredLangs) { option in
+                            let isSelected = voiceLanguageHint.lowercased() == option.code.lowercased()
+                            Button {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    voiceLanguageHint = option.code
+                                    voiceLanguageModeRawValue = VoiceTranscriptionLanguageMode.prefer.rawValue
+                                }
+                                dismissLanguageSearchKeyboard()
+                            } label: {
+                                HStack(spacing: 14) {
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(option.name)
+                                            .font(.bodyMedium)
+                                            .foregroundColor(isSelected ? .accentPrimary : .textMain)
+                                        Text(option.code)
+                                            .font(.caption)
+                                            .foregroundColor(.textSub)
+                                    }
+                                    Spacer()
+                                    if isSelected {
+                                        Image(systemName: "checkmark.circle.fill")
+                                            .foregroundColor(.accentPrimary)
+                                            .font(.system(size: 20))
+                                            .transition(.scale.combined(with: .opacity))
+                                    }
+                                }
+                                .padding(.horizontal, 24)
+                                .padding(.vertical, 12)
+                                .background(isSelected ? Color.accentPrimary.opacity(0.06) : Color.clear)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                            .id(option.code)
+                            
+                            Divider().padding(.leading, 24)
+                        }
+                    }
+                }
+                .scrollDismissesKeyboard(.interactively)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    dismissLanguageSearchKeyboard()
+                }
+                .onAppear {
+                    // Auto-select based on system language if not already chosen
+                    if voiceLanguageHint.isEmpty {
+                        applySystemLanguageDefault()
+                    }
+                    // Scroll to current selection
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        let target = voiceLanguageHint.isEmpty ? "en" : voiceLanguageHint
+                        withAnimation { proxy.scrollTo(target, anchor: .center) }
+                    }
+                }
+            }
+            
+            // Continue Button
+            VStack(spacing: 0) {
+                Divider()
+                primaryButton(
+                    title: voiceLanguageHint.isEmpty ? "Skip" : "Continue",
+                    icon: voiceLanguageHint.isEmpty ? "arrow.right" : "arrow.right"
+                ) {
+                    withAnimation { currentPage = 2 }
+                }
+                .padding(.horizontal, 32)
+                .padding(.vertical, 16)
+            }
+        }
+    }
+    
+    private var voiceLanguageListFiltered: [VoiceLanguageOption] {
+        let trimmed = languageSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return VoiceLanguageOption.all }
+        return VoiceLanguageOption.all.filter {
+            $0.code.localizedCaseInsensitiveContains(trimmed) ||
+            $0.name.localizedCaseInsensitiveContains(trimmed)
+        }
+    }
+    
+    private func applySystemLanguageDefault() {
+        // Pick the best matching option from system preferred languages
+        for preferredLang in Locale.preferredLanguages {
+            let normalized = preferredLang.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Exact match first
+            if VoiceLanguageOption.all.contains(where: { $0.code.lowercased() == normalized.lowercased() }) {
+                voiceLanguageHint = normalized
+                voiceLanguageModeRawValue = VoiceTranscriptionLanguageMode.prefer.rawValue
+                return
+            }
+            // Prefix match (e.g. "zh-Hans-CN" -> "zh-Hans")
+            if let match = VoiceLanguageOption.all.first(where: {
+                normalized.lowercased().hasPrefix($0.code.lowercased())
+            }) {
+                voiceLanguageHint = match.code
+                voiceLanguageModeRawValue = VoiceTranscriptionLanguageMode.prefer.rawValue
+                return
+            }
+        }
+    }
+
+    private func dismissLanguageSearchKeyboard() {
+        isLanguageSearchFocused = false
+    }
+    
     // MARK: - Phase 1: Voice Demo (Merged with Intro)
     private var voiceDemoPage: some View {
         VStack {
-            Spacer(minLength: 12)
+            if isVoiceProcessingPhase {
+                Color.clear.frame(height: 12)
+            } else {
+                Spacer(minLength: 12)
+            }
             
             VStack(spacing: 24) {
                 if voicePhaseState == .idle {
@@ -478,6 +680,10 @@ struct OnboardingView: View {
                             .font(.system(size: 40, weight: .bold, design: .rounded))
                             .foregroundColor(.textMain)
                             .multilineTextAlignment(.center)
+                            .lineLimit(3)
+                            .minimumScaleFactor(0.75)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .layoutPriority(1)
                     }
                     
                     // Initial Prompt
@@ -495,121 +701,114 @@ struct OnboardingView: View {
                             .cornerRadius(20)
                     }
                     .modifier(OnboardingCardModifier())
-                    
-                } else if voicePhaseState == .transcribing || voicePhaseState == .refining {
-                    // Processing State
-                    VStack(alignment: .leading, spacing: 16) {
-                        VoiceProcessingWorkflowView(
-                            currentStage: onboardingProcessingStage,
-                            style: .detailed,
-                            showPersistentHint: true
-                        )
-                        
-                        // Show raw transcript during processing (or placeholder)
-                        if !rawTranscript.isEmpty {
-                            Text(rawTranscript)
-                                .font(.system(size: 18, weight: .medium, design: .rounded))
-                                .lineSpacing(6)
-                                .foregroundColor(voicePhaseState == .refining ? .textSub.opacity(0.5) : .textMain)
-                        } else {
-                            Text("Processing audio...")
-                                .font(.system(size: 18, weight: .medium, design: .rounded))
-                                .foregroundColor(.textSub.opacity(0.5))
-                                .italic()
+
+                } else {
+                    ZStack {
+                        if voicePhaseState == .transcribing || voicePhaseState == .refining {
+                            // Processing State
+                            VStack(alignment: .leading, spacing: 16) {
+                                VoiceProcessingWorkflowView(
+                                    currentStage: onboardingProcessingStage,
+                                    style: .detailed,
+                                    showPersistentHint: false
+                                )
+                            }
+                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                        }
+
+                        if voicePhaseState == .done {
+                            // Done - Show AI Result
+                            VStack(alignment: .leading, spacing: 16) {
+                                HStack {
+                                    Text("✨ Your Note")
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.textMain)
+                                    Spacer()
+                                }
+
+                                Divider().background(Color.black.opacity(0.05))
+
+                                // Display AI processed result with proper markdown rendering
+                                JustifiedMarkdownText(
+                                    content: processedResult,
+                                    font: .systemFont(ofSize: 17),
+                                    textColor: UIColor(Color.textMain)
+                                )
+                                .frame(minHeight: 120)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+
+                                if let error = processingError {
+                                    Text(
+                                        String(
+                                            format: String(localized: "⚠️ %@"),
+                                            error
+                                        )
+                                    )
+                                        .font(.caption)
+                                        .foregroundColor(.orange)
+                                }
+                            }
+                            .modifier(OnboardingCardModifier())
+                            .transition(.opacity.combined(with: .scale(scale: 1.01)))
                         }
                     }
-                    .padding(24)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(.ultraThinMaterial)
-                    .cornerRadius(24)
-                    
-                } else {
-                    // Done - Show AI Result
-                    VStack(spacing: 24) {
+                    .animation(.easeInOut(duration: 0.3), value: voicePhaseState)
+
+                    if voicePhaseState == .done && showVoiceIntents {
                         VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                Text("✨ Your Note")
-                                    .font(.headline)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.textMain)
-                                Spacer()
+                            Text("You can also say...")
+                                .font(.headline)
+                                .foregroundColor(.textSub)
+                            
+                            VStack(spacing: 12) {
+                                HStack {
+                                    Image(systemName: "envelope")
+                                        .foregroundColor(.accentPrimary)
+                                    Text("Draft an email to my boss")
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(Color.white.opacity(0.6))
+                                .cornerRadius(12)
+                                
+                                HStack {
+                                    Image(systemName: "bird")
+                                        .foregroundColor(.accentPrimary)
+                                    Text("Tweet about this launch")
+                                    Spacer()
+                                }
+                                .padding()
+                                .background(Color.white.opacity(0.6))
+                                .cornerRadius(12)
                             }
+                            .font(.subheadline)
+                            .foregroundColor(.textMain)
                             
-                            Divider().background(Color.black.opacity(0.05))
-                            
-                            // Display AI processed result with proper markdown rendering
-                            JustifiedMarkdownText(
-                                content: processedResult,
-                                font: .systemFont(ofSize: 17),
-                                textColor: UIColor(Color.textMain)
-                            )
-                            .frame(minHeight: 120)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            
-                            if let error = processingError {
-                                Text(
-                                    String(
-                                        format: String(localized: "⚠️ %@"),
-                                        error
-                                    )
-                                )
-                                    .font(.caption)
-                                    .foregroundColor(.orange)
+                            Button {
+                                withAnimation { currentPage = 3 }
+                            } label: {
+                                HStack {
+                                    Text("Next Steps")
+                                    Image(systemName: "arrow.right")
+                                }
+                                .font(.headline)
+                                .foregroundColor(.accentPrimary)
+                                .padding(.top, 10)
+                                .frame(maxWidth: .infinity, alignment: .center)
                             }
                         }
-                        .modifier(OnboardingCardModifier())
-                        
-                        if showVoiceIntents {
-                            VStack(alignment: .leading, spacing: 16) {
-                                Text("You can also say...")
-                                    .font(.headline)
-                                    .foregroundColor(.textSub)
-                                
-                                VStack(spacing: 12) {
-                                    HStack {
-                                        Image(systemName: "envelope")
-                                            .foregroundColor(.accentPrimary)
-                                        Text("Draft an email to my boss")
-                                        Spacer()
-                                    }
-                                    .padding()
-                                    .background(Color.white.opacity(0.6))
-                                    .cornerRadius(12)
-                                    
-                                    HStack {
-                                        Image(systemName: "bird")
-                                            .foregroundColor(.accentPrimary)
-                                        Text("Tweet about this launch")
-                                        Spacer()
-                                    }
-                                    .padding()
-                                    .background(Color.white.opacity(0.6))
-                                    .cornerRadius(12)
-                                }
-                                .font(.subheadline)
-                                .foregroundColor(.textMain)
-                                
-                                Button {
-                                    withAnimation { currentPage = 2 }
-                                } label: {
-                                    HStack {
-                                        Text("Next Steps")
-                                        Image(systemName: "arrow.right")
-                                    }
-                                    .font(.headline)
-                                    .foregroundColor(.accentPrimary)
-                                    .padding(.top, 10)
-                                    .frame(maxWidth: .infinity, alignment: .center)
-                                }
-                            }
-                            .transition(.move(edge: .bottom).combined(with: .opacity))
-                        }
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
                     }
                 }
             }
             .padding(.horizontal, 20)
             
-            Spacer(minLength: 120)
+            if isVoiceProcessingPhase {
+                Spacer(minLength: 8)
+            } else {
+                Spacer(minLength: 120)
+            }
             
             // Mic Control
             if voicePhaseState == .idle {
@@ -655,7 +854,7 @@ struct OnboardingView: View {
                     recordTriggerMode: .tapToRecord
                 )
                 .padding(.bottom, 20)
-            } else {
+            } else if !isVoiceProcessingPhase {
                 Spacer(minLength: 80)
             }
         }
@@ -690,6 +889,10 @@ struct OnboardingView: View {
                         .font(.system(size: 40, weight: .bold, design: .rounded)) // Larger & Split
                         .foregroundColor(.textMain)
                         .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.75)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
                         
                     Text("Complex tasks made instant")
                         .font(.body)
@@ -700,14 +903,14 @@ struct OnboardingView: View {
                 }
                 Spacer()
                 primaryButton(title: "Try Recipes", icon: "arrow.right", action: {
-                    withAnimation { currentPage = 3 }
+                    withAnimation { currentPage = 4 }
                 })
                 .padding(.bottom, 40)
             }
         }
     }
     
-    // MARK: - Phase 3: Recipes Demo (Grammar Scan)
+    // MARK: - Phase 4: Recipes Demo (Grammar Scan)
     private var grammarDemoPage: some View {
         VStack {
             Spacer()
@@ -767,7 +970,7 @@ struct OnboardingView: View {
                     }
                     
                     if grammarResult != nil {
-                        Button { withAnimation { currentPage = 4 } } label: {
+                        Button { withAnimation { currentPage = 5 } } label: {
                             HStack { Text("Next: Ask AI"); Image(systemName: "arrow.right") }
                                 .font(.subheadline.weight(.medium))
                                 .foregroundColor(.accentPrimary)
@@ -788,13 +991,15 @@ struct OnboardingView: View {
     
     @State private var askPhase: AskPhase = .idle
     @State private var streamedAnswer: String = ""
-    @State private var finalAnswer = "Based on your notes, Ask transforms static storage into active creation:\n\n1. Instant Recall\n2. Connection of ideas\n3. Saving new insights"
+    private var finalAnswer: String {
+        String(localized: "onboarding.ask.final_answer")
+    }
     
     private var finalStepView: some View {
         VStack {
-            Spacer()
+            Spacer().frame(height: 20)
             
-            VStack(spacing: 30) {
+            VStack(spacing: 24) {
                 // Header
                 if askPhase == .saved {
                     VStack(spacing: 16) {
@@ -812,7 +1017,7 @@ struct OnboardingView: View {
                         Text("Ask Your Notes")
                             .font(.system(size: 28, weight: .bold, design: .rounded))
                             .foregroundColor(.textMain)
-                        Text(askPhase == .idle ? "Select notes to ask questions" : "Analyzing your knowledge base...")
+                        Text(askPhase == .idle ? "Select notes and ask anything about them" : "Reading your notes and building an answer...")
                             .font(.body)
                             .foregroundColor(.textSub)
                             .transition(.opacity)
@@ -841,12 +1046,15 @@ struct OnboardingView: View {
                                 Spacer()
                             }
                             
-                            Text(streamedAnswer)
-                                .font(.system(size: 16, weight: .medium, design: .rounded))
-                                .foregroundColor(.textMain)
-                                .fixedSize(horizontal: false, vertical: true)
-                                .frame(height: 120, alignment: .topLeading) // Reserve space
-                                .animation(nil, value: streamedAnswer) // No animation on text change for typing effect
+                            ScrollView(.vertical, showsIndicators: true) {
+                                Text(streamedAnswer)
+                                    .font(.system(size: 16, weight: .medium, design: .rounded))
+                                    .lineSpacing(2)
+                                    .foregroundColor(.textMain)
+                                    .frame(maxWidth: .infinity, alignment: .topLeading)
+                                    .animation(nil, value: streamedAnswer) // No animation on text change for typing effect
+                            }
+                            .frame(minHeight: 180, maxHeight: askPhase == .review ? 280 : 260)
                             
                             if askPhase == .review {
                                 Button {
@@ -884,14 +1092,14 @@ struct OnboardingView: View {
                         .opacity(askPhase == .saved ? 0 : 1)
                     }
                 }
-                .frame(height: 320)
+                .frame(height: askPhase == .review ? 480 : 390)
                 
                 // 3. User Controls
                 if askPhase == .idle {
                     Button {
                         startAskDemo()
                     } label: {
-                        Text("Ask: \"Summarize core values\"")
+                        Text(L10n.text("onboarding.ask.demo_prompt"))
                             .font(.headline)
                             .foregroundColor(.accentPrimary)
                         .padding(.vertical, 16)
@@ -914,8 +1122,7 @@ struct OnboardingView: View {
                 }
             }
             
-            Spacer()
-            Spacer().frame(height: 50)
+            Spacer(minLength: 8)
         }
     }
     
@@ -1096,8 +1303,8 @@ struct OnboardingView: View {
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
             
-            // Only show Recipes Button Bar on Page 3 (Recipes Demo)
-            if currentPage == 3 {
+            // Only show Recipes Button Bar on Page 4 (Recipes Demo)
+            if currentPage == 4 {
                 // Recipes Button
                 Button { withAnimation { 
                     isRecipesMenuOpen.toggle()

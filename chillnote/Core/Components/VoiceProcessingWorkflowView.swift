@@ -7,18 +7,30 @@ enum VoiceProcessingStage: String, CaseIterable, Equatable {
     var title: String {
         switch self {
         case .transcribing:
-            return "Transcribing"
+            return String(
+                localized: "Transcribing",
+                comment: "Voice processing stage title while converting speech to text"
+            )
         case .refining:
-            return "Refining"
+            return String(
+                localized: "Refining",
+                comment: "Voice processing stage title while improving and structuring note text"
+            )
         }
     }
 
     var subtitle: String {
         switch self {
         case .transcribing:
-            return "Converting your voice into text..."
+            return String(
+                localized: "Converting your voice into text...",
+                comment: "Voice processing stage subtitle while transcribing speech"
+            )
         case .refining:
-            return "Cleaning and structuring your note..."
+            return String(
+                localized: "Cleaning and structuring your note...",
+                comment: "Voice processing stage subtitle while refining note content"
+            )
         }
     }
 
@@ -134,6 +146,7 @@ struct VoiceProcessingWorkflowView: View {
                 .background(Color.primary.opacity(0.02))
             }
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             ZStack {
                 Rectangle().fill(.ultraThinMaterial)
