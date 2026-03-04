@@ -103,7 +103,7 @@ Restore Purchases,chillnote/Features/SubscriptionView.swift,396,Text,False,True,
 Payment will be charged to your Apple ID account at confirmation of purchase.,chillnote/Features/SubscriptionView.swift,409,Text,False,True,medium
 Subscription automatically renews unless canceled at least 24 hours before the end of the current period.,chillnote/Features/SubscriptionView.swift,414,Text,False,True,medium
 Manage or cancel your subscription in Settings > Apple ID > Subscriptions.,chillnote/Features/SubscriptionView.swift,419,Text,False,True,medium
-Save ~40% vs Monthly,chillnote/Features/SubscriptionView.swift,499,Text,False,True,low
+subscription.equivalent_monthly_billed_yearly,chillnote/Features/SubscriptionView.swift,523,Text,False,True,low
 Chillo is climbing the tree of knowledge...,chillnote/Features/AIContextChatView.swift,75,Text,False,True,low
 Dismiss,chillnote/Features/AIContextChatView.swift,115,Button,False,True,low
 Chillo,chillnote/Features/AIContextChatView.swift,126,modifier,False,True,low

@@ -320,7 +320,7 @@ struct SubscriptionView: View {
                 pricingToggleButton(title: "Monthly", isSelected: !isAnnual) {
                     withAnimation(.spring()) { isAnnual = false }
                 }
-                pricingToggleButton(title: "Yearly", isSelected: isAnnual, discountTag: "SAVE 40%") {
+                pricingToggleButton(title: "Yearly", isSelected: isAnnual) {
                     withAnimation(.spring()) { isAnnual = true }
                 }
             }
@@ -473,6 +473,30 @@ struct BenefitRow: View {
 struct ProductHeroCard: View {
     let product: Product
     let isAnnual: Bool
+
+    private var equivalentMonthlyLine: String? {
+        guard isAnnual else { return nil }
+        guard let monthCount = monthCountForPlan else { return nil }
+        guard monthCount > 0 else { return nil }
+
+        let monthlyPrice = product.price / Decimal(monthCount)
+        let monthlyPriceText = monthlyPrice.formatted(product.priceFormatStyle)
+        let template = String(localized: "subscription.equivalent_monthly_billed_yearly")
+        return String(format: template, monthlyPriceText)
+    }
+
+    private var monthCountForPlan: Int? {
+        guard let period = product.subscription?.subscriptionPeriod else { return nil }
+
+        switch period.unit {
+        case .year:
+            return period.value * 12
+        case .month:
+            return period.value
+        default:
+            return nil
+        }
+    }
     
     var body: some View {
         VStack(spacing: 12) {
@@ -495,8 +519,8 @@ struct ProductHeroCard: View {
                     .foregroundColor(.textSub)
             }
             
-            if isAnnual {
-                Text("Save ~40% vs Monthly")
+            if let equivalentMonthlyLine {
+                Text(equivalentMonthlyLine)
                     .font(.callout)
                     .foregroundColor(.accentPrimary)
                     .fontWeight(.medium)
