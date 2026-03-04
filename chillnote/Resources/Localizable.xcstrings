@@ -1460,6 +1460,7 @@
       }
     },
     "✨ Your Note" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -1664,6 +1665,59 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "關於 ChillNote"
+          }
+        }
+      }
+    },
+    "Action items" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To-dos extrahieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Action items"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puntos de acción"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Points d'action"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "アクション項目"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "실행 항목"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "行动事项"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "行動事項"
           }
         }
       }
@@ -2186,6 +2240,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "AI處理不可用"
+          }
+        }
+      }
+    },
+    "AI REFINED" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KI VERFEINERT"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI REFINED"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "PULIDO POR IA"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AFFINÉ PAR IA"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AIで推敲済み"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 다듬음"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 润色"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 潤色"
           }
         }
       }
@@ -4075,6 +4181,58 @@
         }
       }
     },
+    "ChillNote can also..." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ChillNote kann auch..."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ChillNote can also..."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ChillNote también puede..."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ChillNote peut aussi..."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ChillNoteならこんなことも..."
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ChillNote는 이런 것도 할 수 있어요..."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ChillNote 还可以..."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ChillNote 還可以..."
+          }
+        }
+      }
+    },
     "ChillNote is an attempt to use technology to return us to a more natural, healthy, and efficient state of being.\n\nIt is for the dreamers who talk fast, the creators who hurt from typing, and anyone who believes their ideas deserve to be heard, not just written." : {
       "localizations" : {
         "de" : {
@@ -4747,6 +4905,112 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "選擇圖示"
+          }
+        }
+      }
+    },
+    "Clarify thoughts" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gedanken klären"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clarify thoughts"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aclarar ideas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clarifier les idées"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "考えを明確化"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "생각을 명확하게"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "理清思路"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "理清思路"
+          }
+        }
+      }
+    },
+    "Clean filler words" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füllwörter entfernen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clean filler words"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Eliminar muletillas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Supprimer les tics de langage"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "口ぐせ語を整理"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "불필요한 군더더기 제거"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清理口头禅"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清理口頭禪"
           }
         }
       }
@@ -6941,6 +7205,7 @@
       }
     },
     "Draft an email to my boss" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -10249,6 +10514,59 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "完成錄音"
+          }
+        }
+      }
+    },
+    "Fix grammar" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Grammatik korrigieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fix grammar"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corregir gramática"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Corriger la grammaire"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "文法を修正"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "문법 교정"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修正语法"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修正語法"
           }
         }
       }
@@ -17732,7 +18050,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Überarbeitet"
+            "value" : "Verfeinert"
           }
         },
         "en" : {
@@ -17744,19 +18062,19 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mejorado"
+            "value" : "Pulido"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Amélioré"
+            "value" : "Affiné"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "整え済み"
+            "value" : "推敲済み"
           }
         },
         "ko" : {
@@ -17779,13 +18097,65 @@
         }
       }
     },
+    "Refined Note" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verfeinerte Notiz"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Refined Note"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nota pulida"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Note affinée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "推敲ノート"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다듬은 노트"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "润色笔记"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "潤色筆記"
+          }
+        }
+      }
+    },
     "Refining" : {
       "comment" : "Voice processing stage title while improving and structuring note text",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Überarbeiten"
+            "value" : "Verfeinern"
           }
         },
         "en" : {
@@ -17797,7 +18167,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Refinando"
+            "value" : "Puliendo"
           }
         },
         "fr" : {
@@ -17809,7 +18179,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "整え中"
+            "value" : "推敲中"
           }
         },
         "ko" : {
@@ -17827,7 +18197,7 @@
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "潤飾中"
+            "value" : "潤色中"
           }
         }
       }
@@ -22580,6 +22950,7 @@
       }
     },
     "Tweet about this launch" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -24144,6 +24515,7 @@
       }
     },
     "You can also say..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {

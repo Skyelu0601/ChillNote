@@ -161,8 +161,19 @@ final class HomeViewModel: ObservableObject {
     }
 
     func removeNoteLocally(id: UUID) {
+        let beforeCount = items.count
         items.removeAll { $0.id == id }
-        totalCount = max(0, totalCount - 1)
+        let removedCount = beforeCount - items.count
+        totalCount = max(0, totalCount - removedCount)
+    }
+
+    func removeNotesLocally(ids: [UUID]) {
+        guard !ids.isEmpty else { return }
+        let idSet = Set(ids)
+        let beforeCount = items.count
+        items.removeAll { idSet.contains($0.id) }
+        let removedCount = beforeCount - items.count
+        totalCount = max(0, totalCount - removedCount)
     }
 
     private func resetPagination(keepItems: Bool = false) {

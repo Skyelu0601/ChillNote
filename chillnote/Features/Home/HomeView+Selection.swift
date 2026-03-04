@@ -133,6 +133,7 @@ extension HomeView {
         }
         withAnimation {
             note.markDeleted()
+            homeViewModel.removeNoteLocally(id: note.id)
         }
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
         persistAndSync()
@@ -156,7 +157,10 @@ extension HomeView {
         let noteId = note.id
         let candidateTags = Array(note.tags)
         enqueueHardDeleteNoteIDs([noteId])
-        modelContext.delete(note)
+        withAnimation {
+            homeViewModel.removeNoteLocally(id: noteId)
+            modelContext.delete(note)
+        }
         Task { await NotesSearchIndexer.shared.remove(noteIDs: [noteId]) }
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: candidateTags)
         persistAndSync()
@@ -169,6 +173,7 @@ extension HomeView {
         let deletedIds = deleted.map { $0.id }
         enqueueHardDeleteNoteIDs(deletedIds)
         withAnimation {
+            homeViewModel.removeNotesLocally(ids: deletedIds)
             for note in deleted {
                 modelContext.delete(note)
             }
@@ -211,10 +216,12 @@ extension HomeView {
 
         let emptyNotes = activeNotes.filter(\.isEmptyNote)
         let nonEmptyNotes = activeNotes.filter { !$0.isEmptyNote }
+        let activeNoteIDs = activeNotes.map(\.id)
         let deletedIds = emptyNotes.map(\.id)
         let affectedTags = activeNotes.flatMap { $0.tags }
 
         withAnimation {
+            homeViewModel.removeNotesLocally(ids: activeNoteIDs)
             for note in nonEmptyNotes {
                 note.markDeleted()
             }
@@ -232,13 +239,15 @@ extension HomeView {
     }
 
     func persistAndSync() {
-        try? modelContext.save()
-        Task {
+        Task { @MainActor in
+            // Let SwiftUI render local list changes first, then persist/sync.
+            await Task.yield()
+            try? modelContext.save()
             if let userId = currentUserId, FeatureFlags.useLocalFTSSearch {
                 await NotesSearchIndexer.shared.syncIncremental(context: modelContext, userId: userId)
             }
             await syncManager.syncNow(context: modelContext)
-            requestReload(delayNanoseconds: 80_000_000)
+            requestReload(delayNanoseconds: 80_000_000, keepItemsWhileLoading: true)
         }
     }
 

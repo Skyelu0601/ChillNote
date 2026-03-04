@@ -652,7 +652,9 @@ struct OnboardingView: View {
     // MARK: - Phase 1: Voice Demo (Merged with Intro)
     private var voiceDemoPage: some View {
         VStack {
-            if isVoiceProcessingPhase {
+            if voicePhaseState == .done {
+                Spacer(minLength: 72)
+            } else if isVoiceProcessingPhase {
                 Color.clear.frame(height: 12)
             } else {
                 Spacer(minLength: 12)
@@ -717,94 +719,88 @@ struct OnboardingView: View {
                         }
 
                         if voicePhaseState == .done {
-                            // Done - Show AI Result
-                            VStack(alignment: .leading, spacing: 16) {
-                                HStack {
-                                    Text("✨ Your Note")
-                                        .font(.headline)
-                                        .fontWeight(.bold)
-                                        .foregroundColor(.textMain)
-                                    Spacer()
-                                }
+                            VStack(alignment: .leading, spacing: 20) {
+                                // "Your Note" Card
+                                VStack(alignment: .leading, spacing: 16) {
+                                    HStack {
+                                        HStack(spacing: 8) {
+                                            Image(systemName: "sparkles")
+                                                .foregroundColor(.accentPrimary)
+                                                .font(.system(size: 16, weight: .semibold))
+                                            
+                                            Text("Refined Note")
+                                                .font(.system(.subheadline, design: .rounded))
+                                                .fontWeight(.bold)
+                                                .foregroundColor(.textMain)
+                                        }
+                                        
+                                        Spacer()
+                                        
+                                        Text("AI REFINED")
+                                            .font(.system(size: 10, weight: .black))
+                                            .tracking(1)
+                                            .padding(.horizontal, 8)
+                                            .padding(.vertical, 4)
+                                            .background(Color.accentPrimary.opacity(0.1))
+                                            .foregroundColor(.accentPrimary)
+                                            .clipShape(RoundedRectangle(cornerRadius: 6))
+                                    }
 
-                                Divider().background(Color.black.opacity(0.05))
+                                    Divider().background(Color.textMain.opacity(0.05))
 
-                                // Display AI processed result with proper markdown rendering
-                                JustifiedMarkdownText(
-                                    content: processedResult,
-                                    font: .systemFont(ofSize: 17),
-                                    textColor: UIColor(Color.textMain)
-                                )
-                                .frame(minHeight: 120)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-
-                                if let error = processingError {
-                                    Text(
-                                        String(
-                                            format: String(localized: "⚠️ %@"),
-                                            error
-                                        )
+                                    // Display AI processed result with proper markdown rendering
+                                    JustifiedMarkdownText(
+                                        content: processedResult,
+                                        font: .systemFont(ofSize: 17, weight: .medium),
+                                        textColor: UIColor(Color.textMain)
                                     )
-                                        .font(.caption)
-                                        .foregroundColor(.orange)
-                                }
-                            }
-                            .modifier(OnboardingCardModifier())
-                            .transition(.opacity.combined(with: .scale(scale: 1.01)))
-                        }
-                    }
-                    .animation(.easeInOut(duration: 0.3), value: voicePhaseState)
+                                    .frame(minHeight: 120)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    if voicePhaseState == .done && showVoiceIntents {
-                        VStack(alignment: .leading, spacing: 16) {
-                            Text("You can also say...")
-                                .font(.headline)
-                                .foregroundColor(.textSub)
-                            
-                            VStack(spacing: 12) {
-                                HStack {
-                                    Image(systemName: "envelope")
-                                        .foregroundColor(.accentPrimary)
-                                    Text("Draft an email to my boss")
-                                    Spacer()
+                                    if let error = processingError {
+                                        Text(String(format: String(localized: "⚠️ %@"), error))
+                                            .font(.caption)
+                                            .foregroundColor(.orange)
+                                    }
                                 }
-                                .padding()
-                                .background(Color.white.opacity(0.6))
-                                .cornerRadius(12)
-                                
-                                HStack {
-                                    Image(systemName: "bird")
-                                        .foregroundColor(.accentPrimary)
-                                    Text("Tweet about this launch")
-                                    Spacer()
+                                .modifier(OnboardingNoteCardModifier())
+                                .transition(.opacity.combined(with: .scale(scale: 1.02)))
+
+                                if showVoiceIntents {
+                                    // "ChillNote can also..." section
+                                    VStack(alignment: .leading, spacing: 16) {
+                                        Text("ChillNote can also...")
+                                            .font(.system(.headline, design: .rounded))
+                                            .foregroundColor(.textSub)
+                                            .padding(.horizontal, 4)
+                                        
+                                        LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                                            OnboardingFeatureTip(icon: "wand.and.stars", text: "Clean filler words")
+                                            OnboardingFeatureTip(icon: "text.alignleft", text: "Fix grammar")
+                                            OnboardingFeatureTip(icon: "brain.head.profile", text: "Clarify thoughts")
+                                            OnboardingFeatureTip(icon: "list.bullet.rectangle", text: "Action items")
+                                        }
+                                    }
+                                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                                    .padding(.top, 8)
+
+                                    // Next Steps Button
+                                    primaryButton(title: "Next Steps", icon: "arrow.right") {
+                                        withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                            currentPage = 3
+                                        }
+                                    }
+                                    .padding(.top, 12)
+                                    .transition(.opacity.combined(with: .move(edge: .bottom)))
                                 }
-                                .padding()
-                                .background(Color.white.opacity(0.6))
-                                .cornerRadius(12)
-                            }
-                            .font(.subheadline)
-                            .foregroundColor(.textMain)
-                            
-                            Button {
-                                withAnimation { currentPage = 3 }
-                            } label: {
-                                HStack {
-                                    Text("Next Steps")
-                                    Image(systemName: "arrow.right")
-                                }
-                                .font(.headline)
-                                .foregroundColor(.accentPrimary)
-                                .padding(.top, 10)
-                                .frame(maxWidth: .infinity, alignment: .center)
                             }
                         }
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                    }
                 }
             }
-            .padding(.horizontal, 20)
             
-            if isVoiceProcessingPhase {
+            if voicePhaseState == .done {
+                Spacer(minLength: 36)
+            } else if isVoiceProcessingPhase {
                 Spacer(minLength: 8)
             } else {
                 Spacer(minLength: 120)
@@ -854,10 +850,13 @@ struct OnboardingView: View {
                     recordTriggerMode: .tapToRecord
                 )
                 .padding(.bottom, 20)
-            } else if !isVoiceProcessingPhase {
-                Spacer(minLength: 80)
+            } else if voicePhaseState == .done {
+                Spacer(minLength: 16)
             }
         }
+        .padding(.horizontal, 20)
+    }
+    
     }
     
     // MARK: - Phase 2: Recipes Intro (Wall)
@@ -1329,6 +1328,40 @@ struct OnboardingView: View {
 
 // MARK: - Custom Views & Modifiers
 
+struct OnboardingFeatureTip: View {
+    let icon: String
+    let text: LocalizedStringKey
+    
+    var body: some View {
+        HStack(spacing: 10) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentPrimary.opacity(0.1))
+                    .frame(width: 32, height: 32)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.accentPrimary)
+            }
+            
+            Text(text)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundColor(.textMain)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+            
+            Spacer(minLength: 0)
+        }
+        .padding(10)
+        .background(Color.white.opacity(0.5))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.accentPrimary.opacity(0.05), lineWidth: 1)
+        )
+    }
+}
+
 struct CustomMicIcon: View {
     @State private var animateGradient = false
     
@@ -1505,6 +1538,42 @@ struct OnboardingCardModifier: ViewModifier {
             .background(.ultraThinMaterial)
             .cornerRadius(24)
             .shadow(color: Color.black.opacity(0.08), radius: 20, x: 0, y: 10)
+    }
+}
+
+struct OnboardingNoteCardModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(24)
+            .background(
+                ZStack {
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.white)
+                    
+                    // Subtle premium gradient
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(
+                            LinearGradient(
+                                colors: [Color.mellowYellow.opacity(0.2), Color.clear, Color.accentPrimary.opacity(0.05)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+            )
+            .cornerRadius(24)
+            .shadow(color: Color.black.opacity(0.06), radius: 20, x: 0, y: 12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 24)
+                    .stroke(
+                        LinearGradient(
+                            colors: [Color.accentPrimary.opacity(0.2), Color.clear],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: 1
+                    )
+            )
     }
 }
 
