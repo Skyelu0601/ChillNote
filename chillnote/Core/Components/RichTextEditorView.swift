@@ -91,6 +91,10 @@ struct RichTextEditorView: UIViewRepresentable {
         init(_ parent: RichTextEditorView) {
             self.parent = parent
         }
+
+        func textViewDidBeginEditing(_ textView: UITextView) {
+            normalizeTypingAttributesForListPrefixIfNeeded(in: textView)
+        }
         
         func textViewDidChange(_ textView: UITextView) {
             applyPendingInputStyleIfNeeded(in: textView)
@@ -277,14 +281,19 @@ struct RichTextEditorView: UIViewRepresentable {
                 let symbolFont = UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium)
                 let isChecked = checkboxState ?? false
                 let symbolColor = isChecked ? RichTextConverter.Config.checkboxCheckedColor : RichTextConverter.Config.checkboxUncheckedColor
+                let symbolRange = NSRange(location: stylingRange.location, length: min(1, stylingRange.length))
+                let spacerRange = NSRange(location: stylingRange.location + symbolRange.length, length: max(0, stylingRange.length - symbolRange.length))
                 textView.textStorage.addAttributes([
                     .foregroundColor: symbolColor,
                     .font: symbolFont,
                     RichTextConverter.Key.checkbox: isChecked
-                ], range: stylingRange)
+                ], range: symbolRange)
                 
                 // Ensure no strikethrough (safety)
-                textView.textStorage.removeAttribute(.strikethroughStyle, range: stylingRange)
+                textView.textStorage.removeAttribute(.strikethroughStyle, range: symbolRange)
+                if spacerRange.length > 0 {
+                    textView.textStorage.setAttributes(defaultTypingAttributes(), range: spacerRange)
+                }
                 
             } else if isOrdered {
                 textView.textStorage.addAttributes([
@@ -391,14 +400,19 @@ struct RichTextEditorView: UIViewRepresentable {
             // Apply Styles to the Prefix (Orange Zone)
             if isCheckbox {
                 let symbolFont = UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium)
+                let symbolRange = NSRange(location: prefixRange.location, length: min(1, prefixRange.length))
+                let spacerRange = NSRange(location: prefixRange.location + symbolRange.length, length: max(0, prefixRange.length - symbolRange.length))
                 textView.textStorage.addAttributes([
                     .foregroundColor: RichTextConverter.Config.checkboxUncheckedColor,
                     .font: symbolFont,
                     RichTextConverter.Key.checkbox: false
-                ], range: prefixRange)
+                ], range: symbolRange)
                 
                 // Ensure no strikethrough on the checkbox itself (safety)
-                textView.textStorage.removeAttribute(.strikethroughStyle, range: prefixRange)
+                textView.textStorage.removeAttribute(.strikethroughStyle, range: symbolRange)
+                if spacerRange.length > 0 {
+                    textView.textStorage.setAttributes(defaultTypingAttributes(), range: spacerRange)
+                }
                 
             } else if isOrdered {
                 textView.textStorage.addAttributes([
@@ -592,11 +606,13 @@ struct RichTextEditorView: UIViewRepresentable {
                 textView.textStorage.replaceCharacters(in: NSRange(location: lineRange.location, length: 0), with: symbol)
                 
                 // Set Attributes
-                let symbolRange = NSRange(location: lineRange.location, length: 2)
+                let symbolRange = NSRange(location: lineRange.location, length: 1)
+                let spacerRange = NSRange(location: lineRange.location + 1, length: 1)
                 textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: false, range: symbolRange)
                 textView.textStorage.addAttribute(.foregroundColor, value: RichTextConverter.Config.checkboxUncheckedColor, range: symbolRange)
                 textView.textStorage.addAttribute(.font, value: UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium), range: symbolRange)
-                textView.selectedRange = NSRange(location: symbolRange.upperBound, length: 0)
+                textView.textStorage.setAttributes(defaultTypingAttributes(), range: spacerRange)
+                textView.selectedRange = NSRange(location: spacerRange.upperBound, length: 0)
             }
             
             textView.textStorage.endEditing()
@@ -618,8 +634,14 @@ struct RichTextEditorView: UIViewRepresentable {
             textView.textStorage.replaceCharacters(in: range, with: newSymbol)
             
             let newRange = NSRange(location: range.location, length: newSymbol.count)
-            textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: newState, range: newRange)
-            textView.textStorage.addAttribute(.foregroundColor, value: newColor, range: newRange)
+            let symbolRange = NSRange(location: newRange.location, length: min(1, newRange.length))
+            let spacerRange = NSRange(location: newRange.location + symbolRange.length, length: max(0, newRange.length - symbolRange.length))
+            textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: newState, range: symbolRange)
+            textView.textStorage.addAttribute(.foregroundColor, value: newColor, range: symbolRange)
+            textView.textStorage.addAttribute(.font, value: UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium), range: symbolRange)
+            if spacerRange.length > 0 {
+                textView.textStorage.setAttributes(defaultTypingAttributes(), range: spacerRange)
+            }
             
             let lineRange = (textView.text as NSString).lineRange(for: newRange)
             let contentRange = NSRange(location: newRange.upperBound, length: lineRange.upperBound - newRange.upperBound)
@@ -655,14 +677,22 @@ struct RichTextEditorView: UIViewRepresentable {
         private func normalizeTypingAttributesForListPrefixIfNeeded(in textView: UITextView) {
             let selectedRange = textView.selectedRange
             guard selectedRange.length == 0 else { return }
-            guard textView.textStorage.length > 0, selectedRange.location > 0 else { return }
+            guard textView.textStorage.length > 0 else { return }
 
-            let prevIndex = min(selectedRange.location - 1, textView.textStorage.length - 1)
-            let prevAttrs = textView.textStorage.attributes(at: prevIndex, effectiveRange: nil)
-            let isListPrefixChar =
-                prevAttrs[RichTextConverter.Key.checkbox] != nil
-                || prevAttrs[RichTextConverter.Key.bullet] != nil
-                || prevAttrs[RichTextConverter.Key.orderedList] != nil
+            var attrsToInspect: [[NSAttributedString.Key: Any]] = []
+            if selectedRange.location > 0 {
+                let prevIndex = min(selectedRange.location - 1, textView.textStorage.length - 1)
+                attrsToInspect.append(textView.textStorage.attributes(at: prevIndex, effectiveRange: nil))
+            }
+            if selectedRange.location < textView.textStorage.length {
+                attrsToInspect.append(textView.textStorage.attributes(at: selectedRange.location, effectiveRange: nil))
+            }
+
+            let isListPrefixChar = attrsToInspect.contains { attrs in
+                attrs[RichTextConverter.Key.checkbox] != nil
+                || attrs[RichTextConverter.Key.bullet] != nil
+                || attrs[RichTextConverter.Key.orderedList] != nil
+            }
             guard isListPrefixChar else { return }
 
             applyDefaultTypingAttributes(to: textView)
