@@ -470,17 +470,18 @@ struct RichTextEditorView: UIViewRepresentable {
         private func updateToolbarState(in textView: UITextView, toolbar: EditorFormattingToolbar) {
             let selectedRange = textView.selectedRange
             let location = min(selectedRange.location, max(textView.textStorage.length - 1, 0))
-            let attrs = textView.textStorage.length > 0
+            let contentAttrs = textView.textStorage.length > 0
                 ? textView.textStorage.attributes(at: location, effectiveRange: nil)
-                : textView.typingAttributes
+                : [:]
+            let inlineAttrs = selectedRange.length == 0 ? textView.typingAttributes : contentAttrs
             
-            if let font = attrs[.font] as? UIFont {
+            if let font = inlineAttrs[.font] as? UIFont {
                 toolbar.setActive(.bold, isActive: font.fontDescriptor.symbolicTraits.contains(.traitBold))
             } else {
                 toolbar.setActive(.bold, isActive: false)
             }
             
-            if let level = attrs[RichTextConverter.Key.headerLevel] as? Int {
+            if let level = contentAttrs[RichTextConverter.Key.headerLevel] as? Int {
                 toolbar.setActive(.h1, isActive: level == 1)
                 toolbar.setActive(.h2, isActive: level == 2)
             } else {
@@ -488,7 +489,7 @@ struct RichTextEditorView: UIViewRepresentable {
                 toolbar.setActive(.h2, isActive: false)
             }
             
-            toolbar.setActive(.checklist, isActive: attrs[RichTextConverter.Key.checkbox] != nil)
+            toolbar.setActive(.checklist, isActive: contentAttrs[RichTextConverter.Key.checkbox] != nil)
             
             let canUndo = textView.undoManager?.canUndo ?? false
             let canRedo = textView.undoManager?.canRedo ?? false
