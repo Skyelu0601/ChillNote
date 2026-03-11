@@ -234,7 +234,7 @@ class StoreService: ObservableObject {
         transactionListener = listenForTransactions()
         
         Task {
-            await updateSubscriptionStatus()
+            await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
             await fetchProducts()
         }
     }
@@ -251,8 +251,9 @@ class StoreService: ObservableObject {
                 do {
                     let transaction = try self.checkVerified(result)
                     
-                    // Deliver content to the user
-                    await self.updateSubscriptionStatus()
+                    // Keep the local UI in sync, but avoid rebinding subscriptions
+                    // to whichever ChillNote account is currently signed in.
+                    await self.updateSubscriptionStatus(syncActiveTransactionToBackend: false)
                     
                     // Always finish a transaction
                     await transaction.finish()
@@ -275,7 +276,8 @@ class StoreService: ObservableObject {
             switch result {
             case .success(let verification):
                 let transaction = try checkVerified(verification)
-                await updateSubscriptionStatus()
+                await syncSubscriptionWithBackendIfNeeded(transaction)
+                await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
                 await transaction.finish()
                 
             case .userCancelled:
@@ -303,7 +305,7 @@ class StoreService: ObservableObject {
         
         do {
             try await AppStore.sync()
-            await updateSubscriptionStatus()
+            await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
         } catch {
             errorMessage = String(
                 format: String(localized: "Restore failed: %@"),
@@ -315,7 +317,7 @@ class StoreService: ObservableObject {
     }
 
     func refreshSubscriptionStatus() async {
-        await updateSubscriptionStatus()
+        await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
     }
 
     func refreshProducts() async {
@@ -349,9 +351,11 @@ class StoreService: ObservableObject {
         isLoadingProducts = false
     }
     
-    private func updateSubscriptionStatus() async {
+    private func updateSubscriptionStatus(syncActiveTransactionToBackend: Bool) async {
         // 1. Check Local StoreKit Entitlements — used only to sync to backend
         var activeTransaction: Transaction? = nil
+        self.subscriptionExpirationDate = nil
+        self.activeSubscriptionProductId = nil
         
         // Check for active subscriptions from Apple
         for await result in Transaction.currentEntitlements {
@@ -370,20 +374,10 @@ class StoreService: ObservableObject {
             }
         }
         
-        // 2. If logged in and StoreKit has an active subscription, sync it to the backend
-        if let transaction = activeTransaction, AuthService.shared.isSignedIn {
-             do {
-                 try await verifySubscriptionWithBackend(transaction)
-             } catch {
-                 if let urlError = error as? URLError, urlError.code == .dataNotAllowed {
-                     print("Backend verification skipped: network data not allowed (-1020).")
-                 } else if String(describing: error).localizedCaseInsensitiveContains("userCancelled") {
-                     print("Backend verification skipped: user cancelled.")
-                 } else {
-                     print("Backend verification warning: \(error)")
-                 }
-             }
-         }
+        // 2. Only sync entitlements when the user explicitly triggers purchase/restore.
+        if syncActiveTransactionToBackend, let transaction = activeTransaction {
+            await syncSubscriptionWithBackendIfNeeded(transaction)
+        }
          
         // 3. Backend is the single source of truth for membership
         let backendTier = await fetchBackendSubscriptionTier()
@@ -429,6 +423,22 @@ class StoreService: ObservableObject {
     private func cachedBackendTier() -> SubscriptionTier {
         let cached = UserDefaults.standard.string(forKey: Self.backendTierCacheKey) ?? SubscriptionTier.free.rawValue
         return SubscriptionTier(rawValue: cached) ?? .free
+    }
+
+    private func syncSubscriptionWithBackendIfNeeded(_ transaction: Transaction) async {
+        guard AuthService.shared.isSignedIn else { return }
+
+        do {
+            try await verifySubscriptionWithBackend(transaction)
+        } catch {
+            if let urlError = error as? URLError, urlError.code == .dataNotAllowed {
+                print("Backend verification skipped: network data not allowed (-1020).")
+            } else if String(describing: error).localizedCaseInsensitiveContains("userCancelled") {
+                print("Backend verification skipped: user cancelled.")
+            } else {
+                print("Backend verification warning: \(error)")
+            }
+        }
     }
     
     private func verifySubscriptionWithBackend(_ transaction: Transaction) async throws {
