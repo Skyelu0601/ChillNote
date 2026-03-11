@@ -130,7 +130,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Capturer la vitesse de la pensée,\nune voix à la fois. »"
+            "value" : "« Capturer la vitesse de la pensée,\nune voix à la fois. »"
           }
         },
         "ja" : {
@@ -164,7 +164,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "„Die Grenzen definieren, um das ‚Chill‘ zu bewahren.“"
+            "value" : "„Grenzen setzen, um das Chill zu bewahren.“"
           }
         },
         "en" : {
@@ -176,13 +176,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Definir los límites para preservar el 'Chill'.\""
+            "value" : "\"Poner límites para conservar ese Chill.\""
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Définir les limites pour préserver le 'Chill'.\""
+            "value" : "« Poser des limites pour préserver le Chill. »"
           }
         },
         "ja" : {
@@ -540,13 +540,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**La fricción:** Cuando escribimos, realizamos microgestiones: corregimos errores tipográficos y ajustamos los márgenes. Cada microdecisión es una macrointerrupción del flujo."
+            "value" : "**La fricción:** En cuanto empezamos a escribir, nos distraemos corrigiendo, ajustando y reorganizando. Esas pequeñas decisiones rompen muy rápido el hilo de las ideas."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**La friction :** Lorsque nous tapons, nous faisons de la micro-gestion : nous corrigeons les fautes de frappe et ajustons les marges. Chaque micro-décision est une macro-interruption du flux."
+            "value" : "**La friction :** Dès qu'on se met à taper, on commence à corriger, ajuster, reformuler. Ces petites décisions cassent vite le fil des idées."
           }
         },
         "ja" : {
@@ -812,13 +812,13 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解決策:** **編集者としての AI。** ChillNote はあなたを「ぶらぶら」に誘います。断片的で混乱した考えを吐き出します。 AI は熟練した編集者として機能し、混乱を明確な散文に再構築します。洗練された「作家」である必要がなくても、「考える人」になれるようにします。"
+            "value" : "**解決策:** **AI をあなたの編集者に。** ChillNote では、まとまっていない考えをそのまま話して大丈夫です。AI が頼れる編集者のように、散らかった内容を読みやすい文章へ整えてくれます。上手に書こうとしなくても、まず考えることに集中できます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**해결책:** **편집자로서의 AI.** ChillNote가 여러분을 \"Ramble\"로 초대합니다. 단편적이고 지저분한 생각을 쏟아내세요. AI는 숙련된 편집자 역할을 하며 혼란을 명확한 산문으로 재구성합니다. 그것은 당신이 세련된 \"작가\"가 될 필요 없이 \"사상가\"가 될 수 있도록 힘을 실어줍니다."
+            "value" : "**해결책:** **AI를 당신의 편집자로.** ChillNote에서는 정리되지 않은 생각을 있는 그대로 말해도 괜찮습니다. AI가 믿을 만한 편집자처럼 흩어진 내용을 읽기 쉬운 글로 다듬어 줍니다. 잘 쓰려고 애쓰기보다, 먼저 생각하는 데 집중할 수 있습니다."
           }
         },
         "zh-Hans" : {
@@ -858,7 +858,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**La solution :** Une déconnexion entre la saisie et la visualisation. Vous parlez ; le système gère le reste. Plus de RSI, plus de douleurs au cou : juste une pure création."
+            "value" : "**La solution :** Vous parlez, le système s'occupe du reste. Moins de gestes répétitifs, moins de tension physique, plus d'attention pour ce que vous voulez vraiment créer."
           }
         },
         "ja" : {
@@ -956,13 +956,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Vocalizar para lograr claridad:** Hablar en voz alta exterioriza los conflictos internos. ChillNote proporciona un espacio seguro para escribir un diario y reflexionar."
+            "value" : "**Ponerlo en palabras ayuda a aclararlo:** decir en voz alta lo que llevas dentro suele ordenar mejor las ideas. ChillNote te ofrece un espacio tranquilo para escribir, reflexionar y hacer balance."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Vocaliser pour la clarté :** Parler à voix haute extériorise les conflits internes. ChillNote offre un espace sûr pour la journalisation et la réflexion."
+            "value" : "**Mettre les choses en mots aide à y voir clair :** dire ce qu'on a en tête permet souvent de clarifier ses pensées. ChillNote offre un espace calme pour écrire, réfléchir et faire le point."
           }
         },
         "ja" : {
@@ -1848,7 +1848,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajouter des actions"
+            "value" : "Ajouter des commandes"
           }
         },
         "ja" : {
@@ -2894,7 +2894,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Demandez à l'IA"
+            "value" : "Demander à l'IA"
           }
         },
         "ja" : {
@@ -3365,7 +3365,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dos"
+            "value" : "Retour"
           }
         },
         "ja" : {
@@ -3522,7 +3522,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corps grand"
+            "value" : "Texte grand"
           }
         },
         "ja" : {
@@ -3569,13 +3569,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cuerpo medio"
+            "value" : "Texto mediano"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corps moyen"
+            "value" : "Texte moyen"
           }
         },
         "ja" : {
@@ -3622,13 +3622,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "cuerpo pequeño"
+            "value" : "Texto pequeño"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corps petit"
+            "value" : "Texte petit"
           }
         },
         "ja" : {
@@ -4237,7 +4237,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote ist ein Versuch, uns mithilfe von Technologie wieder in einen natürlicheren, gesünderen und effizienteren Zustand zu versetzen.\n\nEs ist für die Träumer, die schnell sprechen, die Schöpfer, denen das Tippen weh tut, und für alle, die glauben, dass ihre Ideen es verdienen, gehört und nicht nur geschrieben zu werden."
+            "value" : "ChillNote soll Technik wieder in den Dienst einer natürlicheren, gesünderen und flüssigeren Art des Festhaltens stellen.\n\nEs ist für Menschen, deren Gedanken schneller sind als ihre Finger, für Kreative, die das Tippen eher bremst, und für alle, die finden, dass gute Ideen gehört und nicht nur geschrieben werden sollten."
           }
         },
         "en" : {
@@ -4249,13 +4249,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote es un intento de utilizar la tecnología para devolvernos a un estado de ser más natural, saludable y eficiente.\n\nEs para los soñadores que hablan rápido, los creadores a los que les duele escribir y cualquiera que crea que sus ideas merecen ser escuchadas, no solo escritas."
+            "value" : "ChillNote busca poner la tecnología al servicio de una forma más natural, más sana y más fluida de tomar notas.\n\nEstá pensada para quienes piensan más rápido de lo que escriben, para quienes sienten que el teclado les frena y para cualquiera que crea que sus ideas merecen ser escuchadas, no solo tecleadas."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote est une tentative d'utiliser la technologie pour nous ramener à un état d'être plus naturel, plus sain et plus efficace.\n\nC'est pour les rêveurs qui parlent vite, les créateurs qui ont mal à écrire et tous ceux qui croient que leurs idées méritent d'être entendues, pas seulement écrites."
+            "value" : "ChillNote essaie de remettre la technologie au service d'une façon de noter plus naturelle, plus saine et plus fluide.\n\nC'est fait pour celles et ceux qui pensent plus vite qu'ils n'écrivent, pour les créatifs que le clavier freine, et pour tous ceux qui pensent que leurs idées méritent d'être entendues, pas seulement tapées."
           }
         },
         "ja" : {
@@ -4301,13 +4301,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote es móvil primero. Existe para capturar pensamientos transitorios y fragmentados antes de que se evaporen. Es para las semillas de ideas, no para toda la novela."
+            "value" : "ChillNote está pensada primero para el móvil. Sirve para capturar ideas fugaces y todavía desordenadas antes de que desaparezcan. Aquí hablamos de la semilla de una idea, no de la novela completa."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote est axé sur le mobile. Il existe pour capturer les pensées éphémères et fragmentées avant qu’elles ne s’évaporent. Il s'agit des graines d'idées, pas du roman tout entier."
+            "value" : "ChillNote est pensé d'abord pour le mobile. Il sert à capturer les idées fugaces et encore brouillonnes avant qu'elles ne disparaissent. On parle ici des graines d'une idée, pas du roman complet."
           }
         },
         "ja" : {
@@ -6280,13 +6280,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eliminar %1$lld Nota%2$@"
+            "value" : "Eliminar %1$lld nota%2$@"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Supprimer %1$lld Remarque%2$@"
+            "value" : "Supprimer %1$lld note%2$@"
           }
         },
         "ja" : {
@@ -6442,7 +6442,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Supprimer des notes"
+            "value" : "Supprimer les notes"
           }
         },
         "ja" : {
@@ -6892,7 +6892,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zurückweisen"
+            "value" : "Schließen"
           }
         },
         "en" : {
@@ -6904,13 +6904,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Despedir"
+            "value" : "Cerrar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rejeter"
+            "value" : "Fermer"
           }
         },
         "ja" : {
@@ -7010,7 +7010,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Medio de visualización"
+            "value" : "Pantalla mediana"
           }
         },
         "fr" : {
@@ -7050,7 +7050,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mach es"
+            "value" : "Ausführen"
           }
         },
         "en" : {
@@ -7062,13 +7062,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hazlo"
+            "value" : "Ejecutar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fais-le"
+            "value" : "Lancer"
           }
         },
         "ja" : {
@@ -8444,7 +8444,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "有効な音声が検出できませんでした。音声は保留中のレコードに保存されました。確認して再試行してください。"
+            "value" : "はっきりした音声を検出できませんでした。音声は保留中の録音に保存されました。確認してから再試行してください。"
           }
         },
         "ko" : {
@@ -8497,7 +8497,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ログイン状態の有効期限が切れました。音声は保留中のレコードに保存されました。再ログイン後に再試行してください。"
+            "value" : "ログインの有効期限が切れました。音声は保留中の録音に保存されました。再ログインしてから再試行してください。"
           }
         },
         "ko" : {
@@ -8603,7 +8603,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ネットワークに問題があります。音声は保留中のレコードに保存されました。接続が安定してから再試行してください。"
+            "value" : "ネットワークに問題があります。音声は保留中の録音に保存されました。接続が安定してから再試行してください。"
           }
         },
         "ko" : {
@@ -8656,7 +8656,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "本日の音声上限に達しました。音声は保留中のレコードに保存されました。アップグレードするか、明日再試行してください。"
+            "value" : "本日の音声上限に達しました。音声は保留中の録音に保存されました。アップグレードするか、明日もう一度お試しください。"
           }
         },
         "ko" : {
@@ -8709,7 +8709,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "文字起こしサービスの設定に問題があります。音声は保留中のレコードに保存されました。後でもう一度お試しください。"
+            "value" : "文字起こしサービスの設定に問題があります。音声は保留中の録音に保存されました。時間をおいて再試行してください。"
           }
         },
         "ko" : {
@@ -8762,7 +8762,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "文字起こしサービスは一時的に利用できません。音声は保留中のレコードに保存されました。後でもう一度お試しください。"
+            "value" : "文字起こしサービスは一時的に利用できません。音声は保留中の録音に保存されました。時間をおいて再試行してください。"
           }
         },
         "ko" : {
@@ -8815,7 +8815,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "文字起こしがタイムアウトしました。音声は保留中のレコードに保存されました。しばらくしてから再試行してください。"
+            "value" : "文字起こしがタイムアウトしました。音声は保留中の録音に保存されました。しばらくしてから再試行してください。"
           }
         },
         "ko" : {
@@ -8868,7 +8868,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "文字起こしに失敗しました。音声は保留中のレコードに保存されました。再試行してください。"
+            "value" : "文字起こしに失敗しました。音声は保留中の録音に保存されました。再試行してください。"
           }
         },
         "ko" : {
@@ -9966,7 +9966,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Prêt à exporter"
+            "value" : "Export prêt"
           }
         },
         "ja" : {
@@ -9978,7 +9978,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "수출 준비 완료"
+            "value" : "내보내기 준비 완료"
           }
         },
         "zh-Hans" : {
@@ -10030,7 +10030,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "지금은 수출 서비스를 이용할 수 없습니다."
+            "value" : "지금은 내보내기 서비스를 사용할 수 없습니다."
           }
         },
         "zh-Hans" : {
@@ -11053,13 +11053,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El formateo es un \"trabajo performativo\": lleva tiempo pero no añade ningún valor al contenido."
+            "value" : "Dar formato a menudo hace sentir que avanzas, aunque en realidad no añade nada al contenido."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le formatage est un « travail performatif » : il prend du temps mais n'ajoute aucune valeur au contenu."
+            "value" : "La mise en forme donne souvent l'impression d'avancer, alors qu'elle n'ajoute rien au fond."
           }
         },
         "ja" : {
@@ -14977,7 +14977,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remarque enregistrée !"
+            "value" : "Note enregistrée !"
           }
         },
         "ja" : {
@@ -15326,7 +15326,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Context.note"
+            "value" : "Kontextnotiz"
           }
         },
         "en" : {
@@ -15338,37 +15338,37 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Context.note"
+            "value" : "Nota de contexto"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Context.note"
+            "value" : "Note de contexte"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Context.note"
+            "value" : "コンテキストノート"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Context.note"
+            "value" : "컨텍스트 노트"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Context.note"
+            "value" : "上下文笔记"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Context.note"
+            "value" : "上下文筆記"
           }
         }
       }
@@ -15430,7 +15430,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flow.note"
+            "value" : "Ablaufnotiz"
           }
         },
         "en" : {
@@ -15442,37 +15442,37 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flow.note"
+            "value" : "Nota de flujo"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flow.note"
+            "value" : "Note de suivi"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flow.note"
+            "value" : "フローノート"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flow.note"
+            "value" : "플로우 노트"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flow.note"
+            "value" : "流程笔记"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Flow.note"
+            "value" : "流程筆記"
           }
         }
       }
@@ -15534,7 +15534,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Source.note"
+            "value" : "Quellnotiz"
           }
         },
         "en" : {
@@ -15546,37 +15546,37 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Source.note"
+            "value" : "Nota fuente"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Source.note"
+            "value" : "Note source"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Source.note"
+            "value" : "ソースノート"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Source.note"
+            "value" : "소스 노트"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Source.note"
+            "value" : "来源笔记"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Source.note"
+            "value" : "來源筆記"
           }
         }
       }
@@ -16027,7 +16027,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "保留中のレコード"
+            "value" : "保留中の録音"
           }
         },
         "ko" : {
@@ -16995,7 +16995,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eingabeaufforderung"
+            "value" : "Anweisung"
           }
         },
         "en" : {
@@ -17025,19 +17025,19 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "즉각적인"
+            "value" : "프롬프트"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "迅速的"
+            "value" : "提示词"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "迅速的"
+            "value" : "提示詞"
           }
         }
       }
@@ -21489,7 +21489,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TAGS"
+            "value" : "Tags"
           }
         },
         "en" : {
@@ -21507,31 +21507,31 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TAGS"
+            "value" : "ÉTIQUETTES"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TAGS"
+            "value" : "タグ"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TAGS"
+            "value" : "태그"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TAGS"
+            "value" : "标签"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TAGS"
+            "value" : "標籤"
           }
         }
       }
@@ -22093,7 +22093,7 @@
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "시간제 노동자"
+            "value" : "타이머"
           }
         },
         "zh-Hans" : {
@@ -22430,7 +22430,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Transkription ist fehlgeschlagen. Audio wurde unter „Ausstehende Datensätze“ gespeichert."
+            "value" : "Die Transkription ist fehlgeschlagen. Die Audioaufnahme wurde unter „Ausstehende Aufnahmen“ gespeichert."
           }
         },
         "en" : {
@@ -22454,7 +22454,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "転写に失敗しました。音声は保留中のレコードに保存されました。"
+            "value" : "文字起こしに失敗しました。音声は保留中の録音に保存されました。"
           }
         },
         "ko" : {
@@ -24071,7 +24071,7 @@
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "チルノートへようこそ！黄色のボタンをタップして音声メモを録音します。"
+            "value" : "ChillNote へようこそ！黄色いボタンをタップして、音声メモを録音してみましょう。"
           }
         },
         "ko" : {
