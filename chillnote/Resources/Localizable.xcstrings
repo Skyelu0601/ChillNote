@@ -112,7 +112,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "„Die Geschwindigkeit des Denkens einfangen,\neine Stimme nach der anderen."
+            "value" : "„Die Geschwindigkeit des Denkens einfangen,\neine Stimme nach der anderen.“"
           }
         },
         "en" : {
@@ -176,7 +176,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Definir los límites para preservar el 'Chill'\"."
+            "value" : "\"Definir los límites para preservar el 'Chill'.\""
           }
         },
         "fr" : {
@@ -228,7 +228,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Tengo la idea, pero no encuentro las palabras\"."
+            "value" : "\"Tengo la idea, pero no encuentro las palabras.\""
           }
         },
         "fr" : {
@@ -268,7 +268,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "„Das Leben ist zu kurz, um die Margen anzupassen.“"
+            "value" : "„Das Leben ist zu kurz, um an Rändern herumzuschieben.“"
           }
         },
         "en" : {
@@ -476,7 +476,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Das Erlebnis:** Die Stimme enthält Nuancen, die im Text fehlen können. Das Aufzeichnen wird zu einer Möglichkeit, zu klären und zu ordnen, was Sie fühlen und denken."
+            "value" : "**Das Erlebnis:** In der Stimme stecken Nuancen, die im Text oft verloren gehen. Aufnehmen wird zu einem Weg, zu ordnen und zu klären, was du fühlst und denkst."
           }
         },
         "en" : {
@@ -528,7 +528,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Die Reibung:** Wenn wir tippen, kümmern wir uns um die Mikroverwaltung – wir korrigieren Tippfehler und passen die Ränder an. Jede Mikroentscheidung ist eine Makro-Unterbrechung des Flusses."
+            "value" : "**Die Reibung:** Beim Tippen verzetteln wir uns schnell in Kleinigkeiten - Tippfehler korrigieren, Abstände anpassen, Format prüfen. Jede dieser Mikroentscheidungen unterbricht den Gedankenfluss."
           }
         },
         "en" : {
@@ -736,7 +736,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Das Ergebnis:** Konzentrieren Sie sich ganz auf den *Inhalt*. Mit einem einzigen Tastendruck wendet die App eine professionelle Struktur an. Gewinnen Sie die Zeit zurück, die Sie für bedeutungslose betriebliche Aufgaben verschwendet haben."
+            "value" : "**Das Ergebnis:** Konzentriere dich ganz auf den *Inhalt*. Mit einem Tipp bringt die App deine Gedanken in eine klare, professionelle Form. So holst du dir die Zeit zurück, die sonst in unnötige Handgriffe fließt."
           }
         },
         "en" : {
@@ -788,7 +788,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Die Lösung:** **KI als Editor.** ChillNote lädt zum „Streifzug“ ein. Schütten Sie fragmentierte, unordentliche Gedanken aus. Die KI fungiert als geschickter Redakteur und restrukturiert das Chaos in klare Prosa. Es befähigt Sie, ein „Denker“ zu sein, ohne ein ausgefeilter „Schreiber“ sein zu müssen."
+            "value" : "**Die Lösung:** **KI als Editor.** ChillNote lädt dich ein, einfach draufloszureden. Lass fragmentierte, unordentliche Gedanken einfach raus. Die KI wirkt wie ein guter Editor und formt aus dem Chaos einen klaren Text. So kannst du dich aufs Denken konzentrieren, ohne erst perfekt schreiben zu müssen."
           }
         },
         "en" : {
@@ -806,7 +806,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**La solution :** **L'IA en tant qu'éditeur.** ChillNote vous invite à « flâner ». Éliminez des pensées fragmentées et désordonnées. L’IA agit comme un éditeur compétent, restructurant le chaos en prose claire. Cela vous permet d'être un « penseur » sans avoir besoin d'être un « écrivain » raffiné."
+            "value" : "**La solution :** **L'IA comme éditeur.** ChillNote vous invite à parler librement. Déversez vos pensées fragmentées et désordonnées. L’IA agit comme un bon éditeur et transforme ce chaos en texte clair. Vous pouvez ainsi vous concentrer sur vos idées, sans devoir écrire parfaitement dès le départ."
           }
         },
         "ja" : {
@@ -840,7 +840,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Die Lösung:** Eine Trennung zwischen Eingabe und Visualisierung. Du sprichst; Den Rest erledigt das System. Kein RSI mehr, keine Nackenschmerzen mehr – einfach pure Schöpfung."
+            "value" : "**Die Lösung:** Du sprichst, das System erledigt den Rest. Weniger Belastung für Hände und Nacken - mehr Raum fürs eigentliche Erstellen."
           }
         },
         "en" : {
@@ -892,7 +892,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Die Lösung:** Stimme ist der Weg des geringsten Widerstands. Indem wir die mechanische Barriere beseitigen, lassen wir den „Strom des Bewusstseins“ ungehindert fließen und stellen sicher, dass kein Funke Genie durch die Langsamkeit einer Tastatur verloren geht."
+            "value" : "**Die Lösung:** Sprechen ist der direkteste Weg. Wenn die mechanische Hürde wegfällt, können Gedanken frei fließen, ohne an der Langsamkeit einer Tastatur hängen zu bleiben."
           }
         },
         "en" : {
@@ -944,7 +944,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Für Klarheit sorgen: Lautes Sprechen externalisiert interne Konflikte. ChillNote bietet einen sicheren Ort zum Aufzeichnen und Nachdenken."
+            "value" : "**Klarer denken:** Laut auszusprechen, was in dir vorgeht, kann innere Konflikte greifbarer machen. ChillNote bietet dir dafür einen geschützten Raum zum Festhalten und Reflektieren."
           }
         },
         "en" : {
@@ -1222,7 +1222,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld remarques • %@"
+            "value" : "%lld notes • %@"
           }
         },
         "ja" : {
@@ -1517,7 +1517,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10 Minuten Aufnahmezeit"
+            "value" : "10-minütige Deep Dives"
           }
         },
         "en" : {
@@ -1830,7 +1830,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Befehle hinzufügen"
+            "value" : "Rezepte hinzufügen"
           }
         },
         "en" : {
@@ -1848,7 +1848,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajouter des commandes"
+            "value" : "Ajouter des actions"
           }
         },
         "ja" : {
@@ -1882,7 +1882,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fügen Sie Befehle aus der Bibliothek hinzu. Das Erstellen eigener benutzerdefinierter Aktionen ist für zahlende Mitglieder verfügbar."
+            "value" : "Füge Rezepte aus der Bibliothek hinzu. Eigene benutzerdefinierte Aktionen sind für zahlende Mitglieder verfügbar."
           }
         },
         "en" : {
@@ -1900,7 +1900,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajoutez des commandes depuis la bibliothèque. La création de vos propres actions personnalisées est disponible pour les membres payants."
+            "value" : "Ajoutez des actions depuis la bibliothèque. La création de vos propres actions personnalisées est réservée aux membres payants."
           }
         },
         "ja" : {
@@ -1987,7 +1987,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zu „Meine Befehle“ hinzufügen"
+            "value" : "Zu „Meine Rezepte“ hinzufügen"
           }
         },
         "en" : {
@@ -2005,7 +2005,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajouter à Mes commandes"
+            "value" : "Ajouter à Mes actions"
           }
         },
         "ja" : {
@@ -2300,7 +2300,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die KI-Verfeinerung ist fehlgeschlagen. Sie können diese Notiz weiterhin bearbeiten."
+            "value" : "Die KI-Überarbeitung ist fehlgeschlagen. Du kannst diese Notiz weiter bearbeiten."
           }
         },
         "en" : {
@@ -2405,7 +2405,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ein Beispielsteuerelement, das einen Timer ausführt."
+            "value" : "Ein Beispiel-Element, das einen Timer startet."
           }
         },
         "en" : {
@@ -2423,7 +2423,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un exemple de contrôle qui exécute une minuterie."
+            "value" : "Un exemple de contrôle qui lance un minuteur."
           }
         },
         "ja" : {
@@ -2616,7 +2616,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sind Sie sicher, dass Sie %1$lld Notiz%2$@ löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden."
+            "value" : "Möchtest du %1$lld Notiz%2$@ wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
           }
         },
         "en" : {
@@ -2628,7 +2628,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¿Está seguro de que desea eliminar %1$lld nota%2$@? Esta acción no se puede deshacer."
+            "value" : "¿Seguro que quieres eliminar %1$lld nota%2$@? Esta acción no se puede deshacer."
           }
         },
         "fr" : {
@@ -2668,7 +2668,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sind Sie sicher, dass Sie diese Notiz löschen möchten? Diese Aktion kann nicht rückgängig gemacht werden."
+            "value" : "Möchtest du diese Notiz wirklich löschen? Diese Aktion kann nicht rückgängig gemacht werden."
           }
         },
         "en" : {
@@ -2824,7 +2824,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fragen Sie den Agenten"
+            "value" : "Agent fragen"
           }
         },
         "en" : {
@@ -2876,7 +2876,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fragen Sie die KI"
+            "value" : "KI fragen"
           }
         },
         "en" : {
@@ -3504,7 +3504,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Körper groß"
+            "value" : "Fließtext groß"
           }
         },
         "en" : {
@@ -3557,7 +3557,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Körpermittel"
+            "value" : "Fließtext mittel"
           }
         },
         "en" : {
@@ -3610,7 +3610,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Körper klein"
+            "value" : "Fließtext klein"
           }
         },
         "en" : {
@@ -4028,7 +4028,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill-Befehle"
+            "value" : "Chill-Rezepte"
           }
         },
         "en" : {
@@ -4081,7 +4081,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill-Befehle können bis zu %lld Notizen gleichzeitig verarbeiten. Bitte reduzieren Sie Ihre Auswahl."
+            "value" : "Chill-Rezepte können bis zu %lld Notizen gleichzeitig verarbeiten. Bitte reduziere deine Auswahl."
           }
         },
         "en" : {
@@ -4093,7 +4093,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los Comandos Chill pueden procesar hasta %lld notas a la vez. Por favor, reduzca su selección."
+            "value" : "Los Comandos Chill pueden procesar hasta %lld notas a la vez. Reduce tu selección."
           }
         },
         "fr" : {
@@ -4289,7 +4289,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote ist Mobile-First. Es dient dazu, flüchtige, fragmentierte Gedanken einzufangen, bevor sie verschwinden. Es geht um die Keime von Ideen, nicht um den gesamten Roman."
+            "value" : "ChillNote ist Mobile First. Die App ist dafür da, flüchtige und unfertige Gedanken festzuhalten, bevor sie wieder verschwinden. Es geht um erste Ideen - nicht gleich um den ganzen Roman."
           }
         },
         "en" : {
@@ -4341,7 +4341,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote ist kein Firmendiktiergerät. Es dient der persönlichen Reflexion und puren Inspiration, nicht dem Dröhnen im Sitzungssaal. Nutzen Sie spezielle Software für stundenlange Meetings."
+            "value" : "ChillNote ist kein Diktiergerät für endlose Business-Meetings. Es ist für persönliche Reflexion und rohe Inspiration gedacht, nicht für stundenlange Besprechungen. Dafür ist spezialisierte Software besser geeignet."
           }
         },
         "en" : {
@@ -4353,13 +4353,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote no es un dictáfono corporativo. Es para reflexiones personales e inspiración pura, no para el zumbido de la sala de juntas. Utilice software especializado para reuniones de una hora."
+            "value" : "ChillNote no es un dictáfono corporativo. Es para reflexiones personales e inspiración en bruto, no para el ruido de la sala de juntas. Usa software especializado para reuniones de una hora."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote n'est pas un dictaphone d'entreprise. Il s’agit de réflexions personnelles et d’inspiration brute, pas du drone d’une salle de réunion. Utilisez un logiciel spécialisé pour les réunions d’une heure."
+            "value" : "ChillNote n'est pas un dictaphone d'entreprise. Il est conçu pour les réflexions personnelles et l'inspiration brute, pas pour les longues réunions. Utilisez un outil spécialisé pour les réunions d'une heure."
           }
         },
         "ja" : {
@@ -4705,7 +4705,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chillo-Serviceschlüssel nicht konfiguriert. Bitte wenden Sie sich an den Support."
+            "value" : "Der Chillo-Serviceschlüssel ist nicht konfiguriert. Bitte wende dich an den Support."
           }
         },
         "en" : {
@@ -4717,7 +4717,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Clave de servicio de Chillo no configurada. Por favor contacte al soporte."
+            "value" : "La clave del servicio de Chillo no está configurada. Ponte en contacto con soporte."
           }
         },
         "fr" : {
@@ -4809,7 +4809,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie eine Sprache aus, um Ihre Notiz zu übersetzen"
+            "value" : "Wähle eine Sprache für die Übersetzung deiner Notiz"
           }
         },
         "en" : {
@@ -4861,7 +4861,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie Symbol"
+            "value" : "Symbol auswählen"
           }
         },
         "en" : {
@@ -4873,7 +4873,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Elija el icono"
+            "value" : "Elegir icono"
           }
         },
         "fr" : {
@@ -5018,7 +5018,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wir bereinigen und strukturieren deine Notiz..."
+            "value" : "Wir ordnen und strukturieren deine Notiz..."
           }
         },
         "en" : {
@@ -5174,7 +5174,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kombinieren Sie ausgewählte Notizen zu einem zusammenhängenden Dokument."
+            "value" : "Fasse ausgewählte Notizen zu einem zusammenhängenden Dokument zusammen."
           }
         },
         "en" : {
@@ -5226,7 +5226,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Komplexe Aufgaben, sofort erledigt"
+            "value" : "Komplexe Aufgaben in Sekunden"
           }
         },
         "en" : {
@@ -5278,7 +5278,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fassen Sie lange Texte zu einer kurzen Zusammenfassung zusammen."
+            "value" : "Fasse lange Texte kurz und klar zusammen."
           }
         },
         "en" : {
@@ -5487,7 +5487,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Korrigieren Sie alle Grammatikfehler."
+            "value" : "Korrigiere alle Grammatikfehler."
           }
         },
         "en" : {
@@ -5499,7 +5499,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Corrija todos los errores gramaticales."
+            "value" : "Corrige todos los errores gramaticales."
           }
         },
         "fr" : {
@@ -5747,7 +5747,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mit Pro personalisierte KI-Befehle erstellen"
+            "value" : "Mit Pro eigene KI-Rezepte erstellen"
           }
         },
         "en" : {
@@ -5765,7 +5765,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Créez des commandes IA personnalisées avec Pro"
+            "value" : "Créez vos propres actions IA avec Pro"
           }
         },
         "ja" : {
@@ -5799,7 +5799,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Befehl erstellen"
+            "value" : "Rezept erstellen"
           }
         },
         "en" : {
@@ -5817,7 +5817,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Créer une commande"
+            "value" : "Créer une action"
           }
         },
         "ja" : {
@@ -5903,7 +5903,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Individuelle Chill-Befehle"
+            "value" : "Eigene Chill-Rezepte"
           }
         },
         "en" : {
@@ -5955,7 +5955,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Individuelles Rezept"
+            "value" : "Eigenes Rezept"
           }
         },
         "en" : {
@@ -6007,7 +6007,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tägliches Befehlslimit erreicht"
+            "value" : "Tägliches Rezeptlimit erreicht"
           }
         },
         "en" : {
@@ -6025,7 +6025,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Limite quotidienne de commandes atteinte"
+            "value" : "Limite quotidienne d'actions atteinte"
           }
         },
         "ja" : {
@@ -6580,7 +6580,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Befehl löschen"
+            "value" : "Rezept löschen"
           }
         },
         "en" : {
@@ -6598,7 +6598,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Supprimer la commande"
+            "value" : "Supprimer l'action"
           }
         },
         "ja" : {
@@ -6998,7 +6998,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Anzeigemedium"
+            "value" : "Anzeige mittel"
           }
         },
         "en" : {
@@ -7016,7 +7016,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Support d'affichage"
+            "value" : "Affichage moyen"
           }
         },
         "ja" : {
@@ -7416,7 +7416,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Leeren Sie den Papierkorb"
+            "value" : "Papierkorb leeren"
           }
         },
         "en" : {
@@ -7469,7 +7469,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Geben Sie einen Namen für Ihr benutzerdefiniertes Tag ein."
+            "value" : "Gib deinem eigenen Tag einen Namen."
           }
         },
         "en" : {
@@ -7481,7 +7481,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingrese un nombre para su etiqueta personalizada."
+            "value" : "Ingresa un nombre para tu etiqueta personalizada."
           }
         },
         "fr" : {
@@ -7521,7 +7521,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wechseln Sie in den AI-Kontextmodus"
+            "value" : "In den KI-Kontextmodus wechseln"
           }
         },
         "en" : {
@@ -7533,7 +7533,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ingrese al modo de contexto de IA"
+            "value" : "Entrar en el modo de contexto de IA"
           }
         },
         "fr" : {
@@ -9426,7 +9426,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ausbauen"
+            "value" : "Erweitern"
           }
         },
         "en" : {
@@ -9908,13 +9908,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rebaja de exportación"
+            "value" : "Exportar en Markdown"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exporter la démarque"
+            "value" : "Exporter en Markdown"
           }
         },
         "ja" : {
@@ -9948,7 +9948,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exportbereit"
+            "value" : "Export ist bereit"
           }
         },
         "en" : {
@@ -10220,13 +10220,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se pudieron empaquetar los archivos de rebajas."
+            "value" : "No se pudieron empaquetar los archivos Markdown."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Échec de l'empaquetage des fichiers de démarque."
+            "value" : "Impossible de regrouper les fichiers Markdown."
           }
         },
         "ja" : {
@@ -10428,13 +10428,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se pudieron escribir archivos de rebajas."
+            "value" : "No se pudieron escribir los archivos Markdown."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Échec de l'écriture des fichiers de démarque."
+            "value" : "Impossible d'écrire les fichiers Markdown."
           }
         },
         "ja" : {
@@ -10468,7 +10468,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beenden Sie die Aufnahme"
+            "value" : "Aufnahme beenden"
           }
         },
         "en" : {
@@ -10833,7 +10833,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Für reflektierende Denker"
+            "value" : "Für nachdenkliche Menschen"
           }
         },
         "en" : {
@@ -10989,7 +10989,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Für ADHS und sehr aktive Denker"
+            "value" : "Für Menschen mit ADHS und einem hyperaktiven Kopf"
           }
         },
         "en" : {
@@ -11041,7 +11041,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Formatierung ist „performative Arbeit“ – sie braucht Zeit, bringt aber keinen inhaltlichen Mehrwert."
+            "value" : "Formatieren ist oft nur Beschäftigung: Es kostet Zeit, macht den Inhalt aber nicht besser."
           }
         },
         "en" : {
@@ -11798,7 +11798,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill Recipes peut traiter jusqu'à %lld notes à la fois. Réduisez votre sélection."
+            "value" : "Les actions Chill peuvent traiter jusqu'à %lld notes à la fois. Réduisez votre sélection."
           }
         },
         "ja" : {
@@ -11885,7 +11885,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Menschheit hat seit Äonen gesprochen; Tippen ist eine neue Erfindung. Für Kreative kann das Tippen eine Ablenkung sein."
+            "value" : "Menschen sprechen seit jeher; Tippen ist dagegen eine ziemlich neue Gewohnheit. Für kreative Arbeit kann genau das zum Störfaktor werden."
           }
         },
         "en" : {
@@ -11937,7 +11937,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ich bin bereit, Ihnen zu helfen, sobald Sie einige Inhalte ausgewählt haben."
+            "value" : "Ich bin bereit zu helfen, sobald du ein paar Inhalte ausgewählt hast."
           }
         },
         "en" : {
@@ -12093,7 +12093,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wenn es länger als 10 Minuten dauert, ist es kein Chill. Aufzeichnen, abschreiben, aufräumen, fertig. Halten Sie es leicht, halten Sie es schnell."
+            "value" : "Wenn es länger als 10 Minuten dauert, ist es nicht mehr chillig. Aufnehmen, transkribieren, ordnen, fertig. Bleib leicht, bleib schnell."
           }
         },
         "en" : {
@@ -12250,7 +12250,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beginnen Sie sofort damit, Ihre Gedanken aufzuzeichnen."
+            "value" : "Halte deine Gedanken sofort per Aufnahme fest."
           }
         },
         "en" : {
@@ -12262,7 +12262,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comience a registrar instantáneamente sus pensamientos."
+            "value" : "Empieza a grabar tus pensamientos al instante."
           }
         },
         "fr" : {
@@ -12458,7 +12458,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bewahren Sie die Originalnotizen auf"
+            "value" : "Originalnotizen behalten"
           }
         },
         "en" : {
@@ -12823,7 +12823,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Initialisierung der lokalen Daten ist fehlgeschlagen. Bitte versuchen Sie es erneut. Wenn es weiterhin fehlschlägt, starten Sie die App neu oder geben Sie Gerätespeicher frei und versuchen Sie es erneut."
+            "value" : "Die lokalen Daten konnten nicht initialisiert werden. Bitte versuch es erneut. Wenn das Problem bleibt, starte die App neu oder gib etwas Gerätespeicher frei und probier es dann noch einmal."
           }
         },
         "en" : {
@@ -12835,7 +12835,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Error al inicializar los datos locales. Por favor inténtalo de nuevo. Si aún falla, reinicie la aplicación o libere almacenamiento en el dispositivo e inténtelo nuevamente."
+            "value" : "Error al inicializar los datos locales. Inténtalo de nuevo. Si sigue fallando, reinicia la app o libera espacio en tu dispositivo y vuelve a intentarlo."
           }
         },
         "fr" : {
@@ -13623,7 +13623,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Plus de mesures"
+            "value" : "Plus d'actions"
           }
         },
         "ja" : {
@@ -13709,7 +13709,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Meine Befehle"
+            "value" : "Meine Rezepte"
           }
         },
         "en" : {
@@ -13727,7 +13727,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mes commandes"
+            "value" : "Mes actions"
           }
         },
         "ja" : {
@@ -14074,7 +14074,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kein Ton aufgenommen. Bitte versuchen Sie es erneut."
+            "value" : "Kein Audio aufgenommen. Bitte versuch es erneut."
           }
         },
         "en" : {
@@ -14138,7 +14138,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay notas eliminadas. Los pagarés permanecen por 30 días."
+            "value" : "Aún no hay notas eliminadas. Las notas se conservan durante 30 días."
           }
         },
         "fr" : {
@@ -14334,7 +14334,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noch keine Notizen. Verwenden Sie die Sprachtaste, um Ihre erste Notiz zu erstellen."
+            "value" : "Noch keine Notizen. Nutze den Sprachbutton, um deine erste Notiz zu erstellen."
           }
         },
         "en" : {
@@ -14346,7 +14346,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aún no hay notas. Utilice el botón de voz para crear su primera nota."
+            "value" : "Aún no hay notas. Usa el botón de voz para crear tu primera nota."
           }
         },
         "fr" : {
@@ -14438,7 +14438,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noch keine Befehle"
+            "value" : "Noch keine Rezepte"
           }
         },
         "en" : {
@@ -14456,7 +14456,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pas encore de commandes"
+            "value" : "Pas encore d'actions"
           }
         },
         "ja" : {
@@ -14490,7 +14490,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Noch keine Befehle"
+            "value" : "Noch keine Rezepte"
           }
         },
         "en" : {
@@ -14508,7 +14508,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aucune commande pour le moment"
+            "value" : "Aucune action pour le moment"
           }
         },
         "ja" : {
@@ -14646,7 +14646,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Derzeit sind keine Abonnementprodukte verfügbar. Bitte versuchen Sie es erneut."
+            "value" : "Derzeit sind keine Abos verfügbar. Bitte versuch es erneut."
           }
         },
         "en" : {
@@ -15586,7 +15586,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Öffnen Sie Einstellungen"
+            "value" : "Einstellungen öffnen"
           }
         },
         "en" : {
@@ -15807,7 +15807,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Archivo zip de embalaje..."
+            "value" : "Empaquetando archivo ZIP..."
           }
         },
         "fr" : {
@@ -16003,7 +16003,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ausstehende Aufzeichnungen"
+            "value" : "Ausstehende Aufnahmen"
           }
         },
         "en" : {
@@ -16015,7 +16015,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Registros pendientes"
+            "value" : "Grabaciones pendientes"
           }
         },
         "fr" : {
@@ -16055,7 +16055,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Menschen mit ADHS oder einem hochaktiven Geist erleben oft einen „Engpass“-Effekt. Ihr Gehirn erzeugt Verbindungen und Ideen mit einer Geschwindigkeit, mit der das Tippen einfach nicht mithalten kann."
+            "value" : "Menschen mit ADHS oder sehr aktiven Gedanken erleben oft einen Flaschenhals: Im Kopf entstehen Verbindungen und Ideen viel schneller, als Tippen mithalten kann."
           }
         },
         "en" : {
@@ -16276,7 +16276,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alfiler"
+            "value" : "Fijar"
           }
         },
         "fr" : {
@@ -16891,7 +16891,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verarbeitungshinweis"
+            "value" : "Notiz wird verarbeitet"
           }
         },
         "en" : {
@@ -16903,13 +16903,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nota de procesamiento"
+            "value" : "Procesando nota"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remarque sur le traitement"
+            "value" : "Traitement de la note"
           }
         },
         "ja" : {
@@ -16955,7 +16955,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tratamiento..."
+            "value" : "Procesando..."
           }
         },
         "fr" : {
@@ -17007,13 +17007,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inmediato"
+            "value" : "Instrucción"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rapide"
+            "value" : "Prompt"
           }
         },
         "ja" : {
@@ -17152,7 +17152,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lesen Sie dies laut vor"
+            "value" : "Lies das laut vor"
           }
         },
         "en" : {
@@ -17170,7 +17170,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lisez ceci à haute voix"
+            "value" : "Lire à voix haute"
           }
         },
         "ja" : {
@@ -17222,7 +17222,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notes de lecture..."
+            "value" : "Lecture des notes..."
           }
         },
         "ja" : {
@@ -17308,7 +17308,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Befehlsdetails"
+            "value" : "Rezeptdetails"
           }
         },
         "en" : {
@@ -17326,7 +17326,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Détails de la commande"
+            "value" : "Détails de l'action"
           }
         },
         "ja" : {
@@ -17373,7 +17373,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Registro"
+            "value" : "Grabar"
           }
         },
         "fr" : {
@@ -18412,7 +18412,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aus „Meine Befehle“ entfernen"
+            "value" : "Aus „Meine Rezepte“ entfernen"
           }
         },
         "en" : {
@@ -18430,7 +18430,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Retirer de Mes commandes"
+            "value" : "Retirer de Mes actions"
           }
         },
         "ja" : {
@@ -18880,7 +18880,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wiederholen Sie die Initialisierung"
+            "value" : "Initialisierung erneut versuchen"
           }
         },
         "en" : {
@@ -18932,7 +18932,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Versuchen Sie den Upload erneut"
+            "value" : "Upload erneut versuchen"
           }
         },
         "en" : {
@@ -18996,7 +18996,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ahorrar"
+            "value" : "Guardar"
           }
         },
         "fr" : {
@@ -19141,7 +19141,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Speichern fehlgeschlagen. Bitte versuchen Sie es erneut."
+            "value" : "Speichern fehlgeschlagen. Bitte versuch es erneut."
           }
         },
         "en" : {
@@ -19153,7 +19153,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Error al guardar. Vuelva a intentarlo."
+            "value" : "Error al guardar. Inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -19258,7 +19258,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¡Salvado!"
+            "value" : "¡Guardado!"
           }
         },
         "fr" : {
@@ -19298,7 +19298,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sparen..."
+            "value" : "Speichern..."
           }
         },
         "en" : {
@@ -19310,13 +19310,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ahorro..."
+            "value" : "Guardando..."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Économie..."
+            "value" : "Enregistrement..."
           }
         },
         "ja" : {
@@ -19662,7 +19662,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie „Alle“ aus"
+            "value" : "Alle auswählen"
           }
         },
         "en" : {
@@ -19714,7 +19714,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie Sprache aus"
+            "value" : "Sprache auswählen"
           }
         },
         "en" : {
@@ -19732,7 +19732,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sélectionnez la langue"
+            "value" : "Choisir la langue"
           }
         },
         "ja" : {
@@ -19766,7 +19766,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wähle Notizen aus und frage sie alles."
+            "value" : "Wähle Notizen aus und frag alles, was du wissen willst."
           }
         },
         "en" : {
@@ -19871,7 +19871,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wählen Sie einige Notizen aus, um zu beginnen"
+            "value" : "Wähle ein paar Notizen aus, um loszulegen."
           }
         },
         "en" : {
@@ -19883,7 +19883,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seleccione algunas notas para comenzar"
+            "value" : "Selecciona algunas notas para empezar"
           }
         },
         "fr" : {
@@ -20392,7 +20392,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vereinfachen Sie komplexe Themen, damit jeder ihnen folgen kann."
+            "value" : "Vereinfache komplexe Themen, damit alle sie gut verstehen können."
           }
         },
         "en" : {
@@ -20404,7 +20404,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Simplifique temas complejos para que cualquiera pueda seguirlos."
+            "value" : "Simplifica temas complejos para que cualquiera pueda seguirlos."
           }
         },
         "fr" : {
@@ -20549,7 +20549,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Starten Sie einen Timer"
+            "value" : "Timer starten"
           }
         },
         "en" : {
@@ -20757,7 +20757,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Beginnen Sie mit der Organisation mit Tags"
+            "value" : "Mit Tags Ordnung schaffen"
           }
         },
         "en" : {
@@ -20775,7 +20775,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Commencez à organiser avec des balises"
+            "value" : "Commencez à organiser avec des tags"
           }
         },
         "ja" : {
@@ -20862,7 +20862,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Stoppt die Aufnahme und speichert Ihre Notiz."
+            "value" : "Beendet die Aufnahme und speichert deine Notiz."
           }
         },
         "en" : {
@@ -20880,7 +20880,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Arrête l'enregistrement et enregistre votre note."
+            "value" : "Arrête l'enregistrement et enregistre la note."
           }
         },
         "ja" : {
@@ -20914,7 +20914,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erweitern Sie eine kurze Idee in detailliertere Details."
+            "value" : "Mach aus einer kurzen Idee einen ausführlicheren Text."
           }
         },
         "en" : {
@@ -20926,13 +20926,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Amplíe una idea breve hasta convertirla en detalles más ricos."
+            "value" : "Amplía una idea breve y conviértela en algo más detallado."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Étirez une brève idée dans des détails plus riches."
+            "value" : "Développez une idée brève en un texte plus détaillé."
           }
         },
         "ja" : {
@@ -21018,7 +21018,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abonnement"
+            "value" : "Abo"
           }
         },
         "en" : {
@@ -21333,7 +21333,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Etikett"
+            "value" : "Tag"
           }
         },
         "en" : {
@@ -21351,7 +21351,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Étiqueter"
+            "value" : "Tag"
           }
         },
         "ja" : {
@@ -21403,7 +21403,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Couleur de l’étiquette %@"
+            "value" : "Couleur du tag %@"
           }
         },
         "ja" : {
@@ -21449,7 +21449,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nombre del tag"
+            "value" : "Nombre de la etiqueta"
           }
         },
         "fr" : {
@@ -21501,7 +21501,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TAGS"
+            "value" : "ETIQUETAS"
           }
         },
         "fr" : {
@@ -21646,7 +21646,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Die Notizen wurden zu einer neuen Notiz zusammengeführt. Möchten Sie die ursprünglichen %lld-Notizen löschen?"
+            "value" : "Die Notizen wurden zu einer neuen Notiz zusammengeführt. Möchtest du die ursprünglichen %lld Notizen löschen?"
           }
         },
         "en" : {
@@ -21658,7 +21658,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Las notas se han fusionado en una nueva nota. ¿Le gustaría eliminar las %lld notas originales?"
+            "value" : "Las notas se han fusionado en una nueva nota. ¿Quieres eliminar las %lld notas originales?"
           }
         },
         "fr" : {
@@ -21958,7 +21958,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dadurch wird dieses benutzerdefinierte Rezept dauerhaft gelöscht."
+            "value" : "Dadurch wird dieses eigene Rezept dauerhaft gelöscht."
           }
         },
         "en" : {
@@ -22075,7 +22075,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Minutero"
+            "value" : "Temporizador"
           }
         },
         "fr" : {
@@ -22128,7 +22128,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El temporizador está funcionando"
+            "value" : "El temporizador está en marcha"
           }
         },
         "fr" : {
@@ -22482,7 +22482,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Das Transkriptionsergebnis war leer. Bitte versuchen Sie es erneut."
+            "value" : "Das Transkriptionsergebnis war leer. Bitte versuch es erneut."
           }
         },
         "en" : {
@@ -22494,7 +22494,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El resultado de la transcripción estaba vacío. Vuelva a intentarlo."
+            "value" : "La transcripción no devolvió contenido. Inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -22534,7 +22534,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zeitüberschreitung bei der Transkription. Bitte versuchen Sie es erneut."
+            "value" : "Die Transkription hat zu lange gedauert. Bitte versuch es erneut."
           }
         },
         "en" : {
@@ -22639,7 +22639,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Übersetzen Sie Notizen in eine andere Sprache."
+            "value" : "Übersetze Notizen in eine andere Sprache."
           }
         },
         "en" : {
@@ -22657,7 +22657,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Traduisez des notes dans une autre langue."
+            "value" : "Traduire les notes dans une autre langue."
           }
         },
         "ja" : {
@@ -22691,7 +22691,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Befehle ausprobieren"
+            "value" : "Rezepte ausprobieren"
           }
         },
         "en" : {
@@ -22709,7 +22709,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Essayer les commandes"
+            "value" : "Essayer les actions"
           }
         },
         "ja" : {
@@ -22743,7 +22743,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verwandeln Sie eine Notiz in einen prägnanten Beitrag für X (Twitter)."
+            "value" : "Mach aus einer Notiz einen prägnanten Beitrag für X (Twitter)."
           }
         },
         "en" : {
@@ -22761,7 +22761,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Transformez une note en un message concis pour X (Twitter)."
+            "value" : "Transformer une note en message concis pour X (Twitter)."
           }
         },
         "ja" : {
@@ -22795,7 +22795,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verwandeln Sie eine Notiz in einen professionellen LinkedIn-Beitrag."
+            "value" : "Mach aus einer Notiz einen professionellen LinkedIn-Beitrag."
           }
         },
         "en" : {
@@ -22813,7 +22813,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Transformez une note en publication LinkedIn professionnelle."
+            "value" : "Transformer une note en publication LinkedIn professionnelle."
           }
         },
         "ja" : {
@@ -22847,7 +22847,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verwandeln Sie eine Notiz in ein YouTube-Videoskript."
+            "value" : "Mach aus einer Notiz ein YouTube-Videoskript."
           }
         },
         "en" : {
@@ -22865,7 +22865,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Transformez une note en script vidéo YouTube."
+            "value" : "Transformer une note en script de vidéo YouTube."
           }
         },
         "ja" : {
@@ -22899,7 +22899,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Verwandeln Sie Notizen in einen E-Mail-Entwurf."
+            "value" : "Mach aus Notizen einen E-Mail-Entwurf."
           }
         },
         "en" : {
@@ -22911,13 +22911,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Convierta notas en un borrador de correo electrónico."
+            "value" : "Convierte notas en un borrador de correo."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Transformez vos notes en brouillon d'e-mail."
+            "value" : "Transformer des notes en brouillon d'e-mail."
           }
         },
         "ja" : {
@@ -23108,7 +23108,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notizen können nicht exportiert werden. Bitte versuchen Sie es erneut."
+            "value" : "Die Notizen konnten nicht exportiert werden. Bitte versuch es erneut."
           }
         },
         "en" : {
@@ -23160,7 +23160,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diese Notiz kann nicht exportiert werden. Bitte versuchen Sie es erneut."
+            "value" : "Diese Notiz konnte nicht exportiert werden. Bitte versuch es erneut."
           }
         },
         "en" : {
@@ -23212,7 +23212,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Abonnementpreise können nicht geladen werden. Bitte überprüfen Sie Ihr Netzwerk und versuchen Sie es erneut."
+            "value" : "Die Abo-Preise konnten nicht geladen werden. Prüfe bitte deine Verbindung und versuch es erneut."
           }
         },
         "en" : {
@@ -23224,7 +23224,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No se pueden cargar los precios de suscripción. Por favor verifique su red e inténtelo nuevamente."
+            "value" : "No se pueden cargar los precios de suscripción. Revisa tu conexión e inténtalo de nuevo."
           }
         },
         "fr" : {
@@ -23577,7 +23577,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lösen"
+            "value" : "Anheften aufheben"
           }
         },
         "en" : {
@@ -23589,7 +23589,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Desprender"
+            "value" : "Desfijar"
           }
         },
         "fr" : {
@@ -23629,7 +23629,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Upgraden"
+            "value" : "Upgrade"
           }
         },
         "en" : {
@@ -23647,7 +23647,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Passer à l'offre supérieure"
+            "value" : "Mettre à niveau"
           }
         },
         "ja" : {
@@ -23733,7 +23733,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Upgraden Sie auf Pro, um mehr mit ChillNote freizuschalten."
+            "value" : "Wechsle zu Pro, um mit ChillNote mehr freizuschalten."
           }
         },
         "en" : {
@@ -23804,7 +23804,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Accord utilisateur"
+            "value" : "Conditions d'utilisation"
           }
         },
         "ja" : {
@@ -23909,7 +23909,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Langue vocale"
+            "value" : "Langue parlée"
           }
         },
         "ja" : {
@@ -24047,7 +24047,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Willkommen bei ChillNote! Tippen Sie auf die gelbe Schaltfläche, um eine Sprachnotiz aufzunehmen."
+            "value" : "Willkommen bei ChillNote! Tippe auf den gelben Button, um eine Sprachnotiz aufzunehmen."
           }
         },
         "en" : {
@@ -24059,7 +24059,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¡Bienvenido a ChillNote! Toque el botón amarillo para grabar una nota de voz."
+            "value" : "¡Bienvenido a ChillNote! Toca el botón amarillo para grabar una nota de voz."
           }
         },
         "fr" : {
@@ -24319,13 +24319,13 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Escribiendo archivos de rebajas..."
+            "value" : "Escribiendo archivos Markdown..."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Écriture de fichiers de démarques..."
+            "value" : "Écriture des fichiers Markdown..."
           }
         },
         "ja" : {
@@ -24570,7 +24570,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sie können AI zu bis zu %lld Notizen gleichzeitig befragen. Bitte reduzieren Sie Ihre Auswahl."
+            "value" : "Du kannst die KI zu bis zu %lld Notizen gleichzeitig befragen. Bitte reduziere deine Auswahl."
           }
         },
         "en" : {
@@ -24582,7 +24582,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Puedes preguntarle a AI sobre hasta %lld notas a la vez. Por favor reduzca su selección."
+            "value" : "Puedes preguntarle a la IA sobre hasta %lld notas a la vez. Reduce tu selección."
           }
         },
         "fr" : {
@@ -24622,7 +24622,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sie können ChillNote weiterhin verwenden, während wir arbeiten."
+            "value" : "Du kannst ChillNote weiter nutzen, während wir arbeiten."
           }
         },
         "en" : {
@@ -24675,7 +24675,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sie haben %lld Notizen ausgewählt. Das Abfragen von KI mit vielen Notizen ist möglicherweise langsamer und ungenauer."
+            "value" : "Du hast %lld Notizen ausgewählt. Bei vielen Notizen kann die KI langsamer und ungenauer sein."
           }
         },
         "en" : {
@@ -24687,7 +24687,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seleccionó %lld notas. Preguntarle a la IA con muchas notas puede ser más lento y menos preciso."
+            "value" : "Has seleccionado %lld notas. Preguntarle a la IA sobre muchas notas puede ser más lento y menos preciso."
           }
         },
         "fr" : {
@@ -24728,7 +24728,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sie haben %lld Notizen ausgewählt. Die Bearbeitung kann eine Weile dauern."
+            "value" : "Du hast %lld Notizen ausgewählt. Die Verarbeitung kann etwas dauern."
           }
         },
         "en" : {
@@ -24740,7 +24740,7 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seleccionó %lld notas. Esto puede tardar un poco en procesarse."
+            "value" : "Has seleccionado %lld notas. Esto puede tardar un poco en procesarse."
           }
         },
         "fr" : {
@@ -24850,7 +24850,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos avantages actifs"
+            "value" : "Vos avantages actuels"
           }
         },
         "ja" : {
