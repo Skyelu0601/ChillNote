@@ -200,13 +200,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“定义边界以保持‘寒冷’。”"
+            "value" : "“划清边界，守住那份 Chill。”"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“定義邊界以保持‘寒冷’。”"
+            "value" : "「劃清界線，守住那份 Chill。」"
           }
         }
       }
@@ -252,13 +252,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“我有这个想法，但我找不到语言。”"
+            "value" : "“我有想法，却不知道该怎么说出来。”"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“我有這個想法，但我找不到語言。”"
+            "value" : "「我有想法，卻不知道該怎麼說出來。」"
           }
         }
       }
@@ -304,13 +304,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“生命太短暂，无法调整利润。”"
+            "value" : "“人生苦短，别把时间花在调页边距上。”"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“生命太短暫，無法調整利潤。”"
+            "value" : "「人生苦短，別把時間花在調頁邊距上。」"
           }
         }
       }
@@ -824,13 +824,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解决方案：** **AI 作为编辑器。** ChillNote 邀请您“漫步”。倾吐支离破碎、凌乱的思绪。人工智能充当熟练的编辑器，将混乱重组为清晰的散文。它使您能够成为一名“思想家”，而无需成为一名优雅的“作家”。"
+            "value" : "**解决方案：** **让 AI 做你的编辑。** 在 ChillNote 里，你可以放心把零散、凌乱的想法直接说出来。AI 会像一位靠谱的编辑，帮你把混乱整理成清晰的文字。你只需要专注思考，不必先把自己变成一个擅长写作的人。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解決方案：** **AI 作為編輯器。 ** ChillNote 邀請您「漫步」。傾吐支離破碎、凌亂的思緒。人工智慧充當熟練的編輯器，將混亂重組為清晰的散文。它使您能夠成為一名“思想家”，而無需成為優雅的“作家”。"
+            "value" : "**解決方案：** **讓 AI 當你的編輯。** 在 ChillNote 裡，你可以放心把零散、凌亂的想法直接說出來。AI 會像一位可靠的編輯，幫你把混亂整理成清晰的文字。你只需要專注思考，不必先把自己變成擅長寫作的人。"
           }
         }
       }
@@ -876,13 +876,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解决方案：** 输入和可视化之间脱节。你说话；系统会处理剩下的事情。不再有 RSI，不再有颈部疼痛——只有纯粹的创造。"
+            "value" : "**解决方案：** 说出来，剩下的交给系统。少一点重复操作，少一点肩颈负担，把注意力留给真正的创作。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解決方案：** 輸入和視覺化之間脫節。你說話；系統會處理剩下的事情。 No more RSI, no more neck pain—just pure creation."
+            "value" : "**解決方案：** 你只管說，剩下的交給系統。少一點重複操作，少一點肩頸負擔，把注意力留給真正的創作。"
           }
         }
       }
@@ -980,13 +980,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**清晰发声：** 大声说话将内部冲突外化。 ChillNote 为日记和反思提供了一个安全的空间。"
+            "value" : "**说出来，思路会更清楚：** 当你把脑子里的纠结说出口，很多想法就开始变得清晰。ChillNote 适合用来写日记、做反思，也适合安静地整理自己。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**清晰發聲：** 大聲說話將內在衝突外在化。 ChillNote 為日記和反思提供了一個安全的空間。"
+            "value" : "**說出來，思路會更清楚：** 當你把腦中的糾結說出口，很多想法就開始變得清晰。ChillNote 適合拿來寫日記、做反思，也適合安靜地整理自己。"
           }
         }
       }
@@ -1136,13 +1136,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 上下文注释"
+            "value" : "%lld 条上下文笔记"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 上下文註釋"
+            "value" : "%lld 則上下文筆記"
           }
         }
       }
@@ -1240,13 +1240,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 注释 • %@"
+            "value" : "%lld 条笔记 • %@"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 註釋 • %@"
+            "value" : "%lld 則筆記 • %@"
           }
         }
       }
@@ -1918,13 +1918,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "从资源库添加指令。付费会员可创建自己的自定义操作。"
+            "value" : "从指令库添加指令。付费会员还可以创建自己的自定义指令。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "從資源庫添加指令。付費會員可建立自己的自訂操作。"
+            "value" : "從指令庫新增指令。付費會員還可以建立自己的自訂指令。"
           }
         }
       }
@@ -2336,13 +2336,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI精炼失败。您可以继续编辑此注释。"
+            "value" : "AI 润色失败，你仍然可以继续编辑这条笔记。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI精煉失敗。您可以繼續編輯此註釋。"
+            "value" : "AI 潤飾失敗，你仍然可以繼續編輯這則筆記。"
           }
         }
       }
@@ -2652,13 +2652,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您确定要删除%1$lld注释%2$@吗？此操作无法撤消。"
+            "value" : "确定要删除 %1$lld 条笔记%2$@吗？此操作无法撤销。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您確定要刪除%1$lld註釋%2$@嗎？此操作無法撤銷。"
+            "value" : "確定要刪除 %1$lld 則筆記%2$@嗎？此操作無法復原。"
           }
         }
       }
@@ -2704,13 +2704,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您确定要删除此注释吗？此操作无法撤消。"
+            "value" : "确定要删除这条笔记吗？此操作无法撤销。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "您確定要刪除此註釋嗎？此操作無法撤銷。"
+            "value" : "確定要刪除這則筆記嗎？此操作無法復原。"
           }
         }
       }
@@ -2860,13 +2860,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "询问代理"
+            "value" : "问问助手"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "詢問代理"
+            "value" : "問問助手"
           }
         }
       }
@@ -2964,13 +2964,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "向 Chillo 询问任何与你笔记相关的问题。"
+            "value" : "向 Chillo 提问，聊聊你的笔记。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "向 Chillo 詢問任何與筆記相關的問題。"
+            "value" : "向 Chillo 提問，聊聊你的筆記。"
           }
         }
       }
@@ -3540,13 +3540,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "体大"
+            "value" : "正文大号"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "體大"
+            "value" : "正文大號"
           }
         }
       }
@@ -3593,13 +3593,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "身体中等"
+            "value" : "正文中号"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "身體中等"
+            "value" : "正文中號"
           }
         }
       }
@@ -3646,13 +3646,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "身体小"
+            "value" : "正文小号"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "身體小"
+            "value" : "正文小號"
           }
         }
       }
@@ -4273,13 +4273,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 试图利用技术让我们回归更自然、健康、高效的存在状态。\n\n它适合那些语速很快的梦想家、那些因打字而受伤的创造者，以及任何相信自己的想法值得被听到而不仅仅是被写下来的人。"
+            "value" : "ChillNote 想用技术帮我们找回一种更自然、更健康，也更高效的记录方式。\n\n它属于那些语速比打字更快的人，属于被键盘拖慢的创作者，也属于所有相信好想法值得被说出来，而不只是写下来的人。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 試圖利用科技讓我們回歸更自然、健康、高效的存在狀態。\n\n它適合那些語速很快的夢想家、那些因打字而受傷的創造者，以及任何相信自己的想法值得被聽到而不僅僅是被寫下來的人。"
+            "value" : "ChillNote 想用科技幫我們找回一種更自然、更健康，也更高效的記錄方式。\n\n它屬於那些語速比打字更快的人，屬於被鍵盤拖慢的創作者，也屬於所有相信好想法值得被說出來，而不只是寫下來的人。"
           }
         }
       }
@@ -4325,13 +4325,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 是移动优先的。它的存在是为了在短暂、支离破碎的想法消失之前捕捉它们。这是为了思想的种子，而不是整部小说。"
+            "value" : "ChillNote 优先围绕手机场景来设计。它适合捕捉那些稍纵即逝、还没来得及整理的念头。它服务的是灵感的种子，不是长篇内容的终稿。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 是行動優先的。它的存在是為了在短暫、支離破碎的想法消失之前捕捉它們。這是為了思想的種子，而不是整部小說。"
+            "value" : "ChillNote 優先圍繞手機場景來設計。它適合捕捉那些稍縱即逝、還來不及整理的念頭。它服務的是靈感的種子，不是長篇內容的定稿。"
           }
         }
       }
@@ -4377,13 +4377,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 不是企业录音电话机。这是为了个人反思和原始灵感，而不是董事会的嗡嗡声。使用专门的软件进行长达一小时的会议。"
+            "value" : "ChillNote 不是拿来录长会议的办公录音工具。\n\n它更适合个人思考、日常记录和一闪而过的灵感，不适合冗长的会议纪要。需要处理长时间会议时，请使用更专业的会议工具。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 不是企業錄音電話機。這是為了個人反思和原始靈感，而不是董事會的嗡嗡聲。使用專門的軟體進行長達一小時的會議。"
+            "value" : "ChillNote 不是拿來錄長會議的辦公錄音工具。\n\n它更適合個人思考、日常記錄和一閃而過的靈感，不適合冗長的會議紀要。需要處理長時間會議時，請使用更專業的會議工具。"
           }
         }
       }
@@ -5210,13 +5210,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "将选定的笔记合并为一份有凝聚力的文档。"
+            "value" : "将所选笔记合并成一份完整、连贯的文档。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "將選定的筆記合併為一份有凝聚力的文檔。"
+            "value" : "將所選筆記合併成一份完整、連貫的文件。"
           }
         }
       }
@@ -5679,13 +5679,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "创造"
+            "value" : "创建"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "創造"
+            "value" : "建立"
           }
         }
       }
@@ -6304,13 +6304,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "删除 %1$lld 注意%2$@"
+            "value" : "删除 %1$lld 条笔记%2$@"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "刪除 %1$lld 注意%2$@"
+            "value" : "刪除 %1$lld 則筆記%2$@"
           }
         }
       }
@@ -6408,13 +6408,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "删除注释"
+            "value" : "删除笔记"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "刪除註釋"
+            "value" : "刪除筆記"
           }
         }
       }
@@ -6928,13 +6928,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "解雇"
+            "value" : "关闭"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "解僱"
+            "value" : "關閉"
           }
         }
       }
@@ -6981,13 +6981,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "显示大"
+            "value" : "展示大号"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "顯示大"
+            "value" : "展示大號"
           }
         }
       }
@@ -7034,13 +7034,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "显示介质"
+            "value" : "展示中号"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "顯示媒體"
+            "value" : "展示中號"
           }
         }
       }
@@ -7557,13 +7557,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "进入AI情景模式"
+            "value" : "进入 AI 上下文模式"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "進入AI情境模式"
+            "value" : "進入 AI 上下文模式"
           }
         }
       }
@@ -8456,13 +8456,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "未检测到有效语音。音频已保存到待处理记录，请检查后重试。"
+            "value" : "未检测到有效语音。音频已保存到待处理录音，请检查后重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "未偵測到有效語音。音訊已儲存到待處理記錄，請檢查後重試。"
+            "value" : "未偵測到有效語音。音訊已儲存到待處理錄音，請檢查後重試。"
           }
         }
       }
@@ -8509,13 +8509,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "登录状态已失效。音频已保存到待处理记录，请重新登录后重试。"
+            "value" : "登录状态已失效。音频已保存到待处理录音，请重新登录后重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "登入狀態已失效。音訊已儲存到待處理記錄，請重新登入後重試。"
+            "value" : "登入狀態已失效。音訊已儲存到待處理錄音，請重新登入後重試。"
           }
         }
       }
@@ -8615,13 +8615,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "网络异常，暂时无法转录。音频已保存到待处理记录，请在网络稳定后重试。"
+            "value" : "网络异常，暂时无法转录。音频已保存到待处理录音，请在网络稳定后重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "網路異常，暫時無法轉錄。音訊已儲存到待處理記錄，請在網路穩定後重試。"
+            "value" : "網路異常，暫時無法轉錄。音訊已儲存到待處理錄音，請在網路穩定後重試。"
           }
         }
       }
@@ -8668,13 +8668,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "今日语音额度已用完。音频已保存到待处理记录，升级后可继续，或明天再试。"
+            "value" : "今日语音额度已用完。音频已保存到待处理录音，升级后可继续，或明天再试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "今日語音額度已用完。音訊已儲存到待處理記錄，升級後可繼續，或明天再試。"
+            "value" : "今日語音額度已用完。音訊已儲存到待處理錄音，升級後可繼續，或明天再試。"
           }
         }
       }
@@ -8721,13 +8721,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "转录服务当前配置异常。音频已保存到待处理记录，请稍后重试。"
+            "value" : "转录服务当前配置异常。音频已保存到待处理录音，请稍后重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "轉錄服務目前設定異常。音訊已儲存到待處理記錄，請稍後重試。"
+            "value" : "轉錄服務目前設定異常。音訊已儲存到待處理錄音，請稍後重試。"
           }
         }
       }
@@ -8774,13 +8774,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "转录服务暂时不可用。音频已保存到待处理记录，请稍后重试。"
+            "value" : "转录服务暂时不可用。音频已保存到待处理录音，请稍后重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "轉錄服務暫時不可用。音訊已儲存到待處理記錄，請稍後重試。"
+            "value" : "轉錄服務暫時不可用。音訊已儲存到待處理錄音，請稍後重試。"
           }
         }
       }
@@ -8827,13 +8827,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "转录超时。音频已保存到待处理记录，请稍后重试。"
+            "value" : "转录超时。音频已保存到待处理录音，请稍后重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "轉錄逾時。音訊已儲存到待處理記錄，請稍後重試。"
+            "value" : "轉錄逾時。音訊已儲存到待處理錄音，請稍後重試。"
           }
         }
       }
@@ -8880,13 +8880,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "转录失败。音频已保存到待处理记录，请重试。"
+            "value" : "转录失败。音频已保存到待处理录音，请重试。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "轉錄失敗。音訊已儲存到待處理記錄，請重試。"
+            "value" : "轉錄失敗。音訊已儲存到待處理錄音，請重試。"
           }
         }
       }
@@ -9724,13 +9724,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "出口取消"
+            "value" : "导出已取消"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "出口取消"
+            "value" : "匯出已取消"
           }
         }
       }
@@ -9932,13 +9932,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "导出降价"
+            "value" : "导出 Markdown"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "匯出降價"
+            "value" : "匯出 Markdown"
           }
         }
       }
@@ -9984,13 +9984,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "出口准备就绪"
+            "value" : "导出已准备好"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "出口準備就緒"
+            "value" : "匯出已準備好"
           }
         }
       }
@@ -10036,13 +10036,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目前不提供出口服务。"
+            "value" : "导出服务当前不可用。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目前不提供出口服務。"
+            "value" : "匯出服務目前不可用。"
           }
         }
       }
@@ -10088,13 +10088,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "出口被取消。"
+            "value" : "导出已取消。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "出口被取消。"
+            "value" : "匯出已取消。"
           }
         }
       }
@@ -11077,13 +11077,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "格式化是“表演性工作”——它需要时间，但不会增加内容价值。"
+            "value" : "排版常常只是看起来很忙，却不会真正增加内容价值。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "格式化是「表演性工作」－它需要時間，但不會增加內容價值。"
+            "value" : "排版常常只是看起來很忙，卻不會真正增加內容價值。"
           }
         }
       }
@@ -11286,13 +11286,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "说吧，我在听……"
+            "value" : "说吧，我在听着……"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "說吧，我在聽…"
+            "value" : "說吧，我在聽著……"
           }
         }
       }
@@ -12025,13 +12025,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我读过你的笔记。让我们看看我们可以一起创造什么。"
+            "value" : "我已经读完你的笔记。来看看我们能一起整理出什么。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我讀過你的筆記。讓我們看看我們可以一起創造什麼。"
+            "value" : "我已經讀完你的筆記。來看看我們能一起整理出什麼。"
           }
         }
       }
@@ -12650,13 +12650,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "资源库"
+            "value" : "指令库"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "資源庫"
+            "value" : "指令庫"
           }
         }
       }
@@ -14318,13 +14318,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "没有要导出的注释。"
+            "value" : "没有可导出的笔记。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "沒有要導出的註釋。"
+            "value" : "沒有可匯出的筆記。"
           }
         }
       }
@@ -14995,13 +14995,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "注释已保存！"
+            "value" : "笔记已保存！"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "註釋已儲存！"
+            "value" : "筆記已儲存！"
           }
         }
       }
@@ -16039,13 +16039,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "待处理记录"
+            "value" : "待处理录音"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "待處理記錄"
+            "value" : "待處理錄音"
           }
         }
       }
@@ -16508,13 +16508,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在准备出口包..."
+            "value" : "正在准备导出文件..."
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在準備出口包..."
+            "value" : "正在準備匯出檔案..."
           }
         }
       }
@@ -17819,13 +17819,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你说吧，我在听..."
+            "value" : "你说吧，我在听着……"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你說吧，我在聽..."
+            "value" : "你說吧，我在聽著……"
           }
         }
       }
@@ -18760,13 +18760,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "恢复注释"
+            "value" : "恢复笔记"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "恢復註釋"
+            "value" : "恢復筆記"
           }
         }
       }
@@ -21682,13 +21682,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "笔记已合并为新笔记。您想删除原始的 %lld 注释吗？"
+            "value" : "笔记已合并成一条新笔记。要删除原来的 %lld 条笔记吗？"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "筆記已合併為新筆記。您想刪除原始的 %lld 註解嗎？"
+            "value" : "筆記已合併成一則新筆記。要刪除原來的 %lld 則筆記嗎？"
           }
         }
       }
@@ -21734,13 +21734,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此注释将在 %lld 天后永久删除。"
+            "value" : "这条笔记将在 %lld 天后被永久删除。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此註釋將在 %lld 天後永久刪除。"
+            "value" : "這則筆記將在 %lld 天後被永久刪除。"
           }
         }
       }
@@ -21786,13 +21786,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "该注释将于今天永久删除。"
+            "value" : "这条笔记今天会被永久删除。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "該註釋將於今天永久刪除。"
+            "value" : "這則筆記今天會被永久刪除。"
           }
         }
       }
@@ -21942,13 +21942,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这将永久删除该注释。此操作无法撤消。"
+            "value" : "这会永久删除这条笔记。此操作无法撤销。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "這將永久刪除該註釋。此操作無法撤銷。"
+            "value" : "這會永久刪除這則筆記。此操作無法復原。"
           }
         }
       }
@@ -22466,13 +22466,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "转录失败。音频已保存到待处理记录中。"
+            "value" : "转录失败。音频已保存到待处理录音中。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "轉錄失敗。音訊已儲存到待處理記錄中。"
+            "value" : "轉錄失敗。音訊已儲存到待處理錄音中。"
           }
         }
       }
@@ -23196,13 +23196,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "无法导出此注释。请再试一次。"
+            "value" : "无法导出这条笔记，请再试一次。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "無法導出此註釋。請再試一次。"
+            "value" : "無法匯出這則筆記，請再試一次。"
           }
         }
       }
