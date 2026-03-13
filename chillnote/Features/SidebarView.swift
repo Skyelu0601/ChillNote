@@ -7,11 +7,13 @@ struct SidebarView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var syncManager: SyncManager
+    @StateObject private var storeService = StoreService.shared
     @Query(filter: #Predicate<Tag> { $0.deletedAt == nil }, sort: \Tag.name) private var _allTags: [Tag]
     
     @Binding var isPresented: Bool
     @Binding var selectedTag: Tag?
     @Binding var isTrashSelected: Bool
+    @State private var showSubscription = false
     var hasPendingRecordings: Bool = false
     var pendingRecordingsCount: Int = 0
     var onSettingsTap: (() -> Void)?
@@ -47,17 +49,14 @@ struct SidebarView: View {
             
             // Drawer Content
             HStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 32) { // 增加间距
-                    // Header - Minimalist
-                    HStack(spacing: 12) {
-                        Text("ChillNote")
-                            .font(.system(size: 22, weight: .bold, design: .serif))
-                            .foregroundColor(.black)
-                            .tracking(0.5)
+                VStack(alignment: .leading, spacing: 24) { // 减小整体间距
+                    // Header - Minimalist (Membership + Settings)
+                    HStack(spacing: 0) {
+                        membershipEntry
                         
                         Spacer()
                         
-                        // Settings Button (Moved from Home)
+                        // Settings Button
                         Button(action: {
                             isPresented = false // Close sidebar
                             onSettingsTap?()
@@ -72,7 +71,7 @@ struct SidebarView: View {
                         .accessibilityLabel("Open Settings")
                     }
                     .padding(.top, 60)
-                    .padding(.horizontal, 28)
+                    .padding(.horizontal, 20)
                     
                     // Main Navigation
                     VStack(spacing: 6) {
@@ -140,7 +139,7 @@ struct SidebarView: View {
                     .padding(.horizontal, 16)
                     
                     Spacer()
-                    
+
                     TrashDropZone(modelContext: modelContext)
                         .padding(.horizontal, 16)
                         .padding(.bottom, 24)
@@ -155,6 +154,12 @@ struct SidebarView: View {
         .ignoresSafeArea(.all, edges: .vertical)
         .simultaneousGesture(sidebarCloseGesture)
         .zIndex(1000)
+        .sheet(isPresented: $showSubscription) {
+            SubscriptionView()
+        }
+        .task {
+            await storeService.refreshSubscriptionStatus()
+        }
     }
     
     // MARK: - Helper Methods
@@ -210,6 +215,37 @@ struct SidebarView: View {
             await syncManager.syncNow(context: modelContext)
         }
         return true
+    }
+
+    private var membershipEntry: some View {
+        Button {
+            isPresented = false
+            showSubscription = true
+        } label: {
+            HStack(spacing: 12) {
+                Text(storeService.currentTier == .pro ? "Pro" : "Free Plan")
+                    .font(.system(size: 14, weight: .bold, design: .serif))
+                    .foregroundColor(storeService.currentTier == .pro ? .white : .textMain.opacity(0.9))
+                
+                if storeService.currentTier != .pro {
+                    Text("Upgrade")
+                        .font(.system(size: 10, weight: .bold))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Capsule().fill(Color.accentPrimary))
+                }
+            }
+            .padding(.leading, 14)
+            .padding(.trailing, storeService.currentTier == .pro ? 14 : 6)
+            .padding(.vertical, 6)
+            .background(
+                Capsule().fill(
+                    storeService.currentTier == .pro ? Color.accentPrimary : Color.textMain.opacity(0.04)
+                )
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 
