@@ -412,6 +412,7 @@ struct HomeBodyView: View {
 
                     HomeNotesListView(
                         cachedVisibleNotes: state.cachedVisibleNotes,
+                        searchQuery: state.searchText,
                         isLoading: state.isLoadingNotes,
                         isSyncing: state.isSyncingNotes,
                         hasLoadedAtLeastOnce: state.hasLoadedNotesAtLeastOnce,

@@ -43,4 +43,48 @@ final class NotesSearchIndexTests: XCTestCase {
         XCTAssertFalse(afterRemove.contains(id1))
         XCTAssertFalse(afterRemove.contains(id2))
     }
+
+    func testSearchSupportsCJKFragmentsLatinPrefixesAndAccentInsensitiveRanking() async {
+        let index = SQLiteFTSNotesSearchIndex()
+        let userId = "search-user-\(UUID().uuidString)"
+
+        let cjkID = UUID()
+        let accentID = UUID()
+        let prefixID = UUID()
+        await index.upsert(documents: [
+            NoteSearchDocument(
+                noteId: cjkID,
+                userId: userId,
+                contentPlain: "今天要去东京塔散步",
+                tagsPlain: "旅行",
+                updatedAt: Date().timeIntervalSince1970,
+                deletedAt: nil
+            ),
+            NoteSearchDocument(
+                noteId: accentID,
+                userId: userId,
+                contentPlain: "Let's meet at the cafe after lunch",
+                tagsPlain: "coffee",
+                updatedAt: Date().timeIntervalSince1970 + 1,
+                deletedAt: nil
+            ),
+            NoteSearchDocument(
+                noteId: prefixID,
+                userId: userId,
+                contentPlain: "Project planning checklist for spring launch",
+                tagsPlain: "work",
+                updatedAt: Date().timeIntervalSince1970 + 2,
+                deletedAt: nil
+            )
+        ])
+
+        let cjkMatches = await index.searchNoteIDs(userId: userId, query: "东京", includeDeleted: false, offset: 0, limit: 10)
+        XCTAssertEqual(cjkMatches.first, cjkID)
+
+        let accentMatches = await index.searchNoteIDs(userId: userId, query: "café", includeDeleted: false, offset: 0, limit: 10)
+        XCTAssertEqual(accentMatches.first, accentID)
+
+        let prefixMatches = await index.searchNoteIDs(userId: userId, query: "plan", includeDeleted: false, offset: 0, limit: 10)
+        XCTAssertEqual(prefixMatches.first, prefixID)
+    }
 }

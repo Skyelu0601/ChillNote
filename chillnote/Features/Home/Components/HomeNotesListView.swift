@@ -3,6 +3,7 @@ import SwiftData
 
 struct HomeNotesListView: View {
     let cachedVisibleNotes: [Note]
+    let searchQuery: String
     let isLoading: Bool
     let isSyncing: Bool
     let hasLoadedAtLeastOnce: Bool
@@ -38,7 +39,11 @@ struct HomeNotesListView: View {
         } else {
             LazyVStack(spacing: 16) {
                 ForEach(cachedVisibleNotes) { note in
-                    let item = NoteListItemViewData(note: note, usePlainPreview: FeatureFlags.usePlainPreviewInList)
+                    let item = NoteListItemViewData(
+                        note: note,
+                        searchQuery: searchQuery,
+                        usePlainPreview: FeatureFlags.usePlainPreviewInList
+                    )
                     Group {
                         if isTrashSelected {
                             NavigationLink(value: note) {
@@ -188,6 +193,7 @@ struct TrashNoteFooterView: View {
 struct NoteListTagViewData: Identifiable {
     let id: UUID
     let name: String
+    let highlightedName: AttributedString
     let textColor: Color
     let backgroundColor: Color
 }
@@ -198,13 +204,14 @@ struct NoteListItemViewData: Identifiable {
     let createdAtRelativeText: String
     let pinnedAt: Date?
     let previewText: String
+    let highlightedPreviewText: AttributedString
     let markdownPreviewText: String
     let usePlainPreview: Bool
     let isEmpty: Bool
     let tags: [NoteListTagViewData]
     let hiddenTagCount: Int
 
-    init(note: Note, usePlainPreview: Bool = true) {
+    init(note: Note, searchQuery: String, usePlainPreview: Bool = true) {
         id = note.id
         createdAt = note.createdAt
         createdAtRelativeText = note.createdAt.relativeFormatted()
@@ -213,7 +220,19 @@ struct NoteListItemViewData: Identifiable {
         let trimmed = note.content.trimmingCharacters(in: .whitespacesAndNewlines)
         isEmpty = trimmed.isEmpty
         self.usePlainPreview = usePlainPreview
-        previewText = note.displayText
+        let preview = SearchHighlightFormatter.makePreviewText(
+            content: note.displayText,
+            query: searchQuery
+        )
+        previewText = preview
+        highlightedPreviewText = SearchHighlightFormatter.makeHighlightedText(
+            text: preview,
+            query: searchQuery,
+            baseColor: .textMain,
+            highlightColor: .textMain,
+            highlightBackground: Color.accentPrimary.opacity(0.18),
+            highlightFont: .bodyMedium.weight(.semibold)
+        )
         markdownPreviewText = trimmed
 
         let prefixTags = Array(note.tags.prefix(3))
@@ -221,6 +240,14 @@ struct NoteListItemViewData: Identifiable {
             NoteListTagViewData(
                 id: tag.id,
                 name: tag.name,
+                highlightedName: SearchHighlightFormatter.makeHighlightedText(
+                    text: tag.name,
+                    query: searchQuery,
+                    baseColor: tag.labelColor,
+                    highlightColor: tag.labelColor,
+                    highlightBackground: Color.white.opacity(0.45),
+                    highlightFont: .chillCaption.weight(.semibold)
+                ),
                 textColor: tag.labelColor,
                 backgroundColor: tag.badgeBackgroundColor
             )
@@ -298,9 +325,8 @@ struct NoteCard: View {
                     if !item.isEmpty {
                         Group {
                             if item.usePlainPreview {
-                                Text(item.previewText)
+                                Text(item.highlightedPreviewText)
                                     .font(.bodyMedium)
-                                    .foregroundColor(.textMain)
                                     .lineLimit(3)
                                     .multilineTextAlignment(.leading)
                             } else {
@@ -317,9 +343,8 @@ struct NoteCard: View {
                     if !item.tags.isEmpty {
                         HStack(spacing: 6) {
                             ForEach(item.tags) { tag in
-                                Text(tag.name)
+                                Text(tag.highlightedName)
                                     .font(.chillCaption)
-                                    .foregroundColor(tag.textColor)
                                     .padding(.horizontal, 8)
                                     .padding(.vertical, 4)
                                     .background(tag.backgroundColor)
@@ -349,5 +374,129 @@ struct ScaleButtonStyle: ButtonStyle {
         configuration.label
             .scaleEffect(configuration.isPressed ? 0.94 : 1.0)
             .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
+    }
+}
+
+enum SearchHighlightFormatter {
+    static func makePreviewText(content: String, query: String, radius: Int = 48) -> String {
+        let trimmedContent = content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedQuery = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedContent.isEmpty, !trimmedQuery.isEmpty else {
+            return trimmedContent
+        }
+
+        guard let firstRange = firstMatchRange(in: trimmedContent, query: trimmedQuery) else {
+            return trimmedContent
+        }
+
+        let lowerBound = trimmedContent.index(
+            firstRange.lowerBound,
+            offsetBy: -radius,
+            limitedBy: trimmedContent.startIndex
+        ) ?? trimmedContent.startIndex
+        let upperBound = trimmedContent.index(
+            firstRange.upperBound,
+            offsetBy: radius,
+            limitedBy: trimmedContent.endIndex
+        ) ?? trimmedContent.endIndex
+
+        var excerpt = String(trimmedContent[lowerBound..<upperBound]).trimmingCharacters(in: .whitespacesAndNewlines)
+        if lowerBound > trimmedContent.startIndex {
+            excerpt = "…" + excerpt
+        }
+        if upperBound < trimmedContent.endIndex {
+            excerpt += "…"
+        }
+        return excerpt
+    }
+
+    static func makeHighlightedText(
+        text: String,
+        query: String,
+        baseColor: Color,
+        highlightColor: Color,
+        highlightBackground: Color,
+        highlightFont: Font? = nil
+    ) -> AttributedString {
+        var attributed = AttributedString(text)
+        attributed.foregroundColor = baseColor
+
+        let tokens = normalizedTokens(from: query)
+        guard !tokens.isEmpty else {
+            return attributed
+        }
+
+        let nsText = text as NSString
+        let fullRange = NSRange(location: 0, length: nsText.length)
+        var matchedRanges: [Range<String.Index>] = []
+
+        for token in tokens {
+            var searchRange = fullRange
+            while let found = nsText.range(
+                of: token,
+                options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive],
+                range: searchRange
+            ).toOptional(), let swiftRange = Range(found, in: text) {
+                matchedRanges.append(swiftRange)
+                let nextLocation = found.location + max(found.length, 1)
+                guard nextLocation < nsText.length else { break }
+                searchRange = NSRange(location: nextLocation, length: nsText.length - nextLocation)
+            }
+        }
+
+        for range in merged(matchedRanges) {
+            guard let attributedRange = Range(range, in: attributed) else { continue }
+            attributed[attributedRange].foregroundColor = highlightColor
+            attributed[attributedRange].backgroundColor = highlightBackground
+            if let highlightFont {
+                attributed[attributedRange].font = highlightFont
+            }
+        }
+
+        return attributed
+    }
+
+    static func firstMatchRange(in text: String, query: String) -> Range<String.Index>? {
+        for token in normalizedTokens(from: query) {
+            if let range = text.range(
+                of: token,
+                options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive]
+            ) {
+                return range
+            }
+        }
+        return nil
+    }
+
+    private static func normalizedTokens(from query: String) -> [String] {
+        let normalized = NoteTextNormalizer.normalizeQuery(query)
+        return normalized
+            .split(whereSeparator: \.isWhitespace)
+            .map(String.init)
+            .filter { !$0.isEmpty }
+            .sorted { $0.count > $1.count }
+    }
+
+    private static func merged(_ ranges: [Range<String.Index>]) -> [Range<String.Index>] {
+        let sorted = ranges.sorted { $0.lowerBound < $1.lowerBound }
+        guard var current = sorted.first else { return [] }
+
+        var result: [Range<String.Index>] = []
+        for range in sorted.dropFirst() {
+            if range.lowerBound <= current.upperBound {
+                current = current.lowerBound..<max(current.upperBound, range.upperBound)
+            } else {
+                result.append(current)
+                current = range
+            }
+        }
+        result.append(current)
+        return result
+    }
+}
+
+private extension NSRange {
+    func toOptional() -> NSRange? {
+        location == NSNotFound ? nil : self
     }
 }

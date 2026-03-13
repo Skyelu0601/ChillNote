@@ -9,7 +9,7 @@ final class NoteCardRenderPerformanceTests: XCTestCase {
         }
 
         measure {
-            _ = notes.map { NoteListItemViewData(note: $0, usePlainPreview: true) }
+            _ = notes.map { NoteListItemViewData(note: $0, searchQuery: "", usePlainPreview: true) }
         }
     }
 }

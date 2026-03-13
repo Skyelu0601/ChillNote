@@ -27,12 +27,37 @@ enum NoteTextNormalizer {
     static func tagsText(_ tags: [Tag]) -> String {
         tags.map { $0.name }.joined(separator: " ")
     }
+
+    static func foldForSearch(_ text: String) -> String {
+        let normalized = text
+            .folding(options: [.caseInsensitive, .diacriticInsensitive, .widthInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+            .lowercased()
+        let punctuationCollapsed = normalized.replacingOccurrences(
+            of: "[\\p{P}\\p{S}]+",
+            with: " ",
+            options: .regularExpression
+        )
+        let whitespaceCollapsed = punctuationCollapsed.replacingOccurrences(
+            of: "\\s+",
+            with: " ",
+            options: .regularExpression
+        )
+        return whitespaceCollapsed.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    static func normalizeQuery(_ query: String) -> String {
+        normalizeContent(query)
+            .replacingOccurrences(of: "[\"'`]+", with: " ", options: .regularExpression)
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
 }
 
 actor SQLiteFTSNotesSearchIndex {
-    private let schemaVersion = 1
+    private let schemaVersion = 2
     private var db: OpaquePointer?
     private var dbURL: URL?
+    private var requiresRebuildAfterMigration = false
 
     init() {}
 
@@ -50,12 +75,14 @@ actor SQLiteFTSNotesSearchIndex {
         defer { sqlite3_exec(db, "COMMIT;", nil, nil, nil) }
 
         let indexSQL = """
-        INSERT INTO note_index (note_id, user_id, content_plain, tags_plain, updated_at, deleted_at)
-        VALUES (?, ?, ?, ?, ?, ?)
+        INSERT INTO note_index (note_id, user_id, content_plain, tags_plain, content_folded, tags_folded, updated_at, deleted_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(note_id) DO UPDATE SET
             user_id=excluded.user_id,
             content_plain=excluded.content_plain,
             tags_plain=excluded.tags_plain,
+            content_folded=excluded.content_folded,
+            tags_folded=excluded.tags_folded,
             updated_at=excluded.updated_at,
             deleted_at=excluded.deleted_at;
         """
@@ -93,11 +120,13 @@ actor SQLiteFTSNotesSearchIndex {
             bindText(indexStmt, index: 2, value: doc.userId)
             bindText(indexStmt, index: 3, value: doc.contentPlain)
             bindText(indexStmt, index: 4, value: doc.tagsPlain)
-            sqlite3_bind_double(indexStmt, 5, doc.updatedAt)
+            bindText(indexStmt, index: 5, value: NoteTextNormalizer.foldForSearch(doc.contentPlain))
+            bindText(indexStmt, index: 6, value: NoteTextNormalizer.foldForSearch(doc.tagsPlain))
+            sqlite3_bind_double(indexStmt, 7, doc.updatedAt)
             if let deletedAt = doc.deletedAt {
-                sqlite3_bind_double(indexStmt, 6, deletedAt)
+                sqlite3_bind_double(indexStmt, 8, deletedAt)
             } else {
-                sqlite3_bind_null(indexStmt, 6)
+                sqlite3_bind_null(indexStmt, 8)
             }
             _ = sqlite3_step(indexStmt)
 
@@ -120,6 +149,8 @@ actor SQLiteFTSNotesSearchIndex {
             }
             _ = sqlite3_step(ftsInsertStmt)
         }
+
+        requiresRebuildAfterMigration = false
     }
 
     func remove(noteIDs: [UUID]) {
@@ -161,32 +192,15 @@ actor SQLiteFTSNotesSearchIndex {
     }
 
     func searchNoteIDs(userId: String, query: String, includeDeleted: Bool, offset: Int, limit: Int) -> [UUID] {
-        guard openIfNeeded(), let db, !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        guard openIfNeeded(), let db, limit > 0 else {
             return []
         }
 
-        let cleanedQuery = query
-            .replacingOccurrences(of: "\"", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        let sql: String
-        if includeDeleted {
-            sql = """
-            SELECT note_id
-            FROM note_fts
-            WHERE user_id = ? AND note_fts MATCH ? AND deleted_at IS NOT NULL
-            ORDER BY bm25(note_fts)
-            LIMIT ? OFFSET ?;
-            """
-        } else {
-            sql = """
-            SELECT note_id
-            FROM note_fts
-            WHERE user_id = ? AND note_fts MATCH ? AND deleted_at IS NULL
-            ORDER BY bm25(note_fts)
-            LIMIT ? OFFSET ?;
-            """
+        guard let plan = SearchQueryPlan(query: query) else {
+            return []
         }
+        let deletedPredicate = includeDeleted ? "deleted_at IS NOT NULL" : "deleted_at IS NULL"
+        let sql = makeRankedNoteIDsSQL(deletedPredicate: deletedPredicate, includeFTS: plan.ftsQuery != nil)
 
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
@@ -196,10 +210,14 @@ actor SQLiteFTSNotesSearchIndex {
         }
         defer { sqlite3_finalize(stmt) }
 
-        bindText(stmt, index: 1, value: userId)
-        bindText(stmt, index: 2, value: cleanedQuery)
-        sqlite3_bind_int(stmt, 3, Int32(limit))
-        sqlite3_bind_int(stmt, 4, Int32(offset))
+        bindSearchParameters(
+            stmt: stmt,
+            userId: userId,
+            phrase: plan.foldedPhrase,
+            ftsQuery: plan.ftsQuery,
+            limit: limit,
+            offset: offset
+        )
 
         var ids: [UUID] = []
         ids.reserveCapacity(limit)
@@ -214,24 +232,14 @@ actor SQLiteFTSNotesSearchIndex {
     }
 
     func countMatches(userId: String, query: String, includeDeleted: Bool) -> Int {
-        guard openIfNeeded(), let db, !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        guard openIfNeeded(), let db else {
             return 0
         }
-
-        let sql: String
-        if includeDeleted {
-            sql = """
-            SELECT COUNT(*)
-            FROM note_fts
-            WHERE user_id = ? AND note_fts MATCH ? AND deleted_at IS NOT NULL;
-            """
-        } else {
-            sql = """
-            SELECT COUNT(*)
-            FROM note_fts
-            WHERE user_id = ? AND note_fts MATCH ? AND deleted_at IS NULL;
-            """
+        guard let plan = SearchQueryPlan(query: query) else {
+            return 0
         }
+        let deletedPredicate = includeDeleted ? "deleted_at IS NOT NULL" : "deleted_at IS NULL"
+        let sql = makeCountSQL(deletedPredicate: deletedPredicate, includeFTS: plan.ftsQuery != nil)
 
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
@@ -240,15 +248,19 @@ actor SQLiteFTSNotesSearchIndex {
         }
         defer { sqlite3_finalize(stmt) }
 
-        let cleanedQuery = query
-            .replacingOccurrences(of: "\"", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        bindText(stmt, index: 1, value: userId)
-        bindText(stmt, index: 2, value: cleanedQuery)
+        bindCountParameters(
+            stmt: stmt,
+            userId: userId,
+            phrase: plan.foldedPhrase,
+            ftsQuery: plan.ftsQuery
+        )
 
         guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
         return Int(sqlite3_column_int64(stmt, 0))
+    }
+
+    func needsRebuild() -> Bool {
+        openIfNeeded() && requiresRebuildAfterMigration
     }
 
     private func openIfNeeded() -> Bool {
@@ -285,6 +297,8 @@ actor SQLiteFTSNotesSearchIndex {
                 user_id TEXT NOT NULL,
                 content_plain TEXT NOT NULL,
                 tags_plain TEXT NOT NULL,
+                content_folded TEXT NOT NULL,
+                tags_folded TEXT NOT NULL,
                 updated_at REAL NOT NULL,
                 deleted_at REAL
             );
@@ -296,10 +310,20 @@ actor SQLiteFTSNotesSearchIndex {
                 content_plain,
                 tags_plain,
                 updated_at UNINDEXED,
-                deleted_at UNINDEXED
+                deleted_at UNINDEXED,
+                tokenize = 'unicode61 remove_diacritics 2',
+                prefix = '2 3 4 5 6'
             );
             """
             sqlite3_exec(db, createMeta, nil, nil, nil)
+
+            let currentVersion = readSchemaVersion(db: db)
+            if currentVersion != schemaVersion {
+                sqlite3_exec(db, "DROP TABLE IF EXISTS note_fts;", nil, nil, nil)
+                sqlite3_exec(db, "DROP TABLE IF EXISTS note_index;", nil, nil, nil)
+                requiresRebuildAfterMigration = true
+            }
+
             sqlite3_exec(db, createIndex, nil, nil, nil)
             sqlite3_exec(db, createFTS, nil, nil, nil)
 
@@ -316,6 +340,159 @@ actor SQLiteFTSNotesSearchIndex {
             return false
         }
     }
+
+    private func readSchemaVersion(db: OpaquePointer) -> Int {
+        let sql = "SELECT v FROM index_meta WHERE k = 'schema_version' LIMIT 1;"
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            sqlite3_finalize(stmt)
+            return 0
+        }
+        defer { sqlite3_finalize(stmt) }
+        guard sqlite3_step(stmt) == SQLITE_ROW, let raw = sqlite3_column_text(stmt, 0) else {
+            return 0
+        }
+        return Int(String(cString: raw)) ?? 0
+    }
+
+    private func makeRankedNoteIDsSQL(deletedPredicate: String, includeFTS: Bool) -> String {
+        """
+        WITH candidates AS (
+            SELECT note_id, updated_at,
+                   1100.0 + CASE
+                       WHEN instr(content_folded, ?) = 1 THEN 140.0
+                       ELSE max(0.0, 80.0 - CAST(instr(content_folded, ?) AS REAL))
+                   END AS score
+            FROM note_index
+            WHERE user_id = ? AND \(deletedPredicate) AND instr(content_folded, ?) > 0
+
+            UNION ALL
+
+            SELECT note_id, updated_at,
+                   900.0 + CASE
+                       WHEN instr(tags_folded, ?) = 1 THEN 100.0
+                       ELSE max(0.0, 50.0 - CAST(instr(tags_folded, ?) AS REAL))
+                   END AS score
+            FROM note_index
+            WHERE user_id = ? AND \(deletedPredicate) AND instr(tags_folded, ?) > 0
+            \(includeFTS ? """
+
+            UNION ALL
+
+            SELECT ni.note_id, ni.updated_at,
+                   700.0 - (bm25(note_fts, 6.0, 3.0) * 10.0) AS score
+            FROM note_fts
+            JOIN note_index ni ON ni.note_id = note_fts.note_id
+            WHERE ni.user_id = ? AND ni.\(deletedPredicate) AND note_fts MATCH ?
+            """ : "")
+        )
+        SELECT note_id
+        FROM (
+            SELECT note_id, MAX(score) AS best_score, MAX(updated_at) AS latest_updated_at
+            FROM candidates
+            GROUP BY note_id
+        )
+        ORDER BY best_score DESC, latest_updated_at DESC, note_id DESC
+        LIMIT ? OFFSET ?;
+        """
+    }
+
+    private func makeCountSQL(deletedPredicate: String, includeFTS: Bool) -> String {
+        """
+        WITH candidates AS (
+            SELECT note_id
+            FROM note_index
+            WHERE instr(content_folded, ?) > 0 AND user_id = ? AND \(deletedPredicate)
+
+            UNION
+
+            SELECT note_id
+            FROM note_index
+            WHERE instr(tags_folded, ?) > 0 AND user_id = ? AND \(deletedPredicate)
+            \(includeFTS ? """
+
+            UNION
+
+            SELECT ni.note_id
+            FROM note_fts
+            JOIN note_index ni ON ni.note_id = note_fts.note_id
+            WHERE ni.user_id = ? AND ni.\(deletedPredicate) AND note_fts MATCH ?
+            """ : "")
+        )
+        SELECT COUNT(*)
+        FROM candidates;
+        """
+    }
+
+    private func bindSearchParameters(
+        stmt: OpaquePointer?,
+        userId: String,
+        phrase: String,
+        ftsQuery: String?,
+        limit: Int?,
+        offset: Int?
+    ) {
+        var index: Int32 = 1
+
+        bindText(stmt, index: index, value: phrase)
+        index += 1
+        bindText(stmt, index: index, value: phrase)
+        index += 1
+        bindText(stmt, index: index, value: userId)
+        index += 1
+        bindText(stmt, index: index, value: phrase)
+        index += 1
+
+        bindText(stmt, index: index, value: phrase)
+        index += 1
+        bindText(stmt, index: index, value: phrase)
+        index += 1
+        bindText(stmt, index: index, value: userId)
+        index += 1
+        bindText(stmt, index: index, value: phrase)
+        index += 1
+
+        if let ftsQuery {
+            bindText(stmt, index: index, value: userId)
+            index += 1
+            bindText(stmt, index: index, value: ftsQuery)
+            index += 1
+        }
+
+        if let limit {
+            sqlite3_bind_int(stmt, index, Int32(limit))
+            index += 1
+        }
+
+        if let offset {
+            sqlite3_bind_int(stmt, index, Int32(offset))
+        }
+    }
+
+    private func bindCountParameters(
+        stmt: OpaquePointer?,
+        userId: String,
+        phrase: String,
+        ftsQuery: String?
+    ) {
+        var index: Int32 = 1
+
+        bindText(stmt, index: index, value: phrase)
+        index += 1
+        bindText(stmt, index: index, value: userId)
+        index += 1
+
+        bindText(stmt, index: index, value: phrase)
+        index += 1
+        bindText(stmt, index: index, value: userId)
+        index += 1
+
+        if let ftsQuery {
+            bindText(stmt, index: index, value: userId)
+            index += 1
+            bindText(stmt, index: index, value: ftsQuery)
+        }
+    }
 }
 
 @MainActor
@@ -329,11 +506,20 @@ final class NotesSearchIndexer {
     private init() { }
 
     func rebuildIfNeeded(context: ModelContext, userId: String) async {
+        if await index.needsRebuild() {
+            await rebuildAll(context: context, userId: userId)
+            return
+        }
+
         if getLastIndexedAt(userId: userId).timeIntervalSince1970 > 0 {
             await syncIncremental(context: context, userId: userId)
             return
         }
 
+        await rebuildAll(context: context, userId: userId)
+    }
+
+    private func rebuildAll(context: ModelContext, userId: String) async {
         let start = PerformanceTelemetry.begin("search_index.rebuild")
         do {
             var descriptor = FetchDescriptor<Note>()
@@ -442,5 +628,38 @@ private let transientDestructor = unsafeBitCast(-1, to: sqlite3_destructor_type.
 private func bindText(_ statement: OpaquePointer?, index: Int32, value: String) {
     _ = value.withCString { raw in
         sqlite3_bind_text(statement, index, raw, -1, transientDestructor)
+    }
+}
+
+private struct SearchQueryPlan {
+    let foldedPhrase: String
+    let ftsQuery: String?
+
+    init?(query: String) {
+        let normalized = NoteTextNormalizer.normalizeQuery(query)
+        let folded = NoteTextNormalizer.foldForSearch(normalized)
+        guard !folded.isEmpty else {
+            return nil
+        }
+
+        foldedPhrase = folded
+
+        let latinTokens = folded
+            .split(whereSeparator: \.isWhitespace)
+            .map(String.init)
+            .filter { !$0.isEmpty }
+            .compactMap(SearchQueryPlan.makeFTSToken)
+
+        ftsQuery = latinTokens.isEmpty ? nil : latinTokens.joined(separator: " AND ")
+    }
+
+    private static func makeFTSToken(_ token: String) -> String? {
+        let filtered = token.filter { character in
+            character.isLetter || character.isNumber
+        }
+        guard !filtered.isEmpty else {
+            return nil
+        }
+        return "\(filtered)*"
     }
 }
