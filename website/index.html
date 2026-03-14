@@ -10,7 +10,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;700&family=Manrope:wght@300;400;500;600;700&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
@@ -18,14 +18,16 @@
 <body>
     <header class="site-header">
         <div class="container header-inner">
-            <a href="index.html" class="logo">ChillNote</a>
+            <a href="index.html" class="logo">
+                <img src="assets/chillo.png" alt="ChillNote Logo" class="logo-icon">
+                <span>ChillNote</span>
+            </a>
             <nav class="nav-links">
-                <a href="#flow">How It Works</a>
+                <a href="#features">Features</a>
                 <a href="#philosophy">Philosophy</a>
-                <a href="#waitlist">Waitlist</a>
                 <a href="#support">Support</a>
             </nav>
-            <a href="#waitlist" class="btn btn-primary btn-sm">Get Early Access</a>
+            <a href="https://apps.apple.com/app/chillnote" class="btn btn-primary btn-sm">Download App</a>
         </div>
     </header>
 
@@ -33,71 +35,84 @@
         <section class="hero">
             <div class="container hero-grid">
                 <div class="hero-copy">
-                    <span class="hero-badge">Voice-first notes for fast minds</span>
-                    <h1>Capture the speed of thought, keep the calm of clarity.</h1>
-                    <p>ChillNote turns voice into structured notes in minutes. Speak freely, then let the app refine
-                        your ideas into clean, actionable writing.</p>
+                    <span class="hero-badge">Now available on iOS</span>
+                    <h1>Capture the speed of thought, <span class="serif-italic">keep the calm</span> of clarity.</h1>
+                    <p>ChillNote turns your spoken words into structured notes. Speak freely, and watch your chaos transform into clear, elegant prose.</p>
                     <div class="hero-actions">
-                        <a href="#waitlist" class="btn btn-primary">Join the Waitlist</a>
-                        <a href="#flow" class="btn btn-secondary">See the Flow</a>
+                        <a href="https://apps.apple.com/app/chillnote" class="btn btn-primary">
+                            <span class="btn-text">Get ChillNote for iOS</span>
+                        </a>
+                        <a href="#features" class="btn btn-secondary">Explore Features</a>
                     </div>
-                    <div class="hero-meta">
-                        <div>
-                            <p class="meta-title">Fast capture</p>
-                            <p class="meta-detail">10-minute sessions max</p>
+                    <div class="hero-trust">
+                        <div class="trust-avatars">
+                            <img src="assets/coffee.png" alt="User Avatar" class="trust-img">
+                            <img src="assets/climb.png" alt="User Avatar" class="trust-img">
                         </div>
-                        <div>
-                            <p class="meta-title">AI-crafted</p>
-                            <p class="meta-detail">Structure without the struggle</p>
-                        </div>
+                        <p class="trust-text">Join 5,000+ fast-thinking creators.</p>
                     </div>
                 </div>
                 <div class="hero-visual">
-                    <div class="note-preview">
-                        <div class="note-header">
-                            <span class="note-pill">Live capture</span>
-                            <span class="note-pill muted">04:28</span>
+                    <div class="ios-mockup">
+                        <div class="mockup-header">
+                            <span class="mockup-status">Recording...</span>
+                            <span class="mockup-time">04:20</span>
                         </div>
-                        <h3>Walking brainstorm</h3>
-                        <p>I want a note app that feels like thinking out loud: no filters, no friction, just flow.
-                            Later, shape it into something clear.</p>
-                        <div class="note-divider"></div>
-                        <p class="note-output-title">ChillNote AI summary</p>
-                        <ul class="note-output">
-                            <li>Capture raw voice, then refine into a clean outline.</li>
-                            <li>Keep sessions under 10 minutes to stay focused.</li>
-                            <li>Export or share instantly when it clicks.</li>
-                        </ul>
+                        <div class="mockup-content">
+                            <h3 class="serif">Walking brain dump</h3>
+                            <p>I feel like my ideas are always trapped behind my typing speed. ChillNote lets me just talk as if I'm explaining things to a friend...</p>
+                            <div class="mockup-divider"></div>
+                            <div class="mockup-ai-result">
+                                <h4 class="ai-label">CHILLNOTE MAGIC</h4>
+                                <ul>
+                                    <li>Breaking the typing bottleneck</li>
+                                    <li>Conversational note-taking interface</li>
+                                    <li>Automatic thought structuring</li>
+                                </ul>
+                            </div>
+                        </div>
                     </div>
-                    <div class="floating-card">
-                        <p>“My thoughts move too fast for typing. ChillNote keeps up.”</p>
-                        <span>— Early tester</span>
-                    </div>
+                    <img src="assets/climb.png" alt="Chill Koala" class="floating-mascot">
                 </div>
             </div>
         </section>
 
-        <section id="flow" class="section flow">
+        <section id="features" class="section features">
             <div class="container">
-                <div class="section-heading">
-                    <h2>From voice to clarity in three steps.</h2>
-                    <p>Built for minds that move fast, designed for moments when focus matters.</p>
+                <div class="section-heading text-center">
+                    <h2 class="serif">Everything you need to <span class="accent-text">stay in the flow.</span></h2>
+                    <p>ChillNote is designed to be invisible, letting your thoughts take center stage.</p>
                 </div>
-                <div class="feature-grid">
-                    <div class="feature-card">
-                        <span class="feature-index">01</span>
-                        <h3>Speak freely</h3>
-                        <p>Capture raw thoughts with zero formatting. Let ideas spill out while they’re fresh.</p>
+                <div class="bento-grid">
+                    <div class="bento-item bento-large">
+                        <div class="bento-copy">
+                            <h3 class="serif">Voice-to-Clarity</h3>
+                            <p>Our AI doesn't just transcribe; it understands. It removes filler words, organizes your thoughts, and structures them into beautiful notes.</p>
+                        </div>
+                        <div class="bento-visual">
+                            <img src="assets/coffee.png" alt="Voice to Clarity" class="bento-img-offset">
+                        </div>
                     </div>
-                    <div class="feature-card">
-                        <span class="feature-index">02</span>
-                        <h3>AI refines</h3>
-                        <p>ChillNote organizes, titles, and structures your notes into a clean layout.</p>
+                    <div class="bento-item bento-small">
+                        <div class="bento-copy">
+                            <h3 class="serif">Tags & Folders</h3>
+                            <p>Organize your brain with a nested tag system that feels as natural as thinking.</p>
+                        </div>
                     </div>
-                    <div class="feature-card">
-                        <span class="feature-index">03</span>
-                        <h3>Act fast</h3>
-                        <p>Review, share, or export. If it takes longer than 10 minutes, it’s not Chill.</p>
+                    <div class="bento-item bento-small highlight">
+                        <div class="bento-copy">
+                            <h3 class="serif">10-Min Limit</h3>
+                            <p>Stay focused. If it takes longer than 10 minutes to explain, it's a meeting, not a note.</p>
+                        </div>
+                    </div>
+                    <div class="bento-item bento-medium">
+                        <div class="bento-copy">
+                            <h3 class="serif">iOS First</h3>
+                            <p>Built exclusively for Apple's ecosystem, with iCloud sync and widgets.</p>
+                        </div>
+                        <div class="bento-visual">
+                            <img src="assets/pro.png" alt="Pro Features" class="bento-img-small">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -105,70 +120,12 @@
 
         <section id="philosophy" class="section philosophy">
             <div class="container">
-                <div class="section-heading">
-                    <h2>Design Philosophy</h2>
-                    <p>ChillNote exists for people who think faster than they type.</p>
-                </div>
-
-                <div class="philosophy-grid">
-                    <div class="card">
-                        <h3>For the ADHD Mind</h3>
-                        <p><strong>“My thoughts run faster than my fingers.”</strong> Voice removes the bottleneck, so no
-                            spark of genius gets lost in typing.</p>
-                    </div>
-                    <div class="card">
-                        <h3>For the Struggling Writer</h3>
-                        <p><strong>“I have the idea, but I can’t find the words.”</strong> ChillNote acts like a
-                            collaborator, transforming chaos into clean prose.</p>
-                    </div>
-                    <div class="card">
-                        <h3>For Creative Workers</h3>
-                        <p><strong>“Typing is unnatural; speaking is instinct.”</strong> Speak first, structure later.
-                        </p>
-                    </div>
-                    <div class="card">
-                        <h3>For the Format Haters</h3>
-                        <p><strong>“Life is too short to adjust margins.”</strong> Focus on content; ChillNote handles the
-                            polish.</p>
-                    </div>
-                </div>
-
-                <div class="divider"></div>
-
-                <div class="section-heading compact">
-                    <h2>What ChillNote is NOT</h2>
-                    <p>We keep it personal, quick, and lightweight by design.</p>
-                </div>
-                <div class="feature-grid muted">
-                    <div class="feature-card">
-                        <h3>Not for meeting minutes</h3>
-                        <p>This isn’t a corporate dictaphone. ChillNote is for personal clarity.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>Not for long-form writing</h3>
-                        <p>We’re mobile-first. Capture the seed, then grow it elsewhere.</p>
-                    </div>
-                    <div class="feature-card">
-                        <h3>The 10-minute limit</h3>
-                        <p>If it takes longer than 10 minutes, you’ve crossed the line.</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <section id="waitlist" class="section waitlist-section">
-            <div class="container">
-                <div class="waitlist-card">
-                    <div class="waitlist-copy">
-                        <h2>Ready to capture your genius?</h2>
-                        <p>Join the inner circle. Get early access and help shape the future of ChillNote.</p>
-                    </div>
-                    <form id="waitlist-form" class="waitlist-form">
-                        <input type="email" placeholder="Enter your email address" required>
-                        <button type="submit" class="btn btn-primary">Get Early Access</button>
-                    </form>
-                    <div id="waitlist-success" class="waitlist-success" style="display: none;">
-                        <p>Welcome to the family. You’re on the list.</p>
+                <div class="philosophy-card">
+                    <img src="assets/chillo.png" alt="Chillo" class="philosophy-icon">
+                    <div class="philosophy-content">
+                        <h2 class="serif">The Chill Philosophy</h2>
+                        <p>We believe that note-taking shouldn't be a chore. It should be a relief. Most apps focus on storage; we focus on <strong>expression</strong>. Capture the spark while it's hot, then let us handle the formatting.</p>
+                        <a href="#support" class="btn btn-secondary">Learn more about our mission</a>
                     </div>
                 </div>
             </div>
