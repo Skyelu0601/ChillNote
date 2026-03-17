@@ -220,20 +220,6 @@ h1, h2, h3, h4 {
   gap: 1rem;
 }
 
-.trust-avatars {
-  display: flex;
-}
-
-.trust-img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  border: 2px solid var(--bg-primary);
-  margin-left: -12px;
-}
-
-.trust-img:first-child { margin-left: 0; }
-
 .trust-text {
   font-size: 0.9rem;
   color: var(--text-sub);
@@ -312,21 +298,6 @@ h1, h2, h3, h4 {
   color: var(--accent-primary);
 }
 
-.floating-mascot {
-  position: absolute;
-  bottom: -40px;
-  right: -20px;
-  width: 180px;
-  z-index: 3;
-  filter: drop-shadow(0 20px 30px rgba(0,0,0,0.1));
-  animation: float 6s ease-in-out infinite;
-}
-
-@keyframes float {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-20px); }
-}
-
 /* --- Bento Grid --- */
 .section { padding: var(--spacing-xl) 0; }
 
@@ -388,18 +359,6 @@ h1, h2, h3, h4 {
   color: var(--text-sub);
 }
 
-.bento-visual {
-  position: relative;
-  height: 100px;
-}
-
-.bento-img-offset {
-  position: absolute;
-  right: -20px;
-  bottom: -40px;
-  width: 140px;
-}
-
 .bento-img-small {
   position: absolute;
   right: 20px;
@@ -412,17 +371,7 @@ h1, h2, h3, h4 {
   background: var(--text-main);
   border-radius: var(--radius-lg);
   padding: 4rem;
-  display: grid;
-  grid-template-columns: 120px 1fr;
-  gap: 3rem;
-  align-items: center;
   color: white;
-}
-
-.philosophy-icon {
-  width: 120px;
-  height: 120px;
-  filter: brightness(0) invert(1);
 }
 
 .philosophy-content h2 {
@@ -585,8 +534,7 @@ footer {
   .hero-trust { justify-content: center; }
   .bento-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
   .bento-large, .bento-medium { grid-column: span 1; }
-  .philosophy-card { grid-template-columns: 1fr; text-align: center; padding: 2rem; }
-  .philosophy-icon { margin: 0 auto; }
+  .philosophy-card { text-align: center; padding: 2rem; }
   .use-case-grid,
   .faq-list { grid-template-columns: 1fr; }
 }
