@@ -2,11 +2,13 @@ import type { NoteDTO, SyncChanges, TagDTO } from "./types.js";
 import { prisma } from "./db.js";
 
 export async function upsertUser(userId: string): Promise<void> {
-  await prisma.user.upsert({
-    where: { id: userId },
-    update: {},
-    create: { id: userId }
-  });
+  // Avoid Prisma upsert race conditions when multiple requests try to
+  // create the same user row at the same time.
+  await prisma.$executeRaw`
+    INSERT INTO "User" ("id", "createdAt", "updatedAt")
+    VALUES (${userId}, NOW(), NOW())
+    ON CONFLICT ("id") DO NOTHING
+  `;
 }
 
 export async function updateSubscriptionStatus(

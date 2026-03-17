@@ -20,6 +20,18 @@ struct SubscriptionView: View {
         ?? storeService.availableProducts.first(where: { $0.id.lowercased().contains("month") })
     }
 
+    private var yearlySavingsTag: String? {
+        guard let monthlyProduct, let yearlyProduct else { return nil }
+        guard monthlyProduct.price > 0 else { return nil }
+
+        let yearlyMonthlyEquivalent = yearlyProduct.price / 12
+        let savingsRatio = 1 - (yearlyMonthlyEquivalent / monthlyProduct.price)
+        let savingsPercent = NSDecimalNumber(decimal: savingsRatio * 100).doubleValue.rounded()
+
+        guard savingsPercent >= 1 else { return nil }
+        return "SAVE \(Int(savingsPercent))%"
+    }
+
     var selectedProduct: Product? {
         if isAnnual {
             return yearlyProduct ?? monthlyProduct
@@ -320,7 +332,7 @@ struct SubscriptionView: View {
                 pricingToggleButton(title: "Monthly", isSelected: !isAnnual) {
                     withAnimation(.spring()) { isAnnual = false }
                 }
-                pricingToggleButton(title: "Yearly", isSelected: isAnnual) {
+                pricingToggleButton(title: "Yearly", isSelected: isAnnual, discountTag: yearlySavingsTag.map { LocalizedStringKey($0) }) {
                     withAnimation(.spring()) { isAnnual = true }
                 }
             }

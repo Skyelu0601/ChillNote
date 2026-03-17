@@ -84,6 +84,7 @@ app.use((req, res, next) => {
 });
 
 const PORT = Number(process.env.PORT ?? 4000);
+const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite-preview";
 
 const isoDateString = z
   .string()
@@ -856,8 +857,7 @@ app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async 
       `🗣️ VoiceNote Request: audioBase64=${audioBase64Kb}KB, audioDecoded=${audioDecodedKb}KB`
     );
 
-    const model = "gemini-2.5-flash-lite";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
     const normalizedLanguageHint = spokenLanguageHint?.trim();
     const hasPreferredLanguageHint =
@@ -1187,8 +1187,7 @@ app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, r
       }
     }
 
-    const model = "gemini-2.5-flash-lite";
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
 
     const contentsParts: any[] = [];
     if (audioBase64) {

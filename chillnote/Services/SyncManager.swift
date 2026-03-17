@@ -9,7 +9,6 @@ final class SyncManager: ObservableObject {
     @AppStorage("syncCursor") private var syncCursor: String = ""
     @AppStorage("syncDeviceId") private var syncDeviceId: String = ""
     private let serverURLString: String = AppConfig.backendBaseURL
-    @AppStorage("syncAuthToken") var authToken: String = ""
     @AppStorage("syncHasUploadedLocal") private var hasUploadedLocal: Bool = false
     
     @Published private(set) var isSyncing: Bool = false
@@ -47,16 +46,16 @@ final class SyncManager: ObservableObject {
             lastError = AppErrorCode.syncDisabled.message
             return
         }
-        guard !authToken.isEmpty else {
-            lastError = AppErrorCode.syncSignInRequired.message
-            return
-        }
         guard let url = URL(string: serverURLString) else {
             lastError = AppErrorCode.syncServerURLRequired.message
             return
         }
         guard let currentUserId = AuthService.shared.currentUserId else {
             lastError = AppErrorCode.syncSignInRequired.message
+            return
+        }
+        guard let currentToken = await AuthService.shared.getSessionToken(), !currentToken.isEmpty else {
+            lastError = AppErrorCode.syncSessionExpired.message
             return
         }
         guard let container = DataService.shared.container else {
@@ -71,10 +70,10 @@ final class SyncManager: ObservableObject {
         do {
             let lastSyncAt = lastSyncAt
             let hasUploadedLocalSnapshot = hasUploadedLocal
-            let authToken = authToken
             let cursorSnapshot = syncCursor
             let deviceIdSnapshot = syncDeviceId
             let userIdForSync = currentUserId
+            let tokenForSync = currentToken
             let hardDeletedNoteIdsSnapshot = HardDeleteQueueStore.noteIDs(for: userIdForSync)
             let hardDeletedTagIdsSnapshot = HardDeleteQueueStore.tagIDs(for: userIdForSync)
             print("[SYNC] syncNow user=\(userIdForSync) since=\(lastSyncAt?.description ?? "nil") cursor=\(cursorSnapshot.isEmpty ? "nil" : cursorSnapshot) hardDeletedNotes=\(hardDeletedNoteIdsSnapshot.count) hardDeletedTags=\(hardDeletedTagIdsSnapshot.count)")
@@ -90,7 +89,7 @@ final class SyncManager: ObservableObject {
                 let cursorValue = shouldForceFullSync ? nil : (cursorSnapshot.isEmpty ? nil : cursorSnapshot)
                 let config = SyncConfig(
                     baseURL: url,
-                    authToken: authToken,
+                    authToken: tokenForSync,
                     since: sinceDate,
                     cursor: cursorValue,
                     localSyncAnchor: syncStartedAt,
@@ -170,7 +169,7 @@ final class SyncManager: ObservableObject {
     
     private func shouldSyncNow() -> Bool {
         guard isEnabled, !isSyncing else { return false }
-        guard !authToken.isEmpty else { return false }
+        guard AuthService.shared.currentUserId != nil else { return false }
         guard URL(string: serverURLString) != nil else { return false }
         if let lastSyncAt, Date().timeIntervalSince(lastSyncAt) < minimumSyncInterval {
             return false

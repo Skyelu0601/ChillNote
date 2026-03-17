@@ -1,4 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
     // Smooth scroll for nav links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
@@ -7,11 +9,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (target) {
                 window.scrollTo({
                     top: target.offsetTop - 80,
-                    behavior: 'smooth'
+                    behavior: prefersReducedMotion ? 'auto' : 'smooth'
                 });
             }
         });
     });
+
+    if (prefersReducedMotion) {
+        return;
+    }
 
     // Reveal animations on scroll
     const observerOptions = {
@@ -27,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, observerOptions);
 
-    document.querySelectorAll('.bento-item, .philosophy-card, .section-heading').forEach(el => {
+    document.querySelectorAll('.bento-item, .philosophy-card, .section-heading, .use-case-card, .faq-item').forEach(el => {
         el.style.opacity = '0';
         el.style.transform = 'translateY(20px)';
         el.style.transition = 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)';

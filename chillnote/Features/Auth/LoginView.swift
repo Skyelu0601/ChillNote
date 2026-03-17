@@ -155,7 +155,7 @@ struct LoginView: View {
     var emailLoginForm: some View {
         VStack(spacing: 20) {
             if !sentCode {
-                TextField("name@example.com", text: $email)
+                TextField(String(localized: "Email address"), text: $email)
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .autocapitalization(.none)
@@ -202,14 +202,14 @@ struct LoginView: View {
                 VStack(spacing: 8) {
                     Text(
                         String(
-                            format: String(localized: "Enter code sent to %@"),
+                            format: String(localized: "Code sent to %@"),
                             email
                         )
                     )
                         .font(.caption)
                         .foregroundColor(.textSub)
                     
-                    TextField("123456", text: $otpCode)
+                    TextField(String(localized: "Verification code"), text: $otpCode)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.center)
                         .font(.title2)

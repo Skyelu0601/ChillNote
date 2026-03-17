@@ -42,6 +42,7 @@ final class AuthService: ObservableObject {
         supabaseKey: AppConfig.supabaseAnonKey,
         options: SupabaseClientOptions(
             auth: SupabaseClientOptions.AuthOptions(
+                autoRefreshToken: true,
                 emitLocalSessionAsInitialSession: true
             )
         )
@@ -343,12 +344,10 @@ final class AuthService: ObservableObject {
     func getSessionToken() async -> String? {
         do {
             let session = try await supabase.auth.session
+            UserDefaults.standard.set(session.accessToken, forKey: "syncAuthToken")
             return session.accessToken
         } catch {
-            let cached = UserDefaults.standard.string(forKey: "syncAuthToken")
-            if let cached, !cached.isEmpty {
-                return cached
-            }
+            UserDefaults.standard.removeObject(forKey: "syncAuthToken")
             return nil
         }
     }
