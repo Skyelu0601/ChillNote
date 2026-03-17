@@ -438,19 +438,12 @@ h1, h2, h3, h4 {
   justify-content: center;
 }
 
-/* --- SEO Hub --- */
-.hub-section {
-  padding-top: 0;
-}
-
-.hub-grid,
 .article-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
 }
 
-.hub-card,
 .detail-card,
 .article-card,
 .timeline-item {
@@ -461,14 +454,12 @@ h1, h2, h3, h4 {
   box-shadow: var(--shadow-sm);
 }
 
-.hub-card h3,
 .detail-card h2,
 .article-card h2,
 .timeline-item h2 {
   margin: 0.75rem 0 1rem;
 }
 
-.hub-card p,
 .detail-card p,
 .article-card p,
 .timeline-item p {
@@ -670,7 +661,6 @@ footer {
   .bento-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
   .bento-large, .bento-medium { grid-column: span 1; }
   .philosophy-card { text-align: center; padding: 2rem; }
-  .hub-grid,
   .article-list,
   .use-case-grid,
   .faq-list { grid-template-columns: 1fr; }
