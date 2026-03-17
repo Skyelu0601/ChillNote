@@ -1,42 +1,91 @@
 document.addEventListener('DOMContentLoaded', () => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const header = document.querySelector('.site-header');
 
-    // Smooth scroll for nav links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
-            e.preventDefault();
-            const target = document.querySelector(this.getAttribute('href'));
-            if (target) {
-                window.scrollTo({
-                    top: target.offsetTop - 80,
-                    behavior: prefersReducedMotion ? 'auto' : 'smooth'
-                });
+    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+        anchor.addEventListener('click', (event) => {
+            const targetId = anchor.getAttribute('href');
+            if (!targetId || targetId === '#') {
+                return;
             }
+
+            const target = document.querySelector(targetId);
+            if (!target) {
+                return;
+            }
+
+            event.preventDefault();
+            const headerOffset = header ? header.offsetHeight + 12 : 0;
+            const top = target.getBoundingClientRect().top + window.scrollY - headerOffset;
+
+            window.scrollTo({
+                top,
+                behavior: prefersReducedMotion ? 'auto' : 'smooth'
+            });
         });
     });
 
+    const syncHeader = () => {
+        if (!header) {
+            return;
+        }
+
+        header.classList.toggle('is-scrolled', window.scrollY > 18);
+    };
+
+    syncHeader();
+    window.addEventListener('scroll', syncHeader, { passive: true });
+
+    const tabButtons = Array.from(document.querySelectorAll('[data-tab-trigger]'));
+    const tabPanels = Array.from(document.querySelectorAll('[data-tab-panel]'));
+
+    if (tabButtons.length && tabPanels.length) {
+        const showPanel = (tabId) => {
+            tabButtons.forEach((button) => {
+                const isActive = button.dataset.tabTrigger === tabId;
+                button.setAttribute('aria-selected', String(isActive));
+                button.classList.toggle('is-active', isActive);
+            });
+
+            tabPanels.forEach((panel) => {
+                const isActive = panel.dataset.tabPanel === tabId;
+                panel.classList.toggle('is-active', isActive);
+                panel.hidden = !isActive;
+            });
+        };
+
+        tabButtons.forEach((button) => {
+            button.addEventListener('click', () => {
+                showPanel(button.dataset.tabTrigger);
+            });
+        });
+
+        const defaultTab = tabButtons.find((button) => button.getAttribute('aria-selected') === 'true') || tabButtons[0];
+        showPanel(defaultTab.dataset.tabTrigger);
+    }
+
     if (prefersReducedMotion) {
+        document.querySelectorAll('[data-reveal]').forEach((element) => {
+            element.classList.add('is-visible');
+        });
         return;
     }
 
-    // Reveal animations on scroll
-    const observerOptions = {
-        threshold: 0.1
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
+    const revealElements = document.querySelectorAll('[data-reveal]');
+    const revealObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
             if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
+                entry.target.classList.add('is-visible');
+                revealObserver.unobserve(entry.target);
             }
         });
-    }, observerOptions);
+    }, {
+        threshold: 0.14,
+        rootMargin: '0px 0px -8% 0px'
+    });
 
-    document.querySelectorAll('.bento-item, .philosophy-card, .section-heading, .use-case-card, .faq-item').forEach(el => {
-        el.style.opacity = '0';
-        el.style.transform = 'translateY(20px)';
-        el.style.transition = 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)';
-        observer.observe(el);
+    revealElements.forEach((element, index) => {
+        element.style.setProperty('--reveal-delay', `${(index % 6) * 70}ms`);
+        revealObserver.observe(element);
     });
 });
