@@ -444,7 +444,7 @@ app.get("/health", (_req, res) => {
 });
 
 app.get("/version", (_req, res) => {
-  res.json({ version: "1.0.2", updated: new Date().toISOString() });
+  res.json({ version: "1.0.3", updated: new Date().toISOString() });
 });
 
 app.get("/invite/me", requireAuth, async (req, res) => {
