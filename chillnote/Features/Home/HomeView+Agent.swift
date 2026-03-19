@@ -69,8 +69,7 @@ extension HomeView {
                 actionProgress = nil
                 let message = error.localizedDescription
                 if message.localizedCaseInsensitiveContains("daily free agent recipe limit reached") {
-                    upgradeTitle = String(localized: "Daily Agent Recipe limit reached")
-                    showUpgradeSheet = true
+                    activePaywallContext = .dailyRecipeLimit
                 }
             }
         }

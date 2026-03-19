@@ -77,6 +77,7 @@ enum OnboardingGrammarDemoContent {
 
 struct OnboardingView: View {
     @Binding var isCompleted: Bool
+    var onCompleted: (() -> Void)? = nil
     @StateObject private var speechRecognizer = SpeechRecognizer()
     @State private var inputText: String = ""
     @State private var isVoiceMode: Bool = true
@@ -1251,7 +1252,10 @@ struct OnboardingView: View {
 
     
     private func completeOnboarding() {
-        requestPermissions { withAnimation { isCompleted = true } }
+        requestPermissions {
+            onCompleted?()
+            withAnimation { isCompleted = true }
+        }
     }
     
     private func requestPermissions(completion: @escaping () -> Void) {

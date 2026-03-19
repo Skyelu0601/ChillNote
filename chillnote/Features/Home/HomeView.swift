@@ -58,9 +58,8 @@ struct HomeView: View {
     @State var showRecipeHardLimitAlert = false
     @State var pendingRecipeForConfirmation: AgentRecipe?
 
-    @State var showUpgradeSheet = false
+    @State var activePaywallContext: PaywallContext?
     @State var showSubscription = false
-    @State var upgradeTitle = ""
 
     let translateLanguages: [TranslateLanguage] = [
         TranslateLanguage(id: "zh-Hans", name: "Simplified Chinese", displayName: "简体中文", flag: "🇨🇳"),
@@ -261,8 +260,7 @@ struct HomeView: View {
                 let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
                 await MainActor.run {
                     guard canRecord else {
-                        upgradeTitle = String(localized: "Daily voice limit reached")
-                        showUpgradeSheet = true
+                        activePaywallContext = .dailyVoiceLimit
                         return
                     }
                     isVoiceMode = true
@@ -280,20 +278,18 @@ struct HomeView: View {
             guard let userId = currentUserId else { return }
             await bootstrapHome(for: userId, source: .initialTask)
         }
-        .sheet(isPresented: $showUpgradeSheet) {
+        .sheet(item: $activePaywallContext) { context in
             UpgradeBottomSheet(
-                title: upgradeTitle,
-                message: UpgradeBottomSheet.unifiedMessage,
-                primaryButtonTitle: String(localized: "Upgrade to Pro"),
+                content: context.content,
                 onUpgrade: {
-                    showUpgradeSheet = false
+                    activePaywallContext = nil
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                         showSubscription = true
                     }
                 },
-                onDismiss: { showUpgradeSheet = false }
+                onDismiss: { activePaywallContext = nil }
             )
-            .presentationDetents([.height(350)])
+            .presentationDetents([.height(context.content.preferredSheetHeight), .large])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSubscription) {

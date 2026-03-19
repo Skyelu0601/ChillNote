@@ -34,22 +34,20 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
                     ShareSheet(activityItems: [exportURL])
                 }
             }
-            .sheet(isPresented: $viewModel.showUpgradeSheet) {
+            .sheet(item: $viewModel.activePaywallContext) { context in
                 UpgradeBottomSheet(
-                    title: viewModel.upgradeTitle,
-                    message: UpgradeBottomSheet.unifiedMessage,
-                    primaryButtonTitle: "Upgrade to Pro",
+                    content: context.content,
                     onUpgrade: {
-                        viewModel.showUpgradeSheet = false
+                        viewModel.activePaywallContext = nil
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                             viewModel.showSubscription = true
                         }
                     },
                     onDismiss: {
-                        viewModel.showUpgradeSheet = false
+                        viewModel.activePaywallContext = nil
                     }
                 )
-                .presentationDetents([.height(350)])
+                .presentationDetents([.height(context.content.preferredSheetHeight), .large])
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $viewModel.showSubscription) {

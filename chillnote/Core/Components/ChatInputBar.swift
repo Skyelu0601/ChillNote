@@ -25,7 +25,7 @@ struct ChatInputBar: View {
 
     @State private var elapsed: TimeInterval = 0
     @State private var didTriggerLimit = false
-    @State private var showUpgradeSheet = false
+    @State private var activePaywallContext: PaywallContext?
     @State private var showSubscription = false
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -39,7 +39,7 @@ struct ChatInputBar: View {
     }
 
     private func openSubscriptionFromUpgrade() {
-        showUpgradeSheet = false
+        activePaywallContext = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             showSubscription = true
         }
@@ -104,7 +104,7 @@ struct ChatInputBar: View {
             if elapsed >= storeService.recordingTimeLimit, speechRecognizer.isRecording {
                 if storeService.currentTier == .free && !didTriggerLimit {
                     didTriggerLimit = true
-                    showUpgradeSheet = true
+                    activePaywallContext = .recordingTimeLimit
                 }
                 onConfirmVoice()
             }
@@ -115,15 +115,13 @@ struct ChatInputBar: View {
                 didTriggerLimit = false
             }
         }
-        .sheet(isPresented: $showUpgradeSheet) {
+        .sheet(item: $activePaywallContext) { context in
             UpgradeBottomSheet(
-                title: String(localized: "Recording limit reached"),
-                message: UpgradeBottomSheet.unifiedMessage,
-                primaryButtonTitle: String(localized: "Upgrade to Pro"),
+                content: context.content,
                 onUpgrade: openSubscriptionFromUpgrade,
-                onDismiss: { showUpgradeSheet = false }
+                onDismiss: { activePaywallContext = nil }
             )
-            .presentationDetents([.height(350)])
+            .presentationDetents([.height(context.content.preferredSheetHeight), .large])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSubscription) {
@@ -329,7 +327,7 @@ struct ChatInputBar: View {
             let canRecord = await storeService.checkDailyQuotaOnServer(feature: .voice)
             await MainActor.run {
                 guard canRecord else {
-                    showUpgradeSheet = true
+                    activePaywallContext = .dailyVoiceLimit
                     return
                 }
                 speechRecognizer.startRecording(countsTowardQuota: true)

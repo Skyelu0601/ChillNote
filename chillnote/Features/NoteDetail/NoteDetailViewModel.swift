@@ -88,9 +88,8 @@ final class NoteDetailViewModel: ObservableObject {
     @Published var showExportError = false
     @Published var exportErrorMessage = ""
 
-    @Published var showUpgradeSheet = false
+    @Published var activePaywallContext: PaywallContext?
     @Published var showSubscription = false
-    @Published var upgradeTitle = ""
 
     @Published var recordingDuration: TimeInterval = 0
     @Published var awaitingVoiceEditResult = false
@@ -300,8 +299,7 @@ final class NoteDetailViewModel: ObservableObject {
         Task {
             let canRecord = await dependencies.checkDailyQuota(.voice)
             guard canRecord else {
-                upgradeTitle = "Daily voice limit reached"
-                showUpgradeSheet = true
+                activePaywallContext = .dailyVoiceLimit
                 return
             }
 

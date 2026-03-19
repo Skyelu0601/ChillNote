@@ -16,6 +16,12 @@ enum DailyQuotaFeature: String {
 @MainActor
 class StoreService: ObservableObject {
     static let shared = StoreService()
+    static let freeRecordingTimeLimit: TimeInterval = 60
+    static let proRecordingTimeLimit: TimeInterval = 600
+    static let freeDailyVoiceLimit = 5
+    static let freeDailyTidyLimit = 5
+    static let freeDailyAgentRecipeLimit = 3
+    static let freeDailyAIChatLimit = 10
     
     @Published var currentTier: SubscriptionTier = .free
     @Published var availableProducts: [Product] = []
@@ -30,23 +36,23 @@ class StoreService: ObservableObject {
     
     // Feature Limits
     var recordingTimeLimit: TimeInterval {
-        currentTier == .pro ? 600 : 60 // 10 mins vs 1 min
+        currentTier == .pro ? Self.proRecordingTimeLimit : Self.freeRecordingTimeLimit
     }
 
     var dailyVoiceLimit: Int {
-        currentTier == .pro ? Int.max : 5
+        currentTier == .pro ? Int.max : Self.freeDailyVoiceLimit
     }
 
     var dailyTidyLimit: Int {
-        currentTier == .pro ? Int.max : 5
+        currentTier == .pro ? Int.max : Self.freeDailyTidyLimit
     }
 
     var dailyAgentRecipeLimit: Int {
-        currentTier == .pro ? Int.max : 3
+        currentTier == .pro ? Int.max : Self.freeDailyAgentRecipeLimit
     }
 
     var dailyAIChatLimit: Int {
-        currentTier == .pro ? Int.max : 10
+        currentTier == .pro ? Int.max : Self.freeDailyAIChatLimit
     }
 
     // MARK: - Usage Tracking

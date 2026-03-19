@@ -13,7 +13,7 @@ struct AIContextChatView: View {
     @State private var errorMessage: String?
     @FocusState private var isInputFocused: Bool
     @State private var isContextExpanded = false // Collapsible context state
-    @State private var showUpgradeSheet = false
+    @State private var activePaywallContext: PaywallContext?
     @State private var showSubscription = false
     
     var initialQuery: String? = nil // Optional initial query to auto-send
@@ -31,7 +31,7 @@ struct AIContextChatView: View {
     private let summarySnippetLimit = 160
     
     private func openSubscriptionFromUpgrade() {
-        showUpgradeSheet = false
+        activePaywallContext = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             showSubscription = true
         }
@@ -154,15 +154,13 @@ struct AIContextChatView: View {
                 }
             }
         }
-        .sheet(isPresented: $showUpgradeSheet) {
+        .sheet(item: $activePaywallContext) { context in
             UpgradeBottomSheet(
-                title: String(localized: "Daily free limit reached"),
-                message: UpgradeBottomSheet.unifiedMessage,
-                primaryButtonTitle: String(localized: "Upgrade to Pro"),
+                content: context.content,
                 onUpgrade: openSubscriptionFromUpgrade,
-                onDismiss: { showUpgradeSheet = false }
+                onDismiss: { activePaywallContext = nil }
             )
-            .presentationDetents([.height(350)])
+            .presentationDetents([.height(context.content.preferredSheetHeight), .large])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSubscription) {
@@ -356,7 +354,7 @@ struct AIContextChatView: View {
                     let message = error.localizedDescription
                     if message.localizedCaseInsensitiveContains("daily free ai chat limit reached") {
                         errorMessage = nil
-                        showUpgradeSheet = true
+                        activePaywallContext = .dailyChatLimit
                     } else {
                         errorMessage = String(
                             format: String(localized: "Chillo ran into an issue: %@"),

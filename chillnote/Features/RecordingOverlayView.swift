@@ -11,14 +11,13 @@ struct RecordingOverlayView: View {
     @State private var didTriggerStartHaptic = false
     @State private var pendingSave = false
     @State private var didTriggerLimit = false
-    @State private var showUpgradeSheet = false
+    @State private var activePaywallContext: PaywallContext?
     @State private var showSubscription = false
-    @State private var upgradeTitle = AppErrorCode.recordingLimitReached.message
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
     private func openSubscriptionFromUpgrade() {
-        showUpgradeSheet = false
+        activePaywallContext = nil
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             showSubscription = true
         }
@@ -208,8 +207,7 @@ struct RecordingOverlayView: View {
             case .error(let message):
                 if message.localizedCaseInsensitiveContains("daily free voice limit reached")
                     || message.localizedCaseInsensitiveContains("daily voice limit reached") {
-                    upgradeTitle = AppErrorCode.recordingDailyLimitReached.message
-                    showUpgradeSheet = true
+                    activePaywallContext = .dailyVoiceLimit
                 } else {
                     notificationHaptic(type: .error)
                 }
@@ -231,8 +229,7 @@ struct RecordingOverlayView: View {
             if elapsed >= limit && !didTriggerLimit {
                 didTriggerLimit = true
                 if StoreService.shared.currentTier == .free {
-                    upgradeTitle = AppErrorCode.recordingLimitReached.message
-                    showUpgradeSheet = true
+                    activePaywallContext = .recordingTimeLimit
                 }
                 finishRecording()
             }
@@ -246,15 +243,13 @@ struct RecordingOverlayView: View {
                 speechRecognizer.shouldStop = false
             }
         }
-        .sheet(isPresented: $showUpgradeSheet) {
+        .sheet(item: $activePaywallContext) { context in
             UpgradeBottomSheet(
-                title: upgradeTitle,
-                message: UpgradeBottomSheet.unifiedMessage,
-                primaryButtonTitle: L10n.text("subscription.upgrade_to_pro"),
+                content: context.content,
                 onUpgrade: openSubscriptionFromUpgrade,
-                onDismiss: { showUpgradeSheet = false }
+                onDismiss: { activePaywallContext = nil }
             )
-            .presentationDetents([.height(350)])
+            .presentationDetents([.height(context.content.preferredSheetHeight), .large])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSubscription) {
@@ -310,8 +305,7 @@ struct RecordingOverlayView: View {
         Task { @MainActor in
             let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
             guard canRecord else {
-                upgradeTitle = AppErrorCode.recordingDailyLimitReached.message
-                showUpgradeSheet = true
+                activePaywallContext = .dailyVoiceLimit
                 return
             }
             await Task.yield()

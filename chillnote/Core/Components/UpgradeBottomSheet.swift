@@ -1,11 +1,7 @@
 import SwiftUI
 
 struct UpgradeBottomSheet: View {
-    static let unifiedMessage = String(localized: "Upgrade to Pro to unlock more with ChillNote.")
-
-    let title: String
-    let message: String
-    let primaryButtonTitle: String
+    let content: PaywallContent
     let onUpgrade: () -> Void
     let onDismiss: () -> Void
 
@@ -18,65 +14,89 @@ struct UpgradeBottomSheet: View {
                 endPoint: .bottom
             )
             .ignoresSafeArea()
-            
-            VStack(spacing: 20) {
-                // Icon / Header
-                Image("coffee")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 110, height: 110)
-                    .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
-                    .padding(.top, 24)
-                
-                Text(title)
-                    .font(.title3)
-                    .fontWeight(.bold)
-                    .foregroundColor(.textMain)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
 
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundColor(.textSub)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-                
-                VStack(spacing: 12) {
-                    Button(action: onUpgrade) {
-                        HStack {
-                            Text(primaryButtonTitle)
-                            Image(systemName: "arrow.right")
-                                .font(.caption).bold()
-                        }
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(
-                            LinearGradient(
-                                colors: [.accentPrimary, Color(hex: "E09040")],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
-                        .cornerRadius(18)
-                        .shadow(color: .accentPrimary.opacity(0.3), radius: 8, x: 0, y: 4)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 18)
-                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                        )
-                    }
+            ScrollView(showsIndicators: false) {
+                VStack(spacing: 20) {
+                    // Icon / Header
+                    Image("coffee")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 110, height: 110)
+                        .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 4)
+                        .padding(.top, 24)
                     
-                    Button(action: onDismiss) {
-                        Text("Maybe Later")
+                    Text(content.title)
+                        .font(.title3)
+                        .fontWeight(.bold)
+                        .foregroundColor(.textMain)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+
+                    if content.hasMessage {
+                        Text(content.message)
                             .font(.subheadline)
-                            .fontWeight(.medium)
                             .foregroundColor(.textSub)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 24)
                     }
+
+                    VStack(alignment: .leading, spacing: 10) {
+                        ForEach(content.benefits, id: \.self) { benefit in
+                            HStack(alignment: .top, spacing: 10) {
+                                Image(systemName: "sparkles")
+                                    .foregroundColor(.accentPrimary)
+                                    .padding(.top, 2)
+                                Text(benefit)
+                                    .font(.subheadline)
+                                    .foregroundColor(.textMain)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    VStack(spacing: 12) {
+                        Button(action: onUpgrade) {
+                            HStack {
+                                Text(content.primaryButtonTitle)
+                                Image(systemName: "arrow.right")
+                                    .font(.caption).bold()
+                            }
+                            .font(.headline)
+                            .fontWeight(.bold)
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                LinearGradient(
+                                    colors: [.accentPrimary, Color(hex: "E09040")],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .cornerRadius(18)
+                            .shadow(color: .accentPrimary.opacity(0.3), radius: 8, x: 0, y: 4)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18)
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            )
+                        }
+                        
+                        Button(action: onDismiss) {
+                            Text(content.secondaryButtonTitle)
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.textSub)
+                                .padding(.bottom, 4)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+                    .padding(.bottom, 16)
                 }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 16)
+                .frame(maxWidth: .infinity)
+            }
+            .safeAreaInset(edge: .bottom) {
+                Color.clear.frame(height: 8)
             }
         }
     }
@@ -84,9 +104,7 @@ struct UpgradeBottomSheet: View {
 
 #Preview {
     UpgradeBottomSheet(
-        title: "Recording limit reached",
-        message: UpgradeBottomSheet.unifiedMessage,
-        primaryButtonTitle: "Upgrade to Pro",
+        content: PaywallContext.recordingTimeLimit.content,
         onUpgrade: {},
         onDismiss: {}
     )

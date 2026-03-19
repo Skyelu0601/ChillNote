@@ -19,9 +19,13 @@ struct NoteDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var syncManager: SyncManager
     @EnvironmentObject private var speechRecognizer: SpeechRecognizer
+    @StateObject private var storeService = StoreService.shared
 
     @StateObject private var viewModel: NoteDetailViewModel
     @State private var activeVoiceAlert: VoiceAlertState?
+    @State private var activePaywallContext: PaywallContext?
+    @State private var firstVoiceSuccessTask: Task<Void, Never>?
+    @AppStorage("paywall.has_shown_first_voice_success") private var hasShownFirstVoiceSuccessPaywall = false
 
     private let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
 
@@ -107,6 +111,26 @@ struct NoteDetailView: View {
                 action: .dismissOnly
             )
         }
+        .onChange(of: viewModel.completedOriginalText) { _, value in
+            guard value != nil else { return }
+            guard !hasShownFirstVoiceSuccessPaywall else { return }
+            guard storeService.currentTier == .free else { return }
+
+            firstVoiceSuccessTask?.cancel()
+            firstVoiceSuccessTask = Task { @MainActor in
+                try? await Task.sleep(nanoseconds: 1_200_000_000)
+                guard !Task.isCancelled else { return }
+                guard activeVoiceAlert == nil else { return }
+                guard activePaywallContext == nil else { return }
+                guard viewModel.activePaywallContext == nil else { return }
+                guard !viewModel.showSubscription else { return }
+                guard viewModel.completedOriginalText != nil else { return }
+
+                hasShownFirstVoiceSuccessPaywall = true
+                PaywallStateStore.hasShownFirstVoiceSuccessPaywall = true
+                activePaywallContext = .firstVoiceSuccess
+            }
+        }
         .alert(item: $activeVoiceAlert) { alert in
             switch alert.action {
             case .retryTranscription:
@@ -132,6 +156,7 @@ struct NoteDetailView: View {
             }
         }
         .onAppear {
+            hasShownFirstVoiceSuccessPaywall = PaywallStateStore.hasShownFirstVoiceSuccessPaywall
             viewModel.configure(
                 modelContext: modelContext,
                 syncManager: syncManager,
@@ -139,6 +164,25 @@ struct NoteDetailView: View {
                 dismissAction: { dismiss() }
             )
             viewModel.send(.onAppear)
+        }
+        .onDisappear {
+            firstVoiceSuccessTask?.cancel()
+        }
+        .sheet(item: $activePaywallContext) { context in
+            UpgradeBottomSheet(
+                content: context.content,
+                onUpgrade: {
+                    activePaywallContext = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                        viewModel.showSubscription = true
+                    }
+                },
+                onDismiss: {
+                    activePaywallContext = nil
+                }
+            )
+            .presentationDetents([.height(context.content.preferredSheetHeight), .large])
+            .presentationDragIndicator(.visible)
         }
         .onChange(of: note.content) { oldValue, newValue in
             viewModel.onContentChange(oldValue: oldValue, newValue: newValue)
