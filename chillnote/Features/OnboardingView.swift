@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import StoreKit
 
 enum OnboardingGrammarDemoContent {
     struct GrammarToken: Identifiable, Equatable {
@@ -79,6 +80,7 @@ struct OnboardingView: View {
     @Binding var isCompleted: Bool
     var onCompleted: (() -> Void)? = nil
     @StateObject private var speechRecognizer = SpeechRecognizer()
+    @StateObject private var storeService = StoreService.shared
     @State private var inputText: String = ""
     @State private var isVoiceMode: Bool = true
     
@@ -995,134 +997,227 @@ struct OnboardingView: View {
         String(localized: "onboarding.ask.final_answer")
     }
     
-    private var finalStepView: some View {
-        VStack {
-            Spacer().frame(height: 20)
+    private var yearlyProduct: Product? {
+        storeService.availableProducts.first(where: { $0.subscription?.subscriptionPeriod.unit == .year })
+        ?? storeService.availableProducts.first(where: { $0.id.lowercased().contains("year") })
+    }
+
+    private var onboardingPaywall: some View {
+        VStack(spacing: 16) {
+            // Dismiss button at Top Right
+            HStack {
+                Spacer()
+                Button {
+                    completeOnboarding()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.textMain.opacity(0.4))
+                        .padding(8)
+                        .background(Color.black.opacity(0.05))
+                        .clipShape(Circle())
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 10)
             
-            VStack(spacing: 24) {
-                // Header
-                if askPhase == .saved {
-                    VStack(spacing: 16) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 60))
-                            .foregroundStyle(LinearGradient(colors: [.green, .mint], startPoint: .topLeading, endPoint: .bottomTrailing))
-                            .transition(.scale.combined(with: .opacity))
-                        
-                        Text("You're ready.")
-                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                            .foregroundColor(.textMain)
-                    }
-                } else {
-                    VStack(spacing: 8) {
-                        Text("Ask Your Notes")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(.textMain)
-                        Text(askPhase == .idle ? "Select notes and ask anything about them" : "Reading your notes and building an answer...")
-                            .font(.body)
-                            .foregroundColor(.textSub)
-                            .transition(.opacity)
-                            .id(askPhase == .idle) // Force transition
-                    }
+            // Header
+            VStack(spacing: 8) {
+                ZStack {
+                    Image("chillohead_touming")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 64, height: 64)
+                    
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 20))
+                        .foregroundColor(.yellow)
+                        .offset(x: 30, y: -20)
                 }
                 
-                // Interactive Stage
-                ZStack {
-                    // 1. Background Floating Notes (Context)
-                    ForEach(demoNotes) { note in
-                        ContextNoteCard(note: note, isGathered: askPhase != .idle && askPhase != .saved)
-                            .zIndex(askPhase == .saved ? 0 : 1) // Move behind when saved
-                            .opacity(askPhase == .saved ? 0 : 1)
-                    }
+                Text(String(localized: "You're all set!"))
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(.textMain)
+                
+                Text(String(localized: "Unlock the full power of ChillNote"))
+                    .font(.bodyMedium)
+                    .foregroundColor(.textSub)
+            }
+            
+            // Value Recap Card
+            VStack(spacing: 16) {
+                // Ensure BenefitRow matches the design from SubscriptionView
+                BenefitRow(icon: "waveform", iconColor: .orange, title: "10-Minute Deep Dives", subtitle: "Capture long thoughts without interruption")
+                BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: "Unlimited Chat", subtitle: "Ask Chillo anything about your notes.")
+                BenefitRow(icon: "wand.and.stars", iconColor: .blue, title: "Infinite Tidy & Polish", subtitle: "Instantly turn messy ramblings into structured notes.")
+                BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: "Custom Chill Recipes", subtitle: "Create personalized AI recipes with Pro")
+            }
+            .padding(20)
+            .background(Color.white.opacity(0.6))
+            .background(.ultraThinMaterial)
+            .cornerRadius(24)
+            .shadow(color: .black.opacity(0.04), radius: 15, x: 0, y: 5)
+            .padding(.horizontal, 24)
+            
+            Spacer(minLength: 16)
+            
+            // CTA Area
+            VStack(spacing: 12) {
+                if let product = yearlyProduct {
+                    Text(String(localized: "Try 7 Days for Free"))
+                        .font(.headline)
+                        .foregroundColor(.accentPrimary)
                     
-                    // 2. AI Answer Card
-                    if askPhase != .idle && askPhase != .thinking {
-                        VStack(alignment: .leading, spacing: 16) {
-                            HStack {
-                                Image("chillohead_touming")
-                                    .resizable().scaledToFit().frame(width: 24, height: 24)
-                                Text("Chill AI")
-                                    .font(.caption.bold())
-                                    .foregroundColor(.accentPrimary)
-                                Spacer()
-                            }
-                            
-                            ScrollView(.vertical, showsIndicators: true) {
-                                Text(streamedAnswer)
-                                    .font(.system(size: 16, weight: .medium, design: .rounded))
-                                    .lineSpacing(2)
-                                    .foregroundColor(.textMain)
-                                    .frame(maxWidth: .infinity, alignment: .topLeading)
-                                    .animation(nil, value: streamedAnswer) // No animation on text change for typing effect
-                            }
-                            .frame(minHeight: 180, maxHeight: askPhase == .review ? 280 : 260)
-                            
-                            if askPhase == .review {
-                                Button {
-                                    saveNoteAction()
-                                } label: {
-                                    HStack {
-                                        Text("Save as Note")
-                                        Image(systemName: "square.and.arrow.down")
-                                    }
-                                    .font(.headline)
-                                    .foregroundColor(.white)
-                                    .padding(.vertical, 12)
-                                    .frame(maxWidth: .infinity)
-                                    .background(Color.accentPrimary)
-                                    .cornerRadius(12)
-                                    .shadow(color: .accentPrimary.opacity(0.3), radius: 8, y: 4)
-                                }
-                                .transition(.scale.combined(with: .opacity).combined(with: .move(edge: .bottom)))
+                    Text("Then \(product.displayPrice)/year. Cancel anytime before the trial ends.")
+                        .font(.caption)
+                        .foregroundColor(.textSub)
+                    
+                    Button {
+                        Task {
+                            await storeService.purchase(product)
+                            await MainActor.run {
+                                completeOnboarding()
                             }
                         }
-                        .padding(24)
-                        .background(
-                            RoundedRectangle(cornerRadius: 24)
-                                .fill(.ultraThinMaterial)
-                                .background(Color.white.opacity(0.5))
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 24))
-                        .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
-                        .padding(.horizontal, 30)
-                        .transition(.scale(scale: 0.8).combined(with: .opacity).combined(with: .move(edge: .bottom)))
-                        .zIndex(10)
-                        // Fly away animation
-                        .offset(y: askPhase == .saved ? 400 : 0)
-                        .scaleEffect(askPhase == .saved ? 0.1 : 1)
-                        .opacity(askPhase == .saved ? 0 : 1)
-                    }
-                }
-                .frame(height: askPhase == .review ? 480 : 390)
-                
-                // 3. User Controls
-                if askPhase == .idle {
-                    Button {
-                        startAskDemo()
                     } label: {
-                        Text(L10n.text("onboarding.ask.demo_prompt"))
-                            .font(.headline)
-                            .foregroundColor(.accentPrimary)
-                        .padding(.vertical, 16)
-                        .padding(.horizontal, 32)
-                        .background(Color.accentPrimary.opacity(0.1))
-                        .cornerRadius(30)
+                        Text(String(localized: "Start 7-Day Free Trial"))
+                            .font(.title3.weight(.bold))
+                            .foregroundColor(.white)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(Color.accentPrimary)
+                            .clipShape(Capsule())
+                            .shadow(color: Color.accentPrimary.opacity(0.4), radius: 15, y: 8)
                     }
-                    .transition(.opacity.combined(with: .move(edge: .bottom)))
-                } else if askPhase == .saved {
+                    .disabled(storeService.isPurchasing)
+                    
+                    Text(String(localized: "Easily manage or cancel in your Apple ID Settings."))
+                        .font(.caption2)
+                        .foregroundColor(.textSub.opacity(0.6))
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                } else {
                     Button {
                         completeOnboarding()
                     } label: {
-                        HStack { Text("Get Started").font(.title3.weight(.bold)); Image(systemName: "arrow.right") }
-                            .foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 18)
+                        HStack { Text(String(localized: "Get Started")).font(.title3.weight(.bold)); Image(systemName: "arrow.right") }
+                            .foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 16)
                             .background(Capsule().fill(Color.accentPrimary))
                             .shadow(color: Color.accentPrimary.opacity(0.4), radius: 15, y: 8)
                     }
-                    .padding(.horizontal, 32)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            
-            Spacer(minLength: 8)
+            .padding(.horizontal, 32)
+            .padding(.bottom, 20)
+        }
+    }
+
+    private var finalStepView: some View {
+        Group {
+            if askPhase == .saved {
+                onboardingPaywall
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            } else {
+                VStack {
+                    Spacer().frame(height: 20)
+                    
+                    VStack(spacing: 24) {
+                        // Header
+                        VStack(spacing: 8) {
+                            Text("Ask Your Notes")
+                                .font(.system(size: 28, weight: .bold, design: .rounded))
+                                .foregroundColor(.textMain)
+                            Text(askPhase == .idle ? "Select notes and ask anything about them" : "Reading your notes and building an answer...")
+                                .font(.body)
+                                .foregroundColor(.textSub)
+                                .transition(.opacity)
+                                .id(askPhase == .idle) // Force transition
+                        }
+                        
+                        // Interactive Stage
+                        ZStack {
+                            // 1. Background Floating Notes (Context)
+                            ForEach(demoNotes) { note in
+                                ContextNoteCard(note: note, isGathered: askPhase != .idle && askPhase != .saved)
+                                    .zIndex(1)
+                            }
+                            
+                            // 2. AI Answer Card
+                            if askPhase != .idle && askPhase != .thinking {
+                                VStack(alignment: .leading, spacing: 16) {
+                                    HStack {
+                                        Image("chillohead_touming")
+                                            .resizable().scaledToFit().frame(width: 24, height: 24)
+                                        Text("Chill AI")
+                                            .font(.caption.bold())
+                                            .foregroundColor(.accentPrimary)
+                                        Spacer()
+                                    }
+                                    
+                                    ScrollView(.vertical, showsIndicators: true) {
+                                        Text(streamedAnswer)
+                                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                                            .lineSpacing(2)
+                                            .foregroundColor(.textMain)
+                                            .frame(maxWidth: .infinity, alignment: .topLeading)
+                                            .animation(nil, value: streamedAnswer) // No animation on text change for typing effect
+                                    }
+                                    .frame(minHeight: 180, maxHeight: askPhase == .review ? 280 : 260)
+                                    
+                                    if askPhase == .review {
+                                        Button {
+                                            saveNoteAction()
+                                        } label: {
+                                            HStack {
+                                                Text("Save as Note")
+                                                Image(systemName: "square.and.arrow.down")
+                                            }
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                            .padding(.vertical, 12)
+                                            .frame(maxWidth: .infinity)
+                                            .background(Color.accentPrimary)
+                                            .cornerRadius(12)
+                                            .shadow(color: .accentPrimary.opacity(0.3), radius: 8, y: 4)
+                                        }
+                                        .transition(.scale.combined(with: .opacity).combined(with: .move(edge: .bottom)))
+                                    }
+                                }
+                                .padding(24)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 24)
+                                        .fill(.ultraThinMaterial)
+                                        .background(Color.white.opacity(0.5))
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 24))
+                                .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
+                                .padding(.horizontal, 30)
+                                .transition(.scale(scale: 0.8).combined(with: .opacity).combined(with: .move(edge: .bottom)))
+                                .zIndex(10)
+                            }
+                        }
+                        .frame(height: askPhase == .review ? 480 : 390)
+                        
+                        // 3. User Controls
+                        if askPhase == .idle {
+                            Button {
+                                startAskDemo()
+                            } label: {
+                                Text(L10n.text("onboarding.ask.demo_prompt"))
+                                    .font(.headline)
+                                    .foregroundColor(.accentPrimary)
+                                .padding(.vertical, 16)
+                                .padding(.horizontal, 32)
+                                .background(Color.accentPrimary.opacity(0.1))
+                                .cornerRadius(30)
+                            }
+                            .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        }
+                    }
+                    
+                    Spacer(minLength: 8)
+                }
+            }
         }
     }
     

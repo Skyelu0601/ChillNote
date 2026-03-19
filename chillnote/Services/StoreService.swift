@@ -13,6 +13,237 @@ enum DailyQuotaFeature: String {
     case chat
 }
 
+struct SubscriptionPeriodDescriptor: Equatable {
+    enum Unit: Equatable {
+        case day
+        case week
+        case month
+        case year
+    }
+
+    let unit: Unit
+    let value: Int
+
+    init(unit: Unit, value: Int) {
+        self.unit = unit
+        self.value = value
+    }
+
+    init?(storeKitPeriod: Product.SubscriptionPeriod?) {
+        guard let storeKitPeriod else { return nil }
+
+        let mappedUnit: Unit
+        switch storeKitPeriod.unit {
+        case .day:
+            mappedUnit = .day
+        case .week:
+            mappedUnit = .week
+        case .month:
+            mappedUnit = .month
+        case .year:
+            mappedUnit = .year
+        @unknown default:
+            return nil
+        }
+
+        self.init(unit: mappedUnit, value: storeKitPeriod.value)
+    }
+
+    var totalMonths: Int? {
+        switch unit {
+        case .month:
+            return value
+        case .year:
+            return value * 12
+        case .day, .week:
+            return nil
+        }
+    }
+
+    var isAnnual: Bool {
+        totalMonths == 12
+    }
+
+    func localizedDuration(locale: Locale = .current) -> String? {
+        let formatter = DateComponentsFormatter()
+        formatter.unitsStyle = .full
+        formatter.maximumUnitCount = 1
+        var calendar = Calendar.autoupdatingCurrent
+        calendar.locale = locale
+        formatter.calendar = calendar
+
+        let components: DateComponents
+        switch unit {
+        case .day:
+            formatter.allowedUnits = [.day]
+            components = DateComponents(day: value)
+        case .week:
+            formatter.allowedUnits = [.weekOfMonth]
+            components = DateComponents(weekOfMonth: value)
+        case .month:
+            formatter.allowedUnits = [.month]
+            components = DateComponents(month: value)
+        case .year:
+            formatter.allowedUnits = [.year]
+            components = DateComponents(year: value)
+        }
+
+        return formatter.string(from: components)
+    }
+}
+
+struct IntroductoryOfferDescriptor: Equatable {
+    enum PaymentMode: Equatable {
+        case freeTrial
+        case payAsYouGo
+        case payUpFront
+    }
+
+    let paymentMode: PaymentMode
+    let period: SubscriptionPeriodDescriptor
+
+    init(paymentMode: PaymentMode, period: SubscriptionPeriodDescriptor) {
+        self.paymentMode = paymentMode
+        self.period = period
+    }
+
+    init?(storeKitOffer: Product.SubscriptionOffer?) {
+        guard let storeKitOffer,
+              let period = SubscriptionPeriodDescriptor(storeKitPeriod: storeKitOffer.period) else {
+            return nil
+        }
+
+        let mappedMode: PaymentMode
+        switch storeKitOffer.paymentMode {
+        case .freeTrial:
+            mappedMode = .freeTrial
+        case .payAsYouGo:
+            mappedMode = .payAsYouGo
+        case .payUpFront:
+            mappedMode = .payUpFront
+        default:
+            return nil
+        }
+
+        self.init(paymentMode: mappedMode, period: period)
+    }
+
+    var isFreeTrial: Bool {
+        paymentMode == .freeTrial
+    }
+}
+
+struct SubscriptionDisplayInfo: Equatable {
+    let isAnnual: Bool
+    let badgeText: String
+    let ctaText: String
+    let billingPeriodText: String
+    let equivalentMonthlyText: String?
+    let renewalText: String?
+    let trialDurationText: String?
+
+    var hasFreeTrial: Bool {
+        trialDurationText != nil
+    }
+
+    static func build(
+        price: Decimal,
+        priceFormatStyle: Decimal.FormatStyle.Currency,
+        billingPeriod: SubscriptionPeriodDescriptor?,
+        introductoryOffer: IntroductoryOfferDescriptor?,
+        locale: Locale = .current
+    ) -> SubscriptionDisplayInfo {
+        let priceText = price.formatted(priceFormatStyle)
+        let isAnnual = billingPeriod?.isAnnual == true
+        let billingPeriodText = String(
+            localized: isAnnual ? "per year" : "per month",
+            locale: locale
+        )
+
+        let trialDurationText: String?
+        if isAnnual,
+           let introductoryOffer,
+           introductoryOffer.isFreeTrial {
+            trialDurationText = introductoryOffer.period.localizedDuration(locale: locale)
+        } else {
+            trialDurationText = nil
+        }
+
+        let badgeText: String
+        if let trialDurationText {
+            badgeText = String(
+                localized: "subscription.badge.free_trial",
+                defaultValue: "%@ FREE TRIAL",
+                locale: locale
+            )
+            .replacingOccurrences(of: "%@", with: trialDurationText.uppercased(with: locale))
+        } else {
+            badgeText = String(
+                localized: isAnnual ? "BEST VALUE" : "FLEXIBLE",
+                locale: locale
+            )
+        }
+
+        let ctaText: String
+        if let trialDurationText {
+            ctaText = String(
+                localized: "subscription.cta.start_free_trial",
+                defaultValue: "Start %@ Free Trial",
+                locale: locale
+            )
+            .replacingOccurrences(of: "%@", with: trialDurationText)
+        } else {
+            ctaText = String(
+                localized: isAnnual ? "Start Annual Plan" : "Start Monthly Plan",
+                locale: locale
+            )
+        }
+
+        let equivalentMonthlyText: String?
+        if isAnnual,
+           let monthCount = billingPeriod?.totalMonths,
+           monthCount > 0 {
+            let monthlyPrice = price / Decimal(monthCount)
+            let monthlyPriceText = monthlyPrice.formatted(priceFormatStyle)
+            let template = String(
+                localized: "subscription.equivalent_monthly_billed_yearly",
+                locale: locale
+            )
+            equivalentMonthlyText = String(format: template, locale: locale, monthlyPriceText)
+        } else {
+            equivalentMonthlyText = nil
+        }
+
+        let renewalText: String?
+        if let trialDurationText {
+            let billedYearlyTemplate = String(
+                localized: "subscription.price_per_year",
+                defaultValue: "%@/year",
+                locale: locale
+            )
+            let billedYearlyText = String(format: billedYearlyTemplate, locale: locale, priceText)
+            let renewalTemplate = String(
+                localized: "subscription.free_trial_then_price",
+                defaultValue: "Free for %@, then %@. Cancel anytime.",
+                locale: locale
+            )
+            renewalText = String(format: renewalTemplate, locale: locale, trialDurationText, billedYearlyText)
+        } else {
+            renewalText = nil
+        }
+
+        return SubscriptionDisplayInfo(
+            isAnnual: isAnnual,
+            badgeText: badgeText,
+            ctaText: ctaText,
+            billingPeriodText: billingPeriodText,
+            equivalentMonthlyText: equivalentMonthlyText,
+            renewalText: renewalText,
+            trialDurationText: trialDurationText
+        )
+    }
+}
+
 @MainActor
 class StoreService: ObservableObject {
     static let shared = StoreService()
@@ -328,6 +559,18 @@ class StoreService: ObservableObject {
 
     func refreshProducts() async {
         await fetchProducts()
+    }
+
+    func subscriptionDisplayInfo(for product: Product, locale: Locale = .current) -> SubscriptionDisplayInfo {
+        let billingPeriod = SubscriptionPeriodDescriptor(storeKitPeriod: product.subscription?.subscriptionPeriod)
+        let introductoryOffer = IntroductoryOfferDescriptor(storeKitOffer: product.subscription?.introductoryOffer)
+        return SubscriptionDisplayInfo.build(
+            price: product.price,
+            priceFormatStyle: product.priceFormatStyle,
+            billingPeriod: billingPeriod,
+            introductoryOffer: introductoryOffer,
+            locale: locale
+        )
     }
     
     // MARK: - Data Fetching

@@ -38,6 +38,11 @@ struct SubscriptionView: View {
         }
         return monthlyProduct ?? yearlyProduct
     }
+
+    private var selectedProductDisplayInfo: SubscriptionDisplayInfo? {
+        guard let selectedProduct else { return nil }
+        return storeService.subscriptionDisplayInfo(for: selectedProduct)
+    }
     
     var body: some View {
         NavigationStack {
@@ -131,7 +136,7 @@ struct SubscriptionView: View {
                     Button {
                         Task { await storeService.purchase(product) }
                     } label: {
-                        Text(isAnnual ? "Start Annual Plan" : "Start Monthly Plan")
+                        Text(selectedProductDisplayInfo?.ctaText ?? (isAnnual ? String(localized: "Start Annual Plan") : String(localized: "Start Monthly Plan")))
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -342,7 +347,10 @@ struct SubscriptionView: View {
             
             // Selected Product Card
             if let product = selectedProduct {
-                ProductHeroCard(product: product, isAnnual: isAnnual)
+                ProductHeroCard(
+                    product: product,
+                    displayInfo: storeService.subscriptionDisplayInfo(for: product)
+                )
                     .id(product.id)
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             } else if storeService.isLoadingProducts {
@@ -484,41 +492,17 @@ struct BenefitRow: View {
 
 struct ProductHeroCard: View {
     let product: Product
-    let isAnnual: Bool
-
-    private var equivalentMonthlyLine: String? {
-        guard isAnnual else { return nil }
-        guard let monthCount = monthCountForPlan else { return nil }
-        guard monthCount > 0 else { return nil }
-
-        let monthlyPrice = product.price / Decimal(monthCount)
-        let monthlyPriceText = monthlyPrice.formatted(product.priceFormatStyle)
-        let template = String(localized: "subscription.equivalent_monthly_billed_yearly")
-        return String(format: template, monthlyPriceText)
-    }
-
-    private var monthCountForPlan: Int? {
-        guard let period = product.subscription?.subscriptionPeriod else { return nil }
-
-        switch period.unit {
-        case .year:
-            return period.value * 12
-        case .month:
-            return period.value
-        default:
-            return nil
-        }
-    }
+    let displayInfo: SubscriptionDisplayInfo
     
     var body: some View {
         VStack(spacing: 12) {
-            Text(isAnnual ? "BEST VALUE" : "FLEXIBLE")
+            Text(displayInfo.badgeText)
                 .font(.system(size: 10, weight: .bold))
                 .tracking(2)
-                .foregroundColor(isAnnual ? .white : .textSub)
+                .foregroundColor(displayInfo.hasFreeTrial || displayInfo.isAnnual ? .white : .textSub)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
-                .background(isAnnual ? Color.accentPrimary : Color.black.opacity(0.05))
+                .background(displayInfo.hasFreeTrial || displayInfo.isAnnual ? Color.accentPrimary : Color.black.opacity(0.05))
                 .clipShape(Capsule())
             
             VStack(spacing: 0) {
@@ -526,16 +510,24 @@ struct ProductHeroCard: View {
                     .font(.system(size: 42, weight: .bold))
                     .foregroundColor(.textMain)
                 
-                Text(isAnnual ? "per year" : "per month")
+                Text(displayInfo.billingPeriodText)
                     .font(.body)
                     .foregroundColor(.textSub)
             }
             
-            if let equivalentMonthlyLine {
+            if let equivalentMonthlyLine = displayInfo.equivalentMonthlyText {
                 Text(equivalentMonthlyLine)
                     .font(.callout)
                     .foregroundColor(.accentPrimary)
                     .fontWeight(.medium)
+            }
+
+            if let renewalText = displayInfo.renewalText {
+                Text(renewalText)
+                    .font(.callout)
+                    .foregroundColor(.textMain)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
             }
 
             Text(product.description)
@@ -549,11 +541,11 @@ struct ProductHeroCard: View {
         .background(
             RoundedRectangle(cornerRadius: 24)
                 .fill(Color.white)
-                .shadow(color: isAnnual ? .accentPrimary.opacity(0.15) : .black.opacity(0.05), radius: 20, x: 0, y: 10)
+                .shadow(color: displayInfo.isAnnual ? .accentPrimary.opacity(0.15) : .black.opacity(0.05), radius: 20, x: 0, y: 10)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 24)
-                .stroke(isAnnual ? Color.accentPrimary : Color.clear, lineWidth: 2)
+                .stroke(displayInfo.isAnnual ? Color.accentPrimary : Color.clear, lineWidth: 2)
         )
     }
 }

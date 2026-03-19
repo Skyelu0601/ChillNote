@@ -7,7 +7,6 @@ enum PaywallContext: String, Identifiable {
     case dailyTidyLimit
     case dailyRecipeLimit
     case dailyChatLimit
-    case postOnboardingWelcome
     case firstVoiceSuccess
 
     var id: String { rawValue }
@@ -74,18 +73,6 @@ enum PaywallContext: String, Identifiable {
                 benefitKeys: [
                     "paywall.daily_chat_limit.benefit.more_chat",
                     "paywall.daily_chat_limit.benefit.deeper_followups"
-                ]
-            )
-        case .postOnboardingWelcome:
-            return PaywallContent(
-                titleKey: "welcome_upgrade.title",
-                messageKey: "welcome_upgrade.message",
-                primaryButtonKey: "welcome_upgrade.cta.upgrade",
-                secondaryButtonKey: "welcome_upgrade.cta.continue",
-                benefitKeys: [
-                    "welcome_upgrade.benefit.free_voice",
-                    "welcome_upgrade.benefit.free_ai",
-                    "welcome_upgrade.benefit.pro_power"
                 ]
             )
         case .firstVoiceSuccess:
@@ -175,13 +162,7 @@ struct PaywallContent {
 
 enum PaywallStateStore {
     private static let defaults = UserDefaults.standard
-    private static let pendingWelcomeUpgradeKey = "paywall.pending_welcome_upgrade"
     private static let hasShownFirstVoiceSuccessPaywallKey = "paywall.has_shown_first_voice_success"
-
-    static var pendingWelcomeUpgrade: Bool {
-        get { defaults.bool(forKey: pendingWelcomeUpgradeKey) }
-        set { defaults.set(newValue, forKey: pendingWelcomeUpgradeKey) }
-    }
 
     static var hasShownFirstVoiceSuccessPaywall: Bool {
         get { defaults.bool(forKey: hasShownFirstVoiceSuccessPaywallKey) }

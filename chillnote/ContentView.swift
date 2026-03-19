@@ -8,18 +8,11 @@ struct ContentView: View {
     // App Flow State
     // In a real app, these would probably check logic or Keychain on init
     @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
-    @AppStorage("paywall.pending_welcome_upgrade") private var pendingWelcomeUpgrade = false
 
     var body: some View {
         Group {
             if !hasSeenOnboarding {
-                OnboardingView(isCompleted: $hasSeenOnboarding) {
-                    pendingWelcomeUpgrade = true
-                }
-            } else if pendingWelcomeUpgrade {
-                WelcomeUpgradeView {
-                    pendingWelcomeUpgrade = false
-                }
+                OnboardingView(isCompleted: $hasSeenOnboarding)
             } else {
                 switch authService.state {
                 case .checking:
