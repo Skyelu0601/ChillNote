@@ -96,8 +96,8 @@ struct ChillRecipesView: View {
                             if recipeManager.savedRecipes.isEmpty {
                                 EmptyStateView(
                                     icon: "doc.text.magnifyingglass",
-                                    title: "No Recipes Yet",
-                                    message: "Add recipes from the library. Creating your own custom actions is available for paid members."
+                                    title: "No Skills Yet",
+                                    message: "Add Skills from the library. Creating your own custom actions is available for paid members."
                                 )
                                 .padding(.top, 40)
                             } else {
@@ -151,7 +151,7 @@ struct ChillRecipesView: View {
                 }
             }
         }
-        .navigationTitle("Chill Recipes")
+        .navigationTitle("Chill Skills")
         .sheet(isPresented: $showingCreateRecipe) {
             CreateRecipeSheet(
                 name: $newRecipeName,
@@ -167,7 +167,7 @@ struct ChillRecipesView: View {
         .sheet(isPresented: $showingSubscription) {
             SubscriptionView()
         }
-        .alert("Delete Recipe", isPresented: Binding(
+        .alert("Delete Skill", isPresented: Binding(
             get: { pendingDeleteRecipe != nil },
             set: { isPresented in if !isPresented { pendingDeleteRecipe = nil } }
         )) {
@@ -179,7 +179,7 @@ struct ChillRecipesView: View {
                 pendingDeleteRecipe = nil
             }
         } message: {
-            Text("This will permanently delete this custom recipe.")
+            Text("This will permanently delete this custom Skill.")
         }
     }
 
@@ -406,7 +406,7 @@ private struct CreateRecipeSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Recipe Details") {
+                Section("Skill Details") {
                     TextField("Name (e.g. Summarize)", text: $name)
                     
                     Button(action: { isIconPickerPresented = true }) {
@@ -425,7 +425,7 @@ private struct CreateRecipeSheet: View {
                         .frame(minHeight: 120)
                 }
             }
-            .navigationTitle("Create Recipe")
+            .navigationTitle("Create Skill")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -452,7 +452,7 @@ private enum RecipeSection: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .library: return NSLocalizedString("Library", comment: "")
-        case .myRecipes: return NSLocalizedString("My Recipes", comment: "")
+        case .myRecipes: return NSLocalizedString("My Skills", comment: "")
         }
     }
 }

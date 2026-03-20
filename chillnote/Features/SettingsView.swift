@@ -251,11 +251,11 @@ struct SettingsView: View {
     private var aiCapabilitiesSection: some View {
         VStack(spacing: 0) {
             
-            // New Chill Recipes Link
+            // New Chill Skills Link
             Button {
                 isAIConfigActive = true
             } label: {
-                SettingItem(icon: "book.closed", iconColor: .accentPrimary, label: "Chill Recipes")
+                SettingItem(icon: "book.closed", iconColor: .accentPrimary, label: "Chill Skills")
             }
             .buttonStyle(.plain)
             

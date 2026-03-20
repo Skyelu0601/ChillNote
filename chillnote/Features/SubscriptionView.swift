@@ -322,7 +322,7 @@ struct SubscriptionView: View {
             BenefitRow(icon: "waveform", iconColor: .orange, title: "10-Minute Deep Dives", subtitle: "Capture long thoughts without interruption")
             BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: "Unlimited Chat", subtitle: "Ask Chillo anything about your notes.")
             BenefitRow(icon: "wand.and.stars", iconColor: .blue, title: "Infinite Tidy & Polish", subtitle: "Instantly turn messy ramblings into structured notes.")
-            BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: "Custom Chill Recipes", subtitle: "Create personalized AI recipes with Pro")
+            BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: "Custom Chill Skills", subtitle: "Create personalized AI Skills with Pro")
         }
         .padding(24)
         .background(Color.white)

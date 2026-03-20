@@ -7,7 +7,7 @@ final class OnboardingGrammarDemoContentTests: XCTestCase {
         XCTAssertEqual(
             OnboardingGrammarDemoContent.fixedText,
             """
-            Chill Recipes turns your notes into instant actions, so instead of writing prompts from scratch, you can just choose what you want and run it in one tap. From quick summary to social post generation, Chill Recipes helps you move from rough thoughts to finished output faster, with less friction and more flow.
+            Chill Skills turns your notes into instant actions, so instead of writing prompts from scratch, you can just choose what you want and run it in one tap. From quick summary to social post generation, Chill Skills helps you move from rough thoughts to finished output faster, with less friction and more flow.
             """
         )
     }

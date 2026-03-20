@@ -26,7 +26,7 @@ struct HomeSelectionOverlayView: View {
                     if isAgentMenuOpen {
                         VStack(spacing: 16) {
                             HStack {
-                                Text("Chill Recipes")
+                                Text("Chill Skills")
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(.secondary)
                                 Spacer()
@@ -39,7 +39,7 @@ struct HomeSelectionOverlayView: View {
                                     Image(systemName: "plus.circle.fill")
                                         .font(.system(size: 18, weight: .semibold))
                                         .foregroundColor(.accentPrimary)
-                                        .accessibilityLabel("Add Recipes")
+                                        .accessibilityLabel("Add Skills")
                                 }
                             }
                             .padding(.horizontal, 4)
@@ -75,7 +75,7 @@ struct HomeSelectionOverlayView: View {
                                         Image(systemName: "book.closed")
                                             .font(.system(size: 20))
                                             .foregroundColor(.secondary)
-                                        Text("No recipes yet")
+                                        Text("No Skills Yet")
                                             .font(.system(size: 12, weight: .medium))
                                             .foregroundColor(.secondary)
                                             .multilineTextAlignment(.center)
@@ -113,7 +113,7 @@ struct HomeSelectionOverlayView: View {
 
                         Button(action: onToggleAgentMenu) {
                             HStack(spacing: 6) {
-                                Text("Chill Recipes")
+                                Text("Chill Skills")
                                     .font(.system(size: 16, weight: .semibold, design: .rounded))
 
                                 Image(systemName: "chevron.up")

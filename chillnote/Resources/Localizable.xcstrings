@@ -1826,106 +1826,106 @@
         }
       }
     },
-    "Add Recipes" : {
+    "Add Skills" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rezepte hinzufügen"
+            "value" : "Skills hinzufugen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add Recipes"
+            "value" : "Add Skills"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Agregar comandos"
+            "value" : "Agregar Skills"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajouter des commandes"
+            "value" : "Ajouter des Skills"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "コマンドを追加"
+            "value" : "Skills を追加"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "명령어 추가"
+            "value" : "Skills 추가"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加指令"
+            "value" : "添加 Skills"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加指令"
+            "value" : "新增 Skills"
           }
         }
       }
     },
-    "Add recipes from the library. Creating your own custom actions is available for paid members." : {
+    "Add Skills from the library. Creating your own custom actions is available for paid members." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Füge Rezepte aus der Bibliothek hinzu. Eigene benutzerdefinierte Aktionen sind für zahlende Mitglieder verfügbar."
+            "value" : "Fuge Skills aus der Bibliothek hinzu. Zahlende Mitglieder konnen auch eigene benutzerdefinierte Skills erstellen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add recipes from the library. Creating your own custom actions is available for paid members."
+            "value" : "Add Skills from the library. Creating your own custom actions is available for paid members."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Agrega comandos desde la biblioteca. Crear tus propias acciones personalizadas está disponible para miembros de pago."
+            "value" : "Agrega Skills desde la biblioteca. Los miembros de pago tambien pueden crear sus propios Skills personalizados."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajoutez des actions depuis la bibliothèque. La création de vos propres actions personnalisées est réservée aux membres payants."
+            "value" : "Ajoutez des Skills depuis la bibliotheque. Les membres payants peuvent aussi creer leurs propres Skills personnalises."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ライブラリからコマンドを追加できます。独自のカスタムアクション作成は有料会員向けです。"
+            "value" : "ライブラリから Skills を追加できます。有料会員は自分だけのカスタム Skills も作成できます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "라이브러리에서 명령어를 추가하세요. 나만의 맞춤 작업 생성은 유료 회원에게 제공됩니다."
+            "value" : "라이브러리에서 Skills를 추가해 보세요. 유료 회원은 나만의 맞춤 Skills도 만들 수 있습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "从指令库添加指令。付费会员还可以创建自己的自定义指令。"
+            "value" : "从资料库添加 Skills。付费会员还可以创建自己的自定义 Skills。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "從指令庫新增指令。付費會員還可以建立自己的自訂指令。"
+            "value" : "從資料庫新增 Skills。付費會員還可以建立自己的自訂 Skills。"
           }
         }
       }
@@ -1982,55 +1982,55 @@
         }
       }
     },
-    "Add to My Recipes" : {
+    "Add to My Skills" : {
       "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Zu „Meine Rezepte“ hinzufügen"
+            "value" : "Meinen Skills hinzufugen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add to My Recipes"
+            "value" : "Add to My Skills"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Añadir a Mis Comandos"
+            "value" : "Agregar a Mis Skills"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajouter à Mes actions"
+            "value" : "Ajouter a Mes Skills"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "マイコマンドに追加"
+            "value" : "マイ Skills に追加"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "내 명령어에 추가"
+            "value" : "내 Skills에 추가"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加到我的指令"
+            "value" : "添加到我的 Skills"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "添加到我的指令"
+            "value" : "加入我的 Skills"
           }
         }
       }
@@ -2188,6 +2188,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "ADHD 助手，將任務分解為零阻力步驟。"
+          }
+        }
+      }
+    },
+    "Agree and Continue" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zustimmen und fortfahren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agree and Continue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aceptar y continuar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accepter et continuer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同意して続ける"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "동의하고 계속하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同意并继续"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同意並繼續"
           }
         }
       }
@@ -3450,6 +3502,58 @@
         }
       }
     },
+    "Before using AI" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bevor du KI verwendest"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before using AI"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antes de usar la IA"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avant d'utiliser l'IA"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AIを使う前に"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI를 사용하기 전에"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 AI 前"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 AI 前"
+          }
+        }
+      }
+    },
     "BEST VALUE" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4028,107 +4132,107 @@
         }
       }
     },
-    "Chill Recipes" : {
+    "Chill Skills" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill-Rezepte"
+            "value" : "Chill Skills"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill Recipes"
+            "value" : "Chill Skills"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comandos Chill"
+            "value" : "Chill Skills"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Commandes Chill"
+            "value" : "Chill Skills"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chillコマンド"
+            "value" : "Chill Skills"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill 명령어"
+            "value" : "Chill Skills"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill指令"
+            "value" : "Chill Skills"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill指令"
+            "value" : "Chill Skills"
           }
         }
       }
     },
-    "Chill Recipes can process up to %lld notes at a time. Please reduce your selection." : {
+    "Chill Skills can process up to %lld notes at a time. Please reduce your selection." : {
       "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill-Rezepte können bis zu %lld Notizen gleichzeitig verarbeiten. Bitte reduziere deine Auswahl."
+            "value" : "Chill Skills kann bis zu %lld Notizen gleichzeitig verarbeiten. Bitte reduziere deine Auswahl."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill Recipes can process up to %lld notes at a time. Please reduce your selection."
+            "value" : "Chill Skills can process up to %lld notes at a time. Please reduce your selection."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los Comandos Chill pueden procesar hasta %lld notas a la vez. Reduce tu selección."
+            "value" : "Chill Skills puede procesar hasta %lld notas a la vez. Reduce tu seleccion."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les Commandes Chill peuvent traiter jusqu'à %lld notes à la fois. Veuillez réduire votre sélection."
+            "value" : "Chill Skills peut traiter jusqu'a %lld notes a la fois. Reduisez votre selection."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chillコマンドは一度に最大 %lld 件のメモを処理できます。選択数を減らしてください。"
+            "value" : "Chill Skillsは一度に最大%lld件のノートを処理できます。選択数を減らしてください。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill 명령어는 한 번에 최대 %lld개의 노트를 처리할 수 있습니다. 선택 수를 줄여 주세요."
+            "value" : "Chill Skills는 한 번에 최대 %lld개의 노트를 처리할 수 있습니다. 선택 수를 줄여 주세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill指令一次最多可处理 %lld 条笔记，请减少选择数量。"
+            "value" : "Chill Skills 一次最多可处理 %lld 条笔记，请减少选择数量。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill指令一次最多可處理 %lld 則筆記，請減少選擇數量。"
+            "value" : "Chill Skills 一次最多可處理 %lld 則筆記，請減少選擇數量。"
           }
         }
       }
@@ -5434,6 +5538,9 @@
         }
       }
     },
+    "Continue on Free Plan" : {
+
+    },
     "Continue with Email" : {
       "localizations" : {
         "de" : {
@@ -5799,106 +5906,106 @@
         }
       }
     },
-    "Create personalized AI recipes with Pro" : {
+    "Create personalized AI Skills with Pro" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mit Pro eigene KI-Rezepte erstellen"
+            "value" : "Erstelle personalisierte KI Skills mit Pro"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Create personalized AI recipes with Pro"
+            "value" : "Create personalized AI Skills with Pro"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crea comandos de IA personalizados con Pro"
+            "value" : "Crea Skills de IA personalizados con Pro"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Créez vos propres actions IA avec Pro"
+            "value" : "Creez des Skills IA personnalises avec Pro"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pro でパーソナライズされた AIコマンドを作成"
+            "value" : "Pro で自分だけの AI Skills を作成"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pro로 맞춤형 AI 명령어 만들기"
+            "value" : "Pro로 맞춤형 AI Skills 만들기"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用 Pro 创建个性化 AI 指令"
+            "value" : "使用 Pro 创建个性化的 AI Skills"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用 Pro 建立個人化 AI 指令"
+            "value" : "使用 Pro 建立個人化的 AI Skills"
           }
         }
       }
     },
-    "Create Recipe" : {
+    "Create Skill" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rezept erstellen"
+            "value" : "Skill erstellen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Create Recipe"
+            "value" : "Create Skill"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crear comando"
+            "value" : "Crear Skill"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Créer une action"
+            "value" : "Creer un Skill"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "コマンドを作成"
+            "value" : "Skillを作成"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "명령어 만들기"
+            "value" : "Skill 만들기"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "创建指令"
+            "value" : "创建 Skill"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "建立指令"
+            "value" : "建立 Skill"
           }
         }
       }
@@ -5955,159 +6062,159 @@
         }
       }
     },
-    "Custom Chill Recipes" : {
+    "Custom Chill Skills" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eigene Chill-Rezepte"
+            "value" : "Eigene Chill Skills"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Custom Chill Recipes"
+            "value" : "Custom Chill Skills"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Comandos Chill personalizados"
+            "value" : "Tus Chill Skills personalizados"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Commandes Chill personnalisées"
+            "value" : "Vos Chill Skills personnalises"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "カスタム Chillコマンド"
+            "value" : "カスタム Chill Skills"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "맞춤형 Chill 명령어"
+            "value" : "나만의 Chill Skills"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "自定义 Chill指令"
+            "value" : "自定义 Chill Skills"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "自訂 Chill指令"
+            "value" : "自訂 Chill Skills"
           }
         }
       }
     },
-    "Custom recipe" : {
+    "Custom Skill" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eigenes Rezept"
+            "value" : "Eigener Skill"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Custom recipe"
+            "value" : "Custom Skill"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "receta personalizada"
+            "value" : "Skill personalizado"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recette personnalisée"
+            "value" : "Skill personnalise"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "カスタムレシピ"
+            "value" : "カスタム Skill"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "맞춤형 레시피"
+            "value" : "맞춤형 Skill"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "定制食谱"
+            "value" : "自定义 Skill"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "客製化食譜"
+            "value" : "自訂 Skill"
           }
         }
       }
     },
-    "Daily Agent Recipe limit reached" : {
+    "Daily Agent Skill limit reached" : {
       "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tägliches Rezeptlimit erreicht"
+            "value" : "Tageslimit fur Agent Skill erreicht"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Daily Agent Recipe limit reached"
+            "value" : "Daily Agent Skill limit reached"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Se alcanzó el límite diario de comandos"
+            "value" : "Has alcanzado el limite diario de Agent Skill"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Limite quotidienne d'actions atteinte"
+            "value" : "Limite quotidienne d'Agent Skill atteinte"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "1日のコマンド上限に達しました"
+            "value" : "本日の Agent Skill の上限に達しました"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "일일 명령어 한도에 도달했습니다"
+            "value" : "오늘의 Agent Skill 한도에 도달했습니다"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "今日指令额度已达上限"
+            "value" : "今日 Agent Skill 配额已达上限"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "今日指令額度已達上限"
+            "value" : "今日 Agent Skill 配額已達上限"
           }
         }
       }
@@ -6636,54 +6743,54 @@
         }
       }
     },
-    "Delete Recipe" : {
+    "Delete Skill" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rezept löschen"
+            "value" : "Skill loschen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Delete Recipe"
+            "value" : "Delete Skill"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eliminar comando"
+            "value" : "Eliminar Skill"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Supprimer l'action"
+            "value" : "Supprimer le Skill"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "コマンドを削除"
+            "value" : "Skillを削除"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "명령어 삭제"
+            "value" : "Skill 삭제"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "删除指令"
+            "value" : "删除 Skill"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "刪除指令"
+            "value" : "刪除 Skill"
           }
         }
       }
@@ -11360,6 +11467,7 @@
       }
     },
     "Get Started" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -11947,49 +12055,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill Recipes kann bis zu %lld Notizen gleichzeitig verarbeiten. Bitte reduziere deine Auswahl."
+            "value" : "Chill Skills can process up to %lld notes at a time. Please reduce your selection."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill Recipes can process up to %lld notes at a time. Please reduce your selection."
+            "value" : "Chill Skills can process up to %lld notes at a time. Please reduce your selection."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill Recipes puede procesar hasta %lld notas a la vez. Reduce tu selección."
+            "value" : "Chill Skills can process up to %lld notes at a time. Please reduce your selection."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les actions Chill peuvent traiter jusqu'à %lld notes à la fois. Réduisez votre sélection."
+            "value" : "Chill Skills can process up to %lld notes at a time. Please reduce your selection."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill Recipes は一度に最大 %lld 件のノートを処理できます。選択数を減らしてください。"
+            "value" : "Chill Skills can process up to %lld notes at a time. Please reduce your selection."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill Recipes는 한 번에 최대 %lld개의 노트를 처리할 수 있습니다. 선택 수를 줄여 주세요."
+            "value" : "Chill Skills can process up to %lld notes at a time. Please reduce your selection."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill Recipes 一次最多可处理 %lld 条笔记，请减少选择数量。"
+            "value" : "Chill Skills can process up to %lld notes at a time. Please reduce your selection."
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Chill Recipes 一次最多可處理 %lld 則筆記，請減少選擇數量。"
+            "value" : "Chill Skills can process up to %lld notes at a time. Please reduce your selection."
           }
         }
       }
@@ -12358,6 +12466,9 @@
           }
         }
       }
+    },
+    "Includes a %@ free trial. Cancel anytime." : {
+
     },
     "Infinite Tidy & Polish" : {
       "localizations" : {
@@ -12817,13 +12928,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "指令库"
+            "value" : "资料库"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "指令庫"
+            "value" : "資料庫"
           }
         }
       }
@@ -12932,6 +13043,9 @@
           }
         }
       }
+    },
+    "Loading subscription details..." : {
+
     },
     "Loading..." : {
       "localizations" : {
@@ -13872,54 +13986,54 @@
         }
       }
     },
-    "My Recipes" : {
+    "My Skills" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Meine Rezepte"
+            "value" : "Meine Skills"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "My Recipes"
+            "value" : "My Skills"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mis Comandos"
+            "value" : "Mis Skills"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mes actions"
+            "value" : "Mes Skills"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "マイコマンド"
+            "value" : "マイ Skills"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "내 명령어"
+            "value" : "내 Skills"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我的指令"
+            "value" : "我的 Skills"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我的指令"
+            "value" : "我的 Skills"
           }
         }
       }
@@ -14187,6 +14301,7 @@
       }
     },
     "Next: Ask AI" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -14602,110 +14717,6 @@
         }
       }
     },
-    "No recipes yet" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch keine Rezepte"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No recipes yet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no hay comandos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pas encore d'actions"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "まだコマンドがありません"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "아직 명령어가 없습니다"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "还没有指令"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "還沒有指令"
-          }
-        }
-      }
-    },
-    "No Recipes Yet" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch keine Rezepte"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No Recipes Yet"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aún no hay comandos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aucune action pour le moment"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "まだコマンドがありません"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "아직 명령어가 없습니다"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "还没有指令"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "還沒有指令"
-          }
-        }
-      }
-    },
     "No recording available to retry" : {
       "localizations" : {
         "de" : {
@@ -14754,6 +14765,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "沒有可重試的錄音"
+          }
+        }
+      }
+    },
+    "No Skills Yet" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch keine Skills"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Skills Yet"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todavia no hay Skills"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas encore de Skills"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まだ Skills がありません"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아직 Skills가 없습니다"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "还没有 Skills"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "還沒有 Skills"
           }
         }
       }
@@ -16597,49 +16660,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erstelle eigene Rezepte für deinen Workflow."
+            "value" : "Erstelle eigene Skills fur deinen Workflow."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Create custom Recipes for your workflow"
+            "value" : "Create custom Skills for your workflow"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crea recetas personalizadas para tu propio flujo de trabajo."
+            "value" : "Crea Skills personalizados para tu flujo de trabajo."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Créez des recettes personnalisées pour votre propre workflow."
+            "value" : "Creez des Skills personnalises pour votre workflow."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "自分のワークフロー向けにカスタムレシピを作れます。"
+            "value" : "自分のワークフロー向けにカスタムSkillsを作れます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "내 워크플로에 맞는 사용자 정의 레시피를 만들 수 있어요."
+            "value" : "내 워크플로에 맞는 사용자 정의 Skills를 만들 수 있어요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "为你的工作流创建自定义指令。"
+            "value" : "为你的工作流创建自定义 Skills。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "為你的工作流建立自訂指令。"
+            "value" : "為你的工作流程建立自訂 Skills。"
           }
         }
       }
@@ -16703,49 +16766,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Führe jeden Tag mehr Rezepte aus."
+            "value" : "Fuhre jeden Tag mehr Skills aus."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Run more Recipes each day"
+            "value" : "Run more Skills each day"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ejecuta más recetas cada día."
+            "value" : "Usa mas Skills cada dia."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Exécutez plus de recettes chaque jour."
+            "value" : "Utilisez plus de Skills chaque jour."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "毎日より多くのレシピを実行できます。"
+            "value" : "毎日より多くのSkillsを使えます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "매일 더 많은 레시피를 실행할 수 있어요."
+            "value" : "매일 더 많은 Skills를 사용할 수 있어요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每天可运行更多 Recipes。"
+            "value" : "每天可运行更多 Skills。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每天可執行更多 Recipes。"
+            "value" : "每天可執行更多 Skills。"
           }
         }
       }
@@ -16756,49 +16819,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Mit Pro bekommst du mehr Recipe-Aktionen."
+            "value" : "Pro gibt dir mehr Skill-Aktionen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pro gives you more Recipe actions."
+            "value" : "Pro gives you more Skill actions."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pro te da más acciones de Recipe."
+            "value" : "Pro te da mas acciones de Skill."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pro vous donne plus d’actions Recipe."
+            "value" : "Pro vous donne plus d'actions Skill."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Proなら、Recipe をもっと使えます。"
+            "value" : "Proなら、より多くのSkillアクションを使えます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pro라면 Recipe를 더 많이 사용할 수 있어요."
+            "value" : "Pro라면 더 많은 Skill 작업을 사용할 수 있어요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pro 会给你更多 Recipe 操作空间。"
+            "value" : "Pro 会给你更多 Skill 操作空间。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pro 會給你更多 Recipe 操作空間。"
+            "value" : "Pro 會給你更多 Skill 操作空間。"
           }
         }
       }
@@ -16809,49 +16872,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dein Rezept-Limit für heute ist erreicht"
+            "value" : "Du hast das heutige Skill-Limit erreicht"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You’ve used today’s Recipe limit"
+            "value" : "You've used today's Skill limit"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ya usaste el límite de recetas de hoy"
+            "value" : "Ya usaste el limite de Skill de hoy"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez atteint la limite de recettes du jour"
+            "value" : "Vous avez atteint la limite de Skill du jour"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "今日のレシピ枠を使い切りました"
+            "value" : "今日のSkill枠を使い切りました"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "오늘의 레시피 한도를 모두 사용했어요"
+            "value" : "오늘의 Skill 한도를 모두 사용했어요"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你今天的指令额度用完了"
+            "value" : "你今天的 Skill 额度用完了"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你今天的指令額度用完了"
+            "value" : "你今天的 Skill 額度用完了"
           }
         }
       }
@@ -17286,49 +17349,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nutze mehr Rezepte und Notiz-Chat."
+            "value" : "Nutze mehr Skills und den Notiz-Chat."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Use more Recipes and note chat"
+            "value" : "Use more Skills and note chat"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Usa más recetas y chat con notas."
+            "value" : "Usa mas Skills y chat con notas."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilisez davantage de recettes et de chat de notes après l’enregistrement."
+            "value" : "Utilisez plus de Skills et le chat de notes."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "より多くのレシピとノートチャットを使えます。"
+            "value" : "より多くのSkillsとノートチャットを使えます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "더 많은 레시피와 노트 채팅을 사용할 수 있어요."
+            "value" : "더 많은 Skills와 노트 채팅을 사용할 수 있어요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用更多 Recipes 和笔记对话。"
+            "value" : "使用更多 Skills 和笔记对话。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "使用更多 Recipes 和筆記對話。"
+            "value" : "使用更多 Skills 和筆記對話。"
           }
         }
       }
@@ -18960,6 +19023,58 @@
         }
       }
     },
+    "Raw audio is processed ephemerally and is not retained on our servers after processing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roh-Audio wird nur kurzzeitig verarbeitet und nach der Verarbeitung nicht auf unseren Servern gespeichert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raw audio is processed ephemerally and is not retained on our servers after processing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El audio sin procesar se trata de forma temporal y no se conserva en nuestros servidores despues del procesamiento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'audio brut est traite de facon ephemere et n'est pas conserve sur nos serveurs apres le traitement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生の音声データは一時的に処理され、処理後に当社のサーバーへ保持されることはありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원본 오디오는 일시적으로만 처리되며, 처리 후 당사 서버에 보관되지 않습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原始音频仅作即时处理，处理完成后不会保留在我们的服务器上。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原始音訊僅作即時處理，處理完成後不會保留在我們的伺服器上。"
+          }
+        }
+      }
+    },
     "Read this aloud" : {
       "localizations" : {
         "de" : {
@@ -19112,58 +19227,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "正在閱讀你的筆記並生成答案..."
-          }
-        }
-      }
-    },
-    "Recipe Details" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Rezeptdetails"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recipe Details"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Detalles del comando"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Détails de l'action"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "コマンド詳細"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "명령어 상세"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "指令详情"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "指令詳情"
           }
         }
       }
@@ -20220,55 +20283,55 @@
         }
       }
     },
-    "Remove from My Recipes" : {
+    "Remove from My Skills" : {
       "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aus „Meine Rezepte“ entfernen"
+            "value" : "Aus Meinen Skills entfernen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remove from My Recipes"
+            "value" : "Remove from My Skills"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Quitar de Mis Comandos"
+            "value" : "Quitar de Mis Skills"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Retirer de Mes actions"
+            "value" : "Retirer de Mes Skills"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "マイコマンドから削除"
+            "value" : "マイ Skills から削除"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "내 명령어에서 제거"
+            "value" : "내 Skills에서 제거"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "从我的指令中移除"
+            "value" : "从我的 Skills 中移除"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "從我的指令中移除"
+            "value" : "從我的 Skills 中移除"
           }
         }
       }
@@ -22253,6 +22316,58 @@
         }
       }
     },
+    "Skill Details" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details zum Skill"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skill Details"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Detalles del Skill"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Details du Skill"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skillの詳細"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skill 상세 정보"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skill 详情"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skill 詳情"
+          }
+        }
+      }
+    },
     "Skip" : {
       "localizations" : {
         "de" : {
@@ -22358,6 +22473,7 @@
       }
     },
     "Start 7-Day Free Trial" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -22878,6 +22994,9 @@
           }
         }
       }
+    },
+    "Subscription details are temporarily unavailable." : {
+
     },
     "Subscription Plan" : {
       "localizations" : {
@@ -23648,6 +23767,7 @@
       }
     },
     "Then %@/year. Cancel anytime before the trial ends." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -23982,54 +24102,54 @@
         }
       }
     },
-    "This will permanently delete this custom recipe." : {
+    "This will permanently delete this custom Skill." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dadurch wird dieses eigene Rezept dauerhaft gelöscht."
+            "value" : "Dieser eigene Skill wird dadurch dauerhaft geloscht."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "This will permanently delete this custom recipe."
+            "value" : "This will permanently delete this custom Skill."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Esto eliminará permanentemente esta receta personalizada."
+            "value" : "Esto eliminara permanentemente este Skill personalizado."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cela supprimera définitivement cette recette personnalisée."
+            "value" : "Ce Skill personnalise sera supprime definitivement."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "これにより、このカスタム レシピは完全に削除されます。"
+            "value" : "このカスタム Skill は完全に削除されます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 맞춤 레시피가 영구적으로 삭제됩니다."
+            "value" : "이 맞춤 Skill이 영구적으로 삭제됩니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这将永久删除此自定义配方。"
+            "value" : "这将永久删除这个自定义 Skill。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "這將永久刪除此自訂配方。"
+            "value" : "這將永久刪除這個自訂 Skill。"
           }
         }
       }
@@ -24188,6 +24308,110 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "計時器正在運行"
+          }
+        }
+      }
+    },
+    "To improve your note, ChillNote may send the text you choose to ChillNote's secure server and to Google Gemini for processing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um deine Notiz zu verbessern, kann ChillNote den von dir ausgewaehlten Text zur Verarbeitung an die sicheren Server von ChillNote und an Google Gemini senden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To improve your note, ChillNote may send the text you choose to ChillNote's secure server and to Google Gemini for processing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para mejorar tu nota, ChillNote puede enviar el texto que elijas a los servidores seguros de ChillNote y a Google Gemini para su procesamiento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pour ameliorer votre note, ChillNote peut envoyer le texte que vous choisissez au serveur securise de ChillNote et a Google Gemini pour traitement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを改善するために、ChillNote はあなたが選択したテキストを、処理のために ChillNote の安全なサーバーおよび Google Gemini に送信する場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "노트를 개선하기 위해 ChillNote는 회원님이 선택한 텍스트를 처리 목적으로 ChillNote의 보안 서버와 Google Gemini로 전송할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为了优化你的笔记，ChillNote 可能会将你选择的文本发送到 ChillNote 的安全服务器和 Google Gemini 进行处理。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "為了優化你的筆記，ChillNote 可能會將你選擇的文字傳送到 ChillNote 的安全伺服器和 Google Gemini 進行處理。"
+          }
+        }
+      }
+    },
+    "To transcribe your voice note, ChillNote may send your audio and essential technical details to ChillNote's secure server and to Google Gemini for processing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um deine Sprachnotiz zu transkribieren, kann ChillNote deine Audiodaten und notwendige technische Details zur Verarbeitung an die sicheren Server von ChillNote und an Google Gemini senden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To transcribe your voice note, ChillNote may send your audio and essential technical details to ChillNote's secure server and to Google Gemini for processing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para transcribir tu nota de voz, ChillNote puede enviar tu audio y los detalles tecnicos esenciales a los servidores seguros de ChillNote y a Google Gemini para su procesamiento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pour transcrire votre note vocale, ChillNote peut envoyer votre audio et les details techniques essentiels au serveur securise de ChillNote et a Google Gemini pour traitement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声メモを文字起こしするために、ChillNote は音声データと必要な技術情報を、処理のために ChillNote の安全なサーバーおよび Google Gemini に送信する場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음성 메모를 텍스트로 변환하기 위해 ChillNote는 회원님의 오디오와 필수 기술 정보를 처리 목적으로 ChillNote의 보안 서버와 Google Gemini로 전송할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为了转写你的语音笔记，ChillNote 可能会将你的音频和必要的技术信息发送到 ChillNote 的安全服务器和 Google Gemini 进行处理。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "為了轉寫你的語音筆記，ChillNote 可能會將你的音訊和必要的技術資訊傳送到 ChillNote 的安全伺服器和 Google Gemini 進行處理。"
           }
         }
       }
@@ -24716,6 +24940,7 @@
       }
     },
     "Try 7 Days for Free" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -24767,54 +24992,57 @@
         }
       }
     },
-    "Try Recipes" : {
+    "Try Again" : {
+
+    },
+    "Try Skills" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rezepte ausprobieren"
+            "value" : "Skills ausprobieren"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Try Recipes"
+            "value" : "Try Skills"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Probar comandos"
+            "value" : "Probar Skills"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Essayer les actions"
+            "value" : "Essayer les Skills"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "コマンドを試す"
+            "value" : "Skills を試す"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "명령어 사용해 보기"
+            "value" : "Skills 사용해 보기"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "试用指令"
+            "value" : "试用 Skills"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "試用指令"
+            "value" : "試用 Skills"
           }
         }
       }
@@ -26604,49 +26832,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Starte mit %d-Minuten-Aufnahmen, %lld Sprachvorgängen, %lld Strukturierungen, %lld Rezepten und %lld Notiz-Chats pro Tag."
+            "value" : "Starte mit %d-Minuten-Aufnahmen, %lld Sprachvorgangen, %lld Strukturierungen, %lld Skills und %lld Notiz-Chats pro Tag."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Start with %d-minute recordings, %lld voice runs, %lld tidy runs, %lld recipes, and %lld note chats each day."
+            "value" : "Start with %d-minute recordings, %lld voice runs, %lld tidy runs, %lld Skills, and %lld note chats each day."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Empieza con grabaciones de %d minuto, %lld procesos de voz, %lld reorganizaciones, %lld recetas y %lld chats de notas por día."
+            "value" : "Empieza con grabaciones de %d minuto, %lld procesos de voz, %lld reorganizaciones, %lld Skills y %lld chats de notas por dia."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Commencez avec des enregistrements de %d minute, %lld traitements vocaux, %lld réorganisations, %lld recettes et %lld chats de notes par jour."
+            "value" : "Commencez avec des enregistrements de %d minute, %lld traitements vocaux, %lld reorganisations, %lld Skills et %lld chats de notes par jour."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "まずは%d分の録音、1日%lld回の音声処理、%lld回の整理、%lld回のレシピ、%lld回のノートチャットから始められます。"
+            "value" : "まずは%d分の録音、1日%lld回の音声処理、%lld回の整理、%lld回のSkills、%lld回のノートチャットから始められます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "먼저 %d분 녹음, 하루 %lld회 음성 처리, %lld회 정리, %lld회 레시피, %lld회 노트 채팅으로 시작할 수 있어요."
+            "value" : "먼저 %d분 녹음, 하루 %lld회 음성 처리, %lld회 정리, %lld회 Skills, %lld회 노트 채팅으로 시작할 수 있어요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "先体验 %d 分钟录音、每天 %lld 次语音处理、%lld 次整理、%lld 次指令和 %lld 次笔记对话。"
+            "value" : "先体验 %d 分钟录音、每天 %lld 次语音处理、%lld 次整理、%lld 次 Skills 和 %lld 次笔记对话。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "先體驗 %d 分鐘錄音、每天 %lld 次語音處理、%lld 次整理、%lld 次指令和 %lld 次筆記對話。"
+            "value" : "先體驗 %d 分鐘錄音、每天 %lld 次語音處理、%lld 次整理、%lld 次 Skills 和 %lld 次筆記對話。"
           }
         }
       }
@@ -27961,266 +28189,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你的資料僅用於完成你的本次請求。我們與第三方合作夥伴都不會使用你的筆記或錄音來訓練模型。"
-          }
-        }
-      }
-    },
-    "Agree and Continue" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Zustimmen und fortfahren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Agree and Continue"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Aceptar y continuar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Accepter et continuer"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "同意して続ける"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "동의하고 계속하기"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "同意并继续"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "同意並繼續"
-          }
-        }
-      }
-    },
-    "Before using AI" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bevor du KI verwendest"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Before using AI"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Antes de usar la IA"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Avant d'utiliser l'IA"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AIを使う前に"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "AI를 사용하기 전에"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用 AI 前"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "使用 AI 前"
-          }
-        }
-      }
-    },
-    "Raw audio is processed ephemerally and is not retained on our servers after processing." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Roh-Audio wird nur kurzzeitig verarbeitet und nach der Verarbeitung nicht auf unseren Servern gespeichert."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Raw audio is processed ephemerally and is not retained on our servers after processing."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "El audio sin procesar se trata de forma temporal y no se conserva en nuestros servidores despues del procesamiento."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "L'audio brut est traite de facon ephemere et n'est pas conserve sur nos serveurs apres le traitement."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "生の音声データは一時的に処理され、処理後に当社のサーバーへ保持されることはありません。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "원본 오디오는 일시적으로만 처리되며, 처리 후 당사 서버에 보관되지 않습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "原始音频仅作即时处理，处理完成后不会保留在我们的服务器上。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "原始音訊僅作即時處理，處理完成後不會保留在我們的伺服器上。"
-          }
-        }
-      }
-    },
-    "To improve your note, ChillNote may send the text you choose to ChillNote's secure server and to Google Gemini for processing." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Um deine Notiz zu verbessern, kann ChillNote den von dir ausgewaehlten Text zur Verarbeitung an die sicheren Server von ChillNote und an Google Gemini senden."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To improve your note, ChillNote may send the text you choose to ChillNote's secure server and to Google Gemini for processing."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para mejorar tu nota, ChillNote puede enviar el texto que elijas a los servidores seguros de ChillNote y a Google Gemini para su procesamiento."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pour ameliorer votre note, ChillNote peut envoyer le texte que vous choisissez au serveur securise de ChillNote et a Google Gemini pour traitement."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ノートを改善するために、ChillNote はあなたが選択したテキストを、処理のために ChillNote の安全なサーバーおよび Google Gemini に送信する場合があります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "노트를 개선하기 위해 ChillNote는 회원님이 선택한 텍스트를 처리 목적으로 ChillNote의 보안 서버와 Google Gemini로 전송할 수 있습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "为了优化你的笔记，ChillNote 可能会将你选择的文本发送到 ChillNote 的安全服务器和 Google Gemini 进行处理。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "為了優化你的筆記，ChillNote 可能會將你選擇的文字傳送到 ChillNote 的安全伺服器和 Google Gemini 進行處理。"
-          }
-        }
-      }
-    },
-    "To transcribe your voice note, ChillNote may send your audio and essential technical details to ChillNote's secure server and to Google Gemini for processing." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Um deine Sprachnotiz zu transkribieren, kann ChillNote deine Audiodaten und notwendige technische Details zur Verarbeitung an die sicheren Server von ChillNote und an Google Gemini senden."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "To transcribe your voice note, ChillNote may send your audio and essential technical details to ChillNote's secure server and to Google Gemini for processing."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para transcribir tu nota de voz, ChillNote puede enviar tu audio y los detalles tecnicos esenciales a los servidores seguros de ChillNote y a Google Gemini para su procesamiento."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pour transcrire votre note vocale, ChillNote peut envoyer votre audio et les details techniques essentiels au serveur securise de ChillNote et a Google Gemini pour traitement."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "音声メモを文字起こしするために、ChillNote は音声データと必要な技術情報を、処理のために ChillNote の安全なサーバーおよび Google Gemini に送信する場合があります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "음성 메모를 텍스트로 변환하기 위해 ChillNote는 회원님의 오디오와 필수 기술 정보를 처리 목적으로 ChillNote의 보안 서버와 Google Gemini로 전송할 수 있습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "为了转写你的语音笔记，ChillNote 可能会将你的音频和必要的技术信息发送到 ChillNote 的安全服务器和 Google Gemini 进行处理。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "為了轉寫你的語音筆記，ChillNote 可能會將你的音訊和必要的技術資訊傳送到 ChillNote 的安全伺服器和 Google Gemini 進行處理。"
           }
         }
       }

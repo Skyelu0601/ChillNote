@@ -17,7 +17,7 @@ enum OnboardingGrammarDemoContent {
 
     static let demoTokens: [GrammarToken] = [
         GrammarToken("Chill"),
-        GrammarToken("Recipes"),
+        GrammarToken("Skills"),
         GrammarToken("turn", fixed: "turns"),
         GrammarToken("your"),
         GrammarToken("notes"),
@@ -51,7 +51,7 @@ enum OnboardingGrammarDemoContent {
         GrammarToken("post"),
         GrammarToken("generatoin,", fixed: "generation,"),
         GrammarToken("Chill"),
-        GrammarToken("Recipes"),
+        GrammarToken("Skills"),
         GrammarToken("help", fixed: "helps"),
         GrammarToken("you"),
         GrammarToken("move"),
@@ -210,7 +210,7 @@ struct OnboardingView: View {
             
             VStack(spacing: 0) {
                 topBar
-                    .opacity(currentPage == 5 ? 0 : 1)
+                    .opacity(currentPage == 5 && askPhase == .saved ? 0 : 1)
                 
                 if isSearchVisible {
                     searchBar
@@ -228,7 +228,7 @@ struct OnboardingView: View {
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 
-                if currentPage < 5 {
+                if currentPage < 6 && !(currentPage == 5 && askPhase == .saved) {
                     pageIndicator
                 }
             }
@@ -297,9 +297,12 @@ struct OnboardingView: View {
                     showKoalaHint = true
                 }
             }
-        } else if page == 5 { // Final (was 4)
-            //  No specific setup needed for new Ask flow,
-            //  as it starts in .idle state driven by user interaction.
+        } else if page == 5 {
+            if storeService.availableProducts.isEmpty && !storeService.isLoadingProducts {
+                Task {
+                    await storeService.refreshProducts()
+                }
+            }
         }
     }
     
@@ -396,7 +399,7 @@ struct OnboardingView: View {
     
     private var pageIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(0..<5, id: \.self) { index in
+            ForEach(0..<6, id: \.self) { index in
                 Capsule()
                     .fill(currentPage == index ? Color.accentPrimary : Color.accentPrimary.opacity(0.2))
                     .frame(width: currentPage == index ? 20 : 8, height: 8)
@@ -409,19 +412,35 @@ struct OnboardingView: View {
     // MARK: - Top Bar
     private var topBar: some View {
         HStack {
-            Spacer()
-            
-            if currentPage == 4 || currentPage == 5 {
+            if currentPage < 5 || (currentPage == 5 && askPhase != .saved) {
                 Button {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                        if currentPage == 4 { 
-                            showRecipesBar = true
-                            showKoalaHint = false
-                            isRecipesButtonPulsing = true
-                        }
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                        currentPage = 5
+                        askPhase = .saved
                     }
                 } label: {
-                ZStack {
+                    Text("Skip")
+                        .font(.system(size: 15, weight: .semibold, design: .rounded))
+                        .foregroundColor(.textSub)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color.white.opacity(0.7))
+                        .clipShape(Capsule())
+                }
+                .buttonStyle(.plain)
+            }
+
+            Spacer()
+
+            if currentPage == 4 {
+                Button {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
+                        showRecipesBar = true
+                        showKoalaHint = false
+                        isRecipesButtonPulsing = true
+                    }
+                } label: {
+                    ZStack {
                         Image("chillohead_touming")
                             .resizable()
                             .scaledToFit()
@@ -899,7 +918,7 @@ struct OnboardingView: View {
                         .lineSpacing(4)
                 }
                 Spacer()
-                primaryButton(title: "Try Recipes", icon: "arrow.right", action: {
+                primaryButton(title: "Try Skills", icon: "arrow.right", action: {
                     withAnimation { currentPage = 4 }
                 })
                 .padding(.bottom, 40)
@@ -914,7 +933,7 @@ struct OnboardingView: View {
             VStack(spacing: 24) {
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
-                        sectionHeader(title: "Chill Recipes")
+                        sectionHeader(title: "Chill Skills")
                         Spacer()
                     }
                     
@@ -966,13 +985,6 @@ struct OnboardingView: View {
                         }
                     }
                     
-                    if grammarResult != nil {
-                        Button { withAnimation { currentPage = 5 } } label: {
-                            HStack { Text("Next: Ask AI"); Image(systemName: "arrow.right") }
-                                .font(.subheadline.weight(.medium))
-                                .foregroundColor(.accentPrimary)
-                        }
-                    }
                 }
                 .modifier(OnboardingCardModifier())
             }
@@ -991,12 +1003,12 @@ struct OnboardingView: View {
     private var finalAnswer: String {
         String(localized: "onboarding.ask.final_answer")
     }
-    
+
     private var yearlyProduct: Product? {
         storeService.availableProducts.first(where: { $0.subscription?.subscriptionPeriod.unit == .year })
         ?? storeService.availableProducts.first(where: { $0.id.lowercased().contains("year") })
     }
-
+    
     private var onboardingPaywall: some View {
         VStack(spacing: 16) {
             // Dismiss button at Top Right
@@ -1045,7 +1057,7 @@ struct OnboardingView: View {
                 BenefitRow(icon: "waveform", iconColor: .orange, title: "10-Minute Deep Dives", subtitle: "Capture long thoughts without interruption")
                 BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: "Unlimited Chat", subtitle: "Ask Chillo anything about your notes.")
                 BenefitRow(icon: "wand.and.stars", iconColor: .blue, title: "Infinite Tidy & Polish", subtitle: "Instantly turn messy ramblings into structured notes.")
-                BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: "Custom Chill Recipes", subtitle: "Create personalized AI recipes with Pro")
+                BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: "Custom Chill Skills", subtitle: "Create personalized AI Skills with Pro")
             }
             .padding(20)
             .background(Color.white.opacity(0.6))
@@ -1059,14 +1071,34 @@ struct OnboardingView: View {
             // CTA Area
             VStack(spacing: 12) {
                 if let product = yearlyProduct {
-                    Text(String(localized: "Try 7 Days for Free"))
-                        .font(.headline)
-                        .foregroundColor(.accentPrimary)
-                    
-                    Text("Then \(product.displayPrice)/year. Cancel anytime before the trial ends.")
-                        .font(.caption)
-                        .foregroundColor(.textSub)
-                    
+                    let displayInfo = storeService.subscriptionDisplayInfo(for: product)
+
+                    VStack(spacing: 10) {
+                        VStack(spacing: 2) {
+                            Text(product.displayPrice)
+                                .font(.system(size: 38, weight: .bold, design: .rounded))
+                                .foregroundColor(.textMain)
+
+                            Text(displayInfo.billingPeriodText)
+                                .font(.footnote.weight(.semibold))
+                                .foregroundColor(.textSub)
+                        }
+
+                        if let trialDurationText = displayInfo.trialDurationText {
+                            Text("Includes a \(trialDurationText) free trial. Cancel anytime.")
+                                .font(.caption)
+                                .foregroundColor(.textSub)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 8)
+                        } else if let renewalText = displayInfo.renewalText {
+                            Text(renewalText)
+                                .font(.caption)
+                                .foregroundColor(.textSub)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 8)
+                        }
+                    }
+
                     Button {
                         Task {
                             await storeService.purchase(product)
@@ -1075,30 +1107,90 @@ struct OnboardingView: View {
                             }
                         }
                     } label: {
-                        Text(String(localized: "Start 7-Day Free Trial"))
+                        Text(displayInfo.hasFreeTrial ? "Start Free Trial" : displayInfo.ctaText)
                             .font(.title3.weight(.bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
+                            .padding(.vertical, 14)
                             .background(Color.accentPrimary)
                             .clipShape(Capsule())
                             .shadow(color: Color.accentPrimary.opacity(0.4), radius: 15, y: 8)
                     }
                     .disabled(storeService.isPurchasing)
-                    
+
                     Text(String(localized: "Easily manage or cancel in your Apple ID Settings."))
                         .font(.caption2)
                         .foregroundColor(.textSub.opacity(0.6))
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
+                } else if storeService.isLoadingProducts {
+                    VStack(spacing: 10) {
+                        ProgressView()
+                            .tint(.accentPrimary)
+
+                        Text("Loading subscription details...")
+                            .font(.caption)
+                            .foregroundColor(.textSub)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 24)
+                } else if let error = storeService.productsErrorMessage {
+                    VStack(spacing: 12) {
+                        Text(error)
+                            .font(.caption)
+                            .foregroundColor(.textSub)
+                            .multilineTextAlignment(.center)
+
+                        Button {
+                            Task {
+                                await storeService.refreshProducts()
+                            }
+                        } label: {
+                            Text("Retry")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.accentPrimary)
+                                .clipShape(Capsule())
+                        }
+
+                        Button {
+                            completeOnboarding()
+                        } label: {
+                            Text("Continue on Free Plan")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundColor(.textSub)
+                        }
+                    }
                 } else {
-                    Button {
-                        completeOnboarding()
-                    } label: {
-                        HStack { Text(String(localized: "Get Started")).font(.title3.weight(.bold)); Image(systemName: "arrow.right") }
-                            .foregroundColor(.white).frame(maxWidth: .infinity).padding(.vertical, 16)
-                            .background(Capsule().fill(Color.accentPrimary))
-                            .shadow(color: Color.accentPrimary.opacity(0.4), radius: 15, y: 8)
+                    VStack(spacing: 12) {
+                        Text("Subscription details are temporarily unavailable.")
+                            .font(.caption)
+                            .foregroundColor(.textSub)
+                            .multilineTextAlignment(.center)
+
+                        Button {
+                            Task {
+                                await storeService.refreshProducts()
+                            }
+                        } label: {
+                            Text("Try Again")
+                                .font(.headline)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.accentPrimary)
+                                .clipShape(Capsule())
+                        }
+
+                        Button {
+                            completeOnboarding()
+                        } label: {
+                            Text("Continue on Free Plan")
+                                .font(.footnote.weight(.semibold))
+                                .foregroundColor(.textSub)
+                        }
                     }
                 }
             }
@@ -1361,7 +1453,7 @@ struct OnboardingView: View {
         VStack(spacing: 8) {
             if isRecipesMenuOpen {
                 VStack(spacing: 16) {
-                    HStack { Text("Chill Recipes").font(.headline).foregroundColor(.secondary); Spacer() }
+                    HStack { Text("Chill Skills").font(.headline).foregroundColor(.secondary); Spacer() }
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
                         // Show only Fix Grammar
                         ForEach(allRecipes.filter { $0.id == "fix" }) { recipe in
@@ -1398,21 +1490,39 @@ struct OnboardingView: View {
             
             // Only show Recipes Button Bar on Page 4 (Recipes Demo)
             if currentPage == 4 {
-                // Recipes Button
-                Button { withAnimation { 
-                    isRecipesMenuOpen.toggle()
-                    isRecipesButtonPulsing = false
-                    if isRecipesMenuOpen { isFixGrammarPulsing = true }
-                } } label: {
-                    HStack { Text("Chill Recipes").font(.headline); Image(systemName: "chevron.up").rotationEffect(.degrees(isRecipesMenuOpen ? 180 : 0)) }
-                        .foregroundColor(.accentPrimary).frame(maxWidth: .infinity).frame(height: 56)
-                        .background(Color.white).clipShape(Capsule())
-                        .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
-                        .overlay(
-                            Capsule().stroke(Color.accentPrimary, lineWidth: 3)
-                                .scaleEffect(isRecipesButtonPulsing ? 1.05 : 1).opacity(isRecipesButtonPulsing ? 0 : 1)
-                                .animation(isRecipesButtonPulsing ? .easeOut(duration: 1).repeatForever(autoreverses: false) : .default, value: isRecipesButtonPulsing)
-                        )
+                if grammarResult == nil {
+                    Button { withAnimation {
+                        isRecipesMenuOpen.toggle()
+                        isRecipesButtonPulsing = false
+                        if isRecipesMenuOpen { isFixGrammarPulsing = true }
+                    } } label: {
+                        HStack { Text("Chill Skills").font(.headline); Image(systemName: "chevron.up").rotationEffect(.degrees(isRecipesMenuOpen ? 180 : 0)) }
+                            .foregroundColor(.accentPrimary).frame(maxWidth: .infinity).frame(height: 56)
+                            .background(Color.white).clipShape(Capsule())
+                            .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
+                            .overlay(
+                                Capsule().stroke(Color.accentPrimary, lineWidth: 3)
+                                    .scaleEffect(isRecipesButtonPulsing ? 1.05 : 1).opacity(isRecipesButtonPulsing ? 0 : 1)
+                                    .animation(isRecipesButtonPulsing ? .easeOut(duration: 1).repeatForever(autoreverses: false) : .default, value: isRecipesButtonPulsing)
+                            )
+                    }
+                } else {
+                    Button {
+                        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                            currentPage = 5
+                        }
+                    } label: {
+                        HStack {
+                            Text("Ask AI").font(.headline.weight(.bold))
+                            Image(systemName: "arrow.right")
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.accentPrimary)
+                        .clipShape(Capsule())
+                        .shadow(color: Color.accentPrimary.opacity(0.35), radius: 12, y: 6)
+                    }
                 }
             }
         }

@@ -14,7 +14,16 @@ struct ContentView: View {
     var body: some View {
         Group {
             if !hasSeenOnboarding {
-                OnboardingView(isCompleted: $hasSeenOnboarding)
+                switch authService.state {
+                case .checking:
+                    ProgressView("Checking session...")
+                case .signedIn:
+                    OnboardingView(isCompleted: $hasSeenOnboarding)
+                case .signedOut:
+                    LoginView()
+                case .signingIn:
+                    LoginView()
+                }
             } else {
                 switch authService.state {
                 case .checking:

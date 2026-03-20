@@ -49,7 +49,7 @@ final class RecipeManager: ObservableObject {
             icon: "",
             systemIcon: systemIcon,
             name: name,
-            description: String(localized: "Custom recipe"),
+            description: String(localized: "Custom Skill"),
             prompt: prompt,
             category: .organize,
             isCustom: true
