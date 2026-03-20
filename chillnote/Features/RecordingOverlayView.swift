@@ -308,6 +308,11 @@ struct RecordingOverlayView: View {
                 activePaywallContext = .dailyVoiceLimit
                 return
             }
+            let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
+            guard hasConsent else {
+                onDismiss()
+                return
+            }
             await Task.yield()
             speechRecognizer.startRecording(countsTowardQuota: true)
         }

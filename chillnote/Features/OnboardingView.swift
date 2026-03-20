@@ -409,11 +409,6 @@ struct OnboardingView: View {
     // MARK: - Top Bar
     private var topBar: some View {
         HStack {
-            Button("Skip") { completeOnboarding() }
-            .font(.bodyMedium)
-            .foregroundColor(.textSub)
-            .opacity(currentPage == 5 ? 0 : 1)
-            
             Spacer()
             
             if currentPage == 4 || currentPage == 5 {

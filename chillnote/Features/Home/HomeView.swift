@@ -258,13 +258,20 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("StartRecording"))) { _ in
             Task {
                 let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
-                await MainActor.run {
-                    guard canRecord else {
+                guard canRecord else {
+                    await MainActor.run {
                         activePaywallContext = .dailyVoiceLimit
-                        return
                     }
+                    return
+                }
+                await MainActor.run {
                     isVoiceMode = true
-                    speechRecognizer.startRecording(countsTowardQuota: true)
+                }
+                let started = await speechRecognizer.startRecordingIfPermitted(countsTowardQuota: true)
+                if !started {
+                    await MainActor.run {
+                        isVoiceMode = false
+                    }
                 }
             }
         }

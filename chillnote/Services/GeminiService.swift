@@ -7,6 +7,7 @@ enum GeminiError: LocalizedError {
     case networkError(Error)
     case apiError(String)
     case invalidResponse
+    case consentDeclined
     
     var errorDescription: String? {
         switch self {
@@ -20,6 +21,8 @@ enum GeminiError: LocalizedError {
             return AppErrorCode.geminiServiceError.message(message)
         case .invalidResponse:
             return AppErrorCode.geminiInvalidResponse.message
+        case .consentDeclined:
+            return String(localized: "AI permission not granted")
         }
     }
 }
@@ -79,6 +82,11 @@ struct GeminiService {
         countUsage: Bool = false,
         usageType: DailyQuotaFeature? = nil
     ) async throws -> String {
+        let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .text)
+        guard hasConsent else {
+            throw GeminiError.consentDeclined
+        }
+
         _ = countUsage // Reserved for backward compatibility at call sites.
         let serverURL = AppConfig.backendBaseURL + "/ai/gemini"
         guard let url = URL(string: serverURL) else {
@@ -158,6 +166,11 @@ struct GeminiService {
         audioFileURL: URL,
         countUsage: Bool = true
     ) async throws -> String {
+        let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
+        guard hasConsent else {
+            throw GeminiError.consentDeclined
+        }
+
         let serverURL = AppConfig.backendBaseURL + "/ai/voice-note"
         guard let url = URL(string: serverURL) else {
             throw GeminiError.invalidURL

@@ -4,6 +4,8 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var authService: AuthService
+    @EnvironmentObject private var aiConsentManager: AIConsentManager
+    @State private var consentSheetHeight: CGFloat = 360
     
     // App Flow State
     // In a real app, these would probably check logic or Keychain on init
@@ -30,6 +32,29 @@ struct ContentView: View {
                 }
             }
         }
+        .sheet(item: consentPromptBinding) { prompt in
+            AIConsentSheet(
+                consentManager: aiConsentManager,
+                prompt: prompt,
+                measuredHeight: $consentSheetHeight
+            )
+            .presentationDetents([.height(consentSheetDetentHeight)])
+        }
+    }
+
+    private var consentSheetDetentHeight: CGFloat {
+        min(max(consentSheetHeight, 300), 560)
+    }
+
+    private var consentPromptBinding: Binding<AIConsentManager.Prompt?> {
+        Binding(
+            get: { aiConsentManager.activePrompt },
+            set: { newValue in
+                if newValue == nil {
+                    aiConsentManager.declineAIDataConsent()
+                }
+            }
+        )
     }
 }
 
@@ -37,4 +62,5 @@ struct ContentView: View {
     ContentView()
         .modelContainer(DataService.shared.container!)
         .environmentObject(AuthService.shared)
+        .environmentObject(AIConsentManager.shared)
 }

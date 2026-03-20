@@ -439,6 +439,15 @@ struct PendingRecordingsView: View {
                     }
                 }
             } catch {
+                if let geminiError = error as? GeminiError, case .consentDeclined = geminiError {
+                    await MainActor.run {
+                        withAnimation {
+                            rowSaveStates[path] = .idle
+                        }
+                        processingPaths.remove(path)
+                    }
+                    return
+                }
                 await MainActor.run {
                     alertMessage = VoiceErrorPresentation.userMessage(for: error.localizedDescription)
                     showAlert = true

@@ -7,6 +7,7 @@ struct ChillNoteApp: App {
     @StateObject private var authService = AuthService.shared
     @StateObject private var syncManager = SyncManager()
     @StateObject private var dataService = DataService.shared
+    @StateObject private var aiConsentManager = AIConsentManager.shared
 
     
     init() {
@@ -26,6 +27,7 @@ struct ChillNoteApp: App {
                         .modelContainer(container)
                         .environmentObject(authService)
                         .environmentObject(syncManager)
+                        .environmentObject(aiConsentManager)
 
                         .onOpenURL { url in
                             // Handle Google Sign-In URL

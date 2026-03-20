@@ -304,6 +304,8 @@ final class NoteDetailViewModel: ObservableObject {
             }
 
             guard let speechRecognizer else { return }
+            let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
+            guard hasConsent else { return }
             noteInitiatedRecording = true
             isVoiceMode = true
             recordingDuration = 0

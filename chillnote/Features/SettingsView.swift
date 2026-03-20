@@ -832,7 +832,9 @@ private extension SettingsView {
         """
         ChillNote stores your notes locally and syncs them to the cloud when you're signed in. We protect your data in transit and at rest.
 
-        Microphone access is used to turn your voice into text. Recordings are stored locally on your device for crash recovery and pending transcription, and are deleted after successful processing or within 7 days.
+        When you choose to use AI features, the audio or text needed for that request may be sent to ChillNote's secure server and to Google Gemini for processing. We and our third-party partners do not use your notes or recordings to train models.
+
+        Raw audio is processed ephemerally for transcription and is not retained on our servers after processing. Pending recordings may be stored locally on your device for crash recovery and are deleted after successful processing or within 7 days.
         """
     }
     

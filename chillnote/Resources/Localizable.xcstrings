@@ -1517,49 +1517,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10-minütige Deep Dives"
+            "value" : "Unbegrenzte Aufnahmen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10-Minute Deep Dives"
+            "value" : "Unlimited Recordings"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10 minutos de grabación de voz"
+            "value" : "Grabaciones ilimitadas"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10 minutes d'enregistrement vocal"
+            "value" : "Enregistrements illimités"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10分間の録音時間"
+            "value" : "録音回数は無制限"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10분 음성 녹음 시간"
+            "value" : "무제한 녹음"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10 分钟语音时长"
+            "value" : "无限次录音"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "10 分鐘語音時長"
+            "value" : "無限次錄音"
           }
         }
       }
@@ -2191,6 +2191,9 @@
           }
         }
       }
+    },
+    "AI permission not granted" : {
+
     },
     "AI processing unavailable" : {
       "localizations" : {
@@ -2929,49 +2932,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Frag Chillo alles zu deinen Notizen."
+            "value" : "Frag die KI alles zu deinen Notizen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask Chillo anything about your notes."
+            "value" : "Ask AI anything about your notes."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pregúntale a Chillo lo que quieras sobre tus notas."
+            "value" : "Pregúntale a la IA lo que quieras sobre tus notas."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Demande à Chillo tout ce que tu veux sur tes notes."
+            "value" : "Demande à l’IA tout ce que tu veux sur tes notes."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "メモについて Chillo に何でも聞けます。"
+            "value" : "メモについて AI に何でも聞けます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "노트에 대해 Chillo에게 무엇이든 물어보세요."
+            "value" : "노트에 대해 AI에게 무엇이든 물어보세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "向 Chillo 提问，聊聊你的笔记。"
+            "value" : "向 AI 提问，聊聊你的笔记。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "向 Chillo 提問，聊聊你的筆記。"
+            "value" : "向 AI 提問，聊聊你的筆記。"
           }
         }
       }
@@ -2981,49 +2984,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Frag Chillo..."
+            "value" : "Frag die KI..."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ask Chillo..."
+            "value" : "Ask AI..."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pregúntale a Chillo..."
+            "value" : "Pregúntale a la IA..."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Demandez à Chillo..."
+            "value" : "Demandez à l’IA..."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "チロに聞いてみて…"
+            "value" : "AI に聞いてみて…"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "칠로에게 물어보세요..."
+            "value" : "AI에게 물어보세요..."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "问问奇洛..."
+            "value" : "向 AI 提问..."
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "問問奇洛..."
+            "value" : "向 AI 提問..."
           }
         }
       }
@@ -3874,49 +3877,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lange Gedanken ohne Unterbrechung aufnehmen"
+            "value" : "Bis zu 10 Minuten pro Aufnahme"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Capture long thoughts without interruption"
+            "value" : "Up to 10 minutes per recording"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Graba ideas largas sin interrupciones"
+            "value" : "Hasta 10 minutos por grabación"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistrez de longues idées sans interruption"
+            "value" : "Jusqu’à 10 minutes par enregistrement"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "長い考えも中断せずに録音"
+            "value" : "1回の録音は最大10分"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "긴 생각도 끊김 없이 녹음"
+            "value" : "녹음 1회당 최대 10분"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不间断记录长段想法"
+            "value" : "每次录音最长 10 分钟"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不間斷記錄長段想法"
+            "value" : "每次錄音最長 10 分鐘"
           }
         }
       }
@@ -15067,6 +15070,58 @@
         }
       }
     },
+    "Not now" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jetzt nicht"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ahora no"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pas maintenant"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今はしない"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지금은 안 함"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暂不使用"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "暫不使用"
+          }
+        }
+      }
+    },
     "Not Set" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -25964,6 +26019,58 @@
         }
       }
     },
+    "View Privacy Policy" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Datenschutzerklärung ansehen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View Privacy Policy"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ver política de privacidad"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voir la politique de confidentialité"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "プライバシーポリシーを見る"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "개인정보 처리방침 보기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看隐私政策"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看隱私政策"
+          }
+        }
+      }
+    },
     "Voice Language" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -27802,6 +27909,318 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你目前的權益"
+          }
+        }
+      }
+    },
+    "Your data is used only to complete your request. We and our third-party partners do not use your notes or recordings to train models." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Daten werden nur verwendet, um deine Anfrage zu bearbeiten. Weder wir noch unsere Drittpartner verwenden deine Notizen oder Aufnahmen zum Trainieren von Modellen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your data is used only to complete your request. We and our third-party partners do not use your notes or recordings to train models."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus datos solo se usan para completar tu solicitud. Ni nosotros ni nuestros socios externos usamos tus notas o grabaciones para entrenar modelos."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos donnees sont utilisees uniquement pour traiter votre demande. Ni nous ni nos partenaires tiers n'utilisons vos notes ou enregistrements pour entrainer des modeles."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "あなたのデータは、リクエストの処理にのみ使用されます。私たちおよび第三者パートナーが、あなたのノートや録音をモデルの学習に使用することはありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "회원님의 데이터는 요청을 처리하는 데에만 사용됩니다. 당사와 제3자 파트너는 회원님의 노트나 녹음을 모델 학습에 사용하지 않습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的数据仅用于完成你的本次请求。我们和第三方合作伙伴都不会使用你的笔记或录音来训练模型。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的資料僅用於完成你的本次請求。我們與第三方合作夥伴都不會使用你的筆記或錄音來訓練模型。"
+          }
+        }
+      }
+    },
+    "Agree and Continue" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zustimmen und fortfahren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agree and Continue"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aceptar y continuar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Accepter et continuer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同意して続ける"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "동의하고 계속하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同意并继续"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "同意並繼續"
+          }
+        }
+      }
+    },
+    "Before using AI" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bevor du KI verwendest"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Before using AI"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Antes de usar la IA"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Avant d'utiliser l'IA"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AIを使う前に"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI를 사용하기 전에"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 AI 前"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用 AI 前"
+          }
+        }
+      }
+    },
+    "Raw audio is processed ephemerally and is not retained on our servers after processing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Roh-Audio wird nur kurzzeitig verarbeitet und nach der Verarbeitung nicht auf unseren Servern gespeichert."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raw audio is processed ephemerally and is not retained on our servers after processing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "El audio sin procesar se trata de forma temporal y no se conserva en nuestros servidores despues del procesamiento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "L'audio brut est traite de facon ephemere et n'est pas conserve sur nos serveurs apres le traitement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "生の音声データは一時的に処理され、処理後に当社のサーバーへ保持されることはありません。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "원본 오디오는 일시적으로만 처리되며, 처리 후 당사 서버에 보관되지 않습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原始音频仅作即时处理，处理完成后不会保留在我们的服务器上。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原始音訊僅作即時處理，處理完成後不會保留在我們的伺服器上。"
+          }
+        }
+      }
+    },
+    "To improve your note, ChillNote may send the text you choose to ChillNote's secure server and to Google Gemini for processing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um deine Notiz zu verbessern, kann ChillNote den von dir ausgewaehlten Text zur Verarbeitung an die sicheren Server von ChillNote und an Google Gemini senden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To improve your note, ChillNote may send the text you choose to ChillNote's secure server and to Google Gemini for processing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para mejorar tu nota, ChillNote puede enviar el texto que elijas a los servidores seguros de ChillNote y a Google Gemini para su procesamiento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pour ameliorer votre note, ChillNote peut envoyer le texte que vous choisissez au serveur securise de ChillNote et a Google Gemini pour traitement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを改善するために、ChillNote はあなたが選択したテキストを、処理のために ChillNote の安全なサーバーおよび Google Gemini に送信する場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "노트를 개선하기 위해 ChillNote는 회원님이 선택한 텍스트를 처리 목적으로 ChillNote의 보안 서버와 Google Gemini로 전송할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为了优化你的笔记，ChillNote 可能会将你选择的文本发送到 ChillNote 的安全服务器和 Google Gemini 进行处理。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "為了優化你的筆記，ChillNote 可能會將你選擇的文字傳送到 ChillNote 的安全伺服器和 Google Gemini 進行處理。"
+          }
+        }
+      }
+    },
+    "To transcribe your voice note, ChillNote may send your audio and essential technical details to ChillNote's secure server and to Google Gemini for processing." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Um deine Sprachnotiz zu transkribieren, kann ChillNote deine Audiodaten und notwendige technische Details zur Verarbeitung an die sicheren Server von ChillNote und an Google Gemini senden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "To transcribe your voice note, ChillNote may send your audio and essential technical details to ChillNote's secure server and to Google Gemini for processing."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Para transcribir tu nota de voz, ChillNote puede enviar tu audio y los detalles tecnicos esenciales a los servidores seguros de ChillNote y a Google Gemini para su procesamiento."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pour transcrire votre note vocale, ChillNote peut envoyer votre audio et les details techniques essentiels au serveur securise de ChillNote et a Google Gemini pour traitement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "音声メモを文字起こしするために、ChillNote は音声データと必要な技術情報を、処理のために ChillNote の安全なサーバーおよび Google Gemini に送信する場合があります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "음성 메모를 텍스트로 변환하기 위해 ChillNote는 회원님의 오디오와 필수 기술 정보를 처리 목적으로 ChillNote의 보안 서버와 Google Gemini로 전송할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "为了转写你的语音笔记，ChillNote 可能会将你的音频和必要的技术信息发送到 ChillNote 的安全服务器和 Google Gemini 进行处理。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "為了轉寫你的語音筆記，ChillNote 可能會將你的音訊和必要的技術資訊傳送到 ChillNote 的安全伺服器和 Google Gemini 進行處理。"
           }
         }
       }

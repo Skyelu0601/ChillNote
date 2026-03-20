@@ -63,7 +63,9 @@ struct VoiceInputBar: View {
                             .lineLimit(1)
                         
                         Button("Retry") {
-                            speechRecognizer.startRecording()
+                            Task {
+                                _ = await speechRecognizer.startRecordingIfPermitted()
+                            }
                         }
                         .font(.caption)
                         .fontWeight(.bold)

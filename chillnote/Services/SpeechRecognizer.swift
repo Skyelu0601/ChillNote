@@ -199,6 +199,14 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         }
     }
 
+    @discardableResult
+    func startRecordingIfPermitted(countsTowardQuota: Bool = true) async -> Bool {
+        let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
+        guard hasConsent else { return false }
+        startRecording(countsTowardQuota: countsTowardQuota)
+        return true
+    }
+
     func prewarmRecordingSession() {
         guard permissionGranted else {
             return
@@ -412,6 +420,8 @@ final class SpeechRecognizer: NSObject, ObservableObject {
                 reason = .serviceUnavailable
             case .apiError(let apiMessage):
                 reason = classifyAPIErrorMessage(apiMessage)
+            case .consentDeclined:
+                reason = .unknown
             }
             publishFailureEvent(fileURL: fileURL, reason: reason, message: message(for: error))
             
@@ -438,6 +448,8 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             return String(localized: "Invalid response from Chillo.")
         case .invalidURL:
             return String(localized: "Invalid configuration URL.")
+        case .consentDeclined:
+            return String(localized: "AI permission not granted")
         }
     }
     

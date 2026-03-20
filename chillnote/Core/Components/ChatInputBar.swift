@@ -319,19 +319,21 @@ struct ChatInputBar: View {
 
     private func tryStartRecordingWithQuotaCheck() {
         guard enforceVoiceQuota else {
-            speechRecognizer.startRecording(countsTowardQuota: false)
+            Task {
+                _ = await speechRecognizer.startRecordingIfPermitted(countsTowardQuota: false)
+            }
             return
         }
 
         Task {
             let canRecord = await storeService.checkDailyQuotaOnServer(feature: .voice)
-            await MainActor.run {
-                guard canRecord else {
+            guard canRecord else {
+                await MainActor.run {
                     activePaywallContext = .dailyVoiceLimit
-                    return
                 }
-                speechRecognizer.startRecording(countsTowardQuota: true)
+                return
             }
+            _ = await speechRecognizer.startRecordingIfPermitted(countsTowardQuota: true)
         }
     }
 }
