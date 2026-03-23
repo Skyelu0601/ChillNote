@@ -107,49 +107,101 @@ struct OnboardingView: View {
         voicePhaseState == .transcribing || voicePhaseState == .refining
     }
     
-    // Recipes Phase State
-    @State private var grammarResult: String? = nil
-    // @State private var askAnswer: String? = nil // Removed
-    @State private var isFixingGrammar = false
-    @State private var isRecipesMenuOpen = false
+    // Skills Chain Phase State
+    @State private var skillChainStep: Int = 0
     
     // Navigation / UI
     @State private var errorMessage: String? = nil
     @State private var currentPage = 0
     @State private var isSearchVisible = false
-    
-    @State private var showRecipesBar = false
-    @State private var scanOffset: CGFloat = -300 // For scan animation
-    
-    // Pulse animation state
-    @State private var isRecipesButtonPulsing = false
-    @State private var isAskButtonPulsing = false
-    @State private var isErrorPulsing = false
-    @State private var showKoalaHint = false // New hint state
-    @State private var isFixGrammarPulsing = false // Pulse for specific item
     @State private var showVoiceIntents = false // New state for showing extra intents
 
     
-    private let voicePrompt = String(localized: "Remind me to buy beef, tomatoes, and pasta")
-    
-    private let typoText = OnboardingGrammarDemoContent.typoText
-    // private let askQuestion = "Who is ChillNote designed for?" // Removed
-    
-    // Expanded Recipe List for "Wall"
-    // Note: Categories mapped to existing cases in AgentRecipeCategory
-    private let allRecipes: [AgentRecipe] = [
-        AgentRecipe(id: "fix", icon: "✅", systemIcon: "checkmark", name: "Fix Grammar", description: "", prompt: "", category: .organize),
-        AgentRecipe(id: "sum", icon: "📝", systemIcon: "doc.text", name: "Summarize", description: "", prompt: "", category: .organize),
-        AgentRecipe(id: "mail", icon: "✉️", systemIcon: "envelope", name: "Email", description: "", prompt: "", category: .organize),
-        AgentRecipe(id: "trans", icon: "🌍", systemIcon: "globe", name: "Translate", description: "", prompt: "", category: .organize),
-        AgentRecipe(id: "blog", icon: "✍️", systemIcon: "pen.tip", name: "Blog Post", description: "", prompt: "", category: .publish),
-        AgentRecipe(id: "tweet", icon: "🐦", systemIcon: "bird", name: "Tweet", description: "", prompt: "", category: .publish),
-        AgentRecipe(id: "code", icon: "👨‍💻", systemIcon: "chevron.left.forwardslash.chevron.right", name: "Code Review", description: "", prompt: "", category: .organize),
-        AgentRecipe(id: "idea", icon: "💡", systemIcon: "lightbulb", name: "Brainstorm", description: "", prompt: "", category: .organize),
-        AgentRecipe(id: "plan", icon: "📅", systemIcon: "calendar", name: "Plan Day", description: "", prompt: "", category: .organize),
-        AgentRecipe(id: "poem", icon: "🎭", systemIcon: "theatermasks", name: "Poem", description: "", prompt: "", category: .publish),
-        AgentRecipe(id: "meet", icon: "🤝", systemIcon: "person.2", name: "Meeting Notes", description: "", prompt: "", category: .organize)
-    ]
+    private let voicePrompt = String(localized: "Remind me to finish the demo, write the launch post, make a few screenshots, and share it on X and LinkedIn tomorrow")
+
+    struct OnboardingTwitterPreview {
+        let authorName: String
+        let handle: String
+        let body: String
+        let hashtags: String
+    }
+
+    struct OnboardingSkillDemoState {
+        let rawContent: String
+        let summarySkill: AgentRecipe
+        let summaryContent: String
+        let polishSkill: AgentRecipe
+        let polishContent: String
+        let twitterSkill: AgentRecipe
+        let twitterPreview: OnboardingTwitterPreview
+    }
+
+    private let onboardingSkillDemo: OnboardingSkillDemoState = {
+        let summarize = AgentRecipe.allRecipes.first(where: { $0.id == "summarize" })!
+        let polish = AgentRecipe.allRecipes.first(where: { $0.id == "fix_grammar" })!
+        let twitter = AgentRecipe.allRecipes.first(where: { $0.id == "twitter_post" })!
+
+        return OnboardingSkillDemoState(
+            rawContent: """
+            launch is getting close and I still feel like the message is all over the place.
+            the product is actually simple: people speak a messy idea first, then ChillNote helps them clean it up and turn it into something useful.
+            but right now I still have demo notes, screenshot reminders, launch wording, and social post ideas all mixed together.
+            I want one clear takeaway that sounds sharp enough to post tomorrow, not this rambling half-finished version.
+            """,
+            summarySkill: summarize,
+            summaryContent: """
+            ChillNote helps people start with a messy spoken idea, then turn it into something clear, polished, and ready to share.
+
+            Launch focus:
+            - finish the demo
+            - capture cleaner screenshots
+            - show the path from rough thought to publishable content
+            """,
+            polishSkill: polish,
+            polishContent: """
+            ChillNote turns rough voice ideas into clear, usable content. For launch, the message should stay simple: you begin with a messy thought, refine it with connected Skills, and end with something polished enough to share.
+
+            Tomorrow's story should center on one transformation that feels immediate and obvious.
+            """,
+            twitterSkill: twitter,
+            twitterPreview: OnboardingTwitterPreview(
+                authorName: "ChillNote",
+                handle: "@chillnoteai",
+                body: """
+                Most notes apps wait until your thinking is already clean.
+
+                ChillNote starts earlier.
+
+                Speak the messy idea first. Then use Skills to summarize it, polish it, and turn it into something ready to post.
+                """,
+                hashtags: "#VoiceNotes #AIWriting #BuildInPublic"
+            )
+        )
+    }()
+
+    private let skillsIntroSections: [(title: String, subtitle: String, color: Color, recipes: [AgentRecipe])] = {
+        let recipes = AgentRecipe.allRecipes
+        return [
+            (
+                title: "Think",
+                subtitle: "Help you find the point",
+                color: .orange,
+                recipes: recipes.filter { ["summarize", "adhd_helper", "explain_like_5", "merge_notes"].contains($0.id) }
+            ),
+            (
+                title: "Shape",
+                subtitle: "Help you improve the draft",
+                color: .teal,
+                recipes: recipes.filter { ["fix_grammar", "translate", "expand"].contains($0.id) }
+            ),
+            (
+                title: "Publish",
+                subtitle: "Help you turn it into shareable output",
+                color: .accentPrimary,
+                recipes: recipes.filter { ["twitter_post", "linkedin_post", "draft_email", "youtube_script"].contains($0.id) }
+            )
+        ]
+    }()
     
     // MARK: - Final Step Data
     
@@ -232,16 +284,6 @@ struct OnboardingView: View {
                     pageIndicator
                 }
             }
-            
-            // Bottom Bars Overlay
-            VStack {
-                Spacer()
-                if showRecipesBar {
-                    onboardingBottomBar
-                        .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .padding(.bottom, 50) // Moved up
-                }
-            }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.8), value: askPhase)
         
@@ -272,13 +314,6 @@ struct OnboardingView: View {
     
     private func handlePageChange(to page: Int) {
         showVoiceIntents = false // Reset
-        isRecipesMenuOpen = false
-        isRecipesButtonPulsing = false
-        isErrorPulsing = false
-        isAskButtonPulsing = false
-        showRecipesBar = false
-        showKoalaHint = false
-        isFixGrammarPulsing = false
         dismissLanguageSearchKeyboard()
         languageSearchText = "" // Reset language search when leaving page
 
@@ -289,15 +324,12 @@ struct OnboardingView: View {
                 speechRecognizer.prewarmRecordingSession()
             }
         }
-        
-        if page == 4 { // Recipes Demo (was 3)
-            // Don't show bar immediately. Guide user to Koala.
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                withAnimation {
-                    showKoalaHint = true
-                }
-            }
-        } else if page == 5 {
+
+        if page == 3 || page == 4 {
+            skillChainStep = 0
+        }
+
+        if page == 5 {
             if storeService.availableProducts.isEmpty && !storeService.isLoadingProducts {
                 Task {
                     await storeService.refreshProducts()
@@ -431,39 +463,6 @@ struct OnboardingView: View {
             }
 
             Spacer()
-
-            if currentPage == 4 {
-                Button {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.75)) {
-                        showRecipesBar = true
-                        showKoalaHint = false
-                        isRecipesButtonPulsing = true
-                    }
-                } label: {
-                    ZStack {
-                        Image("chillohead_touming")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 60, height: 60)
-                            .rotationEffect(.degrees(showKoalaHint && isErrorPulsing ? 10 : -10))
-                            .animation(showKoalaHint ? .easeInOut(duration: 1.5).repeatForever(autoreverses: true) : .default, value: isErrorPulsing)
-                            .onChange(of: showKoalaHint) { _, newValue in
-                                if newValue { isErrorPulsing = true }
-                            }
-                    }
-                }
-                .buttonStyle(.plain)
-                .overlay(alignment: .topTrailing) {
-                    if showKoalaHint {
-                        Circle()
-                            .fill(Color.red)
-                            .frame(width: 16, height: 16)
-                            .overlay(Circle().stroke(Color.white, lineWidth: 2))
-                            .offset(x: 2, y: -2)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                }
-            }
         }
         .padding(.horizontal, 24)
         .padding(.top, 12)
@@ -484,7 +483,7 @@ struct OnboardingView: View {
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundColor(.textMain)
                     .multilineTextAlignment(.center)
-                Text("For minds that refuse to be boxed in.")
+                Text("For makers who build, write, and create.")
                     .font(.bodyMedium)
                     .foregroundColor(.textSub)
                     .multilineTextAlignment(.center)
@@ -670,7 +669,7 @@ struct OnboardingView: View {
     private var voiceDemoPage: some View {
         VStack {
             if voicePhaseState == .done {
-                Spacer(minLength: 72)
+                Spacer(minLength: 32)
             } else if isVoiceProcessingPhase {
                 Color.clear.frame(height: 12)
             } else {
@@ -771,7 +770,7 @@ struct OnboardingView: View {
                                         font: .systemFont(ofSize: 17, weight: .medium),
                                         textColor: UIColor(Color.textMain)
                                     )
-                                    .frame(minHeight: 120)
+                                    .frame(minHeight: 180, alignment: .topLeading)
                                     .frame(maxWidth: .infinity, alignment: .leading)
 
                                     if let error = processingError {
@@ -816,7 +815,7 @@ struct OnboardingView: View {
             }
             
             if voicePhaseState == .done {
-                Spacer(minLength: 36)
+                Spacer(minLength: 12)
             } else if isVoiceProcessingPhase {
                 Spacer(minLength: 8)
             } else {
@@ -875,123 +874,424 @@ struct OnboardingView: View {
     }
     
     }
-    
-    // MARK: - Phase 2: Recipes Intro (Wall)
+
+    // MARK: - Phase 2: Skills Intro
     private var recipesIntroPage: some View {
-        ZStack {
-            // Recipe Wall Background
-            GeometryReader { geo in
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 20) {
-                    ForEach(allRecipes) { recipe in
-                        VStack(spacing: 8) {
-                            Text(recipe.icon).font(.largeTitle).opacity(0.3)
+        VStack(spacing: 14) {
+            Spacer(minLength: 8)
+
+            VStack(spacing: 8) {
+                Text("Skills for Makers")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundColor(.textMain)
+                    .multilineTextAlignment(.center)
+            }
+            .padding(.top, 4)
+
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 10) {
+                    ForEach(Array(skillsIntroSections.enumerated()), id: \.offset) { index, section in
+                        skillsLibraryFlowSection(section: section)
+
+                        if index < skillsIntroSections.count - 1 {
+                            skillsLibraryArrow(section: section)
                         }
-                        .frame(width: 80, height: 80)
                     }
                 }
-                .rotationEffect(.degrees(-10))
-                .scaleEffect(1.2)
-                .opacity(0.5) // Increased visibility from 0.15 to 0.5
-                .offset(y: -50)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 2)
             }
-            
-            // Custom Layout to remove icon and split text
-            VStack(spacing: 30) {
-                Spacer()
-                // Icon Removed
-                
-                VStack(spacing: 16) {
-                    Text("Don't prompt\nJust tap")
-                        .font(.system(size: 40, weight: .bold, design: .rounded)) // Larger & Split
-                        .foregroundColor(.textMain)
-                        .multilineTextAlignment(.center)
-                        .lineLimit(3)
-                        .minimumScaleFactor(0.75)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .layoutPriority(1)
-                        
-                    Text("Complex tasks made instant")
-                        .font(.body)
-                        .foregroundColor(.textSub)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 40)
-                        .lineSpacing(4)
+
+            Spacer(minLength: 4)
+
+            primaryButton(title: "Try Skills", icon: "arrow.right") {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                    currentPage = 4
                 }
-                Spacer()
-                primaryButton(title: "Try Skills", icon: "arrow.right", action: {
-                    withAnimation { currentPage = 4 }
-                })
-                .padding(.bottom, 40)
             }
+            .padding(.bottom, 24)
         }
     }
     
-    // MARK: - Phase 4: Recipes Demo (Grammar Scan)
+    // MARK: - Phase 3: Skill Chain Playground
     private var grammarDemoPage: some View {
-        VStack {
-            Spacer()
-            VStack(spacing: 24) {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack {
-                        sectionHeader(title: "Chill Skills")
-                        Spacer()
+        VStack(spacing: 0) {
+            VStack(spacing: 18) {
+                Text("Try Skills")
+                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                    .foregroundColor(.textMain)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 12)
+
+                skillChainStatusBar
+                    .padding(.horizontal, 20)
+
+                Spacer(minLength: 6)
+
+                singleNoteDemoCard
+                    .padding(.horizontal, 20)
+
+                Spacer(minLength: 10)
+
+                VStack(spacing: 10) {
+                    skillChainActionButton
+                }
+                .padding(.top, 10)
+                .padding(.bottom, 28)
+                .background(
+                    LinearGradient(
+                        colors: [Color.bgPrimary.opacity(0.0), Color.bgPrimary, Color.bgPrimary],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            }
+        }
+    }
+
+    private var skillChainStatusBar: some View {
+        VStack(spacing: 12) {
+            HStack(spacing: 10) {
+                skillChainStatusChip(
+                    title: "Think",
+                    skillName: onboardingSkillDemo.summarySkill.localizedName,
+                    isActive: skillChainStep == 0,
+                    isComplete: skillChainStep >= 1,
+                    color: .orange
+                )
+
+                skillChainStatusChip(
+                    title: "Shape",
+                    skillName: onboardingSkillDemo.polishSkill.localizedName,
+                    isActive: skillChainStep == 1,
+                    isComplete: skillChainStep >= 2,
+                    color: .teal
+                )
+
+                skillChainStatusChip(
+                    title: "Publish",
+                    skillName: onboardingSkillDemo.twitterSkill.localizedName,
+                    isActive: skillChainStep == 2,
+                    isComplete: skillChainStep >= 3,
+                    color: .accentPrimary
+                )
+            }
+
+            HStack(spacing: 8) {
+                ForEach(0..<3, id: \.self) { index in
+                    Capsule()
+                        .fill(skillChainStep > index ? Color.accentPrimary : Color.accentPrimary.opacity(0.18))
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 6)
+                }
+            }
+        }
+    }
+
+    private var skillChainActionButton: some View {
+        Group {
+            if skillChainStep < 3 {
+                primaryButton(title: currentSkillChainButtonTitle, icon: currentSkillChainButtonIcon) {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                        skillChainStep += 1
                     }
-                    
-                    if grammarResult == nil {
-                        Text("Fix messy thoughts, fast")
-                            .font(.subheadline).foregroundColor(.textSub)
+                }
+            } else {
+                primaryButton(title: "Try this on your notes", icon: "arrow.right") {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
+                        currentPage = 5
                     }
-                    
-                    // Text Container with Scan Effect
-                    ZStack(alignment: .leading) {
-                        if #available(iOS 16.0, *) {
-                            AnimatedGrammarTextView(
-                                tokens: OnboardingGrammarDemoContent.demoTokens,
-                                isFixing: isFixingGrammar
-                            )
-                        } else {
-                            if let result = grammarResult {
-                                // Fixed Text
-                                Text(result)
-                                    .font(.system(size: 16, design: .rounded))
-                                    .lineSpacing(6)
-                                    .foregroundColor(.textMain)
-                                    .transition(.opacity)
+                }
+            }
+        }
+    }
+
+    private var currentSkillChainButtonTitle: LocalizedStringKey {
+        switch skillChainStep {
+        case 0:
+            return LocalizedStringKey("Use \(onboardingSkillDemo.summarySkill.localizedName)")
+        case 1:
+            return LocalizedStringKey("Use \(onboardingSkillDemo.polishSkill.localizedName)")
+        default:
+            return LocalizedStringKey("Use \(onboardingSkillDemo.twitterSkill.localizedName)")
+        }
+    }
+
+    private var currentSkillChainButtonIcon: String {
+        switch skillChainStep {
+        case 0:
+            return "brain.head.profile"
+        case 1:
+            return "wand.and.stars"
+        default:
+            return "megaphone"
+        }
+    }
+
+    private var singleNoteDemoCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(currentNoteCardTitle)
+                        .font(.headline)
+                        .foregroundColor(.textMain)
+
+                    if !currentNoteCardBadge.isEmpty {
+                        Text(currentNoteCardBadge)
+                            .font(.caption2.weight(.black))
+                            .tracking(1)
+                            .foregroundColor(currentNoteAccent)
+                    }
+                }
+
+                Spacer()
+
+                Image(systemName: currentNoteIcon)
+                    .foregroundColor(currentNoteAccent)
+                    .padding(10)
+                    .background(currentNoteAccent.opacity(0.1))
+                    .clipShape(Circle())
+            }
+
+            Group {
+                if skillChainStep < 3 {
+                    ScrollView(.vertical, showsIndicators: false) {
+                        Text(currentNoteTextContent)
+                            .font(.system(size: 17, weight: .medium, design: .rounded))
+                            .foregroundColor(.textMain)
+                            .lineSpacing(6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .id("text-\(skillChainStep)")
+                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                    }
+                    .frame(maxHeight: currentNoteHeight)
+                } else {
+                    twitterPreviewCard
+                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                }
+            }
+            .animation(.spring(response: 0.38, dampingFraction: 0.86), value: skillChainStep)
+        }
+        .modifier(OnboardingNoteCardModifier())
+        .overlay(
+            RoundedRectangle(cornerRadius: 24)
+                .stroke(currentNoteAccent.opacity(0.2), lineWidth: 1)
+        )
+    }
+
+    private var currentNoteCardTitle: String {
+        switch skillChainStep {
+        case 0:
+            return "Original Note"
+        case 1:
+            return "Used Skill: \(onboardingSkillDemo.summarySkill.localizedName)"
+        case 2:
+            return "Used Skill: \(onboardingSkillDemo.polishSkill.localizedName)"
+        default:
+            return "Used Skill: \(onboardingSkillDemo.twitterSkill.localizedName)"
+        }
+    }
+
+    private var currentNoteCardBadge: String {
+        switch skillChainStep {
+        case 0:
+            return ""
+        case 1:
+            return "THINK"
+        case 2:
+            return "SHAPE"
+        default:
+            return "PUBLISH"
+        }
+    }
+
+    private var currentNoteIcon: String {
+        switch skillChainStep {
+        case 0:
+            return "doc.text"
+        case 1:
+            return onboardingSkillDemo.summarySkill.systemIcon
+        case 2:
+            return onboardingSkillDemo.polishSkill.systemIcon
+        default:
+            return "bubble.left.and.bubble.right.fill"
+        }
+    }
+
+    private var currentNoteAccent: Color {
+        switch skillChainStep {
+        case 0:
+            return .gray
+        case 1:
+            return .orange
+        case 2:
+            return .teal
+        default:
+            return .accentPrimary
+        }
+    }
+
+    private var currentNoteTextContent: String {
+        switch skillChainStep {
+        case 0:
+            return onboardingSkillDemo.rawContent
+        case 1:
+            return onboardingSkillDemo.summaryContent
+        default:
+            return onboardingSkillDemo.polishContent
+        }
+    }
+
+    private var currentNoteHeight: CGFloat {
+        switch skillChainStep {
+        case 0:
+            return 300
+        case 1:
+            return 220
+        default:
+            return 220
+        }
+    }
+
+    private var twitterPreviewCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(spacing: 10) {
+                Image(systemName: "x.circle.fill")
+                    .font(.system(size: 24))
+                    .foregroundColor(.black)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(onboardingSkillDemo.twitterPreview.authorName)
+                        .font(.subheadline.weight(.bold))
+                        .foregroundColor(.textMain)
+                    Text(onboardingSkillDemo.twitterPreview.handle)
+                        .font(.caption)
+                        .foregroundColor(.textSub)
+                }
+
+                Spacer()
+            }
+
+            Text(onboardingSkillDemo.twitterPreview.body)
+                .font(.system(size: 17, weight: .medium, design: .rounded))
+                .foregroundColor(.textMain)
+                .lineSpacing(6)
+
+            Text(onboardingSkillDemo.twitterPreview.hashtags)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(.accentPrimary)
+
+            HStack(spacing: 18) {
+                Image(systemName: "bubble.left")
+                Image(systemName: "arrow.2.squarepath")
+                Image(systemName: "heart")
+                Image(systemName: "chart.bar")
+            }
+            .font(.system(size: 14, weight: .medium))
+            .foregroundColor(.textSub)
+        }
+        .padding(18)
+        .background(Color.black.opacity(0.03))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
+    }
+
+    private func skillChainStatusChip(
+        title: String,
+        skillName: String,
+        isActive: Bool,
+        isComplete: Bool,
+        color: Color
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Circle()
+                    .fill(isComplete ? color : color.opacity(isActive ? 0.9 : 0.25))
+                    .frame(width: 8, height: 8)
+
+                Text(title)
+                    .font(.caption.weight(.bold))
+                    .foregroundColor(isActive || isComplete ? .textMain : .textSub)
+            }
+
+            Text(skillName)
+                .font(.caption2.weight(.semibold))
+                .foregroundColor(.textSub)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background((isActive || isComplete ? color.opacity(0.12) : Color.bgSecondary.opacity(0.7)))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func skillsLibraryFlowSection(
+        section: (title: String, subtitle: String, color: Color, recipes: [AgentRecipe])
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                Text(section.title)
+                    .font(.subheadline.weight(.bold))
+                    .foregroundColor(.textMain)
+                    .textCase(.uppercase)
+                    .tracking(1.0)
+                Spacer()
+            }
+
+            HStack(spacing: 6) {
+                ForEach(section.recipes) { recipe in
+                    VStack(spacing: 5) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(section.color.opacity(0.12))
+                                .frame(width: 42, height: 42)
+
+                            if recipe.icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                Image(systemName: recipe.systemIcon)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundColor(section.color)
                             } else {
-                                // Typo Text
-                                TypoTextView(text: typoText, typos: OnboardingGrammarDemoContent.typoWords)
+                                Text(recipe.icon)
+                                    .font(.system(size: 20))
                             }
                         }
-                        
-                        // Scanner Beam
-                        if isFixingGrammar && grammarResult == nil {
-                            Rectangle()
-                                .fill(
-                                    LinearGradient(colors: [.clear, .accentPrimary.opacity(0.5), .clear], startPoint: .leading, endPoint: .trailing)
-                                )
-                                .frame(width: 50)
-                                .offset(x: scanOffset)
-                        }
+
+                        Text(recipe.localizedName)
+                            .font(.caption2.weight(.medium))
+                            .foregroundColor(.textMain)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.center)
+                            .frame(maxWidth: .infinity)
                     }
-                    .padding(20)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(RoundedRectangle(cornerRadius: 20).fill(Color.bgSecondary.opacity(0.5)))
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .overlay {
-                        if grammarResult != nil {
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.green.opacity(0.3), lineWidth: 2)
-                                .shadow(color: .green.opacity(0.2), radius: 10)
-                        }
-                    }
-                    
+                    .frame(width: 72)
+                    .padding(.vertical, 7)
+                    .padding(.horizontal, 4)
+                    .background(Color.white.opacity(0.75))
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
                 }
-                .modifier(OnboardingCardModifier())
             }
-            .padding(.horizontal, 20)
-            Spacer()
-            Spacer().frame(height: 100)
         }
+        .padding(12)
+        .background(Color.white.opacity(0.7))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(section.color.opacity(0.15), lineWidth: 1)
+        )
+        .fixedSize(horizontal: true, vertical: false)
+        .frame(maxWidth: .infinity)
+    }
+
+    private func skillsLibraryArrow(
+        section: (title: String, subtitle: String, color: Color, recipes: [AgentRecipe])
+    ) -> some View {
+        Image(systemName: "arrow.down")
+            .font(.system(size: 13, weight: .bold))
+            .foregroundColor(section.color.opacity(0.8))
+            .frame(width: 26, height: 26)
+            .background(section.color.opacity(0.12))
+            .clipShape(Circle())
+            .padding(.vertical, 1)
+            .frame(maxWidth: .infinity)
     }
     
     // MARK: - Phase 5 (Ask)
@@ -1419,33 +1719,6 @@ struct OnboardingView: View {
         .padding(12).background(Color.white.opacity(0.6)).cornerRadius(16)
     }
 
-    // Actions
-    private func runAction(_ recipe: AgentRecipe) {
-        if recipe.id == "fix" { performGrammarFix(recipe) }
-    }
-    
-    private func performGrammarFix(_ recipe: AgentRecipe) {
-        isFixingGrammar = true
-        errorMessage = nil
-        
-        // Start Scan Animation
-        scanOffset = -300
-        withAnimation(.linear(duration: 1.5)) {
-            scanOffset = 300
-        }
-        
-        // Simulated delay for scan animation, then show the corrected copy.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-            withAnimation {
-                grammarResult = OnboardingGrammarDemoContent.fixedText
-                // Keep isFixingGrammar true to maintain the fixed state in AnimatedGrammarTextView
-            }
-        }
-    }
-    
-    // Removed old askAIAboutNote function as it is replaced by startAskDemo
-
-    
     private func completeOnboarding() {
         requestPermissions {
             onCompleted?()
@@ -1461,86 +1734,6 @@ struct OnboardingView: View {
         }
     }
     
-    // Bottom Bar (Recipes & Ask)
-    private var onboardingBottomBar: some View {
-        VStack(spacing: 8) {
-            if isRecipesMenuOpen {
-                VStack(spacing: 16) {
-                    HStack { Text("Chill Skills").font(.headline).foregroundColor(.secondary); Spacer() }
-                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible()), GridItem(.flexible())], spacing: 16) {
-                        // Show only Fix Grammar
-                        ForEach(allRecipes.filter { $0.id == "fix" }) { recipe in
-                            Button {
-                                runAction(recipe)
-                                withAnimation { isRecipesMenuOpen = false }
-                            } label: {
-                                VStack(spacing: 10) {
-                                    ZStack {
-                                        RoundedRectangle(cornerRadius: 18)
-                                            .fill(Color.bgSecondary)
-                                            .frame(width: 60, height: 60)
-                                            .overlay {
-                                                if recipe.id == "fix" && isFixGrammarPulsing {
-                                                     RoundedRectangle(cornerRadius: 18)
-                                                        .stroke(Color.accentPrimary, lineWidth: 3)
-                                                        .scaleEffect(isErrorPulsing ? 1.1 : 1)
-                                                        .opacity(isErrorPulsing ? 0 : 1)
-                                                        .onAppear { isErrorPulsing = true }
-                                                }
-                                            }
-                                        Text(recipe.icon).font(.largeTitle)
-                                    }
-                                    Text(recipe.localizedName).font(.caption).foregroundColor(recipe.id == "fix" ? .primary : .secondary).lineLimit(1)
-                                }
-                            }
-                            .buttonStyle(.plain)
-                        }
-                    }
-                }
-                .modifier(OnboardingCardModifier())
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-            
-            // Only show Recipes Button Bar on Page 4 (Recipes Demo)
-            if currentPage == 4 {
-                if grammarResult == nil {
-                    Button { withAnimation {
-                        isRecipesMenuOpen.toggle()
-                        isRecipesButtonPulsing = false
-                        if isRecipesMenuOpen { isFixGrammarPulsing = true }
-                    } } label: {
-                        HStack { Text("Chill Skills").font(.headline); Image(systemName: "chevron.up").rotationEffect(.degrees(isRecipesMenuOpen ? 180 : 0)) }
-                            .foregroundColor(.accentPrimary).frame(maxWidth: .infinity).frame(height: 56)
-                            .background(Color.white).clipShape(Capsule())
-                            .shadow(color: .black.opacity(0.08), radius: 10, y: 4)
-                            .overlay(
-                                Capsule().stroke(Color.accentPrimary, lineWidth: 3)
-                                    .scaleEffect(isRecipesButtonPulsing ? 1.05 : 1).opacity(isRecipesButtonPulsing ? 0 : 1)
-                                    .animation(isRecipesButtonPulsing ? .easeOut(duration: 1).repeatForever(autoreverses: false) : .default, value: isRecipesButtonPulsing)
-                            )
-                    }
-                } else {
-                    Button {
-                        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                            currentPage = 5
-                        }
-                    } label: {
-                        HStack {
-                            Text("Ask AI").font(.headline.weight(.bold))
-                            Image(systemName: "arrow.right")
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.accentPrimary)
-                        .clipShape(Capsule())
-                        .shadow(color: Color.accentPrimary.opacity(0.35), radius: 12, y: 6)
-                    }
-                }
-            }
-        }
-        .padding(.horizontal, 24)
-    }
 }
 
 // MARK: - Custom Views & Modifiers

@@ -84,8 +84,9 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
 }
 
 enum AgentRecipeCategory: String, CaseIterable, Identifiable, Codable {
-    case organize = "Organize"
-    case publish = "Media"
+    case think = "Think"
+    case shape = "Shape"
+    case publish = "Publish"
     
     var id: String { rawValue }
 
@@ -95,7 +96,8 @@ enum AgentRecipeCategory: String, CaseIterable, Identifiable, Codable {
     
     var icon: String {
         switch self {
-        case .organize: return "tray.full"
+        case .think: return "brain.head.profile"
+        case .shape: return "wand.and.stars"
         case .publish: return "megaphone"
         }
     }
@@ -103,7 +105,7 @@ enum AgentRecipeCategory: String, CaseIterable, Identifiable, Codable {
 
 extension AgentRecipe {
     static let allRecipes: [AgentRecipe] = [
-        // MARK: - Organize
+        // MARK: - Think
         AgentRecipe(
             id: "summarize",
             icon: "📝",
@@ -119,16 +121,16 @@ extension AgentRecipe {
             - If the note is long or messy, use bullets to make it easier to scan.
             - If something is unclear or conflicting, flag it briefly instead of guessing.
             """,
-            category: .organize
+            category: .think
         ),
         AgentRecipe(
             id: "merge_notes",
             icon: "🧩",
             systemIcon: "doc.on.doc.fill",
-            name: "Merge Notes",
+            name: "Combine My Notes",
             description: String(localized: "Combine selected notes into one cohesive document."),
             prompt: "(Built-in Logic) Uses advanced internal logic to merge notes intelligently, preserving structure and handling multi-language content.",
-            category: .organize
+            category: .think
         ),
         AgentRecipe(
             id: "translate",
@@ -137,13 +139,13 @@ extension AgentRecipe {
             name: "Translate",
             description: String(localized: "Translate notes into another language."),
             prompt: "(Built-in Logic) Uses a dynamic translation engine. The target language is selected at runtime.",
-            category: .organize
+            category: .shape
         ),
         AgentRecipe(
             id: "fix_grammar",
             icon: "✅",
             systemIcon: "checkmark.circle",
-            name: "Fix Grammar",
+            name: "Polish the Draft",
             description: String(localized: "Correct all grammatical errors."),
             prompt: """
             You are fixing grammar in a user’s existing note (not a chat message). Correct grammar and spelling while preserving the original meaning and tone.
@@ -153,13 +155,13 @@ extension AgentRecipe {
             - Preserve formatting (headings, lists, line breaks).
             - If something is unclear, keep the original wording rather than guessing.
             """,
-            category: .organize
+            category: .shape
         ),
         AgentRecipe(
             id: "expand",
             icon: "🪄",
             systemIcon: "sparkles",
-            name: "Expand",
+            name: "Develop This Idea",
             description: String(localized: "Stretch a brief idea into richer detail."),
             prompt: """
             You are expanding a user’s existing note (not a chat message). Elaborate only what the note already suggests, keeping the original intent and tone.
@@ -169,14 +171,14 @@ extension AgentRecipe {
             - If the note is very short, provide a conservative expansion without adding new facts.
             - Preserve formatting if the note has structure.
             """,
-            category: .organize
+            category: .shape
         ),
-        // MARK: - Organize
+        // MARK: - Publish
         AgentRecipe(
             id: "draft_email",
             icon: "✉️",
             systemIcon: "envelope",
-            name: "Draft Email",
+            name: "Email",
             description: String(localized: "Turn notes into an email draft."),
             prompt: """
             You are drafting an email based on a user’s existing note (not a chat message). Turn the note into a clear, well-structured email while preserving the user’s intent and tone.
@@ -189,13 +191,13 @@ extension AgentRecipe {
 
             Output only the email.
             """,
-            category: .organize
+            category: .publish
         ),
         AgentRecipe(
             id: "adhd_helper",
             icon: "🧠",
             systemIcon: "bolt.fill",
-            name: "ADHD Helper",
+            name: "Break It Into Steps",
             description: String(localized: "ADHD helper that breaks tasks into zero-resistance steps."),
             prompt: """
             You are helping break down a user’s existing note into a zero-resistance action plan (the note was not written for a chat). Create a simple checklist that builds momentum.
@@ -208,9 +210,9 @@ extension AgentRecipe {
 
             Output only the checklist.
             """,
-            category: .organize
+            category: .think
         ),
-        // MARK: - Media
+        // MARK: - Publish
         AgentRecipe(
             id: "twitter_post",
             icon: "🐦",
@@ -273,7 +275,7 @@ extension AgentRecipe {
             id: "explain_like_5",
             icon: "🧸",
             systemIcon: "brain",
-            name: "Explain Like I'm 5",
+            name: "Make It Simple",
             description: String(localized: "Simplify complex topics so anyone can follow."),
             prompt: """
             You are simplifying a user’s existing note (not a chat message). Explain the note in very simple language, while keeping the original meaning.
@@ -286,7 +288,7 @@ extension AgentRecipe {
 
             Output only the simplified explanation.
             """,
-            category: .organize
+            category: .think
         )
     ]
 }

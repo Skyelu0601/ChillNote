@@ -67,7 +67,7 @@ struct ChillRecipesView: View {
                                 ForEach(AgentRecipeCategory.allCases) { category in
                                     CategoryChip(
                                         category: category,
-                                        isSelected: selectedCategory == category || (selectedCategory == nil && category == .organize), // Default first if nil
+                                        isSelected: selectedCategory == category || (selectedCategory == nil && category == .think), // Default first if nil
                                         action: {
                                             withAnimation {
                                                 selectedCategory = category
@@ -80,7 +80,7 @@ struct ChillRecipesView: View {
                             
                             // Library Grid
                             LazyVGrid(columns: gridColumns, spacing: 16) {
-                                ForEach(recipes(for: selectedCategory ?? .organize)) { recipe in
+                                ForEach(recipes(for: selectedCategory ?? .think)) { recipe in
                                     RecipeCard(recipe: recipe, isAdded: recipeManager.isAdded(recipe)) {
                                         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                             recipeManager.toggleRecipe(recipe)

@@ -51,7 +51,7 @@ final class RecipeManager: ObservableObject {
             name: name,
             description: String(localized: "Custom Skill"),
             prompt: prompt,
-            category: .organize,
+            category: .shape,
             isCustom: true
         )
         customRecipes.append(recipe)

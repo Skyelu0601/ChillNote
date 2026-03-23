@@ -1617,6 +1617,9 @@
         }
       }
     },
+    "A simple flow" : {
+
+    },
     "About ChillNote" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -3766,6 +3769,59 @@
         }
       }
     },
+    "Break It Into Steps" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "In Schritte aufteilen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Break It Into Steps"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Divídelo en pasos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le découper en étapes"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ステップに分ける"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "단계로 나누기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拆成步骤"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拆成步驟"
+          }
+        }
+      }
+    },
     "By continuing, you agree to our [Terms](https://www.chillnoteai.com/terms.html) & [Privacy Policy](https://www.chillnoteai.com/privacy.html)." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -5330,6 +5386,59 @@
         }
       }
     },
+    "Combine My Notes" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Meine Notizen zusammenführen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Combine My Notes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Combinar mis notas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fusionner mes notes"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートをまとめる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "내 노트 합치기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "整合我的笔记"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "整合我的筆記"
+          }
+        }
+      }
+    },
     "Combine selected notes into one cohesive document." : {
       "localizations" : {
         "de" : {
@@ -5383,6 +5492,7 @@
       }
     },
     "Complex tasks made instant" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -7052,6 +7162,59 @@
         }
       }
     },
+    "Develop This Idea" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Idee ausarbeiten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Develop This Idea"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Desarrollar esta idea"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Développer cette idée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "このアイデアを広げる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 아이디어 발전시키기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展开这个想法"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展開這個想法"
+          }
+        }
+      }
+    },
     "Discard" : {
       "localizations" : {
         "de" : {
@@ -7315,6 +7478,7 @@
       }
     },
     "Don't prompt\nJust tap" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -7624,6 +7788,59 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "可隨時在 Apple ID 設定中輕鬆管理或取消。"
+          }
+        }
+      }
+    },
+    "Email" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-Mail"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Email"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "E-mail"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メール"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이메일"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "邮件"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "郵件"
           }
         }
       }
@@ -10943,6 +11160,7 @@
       }
     },
     "Fix messy thoughts, fast" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -11099,54 +11317,54 @@
         }
       }
     },
-    "For minds that refuse to be boxed in." : {
+    "For makers who build, write, and create." : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Für Köpfe, die sich nicht einengen lassen."
+            "value" : "Für Macher, die entwickeln, schreiben und erschaffen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "For minds that refuse to be boxed in."
+            "value" : "For makers who build, write, and create."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Para mentes que no aceptan encasillarse."
+            "value" : "Para quienes construyen, escriben y crean."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pour les esprits qui refusent les cases."
+            "value" : "Pour celles et ceux qui imaginent, écrivent et construisent."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "枠にはまりたくない思考のために。"
+            "value" : "つくり、書き、形にしていく人のために。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "박스 받기를 거부하는 마음을 위해."
+            "value" : "만들고, 쓰고, 실현해 나가는 사람들을 위해."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "为不愿被框住的思维而生。"
+            "value" : "为那些不断构思、写作并把想法做出来的人而生。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "為不願被框住的思考而生。"
+            "value" : "為那些持續構思、書寫，並把想法做出來的人而生。"
           }
         }
       }
@@ -13242,6 +13460,59 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "本地資料初始化失敗。請再試一次。如果仍然失敗，請重新啟動應用程式或釋放裝置儲存空間，然後重試。"
+          }
+        }
+      }
+    },
+    "Make It Simple" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Einfach erklären"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Make It Simple"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hazlo sencillo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rends-le simple"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "わかりやすくする"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "쉽게 풀어주기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "讲简单一点"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "講簡單一點"
           }
         }
       }
@@ -15960,6 +16231,9 @@
         }
       }
     },
+    "One note can become a finished result in a few taps." : {
+
+    },
     "Open Settings" : {
       "localizations" : {
         "de" : {
@@ -18281,6 +18555,59 @@
         }
       }
     },
+    "Polish the Draft" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entwurf verfeinern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Polish the Draft"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pulir el borrador"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Peaufiner le brouillon"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下書きを整える"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "초안 다듬기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "润色草稿"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "潤飾草稿"
+          }
+        }
+      }
+    },
     "Preferred Language" : {
       "localizations" : {
         "de" : {
@@ -19009,6 +19336,59 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "提示詞"
+          }
+        }
+      }
+    },
+    "Publish" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Veröffentlichen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Publish"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Publicar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Publier"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Publish"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "발행"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "发布"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "發佈"
           }
         }
       }
@@ -20274,54 +20654,54 @@
         }
       }
     },
-    "Remind me to buy beef, tomatoes, and pasta" : {
+    "Remind me to finish the demo, write the launch post, make a few screenshots, and share it on X and LinkedIn tomorrow" : {
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erinnere mich daran, Rindfleisch, Tomaten und Nudeln zu kaufen"
+            "value" : "Erinnere mich daran, die Demo fertigzustellen, den Launch-Post zu schreiben, ein paar Screenshots zu machen und es morgen auf X und LinkedIn zu teilen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Remind me to buy beef, tomatoes, and pasta"
+            "value" : "Remind me to finish the demo, write the launch post, make a few screenshots, and share it on X and LinkedIn tomorrow"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Recuérdame comprar carne, tomates y pasta."
+            "value" : "Recuérdame terminar la demo, escribir el post de lanzamiento, preparar unas capturas y compartirlo mañana en X y LinkedIn."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rappelle-moi d'acheter du bœuf, des tomates et des pâtes"
+            "value" : "Rappelle-moi de finaliser la démo, d’écrire le post de lancement, de préparer quelques captures d’écran et de le partager demain sur X et LinkedIn"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "牛肉、トマト、パスタを買うようにリマインドして"
+            "value" : "デモを仕上げて、ローンチ投稿を書いて、スクリーンショットを何枚か用意して、明日XとLinkedInで共有するようリマインドして"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "쇠고기, 토마토, 파스타 사라고 알려줘"
+            "value" : "데모 마무리하고, 출시 글 쓰고, 스크린샷 몇 장 만들고, 내일 X랑 LinkedIn에 공유하라고 알려줘"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "提醒我买牛肉、西红柿和意大利面"
+            "value" : "提醒我完成 demo、写好发布文案、做几张截图，并在明天发到 X 和 LinkedIn"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "提醒我買牛肉、番茄和義大利麵"
+            "value" : "提醒我完成 demo、寫好發佈文案、做幾張截圖，並在明天發到 X 和 LinkedIn"
           }
         }
       }
@@ -22047,6 +22427,59 @@
         }
       }
     },
+    "Shape" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ausarbeiten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shape"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dar forma"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Structurer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Shape"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다듬기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打磨"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打磨"
+          }
+        }
+      }
+    },
     "Show Original" : {
       "localizations" : {
         "de" : {
@@ -22462,6 +22895,9 @@
           }
         }
       }
+    },
+    "Skills for Makers" : {
+
     },
     "Skip" : {
       "localizations" : {
@@ -22933,6 +23369,9 @@
           }
         }
       }
+    },
+    "Start with a messy idea. Then let Skills help you think clearer, shape faster, and publish with less friction." : {
+
     },
     "Stops recording and saves your note." : {
       "localizations" : {
@@ -24035,6 +24474,59 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "之後 %@/年，可隨時取消。"
+          }
+        }
+      }
+    },
+    "Think" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Denken"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Think"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pensar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réfléchir"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Think"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "생각하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "思考"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "思考"
           }
         }
       }
@@ -25293,6 +25785,9 @@
         }
       }
     },
+    "Try this on your notes" : {
+
+    },
     "Turn a note into a concise post for X (Twitter)." : {
       "localizations" : {
         "de" : {
@@ -26335,6 +26830,12 @@
           }
         }
       }
+    },
+    "Use %@" : {
+
+    },
+    "Use Skills like building blocks: first find the point, then clean the draft, then turn it into something ready to share." : {
+
     },
     "User Agreement" : {
       "extractionState" : "stale",
