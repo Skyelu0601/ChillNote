@@ -35,7 +35,7 @@ struct LoginView: View {
                     Spacer()
                         .frame(height: 8)
                     
-                    Text("Say it. Save it.")
+                    Text("For makers who build, write, and create.")
                         .multilineTextAlignment(.center)
                         .font(.system(size: 16, weight: .regular))
                         .kerning(1.2)

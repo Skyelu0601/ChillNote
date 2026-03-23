@@ -1512,6 +1512,9 @@
         }
       }
     },
+    "2m" : {
+
+    },
     "10-Minute Deep Dives" : {
       "localizations" : {
         "de" : {
@@ -1616,9 +1619,6 @@
           }
         }
       }
-    },
-    "A simple flow" : {
-
     },
     "About ChillNote" : {
       "extractionState" : "stale",
@@ -11681,6 +11681,9 @@
         }
       }
     },
+    "From rough thought to ready-to-share" : {
+
+    },
     "Generate a comprehensive Markdown archive of all your notes, organized by date. Perfect for backup or importing into other tools." : {
       "localizations" : {
         "de" : {
@@ -16230,9 +16233,6 @@
           }
         }
       }
-    },
-    "One note can become a finished result in a few taps." : {
-
     },
     "Open Settings" : {
       "localizations" : {
@@ -21750,6 +21750,7 @@
       }
     },
     "Say it. Save it." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -23369,9 +23370,6 @@
           }
         }
       }
-    },
-    "Start with a messy idea. Then let Skills help you think clearer, shape faster, and publish with less friction." : {
-
     },
     "Stops recording and saves your note." : {
       "localizations" : {
@@ -26832,9 +26830,6 @@
       }
     },
     "Use %@" : {
-
-    },
-    "Use Skills like building blocks: first find the point, then clean the draft, then turn it into something ready to share." : {
 
     },
     "User Agreement" : {
