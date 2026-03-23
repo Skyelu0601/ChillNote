@@ -1043,6 +1043,16 @@
         }
       }
     },
+    "%@, %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@, %2$@"
+          }
+        }
+      }
+    },
     "%lld" : {
       "localizations" : {
         "de" : {
@@ -2406,6 +2416,9 @@
         }
       }
     },
+    "AI Skills" : {
+
+    },
     "All Notes" : {
       "localizations" : {
         "de" : {
@@ -2668,6 +2681,9 @@
           }
         }
       }
+    },
+    "Applied" : {
+
     },
     "Are you sure you want to delete %lld note%@? This action cannot be undone." : {
       "extractionState" : "stale",
@@ -11681,7 +11697,7 @@
         }
       }
     },
-    "From rough thought to ready-to-share" : {
+    "From Idea to Sharing" : {
 
     },
     "Generate a comprehensive Markdown archive of all your notes, organized by date. Perfect for backup or importing into other tools." : {
@@ -12994,6 +13010,59 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Chillo 的回覆無效。"
+          }
+        }
+      }
+    },
+    "Just speak your ideas" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just speak your ideas"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just speak your ideas"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just speak your ideas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just speak your ideas"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just speak your ideas"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just speak your ideas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just speak your ideas"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Just speak your ideas"
           }
         }
       }
@@ -14616,6 +14685,9 @@
           }
         }
       }
+    },
+    "Next" : {
+
     },
     "Next Steps" : {
       "localizations" : {
@@ -21697,60 +21769,7 @@
         }
       }
     },
-    "Say it.\nSave it." : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sag's.\nSpeicher's."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Say it.\nSave it."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dilo.\nGuárdalo."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Dis-le.\nEnregistre-le."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "言うだけ。\nすぐ保存。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "말하면,\n바로 저장."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "说完即存"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "說完即存"
-          }
-        }
-      }
-    },
     "Say it. Save it." : {
-      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -22897,9 +22916,6 @@
         }
       }
     },
-    "Skills for Makers" : {
-
-    },
     "Skip" : {
       "localizations" : {
         "de" : {
@@ -22951,6 +22967,9 @@
           }
         }
       }
+    },
+    "Speak your ideas" : {
+
     },
     "Start" : {
       "localizations" : {
@@ -24189,6 +24208,9 @@
           }
         }
       }
+    },
+    "Tap to use" : {
+
     },
     "Terms" : {
       "extractionState" : "stale",
@@ -25783,9 +25805,6 @@
         }
       }
     },
-    "Try this on your notes" : {
-
-    },
     "Turn a note into a concise post for X (Twitter)." : {
       "localizations" : {
         "de" : {
@@ -26828,9 +26847,6 @@
           }
         }
       }
-    },
-    "Use %@" : {
-
     },
     "User Agreement" : {
       "extractionState" : "stale",
