@@ -1084,13 +1084,7 @@ struct OnboardingView: View {
                                 .foregroundColor(.textSub)
                         }
 
-                        if let trialDurationText = displayInfo.trialDurationText {
-                            Text("Includes a \(trialDurationText) free trial. Cancel anytime.")
-                                .font(.caption)
-                                .foregroundColor(.textSub)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal, 8)
-                        } else if let renewalText = displayInfo.renewalText {
+                        if let renewalText = displayInfo.renewalText {
                             Text(renewalText)
                                 .font(.caption)
                                 .foregroundColor(.textSub)
@@ -1107,7 +1101,7 @@ struct OnboardingView: View {
                             }
                         }
                     } label: {
-                        Text(displayInfo.hasFreeTrial ? "Start Free Trial" : displayInfo.ctaText)
+                        Text(displayInfo.ctaText)
                             .font(.title3.weight(.bold))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -1128,7 +1122,7 @@ struct OnboardingView: View {
                         ProgressView()
                             .tint(.accentPrimary)
 
-                        Text("Loading subscription details...")
+                        Text(String(localized: "Loading subscription details..."))
                             .font(.caption)
                             .foregroundColor(.textSub)
                     }
@@ -1146,7 +1140,7 @@ struct OnboardingView: View {
                                 await storeService.refreshProducts()
                             }
                         } label: {
-                            Text("Retry")
+                            Text(String(localized: "Retry"))
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -1158,14 +1152,14 @@ struct OnboardingView: View {
                         Button {
                             completeOnboarding()
                         } label: {
-                            Text("Continue on Free Plan")
+                            Text(String(localized: "Continue on Free Plan"))
                                 .font(.footnote.weight(.semibold))
                                 .foregroundColor(.textSub)
                         }
                     }
                 } else {
                     VStack(spacing: 12) {
-                        Text("Subscription details are temporarily unavailable.")
+                        Text(String(localized: "Subscription details are temporarily unavailable."))
                             .font(.caption)
                             .foregroundColor(.textSub)
                             .multilineTextAlignment(.center)
@@ -1175,7 +1169,7 @@ struct OnboardingView: View {
                                 await storeService.refreshProducts()
                             }
                         } label: {
-                            Text("Try Again")
+                            Text(String(localized: "Try Again"))
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -1187,7 +1181,7 @@ struct OnboardingView: View {
                         Button {
                             completeOnboarding()
                         } label: {
-                            Text("Continue on Free Plan")
+                            Text(String(localized: "Continue on Free Plan"))
                                 .font(.footnote.weight(.semibold))
                                 .foregroundColor(.textSub)
                         }
@@ -1195,6 +1189,25 @@ struct OnboardingView: View {
                 }
             }
             .padding(.horizontal, 32)
+            
+            // Legal & Restore Footer
+            VStack(spacing: 12) {
+                Button {
+                    Task { await storeService.restorePurchases() }
+                } label: {
+                    Text(String(localized: "Restore Purchases"))
+                        .font(.caption2.weight(.medium))
+                        .foregroundColor(.textSub)
+                        .underline()
+                }
+                
+                HStack(spacing: 16) {
+                    Link(String(localized: "Terms of Use"), destination: URL(string: "https://www.chillnoteai.com/terms.html")!)
+                    Link(String(localized: "Privacy Policy"), destination: URL(string: "https://www.chillnoteai.com/privacy.html")!)
+                }
+                .font(.system(size: 10))
+                .foregroundColor(.textSub.opacity(0.6))
+            }
             .padding(.bottom, 20)
         }
     }

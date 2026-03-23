@@ -420,8 +420,8 @@ struct SubscriptionView: View {
             }
             
             HStack(spacing: 16) {
-                Link("Terms", destination: URL(string: "https://www.chillnoteai.com/terms.html")!)
-                Link("Privacy", destination: URL(string: "https://www.chillnoteai.com/privacy.html")!)
+                Link("Terms of Use", destination: URL(string: "https://www.chillnoteai.com/terms.html")!)
+                Link("Privacy Policy", destination: URL(string: "https://www.chillnoteai.com/privacy.html")!)
             }
             .font(.caption)
             .foregroundColor(.textSub.opacity(0.6))
