@@ -220,39 +220,90 @@ struct OnboardingView: View {
         let rotation: Double
         let color: Color
     }
+
+    enum AskMessageSpeaker {
+        case creator
+        case ai
+    }
+
+    struct AskConversationMessage: Identifiable {
+        let id = UUID()
+        let speaker: AskMessageSpeaker
+        let content: String
+        let referencesNotes: Bool
+    }
+
+    struct SavedAskNotePreview {
+        let title: String
+        let bullets: [String]
+    }
     
     private var demoNotes: [DemoNote] {
         [
             DemoNote(
-                title: String(localized: "onboarding.ask.note.context.title"),
-                content: String(localized: "onboarding.ask.note.context.content"),
+                title: "Voice memo idea",
+                content: "Creators do not fail because they lack ideas. They fail because every system starts to feel heavy after one busy week.",
                 offset: CGSize(width: -100, height: -80),
                 rotation: -6,
                 color: .blue
             ),
             DemoNote(
-                title: String(localized: "onboarding.ask.note.source.title"),
-                content: String(localized: "onboarding.ask.note.source.content"),
+                title: "Audience pain",
+                content: "People say they want consistency, but what they really want is a lighter way to keep showing up without guilt.",
                 offset: CGSize(width: 100, height: -50),
                 rotation: 4,
-                color: .purple
+                color: .teal
             ),
             DemoNote(
-                title: String(localized: "onboarding.ask.note.flow.title"),
-                content: String(localized: "onboarding.ask.note.flow.content"),
+                title: "Unfinished angle",
+                content: "Maybe the next post should challenge hustle advice and offer a softer weekly publishing rhythm creators can actually keep.",
                 offset: CGSize(width: 0, height: 80),
                 rotation: -2,
                 color: .orange
             )
         ]
     }
+
+    private let askConversationMessages: [AskConversationMessage] = [
+        AskConversationMessage(
+            speaker: .creator,
+            content: "I have a few scattered ideas about creator burnout and consistency. What should I actually make next?",
+            referencesNotes: false
+        ),
+        AskConversationMessage(
+            speaker: .ai,
+            content: "Your notes keep circling the same tension: creators want consistency, but rigid systems make them quit after one hard week.",
+            referencesNotes: true
+        ),
+        AskConversationMessage(
+            speaker: .creator,
+            content: "So what's the angle if I want this to become a useful post?",
+            referencesNotes: false
+        ),
+        AskConversationMessage(
+            speaker: .ai,
+            content: "Turn it into a 3-part piece: the myth of perfect consistency, the real emotional cost of rigid systems, and one lighter rhythm they can try this week. Want me to save that as a note?",
+            referencesNotes: true
+        )
+    ]
+
+    private let savedAskNotePreview = SavedAskNotePreview(
+        title: "Content Plan: Creators need a lighter system",
+        bullets: [
+            "Open with the myth: consistency is not the same as intensity.",
+            "Name the real problem: rigid systems make creators feel behind and ashamed.",
+            "Close with one gentle weekly rhythm they can test immediately."
+        ]
+    )
     
     enum AskPhase {
-        case idle       // Showing floating notes
-        case thinking   // Notes gathering
-        case answering  // Text streaming
-        case review     // Answer complete, waiting for save
-        case saved      // Saved animation done
+        case idle
+        case gatheringSources
+        case chattingRound1
+        case chattingRound2
+        case planReady
+        case savingNote
+        case saved
     }
     
     // Page Definitions
@@ -269,7 +320,7 @@ struct OnboardingView: View {
             
             VStack(spacing: 0) {
                 topBar
-                    .opacity(currentPage == 5 && askPhase == .saved ? 0 : 1)
+                    .opacity(currentPage == 4 && askPhase == .saved ? 0 : 1)
                 
                 if isSearchVisible {
                     searchBar
@@ -282,12 +333,11 @@ struct OnboardingView: View {
                     voiceLanguagePage.tag(1)
                     voiceDemoPage.tag(2)
                     recipesIntroPage.tag(3)
-                    grammarDemoPage.tag(4)
-                    finalStepView.tag(5)
+                    finalStepView.tag(4)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 
-                if currentPage < 6 && !(currentPage == 5 && askPhase == .saved) {
+                if currentPage < 5 && !(currentPage == 4 && askPhase == .saved) {
                     pageIndicator
                 }
             }
@@ -307,9 +357,6 @@ struct OnboardingView: View {
         
         .onChange(of: currentPage) { _, newValue in
             handlePageChange(to: newValue)
-        }
-        .onChange(of: skillChainStep) { _, newValue in
-            handleSkillChainStepChange(to: newValue)
         }
         .onChange(of: speechRecognizer.permissionGranted) { _, granted in
             guard granted, currentPage == 2 else { return }
@@ -341,36 +388,23 @@ struct OnboardingView: View {
             resetSkillsIntroAnimation()
         }
 
-        if page == 3 || page == 4 {
+        if page == 3 {
             skillChainAdvanceRunID += 1
             skillChainStep = 0
         }
 
-        if page == 5 {
+        if page == 4 {
+            resetAskDemoState()
             if storeService.availableProducts.isEmpty && !storeService.isLoadingProducts {
                 Task {
                     await storeService.refreshProducts()
                 }
             }
+        } else {
+            resetAskDemoState()
         }
     }
 
-    private func handleSkillChainStepChange(to step: Int) {
-        guard currentPage == 4 else { return }
-
-        skillChainAdvanceRunID += 1
-        let runID = skillChainAdvanceRunID
-
-        guard step == 3 else { return }
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.95) {
-            guard currentPage == 4, skillChainStep == 3, skillChainAdvanceRunID == runID else { return }
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                currentPage = 5
-            }
-        }
-    }
-    
     private func startVoiceDemoSequence(text: String) {
         speechRecognizer.completeRecording()
         
@@ -464,7 +498,7 @@ struct OnboardingView: View {
     
     private var pageIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(0..<6, id: \.self) { index in
+            ForEach(0..<5, id: \.self) { index in
                 Capsule()
                     .fill(currentPage == index ? Color.accentPrimary : Color.accentPrimary.opacity(0.2))
                     .frame(width: currentPage == index ? 20 : 8, height: 8)
@@ -477,10 +511,10 @@ struct OnboardingView: View {
     // MARK: - Top Bar
     private var topBar: some View {
         HStack {
-            if currentPage < 5 || (currentPage == 5 && askPhase != .saved) {
+            if currentPage < 4 || (currentPage == 4 && askPhase != .saved) {
                 Button {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        currentPage = 5
+                        currentPage = 4
                         askPhase = .saved
                     }
                 } label: {
@@ -896,13 +930,13 @@ struct OnboardingView: View {
             Spacer(minLength: 8)
 
             VStack(spacing: 6) {
-                Text("From Idea to Sharing")
+                Text("Build Your AI Workflow")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundColor(.textMain)
                     .multilineTextAlignment(.center)
 
-                Text("AI Skills")
-                    .font(.system(size: 15, weight: .medium, design: .rounded))
+                Text("From Ideas to Sharing")
+                    .font(.system(size: 20, weight: .medium, design: .rounded))
                     .foregroundColor(.textSub)
                     .multilineTextAlignment(.center)
             }
@@ -933,7 +967,7 @@ struct OnboardingView: View {
 
             Spacer(minLength: 4)
 
-            primaryButton(title: "Try Skills", icon: "arrow.right") {
+            primaryButton(title: "Next", icon: "arrow.right") {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
                     currentPage = 4
                 }
@@ -1534,10 +1568,9 @@ struct OnboardingView: View {
     // MARK: - Phase 5 (Ask Interactive Demo)
     
     @State private var askPhase: AskPhase = .idle
-    @State private var streamedAnswer: String = ""
-    private var finalAnswer: String {
-        String(localized: "onboarding.ask.final_answer")
-    }
+    @State private var visibleAskMessageCount: Int = 0
+    @State private var askAnimationRunID: Int = 0
+    @State private var showSavedAskNote: Bool = false
 
     private var yearlyProduct: Product? {
         storeService.availableProducts.first(where: { $0.subscription?.subscriptionPeriod.unit == .year })
@@ -1757,96 +1790,55 @@ struct OnboardingView: View {
                     Spacer().frame(height: 20)
                     
                     VStack(spacing: 24) {
-                        // Header
                         VStack(spacing: 8) {
-                            Text("Ask Your Notes")
+                            Text("Your Notes, Powered by AI")
                                 .font(.system(size: 28, weight: .bold, design: .rounded))
                                 .foregroundColor(.textMain)
-                            Text(askPhase == .idle ? "Select notes and ask anything about them" : "Reading your notes and building an answer...")
-                                .font(.body)
-                                .foregroundColor(.textSub)
-                                .transition(.opacity)
-                                .id(askPhase == .idle) // Force transition
                         }
                         
-                        // Interactive Stage
                         ZStack {
-                            // 1. Background Floating Notes (Context)
-                            ForEach(demoNotes) { note in
-                                ContextNoteCard(note: note, isGathered: askPhase != .idle && askPhase != .saved)
-                                    .zIndex(1)
-                            }
-                            
-                            // 2. AI Answer Card
-                            if askPhase != .idle && askPhase != .thinking {
-                                VStack(alignment: .leading, spacing: 16) {
-                                    HStack {
-                                        Image("chillohead_touming")
-                                            .resizable().scaledToFit().frame(width: 24, height: 24)
-                                        Text("Chill AI")
-                                            .font(.caption.bold())
-                                            .foregroundColor(.accentPrimary)
-                                        Spacer()
-                                    }
-                                    
-                                    ScrollView(.vertical, showsIndicators: true) {
-                                        Text(streamedAnswer)
-                                            .font(.system(size: 16, weight: .medium, design: .rounded))
-                                            .lineSpacing(2)
-                                            .foregroundColor(.textMain)
-                                            .frame(maxWidth: .infinity, alignment: .topLeading)
-                                            .animation(nil, value: streamedAnswer) // No animation on text change for typing effect
-                                    }
-                                    .frame(minHeight: 180, maxHeight: askPhase == .review ? 280 : 260)
-                                    
-                                    if askPhase == .review {
-                                        Button {
-                                            saveNoteAction()
-                                        } label: {
-                                            HStack {
-                                                Text("Save as Note")
-                                                Image(systemName: "square.and.arrow.down")
-                                            }
-                                            .font(.headline)
-                                            .foregroundColor(.white)
-                                            .padding(.vertical, 12)
-                                            .frame(maxWidth: .infinity)
-                                            .background(Color.accentPrimary)
-                                            .cornerRadius(12)
-                                            .shadow(color: .accentPrimary.opacity(0.3), radius: 8, y: 4)
-                                        }
-                                        .transition(.scale.combined(with: .opacity).combined(with: .move(edge: .bottom)))
-                                    }
-                                }
-                                .padding(24)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 24)
-                                        .fill(.ultraThinMaterial)
-                                        .background(Color.white.opacity(0.5))
+                            RoundedRectangle(cornerRadius: 30)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.white.opacity(0.88), Color.white.opacity(0.72)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
                                 )
-                                .clipShape(RoundedRectangle(cornerRadius: 24))
-                                .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
-                                .padding(.horizontal, 30)
-                                .transition(.scale(scale: 0.8).combined(with: .opacity).combined(with: .move(edge: .bottom)))
-                                .zIndex(10)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 30)
+                                        .stroke(Color.white.opacity(0.7), lineWidth: 1)
+                                )
+                                .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 14)
+                            
+                            VStack(spacing: 12) {
+                                sourceNotesStrip
+                                askConversationStage
                             }
                         }
-                        .frame(height: askPhase == .review ? 480 : 390)
+                        .frame(height: 520)
+                        .padding(.horizontal, 24)
                         
-                        // 3. User Controls
                         if askPhase == .idle {
                             Button {
                                 startAskDemo()
                             } label: {
-                                Text(L10n.text("onboarding.ask.demo_prompt"))
-                                    .font(.headline)
-                                    .foregroundColor(.accentPrimary)
+                                HStack(spacing: 10) {
+                                    Image(systemName: "sparkles.rectangle.stack")
+                                    Text("Plan my next post")
+                                }
+                                .font(.headline)
+                                .foregroundColor(.accentPrimary)
                                 .padding(.vertical, 16)
                                 .padding(.horizontal, 32)
-                                .background(Color.accentPrimary.opacity(0.1))
+                                .background(Color.accentPrimary.opacity(0.12))
                                 .cornerRadius(30)
                             }
                             .transition(.opacity.combined(with: .move(edge: .bottom)))
+                            .padding(.top, 8)
+                        } else {
+                            askActionArea
+                                .padding(.top, 8)
                         }
                     }
                     
@@ -1859,71 +1851,233 @@ struct OnboardingView: View {
     // MARK: - Final Step Helpers
     
     private func startAskDemo() {
+        askAnimationRunID += 1
+        let runID = askAnimationRunID
+        visibleAskMessageCount = 0
+        showSavedAskNote = false
+
         withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
-            askPhase = .thinking
+            askPhase = .gatheringSources
         }
-        
-        // Simulate Thinking
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-            withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                askPhase = .answering
-                streamText()
-            }
-        }
-    }
-    
-    private func streamText() {
-        streamedAnswer = ""
-        let chars = Array(finalAnswer)
-        var index = 0
-        
-        Timer.scheduledTimer(withTimeInterval: 0.03, repeats: true) { timer in
-            if index < chars.count {
-                streamedAnswer.append(chars[index])
-                index += 1
-            } else {
-                timer.invalidate()
-                withAnimation {
-                    askPhase = .review
+
+        let messageSteps: [(delay: Double, count: Int, phase: AskPhase)] = [
+            (0.95, 1, .chattingRound1),
+            (1.75, 2, .chattingRound1),
+            (2.55, 3, .chattingRound2),
+            (3.35, 4, .planReady)
+        ]
+
+        for step in messageSteps {
+            DispatchQueue.main.asyncAfter(deadline: .now() + step.delay) {
+                guard currentPage == 4, askAnimationRunID == runID else { return }
+                withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
+                    askPhase = step.phase
+                    visibleAskMessageCount = step.count
                 }
             }
-        }
-    }
-    
-    private func saveNoteAction() {
-        withAnimation(.easeIn(duration: 0.5)) {
-            askPhase = .saved
         }
     }
 
-    struct ContextNoteCard: View {
+    private func saveNoteAction() {
+        askAnimationRunID += 1
+        let runID = askAnimationRunID
+
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
+            askPhase = .savingNote
+            showSavedAskNote = true
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            guard currentPage == 4, askAnimationRunID == runID else { return }
+            withAnimation(.easeIn(duration: 0.45)) {
+                askPhase = .saved
+            }
+        }
+    }
+
+    private func resetAskDemoState() {
+        askAnimationRunID += 1
+        askPhase = .idle
+        visibleAskMessageCount = 0
+        showSavedAskNote = false
+    }
+
+    private var askStatusText: String {
+        switch askPhase {
+        case .idle:
+            return "Talk through your ideas with AI, grounded in your notes."
+        case .gatheringSources:
+            return "Pulling signals from your notes..."
+        case .chattingRound1, .chattingRound2:
+            return "Ask is turning scattered notes into a sharper creative direction."
+        case .planReady:
+            return "A concrete plan is ready to save as a new note."
+        case .savingNote:
+            return "Saving the conversation as a fresh note..."
+        case .saved:
+            return "Saved."
+        }
+    }
+
+    private var visibleAskMessages: [AskConversationMessage] {
+        Array(askConversationMessages.prefix(visibleAskMessageCount))
+    }
+
+    private var sourceNotesStrip: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
+                Image(systemName: "sparkles.rectangle.stack")
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundColor(.accentPrimary)
+                Text("From 3 notes")
+                    .font(.system(size: 13, weight: .bold, design: .rounded))
+                    .foregroundColor(.textMain)
+                Spacer()
+                Text(askPhase == .idle ? "AI reads before it replies" : "AI is using these notes")
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundColor(.textSub.opacity(0.8))
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    ForEach(demoNotes) { note in
+                        SourceNotePill(note: note)
+                    }
+                }
+                .padding(.trailing, 4)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.top, 14)
+        .padding(.bottom, 2)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.white.opacity(0.55))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.white.opacity(0.6), lineWidth: 1)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 16)
+    }
+
+    private var askConversationStage: some View {
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                ScrollView(.vertical, showsIndicators: false) {
+                    VStack(spacing: 14) {
+                        ForEach(visibleAskMessages) { message in
+                            AskConversationBubble(message: message)
+                                .transition(
+                                    .asymmetric(
+                                        insertion: .move(edge: message.speaker == .creator ? .leading : .trailing)
+                                            .combined(with: .opacity),
+                                        removal: .opacity
+                                    )
+                                )
+                        }
+
+                        if askPhase == .gatheringSources {
+                            HStack {
+                                AskTypingIndicator()
+                                Spacer()
+                            }
+                            .transition(.opacity)
+                        }
+
+                        Color.clear
+                            .frame(height: showSavedAskNote ? 170 : 12)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 16)
+                    .padding(.top, 8)
+                }
+            }
+            .background(
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(Color.white.opacity(0.72))
+            )
+            .padding(.horizontal, 16)
+            .padding(.bottom, 16)
+
+            if showSavedAskNote {
+                SavedAskNoteCard(note: savedAskNotePreview)
+                    .padding(.horizontal, 34)
+                    .padding(.bottom, 22)
+                    .transition(.scale(scale: 0.9).combined(with: .opacity).combined(with: .move(edge: .bottom)))
+                    .zIndex(2)
+            }
+        }
+    }
+
+    private var askActionArea: some View {
+        VStack(spacing: 10) {
+            if askPhase == .planReady {
+                Button {
+                    saveNoteAction()
+                } label: {
+                    HStack(spacing: 10) {
+                        Text("Save as Note")
+                        Image(systemName: "square.and.arrow.down")
+                    }
+                    .font(.headline)
+                    .foregroundColor(.white)
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity)
+                    .background(Color.accentPrimary)
+                    .cornerRadius(16)
+                    .shadow(color: .accentPrimary.opacity(0.28), radius: 12, y: 6)
+                }
+                .padding(.horizontal, 24)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else {
+                HStack(spacing: 8) {
+                    Image(systemName: askPhase == .savingNote ? "square.and.arrow.down.fill" : "ellipsis.message")
+                    Text(askPhase == .savingNote ? "Turning the plan into a note..." : "Watching the discussion unfold...")
+                }
+                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                .foregroundColor(.textSub)
+                .padding(.vertical, 10)
+            }
+        }
+        .frame(minHeight: 52)
+        .padding(.bottom, 10)
+    }
+
+    struct SourceNotePill: View {
         let note: DemoNote
-        let isGathered: Bool
         
         var body: some View {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Circle().fill(note.color).frame(width: 8, height: 8)
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(note.color)
+                    .frame(width: 8, height: 8)
+
+                VStack(alignment: .leading, spacing: 2) {
                     Text(note.title)
-                        .font(.caption.bold())
-                        .foregroundColor(.gray)
-                    Spacer()
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.textMain)
+                        .lineLimit(1)
+
+                    Text(note.content)
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundColor(.textSub.opacity(0.82))
+                        .lineLimit(1)
                 }
-                Text(note.content)
-                    .font(.caption)
-                    .foregroundColor(.gray.opacity(0.8))
-                    .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(16)
-            .frame(width: 180, height: 140)
-            .background(Color.white)
-            .cornerRadius(12)
-            .shadow(color: Color.black.opacity(0.05), radius: 5, x: 0, y: 2)
-            // Gather Transform
-            .rotationEffect(.degrees(isGathered ? Double.random(in: -5...5) : note.rotation))
-            .offset(isGathered ? .zero : note.offset)
-            .scaleEffect(isGathered ? 0.9 : 1.0)
-            .opacity(isGathered ? 0.6 : 1.0)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .frame(width: 188, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.92))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 16)
+                    .stroke(note.color.opacity(0.16), lineWidth: 1)
+            )
+            .shadow(color: note.color.opacity(0.06), radius: 10, x: 0, y: 6)
         }
     }
 
@@ -2004,6 +2158,150 @@ struct OnboardingFeatureTip: View {
             RoundedRectangle(cornerRadius: 12)
                 .stroke(Color.accentPrimary.opacity(0.05), lineWidth: 1)
         )
+    }
+}
+
+struct AskConversationBubble: View {
+    let message: OnboardingView.AskConversationMessage
+
+    var body: some View {
+        HStack {
+            if message.speaker == .ai {
+                bubble
+                Spacer(minLength: 36)
+            } else {
+                Spacer(minLength: 36)
+                bubble
+            }
+        }
+    }
+
+    private var bubble: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if message.speaker == .ai || message.referencesNotes {
+                HStack(spacing: 6) {
+                    if message.speaker == .ai {
+                        Image("chillohead_touming")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 18, height: 18)
+                    }
+
+                    if message.referencesNotes {
+                        Label("From notes", systemImage: "sparkles")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundColor(.accentPrimary.opacity(0.82))
+                    }
+                }
+            }
+
+            Text(message.content)
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundColor(message.speaker == .creator ? .white : .textMain)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .frame(maxWidth: 280, alignment: .leading)
+        .background(background)
+        .overlay(
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(message.speaker == .creator ? Color.clear : Color.accentPrimary.opacity(0.1), lineWidth: 1)
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 18))
+        .shadow(color: Color.black.opacity(0.05), radius: 10, x: 0, y: 6)
+    }
+
+    private var background: some ShapeStyle {
+        if message.speaker == .creator {
+            return AnyShapeStyle(
+                LinearGradient(
+                    colors: [Color.accentPrimary, Color.accentPrimary.opacity(0.78)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+            )
+        } else {
+            return AnyShapeStyle(Color.white.opacity(0.96))
+        }
+    }
+}
+
+struct AskTypingIndicator: View {
+    @State private var animate = false
+
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(0..<3, id: \.self) { index in
+                Circle()
+                    .fill(Color.accentPrimary.opacity(0.5))
+                    .frame(width: 8, height: 8)
+                    .scaleEffect(animate ? 1.0 : 0.55)
+                    .opacity(animate ? 0.95 : 0.4)
+                    .animation(
+                        .easeInOut(duration: 0.6)
+                            .repeatForever()
+                            .delay(Double(index) * 0.12),
+                        value: animate
+                    )
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(Color.white.opacity(0.95))
+        .clipShape(Capsule())
+        .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 4)
+        .onAppear { animate = true }
+    }
+}
+
+struct SavedAskNoteCard: View {
+    let note: OnboardingView.SavedAskNotePreview
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Label("Saved as Note", systemImage: "checkmark.circle.fill")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundColor(.green)
+                Spacer()
+            }
+
+            Text(note.title)
+                .font(.system(size: 18, weight: .bold, design: .rounded))
+                .foregroundColor(.textMain)
+
+            VStack(alignment: .leading, spacing: 8) {
+                ForEach(note.bullets, id: \.self) { bullet in
+                    HStack(alignment: .top, spacing: 8) {
+                        Circle()
+                            .fill(Color.accentPrimary)
+                            .frame(width: 6, height: 6)
+                            .padding(.top, 6)
+                        Text(bullet)
+                            .font(.system(size: 13, weight: .medium, design: .rounded))
+                            .foregroundColor(.textSub)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+        }
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 22)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white, Color(red: 0.96, green: 0.99, blue: 0.98)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 22)
+                .stroke(Color.green.opacity(0.18), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.1), radius: 18, x: 0, y: 12)
     }
 }
 

@@ -21,10 +21,6 @@ struct SettingsView: View {
     @StateObject private var exportViewModel = ExportViewModel()
     @State private var showExportAllSheet = false
     @State private var showVoiceLanguageSheet = false
-    // Auto Navigation
-    var autoNavigateToAI: Bool = false
-    @State private var isAIConfigActive = false
-    
     var body: some View {
         NavigationStack {
             ZStack {
@@ -54,7 +50,6 @@ struct SettingsView: View {
                     ScrollView {
                         VStack(spacing: 24) {
                             accountSection
-                            aiCapabilitiesSection
                             dataSection
                             supportSection
                             signOutSection
@@ -65,18 +60,6 @@ struct SettingsView: View {
                 }
             }
             .navigationBarHidden(true)
-            .navigationDestination(isPresented: $isAIConfigActive) {
-                ChillRecipesView()
-            }
-            .onAppear {
-                if autoNavigateToAI {
-                    // Small delay to ensure View is fully loaded before triggering navigation
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                        isAIConfigActive = true
-                    }
-                }
-            }
-
             .sheet(isPresented: $showPrivacy) {
                 LegalTextView(title: "Privacy Policy", bodyText: privacyText)
             }
@@ -243,24 +226,6 @@ struct SettingsView: View {
                 .buttonStyle(.plain)
             }
         }
-        .background(Color.white)
-        .cornerRadius(16)
-        .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
-    }
-    
-    private var aiCapabilitiesSection: some View {
-        VStack(spacing: 0) {
-            
-            // New Chill Skills Link
-            Button {
-                isAIConfigActive = true
-            } label: {
-                SettingItem(icon: "book.closed", iconColor: .accentPrimary, label: "Chill Skills")
-            }
-            .buttonStyle(.plain)
-            
-        }
-        .padding(.bottom, 8)
         .background(Color.white)
         .cornerRadius(16)
         .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)

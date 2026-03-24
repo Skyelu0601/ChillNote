@@ -2257,6 +2257,9 @@
         }
       }
     },
+    "AI is using these notes" : {
+
+    },
     "AI permission not granted" : {
 
     },
@@ -2311,6 +2314,9 @@
           }
         }
       }
+    },
+    "AI reads before it replies" : {
+
     },
     "AI REFINED" : {
       "localizations" : {
@@ -2415,9 +2421,6 @@
           }
         }
       }
-    },
-    "AI Skills" : {
-
     },
     "All Notes" : {
       "localizations" : {
@@ -3098,58 +3101,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "向 AI 提問..."
-          }
-        }
-      }
-    },
-    "Ask Your Notes" : {
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Frag deine Notizen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ask Your Notes"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pregúntale a tus notas"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Interrogez vos notes"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ノートに質問"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "메모 요청"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "向笔记提问"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "向筆記提問"
           }
         }
       }
@@ -3838,6 +3789,9 @@
         }
       }
     },
+    "Build Your AI Workflow" : {
+
+    },
     "By continuing, you agree to our [Terms](https://www.chillnoteai.com/terms.html) & [Privacy Policy](https://www.chillnoteai.com/privacy.html)." : {
       "extractionState" : "stale",
       "localizations" : {
@@ -4153,6 +4107,7 @@
       }
     },
     "Chill AI" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -11697,7 +11652,13 @@
         }
       }
     },
-    "From Idea to Sharing" : {
+    "From 3 notes" : {
+
+    },
+    "From Ideas to Sharing" : {
+
+    },
+    "From notes" : {
 
     },
     "Generate a comprehensive Markdown archive of all your notes, organized by date. Perfect for backup or importing into other tools." : {
@@ -15943,6 +15904,7 @@
       }
     },
     "onboarding.ask.final_answer" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -15995,6 +15957,7 @@
       }
     },
     "onboarding.ask.note.context.content" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16047,6 +16010,7 @@
       }
     },
     "onboarding.ask.note.context.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16099,6 +16063,7 @@
       }
     },
     "onboarding.ask.note.flow.content" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16151,6 +16116,7 @@
       }
     },
     "onboarding.ask.note.flow.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16203,6 +16169,7 @@
       }
     },
     "onboarding.ask.note.source.content" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -16255,6 +16222,7 @@
       }
     },
     "onboarding.ask.note.source.title" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -18627,6 +18595,9 @@
         }
       }
     },
+    "Plan my next post" : {
+
+    },
     "Polish the Draft" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -19727,6 +19698,7 @@
       }
     },
     "Reading your notes and building an answer..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -21612,6 +21584,9 @@
         }
       }
     },
+    "Saved as Note" : {
+
+    },
     "Saved successfully" : {
       "extractionState" : "stale",
       "localizations" : {
@@ -22134,6 +22109,7 @@
       }
     },
     "Select notes and ask anything about them" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -25754,6 +25730,7 @@
       }
     },
     "Try Skills" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -26012,6 +25989,9 @@
           }
         }
       }
+    },
+    "Turning the plan into a note..." : {
+
     },
     "Tweet about this launch" : {
       "extractionState" : "stale",
@@ -27161,6 +27141,9 @@
           }
         }
       }
+    },
+    "Watching the discussion unfold..." : {
+
     },
     "Welcome to ChillNote" : {
       "localizations" : {
@@ -28947,6 +28930,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "你的資料僅用於完成你的本次請求。我們與第三方合作夥伴都不會使用你的筆記或錄音來訓練模型。"
+          }
+        }
+      }
+    },
+    "Your Notes, Powered by AI" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deine Notizen, mit KI"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your Notes, Powered by AI"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tus notas, con IA"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vos notes, boostées par l’IA"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AIを活用したあなたのノート"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI로 강화된 나의 노트"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的笔记，由 AI 驱动"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你的筆記，由 AI 驅動"
           }
         }
       }

@@ -17,6 +17,7 @@ struct SidebarView: View {
     var hasPendingRecordings: Bool = false
     var pendingRecordingsCount: Int = 0
     var onSettingsTap: (() -> Void)?
+    var onChillRecipesTap: (() -> Void)?
     var onPendingRecordingsTap: (() -> Void)?
     
     private let sidebarCloseMinTranslation: CGFloat = 30
@@ -96,6 +97,11 @@ struct SidebarView: View {
                                 isPresented = false
                                 onPendingRecordingsTap?()
                             }
+                        }
+
+                        SidebarItem(icon: "book.closed", title: "Chill Skills", isSelected: false) {
+                            isPresented = false
+                            onChillRecipesTap?()
                         }
                     }
                     .padding(.horizontal, 16)

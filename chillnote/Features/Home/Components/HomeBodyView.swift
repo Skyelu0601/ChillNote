@@ -179,6 +179,7 @@ struct HomeBodyView: View {
                 hasPendingRecordings: state.hasPendingRecordings,
                 pendingRecordingsCount: state.pendingRecordingsCount,
                 onSettingsTap: { dispatch(.showSettings) },
+                onChillRecipesTap: { dispatch(.openChillRecipes) },
                 onPendingRecordingsTap: { dispatch(.setShowPendingRecordings(true)) }
             )
         }
