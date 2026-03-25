@@ -2257,9 +2257,6 @@
         }
       }
     },
-    "AI is using these notes" : {
-
-    },
     "AI permission not granted" : {
 
     },
@@ -2314,9 +2311,6 @@
           }
         }
       }
-    },
-    "AI reads before it replies" : {
-
     },
     "AI REFINED" : {
       "localizations" : {
@@ -2421,6 +2415,9 @@
           }
         }
       }
+    },
+    "All languages" : {
+
     },
     "All Notes" : {
       "localizations" : {
@@ -3790,6 +3787,9 @@
       }
     },
     "Build Your AI Workflow" : {
+
+    },
+    "Building your next content plan..." : {
 
     },
     "By continuing, you agree to our [Terms](https://www.chillnoteai.com/terms.html) & [Privacy Policy](https://www.chillnoteai.com/privacy.html)." : {
@@ -11652,13 +11652,7 @@
         }
       }
     },
-    "From 3 notes" : {
-
-    },
     "From Ideas to Sharing" : {
-
-    },
-    "From notes" : {
 
     },
     "Generate a comprehensive Markdown archive of all your notes, organized by date. Perfect for backup or importing into other tools." : {
@@ -21640,6 +21634,9 @@
         }
       }
     },
+    "Saved to Notes" : {
+
+    },
     "Saved!" : {
       "localizations" : {
         "de" : {
@@ -21745,6 +21742,7 @@
       }
     },
     "Say it. Save it." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -21901,6 +21899,7 @@
       }
     },
     "Search language..." : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -22003,6 +22002,9 @@
           }
         }
       }
+    },
+    "Search other languages..." : {
+
     },
     "Select All" : {
       "localizations" : {
@@ -22948,6 +22950,7 @@
 
     },
     "Start" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -23156,6 +23159,9 @@
           }
         }
       }
+    },
+    "Start creating with Pro" : {
+
     },
     "Start Export" : {
       "localizations" : {
@@ -23818,6 +23824,9 @@
           }
         }
       }
+    },
+    "Suggested for you" : {
+
     },
     "Summarize" : {
       "extractionState" : "stale",
@@ -27142,9 +27151,6 @@
         }
       }
     },
-    "Watching the discussion unfold..." : {
-
-    },
     "Welcome to ChillNote" : {
       "localizations" : {
         "de" : {
@@ -28933,6 +28939,9 @@
           }
         }
       }
+    },
+    "Your New Note Is Ready" : {
+
     },
     "Your Notes, Powered by AI" : {
       "localizations" : {

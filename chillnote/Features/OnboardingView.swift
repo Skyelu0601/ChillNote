@@ -235,6 +235,7 @@ struct OnboardingView: View {
 
     struct SavedAskNotePreview {
         let title: String
+        let summary: String
         let bullets: [String]
     }
     
@@ -289,6 +290,7 @@ struct OnboardingView: View {
 
     private let savedAskNotePreview = SavedAskNotePreview(
         title: "Content Plan: Creators need a lighter system",
+        summary: "A practical post draft built from your earlier notes, with a clearer hook, stronger emotional framing, and one simple takeaway people can try this week.",
         bullets: [
             "Open with the myth: consistency is not the same as intensity.",
             "Name the real problem: rigid systems make creators feel behind and ashamed.",
@@ -320,7 +322,7 @@ struct OnboardingView: View {
             
             VStack(spacing: 0) {
                 topBar
-                    .opacity(currentPage == 4 && askPhase == .saved ? 0 : 1)
+                    .opacity(currentPage == 3 && showOnboardingPaywall ? 0 : 1)
                 
                 if isSearchVisible {
                     searchBar
@@ -329,15 +331,14 @@ struct OnboardingView: View {
                 }
 
                 TabView(selection: $currentPage) {
-                    welcomePage.tag(0)
-                    voiceLanguagePage.tag(1)
-                    voiceDemoPage.tag(2)
-                    recipesIntroPage.tag(3)
-                    finalStepView.tag(4)
+                    voiceLanguagePage.tag(0)
+                    voiceDemoPage.tag(1)
+                    recipesIntroPage.tag(2)
+                    finalStepView.tag(3)
                 }
                 .tabViewStyle(PageTabViewStyle(indexDisplayMode: .never))
                 
-                if currentPage < 5 && !(currentPage == 4 && askPhase == .saved) {
+                if currentPage < 4 && !(currentPage == 3 && showOnboardingPaywall) {
                     pageIndicator
                 }
             }
@@ -359,9 +360,9 @@ struct OnboardingView: View {
             handlePageChange(to: newValue)
         }
         .onChange(of: speechRecognizer.permissionGranted) { _, granted in
-            guard granted, currentPage == 2 else { return }
+            guard granted, currentPage == 1 else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                guard currentPage == 2 else { return }
+                guard currentPage == 1 else { return }
                 speechRecognizer.prewarmRecordingSession()
             }
         }
@@ -374,31 +375,38 @@ struct OnboardingView: View {
         dismissLanguageSearchKeyboard()
         languageSearchText = "" // Reset language search when leaving page
 
-        if page == 2 { // Voice Demo (was 1)
+        if page == 1 {
             speechRecognizer.checkPermissions()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                guard currentPage == 2, speechRecognizer.permissionGranted else { return }
+                guard currentPage == 1, speechRecognizer.permissionGranted else { return }
                 speechRecognizer.prewarmRecordingSession()
             }
         }
 
-        if page == 3 {
+        if page == 2 {
             startSkillsIntroAnimation()
         } else {
             resetSkillsIntroAnimation()
         }
 
-        if page == 3 {
+        if page == 2 {
             skillChainAdvanceRunID += 1
             skillChainStep = 0
         }
 
-        if page == 4 {
-            resetAskDemoState()
+        if page == 3 {
+            resetAskDemoState(resetPaywall: false)
             if storeService.availableProducts.isEmpty && !storeService.isLoadingProducts {
                 Task {
                     await storeService.refreshProducts()
                 }
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
+                guard currentPage == 3 else { return }
+                guard !showOnboardingPaywall else { return }
+                guard !askAutoStartedOnCurrentVisit else { return }
+                askAutoStartedOnCurrentVisit = true
+                startAskDemo()
             }
         } else {
             resetAskDemoState()
@@ -498,7 +506,7 @@ struct OnboardingView: View {
     
     private var pageIndicator: some View {
         HStack(spacing: 8) {
-            ForEach(0..<5, id: \.self) { index in
+            ForEach(0..<4, id: \.self) { index in
                 Capsule()
                     .fill(currentPage == index ? Color.accentPrimary : Color.accentPrimary.opacity(0.2))
                     .frame(width: currentPage == index ? 20 : 8, height: 8)
@@ -511,12 +519,9 @@ struct OnboardingView: View {
     // MARK: - Top Bar
     private var topBar: some View {
         HStack {
-            if currentPage < 4 || (currentPage == 4 && askPhase != .saved) {
+            if currentPage < 3 || (currentPage == 3 && !showOnboardingPaywall) {
                 Button {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                        currentPage = 4
-                        askPhase = .saved
-                    }
+                    skipToPaywall()
                 } label: {
                     Text("Skip")
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
@@ -534,169 +539,234 @@ struct OnboardingView: View {
         .padding(.horizontal, 24)
         .padding(.top, 12)
     }
-    
-    // MARK: - Phase 0: Welcome
-    private var welcomePage: some View {
-        VStack(spacing: 40) {
-            Spacer()
-            Image("chillohead_touming")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 120, height: 120)
-                .shadow(color: Color.black.opacity(0.1), radius: 20, x: 0, y: 10)
-            
-            VStack(spacing: 16) {
-                Text("Welcome to ChillNote")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                    .foregroundColor(.textMain)
-                    .multilineTextAlignment(.center)
-                Text("For makers who build, write, and create.")
-                    .font(.bodyMedium)
-                    .foregroundColor(.textSub)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                    .lineSpacing(4)
-            }
-            Spacer()
-            primaryButton(title: "Start", icon: "arrow.right") {
-                withAnimation { currentPage = 1 }
-            }
-            .padding(.bottom, 40)
+
+    private func skipToPaywall() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            currentPage = 3
+            showOnboardingPaywall = true
         }
     }
     
     // MARK: - Phase 1: Voice Language Selection
+    // MARK: - Phase 1: Voice Language Selection
     private var voiceLanguagePage: some View {
         VStack(spacing: 0) {
-            // Header
-            VStack(spacing: 12) {
-                ZStack {
-                    Circle()
-                        .fill(Color.accentPrimary.opacity(0.1))
-                        .frame(width: 80, height: 80)
-                    Image(systemName: "globe")
-                        .font(.system(size: 32))
-                        .foregroundColor(.accentPrimary)
-                }
-                .padding(.top, 20)
+            // 1. Header with Floating Scripts
+            ZStack {
+                // Background Floating Scripts (Decorative)
+                floatingScriptsBackground
+                    .opacity(0.48)
                 
-                    VStack(spacing: 6) {
-                        Text("Which language do\nyou usually speak?")
-                            .font(.system(size: 28, weight: .bold, design: .rounded))
-                            .foregroundColor(.textMain)
-                            .multilineTextAlignment(.center)
-                            .lineLimit(3)
-                            .minimumScaleFactor(0.85)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .layoutPriority(1)
+                VStack(spacing: 12) {
+                    Text("Which language do\nyou usually speak?")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundColor(.textMain)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(3)
+                        .minimumScaleFactor(0.85)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .layoutPriority(1)
                 }
+                .padding(.top, 24)
             }
-            .padding(.bottom, 16)
+            .frame(maxWidth: .infinity)
+            .frame(height: 196)
             .contentShape(Rectangle())
-            .onTapGesture {
-                dismissLanguageSearchKeyboard()
-            }
+            .onTapGesture { dismissLanguageSearchKeyboard() }
             
-            // Search Bar
-            HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(.textSub)
-                    .font(.system(size: 15))
-                TextField("Search language...", text: $languageSearchText)
-                    .textInputAutocapitalization(.never)
-                    .disableAutocorrection(true)
-                    .font(.bodyMedium)
-                    .focused($isLanguageSearchFocused)
-                    .submitLabel(.search)
-                if !languageSearchText.isEmpty {
-                    Button { languageSearchText = "" } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.textSub)
-                    }
-                }
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-            .background(Color.bgSecondary.opacity(0.7))
-            .cornerRadius(12)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 8)
-            
-            // Language List
-            let filteredLangs = voiceLanguageListFiltered
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(filteredLangs) { option in
-                            let isSelected = voiceLanguageHint.lowercased() == option.code.lowercased()
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    
+                    // 2. Suggested Language Card
+                    if let suggested = currentSelectedLanguageOption {
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Suggested for you")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(.textSub)
+                                .tracking(0.5)
+                            
                             Button {
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                    voiceLanguageHint = option.code
+                                    voiceLanguageHint = suggested.code
                                     voiceLanguageModeRawValue = VoiceTranscriptionLanguageMode.prefer.rawValue
                                 }
                                 dismissLanguageSearchKeyboard()
                             } label: {
-                                HStack(spacing: 14) {
-                                    VStack(alignment: .leading, spacing: 2) {
-                                        Text(option.name)
-                                            .font(.bodyMedium)
-                                            .foregroundColor(isSelected ? .accentPrimary : .textMain)
-                                        Text(option.code)
-                                            .font(.caption)
-                                            .foregroundColor(.textSub)
-                                    }
-                                    Spacer()
-                                    if isSelected {
-                                        Image(systemName: "checkmark.circle.fill")
+                                HStack(spacing: 16) {
+                                    ZStack {
+                                        Circle()
+                                            .fill(Color.accentPrimary.opacity(0.1))
+                                            .frame(width: 44, height: 44)
+                                        Text(suggested.code.prefix(2).uppercased())
+                                            .font(.system(size: 14, weight: .bold, design: .rounded))
                                             .foregroundColor(.accentPrimary)
-                                            .font(.system(size: 20))
-                                            .transition(.scale.combined(with: .opacity))
                                     }
+                                    
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(suggested.name)
+                                            .font(.system(size: 19, weight: .bold, design: .rounded))
+                                            .foregroundColor(.textMain)
+                                    }
+                                    
+                                    Spacer()
+                                    
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .foregroundColor(.accentPrimary)
+                                        .font(.system(size: 24))
                                 }
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 12)
-                                .background(isSelected ? Color.accentPrimary.opacity(0.06) : Color.clear)
-                                .contentShape(Rectangle())
+                                .padding(20)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .fill(Color.white)
+                                        .shadow(color: Color.black.opacity(0.04), radius: 10, y: 4)
+                                )
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(Color.accentPrimary.opacity(0.2), lineWidth: 1)
+                                )
                             }
                             .buttonStyle(.plain)
-                            .id(option.code)
+                        }
+                        .padding(.horizontal, 24)
+                    }
+
+                    // 3. Search Bar & Full List Section
+                    VStack(alignment: .leading, spacing: 12) {
+                        if currentSelectedLanguageOption != nil {
+                            Text("All languages")
+                                .font(.system(size: 14, weight: .bold, design: .rounded))
+                                .foregroundColor(.textSub)
+                                .tracking(0.5)
+                                .padding(.top, 8)
+                        }
+                        
+                        HStack(spacing: 10) {
+                            Image(systemName: "magnifyingglass")
+                                .foregroundColor(.textSub)
+                                .font(.system(size: 15))
+                            TextField("Search other languages...", text: $languageSearchText)
+                                .textInputAutocapitalization(.never)
+                                .disableAutocorrection(true)
+                                .font(.bodyMedium)
+                                .focused($isLanguageSearchFocused)
+                                .submitLabel(.search)
+                            if !languageSearchText.isEmpty {
+                                Button { languageSearchText = "" } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .foregroundColor(.textSub)
+                                }
+                            }
+                        }
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 12)
+                        .background(Color.bgSecondary.opacity(0.7))
+                        .cornerRadius(16)
+                    }
+                    .padding(.horizontal, 24)
+                    
+                    // 4. Full List
+                    LazyVStack(spacing: 0) {
+                        let filteredLangs = voiceLanguageListFiltered
+                        ForEach(filteredLangs) { option in
+                            let isSelected = voiceLanguageHint.lowercased() == option.code.lowercased()
                             
-                            Divider().padding(.leading, 24)
+                            if languageSearchText.isEmpty && isSelected {
+                                EmptyView()
+                            } else {
+                                Button {
+                                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                        voiceLanguageHint = option.code
+                                        voiceLanguageModeRawValue = VoiceTranscriptionLanguageMode.prefer.rawValue
+                                    }
+                                    dismissLanguageSearchKeyboard()
+                                } label: {
+                                    HStack(spacing: 14) {
+                                        Text(option.name)
+                                            .font(.system(size: 16, weight: isSelected ? .semibold : .regular, design: .rounded))
+                                            .foregroundColor(isSelected ? .accentPrimary : .textMain)
+                                        
+                                        Spacer()
+                                        
+                                        if isSelected {
+                                            Image(systemName: "checkmark")
+                                                .foregroundColor(.accentPrimary)
+                                                .font(.system(size: 14, weight: .bold))
+                                                .transition(.scale.combined(with: .opacity))
+                                        }
+                                    }
+                                    .padding(.horizontal, 28)
+                                    .padding(.vertical, 16)
+                                    .background(isSelected ? Color.accentPrimary.opacity(0.04) : Color.clear)
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Divider().padding(.leading, 28)
+                            }
                         }
                     }
+                    .padding(.bottom, 20)
                 }
-                .scrollDismissesKeyboard(.interactively)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    dismissLanguageSearchKeyboard()
-                }
-                .onAppear {
-                    // Auto-select based on system language if not already chosen
-                    if voiceLanguageHint.isEmpty {
-                        applySystemLanguageDefault()
-                    }
-                    // Scroll to current selection
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        let target = voiceLanguageHint.isEmpty ? "en" : voiceLanguageHint
-                        withAnimation { proxy.scrollTo(target, anchor: .center) }
-                    }
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .onAppear {
+                if voiceLanguageHint.isEmpty {
+                    applySystemLanguageDefault()
                 }
             }
             
-            // Continue Button
+            // 5. Continue Button
             VStack(spacing: 0) {
                 Divider()
                 primaryButton(
                     title: voiceLanguageHint.isEmpty ? "Skip" : "Continue",
-                    icon: voiceLanguageHint.isEmpty ? "arrow.right" : "arrow.right"
+                    icon: "arrow.right"
                 ) {
-                    withAnimation { currentPage = 2 }
+                    withAnimation { currentPage = 1 }
                 }
                 .padding(.horizontal, 32)
                 .padding(.vertical, 16)
+                .background(Color.bgPrimary)
             }
         }
     }
+    
+    // MARK: - Voice Language UI Sub-components
+    
+    private var currentSelectedLanguageOption: VoiceLanguageOption? {
+        VoiceLanguageOption.all.first(where: { $0.code.lowercased() == voiceLanguageHint.lowercased() })
+    }
+    
+    private var floatingScriptsBackground: some View {
+        ZStack {
+            ForEach(floatingScriptItems) { item in
+                Text(item.char)
+                    .font(.system(size: item.size, weight: .medium, design: .serif))
+                    .foregroundColor(item.color.opacity(item.opacity))
+                    .offset(item.offset)
+                    .blur(radius: item.blur)
+            }
+        }
+    }
+    
+    struct FloatingScriptItem: Identifiable {
+        let id = UUID()
+        let char: String
+        let offset: CGSize
+        let size: CGFloat
+        let opacity: Double
+        let blur: CGFloat
+        let color: Color
+    }
+    
+    private var floatingScriptItems: [FloatingScriptItem] {
+        [
+            FloatingScriptItem(char: "Hello", offset: CGSize(width: -136, height: -68), size: 24, opacity: 0.42, blur: 0, color: .accentPrimary),
+            FloatingScriptItem(char: "你好", offset: CGSize(width: 136, height: -62), size: 30, opacity: 0.34, blur: 0.3, color: .dustyBlue),
+            FloatingScriptItem(char: "Hola", offset: CGSize(width: -122, height: 76), size: 22, opacity: 0.4, blur: 0, color: .mellowOrange),
+            FloatingScriptItem(char: "こんにちは", offset: CGSize(width: 122, height: 82), size: 18, opacity: 0.3, blur: 0, color: .textSub)
+        ]
+    }
+
     
     private var voiceLanguageListFiltered: [VoiceLanguageOption] {
         let trimmed = languageSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -859,7 +929,7 @@ struct OnboardingView: View {
 
                                             primaryButton(title: "Next Steps", icon: "arrow.right") {
                                                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                                    currentPage = 3
+                                                    currentPage = 2
                                                 }
                                             }
                                             .padding(.top, 12)
@@ -969,7 +1039,7 @@ struct OnboardingView: View {
 
             primaryButton(title: "Next", icon: "arrow.right") {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-                    currentPage = 4
+                    currentPage = 3
                 }
             }
             .padding(.bottom, 24)
@@ -1555,7 +1625,7 @@ struct OnboardingView: View {
 
         for step in timeline {
             DispatchQueue.main.asyncAfter(deadline: .now() + step.delay) {
-                guard currentPage == 3, skillsIntroAnimationRunID == runID else { return }
+                guard currentPage == 2, skillsIntroAnimationRunID == runID else { return }
                 withAnimation(.spring(response: 0.52, dampingFraction: 0.84)) {
                     skillsIntroPhase = step.phase
                 }
@@ -1571,6 +1641,8 @@ struct OnboardingView: View {
     @State private var visibleAskMessageCount: Int = 0
     @State private var askAnimationRunID: Int = 0
     @State private var showSavedAskNote: Bool = false
+    @State private var showOnboardingPaywall: Bool = false
+    @State private var askAutoStartedOnCurrentVisit: Bool = false
 
     private var yearlyProduct: Product? {
         storeService.availableProducts.first(where: { $0.subscription?.subscriptionPeriod.unit == .year })
@@ -1782,9 +1854,11 @@ struct OnboardingView: View {
 
     private var finalStepView: some View {
         Group {
-            if askPhase == .saved {
+            if showOnboardingPaywall {
                 onboardingPaywall
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
+            } else if askPhase == .saved {
+                savedAskResultView
             } else {
                 VStack {
                     Spacer().frame(height: 20)
@@ -1811,7 +1885,7 @@ struct OnboardingView: View {
                                 )
                                 .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 14)
                             
-                            VStack(spacing: 12) {
+                            VStack(spacing: 8) {
                                 sourceNotesStrip
                                 askConversationStage
                             }
@@ -1847,6 +1921,28 @@ struct OnboardingView: View {
             }
         }
     }
+
+    private var savedAskResultView: some View {
+        VStack(spacing: 0) {
+            Spacer().frame(height: 28)
+
+            VStack(spacing: 24) {
+                Text("Your New Note Is Ready")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .foregroundColor(.textMain)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 24)
+
+                SavedAskNoteShowcase(note: savedAskNotePreview)
+                    .padding(.horizontal, 24)
+
+                askActionArea
+            }
+
+            Spacer(minLength: 24)
+        }
+        .transition(.opacity.combined(with: .scale(scale: 0.98)))
+    }
     
     // MARK: - Final Step Helpers
     
@@ -1869,7 +1965,7 @@ struct OnboardingView: View {
 
         for step in messageSteps {
             DispatchQueue.main.asyncAfter(deadline: .now() + step.delay) {
-                guard currentPage == 4, askAnimationRunID == runID else { return }
+                guard currentPage == 3, askAnimationRunID == runID else { return }
                 withAnimation(.spring(response: 0.48, dampingFraction: 0.82)) {
                     askPhase = step.phase
                     visibleAskMessageCount = step.count
@@ -1884,22 +1980,31 @@ struct OnboardingView: View {
 
         withAnimation(.spring(response: 0.5, dampingFraction: 0.86)) {
             askPhase = .savingNote
-            showSavedAskNote = true
         }
 
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-            guard currentPage == 4, askAnimationRunID == runID else { return }
-            withAnimation(.easeIn(duration: 0.45)) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.95) {
+            guard currentPage == 3, askAnimationRunID == runID else { return }
+            withAnimation(.spring(response: 0.52, dampingFraction: 0.84)) {
                 askPhase = .saved
             }
         }
     }
 
-    private func resetAskDemoState() {
+    private func continueFromSavedNoteToPaywall() {
+        withAnimation(.spring(response: 0.48, dampingFraction: 0.84)) {
+            showOnboardingPaywall = true
+        }
+    }
+
+    private func resetAskDemoState(resetPaywall: Bool = true) {
         askAnimationRunID += 1
         askPhase = .idle
         visibleAskMessageCount = 0
         showSavedAskNote = false
+        if resetPaywall {
+            showOnboardingPaywall = false
+        }
+        askAutoStartedOnCurrentVisit = false
     }
 
     private var askStatusText: String {
@@ -1925,19 +2030,6 @@ struct OnboardingView: View {
 
     private var sourceNotesStrip: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 8) {
-                Image(systemName: "sparkles.rectangle.stack")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.accentPrimary)
-                Text("From 3 notes")
-                    .font(.system(size: 13, weight: .bold, design: .rounded))
-                    .foregroundColor(.textMain)
-                Spacer()
-                Text(askPhase == .idle ? "AI reads before it replies" : "AI is using these notes")
-                    .font(.system(size: 11, weight: .semibold, design: .rounded))
-                    .foregroundColor(.textSub.opacity(0.8))
-            }
-
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
                     ForEach(demoNotes) { note in
@@ -1948,7 +2040,7 @@ struct OnboardingView: View {
             }
         }
         .padding(.horizontal, 14)
-        .padding(.top, 14)
+        .padding(.top, 8)
         .padding(.bottom, 2)
         .background(
             RoundedRectangle(cornerRadius: 20)
@@ -1959,7 +2051,7 @@ struct OnboardingView: View {
                 .stroke(Color.white.opacity(0.6), lineWidth: 1)
         )
         .padding(.horizontal, 16)
-        .padding(.top, 16)
+        .padding(.top, 8)
     }
 
     private var askConversationStage: some View {
@@ -1987,7 +2079,7 @@ struct OnboardingView: View {
                         }
 
                         Color.clear
-                            .frame(height: showSavedAskNote ? 170 : 12)
+                            .frame(height: 12)
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 16)
@@ -2000,14 +2092,6 @@ struct OnboardingView: View {
             )
             .padding(.horizontal, 16)
             .padding(.bottom, 16)
-
-            if showSavedAskNote {
-                SavedAskNoteCard(note: savedAskNotePreview)
-                    .padding(.horizontal, 34)
-                    .padding(.bottom, 22)
-                    .transition(.scale(scale: 0.9).combined(with: .opacity).combined(with: .move(edge: .bottom)))
-                    .zIndex(2)
-            }
         }
     }
 
@@ -2031,10 +2115,30 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal, 24)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
+            } else if askPhase == .saved {
+                VStack(spacing: 10) {
+                    Button {
+                        continueFromSavedNoteToPaywall()
+                    } label: {
+                        HStack(spacing: 10) {
+                            Text("Start creating with Pro")
+                            Image(systemName: "sparkles")
+                        }
+                        .font(.headline)
+                        .foregroundColor(.white)
+                        .padding(.vertical, 14)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.accentPrimary)
+                        .cornerRadius(16)
+                        .shadow(color: .accentPrimary.opacity(0.28), radius: 12, y: 6)
+                    }
+                    .padding(.horizontal, 24)
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: askPhase == .savingNote ? "square.and.arrow.down.fill" : "ellipsis.message")
-                    Text(askPhase == .savingNote ? "Turning the plan into a note..." : "Watching the discussion unfold...")
+                    Text(askPhase == .savingNote ? "Turning the plan into a note..." : "Building your next content plan...")
                 }
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundColor(.textSub)
@@ -2178,23 +2282,6 @@ struct AskConversationBubble: View {
 
     private var bubble: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if message.speaker == .ai || message.referencesNotes {
-                HStack(spacing: 6) {
-                    if message.speaker == .ai {
-                        Image("chillohead_touming")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 18, height: 18)
-                    }
-
-                    if message.referencesNotes {
-                        Label("From notes", systemImage: "sparkles")
-                            .font(.system(size: 11, weight: .bold, design: .rounded))
-                            .foregroundColor(.accentPrimary.opacity(0.82))
-                    }
-                }
-            }
-
             Text(message.content)
                 .font(.system(size: 15, weight: .medium, design: .rounded))
                 .foregroundColor(message.speaker == .creator ? .white : .textMain)
@@ -2271,6 +2358,11 @@ struct SavedAskNoteCard: View {
                 .font(.system(size: 18, weight: .bold, design: .rounded))
                 .foregroundColor(.textMain)
 
+            Text(note.summary)
+                .font(.system(size: 13, weight: .medium, design: .rounded))
+                .foregroundColor(.textSub)
+                .fixedSize(horizontal: false, vertical: true)
+
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(note.bullets, id: \.self) { bullet in
                     HStack(alignment: .top, spacing: 8) {
@@ -2302,6 +2394,70 @@ struct SavedAskNoteCard: View {
                 .stroke(Color.green.opacity(0.18), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.1), radius: 18, x: 0, y: 12)
+    }
+}
+
+struct SavedAskNoteShowcase: View {
+    let note: OnboardingView.SavedAskNotePreview
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Saved to Notes", systemImage: "checkmark.circle.fill")
+                        .font(.system(size: 12, weight: .bold, design: .rounded))
+                        .foregroundColor(.green)
+
+                    Text(note.title)
+                        .font(.system(size: 22, weight: .bold, design: .rounded))
+                        .foregroundColor(.textMain)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+
+            Text(note.summary)
+                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .foregroundColor(.textSub)
+                .lineSpacing(4)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 12) {
+                ForEach(note.bullets, id: \.self) { bullet in
+                    HStack(alignment: .top, spacing: 10) {
+                        Circle()
+                            .fill(Color.accentPrimary)
+                            .frame(width: 7, height: 7)
+                            .padding(.top, 7)
+
+                        Text(bullet)
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundColor(.textMain)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 10) {
+                Divider()
+                    .overlay(Color.accentPrimary.opacity(0.08))
+            }
+        }
+        .padding(22)
+        .background(
+            RoundedRectangle(cornerRadius: 26)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.white, Color(red: 0.97, green: 0.99, blue: 0.98)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 26)
+                .stroke(Color.green.opacity(0.16), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 10)
     }
 }
 

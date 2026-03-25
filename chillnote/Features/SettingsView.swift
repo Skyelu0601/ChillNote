@@ -391,40 +391,22 @@ struct VoiceLanguageOption: Identifiable {
     var id: String { code }
 
     static let all: [VoiceLanguageOption] = {
-        let prioritizedIdentifiers = ["en", "zh-Hans", "zh-Hant", "es", "fr", "de", "ja", "ko", "pt", "ru", "ar", "hi", "id", "th", "vi", "tr", "it"]
-        let prioritizedSet = Set(prioritizedIdentifiers.map { $0.lowercased() })
-        var optionsByKey: [String: VoiceLanguageOption] = [:]
+        // Keep onboarding/settings aligned with Gemini's published language support.
+        // Chinese is split into Simplified and Traditional for a clearer user choice.
+        let curatedIdentifiers = [
+            "en", "zh-Hans", "zh-Hant", "ja", "ko", "fr", "de", "es",
+            "ar", "bn", "bg", "hr", "cs", "da", "nl", "et",
+            "fi", "el", "he", "hi", "hu", "id", "it", "lv",
+            "lt", "no", "pl", "pt", "ro", "ru", "sr",
+            "sk", "sl", "sw", "sv", "th", "tr", "uk", "vi"
+        ]
 
-        func insert(_ identifier: String) {
-            let normalized = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !normalized.isEmpty else { return }
-            let key = normalized.lowercased()
-            guard optionsByKey[key] == nil else { return }
-            optionsByKey[key] = VoiceLanguageOption(
-                code: normalized,
-                name: displayName(for: normalized)
+        return curatedIdentifiers.map { identifier in
+            VoiceLanguageOption(
+                code: identifier,
+                name: displayName(for: identifier)
             )
         }
-
-        for identifier in prioritizedIdentifiers {
-            insert(identifier)
-        }
-        for languageCode in Locale.LanguageCode.isoLanguageCodes {
-            insert(languageCode.identifier)
-        }
-
-        let prioritizedOptions = prioritizedIdentifiers.compactMap { optionsByKey[$0.lowercased()] }
-        let remainingOptions = optionsByKey
-            .filter { !prioritizedSet.contains($0.key) }
-            .map(\.value)
-            .sorted {
-                if $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedSame {
-                    return $0.code.localizedCaseInsensitiveCompare($1.code) == .orderedAscending
-                }
-                return $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending
-            }
-
-        return prioritizedOptions + remainingOptions
     }()
 
     static func displayName(for identifier: String) -> String {
