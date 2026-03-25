@@ -120,7 +120,7 @@ struct OnboardingView: View {
     @State private var showVoiceIntents = false // New state for showing extra intents
 
     
-    private let voicePrompt = String(localized: "Remind me to finish the demo, write the launch post, make a few screenshots, and share it on X and LinkedIn tomorrow")
+    private let voicePrompt = String(localized: "I'm thinking about tomorrow's content... we should probably, uh, figure out the hook first. Wait, no, maybe I should clean up the opening shot first. Also, remember to pick up coffee on the way home.")
 
     struct OnboardingTwitterPreview {
         let authorName: String
@@ -145,19 +145,19 @@ struct OnboardingView: View {
         let twitter = AgentRecipe.allRecipes.first(where: { $0.id == "twitter_post" })!
 
         return OnboardingSkillDemoState(
-            rawContent: """
+            rawContent: String(localized: """
             it's 11pm and I'm staring at this project I've been working on for the past three weekends. I honestly don't know if I should hit 'publish' or not. it's not that I think it's bad - I actually think the idea is strong. it's more that I'm scared nobody will care. if I share it and get zero response, I don't know how I'll keep going. but I know logically that keeping it to myself is a guaranteed failure. the real fear isn't about failing publicly, it's about confirming that the thing I thought was special... actually isn't. that's the real fear. I have my day job tomorrow at 9am and I have to decide tonight. I keep checking to see if anyone noticed the teaser I dropped last week. nobody did.
-            """,
+            """),
             summarySkill: summarize,
-            summaryContent: """
+            summaryContent: String(localized: """
             - Decision Paralysis: Whether to share a new project tonight despite the fear of silence.
             - Core Insight: The fear isn't of failure, but of realizing your 'special' idea might not be special.
             - The Paradox: Staying hidden guarantees failure; sharing is the only way to find out.
             - Signal vs. Noise: A teaser posted last week got zero traction, adding to the anxiety.
             - Deadline: 9 AM day-job pressure creates a 'now or never' moment.
-            """,
+            """),
             polishSkill: polish,
-            polishContent: """
+            polishContent: String(localized: """
             It’s 11 PM, and I’m staring at a project I’ve spent the last three weekends on. 
 
             The idea is good. I think. That’s the problem.
@@ -169,19 +169,19 @@ struct OnboardingView: View {
             I posted a teaser last week. Nobody noticed. 
 
             One way to find out. Sharing tomorrow.
-            """,
+            """),
             twitterSkill: twitter,
             twitterPreview: OnboardingTwitterPreview(
                 authorName: "Skye",
                 handle: "@skyemakes",
-                body: """
+                body: String(localized: """
                 It’s 11 PM. I’ve been staring at this 'Publish' button for an hour. Three weekends of work. My day job starts at 9 AM.
 
                 Failure isn't the scary part. The scary part is finding out the thing I thought was special... isn't.
 
                 Shipping anyway. 🚀
-                """,
-                hashtags: "#ChillNotes #Makers"
+                """),
+                hashtags: String(localized: "#ChillNotes #Makers")
             )
         )
     }()
@@ -190,19 +190,19 @@ struct OnboardingView: View {
         let recipes = AgentRecipe.allRecipes
         return [
             (
-                title: "Think",
+                title: String(localized: "Think"),
                 subtitle: "",
                 color: .orange,
                 recipes: recipes.filter { ["summarize", "adhd_helper", "explain_like_5", "merge_notes"].contains($0.id) }
             ),
             (
-                title: "Shape",
+                title: String(localized: "Shape"),
                 subtitle: "",
                 color: .teal,
                 recipes: recipes.filter { ["fix_grammar", "translate", "expand"].contains($0.id) }
             ),
             (
-                title: "Publish",
+                title: String(localized: "Publish"),
                 subtitle: "",
                 color: .accentPrimary,
                 recipes: recipes.filter { ["twitter_post", "linkedin_post", "draft_email", "youtube_script"].contains($0.id) }
@@ -233,31 +233,25 @@ struct OnboardingView: View {
         let referencesNotes: Bool
     }
 
-    struct SavedAskNotePreview {
-        let title: String
-        let summary: String
-        let bullets: [String]
-    }
-    
     private var demoNotes: [DemoNote] {
         [
             DemoNote(
-                title: "Voice memo idea",
-                content: "Creators do not fail because they lack ideas. They fail because every system starts to feel heavy after one busy week.",
+                title: String(localized: "Coffee shop thought"),
+                content: String(localized: "Everyone in the cafe looks busy, but half of them are probably just switching between apps and feeling guilty."),
                 offset: CGSize(width: -100, height: -80),
                 rotation: -6,
                 color: .blue
             ),
             DemoNote(
-                title: "Audience pain",
-                content: "People say they want consistency, but what they really want is a lighter way to keep showing up without guilt.",
+                title: String(localized: "Walk home idea"),
+                content: String(localized: "Maybe productivity is not about doing more. Maybe it is about feeling less split all day."),
                 offset: CGSize(width: 100, height: -50),
                 rotation: 4,
                 color: .teal
             ),
             DemoNote(
-                title: "Unfinished angle",
-                content: "Maybe the next post should challenge hustle advice and offer a softer weekly publishing rhythm creators can actually keep.",
+                title: String(localized: "Late-night note"),
+                content: String(localized: "I want to write something about how modern work drains attention in tiny invisible ways."),
                 offset: CGSize(width: 0, height: 80),
                 rotation: -2,
                 color: .orange
@@ -268,35 +262,35 @@ struct OnboardingView: View {
     private let askConversationMessages: [AskConversationMessage] = [
         AskConversationMessage(
             speaker: .creator,
-            content: "I have a few scattered ideas about creator burnout and consistency. What should I actually make next?",
+            content: String(localized: "These notes feel related, but I cannot tell what the actual post is."),
             referencesNotes: false
         ),
         AskConversationMessage(
             speaker: .ai,
-            content: "Your notes keep circling the same tension: creators want consistency, but rigid systems make them quit after one hard week.",
+            content: String(localized: "They all point to one idea: modern work does not just make people busy, it fragments their attention and leaves them feeling quietly exhausted."),
             referencesNotes: true
         ),
         AskConversationMessage(
             speaker: .creator,
-            content: "So what's the angle if I want this to become a useful post?",
+            content: String(localized: "Can you turn that into something I could actually post?"),
             referencesNotes: false
         ),
         AskConversationMessage(
             speaker: .ai,
-            content: "Turn it into a 3-part piece: the myth of perfect consistency, the real emotional cost of rigid systems, and one lighter rhythm they can try this week. Want me to save that as a note?",
+            content: String(localized: """
+            Work feels exhausting even on days that barely look busy.
+
+            Not because you did too much.
+            Because your attention got broken into pieces all day.
+
+            Modern work does not just take your time.
+            It makes it hard to feel fully present for even one hour.
+
+            #Productivity #Attention #WorkLife
+            """),
             referencesNotes: true
         )
     ]
-
-    private let savedAskNotePreview = SavedAskNotePreview(
-        title: "Content Plan: Creators need a lighter system",
-        summary: "A practical post draft built from your earlier notes, with a clearer hook, stronger emotional framing, and one simple takeaway people can try this week.",
-        bullets: [
-            "Open with the myth: consistency is not the same as intensity.",
-            "Name the real problem: rigid systems make creators feel behind and ashamed.",
-            "Close with one gentle weekly rhythm they can test immediately."
-        ]
-    )
     
     enum AskPhase {
         case idle
@@ -305,7 +299,6 @@ struct OnboardingView: View {
         case chattingRound2
         case planReady
         case savingNote
-        case saved
     }
     
     // Page Definitions
@@ -371,7 +364,6 @@ struct OnboardingView: View {
     // MARK: - Logic & Sequencing
     
     private func handlePageChange(to page: Int) {
-        showVoiceIntents = false // Reset
         dismissLanguageSearchKeyboard()
         languageSearchText = "" // Reset language search when leaving page
 
@@ -808,6 +800,9 @@ struct OnboardingView: View {
             let isIdleState = voicePhaseState == .idle
             let bottomReservedHeight: CGFloat = isIdleState ? (128 + proxy.safeAreaInsets.bottom) : (24 + proxy.safeAreaInsets.bottom)
             let topPadding: CGFloat = voicePhaseState == .done ? 24 : (isVoiceProcessingPhase ? 16 : 20)
+            let refinedNoteMaxHeight: CGFloat = showVoiceIntents
+                ? min(220, proxy.size.height * 0.26)
+                : min(300, proxy.size.height * 0.38)
 
             VStack(spacing: 0) {
                 ScrollView(.vertical, showsIndicators: false) {
@@ -815,38 +810,32 @@ struct OnboardingView: View {
                         if isIdleState {
                             CustomMicIcon()
                                 .frame(width: 72, height: 72)
-                                .padding(18)
-                                .background(
-                                    Circle()
-                                        .fill(Color.accentPrimary.opacity(0.1))
-                                        .background(
-                                            Circle()
-                                                .stroke(Color.accentPrimary.opacity(0.2), lineWidth: 1)
-                                        )
-                                )
                                 .padding(.bottom, 8)
 
-                            VStack(spacing: 8) {
-                                Text("Speak your ideas")
-                                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                            VStack(spacing: 12) {
+                                Text("Just speak.\nWe’ll shape the rest.")
+                                    .font(.system(size: 30, weight: .bold, design: .rounded))
                                     .foregroundColor(.textMain)
                                     .multilineTextAlignment(.center)
-                                    .lineLimit(3)
+                                    .lineSpacing(2)
+                                    .lineLimit(2)
                                     .minimumScaleFactor(0.75)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .layoutPriority(1)
+                                    .padding(.horizontal, 10)
                             }
 
-                            VStack(alignment: .leading, spacing: 16) {
-                                sectionHeader(title: "Read this aloud")
+                            VStack(alignment: .leading, spacing: 14) {
+                                sectionHeader(title: "Try saying this")
                                 Text(verbatim: "\"\(voicePrompt)\"")
-                                    .font(.system(size: 18, weight: .medium, design: .rounded))
-                                    .lineSpacing(6)
+                                    .font(.system(size: 17, weight: .medium, design: .rounded))
+                                    .lineSpacing(5)
                                     .multilineTextAlignment(.leading)
                                     .fixedSize(horizontal: false, vertical: true)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                     .foregroundColor(.textMain)
-                                    .padding(20)
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 18)
                                     .background(Color.bgSecondary.opacity(0.5))
                                     .cornerRadius(20)
                             }
@@ -873,32 +862,26 @@ struct OnboardingView: View {
                                                         .foregroundColor(.accentPrimary)
                                                         .font(.system(size: 16, weight: .semibold))
 
-                                                    Text("Refined Note")
+                                                    Text("Your Note")
                                                         .font(.system(.subheadline, design: .rounded))
                                                         .fontWeight(.bold)
                                                         .foregroundColor(.textMain)
                                                 }
 
                                                 Spacer()
-
-                                                Text("AI REFINED")
-                                                    .font(.system(size: 10, weight: .black))
-                                                    .tracking(1)
-                                                    .padding(.horizontal, 8)
-                                                    .padding(.vertical, 4)
-                                                    .background(Color.accentPrimary.opacity(0.1))
-                                                    .foregroundColor(.accentPrimary)
-                                                    .clipShape(RoundedRectangle(cornerRadius: 6))
                                             }
 
                                             Divider().background(Color.textMain.opacity(0.05))
 
-                                            JustifiedMarkdownText(
-                                                content: processedResult,
-                                                font: .systemFont(ofSize: 17, weight: .medium),
-                                                textColor: UIColor(Color.textMain)
-                                            )
-                                            .frame(minHeight: 180, alignment: .topLeading)
+                                            ScrollView(.vertical, showsIndicators: false) {
+                                                JustifiedMarkdownText(
+                                                    content: processedResult,
+                                                    font: .systemFont(ofSize: 17, weight: .medium),
+                                                    textColor: UIColor(Color.textMain)
+                                                )
+                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                            }
+                                            .frame(maxHeight: refinedNoteMaxHeight, alignment: .topLeading)
                                             .frame(maxWidth: .infinity, alignment: .leading)
 
                                             if let error = processingError {
@@ -912,16 +895,22 @@ struct OnboardingView: View {
 
                                         if showVoiceIntents {
                                             VStack(alignment: .leading, spacing: 16) {
-                                                Text("ChillNote can also...")
+                                                Text("ChillNote understands what you mean")
                                                     .font(.system(.headline, design: .rounded))
                                                     .foregroundColor(.textSub)
                                                     .padding(.horizontal, 4)
 
-                                                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
-                                                    OnboardingFeatureTip(icon: "wand.and.stars", text: "Clean filler words")
+                                                LazyVGrid(
+                                                    columns: [
+                                                        GridItem(.flexible(), spacing: 12, alignment: .top),
+                                                        GridItem(.flexible(), spacing: 12, alignment: .top)
+                                                    ],
+                                                    spacing: 12
+                                                ) {
+                                                    OnboardingFeatureTip(icon: "wand.and.stars", text: "Clean up filler words")
                                                     OnboardingFeatureTip(icon: "text.alignleft", text: "Fix grammar")
-                                                    OnboardingFeatureTip(icon: "brain.head.profile", text: "Clarify thoughts")
-                                                    OnboardingFeatureTip(icon: "list.bullet.rectangle", text: "Action items")
+                                                    OnboardingFeatureTip(icon: "brain.head.profile", text: "Help your ideas make sense")
+                                                    OnboardingFeatureTip(icon: "list.bullet.rectangle", text: "Turn thoughts into next steps")
                                                 }
                                             }
                                             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -1000,7 +989,7 @@ struct OnboardingView: View {
             Spacer(minLength: 8)
 
             VStack(spacing: 6) {
-                Text("Build Your AI Workflow")
+                Text("Your Thoughts, Evolved.")
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundColor(.textMain)
                     .multilineTextAlignment(.center)
@@ -1159,13 +1148,13 @@ struct OnboardingView: View {
     private var skillChainFooterText: String {
         switch skillChainStep {
         case 0:
-            return "Tap Think to pull out the core idea."
+            return String(localized: "Tap Think to pull out the core idea.")
         case 1:
-            return "Tap Shape to turn it into a cleaner draft."
+            return String(localized: "Tap Shape to turn it into a cleaner draft.")
         case 2:
-            return "Tap Publish to generate a shareable post."
+            return String(localized: "Tap Publish to generate a shareable post.")
         default:
-            return "Nice. Opening the real notes flow for you..."
+            return String(localized: "Nice. Opening the real notes flow for you...")
         }
     }
 
@@ -1297,13 +1286,13 @@ struct OnboardingView: View {
     private var currentNoteCardTitle: String {
         switch skillChainStep {
         case 0:
-            return "Original Note"
+            return String(localized: "Original Note")
         case 1:
-            return "Used Skill: \(onboardingSkillDemo.summarySkill.localizedName)"
+            return String(format: String(localized: "Used Skill: %@"), onboardingSkillDemo.summarySkill.localizedName)
         case 2:
-            return "Used Skill: \(onboardingSkillDemo.polishSkill.localizedName)"
+            return String(format: String(localized: "Used Skill: %@"), onboardingSkillDemo.polishSkill.localizedName)
         default:
-            return "Used Skill: \(onboardingSkillDemo.twitterSkill.localizedName)"
+            return String(format: String(localized: "Used Skill: %@"), onboardingSkillDemo.twitterSkill.localizedName)
         }
     }
 
@@ -1312,11 +1301,11 @@ struct OnboardingView: View {
         case 0:
             return ""
         case 1:
-            return "THINK"
+            return String(localized: "THINK")
         case 2:
-            return "SHAPE"
+            return String(localized: "SHAPE")
         default:
-            return "PUBLISH"
+            return String(localized: "PUBLISH")
         }
     }
 
@@ -1640,7 +1629,6 @@ struct OnboardingView: View {
     @State private var askPhase: AskPhase = .idle
     @State private var visibleAskMessageCount: Int = 0
     @State private var askAnimationRunID: Int = 0
-    @State private var showSavedAskNote: Bool = false
     @State private var showOnboardingPaywall: Bool = false
     @State private var askAutoStartedOnCurrentVisit: Bool = false
 
@@ -1857,8 +1845,6 @@ struct OnboardingView: View {
             if showOnboardingPaywall {
                 onboardingPaywall
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
-            } else if askPhase == .saved {
-                savedAskResultView
             } else {
                 VStack {
                     Spacer().frame(height: 20)
@@ -1870,28 +1856,12 @@ struct OnboardingView: View {
                                 .foregroundColor(.textMain)
                         }
                         
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 30)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color.white.opacity(0.88), Color.white.opacity(0.72)],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 30)
-                                        .stroke(Color.white.opacity(0.7), lineWidth: 1)
-                                )
-                                .shadow(color: Color.black.opacity(0.08), radius: 24, x: 0, y: 14)
-                            
-                            VStack(spacing: 8) {
-                                sourceNotesStrip
-                                askConversationStage
-                            }
+                        VStack(spacing: 14) {
+                            sourceNotesStrip
+                            askConversationStage
                         }
-                        .frame(height: 520)
-                        .padding(.horizontal, 24)
+                        .frame(maxHeight: 560)
+                        .padding(.horizontal, 12)
                         
                         if askPhase == .idle {
                             Button {
@@ -1921,28 +1891,6 @@ struct OnboardingView: View {
             }
         }
     }
-
-    private var savedAskResultView: some View {
-        VStack(spacing: 0) {
-            Spacer().frame(height: 28)
-
-            VStack(spacing: 24) {
-                Text("Your New Note Is Ready")
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundColor(.textMain)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-
-                SavedAskNoteShowcase(note: savedAskNotePreview)
-                    .padding(.horizontal, 24)
-
-                askActionArea
-            }
-
-            Spacer(minLength: 24)
-        }
-        .transition(.opacity.combined(with: .scale(scale: 0.98)))
-    }
     
     // MARK: - Final Step Helpers
     
@@ -1950,7 +1898,6 @@ struct OnboardingView: View {
         askAnimationRunID += 1
         let runID = askAnimationRunID
         visibleAskMessageCount = 0
-        showSavedAskNote = false
 
         withAnimation(.spring(response: 0.6, dampingFraction: 0.7)) {
             askPhase = .gatheringSources
@@ -1985,14 +1932,8 @@ struct OnboardingView: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.95) {
             guard currentPage == 3, askAnimationRunID == runID else { return }
             withAnimation(.spring(response: 0.52, dampingFraction: 0.84)) {
-                askPhase = .saved
+                showOnboardingPaywall = true
             }
-        }
-    }
-
-    private func continueFromSavedNoteToPaywall() {
-        withAnimation(.spring(response: 0.48, dampingFraction: 0.84)) {
-            showOnboardingPaywall = true
         }
     }
 
@@ -2000,7 +1941,6 @@ struct OnboardingView: View {
         askAnimationRunID += 1
         askPhase = .idle
         visibleAskMessageCount = 0
-        showSavedAskNote = false
         if resetPaywall {
             showOnboardingPaywall = false
         }
@@ -2010,17 +1950,15 @@ struct OnboardingView: View {
     private var askStatusText: String {
         switch askPhase {
         case .idle:
-            return "Talk through your ideas with AI, grounded in your notes."
+            return String(localized: "Talk through your ideas with AI, grounded in your notes.")
         case .gatheringSources:
-            return "Pulling signals from your notes..."
+            return String(localized: "Pulling signals from your notes...")
         case .chattingRound1, .chattingRound2:
-            return "Ask is turning scattered notes into a sharper creative direction."
+            return String(localized: "Ask is turning scattered notes into a sharper creative direction.")
         case .planReady:
-            return "A concrete plan is ready to save as a new note."
+            return String(localized: "Your post draft is ready to save as a new note.")
         case .savingNote:
-            return "Saving the conversation as a fresh note..."
-        case .saved:
-            return "Saved."
+            return String(localized: "Saving this draft as a fresh note...")
         }
     }
 
@@ -2039,26 +1977,26 @@ struct OnboardingView: View {
                 .padding(.trailing, 4)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.top, 8)
-        .padding(.bottom, 2)
+        .padding(.horizontal, 12)
+        .padding(.top, 4)
+        .padding(.bottom, 4)
         .background(
-            RoundedRectangle(cornerRadius: 20)
-                .fill(Color.white.opacity(0.55))
+            RoundedRectangle(cornerRadius: 18)
+                .fill(Color.white.opacity(0.42))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.white.opacity(0.6), lineWidth: 1)
+            RoundedRectangle(cornerRadius: 18)
+                .stroke(Color.white.opacity(0.52), lineWidth: 1)
         )
-        .padding(.horizontal, 16)
-        .padding(.top, 8)
+        .padding(.horizontal, 8)
+        .padding(.top, 4)
     }
 
     private var askConversationStage: some View {
         ZStack(alignment: .bottom) {
             VStack(spacing: 0) {
                 ScrollView(.vertical, showsIndicators: false) {
-                    VStack(spacing: 14) {
+                    VStack(spacing: 10) {
                         ForEach(visibleAskMessages) { message in
                             AskConversationBubble(message: message)
                                 .transition(
@@ -2081,17 +2019,21 @@ struct OnboardingView: View {
                         Color.clear
                             .frame(height: 12)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 16)
-                    .padding(.top, 8)
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
+                    .padding(.top, 12)
                 }
             }
             .background(
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(Color.white.opacity(0.72))
+                RoundedRectangle(cornerRadius: 26)
+                    .fill(Color.white.opacity(0.68))
             )
-            .padding(.horizontal, 16)
-            .padding(.bottom, 16)
+            .overlay(
+                RoundedRectangle(cornerRadius: 26)
+                    .stroke(Color.white.opacity(0.5), lineWidth: 1)
+            )
+            .padding(.horizontal, 8)
+            .padding(.bottom, 12)
         }
     }
 
@@ -2115,30 +2057,10 @@ struct OnboardingView: View {
                 }
                 .padding(.horizontal, 24)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
-            } else if askPhase == .saved {
-                VStack(spacing: 10) {
-                    Button {
-                        continueFromSavedNoteToPaywall()
-                    } label: {
-                        HStack(spacing: 10) {
-                            Text("Start creating with Pro")
-                            Image(systemName: "sparkles")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding(.vertical, 14)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.accentPrimary)
-                        .cornerRadius(16)
-                        .shadow(color: .accentPrimary.opacity(0.28), radius: 12, y: 6)
-                    }
-                    .padding(.horizontal, 24)
-                }
-                .transition(.move(edge: .bottom).combined(with: .opacity))
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: askPhase == .savingNote ? "square.and.arrow.down.fill" : "ellipsis.message")
-                    Text(askPhase == .savingNote ? "Turning the plan into a note..." : "Building your next content plan...")
+                    Text(askPhase == .savingNote ? "Saving this draft to your notes..." : "Shaping your ideas into a post draft...")
                 }
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundColor(.textSub)
@@ -2158,21 +2080,17 @@ struct OnboardingView: View {
                     .fill(note.color)
                     .frame(width: 8, height: 8)
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(note.title)
                         .font(.system(size: 12, weight: .bold, design: .rounded))
                         .foregroundColor(.textMain)
-                        .lineLimit(1)
-
-                    Text(note.content)
-                        .font(.system(size: 11, weight: .medium, design: .rounded))
-                        .foregroundColor(.textSub.opacity(0.82))
                         .lineLimit(1)
                 }
             }
             .padding(.horizontal, 12)
             .padding(.vertical, 10)
-            .frame(width: 188, alignment: .leading)
+            .frame(minWidth: 130, maxWidth: 220, alignment: .leading)
+            .fixedSize(horizontal: true, vertical: false)
             .background(
                 RoundedRectangle(cornerRadius: 16)
                     .fill(Color.white.opacity(0.92))
@@ -2201,7 +2119,9 @@ struct OnboardingView: View {
     }
     
     private func sectionHeader(title: LocalizedStringKey) -> some View {
-        Text(title).font(.title3.weight(.bold)).foregroundColor(.textMain)
+        Text(title)
+            .font(.system(size: 15, weight: .semibold, design: .rounded))
+            .foregroundColor(.textMain.opacity(0.82))
     }
     
     private var searchBar: some View {
@@ -2255,6 +2175,7 @@ struct OnboardingFeatureTip: View {
             
             Spacer(minLength: 0)
         }
+        .frame(maxWidth: .infinity, minHeight: 56, alignment: .topLeading)
         .padding(10)
         .background(Color.white.opacity(0.5))
         .cornerRadius(12)
@@ -2272,9 +2193,9 @@ struct AskConversationBubble: View {
         HStack {
             if message.speaker == .ai {
                 bubble
-                Spacer(minLength: 36)
+                Spacer(minLength: 28)
             } else {
-                Spacer(minLength: 36)
+                Spacer(minLength: 28)
                 bubble
             }
         }
@@ -2283,13 +2204,13 @@ struct AskConversationBubble: View {
     private var bubble: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(message.content)
-                .font(.system(size: 15, weight: .medium, design: .rounded))
+                .font(.system(size: 14, weight: .medium, design: .rounded))
                 .foregroundColor(message.speaker == .creator ? .white : .textMain)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, 14)
-        .padding(.vertical, 12)
-        .frame(maxWidth: 280, alignment: .leading)
+        .padding(.vertical, 10)
+        .frame(maxWidth: 300, alignment: .leading)
         .background(background)
         .overlay(
             RoundedRectangle(cornerRadius: 18)
@@ -2342,157 +2263,91 @@ struct AskTypingIndicator: View {
     }
 }
 
-struct SavedAskNoteCard: View {
-    let note: OnboardingView.SavedAskNotePreview
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 8) {
-                Label("Saved as Note", systemImage: "checkmark.circle.fill")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundColor(.green)
-                Spacer()
-            }
-
-            Text(note.title)
-                .font(.system(size: 18, weight: .bold, design: .rounded))
-                .foregroundColor(.textMain)
-
-            Text(note.summary)
-                .font(.system(size: 13, weight: .medium, design: .rounded))
-                .foregroundColor(.textSub)
-                .fixedSize(horizontal: false, vertical: true)
-
-            VStack(alignment: .leading, spacing: 8) {
-                ForEach(note.bullets, id: \.self) { bullet in
-                    HStack(alignment: .top, spacing: 8) {
-                        Circle()
-                            .fill(Color.accentPrimary)
-                            .frame(width: 6, height: 6)
-                            .padding(.top, 6)
-                        Text(bullet)
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundColor(.textSub)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-        }
-        .padding(18)
-        .background(
-            RoundedRectangle(cornerRadius: 22)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.white, Color(red: 0.96, green: 0.99, blue: 0.98)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 22)
-                .stroke(Color.green.opacity(0.18), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.1), radius: 18, x: 0, y: 12)
-    }
-}
-
-struct SavedAskNoteShowcase: View {
-    let note: OnboardingView.SavedAskNotePreview
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Label("Saved to Notes", systemImage: "checkmark.circle.fill")
-                        .font(.system(size: 12, weight: .bold, design: .rounded))
-                        .foregroundColor(.green)
-
-                    Text(note.title)
-                        .font(.system(size: 22, weight: .bold, design: .rounded))
-                        .foregroundColor(.textMain)
-                        .fixedSize(horizontal: false, vertical: true)
-                }
-            }
-
-            Text(note.summary)
-                .font(.system(size: 15, weight: .medium, design: .rounded))
-                .foregroundColor(.textSub)
-                .lineSpacing(4)
-                .fixedSize(horizontal: false, vertical: true)
-
-            VStack(alignment: .leading, spacing: 12) {
-                ForEach(note.bullets, id: \.self) { bullet in
-                    HStack(alignment: .top, spacing: 10) {
-                        Circle()
-                            .fill(Color.accentPrimary)
-                            .frame(width: 7, height: 7)
-                            .padding(.top, 7)
-
-                        Text(bullet)
-                            .font(.system(size: 14, weight: .medium, design: .rounded))
-                            .foregroundColor(.textMain)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 10) {
-                Divider()
-                    .overlay(Color.accentPrimary.opacity(0.08))
-            }
-        }
-        .padding(22)
-        .background(
-            RoundedRectangle(cornerRadius: 26)
-                .fill(
-                    LinearGradient(
-                        colors: [Color.white, Color(red: 0.97, green: 0.99, blue: 0.98)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 26)
-                .stroke(Color.green.opacity(0.16), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 10)
-    }
-}
-
 struct CustomMicIcon: View {
-    @State private var animateGradient = false
+    @State private var animateAura = false
+    @State private var animateWaves = false
+    
+    // Denser, more varied waveform heights for a sophisticated look
+    private let waveCounts = 9
+    private let waveformBase: [CGFloat] = [12, 22, 16, 28, 20, 26, 18, 24, 14]
+    private let waveformAnimated: [CGFloat] = [24, 14, 28, 16, 30, 18, 26, 12, 22]
     
     var body: some View {
         ZStack {
-            // Capsule Body
-            Capsule()
+            // 1. Layered Breathing Aura (Background Glow)
+            ZStack {
+                Circle()
+                    .fill(Color.accentPrimary.opacity(0.12))
+                    .frame(width: 100, height: 100)
+                    .blur(radius: 12)
+                    .scaleEffect(animateAura ? 1.15 : 0.85)
+                
+                Circle()
+                    .fill(Color.mellowOrange.opacity(0.08))
+                    .frame(width: 80, height: 80)
+                    .blur(radius: 8)
+                    .scaleEffect(animateAura ? 0.9 : 1.1)
+            }
+            .opacity(0.8)
+
+            // 2. Main Container (Ceramic/Glass Base)
+            RoundedRectangle(cornerRadius: 30)
                 .fill(
                     LinearGradient(
-                        colors: [.accentPrimary, .purple.opacity(0.6)],
-                        startPoint: animateGradient ? .topLeading : .bottomLeading,
-                        endPoint: animateGradient ? .bottomTrailing : .topTrailing
+                        colors: [.white, Color.bgSecondary.opacity(0.6)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
                 )
+                .frame(width: 76, height: 76)
+                .shadow(color: Color.accentPrimary.opacity(0.1), radius: 20, x: 0, y: 10)
                 .overlay(
-                    LinearGradient(colors: [.white.opacity(0.4), .clear], startPoint: .top, endPoint: .center)
-                        .mask(Capsule())
+                    RoundedRectangle(cornerRadius: 30)
+                        .stroke(
+                            LinearGradient(
+                                colors: [Color.accentPrimary.opacity(0.25), .clear],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1.5
+                        )
                 )
-                .shadow(color: .accentPrimary.opacity(0.5), radius: 15, x: 0, y: 5)
-                .onAppear {
-                    withAnimation(.easeInOut(duration: 2.0).repeatForever(autoreverses: true)) {
-                        animateGradient.toggle()
-                    }
-                }
-            
-            // Grid / Mesh detail
-            VStack(spacing: 3) {
-                ForEach(0..<6) { _ in
-                    Rectangle().fill(Color.white.opacity(0.2)).frame(height: 1)
+
+            // 3. Dynamic Elegant Waveform
+            HStack(alignment: .center, spacing: 3.5) {
+                ForEach(0..<waveCounts, id: \.self) { index in
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [
+                                    Color.accentPrimary,
+                                    Color.mellowOrange.opacity(0.8)
+                                ],
+                                startPoint: .bottom,
+                                endPoint: .top
+                            )
+                        )
+                        .frame(
+                            width: (index == 4) ? 4.5 : 3.5, // Center bar slightly wider for focal point
+                            height: animateWaves ? waveformAnimated[index] : waveformBase[index]
+                        )
+                        .animation(
+                            .easeInOut(duration: 0.8)
+                            .repeatForever(autoreverses: true)
+                            .delay(Double(index) * 0.08),
+                            value: animateWaves
+                        )
                 }
             }
-            .mask(Capsule().padding(4))
+            .scaleEffect(0.9)
+        }
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.5).repeatForever(autoreverses: true)) {
+                animateAura = true
+            }
+            withAnimation(.easeInOut(duration: 1.0).repeatForever(autoreverses: true)) {
+                animateWaves = true
+            }
         }
     }
 }
