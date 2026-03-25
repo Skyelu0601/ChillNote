@@ -19,12 +19,12 @@ struct AboutView: View {
                             .font(.system(size: 36, weight: .bold, design: .rounded))
                             .foregroundColor(.textMain)
                         
-                        Text("Design Philosophy & Vision")
+                        Text("Built for People Who Create")
                             .font(.title3)
                             .fontWeight(.medium)
                             .foregroundColor(.textSub)
                         
-                        Text("\"Capturing the speed of thought,\none voice at a time.\"")
+                        Text("\"Capture the spark.\nShape it later.\"")
                             .font(.body)
                             .italic()
                             .multilineTextAlignment(.center)
@@ -36,7 +36,7 @@ struct AboutView: View {
                     .padding(.bottom, 16)
                     
                     // Introduction
-                    Text("ChillNote is not just another note-taking app. It is a tool designed to realign the way we capture, process, and structure our thoughts. By prioritizing voice input and AI-driven organization, ChillNote addresses the friction between the human mind's speed and the limitations of traditional input methods.")
+                    Text("ChillNote is built for people who create: content creators, builders, developers, designers, writers, and anyone whose best ideas tend to arrive before they are fully formed. It helps you catch the spark quickly, then shape it into something clear enough to keep building from.")
                         .font(.body)
                         .foregroundColor(.textMain)
                         .lineSpacing(4)
@@ -46,24 +46,24 @@ struct AboutView: View {
                     // Section 1
                     PhilosophySection(
                         number: "01",
-                        title: "For the ADHD & The Hyper-Active Mind",
-                        quote: "\"My thoughts run faster than my fingers.\"",
+                        title: "For Content Creators",
+                        quote: "\"Ideas show up in fragments. I need to catch them before they vanish.\"",
                         content: [
-                            "People with ADHD or highly active minds often experience a \"bottleneck\" effect. Their brains generate connections and ideas at a velocity that typing simply cannot match.",
-                            "**The Problem:** The cognitive load of typing acts as a brake on the train of thought.",
-                            "**The Solution:** Voice is the path of least resistance. By removing the mechanical barrier, we allow the \"stream of consciousness\" to flow freely, ensuring that no spark of genius is lost to the slowness of a keyboard."
+                            "Creators rarely get ideas in neat paragraphs. They come as hooks, angles, half-sentences, scenes, titles, and sudden bursts of clarity.",
+                            "**The Problem:** By the time you open a blank page and try to type cleanly, the energy of the idea is already fading.",
+                            "**The Solution:** ChillNote lets you talk while the idea is still alive, then turns the raw capture into something you can actually return to when it is time to write, record, or publish."
                         ]
                     )
                     
                     // Section 2
                     PhilosophySection(
                         number: "02",
-                        title: "For the \"Struggling Writer\"",
-                        quote: "\"I have the idea, but I can't find the words.\"",
+                        title: "For Builders & Developers",
+                        quote: "\"The product thought hits while I am walking, debugging, or switching contexts.\"",
                         content: [
-                            "Many possess profound insights but lack the structural skills to organize them. ChillNote is for those who love to express but find raw thoughts chaotic.",
-                            "**The Problem:** The gap between *having* an idea and *structuring* it.",
-                            "**The Solution:** **AI as the Editor.** ChillNote invites you to \"ramble.\" Pour out fragmented, messy thoughts. The AI acts as a skilled editor, restructuring chaos into clear prose. It empowers you to be a \"thinker\" without needing to be a polished \"writer.\""
+                            "Builders do not just have tasks. They have feature ideas, product tradeoffs, naming thoughts, launch notes, and tiny insights that appear in the middle of everything else.",
+                            "**The Problem:** Most of those thoughts are too valuable to lose, but too rough to stop and document properly in the moment.",
+                            "**The Solution:** ChillNote gives builders a fast capture layer between the thought and the backlog, so rough product instinct can become usable notes instead of forgotten mental tabs."
                         ]
                     )
                     
@@ -71,35 +71,35 @@ struct AboutView: View {
                     PhilosophySection(
                         number: "03",
                         title: "For Creative Workers",
-                        quote: "\"Typing is unnatural; Speaking is instinct.\"",
+                        quote: "\"I do my best thinking out loud.\"",
                         content: [
-                            "Humanity has spoken for eons; typing is a recent invention. For creatives, typing can be a distraction.",
-                            "**The Friction:** When we type, we micro-manage—fixing typos, adjusting margins. Every micro-decision is a macro-interruption to flow.",
-                            "**The Solution:** A disconnect between input and visualization. You speak; the system handles the rest. No more RSI, no more neck pain—just pure creation."
+                            "Designers, strategists, marketers, filmmakers, researchers, and other creative workers often discover the idea while explaining it to themselves.",
+                            "**The Friction:** Typing too early pushes you into editing mode when what you really need is momentum.",
+                            "**The Solution:** Speaking keeps you closer to the original thought. ChillNote captures that momentum first, then helps you shape it into clearer language, structure, and next steps."
                         ]
                     )
                     
                     // Section 4
                     PhilosophySection(
                         number: "04",
-                        title: "For Reflective Thinkers",
-                        quote: "\"Talk helps untangle thoughts.\"",
+                        title: "Capture First, Organize After",
+                        quote: "\"The first version of a good idea is usually messy.\"",
                         content: [
-                            "In a digital era of \"silent communication,\" we often suppress emotion.",
-                            "**Vocalizing for Clarity:** Speaking aloud externalizes internal conflicts. ChillNote provides a safe space for journaling and reflection.",
-                            "**The Experience:** Voice carries nuance that text can miss. Recording becomes a way to clarify and organize what you feel and think."
+                            "ChillNote is based on a simple belief: forcing structure too early kills useful thinking.",
+                            "**What We Believe:** Capture should feel immediate and forgiving. Organization should happen after the thought is safe.",
+                            "**What That Means:** You do not need a polished sentence to save something important. A rough voice note can still become a clean, useful starting point."
                         ]
                     )
                     
                     // Section 5
                     PhilosophySection(
                         number: "05",
-                        title: "For the \"Format Haters\"",
-                        quote: "\"Life is too short to adjust margins.\"",
+                        title: "A Tool for Momentum, Not Maintenance",
+                        quote: "\"I want to keep making, not babysit a system.\"",
                         content: [
-                            "Formatting is \"performative work\"—it takes time but adds no content value.",
-                            "**The Goal:** One-click perfection.",
-                            "**The Result:** Focus entirely on *content*. With a single tap, the app applies professional-grade structure. Reclaim the time wasted on meaningless operational tasks."
+                            "The goal is not to build another heavy workspace that demands constant upkeep.",
+                            "**The Goal:** Reduce the friction between having an idea and keeping it.",
+                            "**The Result:** Less time formatting, filing, and rewriting from scratch. More time staying in motion and returning to ideas that still feel usable later."
                         ]
                     )
                     
@@ -120,19 +120,19 @@ struct AboutView: View {
                         NotSection(
                             icon: "mic.slash.fill",
                             title: "Not for Meeting Minutes",
-                            bodyText: "ChillNote is not a corporate dictaphone. It is for personal reflections and raw inspiration, not the boardroom drone. Use specialized software for hour-long meetings."
+                            bodyText: "ChillNote is not built to be a full meeting transcription system. It is for capturing personal ideas, creative sparks, and rough thinking while they are happening."
                         )
                         
                         NotSection(
                             icon: "book.closed.fill",
                             title: "Not for Long-Form Writing",
-                            bodyText: "ChillNote is Mobile-First. It exists to capture transient, fragmented thoughts before they evaporate. It is for the seeds of ideas, not the entire novel."
+                            bodyText: "ChillNote is for the seed, not the whole tree. It helps you catch the raw material for a post, product, script, essay, or concept before you move into full drafting elsewhere."
                         )
                         
                         NotSection(
                             icon: "clock.badge.exclamationmark.fill",
-                            title: "The 10-Minute Limit",
-                            bodyText: "If it takes more than 10 minutes, it's not Chill. Record, transcript, tidy, done. Keep it light, keep it fast."
+                            title: "Not a Heavy Workflow",
+                            bodyText: "If capture feels slow, people stop capturing. ChillNote is meant to stay light, fast, and easy to return to, so it supports creative momentum instead of interrupting it."
                         )
                     }
                     .padding(.vertical, 8)
@@ -146,7 +146,7 @@ struct AboutView: View {
                             .foregroundColor(.textSub)
                             .textCase(.uppercase)
                         
-                        Text("ChillNote is an attempt to use technology to return us to a more natural, healthy, and efficient state of being.\n\nIt is for the dreamers who talk fast, the creators who hurt from typing, and anyone who believes their ideas deserve to be heard, not just written.")
+                        Text("ChillNote is for people who create.\n\nIt exists to help you catch ideas while they are still alive, before they get edited away, delayed, or forgotten. Speak the rough version now. Shape it into something useful when you are ready.")
                             .font(.body)
                             .multilineTextAlignment(.center)
                             .foregroundColor(.textMain)

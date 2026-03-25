@@ -15,3 +15,7 @@
 - `npm run i18n:normalize`: 规范化 `Localizable.xcstrings`（补齐语言、修复空项、清理 `new`）
 - `npm run i18n:reports`: 生成 `docs/i18n` 交付文档
 - `npm run lint:i18n`: 国际化质量门禁检查
+- `npm run i18n:stale`: 扫描 `stale` 条目，输出可安全清理的列表
+- `npm run i18n:stale:apply`: 删除源码中已无引用的 `stale` 条目
+- `npm run i18n:empty`: 扫描缺翻译内容的空条目，输出可安全清理的列表
+- `npm run i18n:empty:apply`: 删除源码中已无引用的空条目

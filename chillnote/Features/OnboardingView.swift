@@ -2,80 +2,6 @@ import SwiftUI
 import AVFoundation
 import StoreKit
 
-enum OnboardingGrammarDemoContent {
-    struct GrammarToken: Identifiable, Equatable {
-        let id = UUID()
-        let text: String
-        let fixed: String?
-        var isTypo: Bool { fixed != nil }
-        
-        init(_ text: String, fixed: String? = nil) {
-            self.text = text
-            self.fixed = fixed
-        }
-    }
-
-    static let demoTokens: [GrammarToken] = [
-        GrammarToken("Chill"),
-        GrammarToken("Skills"),
-        GrammarToken("turn", fixed: "turns"),
-        GrammarToken("your"),
-        GrammarToken("notes"),
-        GrammarToken("into"),
-        GrammarToken("instent", fixed: "instant"),
-        GrammarToken("actions,"),
-        GrammarToken("so"),
-        GrammarToken("instead"),
-        GrammarToken("writing", fixed: "of writing"),
-        GrammarToken("prompt", fixed: "prompts"),
-        GrammarToken("from"),
-        GrammarToken("scratch,"),
-        GrammarToken("you"),
-        GrammarToken("can"),
-        GrammarToken("just"),
-        GrammarToken("chose", fixed: "choose"),
-        GrammarToken("what"),
-        GrammarToken("you"),
-        GrammarToken("want"),
-        GrammarToken("and"),
-        GrammarToken("run"),
-        GrammarToken("it"),
-        GrammarToken("on", fixed: "in"),
-        GrammarToken("one"),
-        GrammarToken("tap."),
-        GrammarToken("From"),
-        GrammarToken("quick"),
-        GrammarToken("sumarize", fixed: "summary"),
-        GrammarToken("to"),
-        GrammarToken("social"),
-        GrammarToken("post"),
-        GrammarToken("generatoin,", fixed: "generation,"),
-        GrammarToken("Chill"),
-        GrammarToken("Skills"),
-        GrammarToken("help", fixed: "helps"),
-        GrammarToken("you"),
-        GrammarToken("move"),
-        GrammarToken("from"),
-        GrammarToken("rough"),
-        GrammarToken("thoughts"),
-        GrammarToken("to"),
-        GrammarToken("finish", fixed: "finished"),
-        GrammarToken("output"),
-        GrammarToken("faster,"),
-        GrammarToken("with"),
-        GrammarToken("less"),
-        GrammarToken("frictions", fixed: "friction"),
-        GrammarToken("and"),
-        GrammarToken("more"),
-        GrammarToken("flows.", fixed: "flow."),
-    ]
-    
-    // Legacy support if needed, or remove
-    static let typoText = demoTokens.map { $0.text }.joined(separator: " ")
-    static let fixedText = demoTokens.map { $0.fixed ?? $0.text }.joined(separator: " ")
-    static let typoWords: [String] = demoTokens.filter { $0.isTypo }.map { $0.text.trimmingCharacters(in: .punctuationCharacters) }
-}
-
 struct OnboardingView: View {
     @Binding var isCompleted: Bool
     var onCompleted: (() -> Void)? = nil
@@ -94,6 +20,7 @@ struct OnboardingView: View {
     @State private var voicePhaseState: VoicePhase = .idle // idle -> transcribing -> refining -> done
     @State private var processedResult: String = ""
     @State private var processingError: String?
+    @State private var isAwaitingOnboardingTranscription = false
     
     enum VoicePhase {
         case idle, transcribing, refining, done
@@ -107,84 +34,16 @@ struct OnboardingView: View {
         voicePhaseState == .transcribing || voicePhaseState == .refining
     }
     
-    // Skills Chain Phase State
-    @State private var skillChainStep: Int = 0
-    @State private var skillChainAdvanceRunID: Int = 0
     @State private var skillsIntroPhase: Int = -1
     @State private var skillsIntroAnimationRunID: Int = 0
     
     // Navigation / UI
     @State private var errorMessage: String? = nil
     @State private var currentPage = 0
-    @State private var isSearchVisible = false
     @State private var showVoiceIntents = false // New state for showing extra intents
 
     
     private let voicePrompt = String(localized: "I'm thinking about tomorrow's content... we should probably, uh, figure out the hook first. Wait, no, maybe I should clean up the opening shot first. Also, remember to pick up coffee on the way home.")
-
-    struct OnboardingTwitterPreview {
-        let authorName: String
-        let handle: String
-        let body: String
-        let hashtags: String
-    }
-
-    struct OnboardingSkillDemoState {
-        let rawContent: String
-        let summarySkill: AgentRecipe
-        let summaryContent: String
-        let polishSkill: AgentRecipe
-        let polishContent: String
-        let twitterSkill: AgentRecipe
-        let twitterPreview: OnboardingTwitterPreview
-    }
-
-    private let onboardingSkillDemo: OnboardingSkillDemoState = {
-        let summarize = AgentRecipe.allRecipes.first(where: { $0.id == "summarize" })!
-        let polish = AgentRecipe.allRecipes.first(where: { $0.id == "fix_grammar" })!
-        let twitter = AgentRecipe.allRecipes.first(where: { $0.id == "twitter_post" })!
-
-        return OnboardingSkillDemoState(
-            rawContent: String(localized: """
-            it's 11pm and I'm staring at this project I've been working on for the past three weekends. I honestly don't know if I should hit 'publish' or not. it's not that I think it's bad - I actually think the idea is strong. it's more that I'm scared nobody will care. if I share it and get zero response, I don't know how I'll keep going. but I know logically that keeping it to myself is a guaranteed failure. the real fear isn't about failing publicly, it's about confirming that the thing I thought was special... actually isn't. that's the real fear. I have my day job tomorrow at 9am and I have to decide tonight. I keep checking to see if anyone noticed the teaser I dropped last week. nobody did.
-            """),
-            summarySkill: summarize,
-            summaryContent: String(localized: """
-            - Decision Paralysis: Whether to share a new project tonight despite the fear of silence.
-            - Core Insight: The fear isn't of failure, but of realizing your 'special' idea might not be special.
-            - The Paradox: Staying hidden guarantees failure; sharing is the only way to find out.
-            - Signal vs. Noise: A teaser posted last week got zero traction, adding to the anxiety.
-            - Deadline: 9 AM day-job pressure creates a 'now or never' moment.
-            """),
-            polishSkill: polish,
-            polishContent: String(localized: """
-            It’s 11 PM, and I’m staring at a project I’ve spent the last three weekends on. 
-
-            The idea is good. I think. That’s the problem.
-
-            If I share it and nobody cares, I don’t know if I’ll have the heart to keep going. But staying quiet is the only way to guarantee it fails. 
-
-            The real fear isn’t public failure. It’s the possibility that this thing I care about just isn't special. 
-
-            I posted a teaser last week. Nobody noticed. 
-
-            One way to find out. Sharing tomorrow.
-            """),
-            twitterSkill: twitter,
-            twitterPreview: OnboardingTwitterPreview(
-                authorName: "Skye",
-                handle: "@skyemakes",
-                body: String(localized: """
-                It’s 11 PM. I’ve been staring at this 'Publish' button for an hour. Three weekends of work. My day job starts at 9 AM.
-
-                Failure isn't the scary part. The scary part is finding out the thing I thought was special... isn't.
-
-                Shipping anyway. 🚀
-                """),
-                hashtags: String(localized: "#ChillNotes #Makers")
-            )
-        )
-    }()
 
     private let skillsIntroSections: [(title: String, subtitle: String, color: Color, recipes: [AgentRecipe])] = {
         let recipes = AgentRecipe.allRecipes
@@ -317,12 +176,6 @@ struct OnboardingView: View {
                 topBar
                     .opacity(currentPage == 3 && showOnboardingPaywall ? 0 : 1)
                 
-                if isSearchVisible {
-                    searchBar
-                        .padding(.horizontal, 24)
-                        .padding(.top, 8)
-                }
-
                 TabView(selection: $currentPage) {
                     voiceLanguagePage.tag(0)
                     voiceDemoPage.tag(1)
@@ -342,10 +195,35 @@ struct OnboardingView: View {
         .onChange(of: speechRecognizer.transcript) { _, newValue in
             let trimmed = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmed.isEmpty else { return }
+
+            if isAwaitingOnboardingTranscription {
+                isAwaitingOnboardingTranscription = false
+                continueVoiceProcessing(text: trimmed)
+                return
+            }
             
             // Only trigger once when enough text is captured to simulate the demo
             if trimmed.count > 10 && voicePhaseState == .idle {
                  startVoiceDemoSequence(text: trimmed)
+            }
+        }
+        .onChange(of: speechRecognizer.completedTranscriptions.count) { _, _ in
+            guard isAwaitingOnboardingTranscription,
+                  let latestEvent = speechRecognizer.completedTranscriptions.last else { return }
+
+            switch latestEvent.result {
+            case .success(let text):
+                let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return }
+                isAwaitingOnboardingTranscription = false
+                continueVoiceProcessing(text: trimmed)
+
+            case .failure(_, let message):
+                isAwaitingOnboardingTranscription = false
+                withAnimation {
+                    voicePhaseState = .idle
+                }
+                errorMessage = message
             }
         }
         
@@ -367,6 +245,10 @@ struct OnboardingView: View {
         dismissLanguageSearchKeyboard()
         languageSearchText = "" // Reset language search when leaving page
 
+        if page != 1 {
+            isAwaitingOnboardingTranscription = false
+        }
+
         if page == 1 {
             speechRecognizer.checkPermissions()
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -379,11 +261,6 @@ struct OnboardingView: View {
             startSkillsIntroAnimation()
         } else {
             resetSkillsIntroAnimation()
-        }
-
-        if page == 2 {
-            skillChainAdvanceRunID += 1
-            skillChainStep = 0
         }
 
         if page == 3 {
@@ -943,31 +820,19 @@ struct OnboardingView: View {
                         onSendText: {
                              if !inputText.isEmpty { startVoiceDemoSequence(text: inputText) }
                         },
-                        onCancelVoice: { speechRecognizer.stopRecording(reason: .cancelled) },
+                        onCancelVoice: {
+                            isAwaitingOnboardingTranscription = false
+                            speechRecognizer.stopRecording(reason: .cancelled)
+                        },
                         onConfirmVoice: {
                             withAnimation {
                                 voicePhaseState = .transcribing
                             }
 
+                            errorMessage = nil
+                            processingError = nil
+                            isAwaitingOnboardingTranscription = true
                             speechRecognizer.stopRecording()
-
-                            Task {
-                                var attempts = 0
-                                while speechRecognizer.transcript.isEmpty && attempts < 100 {
-                                    try? await Task.sleep(nanoseconds: 100_000_000)
-                                    attempts += 1
-                                }
-
-                                await MainActor.run {
-                                    if !speechRecognizer.transcript.isEmpty {
-                                        continueVoiceProcessing(text: speechRecognizer.transcript)
-                                    } else {
-                                        withAnimation {
-                                            voicePhaseState = .idle
-                                        }
-                                    }
-                                }
-                            }
                         },
                         enforceVoiceQuota: false,
                         recordTriggerMode: .tapToRecord
@@ -980,6 +845,17 @@ struct OnboardingView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .padding(.horizontal, 20)
+        }
+        .alert(
+            String(localized: "Transcription Failed"),
+            isPresented: Binding(
+                get: { errorMessage != nil },
+                set: { if !$0 { errorMessage = nil } }
+            )
+        ) {
+            Button(String(localized: "OK"), role: .cancel) {}
+        } message: {
+            Text(errorMessage ?? "")
         }
     }
 
@@ -1035,411 +911,6 @@ struct OnboardingView: View {
         }
     }
     
-    // MARK: - Phase 3: Skill Chain Playground
-    private var grammarDemoPage: some View {
-        VStack(spacing: 0) {
-            VStack(spacing: 14) {
-                Spacer(minLength: 10)
-
-                singleNoteDemoCard
-                    .padding(.horizontal, 20)
-
-                Spacer(minLength: 4)
-
-                skillChainControlBar
-                    .padding(.horizontal, 20)
-                .padding(.top, 4)
-                .padding(.bottom, 20)
-                .background(
-                    LinearGradient(
-                        colors: [Color.bgPrimary.opacity(0.0), Color.bgPrimary, Color.bgPrimary],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-            }
-        }
-    }
-
-    private var skillChainControlBar: some View {
-        return VStack(spacing: 12) {
-            HStack(spacing: 8) {
-                skillChainControlButton(
-                    title: "Think",
-                    skillName: onboardingSkillDemo.summarySkill.localizedName,
-                    isActive: skillChainStep == 0,
-                    isComplete: skillChainStep >= 1,
-                    color: .orange,
-                    action: {
-                        advanceSkillChainIfNeeded(for: 0)
-                    }
-                )
-
-                skillChainControlButton(
-                    title: "Shape",
-                    skillName: onboardingSkillDemo.polishSkill.localizedName,
-                    isActive: skillChainStep == 1,
-                    isComplete: skillChainStep >= 2,
-                    color: .teal,
-                    action: {
-                        advanceSkillChainIfNeeded(for: 1)
-                    }
-                )
-
-                skillChainControlButton(
-                    title: "Publish",
-                    skillName: onboardingSkillDemo.twitterSkill.localizedName,
-                    isActive: skillChainStep == 2,
-                    isComplete: skillChainStep >= 3,
-                    color: .accentPrimary,
-                    action: {
-                        advanceSkillChainIfNeeded(for: 2)
-                    }
-                )
-            }
-
-            HStack(spacing: 8) {
-                Image(systemName: skillChainFooterIcon)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(skillChainFooterColor)
-
-                Text(skillChainFooterText)
-                    .font(.system(size: 13, weight: .semibold, design: .rounded))
-                    .foregroundColor(.textSub)
-
-                Spacer()
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 12)
-            .background(Color.white.opacity(0.78))
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(skillChainFooterColor.opacity(0.12), lineWidth: 1)
-            )
-        }
-    }
-
-    private func advanceSkillChainIfNeeded(for index: Int) {
-        guard skillChainStep == index else { return }
-
-        withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
-            skillChainStep += 1
-        }
-    }
-
-    private var skillChainFooterColor: Color {
-        switch skillChainStep {
-        case 0: return .orange
-        case 1: return .teal
-        default: return .accentPrimary
-        }
-    }
-
-    private var skillChainFooterIcon: String {
-        switch skillChainStep {
-        case 0: return "hand.tap"
-        case 1: return "wand.and.stars"
-        case 2: return "megaphone"
-        default: return "arrow.right.circle.fill"
-        }
-    }
-
-    private var skillChainFooterText: String {
-        switch skillChainStep {
-        case 0:
-            return String(localized: "Tap Think to pull out the core idea.")
-        case 1:
-            return String(localized: "Tap Shape to turn it into a cleaner draft.")
-        case 2:
-            return String(localized: "Tap Publish to generate a shareable post.")
-        default:
-            return String(localized: "Nice. Opening the real notes flow for you...")
-        }
-    }
-
-    private func skillChainControlButton(
-        title: String,
-        skillName: String,
-        isActive: Bool,
-        isComplete: Bool,
-        color: Color,
-        action: @escaping () -> Void
-    ) -> some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(spacing: 5) {
-                    if isComplete {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(color)
-                    } else {
-                        Circle()
-                            .fill(isActive ? color : color.opacity(0.25))
-                            .frame(width: 8, height: 8)
-                            .overlay(
-                                Circle()
-                                    .stroke(color.opacity(isActive ? 0.35 : 0), lineWidth: 3)
-                                    .scaleEffect(isActive ? 1.6 : 1.0)
-                                    .opacity(isActive ? 0.5 : 0)
-                            )
-                    }
-
-                    Text(title)
-                        .font(.caption.weight(.bold))
-                        .foregroundColor(isActive || isComplete ? .textMain : .textSub.opacity(0.6))
-                }
-
-                Text(skillName)
-                    .font(.caption2.weight(.semibold))
-                    .foregroundColor(isActive || isComplete ? color : .textSub.opacity(0.5))
-                    .lineLimit(2)
-
-                if isActive {
-                    Text("Tap to use")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(color)
-                } else if isComplete {
-                    Text("Applied")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(color.opacity(0.88))
-                } else {
-                    Text("Next")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundColor(.textSub.opacity(0.45))
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(isActive ? 14 : 11)
-            .background(
-                isComplete ? color.opacity(0.08) :
-                isActive   ? color.opacity(0.15) :
-                             Color.bgSecondary.opacity(0.55)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(isActive ? color.opacity(0.4) : Color.clear, lineWidth: 1.5)
-            )
-            .scaleEffect(isActive ? 1.04 : 1.0)
-            .shadow(color: isActive ? color.opacity(0.2) : .clear, radius: 8, y: 3)
-            .animation(.spring(response: 0.35, dampingFraction: 0.75), value: isActive)
-            .animation(.spring(response: 0.35, dampingFraction: 0.75), value: isComplete)
-        }
-        .buttonStyle(.plain)
-        .disabled(!isActive)
-        .contentShape(RoundedRectangle(cornerRadius: 16))
-        .accessibilityLabel("\(title), \(skillName)")
-    }
-
-    private var singleNoteDemoCard: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(currentNoteCardTitle)
-                        .font(.headline)
-                        .foregroundColor(.textMain)
-
-                    if !currentNoteCardBadge.isEmpty {
-                        Text(currentNoteCardBadge)
-                            .font(.caption2.weight(.black))
-                            .tracking(1)
-                            .foregroundColor(currentNoteAccent)
-                    }
-                }
-
-                Spacer()
-
-                Image(systemName: currentNoteIcon)
-                    .foregroundColor(currentNoteAccent)
-                    .padding(10)
-                    .background(currentNoteAccent.opacity(0.1))
-                    .clipShape(Circle())
-            }
-
-            Group {
-                if skillChainStep < 3 {
-                    ScrollView(.vertical, showsIndicators: false) {
-                        Text(currentNoteTextContent)
-                            .font(.system(size: 17, weight: .medium, design: .rounded))
-                            .foregroundColor(.textMain)
-                            .lineSpacing(6)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .id("text-\(skillChainStep)")
-                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
-                    }
-                    .frame(maxHeight: currentNoteHeight)
-                } else {
-                    twitterPreviewCard
-                        .transition(.opacity.combined(with: .scale(scale: 0.98)))
-                }
-            }
-            .animation(.spring(response: 0.38, dampingFraction: 0.86), value: skillChainStep)
-        }
-        .modifier(OnboardingNoteCardModifier())
-        .overlay(
-            RoundedRectangle(cornerRadius: 24)
-                .stroke(currentNoteAccent.opacity(0.2), lineWidth: 1)
-        )
-    }
-
-    private var currentNoteCardTitle: String {
-        switch skillChainStep {
-        case 0:
-            return String(localized: "Original Note")
-        case 1:
-            return String(format: String(localized: "Used Skill: %@"), onboardingSkillDemo.summarySkill.localizedName)
-        case 2:
-            return String(format: String(localized: "Used Skill: %@"), onboardingSkillDemo.polishSkill.localizedName)
-        default:
-            return String(format: String(localized: "Used Skill: %@"), onboardingSkillDemo.twitterSkill.localizedName)
-        }
-    }
-
-    private var currentNoteCardBadge: String {
-        switch skillChainStep {
-        case 0:
-            return ""
-        case 1:
-            return String(localized: "THINK")
-        case 2:
-            return String(localized: "SHAPE")
-        default:
-            return String(localized: "PUBLISH")
-        }
-    }
-
-    private var currentNoteIcon: String {
-        switch skillChainStep {
-        case 0:
-            return "doc.text"
-        case 1:
-            return onboardingSkillDemo.summarySkill.systemIcon
-        case 2:
-            return onboardingSkillDemo.polishSkill.systemIcon
-        default:
-            return "bubble.left.and.bubble.right.fill"
-        }
-    }
-
-    private var currentNoteAccent: Color {
-        switch skillChainStep {
-        case 0:
-            return .gray
-        case 1:
-            return .orange
-        case 2:
-            return .teal
-        default:
-            return .accentPrimary
-        }
-    }
-
-    private var currentNoteTextContent: String {
-        switch skillChainStep {
-        case 0:
-            return onboardingSkillDemo.rawContent
-        case 1:
-            return onboardingSkillDemo.summaryContent
-        default:
-            return onboardingSkillDemo.polishContent
-        }
-    }
-
-    private var currentNoteHeight: CGFloat {
-        switch skillChainStep {
-        case 0:
-            return 380
-        case 1:
-            return 380
-        default:
-            return 380
-        }
-    }
-
-    private var twitterPreviewCard: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            // Header
-            HStack(alignment: .top, spacing: 12) {
-                // Avatar
-                ZStack {
-                    Circle()
-                        .fill(Color(white: 0.15))
-                        .frame(width: 44, height: 44)
-                    Text(onboardingSkillDemo.twitterPreview.authorName.prefix(1))
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    HStack(spacing: 4) {
-                        Text(onboardingSkillDemo.twitterPreview.authorName)
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(.textMain)
-                        Image(systemName: "checkmark.seal.fill")
-                            .font(.system(size: 13))
-                            .foregroundColor(.accentPrimary)
-                        Spacer()
-                        Text("2m")
-                            .font(.system(size: 13))
-                            .foregroundColor(.textSub)
-                    }
-                    Text(onboardingSkillDemo.twitterPreview.handle)
-                        .font(.system(size: 13))
-                        .foregroundColor(.textSub)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.top, 16)
-            .padding(.bottom, 14)
-
-            // Body
-            VStack(alignment: .leading, spacing: 10) {
-                Text(onboardingSkillDemo.twitterPreview.body)
-                    .font(.system(size: 15, weight: .regular))
-                    .foregroundColor(.textMain)
-                    .lineSpacing(5)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(onboardingSkillDemo.twitterPreview.hashtags)
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundColor(.accentPrimary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 14)
-
-            Divider().padding(.horizontal, 16)
-
-            // Interaction Bar
-            HStack(spacing: 0) {
-                ForEach([
-                    ("bubble.left", "12"),
-                    ("arrow.2.squarepath", "48"),
-                    ("heart", "203"),
-                    ("chart.bar.xaxis", "4.2K")
-                ], id: \.0) { icon, count in
-                    HStack(spacing: 5) {
-                        Image(systemName: icon)
-                            .font(.system(size: 16, weight: .regular))
-                        Text(count)
-                            .font(.system(size: 13))
-                    }
-                    .foregroundColor(.textSub)
-                    .frame(maxWidth: .infinity)
-                }
-            }
-            .padding(.horizontal, 8)
-            .padding(.vertical, 12)
-        }
-        .background(Color.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20)
-                .stroke(Color.black.opacity(0.08), lineWidth: 1)
-        )
-        .shadow(color: .black.opacity(0.06), radius: 12, x: 0, y: 4)
-    }
-
     private func skillsLibraryFlowSection(
         index: Int,
         section: (title: String, subtitle: String, color: Color, recipes: [AgentRecipe]),
@@ -1947,21 +1418,6 @@ struct OnboardingView: View {
         askAutoStartedOnCurrentVisit = false
     }
 
-    private var askStatusText: String {
-        switch askPhase {
-        case .idle:
-            return String(localized: "Talk through your ideas with AI, grounded in your notes.")
-        case .gatheringSources:
-            return String(localized: "Pulling signals from your notes...")
-        case .chattingRound1, .chattingRound2:
-            return String(localized: "Ask is turning scattered notes into a sharper creative direction.")
-        case .planReady:
-            return String(localized: "Your post draft is ready to save as a new note.")
-        case .savingNote:
-            return String(localized: "Saving this draft as a fresh note...")
-        }
-    }
-
     private var visibleAskMessages: [AskConversationMessage] {
         Array(askConversationMessages.prefix(visibleAskMessageCount))
     }
@@ -2124,14 +1580,6 @@ struct OnboardingView: View {
             .foregroundColor(.textMain.opacity(0.82))
     }
     
-    private var searchBar: some View {
-        HStack(spacing: 12) {
-            Image(systemName: "magnifyingglass").foregroundColor(.textSub)
-            TextField("Search notes...", text: .constant("")).disabled(true)
-        }
-        .padding(12).background(Color.white.opacity(0.6)).cornerRadius(16)
-    }
-
     private func completeOnboarding() {
         requestPermissions {
             onCompleted?()
@@ -2352,82 +1800,6 @@ struct CustomMicIcon: View {
     }
 }
 
-struct TypoTextView: View {
-    let text: String
-    let typos: [String]
-    
-    var body: some View {
-        if #available(iOS 16.0, *) {
-            WavyTypoTextBlock(text: text, typos: typos)
-        } else {
-            Text(text)
-        }
-    }
-}
-
-@available(iOS 16.0, *)
-private struct WavyTypoTextBlock: View {
-    let text: String
-    let typos: [String]
-
-    private var words: [String] {
-        text.split(separator: " ").map(String.init)
-    }
-
-    var body: some View {
-        FlowWrapLayout(spacing: 4) {
-            ForEach(Array(words.enumerated()), id: \.offset) { _, word in
-                TypoWordView(word: word, isTypo: isTypoWord(word))
-            }
-        }
-    }
-
-    private func isTypoWord(_ word: String) -> Bool {
-        let cleanWord = word.trimmingCharacters(in: .punctuationCharacters)
-        return typos.contains(cleanWord)
-    }
-}
-
-@available(iOS 16.0, *)
-private struct TypoWordView: View {
-    let word: String
-    let isTypo: Bool
-
-    var body: some View {
-        VStack(spacing: 1) {
-            Text(word)
-                .font(.system(size: 16, design: .rounded))
-                .foregroundColor(.textMain)
-            if isTypo {
-                WaveUnderline()
-                    .stroke(Color.red, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-                    .frame(height: 4)
-            }
-        }
-    }
-}
-
-@available(iOS 16.0, *)
-private struct WaveUnderline: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let midY = rect.midY
-        let amplitude = max(0.8, rect.height * 0.28)
-        let wavelength: CGFloat = 6
-
-        path.move(to: CGPoint(x: 0, y: midY))
-
-        var x: CGFloat = 0
-        while x <= rect.width {
-            let y = midY + sin((x / wavelength) * .pi * 2) * amplitude
-            path.addLine(to: CGPoint(x: x, y: y))
-            x += 1
-        }
-
-        return path
-    }
-}
-
 @available(iOS 16.0, *)
 private struct FlowWrapLayout: Layout {
     var spacing: CGFloat = 4
@@ -2528,115 +1900,5 @@ struct OnboardingNoteCardModifier: ViewModifier {
                         lineWidth: 1
                     )
             )
-    }
-}
-
-extension View {
-    func triggerScaleAnimation() -> some View {
-        self.modifier(ScaleAppearModifier())
-    }
-}
-
-struct ScaleAppearModifier: ViewModifier {
-    @State private var scale: CGFloat = 0.8
-    @State private var opacity: Double = 0
-    
-    func body(content: Content) -> some View {
-        content
-            .scaleEffect(scale)
-            .opacity(opacity)
-            .onAppear {
-                withAnimation(.spring(response: 0.5, dampingFraction: 0.6)) {
-                    scale = 1.0
-                    opacity = 1.0
-                }
-            }
-    }
-}
-
-// MARK: - Animated Grammar Views
-
-@available(iOS 16.0, *)
-struct AnimatedGrammarTextView: View {
-    let tokens: [OnboardingGrammarDemoContent.GrammarToken]
-    let isFixing: Bool
-    
-    @State private var fixedIndices: Set<Int> = []
-    
-    var body: some View {
-        FlowWrapLayout(spacing: 4) {
-            ForEach(Array(tokens.enumerated()), id: \.offset) { index, token in
-                AnimatedWordView(
-                    token: token,
-                    isFixed: fixedIndices.contains(index)
-                )
-            }
-        }
-        .onChange(of: isFixing) { _, newValue in
-             if newValue {
-                 startFixingAnimation()
-             } else {
-                 fixedIndices.removeAll()
-             }
-        }
-    }
-    
-    private func startFixingAnimation() {
-        let totalDuration = 1.5
-        let count = Double(tokens.count)
-        
-        for (index, token) in tokens.enumerated() {
-            if token.isTypo {
-                // Calculate delay based on index (approximate position)
-                let delay = (Double(index) / count) * totalDuration
-                
-                DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                    withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                        _ = fixedIndices.insert(index)
-                    }
-                }
-            }
-        }
-    }
-}
-
-@available(iOS 16.0, *)
-struct AnimatedWordView: View {
-    let token: OnboardingGrammarDemoContent.GrammarToken
-    let isFixed: Bool
-    
-    var body: some View {
-        VStack(spacing: 0) { // Tighter spacing
-            ZStack {
-                // Original Text
-                if !isFixed {
-                    Text(token.text)
-                        .font(.system(size: 16, design: .rounded))
-                        .foregroundColor(.textMain)
-                        .transition(.opacity)
-                }
-                
-                // Fixed Text
-                if isFixed {
-                    Text(token.fixed ?? token.text)
-                        .font(.system(size: 16, design: .rounded))
-                        .foregroundColor(.textMain)
-                        .transition(.opacity.combined(with: .scale(scale: 0.8)))
-                }
-            }
-            .animation(.spring(response: 0.3, dampingFraction: 0.6), value: isFixed)
-            
-            // Wavy line
-            ZStack {
-                if token.isTypo && !isFixed {
-                    WaveUnderline()
-                        .stroke(Color.red, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
-                        .frame(height: 4)
-                        .transition(.opacity)
-                } 
-            }
-            .frame(height: 4)
-            .animation(.easeOut(duration: 0.2), value: isFixed)
-        }
     }
 }
