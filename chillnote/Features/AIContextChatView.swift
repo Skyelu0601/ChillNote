@@ -1,6 +1,22 @@
 import SwiftUI
 import SwiftData
 
+private func sanitizeAssistantContent(_ text: String) -> String {
+    let normalized = text.replacingOccurrences(of: "\r\n", with: "\n")
+    var lines = normalized.split(separator: "\n", omittingEmptySubsequences: false).map(String.init)
+
+    while let first = lines.first {
+        let trimmed = first.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.lowercased().hasPrefix("source:") {
+            lines.removeFirst()
+            continue
+        }
+        break
+    }
+
+    return lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
+}
+
 struct AIContextChatView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -276,14 +292,7 @@ struct AIContextChatView: View {
                 Follow these rules in order:
                 1) Prioritize facts from User Notes whenever possible.
                 2) If User Notes are insufficient, you may use general knowledge.
-                3) Never present general knowledge or guesses as if they came from notes.
-                4) The first line of your response must be exactly one of:
-                   - Source: Notes (Note X, Note Y)
-                   - Source: General Knowledge
-                   - Source: Mixed (Note X + General Knowledge)
-                5) Only when Source is "General Knowledge" or "Mixed", you may add one short line: Inference: ...
-                   If Source is "Notes", do not include any "Inference:" line.
-                6) Keep a natural conversational tone and support follow-up questions.
+                3) Keep a natural conversational tone and support follow-up questions.
                 
                 Conversation Summary:
                 \(conversationHistory.summary)
@@ -312,14 +321,12 @@ struct AIContextChatView: View {
                 let stream = GeminiService.shared.streamGenerateContent(
                     prompt: fullPrompt,
                     systemInstruction: """
-                    You are Chillo, a friendly and calm Koala assistant. You are wise but laid-back. Your tone is soothing, concise, and helpful. You prefer a 'chill' vibe but deliver accurate information. Don't be overly formal.
+                    You are a helpful AI assistant.
                     
                     CRITICAL:
                     \(languageRule)
                     - Always prioritize the language of the User's question for your response, even if notes are in another language.
-                    - Act as a proactive partner. If the user's notes are brief, feel free to ask follow-up questions or offer creative suggestions.
-                    - The first line of every answer must be one Source label in the exact required format.
-                    - Do not output any "Inference:" line when Source is "Notes".
+                    - Be clear, direct, and accurate. If the user's notes are brief, you may ask follow-up questions or offer practical suggestions.
                     """,
                     usageType: .chat
                 )
@@ -337,7 +344,8 @@ struct AIContextChatView: View {
                     if let lastIndex = messages.indices.last {
                         messages[lastIndex].isStreaming = false
                         messages[lastIndex].isAnimated = true // Skip typewriter effect since we streamed it
-                        let finalAnswer = messages[lastIndex].content
+                        let finalAnswer = sanitizeAssistantContent(messages[lastIndex].content)
+                        messages[lastIndex].content = finalAnswer
                         if !finalAnswer.isEmpty {
                             onAnswer?(finalAnswer)
                         }
@@ -394,13 +402,15 @@ struct AIContextChatView: View {
         
         let summary: String = older.isEmpty ? "No older turns to summarize." : older.map { message in
             let role = message.role == .user ? "User" : "Assistant"
-            let snippet = summarizeSnippet(message.content, limit: summarySnippetLimit)
+            let content = message.role == .assistant ? sanitizeAssistantContent(message.content) : message.content
+            let snippet = summarizeSnippet(content, limit: summarySnippetLimit)
             return "- \(role): \(snippet)"
         }.joined(separator: "\n")
         
         let recentTurns = recent.map { message in
             let role = message.role == .user ? "User" : "Assistant"
-            return "\(role): \(message.content)"
+            let content = message.role == .assistant ? sanitizeAssistantContent(message.content) : message.content
+            return "\(role): \(content)"
         }.joined(separator: "\n\n")
         
         return (summary: summary, recentTurns: recentTurns)
@@ -411,10 +421,11 @@ struct AIContextChatView: View {
         guard trimmed.count > limit else { return trimmed }
         return String(trimmed.prefix(limit)) + "..."
     }
-    
+
     func saveMessageAsNote(_ message: ChatMessage) {
         guard let userId = AuthService.shared.currentUserId else { return }
-        let newNote = Note(content: message.content, userId: userId)
+        let content = message.role == .assistant ? sanitizeAssistantContent(message.content) : message.content
+        let newNote = Note(content: content, userId: userId)
         modelContext.insert(newNote)
         
         try? modelContext.save()
@@ -476,7 +487,7 @@ struct ChatMessageBubble: View {
                     // Use typewriter markdown rendering for AI responses.
                     if message.role == .assistant {
                         TypewriterMarkdownText(
-                            content: message.content,
+                            content: sanitizeAssistantContent(message.content),
                             isStreaming: message.isStreaming,
                             shouldAnimate: isLast && !message.isAnimated && !message.isStreaming,
                             onAnimationComplete: onAnimationComplete
