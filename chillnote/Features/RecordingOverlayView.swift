@@ -70,7 +70,7 @@ struct RecordingOverlayView: View {
                                     .multilineTextAlignment(.center)
                                 
                                 HStack(spacing: 24) {
-                                    Button("Discard") {
+                                    Button(L10n.text("recording.overlay.discard")) {
                                         speechRecognizer.stopRecording(reason: .cancelled)
                                         // Force clear error state to close overlay if needed
                                         onDismiss()
@@ -78,7 +78,7 @@ struct RecordingOverlayView: View {
                                     .font(.bodyMedium)
                                     .foregroundColor(.red.opacity(0.8))
                                     
-                                    Button("Retry Upload") {
+                                    Button(L10n.text("recording.overlay.retry_upload")) {
                                         speechRecognizer.retryTranscription()
                                     }
                                     .font(.bodyMedium)
@@ -116,22 +116,22 @@ struct RecordingOverlayView: View {
                     .frame(maxHeight: 200)
                 } else {
                     VStack(spacing: 12) {
-                        Text("Microphone and Speech access are required.")
+                        Text(L10n.text("recording.overlay.permission_required"))
                             .font(.bodyMedium)
                             .foregroundColor(.textMain)
                             .multilineTextAlignment(.center)
-                        Button("Request Access") {
+                        Button(L10n.text("recording.overlay.request_access")) {
                             speechRecognizer.checkPermissions()
                         }
                         .font(.bodyMedium)
                         .foregroundColor(.accentPrimary)
-                        .accessibilityHint("Requests microphone permission.")
-                        Button("Open Settings") {
+                        .accessibilityHint(L10n.text("recording.overlay.request_access_hint"))
+                        Button(L10n.text("recording.overlay.open_settings")) {
                             openSettings()
                         }
                         .font(.bodyMedium)
                         .foregroundColor(.accentPrimary)
-                        .accessibilityHint("Opens system Settings for permissions.")
+                        .accessibilityHint(L10n.text("recording.overlay.open_settings_hint"))
                     }
                     .padding(.horizontal, 32)
                 }
@@ -146,7 +146,7 @@ struct RecordingOverlayView: View {
                         if isProcessing {
                             EmptyView() // Spinner is in the middle now
                         } else {
-                            Text("Done")
+                            Text(L10n.text("recording.overlay.done"))
                         }
                     }
                     .font(.bodyMedium)
@@ -160,8 +160,8 @@ struct RecordingOverlayView: View {
                 }
                 .buttonStyle(.bouncy)
                 .disabled(isProcessing)
-                .accessibilityLabel("Finish recording")
-                .accessibilityHint("Stops recording and saves your note.")
+                .accessibilityLabel(L10n.text("recording.overlay.finish_label"))
+                .accessibilityHint(L10n.text("recording.overlay.finish_hint"))
                 .padding(.bottom, 50)
             }
         }

@@ -107,6 +107,40 @@ extension AgentRecipe {
     static let allRecipes: [AgentRecipe] = [
         // MARK: - Think
         AgentRecipe(
+            id: "devils_advocate",
+            icon: "⚖️",
+            systemIcon: "scale.3d",
+            name: "Advocate",
+            description: String(localized: "Evaluate ideas with pros and cons."),
+            prompt: """
+            You are critically evaluating a user’s existing note (not a chat message). Provide a balanced critique: list 3 strong advantages, and 3 critical flaws or unaddressed tradeoffs.
+
+            - Keep the output in the same language as the note.
+            - Play the role of a supportive but strict strategic partner.
+            - Ensure the feedback is pragmatic and helps refine the idea.
+            
+            Output only the evaluation.
+            """,
+            category: .think
+        ),
+        AgentRecipe(
+            id: "brainstorm",
+            icon: "💡",
+            systemIcon: "lightbulb",
+            name: "Brainstorm",
+            description: String(localized: "Generate diverse angles to expand a thought."),
+            prompt: """
+            You are brainstorming based on a user’s existing note (not a chat message). Generate 5 distinct, creative angles or ideas to expand upon their initial thought.
+
+            - Keep the output in the same language as the note.
+            - Encourage divergent thinking while keeping suggestions practical.
+            - Use short, clear bullet points.
+            
+            Output only the 5 ideas.
+            """,
+            category: .think
+        ),
+        AgentRecipe(
             id: "summarize",
             icon: "📝",
             systemIcon: "doc.text",
@@ -127,7 +161,7 @@ extension AgentRecipe {
             id: "merge_notes",
             icon: "🧩",
             systemIcon: "doc.on.doc.fill",
-            name: "Combine My Notes",
+            name: "Merge Notes",
             description: String(localized: "Combine selected notes into one cohesive document."),
             prompt: "(Built-in Logic) Uses advanced internal logic to merge notes intelligently, preserving structure and handling multi-language content.",
             category: .think
@@ -145,7 +179,7 @@ extension AgentRecipe {
             id: "fix_grammar",
             icon: "✅",
             systemIcon: "checkmark.circle",
-            name: "Polish the Draft",
+            name: "Polish",
             description: String(localized: "Correct all grammatical errors."),
             prompt: """
             You are fixing grammar in a user’s existing note (not a chat message). Correct grammar and spelling while preserving the original meaning and tone.
@@ -161,7 +195,7 @@ extension AgentRecipe {
             id: "expand",
             icon: "🪄",
             systemIcon: "sparkles",
-            name: "Develop This Idea",
+            name: "Expand",
             description: String(localized: "Stretch a brief idea into richer detail."),
             prompt: """
             You are expanding a user’s existing note (not a chat message). Elaborate only what the note already suggests, keeping the original intent and tone.
@@ -197,7 +231,7 @@ extension AgentRecipe {
             id: "adhd_helper",
             icon: "🧠",
             systemIcon: "bolt.fill",
-            name: "Break It Into Steps",
+            name: "Next Steps",
             description: String(localized: "ADHD helper that breaks tasks into zero-resistance steps."),
             prompt: """
             You are helping break down a user’s existing note into a zero-resistance action plan (the note was not written for a chat). Create a simple checklist that builds momentum.
@@ -214,10 +248,45 @@ extension AgentRecipe {
         ),
         // MARK: - Publish
         AgentRecipe(
+            id: "hook_generator",
+            icon: "🎣",
+            systemIcon: "link",
+            name: "Hooks",
+            description: String(localized: "Turn a raw idea into catchy hooks or titles."),
+            prompt: """
+            You are an expert copywriter looking at a user’s raw note (not a chat message). Generate 5 punchy, compelling hooks or tweet openers based on the content.
+
+            - Keep the output in the same language as the note.
+            - Do not use clickbait or hype. Focus on curiosity and value.
+            - Provide a mix of direct and question-based hooks.
+            
+            Output only the 5 hooks.
+            """,
+            category: .publish
+        ),
+        AgentRecipe(
+            id: "release_notes",
+            icon: "📢",
+            systemIcon: "megaphone",
+            name: "Release Notes",
+            description: String(localized: "Turn technical fragments into user-friendly update logs."),
+            prompt: """
+            You are turning fragmented development notes or bug fixes into engaging, user-facing release notes. The note was not written for chat.
+
+            - Keep the output in the same language as the note.
+            - Focus on the value to the user, not the technical implementation.
+            - Keep it brief, structured, and energetic.
+            - Use clear bullet points under friendly category headers (e.g., "New", "Fixed").
+            
+            Output only the release notes.
+            """,
+            category: .publish
+        ),
+        AgentRecipe(
             id: "twitter_post",
             icon: "🐦",
             systemIcon: "bubble.left",
-            name: "X (Twitter)",
+            name: "X Post",
             description: String(localized: "Turn a note into a concise post for X (Twitter)."),
             prompt: """
             You are turning a user’s existing note into a post for X (Twitter). The note was not written for chat. Create a concise, high-signal post that preserves the note’s intent and tone.
@@ -255,7 +324,7 @@ extension AgentRecipe {
             id: "youtube_script",
             icon: "🎬",
             systemIcon: "play.rectangle",
-            name: "YouTube Video Script",
+            name: "YouTube Script",
             description: String(localized: "Turn a note into a YouTube video script."),
             prompt: """
             You are turning a user’s existing note into a YouTube video script. The note was not written for chat. Produce a clean, recordable script that stays faithful to the note’s intent and tone.
@@ -275,7 +344,7 @@ extension AgentRecipe {
             id: "explain_like_5",
             icon: "🧸",
             systemIcon: "brain",
-            name: "Make It Simple",
+            name: "Simplify",
             description: String(localized: "Simplify complex topics so anyone can follow."),
             prompt: """
             You are simplifying a user’s existing note (not a chat message). Explain the note in very simple language, while keeping the original meaning.

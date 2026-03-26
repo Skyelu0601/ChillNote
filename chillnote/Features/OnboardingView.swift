@@ -43,7 +43,7 @@ struct OnboardingView: View {
     @State private var showVoiceIntents = false // New state for showing extra intents
 
     
-    private let voicePrompt = String(localized: "I'm thinking about tomorrow's content... we should probably, uh, figure out the hook first. Wait, no, maybe I should clean up the opening shot first. Also, remember to pick up coffee on the way home.")
+    private let voicePrompt = String(localized: "I'm thinking about tomorrow's content... I should probably, uh, figure out the topic first. Wait, no, maybe I should talk to my team first. Also, remember to pick up coffee on the way home.")
 
     private let skillsIntroSections: [(title: String, subtitle: String, color: Color, recipes: [AgentRecipe])] = {
         let recipes = AgentRecipe.allRecipes
@@ -865,12 +865,12 @@ struct OnboardingView: View {
             Spacer(minLength: 8)
 
             VStack(spacing: 6) {
-                Text("Your Thoughts, Evolved.")
+                Text(String(localized: "Edit notes with AI"))
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundColor(.textMain)
                     .multilineTextAlignment(.center)
 
-                Text("From Ideas to Sharing")
+                Text(String(localized: "Don't prompt. Just Tap."))
                     .font(.system(size: 20, weight: .medium, design: .rounded))
                     .foregroundColor(.textSub)
                     .multilineTextAlignment(.center)

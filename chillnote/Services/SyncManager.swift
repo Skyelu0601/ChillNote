@@ -64,7 +64,6 @@ final class SyncManager: ObservableObject {
         }
         WelcomeNoteFlagStore.syncGlobalFlag(for: currentUserId)
         let syncStartedAt = Date()
-        var needsFollowUpSync = false
         isSyncing = true
         lastError = nil
         do {
@@ -108,28 +107,19 @@ final class SyncManager: ObservableObject {
             HardDeleteQueueStore.dequeue(noteIDs: hardDeletedNoteIdsSnapshot, for: currentUserId)
             HardDeleteQueueStore.dequeue(tagIDs: hardDeletedTagIdsSnapshot, for: currentUserId)
             WelcomeNoteFlagStore.setHasSeenWelcome(UserDefaults.standard.bool(forKey: "hasSeededWelcomeNote"), for: currentUserId)
-            
-            let seededWelcome = DataService.shared.seedDataIfNeeded(context: context, userId: currentUserId)
-            
-            if seededWelcome {
-                self.hasUploadedLocal = false
-                lastSyncAtTimestamp = 0
-                syncCursor = ""
-                needsFollowUpSync = true
-            } else {
-                // Use local time anchor to avoid device/server clock skew skipping local updates.
-                lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
-                if let serverTime = syncOutcome.0.serverTime {
-                    let skewSeconds = serverTime.timeIntervalSince(syncStartedAt)
-                    if skewSeconds > 60 {
-                        print("⚠️ SyncManager detected server clock ahead by \(Int(skewSeconds))s; using local sync time as incremental anchor.")
-                    }
+
+            // Use local time anchor to avoid device/server clock skew skipping local updates.
+            lastSyncAtTimestamp = syncStartedAt.timeIntervalSince1970
+            if let serverTime = syncOutcome.0.serverTime {
+                let skewSeconds = serverTime.timeIntervalSince(syncStartedAt)
+                if skewSeconds > 60 {
+                    print("⚠️ SyncManager detected server clock ahead by \(Int(skewSeconds))s; using local sync time as incremental anchor.")
                 }
-                if let cursor = syncOutcome.0.cursor, !cursor.isEmpty {
-                    syncCursor = cursor
-                }
-                self.hasUploadedLocal = syncOutcome.1 > 0
             }
+            if let cursor = syncOutcome.0.cursor, !cursor.isEmpty {
+                syncCursor = cursor
+            }
+            self.hasUploadedLocal = syncOutcome.1 > 0
 
             if FeatureFlags.useLocalFTSSearch {
                 let hardDeletedNoteUUIDs = syncOutcome.0.remoteHardDeletedNoteIds.compactMap(UUID.init(uuidString:))
@@ -155,11 +145,6 @@ final class SyncManager: ObservableObject {
             }
         }
         isSyncing = false
-
-        if needsFollowUpSync {
-            await syncIfNeeded(context: context)
-            return
-        }
 
         if hasPendingSyncRequest {
             hasPendingSyncRequest = false

@@ -123,6 +123,7 @@ enum HomeScreenAction {
     case aiChatDisappear
     case openChillRecipes
     case closeChillRecipes
+    case skipFirstUseGuide
     case dismissGuideCompletionOverlay
     case repeatGuideSkillFlow
 

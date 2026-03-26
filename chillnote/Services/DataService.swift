@@ -90,61 +90,10 @@ class DataService: ObservableObject {
         }
     }
     
-
-    /// Seeds the database with a welcome note if empty (per-user)
+    /// Welcome Note seeding has been retired in favor of the first-user guide.
+    /// Keep this no-op for compatibility with any older call sites.
     @discardableResult
     func seedDataIfNeeded(context: ModelContext? = nil, userId: String? = nil) -> Bool {
-        let effectiveUserId = userId ?? AuthService.shared.currentUserId
-        
-        if WelcomeNoteFlagStore.hasSeenWelcome(for: effectiveUserId) {
-            return false
-        }
-        
-        guard let context = context ?? container?.mainContext else { return false }
-        guard let userId = effectiveUserId else { return false }
-        
-        do {
-            // Check if there are any existing notes for this user
-            var existingNotesDescriptor = FetchDescriptor<Note>()
-            existingNotesDescriptor.predicate = #Predicate<Note> { note in
-                note.userId == userId
-            }
-            let noteCount = try context.fetchCount(existingNotesDescriptor)
-            
-            if noteCount > 0 {
-                // If notes exist but flag wasn't set, set it now to prevent future seeding
-                WelcomeNoteFlagStore.setHasSeenWelcome(true, for: effectiveUserId)
-                return false
-            }
-            
-            // Double-check: ensure no welcome note already exists (including trashed)
-            // This prevents duplicates even if the flag was inadvertently reset
-            let welcomePrefix = String(localized: "Welcome to ChillNote")
-            var welcomeDescriptor = FetchDescriptor<Note>()
-            welcomeDescriptor.predicate = #Predicate<Note> { note in
-                note.userId == userId && note.content.localizedStandardContains(welcomePrefix)
-            }
-            let existingWelcomeCount = try context.fetchCount(welcomeDescriptor)
-            if existingWelcomeCount > 0 {
-                WelcomeNoteFlagStore.setHasSeenWelcome(true, for: effectiveUserId)
-                return false
-            }
-            
-            // Insert Welcome Note
-            context.insert(
-                Note(
-                    content: String(localized: "Welcome to ChillNote! Tap the yellow button to record a voice note."),
-                    userId: userId
-                )
-            )
-            try? context.save()
-            
-            // Mark as seeded
-            WelcomeNoteFlagStore.setHasSeenWelcome(true, for: effectiveUserId)
-            return true
-        } catch {
-            print("Error checking seed data: \(error)")
-            return false
-        }
+        false
     }
 }

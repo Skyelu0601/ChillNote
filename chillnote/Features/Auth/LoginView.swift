@@ -28,14 +28,14 @@ struct LoginView: View {
                     Spacer()
                         .frame(height: 32)
                     
-                    Text("ChillNote")
+                    Text(L10n.text("auth.login.brand_title"))
                         .font(.system(size: 38, weight: .bold, design: .serif))
                         .foregroundColor(.textMain)
                     
                     Spacer()
                         .frame(height: 8)
                     
-                    Text("Designed for people who create.")
+                    Text(L10n.text("auth.login.subtitle"))
                         .multilineTextAlignment(.center)
                         .font(.system(size: 16, weight: .regular))
                         .kerning(1.2)
@@ -105,7 +105,7 @@ struct LoginView: View {
                         }) {
                             HStack {
                                 Image(systemName: "globe") // Placeholder for Google G logo
-                                Text("Sign in with Google")
+                                Text(L10n.text("auth.login.google_button"))
                                     .font(.system(size: 17, weight: .medium))
                             }
                             .foregroundColor(.black)
@@ -124,7 +124,7 @@ struct LoginView: View {
                         Button(action: {
                             withAnimation { showEmailLogin = true }
                         }) {
-                            Text("Continue with Email")
+                            Text(L10n.text("auth.login.email_button"))
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundColor(.textSub)
                         }
@@ -136,7 +136,7 @@ struct LoginView: View {
                 Spacer()
                 
                 // MARK: - Terms
-                Text(.init("By continuing, you agree to our [Terms](https://www.chillnoteai.com/terms.html) & [Privacy Policy](https://www.chillnoteai.com/privacy.html)."))
+                Text(.init(L10n.text("auth.login.legal_markdown")))
                     .font(.caption)
                     .foregroundColor(.textSub.opacity(0.8))
                     .tint(.textSub.opacity(0.95))
@@ -155,7 +155,7 @@ struct LoginView: View {
     var emailLoginForm: some View {
         VStack(spacing: 20) {
             if !sentCode {
-                TextField(String(localized: "Email address"), text: $email)
+                TextField(L10n.text("auth.login.email_placeholder"), text: $email)
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .autocapitalization(.none)
@@ -187,7 +187,7 @@ struct LoginView: View {
                              .background(Color.accentPrimary)
                              .cornerRadius(12)
                     } else {
-                        Text("Send Verification Code")
+                        Text(L10n.text("auth.login.send_code"))
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -202,14 +202,14 @@ struct LoginView: View {
                 VStack(spacing: 8) {
                     Text(
                         String(
-                            format: String(localized: "Code sent to %@"),
+                            format: L10n.text("auth.login.code_sent_to_format"),
                             email
                         )
                     )
                         .font(.caption)
                         .foregroundColor(.textSub)
                     
-                    TextField(String(localized: "Verification code"), text: $otpCode)
+                    TextField(L10n.text("auth.login.verification_code_placeholder"), text: $otpCode)
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.center)
                         .font(.title2)
@@ -241,7 +241,7 @@ struct LoginView: View {
                             .background(Color.textMain)
                             .cornerRadius(12)
                     } else {
-                        Text("Verify & Login")
+                        Text(L10n.text("auth.login.verify_button"))
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -254,7 +254,7 @@ struct LoginView: View {
 
             }
 
-            Button("Back to Options") {
+            Button(L10n.text("auth.login.back_to_options")) {
                 withAnimation {
                     showEmailLogin = false
                     sentCode = false

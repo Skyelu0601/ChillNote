@@ -221,45 +221,35 @@ struct AIContextChatView: View {
                 
                 // Chat Messages
                 ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(spacing: 16) {
-                            ForEach(messages) { message in
-                                ChatMessageBubble(
-                                    message: message,
-                                    contextNotes: contextNotes,
-                                    isLast: message.id == messages.last?.id,
-                                    isSaved: savedMessageId == message.id,
-                                    onSave: message.role == .assistant ? {
-                                        saveMessageAsNote(message)
-                                    } : nil,
-                                    onAnimationComplete: {
-                                        if let index = messages.firstIndex(where: { $0.id == message.id }) {
-                                            messages[index].isAnimated = true
-                                        }
-                                    },
-                                    onCitationTap: handleCitationTap
-                                )
-                                .id(message.id)
-                            }
-                            
-                            
-                            if isLoading {
-                                HStack {
-                                    ProgressView()
-                                        .progressViewStyle(CircularProgressViewStyle(tint: .accentPrimary))
-                                    Text("Chillo is climbing the tree of knowledge...")
-                                        .font(.bodyMedium)
-                                        .foregroundColor(.textSub)
+                    ZStack {
+                        ScrollView {
+                            LazyVStack(spacing: 16) {
+                                ForEach(messages) { message in
+                                    ChatMessageBubble(
+                                        message: message,
+                                        contextNotes: contextNotes,
+                                        isLast: message.id == messages.last?.id,
+                                        isSaved: savedMessageId == message.id,
+                                        onSave: message.role == .assistant ? {
+                                            saveMessageAsNote(message)
+                                        } : nil,
+                                        onAnimationComplete: {
+                                            if let index = messages.firstIndex(where: { $0.id == message.id }) {
+                                                messages[index].isAnimated = true
+                                            }
+                                        },
+                                        onCitationTap: handleCitationTap
+                                    )
+                                    .id(message.id)
                                 }
-                                .padding()
                             }
+                            .padding(16)
+                            .padding(.top, messages.isEmpty ? 0 : 40)
                         }
-                        .padding(16)
-                        .padding(.top, 40) // Spacing for empty state
                         
-                        // Empty State
                         if messages.isEmpty {
                             emptyStateView
+                                .allowsHitTesting(false)
                         }
                     }
                     .background(Color.bgPrimary)
@@ -298,7 +288,7 @@ struct AIContextChatView: View {
                 }
                 
             }
-            .navigationTitle("Chillo")
+            .navigationTitle("Ask AI")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -428,30 +418,20 @@ struct AIContextChatView: View {
     }
 
     var emptyStateView: some View {
-        VStack(spacing: 24) {
-            Spacer()
+        VStack(spacing: 12) {
+            Text(contextNotes.isEmpty ? "Select some notes to start" : "Your notes are ready")
+                .font(.title2)
+                .fontWeight(.semibold)
+                .foregroundColor(.textMain)
+                .multilineTextAlignment(.center)
             
-            VStack(spacing: 12) {
-                Image("askchillo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 140, height: 140)
-                
-                Text(contextNotes.isEmpty ? "Select some notes to start" : "What's on your mind?")
-                    .font(.title2)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.textMain)
-                
-                Text(contextNotes.isEmpty ? "I'm ready to help once you pick some content." : "I've read through your notes. Let's see what we can create together.")
-                    .font(.body)
-                    .foregroundColor(.textSub)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-            }
-            
-            Spacer()
-            Spacer()
+            Text(contextNotes.isEmpty ? "I'm ready to help once you pick some content." : "Use your notes to get answers, summaries, and new ideas.")
+                .font(.body)
+                .foregroundColor(.textSub)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
     }
     
     
@@ -463,6 +443,8 @@ struct AIContextChatView: View {
         // Add user message
         let userMessage = ChatMessage(role: .user, content: trimmed)
         messages.append(userMessage)
+        let placeholder = ChatMessage(role: .assistant, content: "", isStreaming: true)
+        messages.append(placeholder)
         userInput = ""
         isLoading = true
         errorMessage = nil
@@ -477,13 +459,6 @@ struct AIContextChatView: View {
                 
                 let languageRule = LanguageDetection.languagePreservationRule(for: trimmed)
                 let systemInstruction = makeSystemInstruction(for: chatMode, languageRule: languageRule)
-                
-                // Add empty assistant message placeholder
-                await MainActor.run {
-                    let placeholder = ChatMessage(role: .assistant, content: "", isStreaming: true)
-                    messages.append(placeholder)
-                    isLoading = false // Start showing bubble immediately
-                }
                 
                 let stream = GeminiService.shared.streamGenerateContent(
                     prompt: fullPrompt,
@@ -510,6 +485,7 @@ struct AIContextChatView: View {
                             onAnswer?(finalAnswer)
                         }
                     }
+                    isLoading = false
                 }
                 
             } catch {
@@ -777,24 +753,28 @@ struct ChatMessageBubble: View {
                 VStack(alignment: message.role == .user ? .trailing : .leading, spacing: 4) {
                     // Use typewriter markdown rendering for AI responses.
                     if message.role == .assistant {
-                        if message.isStreaming || !(isLast && !message.isAnimated && !message.isStreaming) {
-                            InteractiveAssistantText(
-                                segments: message.parsedSegments(for: contextNotes),
-                                onCitationTap: onCitationTap
-                            )
-                            .padding(12)
-                            .background(Color.bgSecondary)
-                            .cornerRadius(16)
+                        if message.isStreaming && sanitizeAssistantContent(message.content).isEmpty {
+                            ThinkingBubble()
                         } else {
-                            TypewriterMarkdownText(
-                                content: sanitizeAssistantContent(message.content),
-                                isStreaming: message.isStreaming,
-                                shouldAnimate: isLast && !message.isAnimated && !message.isStreaming,
-                                onAnimationComplete: onAnimationComplete
-                            )
-                            .padding(12)
-                            .background(Color.bgSecondary)
-                            .cornerRadius(16)
+                            if message.isStreaming || !(isLast && !message.isAnimated && !message.isStreaming) {
+                                InteractiveAssistantText(
+                                    segments: message.parsedSegments(for: contextNotes),
+                                    onCitationTap: onCitationTap
+                                )
+                                .padding(12)
+                                .background(Color.bgSecondary)
+                                .cornerRadius(16)
+                            } else {
+                                TypewriterMarkdownText(
+                                    content: sanitizeAssistantContent(message.content),
+                                    isStreaming: message.isStreaming,
+                                    shouldAnimate: isLast && !message.isAnimated && !message.isStreaming,
+                                    onAnimationComplete: onAnimationComplete
+                                )
+                                .padding(12)
+                                .background(Color.bgSecondary)
+                                .cornerRadius(16)
+                            }
                         }
                     } else {
                         Text(message.content)
@@ -811,7 +791,7 @@ struct ChatMessageBubble: View {
                 }
                 
                 // Save button for AI responses
-                if message.role == .assistant, let onSave = onSave {
+                if message.role == .assistant, !message.isStreaming, let onSave = onSave {
                     Button(action: onSave) {
                         HStack(spacing: 6) {
                             Image(systemName: isSaved ? "checkmark.circle.fill" : "square.and.arrow.down")
@@ -833,6 +813,45 @@ struct ChatMessageBubble: View {
             
 
         }
+    }
+}
+
+private struct ThinkingBubble: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.accentPrimary)
+
+            Text("Thinking")
+                .font(.bodyMedium)
+                .foregroundColor(.textMain)
+
+            ThinkingDots()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .background(Color.bgSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+}
+
+private struct ThinkingDots: View {
+    var body: some View {
+        TimelineView(.animation) { context in
+            let phase = Int(context.date.timeIntervalSinceReferenceDate * 2.4) % 3
+
+            HStack(spacing: 5) {
+                ForEach(0..<3, id: \.self) { index in
+                    Circle()
+                        .fill(index <= phase ? Color.accentPrimary : Color.textSub.opacity(0.25))
+                        .frame(width: 6, height: 6)
+                        .scaleEffect(index == phase ? 1.15 : 0.9)
+                        .animation(.easeInOut(duration: 0.18), value: phase)
+                }
+            }
+        }
+        .frame(width: 28, height: 10)
     }
 }
 

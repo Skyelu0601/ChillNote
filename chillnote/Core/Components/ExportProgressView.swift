@@ -24,7 +24,14 @@ struct ExportProgressView: View {
                     Text(progress.message)
                         .font(.bodyMedium)
                         .foregroundColor(.textMain)
-                    Text("\(progress.processed)/\(progress.total) • \(percentageText)")
+                    Text(
+                        L10n.text(
+                            "export.progress.summary",
+                            Int64(progress.processed),
+                            Int64(progress.total),
+                            percentageText
+                        )
+                    )
                         .font(.bodySmall)
                         .foregroundColor(.textSub)
                 }
@@ -40,7 +47,7 @@ struct ExportProgressView: View {
 
             if isExporting {
                 Button(role: .cancel, action: onCancel) {
-                    Text("Cancel Export")
+                    Text(L10n.text("export.cancel"))
                         .font(.bodyMedium)
                         .frame(maxWidth: .infinity)
                 }

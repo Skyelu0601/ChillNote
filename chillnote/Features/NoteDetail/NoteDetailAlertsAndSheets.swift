@@ -8,24 +8,24 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
             .sheet(isPresented: $viewModel.showAddTagAlert) {
                 AddTagSheetView(viewModel: viewModel)
             }
-            .alert("Delete Note", isPresented: $viewModel.showDeleteConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Delete", role: .destructive) {
+            .alert(L10n.text("note_detail.alert.delete.title"), isPresented: $viewModel.showDeleteConfirmation) {
+                Button(L10n.text("common.cancel"), role: .cancel) { }
+                Button(L10n.text("common.delete"), role: .destructive) {
                     viewModel.confirmDeleteNote()
                 }
             } message: {
-                Text("Are you sure you want to delete this note? This action cannot be undone.")
+                Text(L10n.text("note_detail.alert.delete.message"))
             }
-            .alert("Delete Permanently", isPresented: $viewModel.showPermanentDeleteConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Delete Permanently", role: .destructive) {
+            .alert(L10n.text("note_detail.alert.permanent_delete.title"), isPresented: $viewModel.showPermanentDeleteConfirmation) {
+                Button(L10n.text("common.cancel"), role: .cancel) { }
+                Button(L10n.text("note_detail.alert.permanent_delete.action"), role: .destructive) {
                     viewModel.confirmDeleteNotePermanently()
                 }
             } message: {
-                Text("This will permanently delete the note. This action cannot be undone.")
+                Text(L10n.text("note_detail.alert.permanent_delete.message"))
             }
-            .alert("Export Failed", isPresented: $viewModel.showExportError) {
-                Button("OK", role: .cancel) { }
+            .alert(L10n.text("note_detail.alert.export_failed.title"), isPresented: $viewModel.showExportError) {
+                Button(L10n.text("common.ok"), role: .cancel) { }
             } message: {
                 Text(viewModel.exportErrorMessage)
             }
@@ -75,7 +75,7 @@ private struct AddTagSheetView: View {
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 18) {
-                TextField("Tag name", text: $viewModel.newTagName)
+                TextField(L10n.text("note_detail.add_tag.name_placeholder"), text: $viewModel.newTagName)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .padding(.horizontal, 12)
@@ -86,7 +86,7 @@ private struct AddTagSheetView: View {
                     )
 
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("Color")
+                    Text(L10n.text("note_detail.add_tag.color_label"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.textSub)
 
@@ -112,17 +112,19 @@ private struct AddTagSheetView: View {
                                     )
                             }
                             .buttonStyle(.plain)
-                            .accessibilityLabel("Tag color \(normalized)")
+                            .accessibilityLabel(
+                                L10n.text("tag.color.accessibility", normalized)
+                            )
                         }
                     }
                 }
 
                 HStack(spacing: 8) {
-                    Text("Preview")
+                    Text(L10n.text("note_detail.add_tag.preview_label"))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundColor(.textSub)
 
-                    Text(trimmedName.isEmpty ? "New Tag" : trimmedName)
+                    Text(trimmedName.isEmpty ? L10n.text("note_detail.add_tag.new_tag_label") : trimmedName)
                         .font(.system(size: 14, weight: .medium))
                         .padding(.horizontal, 10)
                         .padding(.vertical, 6)
@@ -136,17 +138,17 @@ private struct AddTagSheetView: View {
                 Spacer()
             }
             .padding(16)
-            .navigationTitle("Add Tag")
+            .navigationTitle(L10n.text("note_detail.add_tag.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(L10n.text("common.cancel")) {
                         viewModel.showAddTagAlert = false
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Add") {
+                    Button(L10n.text("common.add")) {
                         viewModel.confirmNewTagFromAlert()
                         dismiss()
                     }

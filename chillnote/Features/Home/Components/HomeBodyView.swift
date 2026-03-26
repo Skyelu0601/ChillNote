@@ -412,7 +412,8 @@ struct HomeBodyView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     if shouldShowTaskCard {
                         HomeFirstUseTaskCard(
-                            step: state.firstUseGuideStep
+                            step: state.firstUseGuideStep,
+                            onSkip: { dispatch(.skipFirstUseGuide) }
                         )
                         .padding(.horizontal, 24)
                     }
@@ -542,7 +543,12 @@ struct HomeBodyView: View {
     }
 
     private var shouldShowTaskCard: Bool {
-        !state.isSelectionMode && state.firstUseGuideStep.isActive
+        !state.isSelectionMode &&
+        !state.isTrashSelected &&
+        state.firstUseGuideStep.isActive &&
+        state.hasLoadedNotesAtLeastOnce &&
+        !state.isLoadingNotes &&
+        !state.isSyncingNotes
     }
 
     private var guideCompletionOverlay: some View {

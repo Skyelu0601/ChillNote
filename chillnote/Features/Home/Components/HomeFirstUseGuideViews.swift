@@ -2,16 +2,17 @@ import SwiftUI
 
 struct HomeFirstUseTaskCard: View {
     let step: HomeFirstUseGuideStep
+    let onSkip: () -> Void
 
     // 为底部提示增加微动效
     @State private var isBouncing = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: step == .recordFirstNote ? 14 : 20) {
             // 头部区域
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(String(localized: "Try ChillNote in 3 small steps"))
+                    Text(String(localized: "Get started in 3 steps"))
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
                         .foregroundColor(.textMain)
 
@@ -24,22 +25,31 @@ struct HomeFirstUseTaskCard: View {
 
                 Spacer()
 
-                Text(progressLabel)
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(.accentPrimary)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
-                    .background(Color.accentPrimary.opacity(0.08))
-                    .clipShape(Capsule())
+                VStack(alignment: .trailing, spacing: 10) {
+                    Button(action: onSkip) {
+                        Text("Skip")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundColor(.textSub)
+                    }
+                    .buttonStyle(.plain)
+
+                    Text(progressLabel)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(.accentPrimary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(Color.accentPrimary.opacity(0.08))
+                        .clipShape(Capsule())
+                }
             }
 
             // 步骤列表 (更克制的视觉设计)
             VStack(alignment: .leading, spacing: 14) {
-                guideRow(title: String(localized: "Record one thought"), isActive: step == .recordFirstNote, isDone: step != .recordFirstNote)
-                guideRow(title: String(localized: "Open the koala and select that note"), isActive: step == .openSelection || step == .addSkill, isDone: step == .runSkill || step == .completed)
-                guideRow(title: String(localized: "Run Skill"), isActive: step == .runSkill, isDone: step == .completed)
+                guideRow(title: String(localized: "Record a note"), isActive: step == .recordFirstNote, isDone: step != .recordFirstNote)
+                guideRow(title: String(localized: "Select that note"), isActive: step == .openSelection || step == .addSkill, isDone: step == .runSkill || step == .completed)
+                guideRow(title: String(localized: "Choose a Skill"), isActive: step == .runSkill, isDone: step == .completed)
             }
-            .padding(.vertical, 4)
+            .padding(.vertical, step == .recordFirstNote ? 0 : 4)
 
             // 动态提示区
             if step == .recordFirstNote {
@@ -51,14 +61,15 @@ struct HomeFirstUseTaskCard: View {
                         .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: isBouncing)
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(String(localized: "Use the mic at the bottom"))
+                        Text(String(localized: "Tap the mic below to start"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.textMain)
                     }
                     
                     Spacer()
                 }
-                .padding(14)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
                 .background(Color.white.opacity(0.6))
                 .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                 .onAppear {
@@ -83,11 +94,11 @@ struct HomeFirstUseTaskCard: View {
     private var subtitle: String {
         switch step {
         case .recordFirstNote:
-            return String(localized: "Say anything on your mind, then we will help you turn it into something useful.")
+            return String(localized: "Record a quick note first. You can say anything.")
         case .openSelection, .addSkill:
-            return String(localized: "Nice, your note is ready. Next, open the koala button and select that note.")
+            return String(localized: "Nice. Now tap the koala icon and select the note you just recorded.")
         case .runSkill:
-            return String(localized: "Now choose a Skill and let AI handle this note for you.")
+            return String(localized: "Choose a Skill and let ChillNote help with your note.")
         case .completed:
             return String(localized: "You already finished the first-time guide.")
         }
@@ -175,11 +186,11 @@ struct HomeGuideCompletionOverlay: View {
 
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("You just learned Chill Skills")
+                    Text("You're all set!")
                         .font(.system(size: 20, weight: .semibold, design: .rounded))
                         .foregroundColor(.textMain)
 
-                    Text("Next time, just tap the koala, select one or more notes, and open Chill Skills.")
+                    Text(String(localized: "Next time, tap the koala icon, select a note, and choose a Skill."))
                         .font(.system(size: 15, weight: .regular))
                         .foregroundColor(.textSub)
                         .lineSpacing(4)
@@ -199,7 +210,7 @@ struct HomeGuideCompletionOverlay: View {
                     .buttonStyle(.plain)
 
                     Button(action: onDismiss) {
-                        Text("Got it")
+                        Text("Done")
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(.textMain)
                             .frame(maxWidth: .infinity)

@@ -73,11 +73,7 @@ extension HomeView {
             isSelectionMode = true
             selectedNotes.removeAll()
         }
-        if firstUseGuideStep == .openSelection {
-            setFirstUseGuideStep(recipeManager.savedRecipes.isEmpty ? .addSkill : .runSkill)
-        } else {
-            syncFirstUseGuideState()
-        }
+        syncFirstUseGuideState()
     }
 
     func exitSelectionMode() {

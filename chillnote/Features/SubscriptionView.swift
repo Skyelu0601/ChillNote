@@ -29,7 +29,7 @@ struct SubscriptionView: View {
         let savingsPercent = NSDecimalNumber(decimal: savingsRatio * 100).doubleValue.rounded()
 
         guard savingsPercent >= 1 else { return nil }
-        return "SAVE \(Int(savingsPercent))%"
+        return L10n.text("subscription.discount.save_percent", Int64(savingsPercent))
     }
 
     var selectedProduct: Product? {
@@ -136,7 +136,7 @@ struct SubscriptionView: View {
                     Button {
                         Task { await storeService.purchase(product) }
                     } label: {
-                        Text(selectedProductDisplayInfo?.ctaText ?? (isAnnual ? String(localized: "Start Annual Plan") : String(localized: "Start Monthly Plan")))
+                        Text(selectedProductDisplayInfo?.ctaText ?? (isAnnual ? L10n.text("subscription.cta.start_annual") : L10n.text("subscription.cta.start_monthly")))
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -165,7 +165,7 @@ struct SubscriptionView: View {
                     .shadow(color: .yellow.opacity(0.2), radius: 10, x: 0, y: 5)
                 
                 VStack(spacing: 8) {
-                    Text("ChillNote Pro")
+                    Text(L10n.text("subscription.brand.pro_title"))
                         .font(.system(size: 28, weight: .bold, design: .serif))
                         .foregroundColor(.textMain)
                 }
@@ -176,7 +176,7 @@ struct SubscriptionView: View {
             VStack(spacing: 20) {
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text(storeService.activeSubscriptionProductId?.localizedCaseInsensitiveContains("year") == true ? "Annual Plan" : "Monthly Plan")
+                        Text(storeService.activeSubscriptionProductId?.localizedCaseInsensitiveContains("year") == true ? L10n.text("subscription.plan.annual") : L10n.text("subscription.plan.monthly"))
                             .font(.headline)
                             .foregroundColor(.textMain)
                         
@@ -184,7 +184,7 @@ struct SubscriptionView: View {
                             Circle()
                                 .fill(Color.green)
                                 .frame(width: 8, height: 8)
-                            Text("Active")
+                            Text(L10n.text("subscription.status.active"))
                                 .font(.subheadline)
                                 .foregroundColor(.green)
                         }
@@ -201,7 +201,7 @@ struct SubscriptionView: View {
                 
                 if let expirationDate = storeService.subscriptionExpirationDate {
                     HStack {
-                        Text("Renews on")
+                        Text(L10n.text("subscription.renews_on"))
                             .font(.subheadline)
                             .foregroundColor(.textSub)
                         Spacer()
@@ -218,7 +218,7 @@ struct SubscriptionView: View {
             
             // Active Benefits
             VStack(alignment: .leading, spacing: 20) {
-                Text("Your Active Privileges")
+                Text(L10n.text("subscription.active_privileges"))
                     .font(.headline)
                     .foregroundColor(.textMain)
                     .padding(.leading, 4)
@@ -232,7 +232,7 @@ struct SubscriptionView: View {
                     guard let url = URL(string: "https://apps.apple.com/account/subscriptions") else { return }
                     openURL(url)
                 } label: {
-                    Text("Manage Subscription")
+                    Text(L10n.text("subscription.manage"))
                         .font(.headline)
                         .foregroundColor(.accentPrimary)
                         .frame(maxWidth: .infinity)
@@ -244,7 +244,7 @@ struct SubscriptionView: View {
                 Button {
                     Task { await storeService.restorePurchases() }
                 } label: {
-                    Text("Restore Purchases")
+                    Text(L10n.text("subscription.restore_purchases"))
                         .font(.footnote.weight(.medium))
                         .foregroundColor(.textSub)
                         .underline()
@@ -293,11 +293,11 @@ struct SubscriptionView: View {
                 .offset(y: 8)
             
             VStack(spacing: 8) {
-                Text("Upgrade to Pro")
+                Text(L10n.text("subscription.upgrade_title"))
                     .font(.system(size: 28, weight: .bold, design: .serif))
                     .foregroundColor(.textMain)
                 
-                Text("Unlock the full power of ChillNote")
+                Text(L10n.text("subscription.upgrade_subtitle"))
                     .font(.body)
                     .foregroundColor(.textSub)
             }
@@ -306,7 +306,7 @@ struct SubscriptionView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "crown.fill")
                         .foregroundColor(.yellow)
-                    Text("Current Plan")
+                    Text(L10n.text("subscription.current_plan"))
                 }
                 .font(.footnote.weight(.medium))
                 .padding(.horizontal, 12)
@@ -319,10 +319,10 @@ struct SubscriptionView: View {
     
     private var benefitsList: some View {
         VStack(spacing: 16) {
-            BenefitRow(icon: "waveform", iconColor: .orange, title: "10-Minute Deep Dives", subtitle: "Capture long thoughts without interruption")
-            BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: "Unlimited Chat", subtitle: "Ask Chillo anything about your notes.")
-            BenefitRow(icon: "wand.and.stars", iconColor: .blue, title: "Infinite Tidy & Polish", subtitle: "Instantly turn messy ramblings into structured notes.")
-            BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: "Custom Chill Skills", subtitle: "Create personalized AI Skills with Pro")
+            BenefitRow(icon: "waveform", iconColor: .orange, title: L10n.text("subscription.benefit.deep_dives.title"), subtitle: L10n.text("subscription.benefit.deep_dives.subtitle"))
+            BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: L10n.text("subscription.benefit.unlimited_chat.title"), subtitle: L10n.text("subscription.benefit.unlimited_chat.subtitle"))
+            BenefitRow(icon: "wand.and.stars", iconColor: .blue, title: L10n.text("subscription.benefit.tidy_polish.title"), subtitle: L10n.text("subscription.benefit.tidy_polish.subtitle"))
+            BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: L10n.text("subscription.benefit.custom_skills.title"), subtitle: L10n.text("subscription.benefit.custom_skills.subtitle"))
         }
         .padding(24)
         .background(Color.white)
@@ -334,10 +334,10 @@ struct SubscriptionView: View {
         VStack(spacing: 24) {
             // Toggle
             HStack(spacing: 0) {
-                pricingToggleButton(title: "Monthly", isSelected: !isAnnual) {
+                pricingToggleButton(title: L10n.text("subscription.interval.monthly"), isSelected: !isAnnual) {
                     withAnimation(.spring()) { isAnnual = false }
                 }
-                pricingToggleButton(title: "Yearly", isSelected: isAnnual, discountTag: yearlySavingsTag.map { LocalizedStringKey($0) }) {
+                pricingToggleButton(title: L10n.text("subscription.interval.yearly"), isSelected: isAnnual, discountTag: yearlySavingsTag) {
                     withAnimation(.spring()) { isAnnual = true }
                 }
             }
@@ -354,7 +354,7 @@ struct SubscriptionView: View {
                     .id(product.id)
                     .transition(.opacity.combined(with: .scale(scale: 0.98)))
             } else if storeService.isLoadingProducts {
-                ProgressView("Loading prices...")
+                ProgressView(L10n.text("subscription.loading_prices"))
                     .padding()
             } else if let error = storeService.productsErrorMessage {
                 VStack(spacing: 10) {
@@ -362,7 +362,7 @@ struct SubscriptionView: View {
                         .font(.caption)
                         .foregroundColor(.red)
                         .multilineTextAlignment(.center)
-                    Button("Retry") {
+                    Button(L10n.text("common.retry")) {
                         Task { await storeService.refreshProducts() }
                     }
                     .font(.caption.weight(.semibold))
@@ -370,10 +370,10 @@ struct SubscriptionView: View {
                 }
             } else {
                 VStack(spacing: 10) {
-                    Text("No subscription product is currently available.")
+                    Text(L10n.text("subscription.unavailable"))
                         .font(.caption)
                         .foregroundColor(.textSub)
-                    Button("Retry") {
+                    Button(L10n.text("common.retry")) {
                         Task { await storeService.refreshProducts() }
                     }
                     .font(.caption.weight(.semibold))
@@ -383,7 +383,7 @@ struct SubscriptionView: View {
         }
     }
     
-    private func pricingToggleButton(title: LocalizedStringKey, isSelected: Bool, discountTag: LocalizedStringKey? = nil, action: @escaping () -> Void) -> some View {
+    private func pricingToggleButton(title: String, isSelected: Bool, discountTag: String? = nil, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Text(title)
@@ -413,30 +413,30 @@ struct SubscriptionView: View {
             Button {
                 Task { await storeService.restorePurchases() }
             } label: {
-                Text("Restore Purchases")
+                Text(L10n.text("subscription.restore_purchases"))
                     .font(.footnote.weight(.medium))
                     .foregroundColor(.textSub)
                     .underline()
             }
             
             HStack(spacing: 16) {
-                Link("Terms of Use", destination: URL(string: "https://www.chillnoteai.com/terms.html")!)
-                Link("Privacy Policy", destination: URL(string: "https://www.chillnoteai.com/privacy.html")!)
+                Link(L10n.text("subscription.terms_of_use"), destination: URL(string: "https://www.chillnoteai.com/terms.html")!)
+                Link(L10n.text("subscription.privacy_policy"), destination: URL(string: "https://www.chillnoteai.com/privacy.html")!)
             }
             .font(.caption)
             .foregroundColor(.textSub.opacity(0.6))
             
-            Text("Payment will be charged to your Apple ID account at confirmation of purchase.")
+            Text(L10n.text("subscription.footer.payment_disclaimer"))
                 .font(.caption2)
                 .foregroundColor(.textSub.opacity(0.4))
                 .multilineTextAlignment(.center)
             
-            Text("Subscription automatically renews unless canceled at least 24 hours before the end of the current period.")
+            Text(L10n.text("subscription.footer.renewal_disclaimer"))
                 .font(.caption2)
                 .foregroundColor(.textSub.opacity(0.4))
                 .multilineTextAlignment(.center)
             
-            Text("Manage or cancel your subscription in Settings > Apple ID > Subscriptions.")
+            Text(L10n.text("subscription.footer.manage_disclaimer"))
                 .font(.caption2)
                 .foregroundColor(.textSub.opacity(0.4))
                 .multilineTextAlignment(.center)
@@ -463,8 +463,8 @@ struct SubscriptionView: View {
 struct BenefitRow: View {
     let icon: String
     let iconColor: Color
-    let title: LocalizedStringKey
-    let subtitle: LocalizedStringKey
+    let title: String
+    let subtitle: String
     
     var body: some View {
         HStack(spacing: 16) {

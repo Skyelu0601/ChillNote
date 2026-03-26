@@ -19,14 +19,14 @@ struct HomeSelectionOverlayView: View {
         switch guideStep {
         case .addSkill:
             if selectedNotesCount == 0 {
-                return String(localized: "Select the note you just recorded, then tap one of the default Skills.")
+                return String(localized: "Select the note you just recorded, then choose a Skill.")
             }
-            return String(localized: "Nice. Open Chill Skills and try Summarize, Polish the Draft, or Email.")
+            return String(localized: "Great. Now choose a Skill like Summarize to see how it works.")
         case .runSkill:
             if selectedNotesCount == 0 {
-                return String(localized: "Select the note you just recorded, then choose a Skill to try.")
+                return String(localized: "Select the note you just recorded, then choose a Skill.")
             }
-            return String(localized: "Now choose a Skill and let AI handle this note for you.")
+            return String(localized: "Great. Now choose a Skill like Summarize to see how it works.")
         case .recordFirstNote, .openSelection, .completed:
             return nil
         }
@@ -98,11 +98,11 @@ struct HomeSelectionOverlayView: View {
 
                             if recipeManager.savedRecipes.isEmpty {
                                 VStack(alignment: .leading, spacing: 14) {
-                                    Text("Add one Skill first")
+                                    Text("Add your first Skill")
                                         .font(.system(size: 18, weight: .bold, design: .rounded))
                                         .foregroundColor(.textMain)
 
-                                    Text("You can add a Skill from the top-right corner. Start with Summarize if you want the easiest first win.")
+                                    Text("Tap the top-right button to add one. If you're not sure where to start, try Summarize.")
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.textSub)
                                         .fixedSize(horizontal: false, vertical: true)
