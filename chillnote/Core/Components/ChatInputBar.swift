@@ -16,6 +16,7 @@ struct ChatInputBar: View {
     var onConfirmVoice: () -> Void
     var enforceVoiceQuota: Bool = true
     var recordTriggerMode: RecordTriggerMode = .tapToRecord
+    var highlightIdleMic: Bool = false
 
     @FocusState private var isTextFocused: Bool
     @State private var showTextInput = false
@@ -179,6 +180,15 @@ struct ChatInputBar: View {
                 .fill(Color.bgPrimary)
                 .frame(width: 90, height: 56)
                 .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
+                .overlay(
+                    Capsule()
+                        .stroke(highlightIdleMic ? Color.accentPrimary : Color.clear, lineWidth: 2)
+                )
+                .shadow(
+                    color: highlightIdleMic ? Color.accentPrimary.opacity(0.28) : .clear,
+                    radius: 16,
+                    y: 6
+                )
                 .overlay(
                     HStack(spacing: 8) {
                         Image(systemName: "mic.fill")

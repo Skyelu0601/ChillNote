@@ -115,6 +115,7 @@ struct NoteDetailView: View {
             guard value != nil else { return }
             guard !hasShownFirstVoiceSuccessPaywall else { return }
             guard storeService.currentTier == .free else { return }
+            guard activeNotesCount(for: note.userId) >= 3 else { return }
 
             firstVoiceSuccessTask?.cancel()
             firstVoiceSuccessTask = Task { @MainActor in
@@ -187,6 +188,15 @@ struct NoteDetailView: View {
         .onChange(of: note.content) { oldValue, newValue in
             viewModel.onContentChange(oldValue: oldValue, newValue: newValue)
         }
+    }
+
+    private func activeNotesCount(for userId: String) -> Int {
+        let descriptor = FetchDescriptor<Note>(
+            predicate: #Predicate<Note> { note in
+                note.userId == userId && note.deletedAt == nil
+            }
+        )
+        return ((try? modelContext.fetch(descriptor)) ?? []).count
     }
 }
 

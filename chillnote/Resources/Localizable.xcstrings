@@ -1011,6 +1011,9 @@
         }
       }
     },
+    "/%@" : {
+
+    },
     "#" : {
       "localizations" : {
         "de" : {
@@ -1793,6 +1796,58 @@
         }
       }
     },
+    "Add one Skill first" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Füge zuerst einen Skill hinzu"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add one Skill first"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primero agrega un Skill"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ajoutez d'abord un Skill"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "まずは Skill をひとつ追加"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "먼저 Skill 하나를 추가하세요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先添加一个 Skill"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先加入一個 Skill"
+          }
+        }
+      }
+    },
     "Add Skills" : {
       "localizations" : {
         "de" : {
@@ -1948,6 +2003,9 @@
           }
         }
       }
+    },
+    "Add your first Skill" : {
+
     },
     "Added" : {
       "localizations" : {
@@ -10842,6 +10900,58 @@
         }
       }
     },
+    "Got it" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verstanden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Got it"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Entendido"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "C'est bon"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "わかりました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "알겠어요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "知道了"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "知道了"
+          }
+        }
+      }
+    },
     "Help your ideas make sense" : {
       "localizations" : {
         "de" : {
@@ -13718,6 +13828,166 @@
         }
       }
     },
+    "Next time, just tap the koala, select a note, and open Chill Skills." : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Beim nächsten Mal einfach auf den Koala tippen, eine oder mehrere Notizen auswählen und Chill Skills öffnen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next time, just tap the koala, select one or more notes, and open Chill Skills."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La próxima vez, solo toca el koala, selecciona una o varias notas y abre Chill Skills."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La prochaine fois, touchez simplement le koala, choisissez une ou plusieurs notes et ouvrez Chill Skills."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次からは、コアラをタップしてノートを1つまたは複数選び、Chill Skills を開くだけです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다음부터는 코알라를 누르고 노트를 하나 또는 여러 개 고른 뒤, Chill Skills를 열면 돼요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下次只要点一下考拉，选中一条或多条笔记，再打开 Chill Skills 就可以了。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下次只要點一下考拉，選取一條或多條筆記，再打開 Chill Skills 就可以了。"
+          }
+        }
+      }
+    },
+    "Next time, just tap the koala, select one or more notes, and open Chill Skills." : {
+
+    },
+    "Nice, your note is ready. Next, open the koala button and select that note." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Super, deine Notiz ist bereit. Öffne als Nächstes den Koala-Button und wähle diese Notiz aus."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nice, your note is ready. Next, open the koala button and select that note."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bien, tu nota ya está lista. Ahora abre el botón del koala y selecciona esa nota."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parfait, votre note est prête. Ouvrez maintenant le bouton koala et sélectionnez cette note."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "いいですね。ノートの準備ができました。次はコアラボタンを開いて、そのノートを選んでみましょう。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "좋아요, 노트가 준비됐어요. 이제 코알라 버튼을 열고 그 노트를 선택해보세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "很好，这条笔记已经准备好了。接下来打开考拉按钮，选中这条笔记。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "很好，這條筆記已經準備好了。接下來打開考拉按鈕，選取這條筆記。"
+          }
+        }
+      }
+    },
+    "Nice. Open Chill Skills and try Summarize, Polish the Draft, or Email." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Super. Öffne Chill Skills und probiere Summarize, Polish the Draft oder Email aus."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nice. Open Chill Skills and try Summarize, Polish the Draft, or Email."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bien. Abre Chill Skills y prueba Summarize, Polish the Draft o Email."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parfait. Ouvrez Chill Skills et essayez Summarize, Polish the Draft ou Email."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "いい感じです。Chill Skills を開いて、Summarize、Polish the Draft、Email のどれかを試してみましょう。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "좋아요. Chill Skills를 열고 Summarize, Polish the Draft, Email 중 하나를 써보세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "很好。打开 Chill Skills，试试 Summarize、Polish the Draft 或 Email。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "很好。打開 Chill Skills，試試 Summarize、Polish the Draft 或 Email。"
+          }
+        }
+      }
+    },
     "No audio captured. Please try again." : {
       "localizations" : {
         "de" : {
@@ -14133,6 +14403,9 @@
           }
         }
       }
+    },
+    "No saved Skills yet. Add some in Chill Skills first." : {
+
     },
     "No Skills Yet" : {
       "localizations" : {
@@ -14707,6 +14980,58 @@
         }
       }
     },
+    "Now choose a Skill and let AI handle this note for you." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle jetzt einen Skill aus und lass die KI diese Notiz für dich bearbeiten."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Now choose a Skill and let AI handle this note for you."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ahora elige un Skill y deja que la IA trabaje esta nota por ti."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choisissez maintenant un Skill et laissez l’IA traiter cette note pour vous."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次は Skill をひとつ選んで、このノートを AI に任せてみましょう。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이제 Skill을 하나 고르고, 이 노트를 AI에게 맡겨보세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "现在选择一个 Skill，试试让 AI 帮你处理这条笔记。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在選擇一個 Skill，試試讓 AI 幫你處理這條筆記。"
+          }
+        }
+      }
+    },
     "Off" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -14913,6 +15238,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "開啟設定"
+          }
+        }
+      }
+    },
+    "Open the koala and select that note" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Öffne den Koala und wähle diese Notiz aus"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open the koala and select that note"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Abre el koala y selecciona esa nota"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ouvrez le koala et choisissez cette note"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "コアラを開いて、そのノートを選ぶ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "코알라를 열고 그 노트를 선택하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打开考拉并选中那条笔记"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "打開考拉並選取那條筆記"
           }
         }
       }
@@ -16408,7 +16785,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "You just turned a real voice note into something usable. Pro makes the whole flow smoother when you want to keep going."
+            "value" : "You already made a few real notes. If you want to keep the momentum going, Pro makes recording and polishing feel much smoother."
           }
         },
         "es" : {
@@ -16438,13 +16815,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你刚刚已经把一段真实语音变成了可用内容。升级 Pro 后，整条流程会更顺，适合继续往下做。"
+            "value" : "你已经连续做出几条真实笔记了。如果你想继续保持这个节奏，升级 Pro 后，录音和整理都会顺很多。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你剛剛已經把一段真實語音變成了可用內容。升級 Pro 後，整條流程會更順，適合繼續往下做。"
+            "value" : "你已經連續做出幾條真實筆記了。如果你想繼續保持這個節奏，升級 Pro 後，錄音和整理都會順很多。"
           }
         }
       }
@@ -16461,7 +16838,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your first note is ready"
+            "value" : "Ready to keep going?"
           }
         },
         "es" : {
@@ -16491,13 +16868,13 @@
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的第一条笔记已经准备好了"
+            "value" : "要继续往下试试吗？"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的第一條筆記已經準備好了"
+            "value" : "要繼續往下試試嗎？"
           }
         }
       }
@@ -17029,6 +17406,9 @@
           }
         }
       }
+    },
+    "Pick just one. Add it now, then go right back and run it on the note you just recorded." : {
+
     },
     "Pin" : {
       "localizations" : {
@@ -18126,6 +18506,9 @@
         }
       }
     },
+    "Recommended for your first try" : {
+
+    },
     "Record" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -18175,6 +18558,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "記錄"
+          }
+        }
+      }
+    },
+    "Record one thought" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprich einen Gedanken ein"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Record one thought"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Graba una idea"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enregistrez une idée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ひとこと録音する"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "생각 하나를 녹음하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "录下一句想法"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "錄下一句想法"
           }
         }
       }
@@ -19435,6 +19870,58 @@
         }
       }
     },
+    "Run Skill" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skill ausführen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Run Skill"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ejecutar Skill"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Lancer le Skill"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skill を実行"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skill 실행"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "运行 Skill"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "執行 Skill"
+          }
+        }
+      }
+    },
     "Save" : {
       "localizations" : {
         "de" : {
@@ -19800,6 +20287,58 @@
         }
       }
     },
+    "Say anything on your mind, then we will help you turn it into something useful." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprich einfach aus, was dir gerade durch den Kopf geht. Wir helfen dir dann, etwas Brauchbares daraus zu machen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Say anything on your mind, then we will help you turn it into something useful."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Di lo que tengas en mente. Luego te ayudaremos a convertirlo en algo útil."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dites simplement ce que vous avez en tête. Nous vous aiderons ensuite à le transformer en quelque chose d’utile."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今思っていることをそのまま話してみてください。あとで使える形に整えるお手伝いをします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지금 떠오르는 생각을 편하게 말해보세요. 나중에 쓸 수 있는 형태로 정리해드릴게요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把你现在想到的随口说出来就好。接下来我们会帮你把它整理成真正有用的内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把你現在想到的隨口說出來就好。接下來我們會幫你把它整理成真正有用的內容。"
+          }
+        }
+      }
+    },
     "Search" : {
       "localizations" : {
         "de" : {
@@ -20160,6 +20699,110 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "選擇一些筆記開始"
+          }
+        }
+      }
+    },
+    "Select the note you just recorded, then choose a Skill to try." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle zuerst die Notiz aus, die du gerade aufgenommen hast, und such dir dann einen Skill zum Ausprobieren aus."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select the note you just recorded, then choose a Skill to try."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selecciona la nota que acabas de grabar y luego elige un Skill para probar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sélectionnez la note que vous venez d’enregistrer, puis choisissez un Skill à essayer."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今録音したノートを選んでから、試したい Skill を選んでください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "방금 녹음한 노트를 먼저 선택한 다음, 써보고 싶은 Skill을 골라보세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先选中你刚录好的那条笔记，再选一个 Skill 来试试看。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先選取你剛錄好的那條筆記，再選一個 Skill 來試試看。"
+          }
+        }
+      }
+    },
+    "Select the note you just recorded, then tap one of the default Skills." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wähle zuerst die Notiz aus, die du gerade aufgenommen hast, und tippe dann auf einen der Standard-Skills."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select the note you just recorded, then tap one of the default Skills."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Selecciona la nota que acabas de grabar y luego toca uno de los Skills predeterminados."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sélectionnez la note que vous venez d’enregistrer, puis touchez l’un des Skills par défaut."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今録音したノートを選んでから、用意されている Skill をひとつタップしてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "방금 녹음한 노트를 먼저 선택한 다음, 기본 Skill 중 하나를 눌러보세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先选中你刚录好的那条笔记，再点一个默认 Skill。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先選取你剛錄好的那條筆記，再點一個預設 Skill。"
           }
         }
       }
@@ -23660,6 +24303,110 @@
         }
       }
     },
+    "Try another Skill" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Noch einen Skill ausprobieren"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try another Skill"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Probar otro Skill"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Essayer un autre Skill"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "別の Skill を試す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다른 Skill 써보기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再试一个 Skill"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "再試一個 Skill"
+          }
+        }
+      }
+    },
+    "Try ChillNote in 3 small steps" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Probier ChillNote in 3 kleinen Schritten aus"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try ChillNote in 3 small steps"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Prueba ChillNote en 3 pasos sencillos"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Essayez ChillNote en 3 petites étapes"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3つのステップで ChillNote を試してみよう"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "3단계로 ChillNote를 시작해보세요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用 3 个简单步骤试试 ChillNote"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用 3 個簡單步驟試試 ChillNote"
+          }
+        }
+      }
+    },
     "Try saying this" : {
       "localizations" : {
         "de" : {
@@ -24697,6 +25444,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "升級到 Pro"
+          }
+        }
+      }
+    },
+    "Use the mic at the bottom" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nutze das Mikrofon unten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use the mic at the bottom"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa el micrófono de abajo"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utilisez le micro en bas"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下のマイクを使ってみて"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "아래 마이크를 눌러보세요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用底部的麦克风"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "使用底部的麥克風"
           }
         }
       }
@@ -26435,6 +27234,110 @@
         }
       }
     },
+    "You already finished the first-time guide." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du hast die erste Einführung schon abgeschlossen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You already finished the first-time guide."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya terminaste la guía inicial."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous avez déjà terminé le guide de démarrage."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最初のガイドはもう完了しています。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "첫 사용 가이드를 이미 완료했어요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你已经完成首次引导了。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你已經完成首次引導了。"
+          }
+        }
+      }
+    },
+    "You can add a Skill from the top-right corner. Start with Summarize if you want the easiest first win." : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Oben rechts kannst du einen Skill hinzufügen. Wenn du am einfachsten starten willst, nimm zuerst Summarize."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You can add a Skill from the top-right corner. Start with Summarize if you want the easiest first win."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Puedes agregar un Skill desde la esquina superior derecha. Si quieres el comienzo más fácil, empieza con Summarize."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous pouvez ajouter un Skill en haut à droite. Si vous voulez commencer le plus simplement possible, essayez d'abord Summarize."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "右上から Skill を追加できます。いちばん気軽に試すなら、まずは Summarize がおすすめです。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "오른쪽 위에서 Skill을 추가할 수 있어요. 가장 쉽게 시작하고 싶다면 먼저 Summarize를 써보세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你可以从右上角添加 Skill。如果想最轻松地开始，建议先试试 Summarize。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你可以從右上角加入 Skill。如果想最輕鬆地開始，建議先試試 Summarize。"
+          }
+        }
+      }
+    },
     "You can keep using ChillNote while we work." : {
       "localizations" : {
         "de" : {
@@ -26483,6 +27386,58 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "在我們工作期間，您可以繼續使用 ChillNote。"
+          }
+        }
+      }
+    },
+    "You just learned Chill Skills" : {
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Du weißt jetzt, wie Chill Skills funktioniert"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "You just learned Chill Skills"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ya aprendiste a usar Chill Skills"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vous savez maintenant utiliser Chill Skills"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chill Skills の使い方がわかりました"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이제 Chill Skills를 사용할 수 있어요"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你已经学会用 Chill Skills 了"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "你已經學會用 Chill Skills 了"
           }
         }
       }

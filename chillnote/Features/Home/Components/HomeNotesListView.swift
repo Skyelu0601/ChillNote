@@ -10,6 +10,7 @@ struct HomeNotesListView: View {
     let isTrashSelected: Bool
     let isSelectionMode: Bool
     let selectedNotes: Set<UUID>
+    let showDefaultEmptyStateMessage: Bool
     let onReachBottom: (Note) -> Void
     let onToggleNoteSelection: (Note) -> Void
     let onRestoreNote: (Note) -> Void
@@ -28,6 +29,9 @@ struct HomeNotesListView: View {
                     .padding(.horizontal, 24)
                     .padding(.top, 12)
                     .frame(maxWidth: .infinity, alignment: .leading)
+            } else if !showDefaultEmptyStateMessage {
+                Color.clear
+                    .frame(height: 1)
             } else {
                 Text("No notes yet. Use the voice button to create your first note.")
                     .font(.bodyMedium)

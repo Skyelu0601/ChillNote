@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct ChillRecipesView: View {
+    let isFirstUseGuideActive: Bool
+    let highlightedRecipeID: String
+
     @StateObject private var recipeManager = RecipeManager.shared
     @StateObject private var storeService = StoreService.shared
     @State private var selectedSection: RecipeSection = .library
@@ -19,6 +22,8 @@ struct ChillRecipesView: View {
     private let gridColumns = [
         GridItem(.adaptive(minimum: 160, maximum: 200), spacing: 16)
     ]
+
+    private let firstTryRecipeIDs = ["summarize"]
 
     var body: some View {
         ZStack {
@@ -62,26 +67,38 @@ struct ChillRecipesView: View {
                 ScrollView {
                     VStack(spacing: 24) {
                         if selectedSection == .library {
-                            // Categories - Full Width
-                            HStack(spacing: 10) {
-                                ForEach(AgentRecipeCategory.allCases) { category in
-                                    CategoryChip(
-                                        category: category,
-                                        isSelected: selectedCategory == category || (selectedCategory == nil && category == .think), // Default first if nil
-                                        action: {
-                                            withAnimation {
-                                                selectedCategory = category
-                                            }
-                                        }
-                                    )
-                                }
+                            if showFirstTrySection {
+                                firstTrySection
+                                    .padding(.horizontal, 20)
                             }
-                            .padding(.horizontal, 20)
+
+                            // Categories - Full Width
+                            if !showFirstTrySection {
+                                HStack(spacing: 10) {
+                                    ForEach(AgentRecipeCategory.allCases) { category in
+                                        CategoryChip(
+                                            category: category,
+                                            isSelected: selectedCategory == category || (selectedCategory == nil && category == .think), // Default first if nil
+                                            action: {
+                                                withAnimation {
+                                                    selectedCategory = category
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal, 20)
+                            }
                             
                             // Library Grid
                             LazyVGrid(columns: gridColumns, spacing: 16) {
-                                ForEach(recipes(for: selectedCategory ?? .think)) { recipe in
-                                    RecipeCard(recipe: recipe, isAdded: recipeManager.isAdded(recipe)) {
+                                ForEach(showFirstTrySection ? firstTryRecipes : recipes(for: selectedCategory ?? .think)) { recipe in
+                                    RecipeCard(
+                                        recipe: recipe,
+                                        isAdded: recipeManager.isAdded(recipe),
+                                        isHighlighted: recipe.id == highlightedRecipeID,
+                                        subtitleOverride: showFirstTrySection ? firstTrySubtitle(for: recipe) : nil
+                                    ) {
                                         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                             recipeManager.toggleRecipe(recipe)
                                         }
@@ -187,6 +204,29 @@ struct ChillRecipesView: View {
         AgentRecipe.allRecipes.filter { $0.category == category }
     }
 
+    private var showFirstTrySection: Bool {
+        isFirstUseGuideActive && recipeManager.savedRecipes.isEmpty
+    }
+
+    private var firstTryRecipes: [AgentRecipe] {
+        AgentRecipe.allRecipes.filter { firstTryRecipeIDs.contains($0.id) }
+    }
+
+    private var firstTrySection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Recommended for your first try")
+                    .font(.system(size: 22, weight: .bold, design: .rounded))
+                    .foregroundColor(.textMain)
+
+                Text("Pick just one. Add it now, then go right back and run it on the note you just recorded.")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.textSub)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
     private func saveCustomRecipe() {
         let trimmedName = newRecipeName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedPrompt = newRecipePrompt.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -204,6 +244,15 @@ struct ChillRecipesView: View {
         newRecipeName = ""
         newRecipePrompt = ""
         newRecipeIcon = "sparkles"
+    }
+
+    private func firstTrySubtitle(for recipe: AgentRecipe) -> String {
+        switch recipe.id {
+        case "summarize":
+            return "Turn a rambling voice note into a short summary."
+        default:
+            return recipe.localizedDescription
+        }
     }
 }
 
@@ -235,6 +284,8 @@ private struct CategoryChip: View {
 private struct RecipeCard: View {
     let recipe: AgentRecipe
     let isAdded: Bool
+    var isHighlighted: Bool = false
+    var subtitleOverride: String? = nil
     let onToggle: () -> Void
     
     var body: some View {
@@ -256,7 +307,7 @@ private struct RecipeCard: View {
                     .lineLimit(1)
                     .foregroundColor(.textMain)
                 
-                Text(recipe.localizedDescription)
+                Text(subtitleOverride ?? recipe.localizedDescription)
                     .font(.caption)
                     .foregroundColor(.textSub)
                     .lineLimit(3)
@@ -273,8 +324,12 @@ private struct RecipeCard: View {
         .shadow(color: Color.black.opacity(0.04), radius: 8, x: 0, y: 4)
         .overlay(
             RoundedRectangle(cornerRadius: 16)
-                .stroke(isAdded ? Color.accentPrimary.opacity(0.3) : Color.clear, lineWidth: 1)
+                .stroke(
+                    isHighlighted ? Color.accentPrimary : (isAdded ? Color.accentPrimary.opacity(0.3) : Color.clear),
+                    lineWidth: isHighlighted ? 1.5 : 1
+                )
         )
+        .shadow(color: isHighlighted ? Color.accentPrimary.opacity(0.14) : Color.black.opacity(0.04), radius: isHighlighted ? 12 : 8, x: 0, y: 4)
     }
 }
 
@@ -459,6 +514,6 @@ private enum RecipeSection: String, CaseIterable, Identifiable {
 
 #Preview {
     NavigationStack {
-        ChillRecipesView()
+        ChillRecipesView(isFirstUseGuideActive: true, highlightedRecipeID: "")
     }
 }

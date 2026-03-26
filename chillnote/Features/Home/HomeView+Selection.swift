@@ -73,6 +73,11 @@ extension HomeView {
             isSelectionMode = true
             selectedNotes.removeAll()
         }
+        if firstUseGuideStep == .openSelection {
+            setFirstUseGuideStep(recipeManager.savedRecipes.isEmpty ? .addSkill : .runSkill)
+        } else {
+            syncFirstUseGuideState()
+        }
     }
 
     func exitSelectionMode() {
@@ -90,6 +95,7 @@ extension HomeView {
                 selectedNotes.insert(note.id)
             }
         }
+        syncFirstUseGuideState()
     }
 
     func selectAllNotes() {

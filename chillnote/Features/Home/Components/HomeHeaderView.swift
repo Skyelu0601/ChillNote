@@ -9,6 +9,7 @@ struct HomeHeaderView: View {
     let selectedNotesCount: Int
     let visibleNotesCount: Int
     let hasPendingRecordings: Bool
+    let highlightSelectionEntry: Bool
 
     let onToggleSidebar: () -> Void
     let onCreateBlankNote: () -> Void
@@ -78,6 +79,20 @@ struct HomeHeaderView: View {
                                 .frame(width: 30, height: 30)
                                 .frame(width: 36, height: 36)
                                 .grayscale(isRecording ? 1.0 : 0.0)
+                                .padding(3)
+                                .background(
+                                    Circle()
+                                        .fill(highlightSelectionEntry ? Color.accentPrimary.opacity(0.14) : Color.clear)
+                                )
+                                .overlay(
+                                    Circle()
+                                        .stroke(highlightSelectionEntry ? Color.accentPrimary : Color.clear, lineWidth: 1.5)
+                                )
+                                .shadow(
+                                    color: highlightSelectionEntry ? Color.accentPrimary.opacity(0.28) : .clear,
+                                    radius: 10,
+                                    y: 4
+                                )
                         }
                         .buttonStyle(.bouncy)
                         .disabled(isRecording)

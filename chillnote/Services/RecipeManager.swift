@@ -6,6 +6,7 @@ final class RecipeManager: ObservableObject {
 
     @AppStorage("savedRecipesJSON") private var savedRecipesJSON: String = "[]"
     @AppStorage("customRecipesJSON") private var customRecipesJSON: String = "[]"
+    @AppStorage("defaultRecipesInstalled") private var defaultRecipesInstalled = false
 
     @Published var savedRecipes: [AgentRecipe] = [] {
         didSet { saveToDisk() }
@@ -18,6 +19,7 @@ final class RecipeManager: ObservableObject {
 
     private init() {
         loadFromDisk()
+        installDefaultRecipesIfNeeded()
     }
 
     func toggleRecipe(_ recipe: AgentRecipe) {
@@ -62,6 +64,22 @@ final class RecipeManager: ObservableObject {
     func deleteCustomRecipe(_ recipe: AgentRecipe) {
         customRecipes.removeAll { $0.id == recipe.id }
         removeRecipe(recipe)
+    }
+
+    func installDefaultRecipesIfNeeded() {
+        guard !defaultRecipesInstalled else { return }
+        guard savedRecipes.isEmpty else {
+            defaultRecipesInstalled = true
+            return
+        }
+
+        let defaultIDs = ["summarize", "fix_grammar", "draft_email"]
+        let defaults = AgentRecipe.allRecipes.filter { defaultIDs.contains($0.id) }
+        guard !defaults.isEmpty else { return }
+
+        savedRecipes = defaults
+        savedRecipeIds = Set(defaults.map(\.id))
+        defaultRecipesInstalled = true
     }
 
     private func loadFromDisk() {

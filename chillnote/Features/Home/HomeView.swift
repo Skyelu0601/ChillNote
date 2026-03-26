@@ -86,6 +86,11 @@ struct HomeView: View {
     @State var autoOpenPendingRecordings = false
     @State var latestTranscriptionFailureMessage = ""
     @State var showTranscriptionFailureAlert = false
+    @State var showGuideCompletionOverlay = false
+
+    @AppStorage(HomeFirstUseGuideStorage.stepKey) private var firstUseGuideStepRawValue = HomeFirstUseGuideStep.recordFirstNote.rawValue
+    @AppStorage(HomeFirstUseGuideStorage.targetNoteIDKey) private var firstUseGuideTargetNoteID = ""
+    @AppStorage(HomeFirstUseGuideStorage.highlightedRecipeIDKey) private var firstUseGuideHighlightedRecipeID = ""
 
     @State var hasScheduledInitialMaintenance = false
     @State var lastMaintenanceAt: Date?
@@ -97,6 +102,10 @@ struct HomeView: View {
     @State var bootstrappingUserId: String?
     @State var lastBootstrappedUserId: String?
     @State var shouldReloadAfterSync = false
+
+    var firstUseGuideStep: HomeFirstUseGuideStep {
+        HomeFirstUseGuideStep(rawValue: firstUseGuideStepRawValue) ?? .recordFirstNote
+    }
 
     var headerTitle: String {
         if isTrashSelected {
@@ -156,17 +165,30 @@ struct HomeView: View {
             recipeHardLimit: recipeHardLimit,
             hasPendingRecordings: hasPendingRecordings,
             pendingRecordingsCount: pendingRecordings.count,
-                               showPendingRecordings: showPendingRecordings
+            showPendingRecordings: showPendingRecordings,
+            firstUseGuideStep: firstUseGuideStep,
+            guideTargetNoteID: UUID(uuidString: firstUseGuideTargetNoteID),
+            guideHighlightedRecipeID: firstUseGuideHighlightedRecipeID,
+            showGuideCompletionOverlay: showGuideCompletionOverlay
         )
     }
 
     var body: some View {
+        homeViewWithModals
+    }
+
+    private var homeRootView: some View {
         HomeBodyView(
             state: screenState,
             dispatch: dispatch,
             isSearchFocused: $isSearchFocused,
             searchBar: AnyView(searchBar)
         )
+    }
+
+    private var homeViewLifecyclePhaseOne: AnyView {
+        AnyView(
+            homeRootView
         .onChange(of: speechRecognizer.recordingState) { _, newState in
             if case .error = newState, isVoiceMode {
                 isVoiceMode = false
@@ -206,6 +228,12 @@ struct HomeView: View {
                 }
             }
         }
+        )
+    }
+
+    private var homeViewLifecyclePhaseTwo: AnyView {
+        AnyView(
+            homeViewLifecyclePhaseOne
         .onChange(of: authService.isSignedIn) { _, isSignedIn in
             guard !isSignedIn else { return }
             showingSettings = false
@@ -237,6 +265,18 @@ struct HomeView: View {
                 await bootstrapHome(for: userId, source: .authChanged)
             }
         }
+        .onChange(of: homeViewModel.items.map(\.id)) { _, _ in
+            syncFirstUseGuideState()
+        }
+        .onChange(of: recipeManager.savedRecipes.map(\.id)) { oldValue, newValue in
+            handleSavedRecipesChanged(from: oldValue, to: newValue)
+        }
+        )
+    }
+
+    private var homeViewWithLifecycleHandlers: AnyView {
+        AnyView(
+            homeViewLifecyclePhaseTwo
         .onChange(of: syncManager.isSyncing) { _, isSyncing in
             if isSyncing {
                 shouldReloadAfterSync = true
@@ -284,7 +324,13 @@ struct HomeView: View {
             scheduleInitialMaintenance()
             guard let userId = currentUserId else { return }
             await bootstrapHome(for: userId, source: .initialTask)
+            syncFirstUseGuideState()
         }
+        )
+    }
+
+    private var homeViewWithModals: some View {
+        homeViewWithLifecycleHandlers
         .sheet(item: $activePaywallContext) { context in
             UpgradeBottomSheet(
                 content: context.content,
@@ -447,6 +493,11 @@ struct HomeView: View {
             showChillRecipes = true
         case .closeChillRecipes:
             showChillRecipes = false
+        case .dismissGuideCompletionOverlay:
+            showGuideCompletionOverlay = false
+        case .repeatGuideSkillFlow:
+            showGuideCompletionOverlay = false
+            reenterGuideSkillFlow()
 
         case .confirmAskSoftLimit:
             cachedContextNotes = getSelectedNotes()
@@ -514,7 +565,97 @@ struct HomeView: View {
             guard !Task.isCancelled else { return }
             await homeViewModel.reload(keepItemsWhileLoading: keepItemsWhileLoading)
             clampSelectionToCurrentFilter()
+            syncFirstUseGuideState()
         }
+    }
+
+    func syncFirstUseGuideState() {
+        guard firstUseGuideStep != .completed else { return }
+
+        let hasNotes = hasAnyActiveNotesForCurrentUser()
+        let hasSavedSkills = !recipeManager.savedRecipes.isEmpty
+
+        switch firstUseGuideStep {
+        case .recordFirstNote:
+            if hasNotes {
+                setFirstUseGuideStep(.openSelection)
+            }
+        case .openSelection, .addSkill:
+            if hasSavedSkills {
+                setFirstUseGuideStep(.runSkill)
+            } else if isSelectionMode {
+                setFirstUseGuideStep(.addSkill)
+            }
+        case .runSkill:
+            if !hasSavedSkills {
+                setFirstUseGuideStep(.addSkill)
+                firstUseGuideHighlightedRecipeID = ""
+            }
+        case .completed:
+            break
+        }
+    }
+
+    func hasAnyActiveNotesForCurrentUser() -> Bool {
+        guard let userId = currentUserId else { return false }
+        let descriptor = FetchDescriptor<Note>(
+            predicate: #Predicate<Note> { note in
+                note.userId == userId && note.deletedAt == nil
+            }
+        )
+        let notes = (try? modelContext.fetch(descriptor)) ?? []
+        return !notes.isEmpty
+    }
+
+    func handleSavedRecipesChanged(from oldValue: [String], to newValue: [String]) {
+        guard newValue.count >= oldValue.count else {
+            syncFirstUseGuideState()
+            return
+        }
+
+        let oldSet = Set(oldValue)
+        let addedID = newValue.first { !oldSet.contains($0) }
+        if let addedID {
+            firstUseGuideHighlightedRecipeID = addedID
+            if firstUseGuideStep != .completed {
+                setFirstUseGuideStep(.runSkill)
+            }
+        }
+
+        syncFirstUseGuideState()
+    }
+
+    func recordGuideTarget(noteID: UUID) {
+        if firstUseGuideTargetNoteID.isEmpty {
+            firstUseGuideTargetNoteID = noteID.uuidString
+        }
+        if firstUseGuideStep == .recordFirstNote {
+            setFirstUseGuideStep(.openSelection)
+        }
+    }
+
+    func markGuideCompletedIfNeeded(using recipe: AgentRecipe) {
+        guard firstUseGuideStep == .runSkill else { return }
+        firstUseGuideHighlightedRecipeID = recipe.id
+        setFirstUseGuideStep(.completed)
+        showGuideCompletionOverlay = true
+    }
+
+    func reenterGuideSkillFlow() {
+        guard let noteID = UUID(uuidString: firstUseGuideTargetNoteID),
+              let note = resolveNote(noteID) else {
+            enterSelectionMode()
+            isAgentMenuOpen = true
+            return
+        }
+
+        enterSelectionMode()
+        selectedNotes = [note.id]
+        isAgentMenuOpen = true
+    }
+
+    func setFirstUseGuideStep(_ step: HomeFirstUseGuideStep) {
+        firstUseGuideStepRawValue = step.rawValue
     }
 
     enum HomeBootstrapSource {

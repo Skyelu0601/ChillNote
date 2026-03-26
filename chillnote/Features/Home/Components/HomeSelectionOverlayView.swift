@@ -4,11 +4,33 @@ struct HomeSelectionOverlayView: View {
     let isSelectionMode: Bool
     let isAgentMenuOpen: Bool
     let recipeManager: RecipeManager
+    let selectedNotesCount: Int
+    let guideStep: HomeFirstUseGuideStep
+    let highlightedRecipeID: String
     let onStartAIChat: () -> Void
     let onToggleAgentMenu: () -> Void
     let onCloseMenu: () -> Void
     let onOpenChillRecipes: () -> Void
     let onHandleAgentActionRequest: (AgentRecipe) -> Void
+
+    @State private var shouldHighlightAddButton = false
+
+    private var guideBubbleMessage: String? {
+        switch guideStep {
+        case .addSkill:
+            if selectedNotesCount == 0 {
+                return String(localized: "Select the note you just recorded, then tap one of the default Skills.")
+            }
+            return String(localized: "Nice. Open Chill Skills and try Summarize, Polish the Draft, or Email.")
+        case .runSkill:
+            if selectedNotesCount == 0 {
+                return String(localized: "Select the note you just recorded, then choose a Skill to try.")
+            }
+            return String(localized: "Now choose a Skill and let AI handle this note for you.")
+        case .recordFirstNote, .openSelection, .completed:
+            return nil
+        }
+    }
 
     var body: some View {
         if isSelectionMode {
@@ -23,6 +45,12 @@ struct HomeSelectionOverlayView: View {
                 }
 
                 VStack(spacing: 0) {
+                    if let guideBubbleMessage {
+                        HomeSelectionGuideBubble(message: guideBubbleMessage)
+                            .padding(.horizontal, 24)
+                            .padding(.bottom, 12)
+                    }
+
                     if isAgentMenuOpen {
                         VStack(spacing: 16) {
                             HStack {
@@ -36,51 +64,85 @@ struct HomeSelectionOverlayView: View {
                                         onOpenChillRecipes()
                                     }
                                 } label: {
-                                    Image(systemName: "plus.circle.fill")
-                                        .font(.system(size: 18, weight: .semibold))
-                                        .foregroundColor(.accentPrimary)
-                                        .accessibilityLabel("Add Skills")
+                                    HStack(spacing: 6) {
+                                        Image(systemName: "plus.circle.fill")
+                                            .font(.system(size: 16, weight: .semibold))
+                                        Text(recipeManager.savedRecipes.isEmpty ? "Add your first Skill" : "Add Skills")
+                                            .font(.system(size: 13, weight: .semibold))
+                                    }
+                                    .foregroundColor(.accentPrimary)
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 8)
+                                    .background((recipeManager.savedRecipes.isEmpty ? Color.accentPrimary.opacity(0.18) : Color.accentPrimary.opacity(0.1)))
+                                    .clipShape(Capsule())
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(recipeManager.savedRecipes.isEmpty ? Color.accentPrimary : Color.clear, lineWidth: 1.5)
+                                    )
+                                    .scaleEffect(recipeManager.savedRecipes.isEmpty && shouldHighlightAddButton ? 1.04 : 1.0)
+                                    .shadow(
+                                        color: recipeManager.savedRecipes.isEmpty ? Color.accentPrimary.opacity(0.24) : .clear,
+                                        radius: shouldHighlightAddButton ? 12 : 6,
+                                        y: 4
+                                    )
+                                    .accessibilityLabel("Add Skills")
                                 }
                             }
                             .padding(.horizontal, 4)
-
-                            LazyVGrid(columns: [
-                                GridItem(.flexible()),
-                                GridItem(.flexible()),
-                                GridItem(.flexible())
-                            ], spacing: 16) {
-                                ForEach(recipeManager.savedRecipes) { recipe in
-                                    Button(action: {
-                                        onCloseMenu()
-                                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                            onHandleAgentActionRequest(recipe)
-                                        }
-                                    }) {
-                                        VStack(spacing: 10) {
-                                            RecipeGridIcon(recipe: recipe, size: 22, container: 52)
-
-                                            Text(recipe.localizedName)
-                                                .font(.system(size: 12, weight: .medium))
-                                                .foregroundColor(.primary)
-                                                .multilineTextAlignment(.center)
-                                                .lineLimit(2)
-                                                .fixedSize(horizontal: false, vertical: true)
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                    }
-                                    .buttonStyle(ScaleButtonStyle())
+                            .onAppear {
+                                guard recipeManager.savedRecipes.isEmpty else { return }
+                                withAnimation(.easeInOut(duration: 0.8).repeatForever(autoreverses: true)) {
+                                    shouldHighlightAddButton = true
                                 }
-                                if recipeManager.savedRecipes.isEmpty {
-                                    VStack(spacing: 8) {
-                                        Image(systemName: "book.closed")
-                                            .font(.system(size: 20))
-                                            .foregroundColor(.secondary)
-                                        Text("No Skills Yet")
-                                            .font(.system(size: 12, weight: .medium))
-                                            .foregroundColor(.secondary)
-                                            .multilineTextAlignment(.center)
+                            }
+
+                            if recipeManager.savedRecipes.isEmpty {
+                                VStack(alignment: .leading, spacing: 14) {
+                                    Text("Add one Skill first")
+                                        .font(.system(size: 18, weight: .bold, design: .rounded))
+                                        .foregroundColor(.textMain)
+
+                                    Text("You can add a Skill from the top-right corner. Start with Summarize if you want the easiest first win.")
+                                        .font(.system(size: 14, weight: .medium))
+                                        .foregroundColor(.textSub)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                }
+                            } else {
+                                LazyVGrid(columns: [
+                                    GridItem(.flexible()),
+                                    GridItem(.flexible()),
+                                    GridItem(.flexible())
+                                ], spacing: 16) {
+                                    ForEach(recipeManager.savedRecipes) { recipe in
+                                        Button(action: {
+                                            onCloseMenu()
+                                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                                                onHandleAgentActionRequest(recipe)
+                                            }
+                                        }) {
+                                            VStack(spacing: 10) {
+                                                RecipeGridIcon(recipe: recipe, size: 22, container: 52)
+
+                                                Text(recipe.localizedName)
+                                                    .font(.system(size: 12, weight: recipe.id == highlightedRecipeID ? .semibold : .medium))
+                                                    .foregroundColor(.primary)
+                                                    .multilineTextAlignment(.center)
+                                                    .lineLimit(2)
+                                                    .fixedSize(horizontal: false, vertical: true)
+                                            }
+                                            .frame(maxWidth: .infinity)
+                                            .padding(.vertical, 8)
+                                            .background(
+                                                RoundedRectangle(cornerRadius: 18)
+                                                    .fill(recipe.id == highlightedRecipeID ? Color.accentPrimary.opacity(0.12) : Color.clear)
+                                            )
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 18)
+                                                    .stroke(recipe.id == highlightedRecipeID ? Color.accentPrimary : Color.clear, lineWidth: 1.5)
+                                            )
+                                        }
+                                        .buttonStyle(ScaleButtonStyle())
                                     }
-                                    .frame(maxWidth: .infinity)
                                 }
                             }
                         }
