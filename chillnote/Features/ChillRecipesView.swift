@@ -113,8 +113,8 @@ struct ChillRecipesView: View {
                             if recipeManager.savedRecipes.isEmpty {
                                 EmptyStateView(
                                     icon: "doc.text.magnifyingglass",
-                                    title: "No Skills Yet",
-                                    message: "Add Skills from the library. Creating your own custom actions is available for paid members."
+                                    title: "recipes.empty.title",
+                                    message: "recipes.empty.message"
                                 )
                                 .padding(.top, 40)
                             } else {
@@ -151,7 +151,7 @@ struct ChillRecipesView: View {
                             HStack(spacing: 8) {
                                 Image(systemName: "plus")
                                     .font(.headline)
-                                Text("Create")
+                                Text(L10n.text("recipes.create"))
                                     .font(.headline)
                             }
                             .padding(.horizontal, 20)
@@ -168,7 +168,7 @@ struct ChillRecipesView: View {
                 }
             }
         }
-        .navigationTitle("Chill Skills")
+        .navigationTitle(L10n.text("recipes.title"))
         .sheet(isPresented: $showingCreateRecipe) {
             CreateRecipeSheet(
                 name: $newRecipeName,
@@ -184,19 +184,19 @@ struct ChillRecipesView: View {
         .sheet(isPresented: $showingSubscription) {
             SubscriptionView()
         }
-        .alert("Delete Skill", isPresented: Binding(
+        .alert(L10n.text("recipes.alert.delete_skill.title"), isPresented: Binding(
             get: { pendingDeleteRecipe != nil },
             set: { isPresented in if !isPresented { pendingDeleteRecipe = nil } }
         )) {
-            Button("Cancel", role: .cancel) { pendingDeleteRecipe = nil }
-            Button("Delete", role: .destructive) {
+            Button(L10n.text("common.cancel"), role: .cancel) { pendingDeleteRecipe = nil }
+            Button(L10n.text("common.delete"), role: .destructive) {
                 if let recipe = pendingDeleteRecipe {
                     withAnimation { recipeManager.deleteCustomRecipe(recipe) }
                 }
                 pendingDeleteRecipe = nil
             }
         } message: {
-            Text("This will permanently delete this custom Skill.")
+            Text(L10n.text("recipes.alert.delete_skill.message"))
         }
     }
 
@@ -215,11 +215,11 @@ struct ChillRecipesView: View {
     private var firstTrySection: some View {
         VStack(alignment: .leading, spacing: 16) {
             VStack(alignment: .leading, spacing: 6) {
-                Text("Recommended for your first try")
+                Text(L10n.text("recipes.first_try.title"))
                     .font(.system(size: 22, weight: .bold, design: .rounded))
                     .foregroundColor(.textMain)
 
-                Text("Pick just one. Add it now, then go right back and run it on the note you just recorded.")
+                Text(L10n.text("recipes.first_try.message"))
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.textSub)
                     .fixedSize(horizontal: false, vertical: true)
@@ -249,7 +249,7 @@ struct ChillRecipesView: View {
     private func firstTrySubtitle(for recipe: AgentRecipe) -> String {
         switch recipe.id {
         case "summarize":
-            return "Turn a rambling voice note into a short summary."
+            return L10n.text("recipes.first_try.summarize_subtitle")
         default:
             return recipe.localizedDescription
         }
@@ -356,12 +356,12 @@ private struct MyRecipeCardRow: View {
             
             Menu {
                 Button(role: .destructive, action: onRemove) {
-                    Label("Remove", systemImage: "minus.circle")
+                    Label(L10n.text("recipes.action.remove"), systemImage: "minus.circle")
                 }
                 
                 if let onDelete {
                     Button(role: .destructive, action: onDelete) {
-                        Label("Delete Permanently", systemImage: "trash")
+                        Label(L10n.text("home.notes.action.delete_permanently"), systemImage: "trash")
                     }
                 }
             } label: {
@@ -461,12 +461,12 @@ private struct CreateRecipeSheet: View {
     var body: some View {
         NavigationStack {
             Form {
-                Section("Skill Details") {
-                    TextField("Name (e.g. Summarize)", text: $name)
+                Section(L10n.text("recipes.create_sheet.details")) {
+                    TextField(L10n.text("recipes.create_sheet.name_placeholder"), text: $name)
                     
                     Button(action: { isIconPickerPresented = true }) {
                         HStack {
-                            Text("Icon")
+                            Text(L10n.text("recipes.create_sheet.icon"))
                                 .foregroundColor(.textMain)
                             Spacer()
                             Image(systemName: icon.isEmpty ? "sparkles" : icon)
@@ -475,19 +475,19 @@ private struct CreateRecipeSheet: View {
                     }
                 }
 
-                Section("Prompt") {
+                Section(L10n.text("recipes.create_sheet.prompt")) {
                     TextEditor(text: $prompt)
                         .frame(minHeight: 120)
                 }
             }
-            .navigationTitle("Create Skill")
+            .navigationTitle(L10n.text("recipes.create_sheet.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel", action: onCancel)
+                    Button(L10n.text("common.cancel"), action: onCancel)
                 }
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("Save", action: onSave)
+                    Button(L10n.text("common.save"), action: onSave)
                         .disabled(isSaveDisabled)
                 }
             }
@@ -506,8 +506,8 @@ private enum RecipeSection: String, CaseIterable, Identifiable {
     
     var title: String {
         switch self {
-        case .library: return NSLocalizedString("Library", comment: "")
-        case .myRecipes: return NSLocalizedString("My Skills", comment: "")
+        case .library: return L10n.text("recipes.section.library")
+        case .myRecipes: return L10n.text("recipes.section.my_skills")
         }
     }
 }

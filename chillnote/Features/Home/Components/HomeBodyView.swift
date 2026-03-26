@@ -195,7 +195,7 @@ struct HomeBodyView: View {
                 PendingRecordingsView()
                     .toolbar {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("Close") {
+                            Button(L10n.text("common.close")) {
                                 dispatch(.setShowPendingRecordings(false))
                             }
                         }
@@ -217,62 +217,62 @@ struct HomeBodyView: View {
                 )
                     .toolbar {
                         ToolbarItem(placement: .navigationBarLeading) {
-                            Button("Close") {
+                            Button(L10n.text("common.close")) {
                                 dispatch(.closeChillRecipes)
                             }
                         }
                     }
             }
         }
-        .alert("Ask Agent", isPresented: customActionInputPresentedBinding) {
-            TextField("What should I do?", text: customActionPromptBinding)
-            Button("Cancel", role: .cancel) {
+        .alert(L10n.text("home.ask_agent.title"), isPresented: customActionInputPresentedBinding) {
+            TextField(L10n.text("home.ask_agent.prompt"), text: customActionPromptBinding)
+            Button(L10n.text("common.cancel"), role: .cancel) {
                 dispatch(.setCustomActionPrompt(""))
             }
-            Button("Do it") {
+            Button(L10n.text("home.ask_agent.confirm")) {
                 dispatch(.executePendingAgentAction(state.customActionPrompt))
                 dispatch(.setCustomActionPrompt(""))
             }
         } message: {
-            Text("Enter your instruction for these notes.")
+            Text(L10n.text("home.ask_agent.message"))
         }
-        .alert("Large Selection", isPresented: Binding(
+        .alert(L10n.text("home.alert.large_selection.title"), isPresented: Binding(
             get: { state.showAskSoftLimitAlert },
             set: { _ in }
         )) {
-            Button("Cancel", role: .cancel) { }
-            Button("Continue") {
+            Button(L10n.text("common.cancel"), role: .cancel) { }
+            Button(L10n.text("common.continue")) {
                 dispatch(.confirmAskSoftLimit)
             }
         } message: {
             Text(L10n.text("home.alert.ask_soft_limit.message", state.selectedNotes.count))
         }
-        .alert("Too Many Notes", isPresented: Binding(
+        .alert(L10n.text("home.alert.too_many_notes.title"), isPresented: Binding(
             get: { state.showAskHardLimitAlert },
             set: { _ in }
         )) {
-            Button("OK", role: .cancel) { }
+            Button(L10n.text("common.ok"), role: .cancel) { }
         } message: {
             Text(L10n.text("home.alert.ask_hard_limit.message", state.askHardLimit))
         }
-        .alert("Large Selection", isPresented: Binding(
+        .alert(L10n.text("home.alert.large_selection.title"), isPresented: Binding(
             get: { state.showRecipeSoftLimitAlert },
             set: { _ in }
         )) {
-            Button("Cancel", role: .cancel) {
+            Button(L10n.text("common.cancel"), role: .cancel) {
                 dispatch(.cancelRecipeSoftLimit)
             }
-            Button("Continue") {
+            Button(L10n.text("common.continue")) {
                 dispatch(.confirmRecipeSoftLimit)
             }
         } message: {
             Text(L10n.text("home.alert.recipe_soft_limit.message", state.selectedNotes.count))
         }
-        .alert("Too Many Notes", isPresented: Binding(
+        .alert(L10n.text("home.alert.too_many_notes.title"), isPresented: Binding(
             get: { state.showRecipeHardLimitAlert },
             set: { _ in }
         )) {
-            Button("OK", role: .cancel) { }
+            Button(L10n.text("common.ok"), role: .cancel) { }
         } message: {
             Text(L10n.text("home.alert.recipe_hard_limit.message", state.recipeHardLimit))
         }
@@ -283,35 +283,35 @@ struct HomeBodyView: View {
                 onCancel: { dispatch(.closeTranslate) }
             )
         }
-        .alert("Delete Notes", isPresented: showDeleteConfirmationBinding) {
-            Button("Cancel", role: .cancel) { }
+        .alert(L10n.text("home.alert.delete_notes.title"), isPresented: showDeleteConfirmationBinding) {
+            Button(L10n.text("common.cancel"), role: .cancel) { }
             Button(deleteNotesButtonTitle, role: .destructive) {
                 dispatch(.deleteSelectedNotes)
             }
         } message: {
             Text(deleteNotesMessage)
         }
-        .alert("Merge Successful", isPresented: showMergeSuccessAlertBinding) {
-            Button("Keep Original Notes", role: .cancel) { }
-            Button("Delete Originals", role: .destructive) {
+        .alert(L10n.text("home.alert.merge_success.title"), isPresented: showMergeSuccessAlertBinding) {
+            Button(L10n.text("home.alert.merge_success.keep_originals"), role: .cancel) { }
+            Button(L10n.text("home.alert.merge_success.delete_originals"), role: .destructive) {
                 dispatch(.deleteNotesAfterMerge)
             }
         } message: {
             Text(L10n.text("home.alert.merge_success.message", state.notesToDeleteAfterMerge.count))
         }
-        .alert("Empty Recycle Bin", isPresented: showEmptyTrashConfirmationBinding) {
-            Button("Cancel", role: .cancel) { }
-            Button("Empty", role: .destructive) {
+        .alert(L10n.text("home.alert.empty_recycle_bin.title"), isPresented: showEmptyTrashConfirmationBinding) {
+            Button(L10n.text("common.cancel"), role: .cancel) { }
+            Button(L10n.text("home.alert.empty_recycle_bin.confirm"), role: .destructive) {
                 dispatch(.emptyTrash)
             }
         } message: {
-            Text("This will permanently delete all notes in the recycle bin.")
+            Text(L10n.text("home.alert.empty_recycle_bin.message"))
         }
         .sheet(isPresented: showBatchTagSheetBinding) {
             NavigationStack {
                 List {
                     if state.availableTags.isEmpty {
-                        Text("No tags available")
+                        Text(L10n.text("home.batch_tag.empty"))
                             .foregroundColor(.textSub)
                     } else {
                         ForEach(state.availableTags) { tag in
@@ -330,11 +330,11 @@ struct HomeBodyView: View {
                                         .foregroundColor(.textMain)
                                     Spacer()
                                     if tagApplyState == .all {
-                                        Text("Added")
+                                        Text(L10n.text("home.batch_tag.added"))
                                             .font(.caption)
                                             .foregroundColor(.textSub)
                                     } else if tagApplyState == .partial {
-                                        Text("Partial")
+                                        Text(L10n.text("home.batch_tag.partial"))
                                             .font(.caption)
                                             .foregroundColor(.textSub)
                                     }
@@ -344,11 +344,11 @@ struct HomeBodyView: View {
                         }
                     }
                 }
-                .navigationTitle("Add Tag")
+                .navigationTitle(L10n.text("home.batch_tag.title"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
+                        Button(L10n.text("common.cancel")) {
                             dispatch(.setShowBatchTagSheet(false))
                         }
                     }

@@ -43,28 +43,28 @@ struct OnboardingView: View {
     @State private var showVoiceIntents = false // New state for showing extra intents
 
     
-    private let voicePrompt = String(localized: "I'm thinking about tomorrow's content... I should probably, uh, figure out the topic first. Wait, no, maybe I should talk to my team first. Also, remember to pick up coffee on the way home.")
+    private let voicePrompt = L10n.text("onboarding.voice_prompt")
 
     private let skillsIntroSections: [(title: String, subtitle: String, color: Color, recipes: [AgentRecipe])] = {
         let recipes = AgentRecipe.allRecipes
         return [
             (
-                title: String(localized: "Think"),
+                title: L10n.text("onboarding.skills_intro.think"),
                 subtitle: "",
                 color: .orange,
-                recipes: recipes.filter { ["summarize", "adhd_helper", "explain_like_5", "merge_notes"].contains($0.id) }
+                recipes: recipes.filter { ["devils_advocate", "brainstorm", "summarize", "merge_notes"].contains($0.id) }
             ),
             (
-                title: String(localized: "Shape"),
+                title: L10n.text("onboarding.skills_intro.shape"),
                 subtitle: "",
                 color: .teal,
-                recipes: recipes.filter { ["fix_grammar", "translate", "expand"].contains($0.id) }
+                recipes: recipes.filter { ["fix_grammar", "translate", "expand", "hook_generator"].contains($0.id) }
             ),
             (
-                title: String(localized: "Publish"),
+                title: L10n.text("onboarding.skills_intro.publish"),
                 subtitle: "",
                 color: .accentPrimary,
-                recipes: recipes.filter { ["twitter_post", "linkedin_post", "draft_email", "youtube_script"].contains($0.id) }
+                recipes: recipes.filter { ["twitter_post", "linkedin_post", "draft_email", "youtube_script", "release_notes"].contains($0.id) }
             )
         ]
     }()
@@ -95,22 +95,22 @@ struct OnboardingView: View {
     private var demoNotes: [DemoNote] {
         [
             DemoNote(
-                title: String(localized: "Coffee shop thought"),
-                content: String(localized: "Everyone in the cafe looks busy, but half of them are probably just switching between apps and feeling guilty."),
+                title: L10n.text("onboarding.demo_note.coffee_title"),
+                content: L10n.text("onboarding.demo_note.coffee_content"),
                 offset: CGSize(width: -100, height: -80),
                 rotation: -6,
                 color: .blue
             ),
             DemoNote(
-                title: String(localized: "Walk home idea"),
-                content: String(localized: "Maybe productivity is not about doing more. Maybe it is about feeling less split all day."),
+                title: L10n.text("onboarding.demo_note.walk_title"),
+                content: L10n.text("onboarding.demo_note.walk_content"),
                 offset: CGSize(width: 100, height: -50),
                 rotation: 4,
                 color: .teal
             ),
             DemoNote(
-                title: String(localized: "Late-night note"),
-                content: String(localized: "I want to write something about how modern work drains attention in tiny invisible ways."),
+                title: L10n.text("onboarding.demo_note.late_night_title"),
+                content: L10n.text("onboarding.demo_note.late_night_content"),
                 offset: CGSize(width: 0, height: 80),
                 rotation: -2,
                 color: .orange
@@ -121,32 +121,22 @@ struct OnboardingView: View {
     private let askConversationMessages: [AskConversationMessage] = [
         AskConversationMessage(
             speaker: .creator,
-            content: String(localized: "These notes feel related, but I cannot tell what the actual post is."),
+            content: L10n.text("onboarding.ask.message.creator_1"),
             referencesNotes: false
         ),
         AskConversationMessage(
             speaker: .ai,
-            content: String(localized: "They all point to one idea: modern work does not just make people busy, it fragments their attention and leaves them feeling quietly exhausted."),
+            content: L10n.text("onboarding.ask.message.ai_1"),
             referencesNotes: true
         ),
         AskConversationMessage(
             speaker: .creator,
-            content: String(localized: "Can you turn that into something I could actually post?"),
+            content: L10n.text("onboarding.ask.message.creator_2"),
             referencesNotes: false
         ),
         AskConversationMessage(
             speaker: .ai,
-            content: String(localized: """
-            Work feels exhausting even on days that barely look busy.
-
-            Not because you did too much.
-            Because your attention got broken into pieces all day.
-
-            Modern work does not just take your time.
-            It makes it hard to feel fully present for even one hour.
-
-            #Productivity #Attention #WorkLife
-            """),
+            content: L10n.text("onboarding.ask.message.ai_2"),
             referencesNotes: true
         )
     ]
@@ -320,7 +310,7 @@ struct OnboardingView: View {
                         withAnimation {
                             voicePhaseState = .done
                             processedResult = text // Fallback to raw text
-                            processingError = String(localized: "AI processing unavailable")
+                            processingError = L10n.text("onboarding.processing_unavailable")
                         }
                     }
                 }
@@ -363,7 +353,7 @@ struct OnboardingView: View {
                         withAnimation {
                             voicePhaseState = .done
                             processedResult = text // Fallback to raw text
-                            processingError = String(localized: "AI processing unavailable")
+                            processingError = L10n.text("onboarding.processing_unavailable")
                         }
                     }
                 }
@@ -392,7 +382,7 @@ struct OnboardingView: View {
                 Button {
                     skipToPaywall()
                 } label: {
-                    Text("Skip")
+                    Text(L10n.text("common.skip"))
                         .font(.system(size: 15, weight: .semibold, design: .rounded))
                         .foregroundColor(.textSub)
                         .padding(.horizontal, 14)
@@ -427,7 +417,7 @@ struct OnboardingView: View {
                     .opacity(0.48)
                 
                 VStack(spacing: 12) {
-                    Text("Which language do\nyou usually speak?")
+                    Text(L10n.text("onboarding.language.title"))
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                         .foregroundColor(.textMain)
                         .multilineTextAlignment(.center)
@@ -449,7 +439,7 @@ struct OnboardingView: View {
                     // 2. Suggested Language Card
                     if let suggested = currentSelectedLanguageOption {
                         VStack(alignment: .leading, spacing: 12) {
-                            Text("Suggested for you")
+                            Text(L10n.text("onboarding.language.suggested"))
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
                                 .foregroundColor(.textSub)
                                 .tracking(0.5)
@@ -502,7 +492,7 @@ struct OnboardingView: View {
                     // 3. Search Bar & Full List Section
                     VStack(alignment: .leading, spacing: 12) {
                         if currentSelectedLanguageOption != nil {
-                            Text("All languages")
+                            Text(L10n.text("onboarding.language.all_languages"))
                                 .font(.system(size: 14, weight: .bold, design: .rounded))
                                 .foregroundColor(.textSub)
                                 .tracking(0.5)
@@ -513,7 +503,7 @@ struct OnboardingView: View {
                             Image(systemName: "magnifyingglass")
                                 .foregroundColor(.textSub)
                                 .font(.system(size: 15))
-                            TextField("Search other languages...", text: $languageSearchText)
+                            TextField(L10n.text("onboarding.language.search_placeholder"), text: $languageSearchText)
                                 .textInputAutocapitalization(.never)
                                 .disableAutocorrection(true)
                                 .font(.bodyMedium)
@@ -587,7 +577,7 @@ struct OnboardingView: View {
             VStack(spacing: 0) {
                 Divider()
                 primaryButton(
-                    title: voiceLanguageHint.isEmpty ? "Skip" : "Continue",
+                    title: LocalizedStringKey(voiceLanguageHint.isEmpty ? "common.skip" : "common.continue"),
                     icon: "arrow.right"
                 ) {
                     withAnimation { currentPage = 1 }
@@ -690,7 +680,7 @@ struct OnboardingView: View {
                                 .padding(.bottom, 8)
 
                             VStack(spacing: 12) {
-                                Text("Just speak.\nWe’ll shape the rest.")
+                                Text(L10n.text("onboarding.voice_demo.title"))
                                     .font(.system(size: 30, weight: .bold, design: .rounded))
                                     .foregroundColor(.textMain)
                                     .multilineTextAlignment(.center)
@@ -703,7 +693,7 @@ struct OnboardingView: View {
                             }
 
                             VStack(alignment: .leading, spacing: 14) {
-                                sectionHeader(title: "Try saying this")
+                                sectionHeader(title: LocalizedStringKey("onboarding.voice_demo.try_saying"))
                                 Text(verbatim: "\"\(voicePrompt)\"")
                                     .font(.system(size: 17, weight: .medium, design: .rounded))
                                     .lineSpacing(5)
@@ -739,7 +729,7 @@ struct OnboardingView: View {
                                                         .foregroundColor(.accentPrimary)
                                                         .font(.system(size: 16, weight: .semibold))
 
-                                                    Text("Your Note")
+                                                    Text(L10n.text("onboarding.voice_demo.your_note"))
                                                         .font(.system(.subheadline, design: .rounded))
                                                         .fontWeight(.bold)
                                                         .foregroundColor(.textMain)
@@ -762,7 +752,7 @@ struct OnboardingView: View {
                                             .frame(maxWidth: .infinity, alignment: .leading)
 
                                             if let error = processingError {
-                                                Text(String(format: String(localized: "⚠️ %@"), error))
+                                                Text(String(format: L10n.text("onboarding.voice_demo.error_format"), error))
                                                     .font(.caption)
                                                     .foregroundColor(.orange)
                                             }
@@ -772,7 +762,7 @@ struct OnboardingView: View {
 
                                         if showVoiceIntents {
                                             VStack(alignment: .leading, spacing: 16) {
-                                                Text("ChillNote understands what you mean")
+                                                Text(L10n.text("onboarding.voice_demo.understands_title"))
                                                     .font(.system(.headline, design: .rounded))
                                                     .foregroundColor(.textSub)
                                                     .padding(.horizontal, 4)
@@ -784,16 +774,16 @@ struct OnboardingView: View {
                                                     ],
                                                     spacing: 12
                                                 ) {
-                                                    OnboardingFeatureTip(icon: "wand.and.stars", text: "Clean up filler words")
-                                                    OnboardingFeatureTip(icon: "text.alignleft", text: "Fix grammar")
-                                                    OnboardingFeatureTip(icon: "brain.head.profile", text: "Help your ideas make sense")
-                                                    OnboardingFeatureTip(icon: "list.bullet.rectangle", text: "Turn thoughts into next steps")
+                                                    OnboardingFeatureTip(icon: "wand.and.stars", text: LocalizedStringKey("onboarding.voice_demo.tip.clean_filler"))
+                                                    OnboardingFeatureTip(icon: "text.alignleft", text: LocalizedStringKey("onboarding.voice_demo.tip.fix_grammar"))
+                                                    OnboardingFeatureTip(icon: "brain.head.profile", text: LocalizedStringKey("onboarding.voice_demo.tip.make_sense"))
+                                                    OnboardingFeatureTip(icon: "list.bullet.rectangle", text: LocalizedStringKey("onboarding.voice_demo.tip.next_steps"))
                                                 }
                                             }
                                             .transition(.move(edge: .bottom).combined(with: .opacity))
                                             .padding(.top, 8)
 
-                                            primaryButton(title: "Next Steps", icon: "arrow.right") {
+                                            primaryButton(title: LocalizedStringKey("onboarding.voice_demo.next_steps"), icon: "arrow.right") {
                                                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
                                                     currentPage = 2
                                                 }
@@ -847,13 +837,13 @@ struct OnboardingView: View {
             .padding(.horizontal, 20)
         }
         .alert(
-            String(localized: "Transcription Failed"),
+            L10n.text("onboarding.voice_demo.transcription_failed"),
             isPresented: Binding(
                 get: { errorMessage != nil },
                 set: { if !$0 { errorMessage = nil } }
             )
         ) {
-            Button(String(localized: "OK"), role: .cancel) {}
+            Button(L10n.text("common.ok"), role: .cancel) {}
         } message: {
             Text(errorMessage ?? "")
         }
@@ -865,12 +855,12 @@ struct OnboardingView: View {
             Spacer(minLength: 8)
 
             VStack(spacing: 6) {
-                Text(String(localized: "Edit notes with AI"))
+                Text(L10n.text("onboarding.skills_intro.title"))
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundColor(.textMain)
                     .multilineTextAlignment(.center)
 
-                Text(String(localized: "Don't prompt. Just Tap."))
+                Text(L10n.text("onboarding.skills_intro.subtitle"))
                     .font(.system(size: 20, weight: .medium, design: .rounded))
                     .foregroundColor(.textSub)
                     .multilineTextAlignment(.center)
@@ -902,7 +892,7 @@ struct OnboardingView: View {
 
             Spacer(minLength: 4)
 
-            primaryButton(title: "Next", icon: "arrow.right") {
+            primaryButton(title: LocalizedStringKey("common.next"), icon: "arrow.right") {
                 withAnimation(.spring(response: 0.45, dampingFraction: 0.82)) {
                     currentPage = 3
                 }
@@ -1141,11 +1131,11 @@ struct OnboardingView: View {
                         .offset(x: 30, y: -20)
                 }
                 
-                Text(String(localized: "You're all set!"))
+                Text(L10n.text("onboarding.paywall.title"))
                     .font(.system(size: 28, weight: .bold, design: .rounded))
                     .foregroundColor(.textMain)
                 
-                Text(String(localized: "Unlock the full power of ChillNote"))
+                Text(L10n.text("onboarding.paywall.subtitle"))
                     .font(.bodyMedium)
                     .foregroundColor(.textSub)
             }
@@ -1153,10 +1143,10 @@ struct OnboardingView: View {
             // Value Recap Card
             VStack(spacing: 16) {
                 // Ensure BenefitRow matches the design from SubscriptionView
-                BenefitRow(icon: "waveform", iconColor: .orange, title: "10-Minute Deep Dives", subtitle: "Capture long thoughts without interruption")
-                BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: "Unlimited Chat", subtitle: "Ask Chillo anything about your notes.")
-                BenefitRow(icon: "wand.and.stars", iconColor: .blue, title: "Infinite Tidy & Polish", subtitle: "Instantly turn messy ramblings into structured notes.")
-                BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: "Custom Chill Skills", subtitle: "Create personalized AI Skills with Pro")
+                BenefitRow(icon: "waveform", iconColor: .orange, title: L10n.text("subscription.benefit.deep_dives.title"), subtitle: L10n.text("subscription.benefit.deep_dives.subtitle"))
+                BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: L10n.text("subscription.benefit.unlimited_chat.title"), subtitle: L10n.text("subscription.benefit.unlimited_chat.subtitle"))
+                BenefitRow(icon: "wand.and.stars", iconColor: .blue, title: L10n.text("subscription.benefit.tidy_polish.title"), subtitle: L10n.text("subscription.benefit.tidy_polish.subtitle"))
+                BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: L10n.text("subscription.benefit.custom_skills.title"), subtitle: L10n.text("subscription.benefit.custom_skills.subtitle"))
             }
             .padding(20)
             .background(Color.white.opacity(0.6))
@@ -1211,7 +1201,7 @@ struct OnboardingView: View {
                     }
                     .disabled(storeService.isPurchasing)
 
-                    Text(String(localized: "Easily manage or cancel in your Apple ID Settings."))
+                    Text(L10n.text("subscription.apple_settings_manage"))
                         .font(.caption2)
                         .foregroundColor(.textSub.opacity(0.6))
                         .multilineTextAlignment(.center)
@@ -1221,7 +1211,7 @@ struct OnboardingView: View {
                         ProgressView()
                             .tint(.accentPrimary)
 
-                        Text(String(localized: "Loading subscription details..."))
+                        Text(L10n.text("onboarding.paywall.loading_subscription"))
                             .font(.caption)
                             .foregroundColor(.textSub)
                     }
@@ -1239,7 +1229,7 @@ struct OnboardingView: View {
                                 await storeService.refreshProducts()
                             }
                         } label: {
-                            Text(String(localized: "Retry"))
+                            Text(L10n.text("common.retry"))
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -1251,14 +1241,14 @@ struct OnboardingView: View {
                         Button {
                             completeOnboarding()
                         } label: {
-                            Text(String(localized: "Continue on Free Plan"))
+                            Text(L10n.text("onboarding.paywall.continue_free"))
                                 .font(.footnote.weight(.semibold))
                                 .foregroundColor(.textSub)
                         }
                     }
                 } else {
                     VStack(spacing: 12) {
-                        Text(String(localized: "Subscription details are temporarily unavailable."))
+                        Text(L10n.text("onboarding.paywall.unavailable"))
                             .font(.caption)
                             .foregroundColor(.textSub)
                             .multilineTextAlignment(.center)
@@ -1268,7 +1258,7 @@ struct OnboardingView: View {
                                 await storeService.refreshProducts()
                             }
                         } label: {
-                            Text(String(localized: "Try Again"))
+                            Text(L10n.text("common.try_again"))
                                 .font(.headline)
                                 .foregroundColor(.white)
                                 .frame(maxWidth: .infinity)
@@ -1280,7 +1270,7 @@ struct OnboardingView: View {
                         Button {
                             completeOnboarding()
                         } label: {
-                            Text(String(localized: "Continue on Free Plan"))
+                            Text(L10n.text("onboarding.paywall.continue_free"))
                                 .font(.footnote.weight(.semibold))
                                 .foregroundColor(.textSub)
                         }
@@ -1294,15 +1284,15 @@ struct OnboardingView: View {
                 Button {
                     Task { await storeService.restorePurchases() }
                 } label: {
-                    Text(String(localized: "Restore Purchases"))
+                    Text(L10n.text("subscription.restore_purchases"))
                         .font(.caption2.weight(.medium))
                         .foregroundColor(.textSub)
                         .underline()
                 }
                 
                 HStack(spacing: 16) {
-                    Link(String(localized: "Terms of Use"), destination: URL(string: "https://www.chillnoteai.com/terms.html")!)
-                    Link(String(localized: "Privacy Policy"), destination: URL(string: "https://www.chillnoteai.com/privacy.html")!)
+                    Link(L10n.text("subscription.terms_of_use"), destination: URL(string: "https://www.chillnoteai.com/terms.html")!)
+                    Link(L10n.text("subscription.privacy_policy"), destination: URL(string: "https://www.chillnoteai.com/privacy.html")!)
                 }
                 .font(.system(size: 10))
                 .foregroundColor(.textSub.opacity(0.6))
@@ -1322,7 +1312,7 @@ struct OnboardingView: View {
                     
                     VStack(spacing: 24) {
                         VStack(spacing: 8) {
-                            Text("Your Notes, Powered by AI")
+                            Text(L10n.text("onboarding.final.title"))
                                 .font(.system(size: 28, weight: .bold, design: .rounded))
                                 .foregroundColor(.textMain)
                         }
@@ -1340,7 +1330,7 @@ struct OnboardingView: View {
                             } label: {
                                 HStack(spacing: 10) {
                                     Image(systemName: "sparkles.rectangle.stack")
-                                    Text("Plan my next post")
+                                    Text(L10n.text("onboarding.final.plan_post"))
                                 }
                                 .font(.headline)
                                 .foregroundColor(.accentPrimary)
@@ -1500,7 +1490,7 @@ struct OnboardingView: View {
                     saveNoteAction()
                 } label: {
                     HStack(spacing: 10) {
-                        Text("Save as Note")
+                        Text(L10n.text("ai_chat.message.save_as_note"))
                         Image(systemName: "square.and.arrow.down")
                     }
                     .font(.headline)
@@ -1516,7 +1506,7 @@ struct OnboardingView: View {
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: askPhase == .savingNote ? "square.and.arrow.down.fill" : "ellipsis.message")
-                    Text(askPhase == .savingNote ? "Saving this draft to your notes..." : "Shaping your ideas into a post draft...")
+                    Text(askPhase == .savingNote ? L10n.text("onboarding.final.saving_draft") : L10n.text("onboarding.final.shaping_draft"))
                 }
                 .font(.system(size: 14, weight: .semibold, design: .rounded))
                 .foregroundColor(.textSub)

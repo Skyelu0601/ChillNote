@@ -31,7 +31,7 @@ struct TagBannerView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "plus")
                             .font(.system(size: 12, weight: .bold))
-                        Text("Tag")
+                        Text(L10n.text("note_detail.tag.add"))
                             .font(.system(size: 14, weight: .medium))
                     }
                     .padding(.horizontal, 12)

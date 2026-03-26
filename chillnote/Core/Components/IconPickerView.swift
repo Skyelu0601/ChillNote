@@ -79,11 +79,11 @@ struct IconPickerView: View {
                 .padding(24)
             }
             .background(Color.bgPrimary)
-            .navigationTitle("Choose Icon")
+            .navigationTitle(L10n.text("icon_picker.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Done") {
+                    Button(L10n.text("common.done")) {
                         dismiss()
                     }
                 }

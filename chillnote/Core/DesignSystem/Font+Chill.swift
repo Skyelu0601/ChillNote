@@ -18,12 +18,12 @@ extension Font {
 struct Typography_Previews: PreviewProvider {
     static var previews: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Display Large").font(.displayLarge)
-            Text("Display Medium").font(.displayMedium)
-            Text("Body Large").font(.bodyLarge)
-            Text("Body Medium").font(.bodyMedium)
-            Text("Body Small").font(.bodySmall)
-            Text("Caption").font(.chillCaption)
+            Text(L10n.text("font.preview.display_large")).font(.displayLarge)
+            Text(L10n.text("font.preview.display_medium")).font(.displayMedium)
+            Text(L10n.text("font.preview.body_large")).font(.bodyLarge)
+            Text(L10n.text("font.preview.body_medium")).font(.bodyMedium)
+            Text(L10n.text("font.preview.body_small")).font(.bodySmall)
+            Text(L10n.text("font.preview.caption")).font(.chillCaption)
         }
     }
 }

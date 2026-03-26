@@ -192,12 +192,9 @@ final class NoteDetailViewModel: ObservableObject {
         guard let deletedAt = note.deletedAt else { return nil }
         let daysRemaining = TrashPolicy.daysRemaining(from: deletedAt)
         if daysRemaining == 0 {
-            return String(localized: "This note will be permanently deleted today.")
+            return L10n.text("note_detail.trash.deleted_today")
         }
-        return String(
-            format: String(localized: "This note will be permanently deleted in %lld days."),
-            Int64(daysRemaining)
-        )
+        return L10n.text("note_detail.trash.deleted_in_days", Int64(daysRemaining))
     }
 
     var isInteractionEnabled: Bool {

@@ -12,7 +12,7 @@ struct HomeFirstUseTaskCard: View {
             // 头部区域
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text(String(localized: "Get started in 3 steps"))
+                    Text(L10n.text("home.first_use.card.title"))
                         .font(.system(size: 17, weight: .semibold, design: .rounded))
                         .foregroundColor(.textMain)
 
@@ -27,7 +27,7 @@ struct HomeFirstUseTaskCard: View {
 
                 VStack(alignment: .trailing, spacing: 10) {
                     Button(action: onSkip) {
-                        Text("Skip")
+                        Text(L10n.text("home.first_use.card.skip"))
                             .font(.system(size: 13, weight: .semibold))
                             .foregroundColor(.textSub)
                     }
@@ -45,9 +45,9 @@ struct HomeFirstUseTaskCard: View {
 
             // 步骤列表 (更克制的视觉设计)
             VStack(alignment: .leading, spacing: 14) {
-                guideRow(title: String(localized: "Record a note"), isActive: step == .recordFirstNote, isDone: step != .recordFirstNote)
-                guideRow(title: String(localized: "Select that note"), isActive: step == .openSelection || step == .addSkill, isDone: step == .runSkill || step == .completed)
-                guideRow(title: String(localized: "Choose a Skill"), isActive: step == .runSkill, isDone: step == .completed)
+                guideRow(title: L10n.text("home.first_use.step.record"), isActive: step == .recordFirstNote, isDone: step != .recordFirstNote)
+                guideRow(title: L10n.text("home.first_use.step.select"), isActive: step == .openSelection || step == .addSkill, isDone: step == .runSkill || step == .completed)
+                guideRow(title: L10n.text("home.first_use.step.choose_skill"), isActive: step == .runSkill, isDone: step == .completed)
             }
             .padding(.vertical, step == .recordFirstNote ? 0 : 4)
 
@@ -61,7 +61,7 @@ struct HomeFirstUseTaskCard: View {
                         .animation(.easeInOut(duration: 1.2).repeatForever(autoreverses: true), value: isBouncing)
 
                     VStack(alignment: .leading, spacing: 3) {
-                        Text(String(localized: "Tap the mic below to start"))
+                        Text(L10n.text("home.first_use.card.tap_mic"))
                             .font(.system(size: 14, weight: .medium))
                             .foregroundColor(.textMain)
                     }
@@ -94,13 +94,13 @@ struct HomeFirstUseTaskCard: View {
     private var subtitle: String {
         switch step {
         case .recordFirstNote:
-            return String(localized: "Record a quick note first. You can say anything.")
+            return L10n.text("home.first_use.subtitle.record")
         case .openSelection, .addSkill:
-            return String(localized: "Nice. Now tap the koala icon and select the note you just recorded.")
+            return L10n.text("home.first_use.subtitle.select")
         case .runSkill:
-            return String(localized: "Choose a Skill and let ChillNote help with your note.")
+            return L10n.text("home.first_use.subtitle.choose_skill")
         case .completed:
-            return String(localized: "You already finished the first-time guide.")
+            return L10n.text("home.first_use.subtitle.completed")
         }
     }
 
@@ -113,7 +113,7 @@ struct HomeFirstUseTaskCard: View {
         case .runSkill:
             return "3/3"
         case .completed:
-            return String(localized: "Done")
+            return L10n.text("common.done")
         }
     }
 
@@ -186,11 +186,11 @@ struct HomeGuideCompletionOverlay: View {
 
             VStack(alignment: .leading, spacing: 20) {
                 VStack(alignment: .leading, spacing: 10) {
-                    Text("You're all set!")
+                    Text(L10n.text("home.first_use.completion.title"))
                         .font(.system(size: 20, weight: .semibold, design: .rounded))
                         .foregroundColor(.textMain)
 
-                    Text(String(localized: "Next time, tap the koala icon, select a note, and choose a Skill."))
+                    Text(L10n.text("home.first_use.completion.subtitle"))
                         .font(.system(size: 15, weight: .regular))
                         .foregroundColor(.textSub)
                         .lineSpacing(4)
@@ -199,7 +199,7 @@ struct HomeGuideCompletionOverlay: View {
 
                 HStack(spacing: 12) {
                     Button(action: onTryAnotherSkill) {
-                        Text("Try another Skill")
+                        Text(L10n.text("home.first_use.completion.try_another_skill"))
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -210,7 +210,7 @@ struct HomeGuideCompletionOverlay: View {
                     .buttonStyle(.plain)
 
                     Button(action: onDismiss) {
-                        Text("Done")
+                        Text(L10n.text("common.done"))
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(.textMain)
                             .frame(maxWidth: .infinity)

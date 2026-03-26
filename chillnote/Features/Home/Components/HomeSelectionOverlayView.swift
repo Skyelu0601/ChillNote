@@ -19,14 +19,14 @@ struct HomeSelectionOverlayView: View {
         switch guideStep {
         case .addSkill:
             if selectedNotesCount == 0 {
-                return String(localized: "Select the note you just recorded, then choose a Skill.")
+                return L10n.text("home.selection_overlay.guide.select_note")
             }
-            return String(localized: "Great. Now choose a Skill like Summarize to see how it works.")
+            return L10n.text("home.selection_overlay.guide.choose_skill")
         case .runSkill:
             if selectedNotesCount == 0 {
-                return String(localized: "Select the note you just recorded, then choose a Skill.")
+                return L10n.text("home.selection_overlay.guide.select_note")
             }
-            return String(localized: "Great. Now choose a Skill like Summarize to see how it works.")
+            return L10n.text("home.selection_overlay.guide.choose_skill")
         case .recordFirstNote, .openSelection, .completed:
             return nil
         }
@@ -54,7 +54,7 @@ struct HomeSelectionOverlayView: View {
                     if isAgentMenuOpen {
                         VStack(spacing: 16) {
                             HStack {
-                                Text("Chill Skills")
+                                Text(L10n.text("home.selection_overlay.skills_title"))
                                     .font(.system(size: 14, weight: .semibold))
                                     .foregroundColor(.secondary)
                                 Spacer()
@@ -67,7 +67,7 @@ struct HomeSelectionOverlayView: View {
                                     HStack(spacing: 6) {
                                         Image(systemName: "plus.circle.fill")
                                             .font(.system(size: 16, weight: .semibold))
-                                        Text(recipeManager.savedRecipes.isEmpty ? "Add your first Skill" : "Add Skills")
+                                        Text(recipeManager.savedRecipes.isEmpty ? L10n.text("home.selection_overlay.add_first_skill") : L10n.text("home.selection_overlay.add_skills"))
                                             .font(.system(size: 13, weight: .semibold))
                                     }
                                     .foregroundColor(.accentPrimary)
@@ -85,7 +85,7 @@ struct HomeSelectionOverlayView: View {
                                         radius: shouldHighlightAddButton ? 12 : 6,
                                         y: 4
                                     )
-                                    .accessibilityLabel("Add Skills")
+                                    .accessibilityLabel(L10n.text("home.selection_overlay.add_skills"))
                                 }
                             }
                             .padding(.horizontal, 4)
@@ -98,11 +98,11 @@ struct HomeSelectionOverlayView: View {
 
                             if recipeManager.savedRecipes.isEmpty {
                                 VStack(alignment: .leading, spacing: 14) {
-                                    Text("Add your first Skill")
+                                    Text(L10n.text("home.selection_overlay.add_first_skill"))
                                         .font(.system(size: 18, weight: .bold, design: .rounded))
                                         .foregroundColor(.textMain)
 
-                                    Text("Tap the top-right button to add one. If you're not sure where to start, try Summarize.")
+                                    Text(L10n.text("home.selection_overlay.empty_state_message"))
                                         .font(.system(size: 14, weight: .medium))
                                         .foregroundColor(.textSub)
                                         .fixedSize(horizontal: false, vertical: true)
@@ -157,7 +157,7 @@ struct HomeSelectionOverlayView: View {
 
                     HStack(spacing: 16) {
                         Button(action: onStartAIChat) {
-                            Text("Ask AI")
+                            Text(L10n.text("home.selection_overlay.ask_ai"))
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
@@ -175,7 +175,7 @@ struct HomeSelectionOverlayView: View {
 
                         Button(action: onToggleAgentMenu) {
                             HStack(spacing: 6) {
-                                Text("Chill Skills")
+                                Text(L10n.text("home.selection_overlay.skills_title"))
                                     .font(.system(size: 16, weight: .semibold, design: .rounded))
 
                                 Image(systemName: "chevron.up")

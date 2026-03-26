@@ -18,11 +18,11 @@ struct TranslateSheetView: View {
                                 .foregroundStyle(LinearGradient(colors: [.accentPrimary, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
                                 .padding(.bottom, 8)
 
-                            Text("Select Language")
+                            Text(L10n.text("translate_sheet.title"))
                                 .font(.title2.bold())
                                 .foregroundColor(.textMain)
 
-                            Text("Choose a language to translate your note")
+                            Text(L10n.text("translate_sheet.subtitle"))
                                 .font(.subheadline)
                                 .foregroundColor(.textSub)
                         }
@@ -68,7 +68,7 @@ struct TranslateSheetView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
+                    Button(L10n.text("common.cancel")) {
                         onCancel()
                     }
                     .foregroundColor(.textMain)

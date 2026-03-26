@@ -13,15 +13,15 @@ final class AIConsentManager: ObservableObject {
         case text
 
         var title: String {
-            String(localized: "Before using AI")
+            L10n.text("ai_consent.before_using_ai")
         }
 
         var summary: String {
             switch self {
             case .audio:
-                return String(localized: "To transcribe your voice note, ChillNote may send your audio and essential technical details to ChillNote's secure server and to Google Gemini for processing.")
+                return L10n.text("ai_consent.trigger.audio_summary")
             case .text:
-                return String(localized: "To improve your note, ChillNote may send the text you choose to ChillNote's secure server and to Google Gemini for processing.")
+                return L10n.text("ai_consent.trigger.text_summary")
             }
         }
     }

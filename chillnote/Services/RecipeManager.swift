@@ -51,7 +51,7 @@ final class RecipeManager: ObservableObject {
             icon: "",
             systemIcon: systemIcon,
             name: name,
-            description: String(localized: "Custom Skill"),
+            description: L10n.text("recipes.custom_skill"),
             prompt: prompt,
             category: .shape,
             isCustom: true

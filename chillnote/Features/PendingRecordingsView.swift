@@ -25,14 +25,14 @@ final class PendingRecordingPlaybackController: NSObject, ObservableObject, AVAu
             throw NSError(
                 domain: "PendingRecordingPlaybackController",
                 code: 1,
-                userInfo: [NSLocalizedDescriptionKey: String(localized: "Unable to prepare recording playback.")]
+                userInfo: [NSLocalizedDescriptionKey: L10n.text("pending_recordings.error.unable_to_prepare_playback")]
             )
         }
         guard player.play() else {
             throw NSError(
                 domain: "PendingRecordingPlaybackController",
                 code: 2,
-                userInfo: [NSLocalizedDescriptionKey: String(localized: "Unable to start recording playback.")]
+                userInfo: [NSLocalizedDescriptionKey: L10n.text("pending_recordings.error.unable_to_start_playback")]
             )
         }
 
@@ -152,7 +152,7 @@ struct PendingRecordingsView: View {
             .animation(.spring(response: 0.4, dampingFraction: 0.8), value: toastMessage)
             .allowsHitTesting(false)
         }
-        .navigationTitle("Pending Recordings")
+        .navigationTitle(L10n.text("pending_recordings.title"))
         .navigationBarTitleDisplayMode(.inline)
         .onAppear {
             refreshRecordings()
@@ -161,9 +161,9 @@ struct PendingRecordingsView: View {
             playbackController.stop()
         }
         .alert(VoiceErrorPresentation.transcriptionFailedTitle, isPresented: $showAlert) {
-            Button("OK", role: .cancel) { }
+            Button(L10n.text("common.ok"), role: .cancel) { }
         } message: {
-            Text(alertMessage ?? "An unknown error occurred.")
+            Text(alertMessage ?? L10n.text("common.error.unknown"))
         }
     }
 
@@ -174,7 +174,7 @@ struct PendingRecordingsView: View {
             Image(systemName: "waveform.circle")
                 .font(.system(size: 44))
                 .foregroundColor(.textSub.opacity(0.6))
-            Text("No pending recordings")
+            Text(L10n.text("pending_recordings.empty"))
                 .font(.bodyMedium)
                 .foregroundColor(.textSub)
         }
@@ -211,7 +211,7 @@ struct PendingRecordingsView: View {
 
             HStack(spacing: 10) {
                 Button(action: { deleteRecording(recording) }) {
-                    Text("Delete")
+                    Text(L10n.text("common.delete"))
                         .font(.bodySmall)
                         .foregroundColor(.red.opacity(0.85))
                         .padding(.horizontal, 18)
@@ -243,7 +243,7 @@ struct PendingRecordingsView: View {
         switch state {
         case .idle:
             Button(action: { transcribeRecording(recording) }) {
-                Text("Save as Note")
+                Text(L10n.text("pending_recordings.save_as_note"))
                     .font(.bodySmall)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
@@ -259,7 +259,7 @@ struct PendingRecordingsView: View {
                 ProgressView()
                     .progressViewStyle(CircularProgressViewStyle(tint: .white))
                     .scaleEffect(0.8)
-                Text("Saving...")
+                Text(L10n.text("pending_recordings.saving"))
                     .font(.bodySmall)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
@@ -274,7 +274,7 @@ struct PendingRecordingsView: View {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundColor(.white)
-                Text("Saved!")
+                Text(L10n.text("pending_recordings.saved"))
                     .font(.bodySmall)
                     .fontWeight(.semibold)
                     .foregroundColor(.white)
@@ -369,7 +369,7 @@ struct PendingRecordingsView: View {
                     throw NSError(
                         domain: "PendingRecordingsView",
                         code: 3,
-                        userInfo: [NSLocalizedDescriptionKey: String(localized: "Transcription result was empty. Please retry.")]
+                        userInfo: [NSLocalizedDescriptionKey: L10n.text("transcription.failure.empty_result_retry")]
                     )
                 }
                 let userId = try await MainActor.run { () throws -> String in
@@ -377,7 +377,7 @@ struct PendingRecordingsView: View {
                         throw NSError(
                             domain: "PendingRecordingsView",
                             code: 4,
-                            userInfo: [NSLocalizedDescriptionKey: String(localized: "Sign in required.")]
+                            userInfo: [NSLocalizedDescriptionKey: L10n.text("common.error.sign_in_required")]
                         )
                     }
                     return userId
@@ -425,7 +425,7 @@ struct PendingRecordingsView: View {
                     )
 
                     // 4. Show toast
-                    showToast(String(localized: "Note saved!"))
+                    showToast(L10n.text("pending_recordings.toast.note_saved"))
 
                     // 5. Remove the row after a short delay so user sees the "Saved!" confirmation
                     Task {
@@ -455,7 +455,7 @@ struct PendingRecordingsView: View {
                         rowSaveStates[path] = .idle
                     }
                     processingPaths.remove(path)
-                    showToast(String(localized: "Save failed. Please retry."), isSuccess: false)
+                    showToast(L10n.text("pending_recordings.toast.save_failed"), isSuccess: false)
                 }
             }
         }

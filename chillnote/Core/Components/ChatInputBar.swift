@@ -50,7 +50,7 @@ struct ChatInputBar: View {
         VStack(spacing: 0) {
             if showTextInput {
                 HStack(alignment: .bottom, spacing: 8) {
-                    TextField("Type a note...", text: $text, axis: .vertical)
+                    TextField(L10n.text("chat_input.placeholder"), text: $text, axis: .vertical)
                         .font(.bodyMedium)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 10)

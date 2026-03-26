@@ -45,7 +45,7 @@ struct NoteDetailOverlaysView: View {
                         )
                     )
 
-                Text("Refined")
+                Text(L10n.text("note_detail.overlay.refined"))
                     .font(.subheadline)
                     .fontWeight(.semibold)
                     .foregroundColor(.primary)
@@ -56,7 +56,7 @@ struct NoteDetailOverlaysView: View {
                     .padding(.horizontal, 4)
 
                 Button(action: viewModel.restoreOriginalVoiceResultIfAvailable) {
-                    Text("Show Original")
+                    Text(L10n.text("note_detail.overlay.show_original"))
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .foregroundColor(.accentPrimary)

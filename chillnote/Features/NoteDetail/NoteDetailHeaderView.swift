@@ -21,13 +21,13 @@ struct NoteDetailHeaderView: View {
                     .foregroundColor(.textMain)
                     .padding(8)
             }
-            .accessibilityLabel("Back")
+            .accessibilityLabel(L10n.text("note_detail.header.accessibility.back"))
 
             Spacer()
 
             if isDeleted {
                 Button(action: onRestore) {
-                    Label("Restore", systemImage: "arrow.uturn.left")
+                    Label(L10n.text("home.notes.action.restore"), systemImage: "arrow.uturn.left")
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.accentPrimary)
                         .padding(.horizontal, 12)
@@ -35,7 +35,7 @@ struct NoteDetailHeaderView: View {
                         .background(Color.accentPrimary.opacity(0.1))
                         .clipShape(Capsule())
                 }
-                .accessibilityLabel("Restore Note")
+                .accessibilityLabel(L10n.text("note_detail.header.accessibility.restore_note"))
             } else if isRecording {
                 HStack(spacing: 8) {
                     Text(recordingTimeString)
@@ -72,21 +72,21 @@ struct NoteDetailHeaderView: View {
                             .background(Color.bgSecondary)
                             .clipShape(Circle())
                     }
-                    .accessibilityLabel("Chillo's Magic")
+                    .accessibilityLabel(L10n.text("note_detail.header.accessibility.chillo_magic"))
                     .disabled(!isTidyEnabled)
                     .opacity(isTidyEnabled ? 1 : 0.5)
 
                     Menu {
                         Button(action: onExport) {
-                            Label("Export Markdown", systemImage: "square.and.arrow.up")
+                            Label(L10n.text("note_detail.header.action.export_markdown"), systemImage: "square.and.arrow.up")
                         }
 
                         Button(role: .destructive, action: onDelete) {
-                            Label("Delete Note", systemImage: "trash")
+                            Label(L10n.text("note_detail.header.action.delete_note"), systemImage: "trash")
                         }
 
                         Button(role: .destructive, action: onDeletePermanently) {
-                            Label("Delete Permanently", systemImage: "trash.slash")
+                            Label(L10n.text("home.notes.action.delete_permanently"), systemImage: "trash.slash")
                         }
                     } label: {
                         Image(systemName: "ellipsis")
@@ -96,7 +96,7 @@ struct NoteDetailHeaderView: View {
                             .background(Color.bgSecondary)
                             .clipShape(Circle())
                     }
-                    .accessibilityLabel("More Actions")
+                    .accessibilityLabel(L10n.text("note_detail.header.accessibility.more_actions"))
                 }
             }
         }

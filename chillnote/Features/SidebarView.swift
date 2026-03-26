@@ -69,19 +69,19 @@ struct SidebarView: View {
                                 .background(Color.textMain.opacity(0.05))
                                 .clipShape(Circle())
                         }
-                        .accessibilityLabel("Open Settings")
+                        .accessibilityLabel(L10n.text("sidebar.accessibility.open_settings"))
                     }
                     .padding(.top, 60)
                     .padding(.horizontal, 20)
                     
                     // Main Navigation
                     VStack(spacing: 6) {
-                        SidebarItem(icon: "house", title: "All Notes", isSelected: selectedTag == nil && !isTrashSelected) {
+                        SidebarItem(icon: "house", title: LocalizedStringKey("sidebar.nav.all_notes"), isSelected: selectedTag == nil && !isTrashSelected) {
                             selectedTag = nil
                             isTrashSelected = false
                             isPresented = false
                         }
-                        SidebarItem(icon: "trash", title: "Recycle Bin", isSelected: isTrashSelected) {
+                        SidebarItem(icon: "trash", title: LocalizedStringKey("sidebar.nav.recycle_bin"), isSelected: isTrashSelected) {
                             selectedTag = nil
                             isTrashSelected = true
                             isPresented = false
@@ -90,7 +90,7 @@ struct SidebarView: View {
                         if pendingRecordingsCount > 0 {
                             SidebarItem(
                                 icon: "waveform",
-                                title: "Pending Records",
+                                title: LocalizedStringKey("sidebar.nav.pending_records"),
                                 isSelected: false,
                                 badgeCount: pendingRecordingsCount
                             ) {
@@ -99,7 +99,7 @@ struct SidebarView: View {
                             }
                         }
 
-                        SidebarItem(icon: "book.closed", title: "Chill Skills", isSelected: false) {
+                        SidebarItem(icon: "book.closed", title: LocalizedStringKey("sidebar.nav.chill_skills"), isSelected: false) {
                             isPresented = false
                             onChillRecipesTap?()
                         }
@@ -125,7 +125,7 @@ struct SidebarView: View {
                                 }
                                 
                                 if allTags.isEmpty {
-                                    Text("Start organizing with tags")
+                                    Text(L10n.text("sidebar.tags.empty"))
                                         .font(.system(size: 13, design: .serif))
                                         .foregroundColor(.textSub.opacity(0.6))
                                         .padding(.top, 40)
@@ -229,12 +229,12 @@ struct SidebarView: View {
             showSubscription = true
         } label: {
             HStack(spacing: 12) {
-                Text(storeService.currentTier == .pro ? "Pro" : "Free Plan")
+                Text(storeService.currentTier == .pro ? L10n.text("sidebar.membership.pro") : L10n.text("sidebar.membership.free_plan"))
                     .font(.system(size: 14, weight: .bold, design: .serif))
                     .foregroundColor(storeService.currentTier == .pro ? .white : .textMain.opacity(0.9))
                 
                 if storeService.currentTier != .pro {
-                    Text("Upgrade")
+                    Text(L10n.text("sidebar.membership.upgrade"))
                         .font(.system(size: 10, weight: .bold))
                         .foregroundColor(.white)
                         .padding(.horizontal, 10)
@@ -454,7 +454,7 @@ struct RootDropZone: View {
     
     var body: some View {
         HStack {
-            Text("TAGS")
+            Text(L10n.text("sidebar.tags.title"))
                 .font(.system(size: 11, weight: .black, design: .serif))
                 .foregroundColor(.textSub.opacity(0.4))
                 .tracking(1.2)
@@ -462,7 +462,7 @@ struct RootDropZone: View {
             Spacer()
             
             if isDropTargeted {
-                Text("Release to unnest")
+                Text(L10n.text("sidebar.tags.release_to_unnest"))
                     .font(.system(size: 10, weight: .bold, design: .serif))
                     .foregroundColor(.accentPrimary)
                     .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -522,7 +522,7 @@ struct TrashDropZone: View {
             Image(systemName: isTargeted ? "trash.fill" : "trash")
                 .font(.system(size: 16))
             
-            Text(isTargeted ? "Release to delete" : "Drag here to delete")
+            Text(isTargeted ? L10n.text("sidebar.trash.release_to_delete") : L10n.text("sidebar.trash.drag_to_delete"))
                 .font(.system(size: 14, weight: isTargeted ? .bold : .medium, design: .serif))
         }
         .foregroundColor(isTargeted ? .red : .textMain.opacity(0.4))

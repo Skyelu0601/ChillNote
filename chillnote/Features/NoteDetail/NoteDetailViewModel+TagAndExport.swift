@@ -72,7 +72,7 @@ extension NoteDetailViewModel {
             exportURL = url
             showExportSheet = true
         } catch {
-            exportErrorMessage = String(localized: "Unable to export this note. Please try again.")
+            exportErrorMessage = L10n.text("note_detail.export.error.unable_to_export_note")
             showExportError = true
         }
     }

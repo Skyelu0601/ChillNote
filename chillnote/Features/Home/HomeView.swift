@@ -109,7 +109,7 @@ struct HomeView: View {
 
     var headerTitle: String {
         if isTrashSelected {
-            return String(localized: "Recycle Bin")
+            return L10n.text("sidebar.nav.recycle_bin")
         }
         return selectedTag?.name ?? "ChillNote"
     }
@@ -352,10 +352,10 @@ struct HomeView: View {
             SubscriptionView()
         }
         .alert(VoiceErrorPresentation.transcriptionFailedTitle, isPresented: $showTranscriptionFailureAlert) {
-            Button("Pending Records") {
+            Button(L10n.text("sidebar.nav.pending_records")) {
                 showPendingRecordings = true
             }
-            Button("OK", role: .cancel) { }
+            Button(L10n.text("common.ok"), role: .cancel) { }
         } message: {
             Text(latestTranscriptionFailureMessage)
         }
@@ -529,7 +529,7 @@ struct HomeView: View {
                 .foregroundColor(.textSub)
                 .font(.system(size: 16, weight: .semibold))
 
-            TextField("Search notes...", text: Binding(
+            TextField(L10n.text("home.search.placeholder"), text: Binding(
                 get: { searchText },
                 set: { dispatch(.setSearchText($0)) }
             ))

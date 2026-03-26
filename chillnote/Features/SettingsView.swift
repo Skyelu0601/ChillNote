@@ -36,7 +36,7 @@ struct SettingsView: View {
                                 .foregroundColor(.textMain)
                         }
                         Spacer()
-                        Text("Settings")
+                        Text(L10n.text("settings.title"))
                         .font(.bodyLarge)
                         .fontWeight(.bold)
                         .foregroundColor(.black)
@@ -61,10 +61,10 @@ struct SettingsView: View {
             }
             .navigationBarHidden(true)
             .sheet(isPresented: $showPrivacy) {
-                LegalTextView(title: "Privacy Policy", bodyText: privacyText)
+                LegalTextView(title: L10n.text("settings.support.privacy_policy"), bodyText: privacyText)
             }
             .sheet(isPresented: $showAgreement) {
-                LegalTextView(title: "User Agreement", bodyText: agreementText)
+                LegalTextView(title: L10n.text("settings.support.user_agreement"), bodyText: agreementText)
             }
             .sheet(isPresented: $showAbout) {
                 AboutView()
@@ -90,18 +90,18 @@ struct SettingsView: View {
                 )
             }
             .banner(data: $bannerData)
-            .alert("Sign Out", isPresented: $showLogoutConfirmation) {
-                Button("Cancel", role: .cancel) { }
-                Button("Sign Out", role: .destructive) {
+            .alert(L10n.text("settings.alert.sign_out.title"), isPresented: $showLogoutConfirmation) {
+                Button(L10n.text("common.cancel"), role: .cancel) { }
+                Button(L10n.text("settings.account.sign_out"), role: .destructive) {
                     authService.signOut()
                     dismiss()
                 }
             } message: {
-                Text("Are you sure you want to sign out?")
+                Text(L10n.text("settings.alert.sign_out.message"))
             }
-            .alert("Delete Account", isPresented: $showDeleteAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Delete", role: .destructive) {
+            .alert(L10n.text("settings.alert.delete_account.title"), isPresented: $showDeleteAlert) {
+                Button(L10n.text("common.cancel"), role: .cancel) { }
+                Button(L10n.text("common.delete"), role: .destructive) {
                     isDeleting = true
                     Task {
                         let success = await authService.deleteAccount()
@@ -114,16 +114,16 @@ struct SettingsView: View {
                     }
                 }
             } message: {
-                Text("Are you sure you want to delete your account? All your data will be permanently removed. This action cannot be undone.")
+                Text(L10n.text("settings.alert.delete_account.message"))
             }
-            .alert("Deletion Failed", isPresented: $showDeleteError) {
-                Button("OK", role: .cancel) { }
+            .alert(L10n.text("settings.alert.deletion_failed.title"), isPresented: $showDeleteError) {
+                Button(L10n.text("common.ok"), role: .cancel) { }
             } message: {
-                Text(authService.errorMessage ?? "An unknown error occurred.")
+                Text(authService.errorMessage ?? L10n.text("common.error.unknown"))
             }
-            .alert("Export Failed", isPresented: $exportViewModel.showErrorAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Retry") {
+            .alert(L10n.text("settings.alert.export_failed.title"), isPresented: $exportViewModel.showErrorAlert) {
+                Button(L10n.text("common.cancel"), role: .cancel) { }
+                Button(L10n.text("common.retry")) {
                     exportViewModel.startExport(userId: authService.currentUserId)
                 }
             } message: {
@@ -142,11 +142,11 @@ struct SettingsView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             HStack {
-                                Text("My Account")
+                                Text(L10n.text("settings.account.title"))
                                     .font(.headline)
                                     .foregroundColor(.textMain)
                                 if storeService.currentTier == .pro {
-                                    Text("PRO")
+                                    Text(L10n.text("settings.account.pro_badge"))
                                         .font(.system(size: 10, weight: .bold))
                                         .foregroundColor(.white)
                                         .padding(.horizontal, 6)
@@ -155,7 +155,7 @@ struct SettingsView: View {
                                 }
                             }
                             let rawEmail = authService.currentUser?.email ?? ""
-                            let emailLabel = rawEmail.isEmpty ? "Unknown email" : rawEmail
+                            let emailLabel = rawEmail.isEmpty ? L10n.text("settings.account.unknown_email") : rawEmail
                             HStack(spacing: 4) {
                                 Image(systemName: loginProviderIconName)
                                 Text(emailLabel)
@@ -173,15 +173,15 @@ struct SettingsView: View {
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Subscription Plan")
+                                Text(L10n.text("settings.account.subscription_plan"))
                                     .font(.subheadline)
                                     .foregroundColor(.textMain)
-                                Text(storeService.currentTier == .pro ? "Pro Active" : "Free Plan")
+                                Text(storeService.currentTier == .pro ? L10n.text("settings.account.pro_active") : L10n.text("settings.account.free_plan"))
                                     .font(.caption)
                                     .foregroundColor(.textSub)
                             }
                             Spacer()
-                            Text(storeService.currentTier == .pro ? "Manage" : "Upgrade")
+                            Text(storeService.currentTier == .pro ? L10n.text("settings.account.manage") : L10n.text("settings.account.upgrade"))
                                 .font(.system(size: 14, weight: .semibold))
                                 .foregroundColor(storeService.currentTier == .pro ? .textMain : .accentPrimary)
                                 .padding(.horizontal, 12)
@@ -212,7 +212,7 @@ struct SettingsView: View {
                                     .foregroundColor(.accentColor)
                             )
                         
-                        Text("Sign In to ChillNote")
+                        Text(L10n.text("settings.account.sign_in"))
                             .font(.headline)
                             .foregroundColor(.textMain)
                             
@@ -237,7 +237,7 @@ struct SettingsView: View {
                 SettingItem(
                     icon: "square.and.arrow.up",
                     iconColor: .accentPrimary,
-                    label: "Export All Notes"
+                    label: "settings.data.export_all_notes"
                 )
             }
             .buttonStyle(.plain)
@@ -248,7 +248,7 @@ struct SettingsView: View {
                 SettingItem(
                     icon: "globe",
                     iconColor: .accentPrimary,
-                    label: "Voice Language",
+                    label: "settings.data.voice_language",
                     value: voiceTranscriptionLanguageSummary
                 )
             }
@@ -259,7 +259,7 @@ struct SettingsView: View {
 
             
             Button(action: openAppSettings) {
-                SettingItem(icon: "shield", iconColor: .accentPrimary, label: "Permissions")
+                SettingItem(icon: "shield", iconColor: .accentPrimary, label: "settings.data.permissions")
             }
             .buttonStyle(.plain)
         }
@@ -271,7 +271,7 @@ struct SettingsView: View {
     private var supportSection: some View {
         VStack(spacing: 0) {
             Button(action: sendFeedback) {
-                SettingItem(icon: "envelope", iconColor: .accentPrimary, label: "Send Feedback")
+                SettingItem(icon: "envelope", iconColor: .accentPrimary, label: "settings.support.send_feedback")
             }
             .buttonStyle(.plain)
             
@@ -279,21 +279,21 @@ struct SettingsView: View {
 
             
             Button(action: openPrivacyPolicy) {
-                SettingItem(icon: "hand.raised", iconColor: .accentPrimary, label: "Privacy Policy")
+                SettingItem(icon: "hand.raised", iconColor: .accentPrimary, label: "settings.support.privacy_policy")
             }
             .buttonStyle(.plain)
             
             Divider().padding(.leading, 56)
             
             Button(action: openUserAgreement) {
-                SettingItem(icon: "doc.text", iconColor: .accentPrimary, label: "User Agreement")
+                SettingItem(icon: "doc.text", iconColor: .accentPrimary, label: "settings.support.user_agreement")
             }
             .buttonStyle(.plain)
             
             Divider().padding(.leading, 56)
             
             Button(action: { showAbout = true }) {
-                SettingItem(icon: "info.circle", iconColor: .accentPrimary, label: "About ChillNote")
+                SettingItem(icon: "info.circle", iconColor: .accentPrimary, label: "settings.support.about")
             }
             .buttonStyle(.plain)
             
@@ -303,7 +303,7 @@ struct SettingsView: View {
                 Button {
                     showDeleteAlert = true
                 } label: {
-                    SettingItem(icon: "trash", iconColor: .accentPrimary, label: "Delete Account", showChevron: true)
+                    SettingItem(icon: "trash", iconColor: .accentPrimary, label: "settings.account.delete_account", showChevron: true)
                 }
                 .buttonStyle(.plain)
             }
@@ -320,7 +320,7 @@ struct SettingsView: View {
                     Button {
                         showLogoutConfirmation = true
                     } label: {
-                        SettingItem(icon: "rectangle.portrait.and.arrow.right", iconColor: .red, label: "Sign Out", labelColor: .red, showChevron: false)
+                        SettingItem(icon: "rectangle.portrait.and.arrow.right", iconColor: .red, label: "settings.account.sign_out", labelColor: .red, showChevron: false)
                     }
                     .buttonStyle(.plain)
                 }
@@ -483,25 +483,25 @@ struct VoiceLanguagePreferenceSheet: View {
                         modeRawValue = newMode.rawValue
                     }
                 )) {
-                    Text("Auto Detect").tag(VoiceTranscriptionLanguageMode.auto)
-                    Text("Preferred Language").tag(VoiceTranscriptionLanguageMode.prefer)
+                    Text(L10n.text("settings.voice.mode.auto_detect")).tag(VoiceTranscriptionLanguageMode.auto)
+                    Text(L10n.text("settings.voice.mode.preferred_language")).tag(VoiceTranscriptionLanguageMode.prefer)
                 }
                 .pickerStyle(.segmented)
                 .padding(.horizontal, 20)
 
                 if selectedMode == .auto {
-                    Text("Language will be inferred from audio. Mixed-language speech is preserved.")
+                    Text(L10n.text("settings.voice.auto_help"))
                         .font(.bodySmall)
                         .foregroundColor(.textSub)
                         .padding(.horizontal, 20)
                     Spacer(minLength: 0)
                 } else {
-                    Text("Preferred language improves primary-language stability while preserving mixed-language speech.")
+                    Text(L10n.text("settings.voice.preferred_help"))
                         .font(.bodySmall)
                         .foregroundColor(.textSub)
                         .padding(.horizontal, 20)
 
-                    TextField("Search language", text: $searchText)
+                    TextField(L10n.text("settings.voice.search_placeholder"), text: $searchText)
                         .textInputAutocapitalization(.never)
                         .disableAutocorrection(true)
                         .padding(.horizontal, 12)
@@ -538,11 +538,11 @@ struct VoiceLanguagePreferenceSheet: View {
             }
             .padding(.top, 16)
             .background(Color.bgPrimary.ignoresSafeArea())
-            .navigationTitle("Voice Transcription")
+            .navigationTitle(L10n.text("settings.voice.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Close") { dismiss() }
+                    Button(L10n.text("common.close")) { dismiss() }
                 }
             }
         }
@@ -574,13 +574,13 @@ private struct ExportAllNotesSheet: View {
                             }
                             
                             VStack(spacing: 12) {
-                                Text("Export Your Knowledge Base")
+                                Text(L10n.text("settings.export.title"))
                                     .font(.bodyLarge)
                                     .fontWeight(.bold)
                                     .foregroundColor(.black)
                                     .multilineTextAlignment(.center)
                                 
-                                Text("Generate a comprehensive Markdown archive of all your notes, organized by date. Perfect for backup or importing into other tools.")
+                                Text(L10n.text("settings.export.subtitle"))
                                     .font(.bodyMedium)
                                     .foregroundColor(.textSub)
                                     .multilineTextAlignment(.center)
@@ -593,7 +593,7 @@ private struct ExportAllNotesSheet: View {
                         // 2. Info Card
                         VStack(spacing: 12) {
                             HStack {
-                                Text("SUMMARY")
+                                Text(L10n.text("settings.export.summary"))
                                     .font(.caption)
                                     .fontWeight(.semibold)
                                     .foregroundColor(.textSub)
@@ -609,7 +609,7 @@ private struct ExportAllNotesSheet: View {
                                         Image(systemName: "doc.text.fill")
                                             .foregroundColor(.accentPrimary)
                                             .font(.system(size: 16))
-                                        Text("Total Notes")
+                                        Text(L10n.text("settings.export.total_notes"))
                                             .font(.bodyMedium)
                                             .foregroundColor(.textMain)
                                     }
@@ -634,12 +634,12 @@ private struct ExportAllNotesSheet: View {
                                         Image(systemName: "doc.zipper")
                                             .foregroundColor(.accentPrimary)
                                             .font(.system(size: 16))
-                                        Text("Export Format")
+                                        Text(L10n.text("settings.export.format"))
                                             .font(.bodyMedium)
                                             .foregroundColor(.textMain)
                                     }
                                     Spacer()
-                                    Text("Markdown")
+                                    Text(L10n.text("settings.export.format_markdown"))
                                         .font(.bodyMedium)
                                         .foregroundColor(.textSub)
                                 }
@@ -674,7 +674,7 @@ private struct ExportAllNotesSheet: View {
                             .cornerRadius(16)
                             .padding(.horizontal, 20)
                         } else if !viewModel.isLoadingEstimate && (viewModel.estimatedNoteCount ?? 0) == 0 {
-                             Text("No notes found to export.")
+                             Text(L10n.text("settings.export.no_notes"))
                                 .font(.bodyMedium)
                                 .foregroundColor(.textSub)
                                 .padding(.top, 10)
@@ -699,7 +699,7 @@ private struct ExportAllNotesSheet: View {
                                     .tint(.white)
                                     .padding(.trailing, 8)
                             }
-                            Text(viewModel.isExporting ? "Exporting..." : "Start Export")
+                            Text(viewModel.isExporting ? L10n.text("settings.export.exporting") : L10n.text("settings.export.start"))
                                 .font(.headline)
                                 .fontWeight(.semibold)
                         }
@@ -719,11 +719,11 @@ private struct ExportAllNotesSheet: View {
                 .background(Color.bgPrimary.ignoresSafeArea(edges: .bottom))
             }
             .background(Color.bgPrimary.ignoresSafeArea())
-            .navigationTitle("Export")
+            .navigationTitle(L10n.text("settings.export.nav_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Close") {
+                    Button(L10n.text("common.close")) {
                         dismiss()
                     }
                     .disabled(viewModel.isExporting)
@@ -752,10 +752,10 @@ private extension SettingsView {
         let mode = VoiceTranscriptionLanguageMode(rawValue: voiceLanguageModeRawValue) ?? .auto
         switch mode {
         case .auto:
-            return "Auto"
+            return L10n.text("settings.voice.summary.auto")
         case .prefer:
             let trimmed = voiceLanguageHint.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return "Not Set" }
+            guard !trimmed.isEmpty else { return L10n.text("settings.voice.summary.not_set") }
             return VoiceLanguageOption.shortDisplayName(for: trimmed)
         }
     }
@@ -879,7 +879,7 @@ private struct LegalTextView: View {
             .navigationTitle(title)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
+                    Button(L10n.text("common.done")) {
                         dismiss()
                     }
                 }

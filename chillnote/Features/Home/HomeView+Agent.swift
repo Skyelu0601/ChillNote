@@ -41,10 +41,7 @@ extension HomeView {
 
         await MainActor.run {
             isExecutingAction = true
-            actionProgress = String(
-                format: String(localized: "Executing %@..."),
-                recipe.localizedName
-            )
+            actionProgress = L10n.text("home.agent.executing", recipe.localizedName)
         }
 
         do {

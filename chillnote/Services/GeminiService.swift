@@ -22,7 +22,7 @@ enum GeminiError: LocalizedError {
         case .invalidResponse:
             return AppErrorCode.geminiInvalidResponse.message
         case .consentDeclined:
-            return String(localized: "AI permission not granted")
+            return L10n.text("speech_recognizer.error.ai_permission_not_granted")
         }
     }
 }

@@ -138,7 +138,7 @@ struct NoteDetailView: View {
                 Alert(
                     title: Text(alert.title),
                     message: Text(alert.message),
-                    primaryButton: .default(Text("Retry")) {
+                    primaryButton: .default(Text(L10n.text("common.retry"))) {
                         viewModel.triggerRetryHaptic()
                         viewModel.send(.retryTranscriptionTapped)
                     },
@@ -150,7 +150,7 @@ struct NoteDetailView: View {
                 Alert(
                     title: Text(alert.title),
                     message: Text(alert.message),
-                    dismissButton: .default(Text("OK")) {
+                    dismissButton: .default(Text(L10n.text("common.ok"))) {
                         viewModel.send(.dismissVoiceProcessingErrorTapped)
                     }
                 )

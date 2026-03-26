@@ -44,7 +44,7 @@ enum TranscriptionContentValidator {
     }
 
     static func fallbackEmptyTranscriptionMessage() -> String {
-        String(localized: "Transcription result was empty. Please retry.")
+        L10n.text("transcription.failure.empty_result_retry")
     }
 
     static func looksLikeProviderEmptyResponse(_ text: String) -> Bool {
@@ -88,7 +88,7 @@ enum TranscriptionContentValidator {
 
 enum VoiceErrorPresentation {
     static var transcriptionFailedTitle: String {
-        String(localized: "Transcription Failed")
+        L10n.text("transcription.failure.title")
     }
 
     static func userMessage(for rawMessage: String) -> String {
@@ -103,7 +103,7 @@ enum VoiceErrorPresentation {
             || lowered.contains("no microphone available")
             || (lowered.contains("permission") && lowered.contains("microphone"))
             || (lowered.contains("microphone") && lowered.contains("denied")) {
-            return String(localized: "Microphone and Speech access are required.")
+            return L10n.text("transcription.failure.microphone_and_speech_required")
         }
 
         if lowered.contains("network error") || lowered.contains("network unavailable") || lowered.contains("offline") {

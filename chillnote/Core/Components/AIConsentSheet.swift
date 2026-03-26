@@ -20,12 +20,12 @@ struct AIConsentSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 10) {
-                Text(String(localized: "Your data is used only to complete your request. We and our third-party partners do not use your notes or recordings to train models."))
+                Text(L10n.text("ai_consent.data_usage"))
                     .font(.bodyMedium)
                     .foregroundColor(.textSub)
                     .fixedSize(horizontal: false, vertical: true)
 
-                Text(String(localized: "Raw audio is processed ephemerally and is not retained on our servers after processing."))
+                Text(L10n.text("ai_consent.raw_audio"))
                     .font(.bodyMedium)
                     .foregroundColor(.textSub)
                     .fixedSize(horizontal: false, vertical: true)
@@ -33,7 +33,7 @@ struct AIConsentSheet: View {
 
             HStack(spacing: 12) {
                 Button(action: consentManager.declineAIDataConsent) {
-                    Text(String(localized: "Not now"))
+                    Text(L10n.text("ai_consent.not_now"))
                         .font(.bodySmall)
                         .foregroundColor(.textMain)
                         .frame(maxWidth: .infinity)
@@ -48,7 +48,7 @@ struct AIConsentSheet: View {
                 .buttonStyle(.plain)
 
                 Button(action: consentManager.acceptAIDataConsent) {
-                    Text(String(localized: "Agree and Continue"))
+                    Text(L10n.text("ai_consent.agree_and_continue"))
                         .font(.bodySmall)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
@@ -67,7 +67,7 @@ struct AIConsentSheet: View {
             }
 
             Button(action: openPrivacyPolicy) {
-                Text(String(localized: "View Privacy Policy"))
+                Text(L10n.text("ai_consent.view_privacy_policy"))
                     .font(.chillCaption)
                     .foregroundColor(.accentPrimary)
                     .underline()

@@ -277,7 +277,7 @@ struct AIContextChatView: View {
                             .font(.caption)
                             .foregroundColor(.red)
                         Spacer()
-                        Button("Dismiss") {
+                        Button(L10n.text("ai_chat.error.dismiss")) {
                             errorMessage = nil
                         }
                         .font(.caption)
@@ -288,11 +288,11 @@ struct AIContextChatView: View {
                 }
                 
             }
-            .navigationTitle("Ask AI")
+            .navigationTitle(L10n.text("ai_chat.title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Close") {
+                    Button(L10n.text("common.close")) {
                         dismiss()
                     }
                 }
@@ -359,7 +359,7 @@ struct AIContextChatView: View {
 
             HStack(alignment: .bottom, spacing: 10) {
                 // Multi-line text field
-                TextField("Ask Chillo...", text: $userInput, axis: .vertical)
+                TextField(L10n.text("ai_chat.input_placeholder"), text: $userInput, axis: .vertical)
                     .font(.bodyMedium)
                     .foregroundColor(.textMain)
                     .padding(.horizontal, 14)
@@ -419,13 +419,13 @@ struct AIContextChatView: View {
 
     var emptyStateView: some View {
         VStack(spacing: 12) {
-            Text(contextNotes.isEmpty ? "Select some notes to start" : "Your notes are ready")
+            Text(contextNotes.isEmpty ? L10n.text("ai_chat.empty.no_notes_title") : L10n.text("ai_chat.empty.ready_title"))
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundColor(.textMain)
                 .multilineTextAlignment(.center)
             
-            Text(contextNotes.isEmpty ? "I'm ready to help once you pick some content." : "Use your notes to get answers, summaries, and new ideas.")
+            Text(contextNotes.isEmpty ? L10n.text("ai_chat.empty.no_notes_message") : L10n.text("ai_chat.empty.ready_message"))
                 .font(.body)
                 .foregroundColor(.textSub)
                 .multilineTextAlignment(.center)
@@ -501,7 +501,7 @@ struct AIContextChatView: View {
                         activePaywallContext = .dailyChatLimit
                     } else {
                         errorMessage = String(
-                            format: String(localized: "Chillo ran into an issue: %@"),
+                            format: L10n.text("ai_chat.error.issue_format"),
                             message
                         )
                     }
@@ -796,7 +796,7 @@ struct ChatMessageBubble: View {
                         HStack(spacing: 6) {
                             Image(systemName: isSaved ? "checkmark.circle.fill" : "square.and.arrow.down")
                                 .font(.system(size: 14))
-                            Text(isSaved ? "Saved!" : "Save as Note")
+                            Text(isSaved ? L10n.text("ai_chat.message.saved") : L10n.text("ai_chat.message.save_as_note"))
                                 .font(.caption)
                                 .fontWeight(.medium)
                         }
@@ -823,7 +823,7 @@ private struct ThinkingBubble: View {
                 .font(.system(size: 13, weight: .semibold))
                 .foregroundColor(.accentPrimary)
 
-            Text("Thinking")
+            Text(L10n.text("ai_chat.thinking"))
                 .font(.bodyMedium)
                 .foregroundColor(.textMain)
 
@@ -916,7 +916,7 @@ private struct ContextPreviewView: View, Equatable {
 
             Text(
                 String(
-                    format: String(localized: "%lld Context Notes"),
+                    format: L10n.text("ai_chat.context_notes_format"),
                     Int64(notes.count)
                 )
             )
@@ -1146,12 +1146,12 @@ private struct SlashSkillsPanel: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Chill Skills")
+            Text(L10n.text("ai_chat.skills_title"))
                 .font(.caption.weight(.semibold))
                 .foregroundColor(.textSub)
 
             if isEmptyLibrary {
-                Text("No saved Skills yet. Add some in Chill Skills first.")
+                Text(L10n.text("ai_chat.skills_empty"))
                     .font(.subheadline)
                     .foregroundColor(.textSub)
             } else {

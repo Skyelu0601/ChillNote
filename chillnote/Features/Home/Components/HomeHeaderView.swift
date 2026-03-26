@@ -58,7 +58,7 @@ struct HomeHeaderView: View {
                     }
                     .buttonStyle(.bouncy)
                     .disabled(isRecording)
-                    .accessibilityLabel("Search")
+                    .accessibilityLabel(L10n.text("home.header.accessibility.search"))
 
                     if !isTrashSelected {
                         Button(action: onCreateBlankNote) {
@@ -70,7 +70,7 @@ struct HomeHeaderView: View {
                         }
                         .buttonStyle(.bouncy)
                         .disabled(isRecording)
-                        .accessibilityLabel("Create Blank Note")
+                        .accessibilityLabel(L10n.text("home.header.accessibility.create_blank_note"))
 
                         Button(action: onEnterSelectionMode) {
                             Image("chillohead_touming")
@@ -96,7 +96,7 @@ struct HomeHeaderView: View {
                         }
                         .buttonStyle(.bouncy)
                         .disabled(isRecording)
-                        .accessibilityLabel("Enter AI Context Mode")
+                        .accessibilityLabel(L10n.text("home.header.accessibility.enter_ai_context_mode"))
                     }
 
                     if isTrashSelected {
@@ -108,7 +108,7 @@ struct HomeHeaderView: View {
                                 .contentShape(Circle())
                         }
                         .buttonStyle(.bouncy)
-                        .accessibilityLabel("Empty Recycle Bin")
+                        .accessibilityLabel(L10n.text("home.header.accessibility.empty_recycle_bin"))
                     }
                 }
                 .padding(.horizontal, 4)
@@ -118,7 +118,7 @@ struct HomeHeaderView: View {
                 .opacity(isRecording ? 0.3 : 1.0)
             } else {
                 HStack {
-                    Button("Cancel") {
+                    Button(L10n.text("common.cancel")) {
                         onExitSelectionMode()
                     }
                     .font(.bodyMedium)
@@ -128,13 +128,13 @@ struct HomeHeaderView: View {
 
                     HStack(spacing: 20) {
                         if selectedNotesCount < visibleNotesCount {
-                            Button("Select All") {
+                            Button(L10n.text("home.header.select_all")) {
                                 onSelectAll()
                             }
                             .font(.bodyMedium)
                             .foregroundColor(.accentPrimary)
                         } else {
-                            Button("Deselect All") {
+                            Button(L10n.text("home.header.deselect_all")) {
                                 onDeselectAll()
                             }
                             .font(.bodyMedium)

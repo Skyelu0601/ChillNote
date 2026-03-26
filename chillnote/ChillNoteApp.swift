@@ -60,10 +60,10 @@ private struct DataInitializationFailedView: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            Text("Couldn't Start ChillNote")
+            Text(L10n.text("app_init.title"))
                 .font(.title2)
                 .fontWeight(.semibold)
-            Text("Local data initialization failed. Please try again. If it still fails, restart the app or free up device storage and try again.")
+            Text(L10n.text("app_init.message"))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 24)
@@ -74,7 +74,7 @@ private struct DataInitializationFailedView: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal, 24)
             }
-            Button("Retry Initialization", action: onRetry)
+            Button(L10n.text("app_init.retry"), action: onRetry)
                 .buttonStyle(.borderedProminent)
         }
         .padding()

@@ -37,7 +37,7 @@ struct ExportProgress: Sendable {
         processed: 0,
         total: 0,
         elapsed: 0,
-        message: String(localized: "Preparing export...")
+        message: L10n.text("export.progress.preparing")
     )
 
     var fraction: Double {
@@ -66,19 +66,19 @@ enum ExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingContainer:
-            return String(localized: "Export service is unavailable right now.")
+            return L10n.text("notes_export.error.service_unavailable")
         case .noNotes:
-            return String(localized: "No notes to export.")
+            return L10n.text("notes_export.error.no_notes")
         case .insufficientStorage:
-            return String(localized: "Not enough storage to create export file.")
+            return L10n.text("notes_export.error.insufficient_storage")
         case .cancelled:
-            return String(localized: "Export was cancelled.")
+            return L10n.text("notes_export.error.cancelled")
         case .invalidArchive:
-            return String(localized: "Unable to create zip archive.")
+            return L10n.text("notes_export.error.invalid_archive")
         case .writeFailed:
-            return String(localized: "Failed to write markdown files.")
+            return L10n.text("notes_export.error.write_failed")
         case .zipFailed:
-            return String(localized: "Failed to package markdown files.")
+            return L10n.text("notes_export.error.zip_failed")
         case .unknown(let message):
             return message
         }
@@ -135,7 +135,7 @@ actor NotesExportService: NotesExporting {
                 processed: 0,
                 total: total,
                 startedAt: startedAt,
-                message: String(localized: "Preparing export package...")
+                message: L10n.text("notes_export.progress.preparing_package")
             )
 
             try ensureSufficientStorage(totalNotes: total)
@@ -178,7 +178,7 @@ actor NotesExportService: NotesExporting {
                     processed: processed,
                     total: total,
                     startedAt: startedAt,
-                    message: String(localized: "Reading notes...")
+                    message: L10n.text("notes_export.progress.reading_notes")
                 )
 
                 var writeFailed = false
@@ -217,7 +217,7 @@ actor NotesExportService: NotesExporting {
                                 processed: processed,
                                 total: total,
                                 startedAt: startedAt,
-                                message: String(localized: "Writing markdown files...")
+                                message: L10n.text("notes_export.progress.writing_markdown_files")
                             )
                         }
                     }
@@ -239,7 +239,7 @@ actor NotesExportService: NotesExporting {
                 processed: processed,
                 total: total,
                 startedAt: startedAt,
-                message: String(localized: "Packaging zip file...")
+                message: L10n.text("notes_export.progress.packaging_zip")
             )
 
             let zipURL = fileManager.temporaryDirectory
@@ -265,7 +265,7 @@ actor NotesExportService: NotesExporting {
                 processed: total,
                 total: total,
                 startedAt: startedAt,
-                message: String(localized: "Export ready")
+                message: L10n.text("notes_export.progress.ready")
             )
 
             return zipURL

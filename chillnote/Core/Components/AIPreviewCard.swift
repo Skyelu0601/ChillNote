@@ -15,7 +15,7 @@ struct AIPreviewCard: View {
                     VStack(spacing: 2) {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 18))
-                        Text("Retry")
+                        Text(L10n.text("common.retry"))
                             .font(.system(size: 10))
                     }
                     .foregroundColor(.accentPrimary)
@@ -31,7 +31,7 @@ struct AIPreviewCard: View {
                     VStack(spacing: 2) {
                         Image(systemName: "arrow.uturn.backward")
                             .font(.system(size: 18))
-                        Text("Undo")
+                        Text(L10n.text("common.undo"))
                             .font(.system(size: 10))
                     }
                     .foregroundColor(.orange)
@@ -47,7 +47,7 @@ struct AIPreviewCard: View {
                     VStack(spacing: 2) {
                         Image(systemName: "checkmark")
                             .font(.system(size: 18))
-                        Text("Save")
+                        Text(L10n.text("common.save"))
                             .font(.system(size: 10))
                     }
                     .foregroundColor(.accentPrimary)

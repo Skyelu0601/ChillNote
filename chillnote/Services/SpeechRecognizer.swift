@@ -163,7 +163,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         // Validation
         guard permissionGranted else {
             checkPermissions()
-            setError(String(localized: "Microphone permission required"))
+            setError(L10n.text("speech_recognizer.error.microphone_permission_required"))
             return
         }
         
@@ -191,10 +191,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             print(debugAudioSessionSnapshot())
             cleanupRecordingSession()
             setError(
-                String(
-                    format: String(localized: "Failed to start recording: %@"),
-                    error.localizedDescription
-                )
+                L10n.text("speech_recognizer.error.failed_to_start_recording", error.localizedDescription)
             )
         }
     }
@@ -254,7 +251,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             return
         }
 
-        setError(String(localized: "No recording available to retry"))
+        setError(L10n.text("speech_recognizer.error.no_recording_to_retry"))
     }
 
     func retryTranscription(fileURL: URL) {
@@ -355,7 +352,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             publishFailureEvent(
                 fileURL: fileURL,
                 reason: .localFileIssue,
-                message: String(localized: "Could not read audio file")
+                message: L10n.text("speech_recognizer.error.could_not_read_audio_file")
             )
             return
         }
@@ -367,7 +364,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             publishFailureEvent(
                 fileURL: fileURL,
                 reason: .audioEmpty,
-                message: String(localized: "No audio captured. Please try again.")
+                message: L10n.text("speech_recognizer.error.no_audio_captured")
             )
             return
         }
@@ -406,7 +403,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             publishFailureEvent(
                 fileURL: fileURL,
                 reason: .timeout,
-                message: String(localized: "Transcription timed out. Please try again.")
+                message: L10n.text("speech_recognizer.error.transcription_timed_out")
             )
             
         } catch let error as GeminiError {
@@ -429,7 +426,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             publishFailureEvent(
                 fileURL: fileURL,
                 reason: .unknown,
-                message: String(format: String(localized: "Transcription failed: %@"), error.localizedDescription)
+                message: L10n.text("speech_recognizer.error.transcription_failed", error.localizedDescription)
             )
         }
     }
@@ -439,17 +436,17 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     private func message(for error: GeminiError) -> String {
         switch error {
         case .missingAPIKey:
-            return String(localized: "Chillo service key not configured. Please contact support.")
+            return L10n.text("speech_recognizer.error.service_key_not_configured")
         case .apiError(let apiMessage):
-            return String(format: String(localized: "Chillo service error: %@"), apiMessage)
+            return L10n.text("speech_recognizer.error.service_error", apiMessage)
         case .networkError(let networkError):
-            return String(format: String(localized: "Network error: %@"), networkError.localizedDescription)
+            return L10n.text("speech_recognizer.error.network_error", networkError.localizedDescription)
         case .invalidResponse:
-            return String(localized: "Invalid response from Chillo.")
+            return L10n.text("speech_recognizer.error.invalid_response")
         case .invalidURL:
-            return String(localized: "Invalid configuration URL.")
+            return L10n.text("speech_recognizer.error.invalid_configuration_url")
         case .consentDeclined:
-            return String(localized: "AI permission not granted")
+            return L10n.text("speech_recognizer.error.ai_permission_not_granted")
         }
     }
     
@@ -634,7 +631,7 @@ private extension SpeechRecognizer {
             throw NSError(
                 domain: "SpeechRecognizer",
                 code: 10,
-                userInfo: [NSLocalizedDescriptionKey: String(localized: "No microphone available")]
+                userInfo: [NSLocalizedDescriptionKey: L10n.text("speech_recognizer.error.no_microphone_available")]
             )
         }
 
@@ -665,7 +662,7 @@ private extension SpeechRecognizer {
                 throw NSError(
                     domain: "SpeechRecognizer",
                     code: 11,
-                    userInfo: [NSLocalizedDescriptionKey: String(localized: "Failed to prepare recorder")]
+                    userInfo: [NSLocalizedDescriptionKey: L10n.text("speech_recognizer.error.failed_to_prepare_recorder")]
                 )
             }
         }
@@ -674,7 +671,7 @@ private extension SpeechRecognizer {
             throw NSError(
                 domain: "SpeechRecognizer",
                 code: 12,
-                userInfo: [NSLocalizedDescriptionKey: String(localized: "Failed to start recording")]
+                userInfo: [NSLocalizedDescriptionKey: L10n.text("speech_recognizer.error.failed_to_start_recording_short")]
             )
         }
 
@@ -808,7 +805,7 @@ private extension SpeechRecognizer {
 
 extension SpeechRecognizer: AVAudioRecorderDelegate {
     nonisolated func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
-        let message = error?.localizedDescription ?? "Unknown audio encoder error"
+        let message = error?.localizedDescription ?? L10n.text("speech_recognizer.error.unknown_audio_encoder_error")
         Task { @MainActor in
             self.audioRecorder = nil
             if let error {
@@ -816,7 +813,7 @@ extension SpeechRecognizer: AVAudioRecorderDelegate {
                 print(self.debugAudioSessionSnapshot())
             }
             self.cleanupRecordingSession()
-            self.setError("Recording failed: \(message)")
+            self.setError(L10n.text("speech_recognizer.error.recording_failed", message))
         }
     }
 }

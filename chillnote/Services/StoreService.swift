@@ -528,7 +528,7 @@ class StoreService: ObservableObject {
             }
         } catch {
             errorMessage = String(
-                format: String(localized: "Purchase failed: %@"),
+                format: L10n.text("store.error.purchase_failed"),
                 error.localizedDescription
             )
         }
@@ -545,7 +545,7 @@ class StoreService: ObservableObject {
             await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
         } catch {
             errorMessage = String(
-                format: String(localized: "Restore failed: %@"),
+                format: L10n.text("store.error.restore_failed"),
                 error.localizedDescription
             )
         }
@@ -591,11 +591,11 @@ class StoreService: ObservableObject {
             let products = try await Product.products(for: productIds)
             availableProducts = products.sorted(by: { $0.price < $1.price })
             if availableProducts.isEmpty {
-                productsErrorMessage = String(localized: "No subscription products are available right now. Please try again.")
+                productsErrorMessage = L10n.text("store.error.no_subscription_products")
             }
         } catch {
             print("Failed to fetch products: \(error)")
-            productsErrorMessage = String(localized: "Unable to load subscription prices. Please check your network and try again.")
+            productsErrorMessage = L10n.text("store.error.unable_to_load_prices")
         }
         isLoadingProducts = false
     }
@@ -728,7 +728,7 @@ class StoreService: ObservableObject {
         if httpResponse.statusCode != 200 {
             // Handle specific errors like 409 (Bound to another user)
             if httpResponse.statusCode == 409 {
-                 self.errorMessage = String(localized: "This subscription is already linked to another ChillNote account.")
+                 self.errorMessage = L10n.text("store.error.subscription_linked_elsewhere")
             } else if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let message = json["error"] as? String {
                 self.errorMessage = message

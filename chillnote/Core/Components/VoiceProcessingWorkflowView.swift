@@ -7,30 +7,18 @@ enum VoiceProcessingStage: String, CaseIterable, Equatable {
     var title: String {
         switch self {
         case .transcribing:
-            return String(
-                localized: "Transcribing",
-                comment: "Voice processing stage title while converting speech to text"
-            )
+            return L10n.text("voice_processing.stage.transcribing.title")
         case .refining:
-            return String(
-                localized: "Refining",
-                comment: "Voice processing stage title while improving and structuring note text"
-            )
+            return L10n.text("voice_processing.stage.refining.title")
         }
     }
 
     var subtitle: String {
         switch self {
         case .transcribing:
-            return String(
-                localized: "Converting your voice into text...",
-                comment: "Voice processing stage subtitle while transcribing speech"
-            )
+            return L10n.text("voice_processing.stage.transcribing.subtitle")
         case .refining:
-            return String(
-                localized: "Cleaning and structuring your note...",
-                comment: "Voice processing stage subtitle while refining note content"
-            )
+            return L10n.text("voice_processing.stage.refining.subtitle")
         }
     }
 
@@ -135,7 +123,7 @@ struct VoiceProcessingWorkflowView: View {
                         .foregroundStyle(.secondary)
                         .symbolEffect(.bounce, value: currentStage)
                     
-                    Text("You can keep using ChillNote while we work.")
+                    Text(L10n.text("voice_processing.persistent_hint"))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.leading)

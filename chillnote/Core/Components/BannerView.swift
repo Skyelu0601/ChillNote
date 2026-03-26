@@ -115,9 +115,9 @@ extension View {
         Color.gray.opacity(0.1).ignoresSafeArea()
         
         VStack(spacing: 20) {
-            BannerView(data: BannerData(message: String(localized: "Network Error"), style: .error))
-            BannerView(data: BannerData(message: String(localized: "Saved successfully"), style: .success))
-            BannerView(data: BannerData(message: String(localized: "Processing..."), style: .info))
+            BannerView(data: BannerData(message: L10n.text("banner.preview.network_error"), style: .error))
+            BannerView(data: BannerData(message: L10n.text("banner.preview.saved_successfully"), style: .success))
+            BannerView(data: BannerData(message: L10n.text("banner.preview.processing"), style: .info))
         }
     }
 }

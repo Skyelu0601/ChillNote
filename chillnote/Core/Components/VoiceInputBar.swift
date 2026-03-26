@@ -28,7 +28,7 @@ struct VoiceInputBar: View {
                             .opacity(isRecordingPulsing ? 1.0 : 0.3)
                             .animation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true), value: isRecordingPulsing)
                         
-                        Text("Recording...")
+                        Text(L10n.text("voice_input.recording"))
                             .font(.bodyMedium)
                             .foregroundColor(.textMain)
                     }
@@ -48,7 +48,7 @@ struct VoiceInputBar: View {
                     // Processing State
                     HStack(spacing: 12) {
                         ProgressView()
-                        Text("Processing...")
+                        Text(L10n.text("voice_input.processing"))
                             .font(.bodyMedium)
                             .foregroundColor(.textSub)
                     }
@@ -62,7 +62,7 @@ struct VoiceInputBar: View {
                             .foregroundColor(.red)
                             .lineLimit(1)
                         
-                        Button("Retry") {
+                        Button(L10n.text("common.retry")) {
                             Task {
                                 _ = await speechRecognizer.startRecordingIfPermitted()
                             }

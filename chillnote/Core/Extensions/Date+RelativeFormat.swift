@@ -42,10 +42,7 @@ extension Date {
         
         // Check if it's yesterday
         if calendar.isDateInYesterday(self) {
-            return String(
-                format: String(localized: "Yesterday %@"),
-                Self.timeFormatter.string(from: self)
-            )
+            return L10n.text("date.relative.yesterday_time", Self.timeFormatter.string(from: self))
         }
         
         // Check if it's within the last 6 days (this week)

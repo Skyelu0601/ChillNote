@@ -23,7 +23,7 @@ struct HomeNotesListView: View {
             if isLoading || isSyncing || !hasLoadedAtLeastOnce {
                 HomeNotesLoadingView()
             } else if isTrashSelected {
-                Text("No deleted notes yet. Notes stay for 30 days.")
+                Text(L10n.text("home.notes.empty.trash"))
                     .font(.bodyMedium)
                     .foregroundColor(.textSub)
                     .padding(.horizontal, 24)
@@ -33,7 +33,7 @@ struct HomeNotesListView: View {
                 Color.clear
                     .frame(height: 1)
             } else {
-                Text("No notes yet. Use the voice button to create your first note.")
+                Text(L10n.text("home.notes.empty.default"))
                     .font(.bodyMedium)
                     .foregroundColor(.textSub)
                     .padding(.horizontal, 24)
@@ -61,12 +61,12 @@ struct HomeNotesListView: View {
                                 Button {
                                     onRestoreNote(note)
                                 } label: {
-                                    Label("Restore", systemImage: "arrow.uturn.left")
+                                    Label(L10n.text("home.notes.action.restore"), systemImage: "arrow.uturn.left")
                                 }
                                 Button(role: .destructive) {
                                     onDeleteNotePermanently(note)
                                 } label: {
-                                    Label("Delete Permanently", systemImage: "trash.slash")
+                                    Label(L10n.text("home.notes.action.delete_permanently"), systemImage: "trash.slash")
                                 }
                             }
                         } else if isSelectionMode {
@@ -91,12 +91,15 @@ struct HomeNotesListView: View {
                                 Button {
                                     onTogglePin(note)
                                 } label: {
-                                    Label(note.pinnedAt == nil ? "Pin" : "Unpin", systemImage: note.pinnedAt == nil ? "pin" : "pin.slash")
+                                    Label(
+                                        note.pinnedAt == nil ? L10n.text("home.notes.action.pin") : L10n.text("home.notes.action.unpin"),
+                                        systemImage: note.pinnedAt == nil ? "pin" : "pin.slash"
+                                    )
                                 }
                                 Button(role: .destructive) {
                                     onDeleteNote(note)
                                 } label: {
-                                    Label("Delete", systemImage: "trash")
+                                    Label(L10n.text("common.delete"), systemImage: "trash")
                                 }
                             }
                         }
@@ -110,7 +113,7 @@ struct HomeNotesListView: View {
                     HStack(spacing: 10) {
                         ProgressView()
                             .controlSize(.small)
-                        Text("Loading...")
+                        Text(L10n.text("common.loading"))
                             .font(.chillCaption)
                             .foregroundColor(.textSub)
                     }
@@ -169,7 +172,7 @@ struct TrashNoteFooterView: View {
                     .foregroundColor(.textSub)
                 Text(
                     String(
-                        format: String(localized: "Deleted %@"),
+                        format: L10n.text("home.notes.trash.deleted_format"),
                         deletedAt.relativeFormatted()
                     )
                 )
@@ -180,9 +183,9 @@ struct TrashNoteFooterView: View {
                     .foregroundColor(.textSub)
                 Text(
                     daysRemaining == 0
-                    ? String(localized: "Expires today")
+                    ? L10n.text("home.notes.trash.expires_today")
                     : String(
-                        format: String(localized: "%lld days left"),
+                        format: L10n.text("home.notes.trash.days_left"),
                         Int64(daysRemaining)
                     )
                 )
@@ -305,7 +308,7 @@ struct NoteCard: View {
                             .font(.system(size: 12, weight: .semibold))
                             .foregroundColor(.accentPrimary)
                             .padding(.leading, 4)
-                            .accessibilityLabel(Text("Pinned"))
+                            .accessibilityLabel(Text(L10n.text("home.notes.accessibility.pinned")))
                     }
                     Spacer()
                 }
