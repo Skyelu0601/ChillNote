@@ -159,6 +159,7 @@ struct AboutView: View {
                 .padding(24)
             }
             .background(Color.bgPrimary.ignoresSafeArea())
+            .navigationTitle(L10n.text("settings.support.about"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
@@ -167,6 +168,7 @@ struct AboutView: View {
                             .foregroundStyle(Color.textSub.opacity(0.5))
                             .font(.system(size: 24))
                     }
+                    .accessibilityLabel(L10n.text("common.close"))
                 }
             }
         }

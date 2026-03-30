@@ -364,8 +364,15 @@ struct AIContextChatView: View {
                     .foregroundColor(.textMain)
                     .padding(.horizontal, 14)
                     .padding(.vertical, 11)
-                    .background(Color.bgSecondary)
-                    .cornerRadius(22)
+                    .background(
+                        RoundedRectangle(cornerRadius: 22)
+                            .fill(Color.bgSecondary)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 22)
+                                    .stroke(Color.textSub.opacity(0.14), lineWidth: 1)
+                            )
+                            .shadow(color: Color.shadowColor.opacity(0.55), radius: 8, x: 0, y: 3)
+                    )
                     .lineLimit(1...5)
                     .focused($isInputFocused)
                     .submitLabel(.send)

@@ -220,6 +220,10 @@ struct OnboardingView: View {
         .onChange(of: currentPage) { _, newValue in
             handlePageChange(to: newValue)
         }
+        .onChange(of: storeService.currentTier) { _, newValue in
+            guard newValue == .pro, showOnboardingPaywall else { return }
+            completeOnboarding()
+        }
         .onChange(of: speechRecognizer.permissionGranted) { _, granted in
             guard granted, currentPage == 1 else { return }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
@@ -255,6 +259,9 @@ struct OnboardingView: View {
 
         if page == 3 {
             resetAskDemoState(resetPaywall: false)
+            Task {
+                await storeService.refreshSubscriptionStatus()
+            }
             if storeService.availableProducts.isEmpty && !storeService.isLoadingProducts {
                 Task {
                     await storeService.refreshProducts()
@@ -400,6 +407,11 @@ struct OnboardingView: View {
     }
 
     private func skipToPaywall() {
+        guard !shouldSkipOnboardingPaywall else {
+            completeOnboarding()
+            return
+        }
+
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             currentPage = 3
             showOnboardingPaywall = true
@@ -1093,6 +1105,10 @@ struct OnboardingView: View {
     @State private var showOnboardingPaywall: Bool = false
     @State private var askAutoStartedOnCurrentVisit: Bool = false
 
+    private var shouldSkipOnboardingPaywall: Bool {
+        storeService.currentTier == .pro
+    }
+
     private var yearlyProduct: Product? {
         storeService.availableProducts.first(where: { $0.subscription?.subscriptionPeriod.unit == .year })
         ?? storeService.availableProducts.first(where: { $0.id.lowercased().contains("year") })
@@ -1392,8 +1408,12 @@ struct OnboardingView: View {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.95) {
             guard currentPage == 3, askAnimationRunID == runID else { return }
-            withAnimation(.spring(response: 0.52, dampingFraction: 0.84)) {
-                showOnboardingPaywall = true
+            if shouldSkipOnboardingPaywall {
+                completeOnboarding()
+            } else {
+                withAnimation(.spring(response: 0.52, dampingFraction: 0.84)) {
+                    showOnboardingPaywall = true
+                }
             }
         }
     }

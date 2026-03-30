@@ -560,98 +560,9 @@ private struct ExportAllNotesSheet: View {
         NavigationStack {
             VStack(spacing: 0) {
                 ScrollView {
-                    VStack(spacing: 32) {
-                        // 1. Header Illustration
-                        VStack(spacing: 20) {
-                            ZStack {
-                                Circle()
-                                    .fill(Color.accentPrimary.opacity(0.1))
-                                    .frame(width: 80, height: 80)
-                                
-                                Image(systemName: "folder.badge.gear")
-                                    .font(.system(size: 32))
-                                    .foregroundColor(.accentPrimary)
-                            }
-                            
-                            VStack(spacing: 12) {
-                                Text(L10n.text("settings.export.title"))
-                                    .font(.bodyLarge)
-                                    .fontWeight(.bold)
-                                    .foregroundColor(.black)
-                                    .multilineTextAlignment(.center)
-                                
-                                Text(L10n.text("settings.export.subtitle"))
-                                    .font(.bodyMedium)
-                                    .foregroundColor(.textSub)
-                                    .multilineTextAlignment(.center)
-                                    .padding(.horizontal, 24)
-                                    .lineSpacing(4)
-                            }
-                        }
-                        .padding(.top, 20)
-                        
-                        // 2. Info Card
-                        VStack(spacing: 12) {
-                            HStack {
-                                Text(L10n.text("settings.export.summary"))
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.textSub)
-                                    .tracking(1)
-                                Spacer()
-                            }
-                            .padding(.horizontal, 4)
-                            
-                            VStack(spacing: 0) {
-                                // Row 1: Note Count
-                                HStack {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "doc.text.fill")
-                                            .foregroundColor(.accentPrimary)
-                                            .font(.system(size: 16))
-                                        Text(L10n.text("settings.export.total_notes"))
-                                            .font(.bodyMedium)
-                                            .foregroundColor(.textMain)
-                                    }
-                                    Spacer()
-                                    if viewModel.isLoadingEstimate {
-                                        ProgressView()
-                                            .scaleEffect(0.8)
-                                    } else {
-                                        Text("\(viewModel.estimatedNoteCount ?? 0)")
-                                            .font(.bodyMedium)
-                                            .fontWeight(.semibold)
-                                            .foregroundColor(.textMain)
-                                    }
-                                }
-                                .padding(16)
-                                
-                                Divider().padding(.leading, 44)
-                                
-                                // Row 2: Format
-                                HStack {
-                                    HStack(spacing: 12) {
-                                        Image(systemName: "doc.zipper")
-                                            .foregroundColor(.accentPrimary)
-                                            .font(.system(size: 16))
-                                        Text(L10n.text("settings.export.format"))
-                                            .font(.bodyMedium)
-                                            .foregroundColor(.textMain)
-                                    }
-                                    Spacer()
-                                    Text(L10n.text("settings.export.format_markdown"))
-                                        .font(.bodyMedium)
-                                        .foregroundColor(.textSub)
-                                }
-                                .padding(16)
-                            }
-                            .background(Color.white)
-                            .cornerRadius(16)
-                            .shadow(color: Color.black.opacity(0.04), radius: 8, y: 2)
-                        }
-                        .padding(.horizontal, 20)
+                    VStack(spacing: 24) {
+                        exportHeroSection
 
-                        // 3. Status/Progress Area
                         if viewModel.isExporting || viewModel.progress.processed > 0 {
                             ExportProgressView(
                                 progress: viewModel.progress,
@@ -679,11 +590,12 @@ private struct ExportAllNotesSheet: View {
                                 .foregroundColor(.textSub)
                                 .padding(.top, 10)
                         }
+
+                        exportBenefitsSection
                     }
                     .padding(.bottom, 40)
                 }
                 
-                // 4. Bottom Button
                 VStack {
                     Divider()
                     Button(action: {
@@ -699,7 +611,7 @@ private struct ExportAllNotesSheet: View {
                                     .tint(.white)
                                     .padding(.trailing, 8)
                             }
-                            Text(viewModel.isExporting ? L10n.text("settings.export.exporting") : L10n.text("settings.export.start"))
+                            Text(viewModel.isExporting ? L10n.text("settings.export.exporting") : L10n.text("settings.export.cta"))
                                 .font(.headline)
                                 .fontWeight(.semibold)
                         }
@@ -740,6 +652,151 @@ private struct ExportAllNotesSheet: View {
                 }
             }
         }
+    }
+
+    private var exportHeroSection: some View {
+        VStack(spacing: 16) {
+            VStack(spacing: 10) {
+                Text(L10n.text("settings.export.title"))
+                    .font(.system(size: 30, weight: .bold, design: .rounded))
+                    .foregroundColor(.textMain)
+                    .multilineTextAlignment(.center)
+
+                Text(L10n.text("settings.export.subtitle"))
+                    .font(.bodyMedium)
+                    .foregroundColor(.textSub)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(4)
+            }
+
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                ExportFactCard(
+                    icon: "doc.text",
+                    title: L10n.text("settings.export.total_notes"),
+                    value: estimatedNoteCountText
+                )
+
+                ExportFactCard(
+                    icon: "curlybraces.square",
+                    title: L10n.text("settings.export.format"),
+                    value: L10n.text("settings.export.format_markdown")
+                )
+            }
+        }
+        .padding(24)
+        .background(
+            LinearGradient(
+                colors: [Color.white, Color.accentPrimary.opacity(0.05)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 28, style: .continuous)
+                .stroke(Color.accentPrimary.opacity(0.08), lineWidth: 1)
+        )
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+    }
+
+    private var exportBenefitsSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text(L10n.text("settings.export.benefits_title"))
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.textSub)
+                .tracking(1)
+
+            VStack(spacing: 12) {
+                ExportBenefitRow(
+                    icon: "lock.open.fill",
+                    title: L10n.text("settings.export.benefit_portable_title"),
+                    message: L10n.text("settings.export.benefit_portable_body")
+                )
+                ExportBenefitRow(
+                    icon: "sparkles.rectangle.stack.fill",
+                    title: L10n.text("settings.export.benefit_ai_title"),
+                    message: L10n.text("settings.export.benefit_ai_body")
+                )
+                ExportBenefitRow(
+                    icon: "square.and.arrow.up.on.square.fill",
+                    title: L10n.text("settings.export.benefit_move_title"),
+                    message: L10n.text("settings.export.benefit_move_body")
+                )
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private var estimatedNoteCountText: String {
+        if viewModel.isLoadingEstimate {
+            return "..."
+        }
+        return "\(viewModel.estimatedNoteCount ?? 0)"
+    }
+}
+
+private struct ExportFactCard: View {
+    let icon: String
+    let title: String
+    let value: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.accentPrimary)
+
+            Text(title)
+                .font(.caption)
+                .foregroundColor(.textSub)
+
+            Text(value)
+                .font(.system(.title3, design: .rounded).weight(.semibold))
+                .foregroundColor(.textMain)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(Color.white.opacity(0.9))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+    }
+}
+
+private struct ExportBenefitRow: View {
+    let icon: String
+    let title: String
+    let message: String
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.accentPrimary.opacity(0.10))
+                    .frame(width: 40, height: 40)
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.accentPrimary)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.bodyMedium.weight(.semibold))
+                    .foregroundColor(.textMain)
+                Text(message)
+                    .font(.caption)
+                    .foregroundColor(.textSub)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color.black.opacity(0.04), lineWidth: 1)
+        )
     }
 }
 
