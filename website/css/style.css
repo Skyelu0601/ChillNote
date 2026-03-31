@@ -174,7 +174,7 @@ h1, h2, h3, h4 {
 
 /* --- Hero --- */
 .hero {
-  padding: 12rem 0 6rem;
+  padding: 10rem 0 4.5rem;
   background: radial-gradient(circle at 10% 20%, rgba(230, 163, 85, 0.05) 0%, transparent 40%),
               radial-gradient(circle at 90% 80%, rgba(156, 175, 136, 0.05) 0%, transparent 40%);
 }
@@ -326,11 +326,11 @@ h1, h2, h3, h4 {
   color: var(--accent-primary);
 }
 
-/* --- Bento Grid --- */
-.section { padding: var(--spacing-xl) 0; }
+/* --- Shared Layout --- */
+.section { padding: 6rem 0; }
 
 .section-heading {
-  margin-bottom: 4rem;
+  margin-bottom: 3rem;
 }
 
 .section-heading h2 {
@@ -340,8 +340,8 @@ h1, h2, h3, h4 {
 
 .bento-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  grid-template-rows: repeat(2, 300px);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(2, 240px);
   gap: 1.5rem;
 }
 
@@ -395,24 +395,6 @@ h1, h2, h3, h4 {
 }
 
 /* --- Philosophy --- */
-.philosophy-card {
-  background: var(--text-main);
-  border-radius: var(--radius-lg);
-  padding: 4rem;
-  color: white;
-}
-
-.philosophy-content h2 {
-  font-size: 2.5rem;
-  margin-bottom: 1.5rem;
-}
-
-.philosophy-content p {
-  font-size: 1.25rem;
-  color: rgba(255,255,255,0.7);
-  margin-bottom: 2.5rem;
-}
-
 /* --- Use Cases --- */
 .use-cases {
   padding-top: 0;
@@ -420,7 +402,7 @@ h1, h2, h3, h4 {
 
 .use-case-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 1.5rem;
 }
 
@@ -614,12 +596,6 @@ h1, h2, h3, h4 {
   color: var(--accent-primary);
   font-weight: 700;
   margin-bottom: 0.5rem;
-}
-
-.article-preview-section,
-.compare-preview-section,
-.updates-preview-section {
-  padding-top: 0;
 }
 
 .support-actions {
@@ -828,7 +804,6 @@ footer {
   .bento-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
   .bento-large, .bento-medium { grid-column: span 1; }
   .workflow-grid { grid-template-columns: 1fr; }
-  .philosophy-card { text-align: center; padding: 2rem; }
   .article-list,
   .use-case-grid,
   .faq-list,
