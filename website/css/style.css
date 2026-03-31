@@ -229,6 +229,8 @@ h1, h2, h3, h4 {
   color: var(--text-sub);
   margin-bottom: 2.5rem;
   max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .hero-actions {
@@ -340,7 +342,7 @@ h1, h2, h3, h4 {
 
 .bento-grid {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   grid-template-rows: 240px;
   gap: 1.5rem;
 }
@@ -362,7 +364,6 @@ h1, h2, h3, h4 {
 }
 
 .bento-large {
-  grid-column: span 2;
   background: var(--bg-secondary);
 }
 
