@@ -340,8 +340,8 @@ h1, h2, h3, h4 {
 
 .bento-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: repeat(2, 240px);
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  grid-template-rows: 240px;
   gap: 1.5rem;
 }
 
@@ -366,10 +366,6 @@ h1, h2, h3, h4 {
   background: var(--bg-secondary);
 }
 
-.bento-medium {
-  grid-column: span 2;
-}
-
 .bento-small.highlight {
   background: var(--accent-primary);
   color: white;
@@ -385,13 +381,6 @@ h1, h2, h3, h4 {
 
 .bento-copy p {
   color: var(--text-sub);
-}
-
-.bento-img-small {
-  position: absolute;
-  right: 20px;
-  bottom: -20px;
-  width: 100px;
 }
 
 /* --- Philosophy --- */
@@ -768,7 +757,7 @@ footer {
   .hero-actions { justify-content: center; }
   .hero-trust { justify-content: center; }
   .bento-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
-  .bento-large, .bento-medium { grid-column: span 1; }
+  .bento-large { grid-column: span 1; }
   .article-list,
   .use-case-grid,
   .faq-list,
