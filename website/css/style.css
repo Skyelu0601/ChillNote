@@ -342,7 +342,7 @@ h1, h2, h3, h4 {
 
 .bento-grid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   grid-template-rows: 240px;
   gap: 1.5rem;
 }
@@ -363,17 +363,21 @@ h1, h2, h3, h4 {
   transform: scale(1.02);
 }
 
-.bento-large {
+.bento-tone-soft {
   background: var(--bg-secondary);
 }
 
-.bento-small.highlight {
+.bento-tone-accent {
   background: var(--accent-primary);
   color: white;
   border: none;
 }
 
-.bento-small.highlight .bento-copy p { color: rgba(255,255,255,0.8); }
+.bento-tone-accent .bento-copy p { color: rgba(255,255,255,0.8); }
+
+.bento-tone-outline {
+  background: rgba(255, 255, 255, 0.82);
+}
 
 .bento-copy h3 {
   font-size: 1.6rem;
@@ -392,7 +396,7 @@ h1, h2, h3, h4 {
 
 .use-case-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1.5rem;
 }
 
@@ -820,7 +824,6 @@ footer {
   .hero-actions { justify-content: center; }
   .hero-trust { justify-content: center; }
   .bento-grid { grid-template-columns: 1fr; grid-template-rows: auto; }
-  .bento-large { grid-column: span 1; }
   .article-list,
   .use-case-grid,
   .faq-list,
