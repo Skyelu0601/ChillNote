@@ -145,11 +145,17 @@
     </header>
 
     <main>
-        <section class="hero">
-            <div class="container hero-grid hero-centered">
-                <div class="hero-copy">
+        <section class="hero hero-story">
+            <div class="container hero-grid">
+                <div class="hero-copy" data-reveal>
+                    <p class="hero-badge">Voice in. Clarity out.</p>
                     <h1>Capture ideas before they disappear.</h1>
-                    <p>Not just a note app. A personal context layer that helps any AI understand you better.</p>
+                    <p>Speak naturally, let ChillNote clean it up, and keep moving before the moment passes.</p>
+                    <div class="hero-keywords" aria-label="Core product ideas">
+                        <span class="hero-keyword">Voice capture</span>
+                        <span class="hero-keyword">AI cleanup</span>
+                        <span class="hero-keyword">Portable context</span>
+                    </div>
                     <div class="hero-actions">
                         <a href="https://apps.apple.com/us/app/chillnote-ai-quick-capture/id6758427839" class="btn btn-primary"
                             aria-label="Get ChillNote for iOS from the App Store">
@@ -158,38 +164,37 @@
                         <a href="use-cases.html" class="btn btn-secondary">See Use Cases</a>
                     </div>
                 </div>
-            </div>
-        </section>
-
-        <section id="features" class="section features">
-            <div class="container">
-                <div class="section-heading text-center">
-                    <h2 class="serif">From raw thoughts to <span class="accent-text">something you can actually use.</span></h2>
+                <div class="hero-visual hero-collage" data-reveal>
+                    <div class="hero-orbit hero-orbit-left" aria-hidden="true"></div>
+                    <div class="hero-orbit hero-orbit-right" aria-hidden="true"></div>
+                    <div class="floating-note floating-note-top">
+                        <p class="floating-label">Captured on a walk</p>
+                        <p>"Need a better way to save the ideas I only get when moving."</p>
+                    </div>
+                    <div class="ios-stage">
+                        <div class="device-shell">
+                            <img src="assets/pro.png" alt="ChillNote iPhone app interface preview" class="hero-app-shot">
+                        </div>
+                    </div>
+                    <div class="floating-note floating-note-bottom">
+                        <p class="floating-label">After ChillNote</p>
+                        <p>Clean thought, tagged context, Markdown-ready note.</p>
+                    </div>
                 </div>
-                <div class="bento-grid">
-                    <div class="bento-item bento-tone-soft">
-                        <div class="bento-copy">
-                            <h3 class="serif">Capture when typing is not possible</h3>
-                            <p>The best ideas often show up when your hands are busy, so ChillNote helps you catch them during walks, commutes, and fast-moving days.</p>
-                        </div>
+            </div>
+            <div class="container" data-reveal>
+                <div class="hero-strip" aria-label="Moments ChillNote is designed for">
+                    <div class="hero-strip-item">
+                        <span class="strip-title">Capture</span>
+                        <p>Talk when your hands are busy and the idea is still alive.</p>
                     </div>
-                    <div class="bento-item bento-tone-accent">
-                        <div class="bento-copy">
-                            <h3 class="serif">Clean up raw speech automatically</h3>
-                            <p>Let AI remove filler, preserve meaning, and turn messy spoken thoughts into clearer notes.</p>
-                        </div>
+                    <div class="hero-strip-item">
+                        <span class="strip-title">Refine</span>
+                        <p>Let AI remove filler without flattening what you meant.</p>
                     </div>
-                    <div class="bento-item bento-tone-outline">
-                        <div class="bento-copy">
-                            <h3 class="serif">Voice to Markdown</h3>
-                            <p>Turn spoken thoughts into Markdown-ready notes that fit Obsidian, AI workflows, and portable knowledge bases.</p>
-                        </div>
-                    </div>
-                    <div class="bento-item bento-tone-soft">
-                        <div class="bento-copy">
-                            <h3 class="serif">Save AI chat as note</h3>
-                            <p>Keep useful ideas from AI conversations instead of letting good outputs disappear inside chat threads.</p>
-                        </div>
+                    <div class="hero-strip-item">
+                        <span class="strip-title">Reuse</span>
+                        <p>Keep the result in Markdown so it can travel into future workflows.</p>
                     </div>
                 </div>
             </div>
@@ -197,25 +202,30 @@
 
         <section class="section use-cases">
             <div class="container">
-                <div class="section-heading text-center">
-                    <h2 class="serif">Built for the moments when typing gets in the way.</h2>
+                <div class="section-heading text-center" data-reveal>
+                    <p class="section-kicker">Who it is for</p>
+                    <h2 class="serif">Built for real moments, not ideal desk setups.</h2>
                 </div>
-                <div class="use-case-grid">
-                    <article class="use-case-card">
-                        <h3 class="serif">For creators who capture ideas on the go</h3>
-                        <p>Save hooks, outlines, and half-formed thoughts before they vanish while you are out in the real world.</p>
+                <div class="use-case-showcase">
+                    <article class="use-case-feature use-case-feature-tall" data-reveal>
+                        <p class="hub-label">Creators</p>
+                        <h3 class="serif">Save hooks, outlines, and unfinished thoughts before the moment disappears.</h3>
+                        <p>Ideal for people who get their best ideas away from the desk and want a softer path from impulse to draft.</p>
                     </article>
-                    <article class="use-case-card">
-                        <h3 class="serif">For people who want voice journaling without writing pressure</h3>
-                        <p>Talk through your day naturally instead of forcing yourself to sit down and type a perfect journal entry.</p>
+                    <article class="use-case-feature" data-reveal>
+                        <p class="hub-label">Voice Journaling</p>
+                        <h3 class="serif">Reflect without the pressure of writing perfectly.</h3>
+                        <p>Speak first, shape later. Good for days when typing feels heavy but you still want to keep the thought.</p>
                     </article>
-                    <article class="use-case-card">
-                        <h3 class="serif">For Obsidian and Markdown-first users</h3>
-                        <p>Turn spoken thoughts into notes that are easier to export, keep portable, and reuse in a Markdown workflow.</p>
+                    <article class="use-case-feature" data-reveal>
+                        <p class="hub-label">Markdown-first</p>
+                        <h3 class="serif">Keep notes portable for Obsidian and future AI workflows.</h3>
+                        <p>ChillNote fits people who care about owning their notes and reusing them across tools.</p>
                     </article>
-                    <article class="use-case-card">
-                        <h3 class="serif">For people who want to save useful ideas from AI chats</h3>
-                        <p>Keep valuable outputs from disappearing into chat threads by turning them into notes you can return to later.</p>
+                    <article class="use-case-feature use-case-feature-wide" data-reveal>
+                        <p class="hub-label">AI Chat Notes</p>
+                        <h3 class="serif">Turn useful AI outputs into notes instead of letting them sink inside long chat history.</h3>
+                        <p>When a conversation produces something worth keeping, save it as part of your personal context instead of hoping you can find it again later.</p>
                     </article>
                 </div>
                 <div class="section-cta">
@@ -224,14 +234,89 @@
             </div>
         </section>
 
-        <section id="faq" class="section faq">
+        <section class="section skills-showcase">
             <div class="container">
-                <div class="section-heading text-center">
-                    <h2 class="serif">Frequently asked questions</h2>
-                    <p>Quick answers about ChillNote.</p>
+                <div class="section-heading text-center" data-reveal>
+                    <p class="section-kicker">AI Skills</p>
+                    <h2 class="serif">A mobile skill library for thinking, shaping, and publishing.</h2>
+                    <p class="skills-intro">
+                        AI Skills are reusable actions inside ChillNote. Instead of starting from a blank prompt every time,
+                        you can pick a skill from your library and run it on a note in seconds.
+                    </p>
+                </div>
+
+                <div class="skills-layout">
+                    <div class="skills-categories">
+                        <article class="skill-category-card" data-reveal>
+                            <div class="skill-category-header">
+                                <p class="hub-label">Think</p>
+                                <h3 class="serif">Use AI to examine and expand an idea.</h3>
+                            </div>
+                            <p class="skill-category-copy">Helpful when your note is still rough and you want clearer thinking before you start polishing.</p>
+                            <div class="skill-pill-list" aria-label="Think skills in the library">
+                                <span class="pill">Advocate</span>
+                                <span class="pill">Brainstorm</span>
+                                <span class="pill">Summarize</span>
+                                <span class="pill">Merge Notes</span>
+                            </div>
+                        </article>
+
+                        <article class="skill-category-card" data-reveal>
+                            <div class="skill-category-header">
+                                <p class="hub-label">Shape</p>
+                                <h3 class="serif">Turn messy notes into something clearer and cleaner.</h3>
+                            </div>
+                            <p class="skill-category-copy">This is the middle layer where raw thoughts become useful writing you can actually keep or reuse.</p>
+                            <div class="skill-pill-list" aria-label="Shape skills in the library">
+                                <span class="pill">Translate</span>
+                                <span class="pill">Polish</span>
+                                <span class="pill">Expand</span>
+                                <span class="pill">Hooks</span>
+                            </div>
+                        </article>
+
+                        <article class="skill-category-card" data-reveal>
+                            <div class="skill-category-header">
+                                <p class="hub-label">Publish</p>
+                                <h3 class="serif">Turn one note into channel-ready output.</h3>
+                            </div>
+                            <p class="skill-category-copy">Good for creators who want to go from idea to draft on iPhone without reopening everything on a laptop.</p>
+                            <div class="skill-pill-list" aria-label="Publish skills in the library">
+                                <span class="pill">Email</span>
+                                <span class="pill">Release Notes</span>
+                                <span class="pill">X Post</span>
+                                <span class="pill">LinkedIn</span>
+                                <span class="pill">YouTube Script</span>
+                            </div>
+                        </article>
+                    </div>
+
+                    <aside class="skills-sidecard" data-reveal>
+                        <p class="hub-label">Build Your Own</p>
+                        <h3 class="serif">Create custom skills for your personal workflow.</h3>
+                        <p>
+                            ChillNote does not stop at a fixed library. You can also create your own AI Skills, save the ones
+                            that fit your style, and build a workflow that feels personal instead of generic.
+                        </p>
+                        <div class="skills-mini-flow" aria-label="How AI Skills work">
+                            <span>Pick a note</span>
+                            <span>Run a skill</span>
+                            <span>Keep the result</span>
+                        </div>
+                        <a href="pricing.html" class="btn btn-secondary">See AI Skills in pricing</a>
+                    </aside>
+                </div>
+            </div>
+        </section>
+
+        <section id="faq" class="section faq alt-surface">
+            <div class="container">
+                <div class="section-heading text-center" data-reveal>
+                    <p class="section-kicker">Frequently asked questions</p>
+                    <h2 class="serif">Quick answers before you download.</h2>
                 </div>
                 <div class="faq-list">
-                    <details class="faq-item">
+                    <details class="faq-item" data-reveal>
                         <summary class="faq-question">
                             <span>What makes ChillNote different from regular voice memo apps?</span>
                             <span class="faq-toggle" aria-hidden="true"></span>
@@ -240,7 +325,7 @@
                             <p>ChillNote is not just for storing audio. It helps you capture ideas by voice, clean up raw speech with AI, and turn the result into reusable notes instead of leaving thoughts trapped in recordings.</p>
                         </div>
                     </details>
-                    <details class="faq-item">
+                    <details class="faq-item" data-reveal>
                         <summary class="faq-question">
                             <span>Can ChillNote export notes to Markdown or work with Obsidian?</span>
                             <span class="faq-toggle" aria-hidden="true"></span>
@@ -249,16 +334,7 @@
                             <p>Yes. ChillNote is built around a Markdown-friendly workflow, so your notes are easier to export, reuse, and bring into Obsidian or any AI-ready knowledge base.</p>
                         </div>
                     </details>
-                    <details class="faq-item">
-                        <summary class="faq-question">
-                            <span>Is ChillNote good for capturing ideas when I cannot type?</span>
-                            <span class="faq-toggle" aria-hidden="true"></span>
-                        </summary>
-                        <div class="faq-answer">
-                            <p>Yes. ChillNote is designed for walks, commutes, fast-moving workdays, and other moments when your best ideas show up before you have time to type them.</p>
-                        </div>
-                    </details>
-                    <details class="faq-item">
+                    <details class="faq-item" data-reveal>
                         <summary class="faq-question">
                             <span>Can ChillNote help organize messy voice notes automatically?</span>
                             <span class="faq-toggle" aria-hidden="true"></span>
@@ -267,34 +343,7 @@
                             <p>Yes. ChillNote uses AI to remove filler, preserve your meaning, and shape rough speech into clearer, more structured notes that are easier to use later.</p>
                         </div>
                     </details>
-                    <details class="faq-item">
-                        <summary class="faq-question">
-                            <span>Can I save useful Gemini AI chat answers as notes?</span>
-                            <span class="faq-toggle" aria-hidden="true"></span>
-                        </summary>
-                        <div class="faq-answer">
-                            <p>Yes. ChillNote is designed for turning useful Gemini AI chat outputs into notes you can keep, revisit, and reuse later instead of letting good ideas disappear inside history.</p>
-                        </div>
-                    </details>
-                    <details class="faq-item">
-                        <summary class="faq-question">
-                            <span>What are Chill Skills?</span>
-                            <span class="faq-toggle" aria-hidden="true"></span>
-                        </summary>
-                        <div class="faq-answer">
-                            <p>Chill Skills are built-in and customizable AI actions that help you transform notes quickly, such as summarizing, rewriting, translating, or turning rough thoughts into publishable drafts.</p>
-                        </div>
-                    </details>
-                    <details class="faq-item">
-                        <summary class="faq-question">
-                            <span>Is ChillNote good for journaling without writing?</span>
-                            <span class="faq-toggle" aria-hidden="true"></span>
-                        </summary>
-                        <div class="faq-answer">
-                            <p>Yes. ChillNote is useful for voice journaling when writing feels heavy, because you can speak naturally first and organize the entry later.</p>
-                        </div>
-                    </details>
-                    <details class="faq-item">
+                    <details class="faq-item" data-reveal>
                         <summary class="faq-question">
                             <span>Who is ChillNote best for?</span>
                             <span class="faq-toggle" aria-hidden="true"></span>

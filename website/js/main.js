@@ -33,7 +33,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }, observerOptions);
 
-    document.querySelectorAll('.bento-item, .philosophy-card, .section-heading, .use-case-card, .faq-item').forEach(el => {
+    document.querySelectorAll('[data-reveal], .bento-item, .philosophy-card, .section-heading, .use-case-card, .faq-item').forEach(el => {
         el.style.opacity = '0';
         el.style.transform = 'translateY(20px)';
         el.style.transition = 'all 0.6s cubic-bezier(0.22, 1, 0.36, 1)';
