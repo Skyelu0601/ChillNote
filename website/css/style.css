@@ -233,6 +233,14 @@ h1, h2, h3, h4 {
   margin-right: auto;
 }
 
+.hero-copy .hero-context {
+  font-size: 1rem;
+  max-width: 640px;
+  margin-top: -1.2rem;
+  margin-bottom: 2rem;
+  color: var(--text-main);
+}
+
 .hero-actions {
   display: flex;
   gap: 1rem;
@@ -342,8 +350,8 @@ h1, h2, h3, h4 {
 
 .bento-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-template-rows: 240px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(220px, auto));
   gap: 1.5rem;
 }
 
@@ -491,6 +499,10 @@ h1, h2, h3, h4 {
 .faq-answer {
   padding: 0 1.6rem 1.4rem;
   border-top: 1px solid var(--color-border);
+}
+
+.faq-answer p {
+  max-width: 780px;
 }
 
 .faq-stack {
