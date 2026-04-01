@@ -437,6 +437,8 @@ h1, h2, h3, h4 {
   display: grid;
   grid-template-columns: 1fr;
   gap: 1rem;
+  max-width: 920px;
+  margin: 0 auto;
 }
 
 .faq-item {
