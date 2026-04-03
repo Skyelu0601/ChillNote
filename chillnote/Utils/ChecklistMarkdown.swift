@@ -17,6 +17,7 @@ struct ChecklistMarkdown {
 
         var items: [(Bool, String)] = []
         var notesLines: [String] = []
+        var currentItemIndex: Int?
 
         for line in lines {
             let nsLine = line as NSString
@@ -28,8 +29,19 @@ struct ChecklistMarkdown {
                 let text = nsLine.substring(with: match.range(at: 2)).trimmingCharacters(in: .whitespacesAndNewlines)
                 let isDone = doneMark.lowercased() == "x"
                 items.append((isDone, text))
+                currentItemIndex = items.count - 1
             } else {
-                if !line.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty {
+                    continue
+                }
+
+                if let currentItemIndex {
+                    let existingText = items[currentItemIndex].1
+                    items[currentItemIndex].1 = existingText.isEmpty
+                        ? trimmed
+                        : "\(existingText)\n\(trimmed)"
+                } else {
                     notesLines.append(line)
                 }
             }
@@ -50,8 +62,20 @@ struct ChecklistMarkdown {
 
         for item in items.sorted(by: { $0.sortOrder < $1.sortOrder }) {
             let mark = item.isDone ? "x" : " "
-            let text = item.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            parts.append("- [\(mark)] \(text)")
+            let lines = item.text
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+
+            guard let firstLine = lines.first else {
+                parts.append("- [\(mark)]")
+                continue
+            }
+
+            parts.append("- [\(mark)] \(firstLine)")
+            for continuation in lines.dropFirst() {
+                parts.append("    \(continuation)")
+            }
         }
 
         return parts.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)

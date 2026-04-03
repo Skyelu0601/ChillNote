@@ -40,14 +40,27 @@ extension HomeView {
 
         Task {
             switch reason {
-            case .userChanged:
-                await syncManager.syncNow(context: modelContext)
-            case .initial, .foreground:
+            case .initial, .userChanged:
+                await syncAndSeedStarterGuideIfNeeded()
+            case .foreground:
                 await syncManager.syncIfNeeded(context: modelContext)
             }
         }
 
         await checkForPendingRecordingsAsync()
+    }
+
+    @MainActor
+    private func syncAndSeedStarterGuideIfNeeded() async {
+        let syncSucceeded = await syncManager.syncNow(context: modelContext)
+        guard syncSucceeded, let user = AuthService.shared.currentUser else { return }
+        let didSeedWelcome = StarterGuideService.shared.seedWelcomeContentIfNeeded(
+            context: modelContext,
+            user: user
+        )
+        guard didSeedWelcome else { return }
+        await homeViewModel.reload(keepItemsWhileLoading: true)
+        clampSelectionToCurrentFilter()
     }
 
     func checkForPendingRecordingsAsync() async {

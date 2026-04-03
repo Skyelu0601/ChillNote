@@ -2,43 +2,25 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var aiConsentManager: AIConsentManager
     @State private var consentSheetHeight: CGFloat = 360
-    
-    // App Flow State
-    // In a real app, these would probably check logic or Keychain on init
-    @AppStorage("hasSeenOnboarding") private var hasSeenOnboarding = false
 
     var body: some View {
         Group {
-            if !hasSeenOnboarding {
-                switch authService.state {
-                case .checking:
-                    ProgressView("Checking session...")
-                case .signedIn:
-                    OnboardingView(isCompleted: $hasSeenOnboarding)
-                case .signedOut:
-                    LoginView()
-                case .signingIn:
-                    LoginView()
-                }
-            } else {
-                switch authService.state {
-                case .checking:
-                    if authService.canOptimisticallyEnterHome {
-                        HomeView()
-                    } else {
-                        ProgressView("Checking session...")
-                    }
-                case .signedIn:
+            switch authService.state {
+            case .checking:
+                if authService.canOptimisticallyEnterHome {
                     HomeView()
-                case .signedOut:
-                    LoginView()
-                case .signingIn:
-                    LoginView()
+                } else {
+                    ProgressView("Checking session...")
                 }
+            case .signedIn:
+                HomeView()
+            case .signedOut:
+                LoginView()
+            case .signingIn:
+                LoginView()
             }
         }
         .sheet(item: consentPromptBinding) { prompt in

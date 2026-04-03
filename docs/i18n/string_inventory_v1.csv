@@ -139,7 +139,7 @@ Chill Recipes,chillnote/Features/OnboardingView.swift,1058,Text,False,True,low
 Chill Recipes,chillnote/Features/OnboardingView.swift,1101,Text,False,True,low
 Search notes...,chillnote/Features/Home/HomeView.swift,451,TextField,False,True,low
 ChillNote,chillnote/Features/Auth/LoginView.swift,31,Text,False,True,low
-Say it. Save it.,chillnote/Features/Auth/LoginView.swift,38,Text,False,True,low
+Brain dump your ideas here,chillnote/Features/Auth/LoginView.swift,38,Text,False,True,low
 Sign in with Google,chillnote/Features/Auth/LoginView.swift,104,Text,False,True,low
 Continue with Email,chillnote/Features/Auth/LoginView.swift,123,Text,False,True,low
 name@example.com,chillnote/Features/Auth/LoginView.swift,154,TextField,False,True,low

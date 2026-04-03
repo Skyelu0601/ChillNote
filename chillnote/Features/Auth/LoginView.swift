@@ -2,6 +2,9 @@ import SwiftUI
 import AuthenticationServices
 
 struct LoginView: View {
+    private let primaryButtonHeight: CGFloat = 52
+    private let primaryButtonCornerRadius: CGFloat = 10
+
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authService: AuthService
     @State private var showEmailLogin = false
@@ -15,7 +18,7 @@ struct LoginView: View {
         ZStack {
             Color.bgPrimary.ignoresSafeArea()
             
-            VStack(spacing: 30) {
+            VStack(spacing: 36) {
                 Spacer()
                 
                 // MARK: - Brand Header
@@ -23,29 +26,29 @@ struct LoginView: View {
                     Image("chillohead_touming")
                         .resizable()
                         .scaledToFit()
-                        .frame(width: 100, height: 100)
+                        .frame(width: 88, height: 88)
                     
                     Spacer()
-                        .frame(height: 32)
+                        .frame(height: 24)
                     
                     Text(L10n.text("auth.login.brand_title"))
                         .font(.system(size: 38, weight: .bold, design: .serif))
                         .foregroundColor(.textMain)
                     
                     Spacer()
-                        .frame(height: 8)
+                        .frame(height: 12)
                     
                     Text(L10n.text("auth.login.subtitle"))
                         .multilineTextAlignment(.center)
                         .font(.system(size: 16, weight: .regular))
-                        .kerning(1.2)
+                        .kerning(0.4)
                         .foregroundColor(.textSub.opacity(0.9))
                         .lineLimit(3)
                         .minimumScaleFactor(0.85)
                         .fixedSize(horizontal: false, vertical: true)
                         .layoutPriority(1)
                 }
-                .padding(.bottom, 20)
+                .padding(.horizontal, 24)
                 
                 if showEmailLogin {
                     // MARK: - Email Login Form
@@ -92,7 +95,7 @@ struct LoginView: View {
                             }
                         )
                         .signInWithAppleButtonStyle(.black)
-                        .frame(height: 50)
+                        .frame(height: primaryButtonHeight)
                         
                         // Google Sign In (Custom Button)
                         Button(action: {
@@ -104,18 +107,21 @@ struct LoginView: View {
                             }
                         }) {
                             HStack {
-                                Image(systemName: "globe") // Placeholder for Google G logo
+                                Image("GoogleLogo")
+                                    .resizable()
+                                    .renderingMode(.original)
+                                    .frame(width: 18, height: 18)
                                 Text(L10n.text("auth.login.google_button"))
                                     .font(.system(size: 17, weight: .medium))
                             }
                             .foregroundColor(.black)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 50)
+                            .frame(height: primaryButtonHeight)
                             .background(Color.white)
-                            .cornerRadius(8)
+                            .cornerRadius(primaryButtonCornerRadius)
                             .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 8)
+                                RoundedRectangle(cornerRadius: primaryButtonCornerRadius)
                                     .stroke(Color.gray.opacity(0.2), lineWidth: 1)
                             )
                         }
@@ -130,7 +136,7 @@ struct LoginView: View {
                         }
                         .padding(.top, 10)
                     }
-                    .padding(.horizontal, 30)
+                    .padding(.horizontal, 24)
                 }
                 
                 Spacer()
@@ -183,17 +189,17 @@ struct LoginView: View {
                          ProgressView()
                              .progressViewStyle(CircularProgressViewStyle(tint: .white))
                              .frame(maxWidth: .infinity)
-                             .frame(height: 50)
+                             .frame(height: primaryButtonHeight)
                              .background(Color.accentPrimary)
-                             .cornerRadius(12)
+                             .cornerRadius(primaryButtonCornerRadius)
                     } else {
                         Text(L10n.text("auth.login.send_code"))
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 50)
+                            .frame(height: primaryButtonHeight)
                             .background(Color.accentPrimary)
-                            .cornerRadius(12)
+                            .cornerRadius(primaryButtonCornerRadius)
                     }
                 }
                 .disabled(isSendingCode || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -237,17 +243,17 @@ struct LoginView: View {
                         ProgressView()
                             .progressViewStyle(CircularProgressViewStyle(tint: .white))
                             .frame(maxWidth: .infinity)
-                            .frame(height: 50)
+                            .frame(height: primaryButtonHeight)
                             .background(Color.textMain)
-                            .cornerRadius(12)
+                            .cornerRadius(primaryButtonCornerRadius)
                     } else {
                         Text(L10n.text("auth.login.verify_button"))
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)
-                            .frame(height: 50)
+                            .frame(height: primaryButtonHeight)
                             .background(Color.textMain)
-                            .cornerRadius(12)
+                            .cornerRadius(primaryButtonCornerRadius)
                     }
                 }
                 .disabled(isVerifyingCode || otpCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -264,7 +270,7 @@ struct LoginView: View {
             .font(.footnote)
             .foregroundColor(.textSub)
         }
-        .padding(.horizontal, 30)
+        .padding(.horizontal, 24)
         .transition(.move(edge: .trailing))
     }
 }

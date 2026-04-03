@@ -8696,49 +8696,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lass deine Ideen hier als Braindump raus."
+            "value" : "Hier kannst du all deine Ideen rauslassen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Brain dump your ideas here."
+            "value" : "Brain dump your ideas here"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vacía aquí tus ideas."
+            "value" : "Expresa aquí todas tus ideas"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Déversez vos idées ici."
+            "value" : "Exprimez toutes vos idées ici"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ここにアイデアを書き出そう。"
+            "value" : "ここで思いついたことをどんどん言葉にしよう"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "여기에 아이디어를 쏟아두세요."
+            "value" : "여기에서 떠오른 생각을 마음껏 풀어보세요"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "把你的想法先倒在这里。"
+            "value" : "在这里把你的想法都说出来"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "把你的想法先倒在這裡。"
+            "value" : "在這裡把你的想法都說出來"
           }
         }
       }
@@ -50728,6 +50728,112 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "YouTube 腳本"
+          }
+        }
+      }
+    },
+    "onboarding.welcome_note.content" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "# Willkommen bei ChillNote\n\n> ChillNote ist eine Brain-Dump-App.\n> Sprich zuerst, ordne später.\n\n---\n\n## So legst du los\n\n- [ ] **Nimm deine erste Notiz auf**\nTippe unten auf die Aufnahmetaste und sag einfach, was dir gerade durch den Kopf geht.\n\n- [ ] **Sieh, wie ChillNote daraus eine Notiz macht**\nDeine Stimme wird in Text umgewandelt, bereinigt und mit vorgeschlagenen Tags versehen.\n\n- [ ] **Probiere den Koala-Button aus**\nWähle eine oder mehrere Notizen aus und nutze dann **AI Skills** oder **Ask AI**.\n\n- [ ] **Probiere den Zauberstab-Button aus**\nÖffne eine Notiz und tippe oben rechts auf den Zauberstab-Button, um **Auto Format** zu verwenden und die Notiz leichter lesbar zu machen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "# Welcome to ChillNote\n\n> ChillNote is a brain dump app.\n> Speak first, organize later.\n\n---\n\n## How to Get Started\n\n- [ ] **Record your first note**\nTap the record button at the bottom and say anything on your mind.\n\n- [ ] **See how ChillNote turns it into a note**\nYour voice is turned into text, cleaned up, and given suggested tags.\n\n- [ ] **Try the Koala button**\nSelect one or more notes, then use **AI Skills** or **Ask AI**.\n\n- [ ] **Try the magic wand button**\nOpen a note, then tap the magic wand button in the top right to use **Auto Format** and make it easier to read."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "# Bienvenido a ChillNote\n\n> ChillNote es una app de brain dump.\n> Habla primero, organiza después.\n\n---\n\n## Cómo empezar\n\n- [ ] **Graba tu primera nota**\nToca el botón de grabación de abajo y di lo que tengas en mente.\n\n- [ ] **Mira cómo ChillNote la convierte en una nota**\nTu voz se convierte en texto, se limpia y recibe etiquetas sugeridas.\n\n- [ ] **Prueba el botón del koala**\nSelecciona una o más notas y luego usa **AI Skills** o **Ask AI**.\n\n- [ ] **Prueba el botón de la varita mágica**\nAbre una nota y toca el botón de la varita mágica en la esquina superior derecha para usar **Auto Format** y hacerla más fácil de leer."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "# Bienvenue sur ChillNote\n\n> ChillNote est une app de brain dump.\n> Parlez d'abord, organisez ensuite.\n\n---\n\n## Comment démarrer\n\n- [ ] **Enregistrez votre première note**\nTouchez le bouton d'enregistrement en bas et dites simplement ce que vous avez en tête.\n\n- [ ] **Voyez comment ChillNote la transforme en note**\nVotre voix est transformée en texte, nettoyée et accompagnée de tags suggérés.\n\n- [ ] **Essayez le bouton koala**\nSélectionnez une ou plusieurs notes, puis utilisez **AI Skills** ou **Ask AI**.\n\n- [ ] **Essayez le bouton baguette magique**\nOuvrez une note, puis touchez le bouton baguette magique en haut à droite pour utiliser **Auto Format** et la rendre plus facile à lire."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "# ChillNoteへようこそ\n\n> ChillNoteはブレインダンプのためのアプリです。\n> まず話して、あとで整理しましょう。\n\n---\n\n## はじめ方\n\n- [ ] **最初のノートを録音する**\n下にある録音ボタンをタップして、思いついたことをそのまま話してみてください。\n\n- [ ] **ChillNoteがノートにしてくれる流れを見る**\n音声はテキストに変換され、整えられ、タグ候補も提案されます。\n\n- [ ] **コアラボタンを試す**\n1つ以上のノートを選択してから、**AI Skills** または **Ask AI** を使ってみてください。\n\n- [ ] **魔法の杖ボタンを試す**\nノートを開いて右上の魔法の杖ボタンをタップすると、**Auto Format** で読みやすく整えられます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "# ChillNote에 오신 것을 환영합니다\n\n> ChillNote는 브레인 덤프 앱입니다.\n> 먼저 말하고, 나중에 정리하세요.\n\n---\n\n## 시작하는 방법\n\n- [ ] **첫 번째 노트를 녹음해 보세요**\n아래의 녹음 버튼을 누르고 떠오르는 내용을 아무렇게나 말해 보세요.\n\n- [ ] **ChillNote가 노트로 바꾸는 과정을 확인해 보세요**\n당신의 음성은 텍스트로 바뀌고, 다듬어지며, 추천 태그도 함께 제안됩니다.\n\n- [ ] **코알라 버튼을 사용해 보세요**\n하나 이상의 노트를 선택한 다음 **AI Skills** 또는 **Ask AI**를 사용해 보세요.\n\n- [ ] **마법 지팡이 버튼을 사용해 보세요**\n노트를 연 뒤 오른쪽 위의 마법 지팡이 버튼을 눌러 **Auto Format**을 사용하면 더 읽기 쉽게 정리할 수 있습니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "# 欢迎来到 ChillNote\n\n> ChillNote 是一款 Brain Dump 应用。\n> 先说出来，再整理。\n\n---\n\n## 开始使用\n\n- [ ] **录下你的第一条笔记**\n点击底部的录音按钮，把你脑海里的内容直接说出来。\n\n- [ ] **看看 ChillNote 如何把它变成一条笔记**\n你的语音会被转成文字、稍作整理，并附上建议标签。\n\n- [ ] **试试考拉按钮**\n选择一条或多条笔记，然后使用 **AI Skills** 或 **Ask AI**。\n\n- [ ] **试试魔法棒按钮**\n打开一条笔记，然后点击右上角的魔法棒按钮，使用 **Auto Format** 让内容更清晰、更易读。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "# 歡迎來到 ChillNote\n\n> ChillNote 是一款 Brain Dump 應用。\n> 先說出來，再整理。\n\n---\n\n## 開始使用\n\n- [ ] **錄下你的第一條筆記**\n點擊底部的錄音按鈕，把你腦海裡的內容直接說出來。\n\n- [ ] **看看 ChillNote 如何把它變成一條筆記**\n你的語音會被轉成文字、稍作整理，並附上建議標籤。\n\n- [ ] **試試考拉按鈕**\n選擇一條或多條筆記，然後使用 **AI Skills** 或 **Ask AI**。\n\n- [ ] **試試魔法棒按鈕**\n打開一條筆記，然後點擊右上角的魔法棒按鈕，使用 **Auto Format** 讓內容更清晰、更易讀。"
+          }
+        }
+      }
+    },
+    "onboarding.welcome_note.tag.start_here" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hier starten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Here"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empieza aquí"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commencez ici"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ここから始める"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "여기서 시작"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从这里开始"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "從這裡開始"
           }
         }
       }

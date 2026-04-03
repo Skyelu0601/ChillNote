@@ -33,39 +33,41 @@ final class SyncManager: ObservableObject {
     
     func syncIfNeeded(context: ModelContext) async {
         guard shouldSyncNow() else { return }
-        await syncNow(context: context)
+        _ = await syncNow(context: context)
     }
     
-    func syncNow(context: ModelContext) async {
+    @discardableResult
+    func syncNow(context: ModelContext) async -> Bool {
         if isSyncing {
             hasPendingSyncRequest = true
             print("[SYNC] syncNow skipped because a sync is already running; queued follow-up sync.")
-            return
+            return false
         }
         guard isEnabled else {
             lastError = AppErrorCode.syncDisabled.message
-            return
+            return false
         }
         guard let url = URL(string: serverURLString) else {
             lastError = AppErrorCode.syncServerURLRequired.message
-            return
+            return false
         }
         guard let currentUserId = AuthService.shared.currentUserId else {
             lastError = AppErrorCode.syncSignInRequired.message
-            return
+            return false
         }
         guard let currentToken = await AuthService.shared.getSessionToken(), !currentToken.isEmpty else {
             lastError = AppErrorCode.syncSessionExpired.message
-            return
+            return false
         }
         guard let container = DataService.shared.container else {
             lastError = AppErrorCode.syncUnavailable.message
-            return
+            return false
         }
         WelcomeNoteFlagStore.syncGlobalFlag(for: currentUserId)
         let syncStartedAt = Date()
         isSyncing = true
         lastError = nil
+        var didSucceed = false
         do {
             let lastSyncAt = lastSyncAt
             let hasUploadedLocalSnapshot = hasUploadedLocal
@@ -128,6 +130,7 @@ final class SyncManager: ObservableObject {
                 }
                 await NotesSearchIndexer.shared.syncIncremental(context: context, userId: currentUserId)
             }
+            didSucceed = true
         } catch {
             if case SyncError.unauthorized = error {
                 // Supabase SDK handles session refresh under the hood, but if we get a 401 here,
@@ -150,6 +153,7 @@ final class SyncManager: ObservableObject {
             hasPendingSyncRequest = false
             await syncNow(context: context)
         }
+        return didSucceed
     }
     
     private func shouldSyncNow() -> Bool {

@@ -43,11 +43,6 @@ struct NoteDetailHeaderView: View {
                         .fontWeight(.bold)
                         .foregroundColor(.accentPrimary)
 
-                    Image(systemName: "waveform")
-                        .symbolEffect(.variableColor.iterative.dimInactiveLayers, isActive: true)
-                        .font(.system(size: 14))
-                        .foregroundColor(.accentPrimary)
-
                     Button(action: onStopRecording) {
                         Image(systemName: "stop.fill")
                             .font(.system(size: 10, weight: .bold))
