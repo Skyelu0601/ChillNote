@@ -167,7 +167,6 @@ struct HomeBodyView: View {
             floatingVoiceInput
             selectionModeOverlay
             agentProgressOverlay
-            guideCompletionOverlay
         }
         .simultaneousGesture(sidebarOpenGesture)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -211,10 +210,7 @@ struct HomeBodyView: View {
         }
         .sheet(isPresented: showChillRecipesBinding) {
             NavigationStack {
-                ChillRecipesView(
-                    isFirstUseGuideActive: state.firstUseGuideStep == .addSkill || state.firstUseGuideStep == .runSkill,
-                    highlightedRecipeID: state.guideHighlightedRecipeID
-                )
+                ChillRecipesView()
                     .toolbar {
                         ToolbarItem(placement: .navigationBarLeading) {
                             Button(L10n.text("common.close")) {
@@ -393,7 +389,7 @@ struct HomeBodyView: View {
                 selectedNotesCount: state.selectedNotes.count,
                 visibleNotesCount: state.cachedVisibleNotes.count,
                 hasPendingRecordings: state.hasPendingRecordings,
-                highlightSelectionEntry: !state.isSelectionMode && (state.firstUseGuideStep == .openSelection || state.firstUseGuideStep == .addSkill || state.firstUseGuideStep == .runSkill),
+                highlightSelectionEntry: false,
                 onToggleSidebar: { dispatch(.toggleSidebar) },
                 onCreateBlankNote: { dispatch(.createBlankNote) },
                 onEnterSelectionMode: { dispatch(.enterSelectionMode) },
@@ -410,14 +406,6 @@ struct HomeBodyView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    if shouldShowTaskCard {
-                        HomeFirstUseTaskCard(
-                            step: state.firstUseGuideStep,
-                            onSkip: { dispatch(.skipFirstUseGuide) }
-                        )
-                        .padding(.horizontal, 24)
-                    }
-
                     if !state.isSelectionMode && state.isSearchVisible {
                         searchBar
                             .padding(.horizontal, 24)
@@ -432,7 +420,7 @@ struct HomeBodyView: View {
                         isTrashSelected: state.isTrashSelected,
                         isSelectionMode: state.isSelectionMode,
                         selectedNotes: state.selectedNotes,
-                        showDefaultEmptyStateMessage: !shouldShowTaskCard,
+                        showDefaultEmptyStateMessage: true,
                         onReachBottom: { dispatch(.loadMoreIfNeeded($0)) },
                         onToggleNoteSelection: { dispatch(.toggleNoteSelection($0)) },
                         onRestoreNote: { dispatch(.restoreNote($0)) },
@@ -490,7 +478,7 @@ struct HomeBodyView: View {
                         dispatch(.confirmVoice)
                     },
                     recordTriggerMode: .tapToRecord,
-                    highlightIdleMic: state.firstUseGuideStep == .recordFirstNote
+                    highlightIdleMic: false
                 )
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -503,8 +491,6 @@ struct HomeBodyView: View {
             isAgentMenuOpen: state.isAgentMenuOpen,
             recipeManager: state.recipeManager,
             selectedNotesCount: state.selectedNotes.count,
-            guideStep: state.firstUseGuideStep,
-            highlightedRecipeID: state.guideHighlightedRecipeID,
             onStartAIChat: { dispatch(.startAIChat) },
             onToggleAgentMenu: {
                 dispatch(.setAgentMenuOpen(!state.isAgentMenuOpen))
@@ -538,28 +524,6 @@ struct HomeBodyView: View {
                     .background(Color.black.opacity(0.8))
                     .cornerRadius(20)
                 }
-            }
-        }
-    }
-
-    private var shouldShowTaskCard: Bool {
-        !state.isSelectionMode &&
-        !state.isTrashSelected &&
-        state.firstUseGuideStep.isActive &&
-        state.hasLoadedNotesAtLeastOnce &&
-        !state.isLoadingNotes &&
-        !state.isSyncingNotes
-    }
-
-    private var guideCompletionOverlay: some View {
-        Group {
-            if state.showGuideCompletionOverlay {
-                HomeGuideCompletionOverlay(
-                    onTryAnotherSkill: { dispatch(.repeatGuideSkillFlow) },
-                    onDismiss: { dispatch(.dismissGuideCompletionOverlay) }
-                )
-                .transition(.opacity.combined(with: .scale(scale: 0.98)))
-                .zIndex(200)
             }
         }
     }

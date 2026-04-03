@@ -871,11 +871,6 @@ struct OnboardingView: View {
                     .font(.system(size: 34, weight: .bold, design: .rounded))
                     .foregroundColor(.textMain)
                     .multilineTextAlignment(.center)
-
-                Text(L10n.text("onboarding.skills_intro.subtitle"))
-                    .font(.system(size: 20, weight: .medium, design: .rounded))
-                    .foregroundColor(.textSub)
-                    .multilineTextAlignment(.center)
             }
             .padding(.top, 4)
 

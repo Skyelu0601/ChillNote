@@ -208,6 +208,11 @@ h4 {
   color: var(--text-main);
 }
 
+.nav-links .nav-cta,
+.nav-links .nav-cta:hover {
+  color: white;
+}
+
 /* --- Hero --- */
 .hero {
   padding: 10rem 0 4.5rem;
@@ -329,7 +334,7 @@ h4 {
 
 .device-shell {
   position: relative;
-  width: min(100%, 29rem);
+  width: min(100%, 19.5rem);
   margin: 0 auto;
   padding: 1.1rem;
   border-radius: 2.2rem;
@@ -869,29 +874,45 @@ h4 {
   background: rgba(255, 255, 255, 0.18);
 }
 
-.skills-mini-flow {
-  display: grid;
-  gap: 0.85rem;
-  margin: 1.5rem 0 1.75rem;
+.feature-shot-skills {
+  margin: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
 
-.skills-mini-flow span {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  padding: 0.85rem 1rem;
-  border-radius: 1rem;
-  background: rgba(255, 255, 255, 0.09);
-  font-weight: 600;
+.skills-image-rail {
+  position: relative;
+  align-self: start;
+  padding: 0;
+  margin-top: -1rem;
 }
 
-.skills-mini-flow span::before {
+.skills-device-shell {
+  position: relative;
+  width: min(100%, 22rem);
+  margin: 0 auto;
+  padding: 1rem;
+  border-radius: 2.2rem;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.7));
+  border: 1px solid rgba(45, 42, 38, 0.08);
+  box-shadow: 0 28px 70px rgba(90, 76, 56, 0.14);
+}
+
+.skills-device-shell::before {
   content: "";
-  width: 0.55rem;
-  height: 0.55rem;
-  border-radius: 999px;
-  background: var(--accent-primary);
-  box-shadow: 0 0 0 6px rgba(230, 163, 85, 0.12);
+  position: absolute;
+  inset: 0.95rem;
+  border-radius: 1.6rem;
+  border: 1px solid rgba(45, 42, 38, 0.08);
+  pointer-events: none;
+}
+
+.feature-shot-skills img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 1.45rem;
 }
 
 /* --- FAQ --- */
@@ -1677,7 +1698,7 @@ footer {
   }
 
   .device-shell {
-    width: min(100%, 22rem);
+    width: min(100%, 16.5rem);
     transform: none;
   }
 
@@ -1728,6 +1749,10 @@ footer {
   }
 
   .skills-sidecard {
+    position: static;
+  }
+
+  .skills-image-rail {
     position: static;
   }
 

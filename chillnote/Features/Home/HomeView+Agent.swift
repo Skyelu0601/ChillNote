@@ -58,7 +58,6 @@ extension HomeView {
                 } else {
                     exitSelectionMode()
                 }
-                markGuideCompletedIfNeeded(using: recipe)
             }
         } catch {
             print("⚠️ Agent action failed: \(error)")

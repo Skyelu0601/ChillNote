@@ -26,7 +26,6 @@ extension HomeView {
         applyCurrentTagContext(to: note)
         modelContext.insert(note)
         try? modelContext.save()
-        recordGuideTarget(noteID: note.id)
 
         pendingVoiceNoteByPath[fileURL.path] = note.id
         // Persist the link so PendingRecordingsView can find this Note after a crash/restart
@@ -126,7 +125,6 @@ extension HomeView {
         }
 
         persistAndSync()
-        recordGuideTarget(noteID: note.id)
 
         if shouldNavigate {
             navigationPath.append(note)

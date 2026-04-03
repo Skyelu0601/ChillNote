@@ -5,8 +5,6 @@ struct HomeSelectionOverlayView: View {
     let isAgentMenuOpen: Bool
     let recipeManager: RecipeManager
     let selectedNotesCount: Int
-    let guideStep: HomeFirstUseGuideStep
-    let highlightedRecipeID: String
     let onStartAIChat: () -> Void
     let onToggleAgentMenu: () -> Void
     let onCloseMenu: () -> Void
@@ -14,23 +12,6 @@ struct HomeSelectionOverlayView: View {
     let onHandleAgentActionRequest: (AgentRecipe) -> Void
 
     @State private var shouldHighlightAddButton = false
-
-    private var guideBubbleMessage: String? {
-        switch guideStep {
-        case .addSkill:
-            if selectedNotesCount == 0 {
-                return L10n.text("home.selection_overlay.guide.select_note")
-            }
-            return L10n.text("home.selection_overlay.guide.choose_skill")
-        case .runSkill:
-            if selectedNotesCount == 0 {
-                return L10n.text("home.selection_overlay.guide.select_note")
-            }
-            return L10n.text("home.selection_overlay.guide.choose_skill")
-        case .recordFirstNote, .openSelection, .completed:
-            return nil
-        }
-    }
 
     var body: some View {
         if isSelectionMode {
@@ -45,12 +26,6 @@ struct HomeSelectionOverlayView: View {
                 }
 
                 VStack(spacing: 0) {
-                    if let guideBubbleMessage {
-                        HomeSelectionGuideBubble(message: guideBubbleMessage)
-                            .padding(.horizontal, 24)
-                            .padding(.bottom, 12)
-                    }
-
                     if isAgentMenuOpen {
                         VStack(spacing: 16) {
                             HStack {
@@ -124,7 +99,7 @@ struct HomeSelectionOverlayView: View {
                                                 RecipeGridIcon(recipe: recipe, size: 22, container: 52)
 
                                                 Text(recipe.localizedName)
-                                                    .font(.system(size: 12, weight: recipe.id == highlightedRecipeID ? .semibold : .medium))
+                                                    .font(.system(size: 12, weight: .medium))
                                                     .foregroundColor(.primary)
                                                     .multilineTextAlignment(.center)
                                                     .lineLimit(2)
@@ -132,14 +107,6 @@ struct HomeSelectionOverlayView: View {
                                             }
                                             .frame(maxWidth: .infinity)
                                             .padding(.vertical, 8)
-                                            .background(
-                                                RoundedRectangle(cornerRadius: 18)
-                                                    .fill(recipe.id == highlightedRecipeID ? Color.accentPrimary.opacity(0.12) : Color.clear)
-                                            )
-                                            .overlay(
-                                                RoundedRectangle(cornerRadius: 18)
-                                                    .stroke(recipe.id == highlightedRecipeID ? Color.accentPrimary : Color.clear, lineWidth: 1.5)
-                                            )
                                         }
                                         .buttonStyle(ScaleButtonStyle())
                                     }

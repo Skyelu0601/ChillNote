@@ -86,11 +86,6 @@ struct HomeView: View {
     @State var autoOpenPendingRecordings = false
     @State var latestTranscriptionFailureMessage = ""
     @State var showTranscriptionFailureAlert = false
-    @State var showGuideCompletionOverlay = false
-
-    @State private var firstUseGuideStepRawValue = HomeFirstUseGuideStep.recordFirstNote.rawValue
-    @State private var firstUseGuideTargetNoteID = ""
-    @State private var firstUseGuideHighlightedRecipeID = ""
 
     @State var hasScheduledInitialMaintenance = false
     @State var lastMaintenanceAt: Date?
@@ -102,10 +97,6 @@ struct HomeView: View {
     @State var bootstrappingUserId: String?
     @State var lastBootstrappedUserId: String?
     @State var shouldReloadAfterSync = false
-
-    var firstUseGuideStep: HomeFirstUseGuideStep {
-        HomeFirstUseGuideStep(rawValue: firstUseGuideStepRawValue) ?? .recordFirstNote
-    }
 
     var headerTitle: String {
         if isTrashSelected {
@@ -165,11 +156,7 @@ struct HomeView: View {
             recipeHardLimit: recipeHardLimit,
             hasPendingRecordings: hasPendingRecordings,
             pendingRecordingsCount: pendingRecordings.count,
-            showPendingRecordings: showPendingRecordings,
-            firstUseGuideStep: firstUseGuideStep,
-            guideTargetNoteID: UUID(uuidString: firstUseGuideTargetNoteID),
-            guideHighlightedRecipeID: firstUseGuideHighlightedRecipeID,
-            showGuideCompletionOverlay: showGuideCompletionOverlay
+            showPendingRecordings: showPendingRecordings
         )
     }
 
@@ -240,7 +227,6 @@ struct HomeView: View {
             isVoiceMode = false
             bootstrappingUserId = nil
             lastBootstrappedUserId = nil
-            resetFirstUseGuideState()
         }
         .onChange(of: isTrashSelected) { _, newValue in
             if newValue {
@@ -261,17 +247,10 @@ struct HomeView: View {
             homeViewModel.scheduleDebouncedSearchUpdate(searchText)
         }
         .onChange(of: authService.currentUserId) { _, newUserId in
-            loadFirstUseGuideState(for: newUserId)
             guard let userId = newUserId else { return }
             Task {
                 await bootstrapHome(for: userId, source: .authChanged)
             }
-        }
-        .onChange(of: homeViewModel.items.map(\.id)) { _, _ in
-            syncFirstUseGuideState()
-        }
-        .onChange(of: recipeManager.savedRecipes.map(\.id)) { oldValue, newValue in
-            handleSavedRecipesChanged(from: oldValue, to: newValue)
         }
         )
     }
@@ -324,10 +303,8 @@ struct HomeView: View {
         .task {
             await checkForPendingRecordingsAsync()
             scheduleInitialMaintenance()
-            loadFirstUseGuideState(for: currentUserId)
             guard let userId = currentUserId else { return }
             await bootstrapHome(for: userId, source: .initialTask)
-            syncFirstUseGuideState()
         }
         )
     }
@@ -496,13 +473,6 @@ struct HomeView: View {
             showChillRecipes = true
         case .closeChillRecipes:
             showChillRecipes = false
-        case .skipFirstUseGuide:
-            skipFirstUseGuide()
-        case .dismissGuideCompletionOverlay:
-            showGuideCompletionOverlay = false
-        case .repeatGuideSkillFlow:
-            showGuideCompletionOverlay = false
-            reenterGuideSkillFlow()
 
         case .confirmAskSoftLimit:
             cachedContextNotes = getSelectedNotes()
@@ -570,136 +540,7 @@ struct HomeView: View {
             guard !Task.isCancelled else { return }
             await homeViewModel.reload(keepItemsWhileLoading: keepItemsWhileLoading)
             clampSelectionToCurrentFilter()
-            syncFirstUseGuideState()
         }
-    }
-
-    func syncFirstUseGuideState() {
-        guard firstUseGuideStep != .completed else { return }
-
-        let hasSelectedNote = !selectedNotes.isEmpty
-        let hasAvailableSkills = !recipeManager.savedRecipes.isEmpty
-
-        switch firstUseGuideStep {
-        case .recordFirstNote:
-            break
-        case .openSelection:
-            guard isSelectionMode else { return }
-            guard hasSelectedNote else { return }
-
-            if hasAvailableSkills {
-                setFirstUseGuideStep(.runSkill)
-            } else {
-                setFirstUseGuideStep(.addSkill)
-            }
-        case .addSkill:
-            guard isSelectionMode else { return }
-
-            if !hasSelectedNote {
-                setFirstUseGuideStep(.openSelection)
-                return
-            }
-
-            if hasAvailableSkills {
-                setFirstUseGuideStep(.runSkill)
-            }
-        case .runSkill:
-            guard isSelectionMode else { return }
-
-            if !hasSelectedNote {
-                setFirstUseGuideStep(.openSelection)
-                return
-            }
-
-            if !hasAvailableSkills {
-                setFirstUseGuideStep(.addSkill)
-            }
-        case .completed:
-            break
-        }
-    }
-
-    func handleSavedRecipesChanged(from oldValue: [String], to newValue: [String]) {
-        guard newValue.count >= oldValue.count else {
-            syncFirstUseGuideState()
-            return
-        }
-
-        let oldSet = Set(oldValue)
-        let addedID = newValue.first { !oldSet.contains($0) }
-        if let addedID {
-            firstUseGuideHighlightedRecipeID = addedID
-            persistFirstUseGuideState()
-            if firstUseGuideStep == .addSkill {
-                setFirstUseGuideStep(.runSkill)
-            }
-        }
-
-        syncFirstUseGuideState()
-    }
-
-    func recordGuideTarget(noteID: UUID) {
-        if firstUseGuideTargetNoteID.isEmpty {
-            firstUseGuideTargetNoteID = noteID.uuidString
-            persistFirstUseGuideState()
-        }
-        if firstUseGuideStep == .recordFirstNote {
-            setFirstUseGuideStep(.openSelection)
-        }
-    }
-
-    func markGuideCompletedIfNeeded(using recipe: AgentRecipe) {
-        guard firstUseGuideStep == .runSkill else { return }
-        firstUseGuideHighlightedRecipeID = recipe.id
-        persistFirstUseGuideState()
-        setFirstUseGuideStep(.completed)
-        showGuideCompletionOverlay = true
-    }
-
-    func skipFirstUseGuide() {
-        showGuideCompletionOverlay = false
-        firstUseGuideHighlightedRecipeID = ""
-        setFirstUseGuideStep(.completed)
-    }
-
-    func reenterGuideSkillFlow() {
-        guard let noteID = UUID(uuidString: firstUseGuideTargetNoteID),
-              let note = resolveNote(noteID) else {
-            enterSelectionMode()
-            isAgentMenuOpen = true
-            return
-        }
-
-        enterSelectionMode()
-        selectedNotes = [note.id]
-        isAgentMenuOpen = true
-    }
-
-    func setFirstUseGuideStep(_ step: HomeFirstUseGuideStep) {
-        firstUseGuideStepRawValue = step.rawValue
-        persistFirstUseGuideState()
-    }
-
-    func loadFirstUseGuideState(for userId: String?) {
-        let state = HomeFirstUseGuideStore.load(for: userId)
-        firstUseGuideStepRawValue = state.stepRawValue
-        firstUseGuideTargetNoteID = state.targetNoteID
-        firstUseGuideHighlightedRecipeID = state.highlightedRecipeID
-    }
-
-    func persistFirstUseGuideState() {
-        let state = HomeFirstUseGuideState(
-            stepRawValue: firstUseGuideStepRawValue,
-            targetNoteID: firstUseGuideTargetNoteID,
-            highlightedRecipeID: firstUseGuideHighlightedRecipeID
-        )
-        HomeFirstUseGuideStore.save(state, for: currentUserId)
-    }
-
-    func resetFirstUseGuideState() {
-        firstUseGuideStepRawValue = HomeFirstUseGuideStep.recordFirstNote.rawValue
-        firstUseGuideTargetNoteID = ""
-        firstUseGuideHighlightedRecipeID = ""
     }
 
     enum HomeBootstrapSource {

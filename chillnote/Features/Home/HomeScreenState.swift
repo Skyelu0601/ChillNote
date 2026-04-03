@@ -59,10 +59,6 @@ struct HomeScreenState {
     let hasPendingRecordings: Bool
     let pendingRecordingsCount: Int
     let showPendingRecordings: Bool
-    let firstUseGuideStep: HomeFirstUseGuideStep
-    let guideTargetNoteID: UUID?
-    let guideHighlightedRecipeID: String
-    let showGuideCompletionOverlay: Bool
 }
 
 enum HomeScreenAction {
@@ -123,9 +119,6 @@ enum HomeScreenAction {
     case aiChatDisappear
     case openChillRecipes
     case closeChillRecipes
-    case skipFirstUseGuide
-    case dismissGuideCompletionOverlay
-    case repeatGuideSkillFlow
 
     case confirmAskSoftLimit
     case confirmRecipeSoftLimit

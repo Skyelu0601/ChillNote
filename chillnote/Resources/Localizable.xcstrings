@@ -2018,49 +2018,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote wurde für Menschen entwickelt, die etwas erschaffen: Content-Creator, Builder, Entwickler, Designer, Autoren und alle, deren beste Ideen auftauchen, bevor sie ganz ausformuliert sind. Es hilft dir, den Funken schnell einzufangen und ihn dann in etwas so Klares zu verwandeln, dass du darauf weiter aufbauen kannst."
+            "value" : "ChillNote ist für den Moment gebaut, in dem ein Gedanke auftaucht, bevor er fertig ist.\n\nEine halbe Idee. Eine kurze Einsicht. Eine unordentliche Sprachnotiz. Ein Satz, den du nicht verlieren willst.\n\nEs gibt dir einen schnellen, nachsichtigen Ort, um diese Gedanken zuerst festzuhalten und sie dann in etwas zu verwandeln, das klar genug ist, um weiter damit zu arbeiten."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote is built for people who create: content creators, builders, developers, designers, writers, and anyone whose best ideas tend to arrive before they are fully formed. It helps you catch the spark quickly, then shape it into something clear enough to keep building from."
+            "value" : "ChillNote is built for the moment when a thought appears before it is ready.\n\nA half-formed idea. A passing insight. A messy voice note. A sentence you do not want to lose.\n\nIt gives you a fast, forgiving place to get those thoughts out first, then turn them into something clear enough to keep using."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote está hecho para la gente que crea: creadores de contenido, builders, desarrolladores, diseñadores, escritores y cualquier persona cuyas mejores ideas suelen aparecer antes de estar del todo formadas. Te ayuda a atrapar esa chispa rápido y luego a darle una forma lo bastante clara como para seguir construyendo sobre ella."
+            "value" : "ChillNote está pensado para ese momento en que una idea aparece antes de estar lista.\n\nUna idea a medio formar. Una intuición pasajera. Una nota de voz desordenada. Una frase que no quieres perder.\n\nTe da un lugar rápido y sin presión para sacar primero esos pensamientos y convertirlos después en algo lo bastante claro como para seguir usándolo."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote est conçu pour les personnes qui créent : créateurs de contenu, builders, développeurs, designers, auteurs, et toutes celles et ceux dont les meilleures idées arrivent avant d’être complètement formées. Il vous aide à capter l’étincelle rapidement, puis à la transformer en quelque chose d’assez clair pour continuer à construire dessus."
+            "value" : "ChillNote est conçu pour ce moment où une pensée arrive avant d'être prête.\n\nUne idée à moitié formée. Une intuition passagère. Une note vocale brouillonne. Une phrase que vous ne voulez pas perdre.\n\nIl vous offre un endroit rapide et sans pression pour sortir ces pensées d'abord, puis les transformer en quelque chose d'assez clair pour continuer à les utiliser."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote は、何かを生み出す人のために作られています。コンテンツ制作者、ビルダー、開発者、デザイナー、書き手、そして最高のアイデアがまだ形になる前にやって来るすべての人のためのものです。ひらめきの火花をすばやくつかみ、その先を形にしていけるだけの明瞭さへ整える手助けをします。"
+            "value" : "ChillNoteは、考えがまだまとまる前にふっと現れる、その瞬間のために作られています。\n\n形になりきっていないアイデア。ふとよぎる気づき。まとまっていない音声メモ。失いたくない一文。\n\nそんな考えをまず外に出し、そのあと使える形へ整えていけるように、すばやく気楽に受け止める場所を用意します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote는 무언가를 만들어내는 사람들을 위해 만들어졌습니다. 콘텐츠 크리에이터, 빌더, 개발자, 디자이너, 작가, 그리고 최고의 아이디어가 완전히 형태를 갖추기 전에 먼저 찾아오는 모든 사람들을 위한 도구입니다. 떠오른 불꽃을 빠르게 붙잡고, 그다음 계속 발전시킬 수 있을 만큼 분명한 형태로 다듬도록 도와줍니다."
+            "value" : "ChillNote는 생각이 아직 완성되기 전에 먼저 떠오르는 순간을 위해 만들어졌습니다.\n\n반쯤만 잡힌 아이디어. 스쳐 가는 통찰. 어수선한 음성 메모. 놓치고 싶지 않은 한 문장.\n\n이런 생각들을 먼저 꺼내둘 수 있도록 빠르고 부담 없는 자리를 만들고, 나중에 계속 써먹을 수 있을 만큼 또렷한 형태로 다듬을 수 있게 도와줍니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 是为创作者打造的：内容创作者、产品构建者、开发者、设计师、写作者，以及那些最好的想法总在尚未成形时就突然出现的人。它帮你先迅速抓住那点火花，再把它整理成足够清晰、可以继续推进的内容。"
+            "value" : "ChillNote 是为那种“想法还没成形，就先冒出来”的时刻而设计的。\n\n可能是一个半成型的念头，一闪而过的灵感，一段乱糟糟的语音，或者一句你不想丢掉的话。\n\n它给你一个快速、没有压力的地方，先把这些想法说出来，再把它们整理成以后还能继续使用的内容。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 是為創作者打造的：內容創作者、產品構建者、開發者、設計師、寫作者，以及那些最好的想法總在尚未成形時就突然出現的人。它幫你先迅速抓住那點火花，再把它整理成足夠清晰、可以繼續推進的內容。"
+            "value" : "ChillNote 是為那種「想法還沒成形，就先冒出來」的時刻而設計的。\n\n可能是一個半成形的念頭、一閃而過的靈感、一段亂糟糟的語音，或是一句你不想丟掉的話。\n\n它給你一個快速、沒有壓力的地方，先把這些想法說出來，再把它們整理成之後還能繼續使用的內容。"
           }
         }
       }
@@ -2071,49 +2071,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wenn das Festhalten von Ideen langsam wirkt, hören Menschen auf, etwas festzuhalten. ChillNote soll leicht, schnell und angenehm sein, sodass man gerne zurückkommt. Es unterstützt kreativen Schwung, statt ihn zu unterbrechen."
+            "value" : "Wenn Festhalten kompliziert wirkt, hören Menschen auf festzuhalten. ChillNote soll leicht, schnell und leicht wieder zugänglich bleiben, damit es Schwung unterstützt, statt ihn auszubremsen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "If capture feels slow, people stop capturing. ChillNote is meant to stay light, fast, and easy to return to, so it supports creative momentum instead of interrupting it."
+            "value" : "If capture feels complicated, people stop capturing. ChillNote is meant to stay light, fast, and easy to return to, so it supports momentum instead of slowing it down."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Si capturar una idea se siente lento, la gente deja de capturar. ChillNote está pensado para ser ligero, rápido y fácil de retomar, para apoyar el impulso creativo en lugar de interrumpirlo."
+            "value" : "Si capturar se siente complicado, la gente deja de capturar. ChillNote está pensado para seguir siendo ligero, rápido y fácil de retomar, para acompañar el impulso en lugar de frenarlo."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Si capturer une idée devient lent, on finit par ne plus rien capturer. ChillNote est conçu pour rester léger, rapide et facile à reprendre, afin de soutenir l’élan créatif au lieu de l’interrompre."
+            "value" : "Si capturer devient compliqué, on finit par ne plus rien capturer. ChillNote doit rester léger, rapide et facile à retrouver, pour soutenir l'élan au lieu de le ralentir."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "記録すること自体が遅く感じられると、人は記録しなくなります。ChillNote は軽く、速く、また戻ってきやすい存在であることを目指しています。創作の勢いを止めるのではなく、支えるためのものです。"
+            "value" : "記録すること自体が複雑に感じられると、人は記録しなくなります。ChillNote は、勢いを止めるのではなく支えられるように、軽く、速く、またすぐ戻ってこられる存在であるべきだと考えています。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "기록하는 일 자체가 느리게 느껴지면 사람들은 기록을 멈추게 됩니다. ChillNote는 가볍고 빠르며 다시 돌아오기 쉬운 도구로 남아, 창작의 흐름을 끊는 대신 받쳐 주도록 설계되었습니다."
+            "value" : "기록하는 일이 복잡하게 느껴지면 사람들은 더 이상 기록하지 않습니다. ChillNote는 흐름을 늦추지 않고 받쳐줄 수 있도록 가볍고 빠르며 다시 돌아오기 쉬운 도구여야 합니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "如果记录这件事本身变慢了，人们就会停止记录。ChillNote 的目标是保持轻盈、快速、随时愿意回来用，因此它服务的是创作势能，而不是打断它。"
+            "value" : "如果记录这件事本身变复杂了，人们就不会继续记录。ChillNote 应该始终保持轻巧、快速、随时都能回来，让它帮助你保持节奏，而不是拖慢你。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "如果記錄這件事本身變慢了，人們就會停止記錄。ChillNote 的目標是保持輕盈、快速、隨時願意回來用，因此它服務的是創作動能，而不是打斷它。"
+            "value" : "如果記錄這件事本身變複雜了，人們就不會繼續記錄。ChillNote 應該始終保持輕巧、快速、隨時都能回來，讓它幫助你維持節奏，而不是拖慢你。"
           }
         }
       }
@@ -2124,49 +2124,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kein schwerfälliger Workflow"
+            "value" : "Kein schwergewichtiges Workflow-Tool"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not a Heavy Workflow"
+            "value" : "Not a heavy workflow tool"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No es un flujo de trabajo pesado"
+            "value" : "No es una herramienta de flujo pesado"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pas un workflow lourd"
+            "value" : "Pas un outil de workflow lourd"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "重たいワークフローではありません"
+            "value" : "重たいワークフローツールではありません"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "무거운 워크플로를 위한 도구가 아닙니다"
+            "value" : "무거운 워크플로 도구가 아닙니다"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不是沉重的工作流"
+            "value" : "不是一个笨重的工作流工具"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不是沉重的工作流"
+            "value" : "不是一個笨重的工作流工具"
           }
         }
       }
@@ -2177,49 +2177,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote ist für den Samen gedacht, nicht für den ganzen Baum. Es hilft dir, das Rohmaterial für einen Post, ein Produkt, ein Skript, einen Essay oder ein Konzept festzuhalten, bevor du das eigentliche Ausarbeiten anderswo übernimmst."
+            "value" : "ChillNote ist für das Rohmaterial da, nicht für das fertige Manuskript. Es hilft dir, die erste Version schnell festzuhalten, bevor du anderswo tiefer ins Schreiben einsteigst."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote is for the seed, not the whole tree. It helps you catch the raw material for a post, product, script, essay, or concept before you move into full drafting elsewhere."
+            "value" : "ChillNote is for the raw material, not the finished manuscript. It helps you catch the first version quickly before you move into deeper writing somewhere else."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote sirve para la semilla, no para el árbol entero. Te ayuda a capturar la materia prima de una publicación, un producto, un guion, un ensayo o un concepto antes de pasar a desarrollarlo por completo en otro lugar."
+            "value" : "ChillNote es para la materia prima, no para el manuscrito terminado. Te ayuda a atrapar esa primera versión rápidamente antes de pasar a una escritura más profunda en otro lugar."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote est là pour la graine, pas pour l’arbre entier. Il vous aide à capturer la matière brute d’un post, d’un produit, d’un script, d’un essai ou d’un concept avant de passer à une rédaction complète ailleurs."
+            "value" : "ChillNote sert à capturer la matière brute, pas le manuscrit final. Il vous aide à saisir rapidement une première version avant de passer à une écriture plus approfondie ailleurs."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote が扱うのは種であって、木全体ではありません。投稿、プロダクト、脚本、エッセイ、コンセプトの元になる素材を、別の場所で本格的に書き始める前にまずつかまえるためのものです。"
+            "value" : "ChillNote が扱うのは、完成原稿ではなく、その手前の素材です。どこか別の場所で本格的に書き始める前に、最初のバージョンをすばやく残せるようにします。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote는 씨앗을 위한 도구이지, 나무 전체를 위한 도구는 아닙니다. 게시물, 제품, 스크립트, 에세이, 아이디어의 원재료를 먼저 붙잡고, 완전한 초안 작업은 다른 곳에서 이어 갈 수 있게 도와줍니다."
+            "value" : "ChillNote는 완성 원고가 아니라 그 전 단계의 재료를 위한 도구입니다. 다른 곳에서 본격적으로 쓰기 전에 첫 버전을 빠르게 붙잡아둘 수 있게 도와줍니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 负责的是种子，不是整棵树。它帮你先抓住帖子、产品、脚本、文章或概念的原始素材，再去别的地方完成完整写作。"
+            "value" : "ChillNote 适合承接原始素材，而不是完整长文。它帮你先快速抓住第一版，再去别的地方做更深入的写作。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 負責的是種子，不是整棵樹。它幫你先抓住貼文、產品、腳本、文章或概念的原始素材，再去別的地方完成完整寫作。"
+            "value" : "ChillNote 適合承接原始素材，而不是完整長文。它幫你先快速抓住第一版，再去別的地方做更深入的寫作。"
           }
         }
       }
@@ -2283,49 +2283,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote ist nicht dafür gebaut, ein vollständiges System für Meeting-Transkripte zu sein. Es ist dafür da, persönliche Ideen, kreative Funken und rohes Denken genau in dem Moment festzuhalten, in dem sie entstehen."
+            "value" : "ChillNote ist nicht als vollständiges System für Meeting-Transkription gedacht. Es ist besser für persönliches Denken, schnelles Festhalten von Ideen und rohe Sprachnotizen, die du später weiterformen willst."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote is not built to be a full meeting transcription system. It is for capturing personal ideas, creative sparks, and rough thinking while they are happening."
+            "value" : "ChillNote is not designed to be a full meeting transcription system. It is better for personal thinking, fast idea capture, and rough voice notes you want to shape later."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote no está pensado para ser un sistema completo de transcripción de reuniones. Está hecho para capturar ideas personales, chispas creativas y pensamiento en bruto justo cuando aparecen."
+            "value" : "ChillNote no está diseñado para ser un sistema completo de transcripción de reuniones. Funciona mejor para pensar en voz alta, capturar ideas rápido y guardar notas de voz en bruto que luego quieras dar forma."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote n’est pas conçu pour être un système complet de transcription de réunions. Il sert à capturer des idées personnelles, des étincelles créatives et une pensée encore brute au moment même où elles apparaissent."
+            "value" : "ChillNote n'est pas conçu pour être un système complet de transcription de réunions. Il convient mieux à la réflexion personnelle, à la capture rapide d'idées et aux notes vocales brutes que vous voulez retravailler plus tard."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote は、会議を丸ごと書き起こす完全な転写システムとして作られているわけではありません。個人的なアイデアや創作の火花、まだ荒いままの思考を、その場でつかまえるためのものです。"
+            "value" : "ChillNote は会議を丸ごと文字起こしするためのツールではありません。個人的な思考、すばやいアイデアの記録、あとで整えたいラフな音声メモに向いています。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote는 완전한 회의 전사 시스템으로 만들어진 앱이 아닙니다. 개인적인 아이디어, 창작의 불꽃, 아직 다듬어지지 않은 생각을 떠오르는 순간 붙잡기 위한 도구입니다."
+            "value" : "ChillNote는 회의를 통째로 받아 적는 전사 도구가 아닙니다. 개인적인 생각, 빠른 아이디어 기록, 나중에 다듬고 싶은 거친 음성 메모에 더 잘 어울립니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 不是为了做完整会议转录系统而设计的。它更适合在灵感出现的当下，帮你记录个人想法、创意火花和还很粗糙的思考。"
+            "value" : "ChillNote 不是一个完整的会议转录工具。它更适合个人思考、快速记录灵感，以及那些你之后还想继续整理的粗糙语音。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 不是為了做完整會議轉錄系統而設計的。它更適合在靈感出現的當下，幫你記錄個人想法、創意火花和還很粗糙的思考。"
+            "value" : "ChillNote 不是一個完整的會議轉錄工具。它更適合個人思考、快速記錄靈感，以及那些你之後還想繼續整理的粗糙語音。"
           }
         }
       }
@@ -2336,49 +2336,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Nicht für Sitzungsprotokolle"
+            "value" : "Nicht für Meeting-Transkription"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Not for Meeting Minutes"
+            "value" : "Not for meeting transcription"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "No para actas de reuniones"
+            "value" : "No es para transcribir reuniones"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pas pour les procès-verbaux des réunions"
+            "value" : "Pas pour la transcription de réunions"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "議事録ではありません"
+            "value" : "会議の文字起こし向けではありません"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "회의록용이 아님"
+            "value" : "회의 전사용이 아닙니다"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不适用于会议纪要"
+            "value" : "不是用来做会议转录的"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "不適用於會議紀要"
+            "value" : "不是用來做會議轉錄的"
           }
         }
       }
@@ -2389,49 +2389,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "„Grenzen setzen, um das Chill zu bewahren.“"
+            "value" : "\"Klare Grenzen halten das Produkt ehrlich.\""
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Defining the boundaries to preserve the 'Chill'.\""
+            "value" : "\"Defining the boundaries keeps the product honest.\""
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Poner límites para conservar ese Chill.\""
+            "value" : "\"Definir los límites mantiene honesto al producto.\""
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "« Poser des limites pour préserver le Chill. »"
+            "value" : "\"Définir les limites permet au produit de rester honnête.\""
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「『チル』を維持するための境界線を定義する。」"
+            "value" : "「境界をはっきりさせることで、プロダクトは誠実でいられる。」"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"'냉기'를 보존하기 위한 경계를 정의합니다.\""
+            "value" : "\"경계를 분명히 해야 제품이 솔직해진다.\""
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“划清边界，守住那份 Chill。”"
+            "value" : "“把边界说清楚，产品才会更诚实。”"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「劃清界線，守住那份 Chill。」"
+            "value" : "「把邊界說清楚，產品才會更誠實。」"
           }
         }
       }
@@ -2495,49 +2495,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kreative bekommen Ideen selten in sauber geordneten Absätzen. Sie kommen als Hook, Blickwinkel, halbe Sätze, Szenen, Titel oder als plötzlicher Moment von Klarheit."
+            "value" : "Die nützlichsten Gedanken kommen selten als saubere Absätze. Sie tauchen als Fragmente, lose Verbindungen, unfertige Sätze und plötzliche Geistesblitze mitten im Alltag auf."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Creators rarely get ideas in neat paragraphs. They come as hooks, angles, half-sentences, scenes, titles, and sudden bursts of clarity."
+            "value" : "Most useful thoughts do not arrive as clean paragraphs. They come as fragments, loose connections, unfinished sentences, and sudden sparks that appear in the middle of everything else."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los creadores casi nunca reciben sus ideas en párrafos ordenados. Llegan como ganchos, enfoques, medias frases, escenas, títulos o ráfagas repentinas de claridad."
+            "value" : "Las ideas más útiles rara vez llegan como párrafos limpios. Suelen aparecer como fragmentos, conexiones sueltas, frases inacabadas y chispazos repentinos en medio de todo lo demás."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les créateurs reçoivent rarement leurs idées sous forme de paragraphes bien rangés. Elles arrivent sous forme d’accroches, d’angles, de demi-phrases, de scènes, de titres ou d’éclairs soudains de clarté."
+            "value" : "Les pensées les plus utiles n'arrivent presque jamais sous forme de paragraphes bien rangés. Elles surgissent comme des fragments, des liens encore flous, des phrases inachevées et des éclairs d'idée au milieu de tout le reste."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "作り手のもとにアイデアが整った段落で届くことは、ほとんどありません。フック、切り口、言いかけの文、場面、タイトル、あるいは突然のひらめきとして現れます。"
+            "value" : "本当に使える考えは、きれいな段落の形でやってくることはほとんどありません。断片や、まだつながりきっていない感覚、言い切れていない文、ふとしたひらめきとして現れます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "창작자에게 아이디어는 깔끔한 문단으로 도착하지 않습니다. 훅, 관점, 반쯤 나온 문장, 장면, 제목, 혹은 갑작스러운 선명함의 형태로 찾아옵니다."
+            "value" : "정말 쓸모 있는 생각은 깔끔한 문단으로 오지 않습니다. 조각난 형태, 느슨한 연결, 끝맺지 못한 문장, 갑작스러운 번뜩임으로 일상 한가운데서 튀어나옵니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "创作者很少会直接得到一整段整整齐齐的想法。更多时候，它们以钩子、角度、半句话、画面、标题，或者一阵突然清晰的灵感出现。"
+            "value" : "真正有用的想法，很少会以完整清晰的段落出现。它们更常常是碎片、松散的连接、没说完的话，或者生活中突然冒出来的一点火花。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "創作者很少會直接得到一整段整整齊齊的想法。更多時候，它們以鉤子、角度、半句話、畫面、標題，或者一陣突然清晰的靈感出現。"
+            "value" : "真正有用的想法，很少會以完整清晰的段落出現。它們更常常是碎片、鬆散的連結、沒說完的話，或是生活中突然冒出來的一點火花。"
           }
         }
       }
@@ -2548,49 +2548,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Das Problem:** Bis du eine leere Seite öffnest und versuchst, alles sauber zu tippen, ist die Energie der Idee oft schon am Verblassen."
+            "value" : "**Das Problem:** Wenn du einen Gedanken erst perfekt ordnen musst, bevor du ihn speichern kannst, verlierst du wahrscheinlich einen Teil davon."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**The Problem:** By the time you open a blank page and try to type cleanly, the energy of the idea is already fading."
+            "value" : "**The Problem:** If you have to organize the thought perfectly before saving it, there is a good chance you lose part of it."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**El problema:** Para cuando abres una página en blanco e intentas escribirlo todo de forma limpia, la energía de la idea ya se está apagando."
+            "value" : "**El Problema:** Si tienes que ordenar la idea perfectamente antes de guardarla, hay muchas posibilidades de que pierdas una parte por el camino."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Le problème :** Au moment où vous ouvrez une page blanche et essayez de tout écrire proprement, l’énergie de l’idée est souvent déjà en train de s’éteindre."
+            "value" : "**Le Problème :** Si vous devez organiser parfaitement une pensée avant de la sauvegarder, vous risquez fort d'en perdre une partie."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**問題：** 白紙のページを開き、きれいに打ち込もうとしたころには、そのアイデアの勢いはもう薄れ始めています。"
+            "value" : "**課題:** きれいに整理できてから保存しようとすると、その考えの一部はすでにこぼれ落ちてしまうかもしれません。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**문제:** 빈 페이지를 열고 깔끔하게 타이핑하려는 순간쯤이면, 아이디어의 에너지는 이미 사라지기 시작합니다."
+            "value" : "**문제:** 생각을 완벽하게 정리한 뒤에야 저장할 수 있다면, 그 사이에 중요한 일부를 놓칠 가능성이 큽니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**问题：** 等你打开空白页面，开始试着把它规规矩矩打出来时，那个想法本身的能量往往已经在消退。"
+            "value" : "**问题：** 如果你非要等到想法整理得很完整才肯记下来，那它很可能已经丢掉了一部分。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**問題：** 等你打開空白頁面，開始試著把它規規矩矩打出來時，那個想法本身的能量往往已經在消退。"
+            "value" : "**問題：** 如果你非要等到想法整理得很完整才肯記下來，那它很可能已經丟掉了一部分。"
           }
         }
       }
@@ -2601,49 +2601,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Die Lösung:** ChillNote lässt dich sprechen, solange die Idee noch lebendig ist, und verwandelt diese rohe Aufnahme später in etwas, zu dem du beim Schreiben, Aufnehmen oder Veröffentlichen wirklich zurückkehren kannst."
+            "value" : "**Die Lösung:** ChillNote hilft dir, zuerst die rohe Version festzuhalten, solange sie noch lebendig ist, damit du später auf etwas Echtes zurückkommen kannst."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**The Solution:** ChillNote lets you talk while the idea is still alive, then turns the raw capture into something you can actually return to when it is time to write, record, or publish."
+            "value" : "**The Solution:** ChillNote helps you capture the raw version first, while it is still alive, so you have something real to return to later."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**La solución:** ChillNote te deja hablar mientras la idea sigue viva y luego convierte esa captura en bruto en algo a lo que realmente puedes volver cuando llegue el momento de escribir, grabar o publicar."
+            "value" : "**La Solución:** ChillNote te ayuda a capturar primero la versión en bruto, mientras todavía está viva, para que luego tengas algo real a lo que volver."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**La solution :** ChillNote vous laisse parler tant que l’idée est encore vivante, puis transforme cette capture brute en quelque chose vers quoi vous pouvez réellement revenir au moment d’écrire, d’enregistrer ou de publier."
+            "value" : "**La Solution :** ChillNote vous aide à capturer d'abord la version brute, pendant qu'elle est encore vivante, afin que vous ayez plus tard quelque chose de réel vers quoi revenir."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解決策：** ChillNote なら、アイデアがまだ生きているうちに話して残せます。そしてその粗い記録を、書くとき、録るとき、公開するときに本当に戻って使える形へ整えます。"
+            "value" : "**解決策:** ChillNote は、その考えがまだ生きているうちにラフなまま残せるようにし、あとで本当に戻ってこられる土台を作ります。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**해결책:** ChillNote는 아이디어가 아직 살아 있을 때 먼저 말로 남기게 해 주고, 그 거친 기록을 나중에 글을 쓰거나 녹음하거나 공개할 때 다시 꺼내 쓸 수 있는 형태로 바꿔 줍니다."
+            "value" : "**해결책:** ChillNote는 생각이 살아 있을 때 거친 버전 그대로 먼저 붙잡아둘 수 있게 해주고, 나중에 다시 돌아올 수 있는 진짜 바탕을 남겨줍니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解决方案：** ChillNote 让你在想法还鲜活的时候先说出来，再把这些原始记录整理成你在写作、录制或发布时真的能回来继续用的内容。"
+            "value" : "**解决办法：** ChillNote 会帮你先把最原始的版本接住，趁它还鲜活的时候留下来，这样你之后就有东西可以真正回头继续用。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解決方案：** ChillNote 讓你在想法還鮮活的時候先說出來，再把這些原始記錄整理成你在寫作、錄製或發布時真的能回來繼續用的內容。"
+            "value" : "**解決辦法：** ChillNote 會幫你先把最原始的版本接住，趁它還鮮活的時候留下來，這樣你之後就有東西可以真正回頭繼續用。"
           }
         }
       }
@@ -2707,49 +2707,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Für Content-Creator"
+            "value" : "Gedanken kommen selten fertig an"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "For Content Creators"
+            "value" : "Thoughts rarely arrive finished"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Para creadores de contenido"
+            "value" : "Las ideas rara vez llegan terminadas"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pour les créateurs de contenu"
+            "value" : "Les pensées arrivent rarement terminées"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "コンテンツ制作者のために"
+            "value" : "考えは完成形ではやってこない"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "콘텐츠 크리에이터를 위해"
+            "value" : "생각은 완성된 채로 오지 않습니다"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "为内容创作者而生"
+            "value" : "想法很少会完整出现"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "為內容創作者而生"
+            "value" : "想法很少會完整出現"
           }
         }
       }
@@ -2760,49 +2760,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Builder haben nicht nur Aufgaben. Sie haben Funktionsideen, Produktabwägungen, Namensgedanken, Launch-Notizen und kleine Einsichten, die mitten im restlichen Alltag auftauchen."
+            "value" : "ChillNote basiert auf einer einfachen Überzeugung: Struktur sollte nach dem Festhalten kommen, nicht davor."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Builders do not just have tasks. They have feature ideas, product tradeoffs, naming thoughts, launch notes, and tiny insights that appear in the middle of everything else."
+            "value" : "ChillNote is based on a simple belief: structure should come after capture, not before it."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Los builders no solo tienen tareas. También tienen ideas de funciones, decisiones de producto, ideas de naming, notas de lanzamiento y pequeños hallazgos que aparecen en medio de todo lo demás."
+            "value" : "ChillNote parte de una idea sencilla: la estructura debe venir después de capturar, no antes."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les builders n’ont pas seulement des tâches. Ils ont aussi des idées de fonctionnalités, des arbitrages produit, des intuitions de naming, des notes de lancement et de petites idées qui surgissent au milieu de tout le reste."
+            "value" : "ChillNote repose sur une idée simple : la structure doit venir après la capture, pas avant."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ビルダーにあるのはタスクだけではありません。機能のアイデア、プロダクト上のトレードオフ、名前の案、ローンチメモ、そしてあらゆる作業の合間にふと現れる小さな気づきがあります。"
+            "value" : "ChillNote にはシンプルな考え方があります。構造は、記録したあとに来るべきであって、その前ではないということです。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "빌더에게는 할 일만 있는 것이 아닙니다. 기능 아이디어, 제품의 트레이드오프, 이름에 대한 생각, 출시 메모, 그리고 다른 모든 일 사이에 불쑥 떠오르는 작은 통찰도 함께 있습니다."
+            "value" : "ChillNote는 아주 단순한 믿음에서 출발합니다. 구조는 기록보다 먼저가 아니라, 기록 다음에 와야 한다는 것입니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "构建者面对的不只是任务。他们脑子里还有功能想法、产品取舍、命名念头、发布备注，以及夹杂在各种工作之间突然冒出来的小洞察。"
+            "value" : "ChillNote 背后的想法很简单：结构应该发生在记录之后，而不是之前。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "構建者面對的不只是任務。他們腦子裡還有功能想法、產品取捨、命名念頭、發布備註，以及夾雜在各種工作之間突然冒出來的小洞察。"
+            "value" : "ChillNote 背後的想法很簡單：結構應該發生在記錄之後，而不是之前。"
           }
         }
       }
@@ -2813,49 +2813,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Das Problem:** Die meisten dieser Gedanken sind zu wertvoll, um sie zu verlieren, aber zu roh, um im Moment anzuhalten und sie ordentlich zu dokumentieren."
+            "value" : "**Woran wir glauben:** Einen Gedanken festzuhalten sollte sofort und druckfrei sein. Ordnen kann man ihn, sobald die Idee sicher ist."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**The Problem:** Most of those thoughts are too valuable to lose, but too rough to stop and document properly in the moment."
+            "value" : "**What We Believe:** Getting the thought out should feel immediate and low-pressure. Organization can happen once the idea is safe."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**El problema:** La mayoría de esas ideas son demasiado valiosas como para perderlas, pero demasiado crudas como para parar en ese momento y documentarlas bien."
+            "value" : "**En qué creemos:** Sacar una idea debería sentirse inmediato y sin presión. Ordenarla puede venir después, cuando ya esté a salvo."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Le problème :** La plupart de ces pensées sont trop précieuses pour être perdues, mais encore trop brutes pour qu’on puisse s’arrêter et les documenter correctement sur le moment."
+            "value" : "**Ce que nous croyons :** Sortir une pensée doit être immédiat et sans pression. L'organisation peut venir une fois que l'idée est à l'abri."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**問題：** そうした考えの多くは失うには惜しすぎる一方で、その場で立ち止まってきちんと記録するにはまだ粗すぎます。"
+            "value" : "**私たちの考え:** 考えを外に出すことは、すぐできて、気負わずできるべきです。整理は、アイデアが安全に残ったあとでいいのです。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**문제:** 이런 생각들은 잃기에는 너무 소중하지만, 그 순간 멈춰 서서 제대로 문서화하기에는 아직 너무 거칠 때가 많습니다."
+            "value" : "**우리가 믿는 것:** 생각을 꺼내는 일은 즉각적이고 부담 없어야 합니다. 정리는 그 생각이 안전하게 남은 다음에 해도 됩니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**问题：** 这些想法大多珍贵到不能丢，但又粗糙到很难让你当场停下来，好好整理记录。"
+            "value" : "**我们的看法：** 把想法说出来这件事，应该足够即时、足够没有压力。等它被安全留下来之后，再整理也不迟。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**問題：** 這些想法大多珍貴到不能丟，但又粗糙到很難讓你當場停下來，好好整理記錄。"
+            "value" : "**我們的看法：** 把想法說出來這件事，應該足夠即時、足夠沒有壓力。等它被安全留下來之後，再整理也不遲。"
           }
         }
       }
@@ -2866,49 +2866,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Die Lösung:** ChillNote gibt Buildern eine schnelle Aufnahmeschicht zwischen dem Gedanken und dem Backlog, damit aus rohem Produktinstinkt nutzbare Notizen statt vergessener mentaler Tabs werden."
+            "value" : "**Was das bedeutet:** Du brauchst noch keinen perfekten Satz. Eine raue Sprachnotiz kann trotzdem ein klarer, nützlicher Ausgangspunkt werden."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**The Solution:** ChillNote gives builders a fast capture layer between the thought and the backlog, so rough product instinct can become usable notes instead of forgotten mental tabs."
+            "value" : "**What That Means:** You do not need the polished sentence yet. A rough voice note can still become a clear, useful starting point."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**La solución:** ChillNote les da a los builders una capa de captura rápida entre la idea y el backlog, para que ese instinto de producto en bruto se convierta en notas útiles en vez de pestañas mentales olvidadas."
+            "value" : "**Lo que eso significa:** Todavía no necesitas una frase perfecta. Una nota de voz en bruto también puede convertirse en un punto de partida claro y útil."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**La solution :** ChillNote offre aux builders une couche de capture rapide entre l’idée et le backlog, afin qu’un instinct produit encore brut devienne des notes exploitables plutôt que des onglets mentaux oubliés."
+            "value" : "**Ce que cela implique :** Vous n'avez pas encore besoin de la phrase parfaite. Une note vocale brute peut déjà devenir un point de départ clair et utile."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解決策：** ChillNote は、思いつきとバックログのあいだに素早く記録する層を置きます。まだ粗いプロダクト直感を、忘れられた脳内タブではなく使えるメモへ変えてくれます。"
+            "value" : "**それが意味すること:** まだ整った一文である必要はありません。ラフな音声メモでも、十分に明確で役に立つ出発点になれます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**해결책:** ChillNote는 생각과 백로그 사이에 빠른 기록 레이어를 만들어 줍니다. 덕분에 거친 제품 직감이 잊힌 머릿속 탭이 아니라 실제로 쓸 수 있는 메모가 됩니다."
+            "value" : "**이게 뜻하는 것:** 아직 매끈한 문장이 아니어도 괜찮습니다. 거친 음성 메모도 충분히 또렷하고 유용한 출발점이 될 수 있습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解决方案：** ChillNote 在想法和待办列表之间提供了一层快速记录层，让那些粗糙的产品直觉不再变成被遗忘的脑内标签页，而是变成可用的笔记。"
+            "value" : "**这意味着：** 你不需要一上来就说得很漂亮。哪怕是一段粗糙的语音，也可以成为一个清晰、有用的起点。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**解決方案：** ChillNote 在想法和待辦清單之間提供了一層快速記錄層，讓那些粗糙的產品直覺不再變成被遺忘的腦內分頁，而是變成可用的筆記。"
+            "value" : "**這意味著：** 你不需要一開始就說得很漂亮。哪怕是一段粗糙的語音，也可以成為一個清晰、有用的起點。"
           }
         }
       }
@@ -2919,537 +2919,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "„Die Produktidee kommt mir, während ich gehe, debugge oder gerade den Kontext wechsle.“"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"The product thought hits while I am walking, debugging, or switching contexts.\""
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"La idea de producto me llega mientras camino, depuro o cambio de contexto.\""
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"L'idée produit me vient pendant que je marche, que je débogue ou que je change de contexte.\""
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「プロダクトのアイデアは、歩いているときやデバッグ中、あるいは別の作業に切り替えている最中にふと浮かぶ。」"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"제품 아이디어는 걷는 중이거나, 디버깅 중이거나, 맥락을 전환하는 순간에 불쑥 떠오른다.\""
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "“产品上的想法，总会在我走路、调试，或者切换任务的时候突然冒出来。”"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「產品上的想法，總會在我走路、除錯，或切換任務的時候突然冒出來。」"
-          }
-        }
-      }
-    },
-    "about.section.2.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Für Builder und Entwickler"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For Builders & Developers"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para builders y desarrolladores"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pour les builders et développeurs"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ビルダーと開発者のために"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "빌더와 개발자를 위해"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "为构建者与开发者而生"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "為構建者與開發者而生"
-          }
-        }
-      }
-    },
-    "about.section.3.body.1" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Designer, Strategen, Marketer, Filmschaffende, Forschende und andere Kreativschaffende entdecken die eigentliche Idee oft erst, während sie sie sich selbst erklären."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Designers, strategists, marketers, filmmakers, researchers, and other creative workers often discover the idea while explaining it to themselves."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Diseñadores, estrategas, marketers, cineastas, investigadores y otros profesionales creativos muchas veces descubren la idea mientras se la explican a sí mismos."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Les designers, stratèges, marketers, cinéastes, chercheurs et autres créatifs découvrent souvent l’idée en se l’expliquant à eux-mêmes."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "デザイナー、ストラテジスト、マーケター、映像制作者、研究者などのクリエイティブワーカーは、自分で説明している最中にこそ本当のアイデアを見つけることがよくあります。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "디자이너, 전략가, 마케터, 영상 창작자, 연구자 등 다양한 크리에이티브 워커들은 스스로에게 설명하는 과정에서 비로소 아이디어를 발견하는 경우가 많습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "设计师、策略师、市场人、影视创作者、研究者，以及其他创意工作者，常常是在对自己把事情讲明白的过程中，才真正发现那个想法。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "設計師、策略師、市場人、影視創作者、研究者，以及其他創意工作者，常常是在對自己把事情講明白的過程中，才真正發現那個想法。"
-          }
-        }
-      }
-    },
-    "about.section.3.body.2" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Die Reibung:** Wer zu früh tippt, rutscht sofort in den Bearbeitungsmodus, obwohl man in diesem Moment eigentlich Schwung braucht."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**The Friction:** Typing too early pushes you into editing mode when what you really need is momentum."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**La fricción:** Escribir demasiado pronto te empuja al modo edición justo cuando lo que de verdad necesitas es impulso."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**La friction :** Taper trop tôt vous fait basculer en mode édition alors que ce dont vous avez vraiment besoin à ce moment-là, c’est d’élan."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**摩擦：** 早い段階で文字にし始めると、本当は勢いが必要な場面なのに、すぐ編集モードに入ってしまいます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**마찰:** 너무 일찍 타이핑을 시작하면, 지금 필요한 것은 추진력인데도 곧바로 편집 모드로 들어가 버립니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**阻力：** 太早开始打字，会把你推进“编辑模式”；但你真正需要的，其实是继续往前走的势头。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**阻力：** 太早開始打字，會把你推進「編輯模式」；但你真正需要的，其實是繼續往前走的動能。"
-          }
-        }
-      }
-    },
-    "about.section.3.body.3" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Die Lösung:** Sprechen hält dich näher am ursprünglichen Gedanken. ChillNote fängt diesen Schwung zuerst ein und hilft dir dann, ihn in klarere Sprache, Struktur und nächste Schritte zu formen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**The Solution:** Speaking keeps you closer to the original thought. ChillNote captures that momentum first, then helps you shape it into clearer language, structure, and next steps."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**La solución:** Hablar te mantiene más cerca de la idea original. ChillNote captura primero ese impulso y luego te ayuda a convertirlo en un lenguaje más claro, una mejor estructura y próximos pasos concretos."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**La solution :** Parler vous garde plus proche de l’idée d’origine. ChillNote capture d’abord cet élan, puis vous aide à le transformer en langage plus clair, en structure et en prochaines étapes."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**解決策：** 話すことは、元の考えにより近いままでいる助けになります。ChillNote はその勢いをまず受け止め、そのあとで、より明確な言葉、構造、次の一歩へ整えるのを手伝います。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**해결책:** 말로 꺼내면 원래의 생각에 더 가까이 머물 수 있습니다. ChillNote는 그 흐름을 먼저 받아 적고, 이후 더 명확한 언어와 구조, 다음 단계로 다듬어 줍니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**解决方案：** 说出来，能让你更贴近最初的想法。ChillNote 会先把这股势头接住，再帮你整理成更清晰的语言、结构和下一步行动。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**解決方案：** 說出來，能讓你更貼近最初的想法。ChillNote 會先把這股動能接住，再幫你整理成更清晰的語言、結構和下一步行動。"
-          }
-        }
-      }
-    },
-    "about.section.3.quote" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "„Ich denke am besten, wenn ich laut spreche.“"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"I do my best thinking out loud.\""
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"Pienso mejor cuando hablo en voz alta.\""
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"Je réfléchis mieux à voix haute.\""
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「声に出して話しているときが、一番よく考えられる。」"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "\"나는 소리 내어 말할 때 가장 잘 생각할 수 있다.\""
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "“把想法说出来的时候，我最能想清楚。”"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "「把想法說出來的時候，我最能想清楚。」"
-          }
-        }
-      }
-    },
-    "about.section.3.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Für Kreative"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "For Creative Workers"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Para trabajadores creativos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pour les travailleurs créatifs"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "クリエイティブワーカー向け"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "창의적인 근로자를 위한"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "对于创意工作者"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "對於創意工作者"
-          }
-        }
-      }
-    },
-    "about.section.4.body.1" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ChillNote basiert auf einem einfachen Glaubenssatz: Wer zu früh Struktur erzwingt, zerstört oft wertvolles Denken."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ChillNote is based on a simple belief: forcing structure too early kills useful thinking."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ChillNote parte de una idea muy simple: imponer estructura demasiado pronto mata pensamientos que todavía podían ser útiles."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ChillNote repose sur une conviction simple : imposer une structure trop tôt tue souvent une pensée encore utile."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ChillNote は、ひとつのシンプルな考え方を土台にしています。早すぎる段階で構造を押しつけると、有用な思考は死んでしまうことが多いということです。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ChillNote는 아주 단순한 믿음 위에 세워져 있습니다. 구조를 너무 일찍 강요하면 가치 있는 생각이 죽어 버린다는 것입니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ChillNote 建立在一个很简单的信念上：过早强加结构，会扼杀真正有价值的思考。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ChillNote 建立在一個很簡單的信念上：過早強加結構，會扼殺真正有價值的思考。"
-          }
-        }
-      }
-    },
-    "about.section.4.body.2" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Woran wir glauben:** Festhalten sollte sich sofortig und fehlertolerant anfühlen. Organisieren sollte erst passieren, wenn der Gedanke sicher aufgehoben ist."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**What We Believe:** Capture should feel immediate and forgiving. Organization should happen after the thought is safe."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Lo que creemos:** Capturar debería sentirse inmediato y permisivo. La organización debería venir después, cuando la idea ya está a salvo."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Ce que nous croyons :** Capturer doit être immédiat et sans pression. L’organisation doit venir après, une fois que l’idée est en sécurité."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**私たちの考え：** 記録はすぐにできて、多少荒くても許されるものであるべきです。整理は、その考えが安全に残されたあとで行えばいいのです。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**우리가 믿는 것:** 기록은 즉각적이고 부담이 적어야 합니다. 정리는 생각이 안전하게 저장된 뒤에 이루어져야 합니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**我们的信念：** 记录这件事应该是即时的、宽容的。整理，应该发生在想法已经被安全保存之后。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**我們的信念：** 記錄這件事應該是即時的、寬容的。整理，應該發生在想法已經被安全保存之後。"
-          }
-        }
-      }
-    },
-    "about.section.4.body.3" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Was das bedeutet:** Du brauchst keinen perfekt formulierten Satz, um etwas Wichtiges zu sichern. Eine raue Sprachnotiz kann trotzdem zu einem sauberen, nützlichen Ausgangspunkt werden."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**What That Means:** You do not need a polished sentence to save something important. A rough voice note can still become a clean, useful starting point."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Lo que eso significa:** No necesitas una frase pulida para guardar algo importante. Una nota de voz todavía torpe puede convertirse en un punto de partida limpio y útil."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**Ce que cela veut dire :** Vous n’avez pas besoin d’une phrase parfaitement polie pour sauvegarder quelque chose d’important. Une note vocale encore brute peut quand même devenir un point de départ propre et utile."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**つまり：** 重要なものを残すのに、最初から整った一文は必要ありません。粗い音声メモでも、十分に整理された役立つ出発点になれます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**이 뜻은:** 중요한 것을 남기기 위해 처음부터 다듬어진 문장이 필요하지는 않습니다. 거친 음성 메모도 충분히 깔끔하고 유용한 출발점이 될 수 있습니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**这意味着：** 你不需要先把一句话打磨漂亮，才能保存重要的东西。一个粗糙的语音记录，依然可以变成干净、好用的起点。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "**這意味著：** 你不需要先把一句話打磨漂亮，才能保存重要的東西。一個粗糙的語音記錄，依然可以變成乾淨、好用的起點。"
-          }
-        }
-      }
-    },
-    "about.section.4.quote" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "„Die erste Version einer guten Idee ist meistens chaotisch.“"
+            "value" : "\"Die erste Version einer guten Idee ist meistens chaotisch.\""
           }
         },
         "en" : {
@@ -3461,54 +2931,54 @@
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"La primera versión de una buena idea casi siempre es un caos.\""
+            "value" : "\"La primera versión de una buena idea casi siempre es caótica.\""
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"La première version d'une bonne idée est souvent brouillonne.\""
+            "value" : "\"La première version d'une bonne idée est presque toujours brouillonne.\""
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「良いアイデアの最初の形は、たいてい散らかっている。」"
+            "value" : "「いいアイデアの最初の形は、たいていまだ雑だ。」"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"좋은 아이디어의 첫 버전은 보통 엉성하다.\""
+            "value" : "\"좋은 아이디어의 첫 버전은 대개 엉성하다.\""
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“一个好点子的第一个版本，通常都是乱糟糟的。”"
+            "value" : "“一个好想法的第一版，通常都是乱的。”"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「一個好點子的第一個版本，通常都是亂糟糟的。」"
+            "value" : "「一個好想法的第一版，通常都是亂的。」"
           }
         }
       }
     },
-    "about.section.4.title" : {
+    "about.section.2.title" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erfassen zuerst, ordnen danach"
+            "value" : "Erst festhalten, dann ordnen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Capture First, Organize After"
+            "value" : "Capture first, organize later"
           }
         },
         "es" : {
@@ -3520,19 +2990,19 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Capturer d’abord, organiser ensuite"
+            "value" : "Capturer d'abord, organiser ensuite"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "まず記録し、整理はあとで"
+            "value" : "まず残して、整えるのはあとで"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "먼저 담고, 정리는 나중에"
+            "value" : "먼저 붙잡고, 정리는 나중에"
           }
         },
         "zh-Hans" : {
@@ -3549,55 +3019,585 @@
         }
       }
     },
+    "about.section.3.body.1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tippen ist oft zu langsam, wenn der Kopf schnell arbeitet. Sprechen ist häufig der schnellste Weg, mit einem Gedanken Schritt zu halten, während er gerade entsteht."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Typing can be too slow when your mind is moving quickly. Speaking is often the fastest way to keep up with a thought while it is happening."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Escribir puede ser demasiado lento cuando tu mente va deprisa. Hablar suele ser la manera más rápida de seguirle el ritmo a una idea mientras está ocurriendo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Taper peut être trop lent quand l'esprit va vite. Parler est souvent le moyen le plus rapide de suivre une pensée pendant qu'elle se forme."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "頭の回転が速いとき、タイピングでは追いつけないことがあります。考えが生まれている最中に追いつくには、話すことがいちばん速い方法であることがよくあります。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "머리가 빠르게 돌아갈 때는 타이핑이 너무 느릴 수 있습니다. 생각이 생겨나는 그 순간을 따라잡는 가장 빠른 방법은 종종 말하는 것입니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "当脑子转得很快时，打字往往太慢了。想要跟上一个正在发生的想法，很多时候开口说出来才是最快的方式。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "當腦子轉得很快時，打字往往太慢了。想要跟上一個正在發生的想法，很多時候開口說出來才是最快的方式。"
+          }
+        }
+      }
+    },
+    "about.section.3.body.2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Die Reibung:** In dem Moment, in dem du zu früh anfängst, dich selbst zu editieren, fällt das Momentum ab und der ursprüngliche Gedanke beginnt zu verblassen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**The Friction:** The moment you start editing yourself too early, momentum drops and the original thought starts to fade."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**La Fricción:** En cuanto empiezas a editarte demasiado pronto, el impulso baja y la idea original empieza a desvanecerse."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**La Friction :** Dès que vous commencez à vous corriger trop tôt, l'élan retombe et la pensée d'origine commence à s'effacer."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**つまずき:** 早い段階で自分を編集し始めると、勢いが落ち、もとの考えは薄れ始めます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**마찰:** 너무 이른 순간부터 스스로를 편집하기 시작하면 흐름이 꺾이고, 처음의 생각도 흐려지기 시작합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**阻力：** 你一旦太早开始修改自己，那个流动感就会掉下去，原本的想法也会开始变淡。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**阻力：** 你一旦太早開始修改自己，那個流動感就會掉下去，原本的想法也會開始變淡。"
+          }
+        }
+      }
+    },
+    "about.section.3.body.3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Die Lösung:** ChillNote lässt dich natürlich sprechen und nutzt dann KI, um den Gedanken zu säubern, zu strukturieren und weiterzutragen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**The Solution:** ChillNote lets you speak naturally, then uses AI to clean up, structure, and carry the thought forward."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**La Solución:** ChillNote te deja hablar con naturalidad y luego usa IA para limpiar, estructurar y empujar esa idea hacia adelante."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**La Solution :** ChillNote vous laisse parler naturellement, puis utilise l'IA pour clarifier, structurer et faire avancer cette pensée."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**解決策:** ChillNote は自然に話せるようにし、そのあと AI で考えを整え、構造化し、先へ進めやすくします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**해결책:** ChillNote는 자연스럽게 말할 수 있게 두고, 그다음 AI로 그 생각을 정리하고 구조화해 다음 단계로 이어지게 합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**解决办法：** ChillNote 让你先自然地说，再用 AI 帮你把这个想法清理出来、整理结构，并继续往前推进。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**解決辦法：** ChillNote 讓你先自然地說，再用 AI 幫你把這個想法清理出來、整理結構，並繼續往前推進。"
+          }
+        }
+      }
+    },
+    "about.section.3.quote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"Meine Gedanken sind schneller als meine Finger.\""
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"My thoughts run faster than my fingers.\""
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"Mis pensamientos van más rápido que mis dedos.\""
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"Mes pensées vont plus vite que mes doigts.\""
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「考える速さに、指が追いつかない。」"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"내 생각은 손가락보다 더 빨리 달린다.\""
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“我的想法，总是比手指更快。”"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「我的想法，總是比手指更快。」"
+          }
+        }
+      }
+    },
+    "about.section.3.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sprechen hilft, den Gedanken zu halten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Talking helps you keep the thought"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hablar te ayuda a no perder la idea"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Parler aide à garder la pensée"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "話すことが、考えをつなぎとめる"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "말하면 생각을 붙잡기 쉬워집니다"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "说出来，更容易留住想法"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "說出來，更容易留住想法"
+          }
+        }
+      }
+    },
+    "about.section.4.body.1" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ein Braindump ist nicht das Endergebnis. Es ist das Rohmaterial."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A brain dump is not the end result. It is the raw material."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Una descarga mental no es el resultado final. Es la materia prima."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sortir ses idées n'est pas le résultat final. C'est la matière première."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブレインダンプは完成形ではありません。あくまで素材です。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "생각 정리는 최종 결과물이 아닙니다. 그것은 원재료입니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空大脑并不是最终结果，它只是原始素材。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清空大腦並不是最終結果，它只是原始素材。"
+          }
+        }
+      }
+    },
+    "about.section.4.body.2" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Was danach passiert:** Sobald der Gedanke festgehalten ist, hilft dir ChillNote, ihn zu verfeinern, umzuformen, mit ihm zu sprechen und daraus etwas zu machen, das du wirklich nutzen kannst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**What Happens Next:** Once the thought is captured, ChillNote helps you refine it, reshape it, talk to it, and turn it into something you can actually use."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Lo que pasa después:** Una vez capturada la idea, ChillNote te ayuda a refinarla, darle otra forma, conversar con ella y convertirla en algo que realmente puedas usar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Ce qui se passe ensuite :** Une fois la pensée capturée, ChillNote vous aide à l'affiner, la transformer, dialoguer avec elle et en faire quelque chose que vous pouvez réellement utiliser."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**そのあとに起きること:** 考えを残したあと、ChillNote はそれを磨き直し、形を変え、対話し、本当に使えるものへと変えていく手助けをします。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**그다음에 일어나는 일:** 생각이 붙잡히고 나면 ChillNote는 그것을 다듬고, 다시 빚고, 대화하고, 실제로 쓸 수 있는 형태로 바꾸는 일을 도와줍니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**接下来会发生什么：** 一旦想法被记下来，ChillNote 就会帮你继续润色、重组、对话，并把它变成你真的能用起来的内容。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**接下來會發生什麼：** 一旦想法被記下來，ChillNote 就會幫你繼續潤色、重組、對話，並把它變成你真的能用起來的內容。"
+          }
+        }
+      }
+    },
+    "about.section.4.body.3" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Das Ergebnis:** Weniger Zeit damit, alles neu zu schreiben. Mehr Zeit, mit Ideen weiterzugehen, die später immer noch Sinn ergeben."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**The Result:** Less time rewriting from scratch. More time moving forward with ideas that still make sense later."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**El Resultado:** Menos tiempo reescribiendo desde cero. Más tiempo avanzando con ideas que siguen teniendo sentido después."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**Le Résultat :** Moins de temps à tout réécrire depuis zéro. Plus de temps à avancer avec des idées qui ont encore du sens plus tard."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**結果:** ゼロから書き直す時間は減り、あとから読み返しても意味を保っているアイデアを前に進める時間が増えます。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**결과:** 처음부터 다시 쓰는 시간은 줄고, 나중에도 여전히 의미가 남아 있는 생각을 밀고 나가는 시간은 늘어납니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**结果：** 你不需要总是从头重写，而是可以把更多时间花在继续推进那些之后依然说得通的想法上。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "**結果：** 你不需要總是從頭重寫，而是可以把更多時間花在繼續推進那些之後依然說得通的想法上。"
+          }
+        }
+      }
+    },
+    "about.section.4.quote" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"Ich habe die Idee, aber mir fehlen die Worte.\""
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"I have the idea, but I can't find the words.\""
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"Tengo la idea, pero no encuentro las palabras.\""
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"J'ai l'idée, mais je n'arrive pas à trouver les mots.\""
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「アイデアはあるのに、うまく言葉にできない。」"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "\"아이디어는 있는데, 딱 맞는 말이 안 나온다.\""
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“想法有了，但就是还说不清。”"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「想法有了，但就是還說不清。」"
+          }
+        }
+      }
+    },
+    "about.section.4.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Vom Braindump zu etwas Nutzbarem"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From brain dump to something usable"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "De descarga mental a algo útil"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Des idées brutes à quelque chose d'utile"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ブレインダンプを使える形へ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "생각 정리에서 쓸 수 있는 결과물로"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "从清空大脑，到真正能用"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "從清空大腦，到真正能用"
+          }
+        }
+      }
+    },
     "about.section.5.body.1" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Das Ziel ist nicht, einen weiteren schweren Arbeitsbereich zu bauen, der ständig Pflege verlangt."
+            "value" : "ChillNote will kein weiterer schwerer Workspace sein, der ständiges Sortieren, Taggen und Pflegen verlangt."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "The goal is not to build another heavy workspace that demands constant upkeep."
+            "value" : "ChillNote is not trying to become a heavy workspace that demands constant sorting, tagging, and upkeep."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El objetivo no es construir otro espacio de trabajo pesado que exija mantenimiento constante."
+            "value" : "ChillNote no intenta convertirse en otro espacio de trabajo pesado que exija ordenar, etiquetar y mantener todo constantemente."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le but n’est pas de créer un espace de travail de plus, lourd et exigeant en entretien constant."
+            "value" : "ChillNote n'essaie pas de devenir un espace de travail lourd qui exige de trier, étiqueter et entretenir sans cesse."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目指しているのは、絶えず手入れを求める重たいワークスペースをもうひとつ作ることではありません。"
+            "value" : "ChillNote が目指しているのは、分類やタグ付け、手入れを常に求める重たいワークスペースになることではありません。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "목표는 계속 손이 가는 또 하나의 무거운 워크스페이스를 만드는 것이 아닙니다."
+            "value" : "ChillNote는 끊임없이 정리하고 태그를 붙이고 관리해야 하는 무거운 작업 공간이 되려는 것이 아닙니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目标不是再造一个需要你不断维护、不断打理的沉重工作空间。"
+            "value" : "ChillNote 并不想变成另一个需要你不断分类、打标签、维护的笨重工作台。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "目標不是再造一個需要你不斷維護、不斷打理的沉重工作空間。"
+            "value" : "ChillNote 並不想變成另一個需要你不斷分類、加標籤、維護的笨重工作台。"
           }
         }
       }
@@ -3661,49 +3661,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Das Ergebnis:** Weniger Zeit für Formatierung, Ablage und komplettes Umschreiben. Mehr Zeit, um im Fluss zu bleiben und später zu Ideen zurückzukehren, die sich noch immer brauchbar anfühlen."
+            "value" : "**Das Ergebnis:** Du bleibst in Bewegung. Deine Ideen bleiben zugänglich. Und deine Notizen bleiben flexibel genug, um sie bei Bedarf auch anderswo zu nutzen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**The Result:** Less time formatting, filing, and rewriting from scratch. More time staying in motion and returning to ideas that still feel usable later."
+            "value" : "**The Result:** You stay in motion. Your ideas stay accessible. And your notes stay flexible enough to use elsewhere when you need them."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**El resultado:** Menos tiempo formateando, archivando y reescribiendo desde cero. Más tiempo para seguir avanzando y volver después a ideas que todavía se sienten útiles."
+            "value" : "**El Resultado:** Sigues avanzando. Tus ideas siguen accesibles. Y tus notas siguen siendo lo bastante flexibles como para usarlas en otros sitios cuando lo necesites."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Le résultat :** Moins de temps passé à mettre en forme, classer et tout réécrire depuis zéro. Plus de temps pour rester en mouvement et revenir plus tard à des idées qui restent encore exploitables."
+            "value" : "**Le Résultat :** Vous restez en mouvement. Vos idées restent accessibles. Et vos notes restent assez souples pour être réutilisées ailleurs quand vous en avez besoin."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**結果：** 書式調整や整理、ゼロからの書き直しに使う時間は減り、そのぶん流れを保ち、あとからでも使えるアイデアに戻る時間が増えます。"
+            "value" : "**結果:** 流れを止めずに進み続けられます。アイデアはすぐ手の届く場所に残ります。そしてノートは、必要になれば他の場所でも使えるだけの柔軟さを保ちます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**결과:** 서식 맞추기, 분류하기, 처음부터 다시 쓰기에 쓰는 시간은 줄고, 대신 흐름을 유지하며 나중에도 다시 꺼내 쓸 수 있는 아이디어로 돌아갈 시간이 늘어납니다."
+            "value" : "**결과:** 흐름을 유지한 채 앞으로 나아갈 수 있습니다. 아이디어는 계속 손이 닿는 곳에 남습니다. 그리고 노트는 필요할 때 다른 곳에서도 쓸 수 있을 만큼 유연하게 남습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**结果：** 少花时间排版、归档和从头重写，多花时间保持前进，并在之后还能回到那些依然可用的想法上。"
+            "value" : "**结果：** 你可以继续往前走，想法也依然随时可回来看。而你的笔记，也会保持足够灵活，方便你在需要时带到别处继续用。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**結果：** 少花時間排版、歸檔和從頭重寫，多花時間保持前進，並在之後還能回到那些依然可用的想法上。"
+            "value" : "**結果：** 你可以繼續往前走，想法也依然隨時可回來看。而你的筆記，也會保持足夠靈活，方便你在需要時帶到別處繼續用。"
           }
         }
       }
@@ -3820,49 +3820,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Für Menschen, die gestalten"
+            "value" : "Ein Ort für Gedanken, bevor sie verloren gehen"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Built for People Who Create"
+            "value" : "A place for thoughts before they slip away"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hecho para quienes crean"
+            "value" : "Un lugar para tus ideas antes de que se escapen"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Conçu pour celles et ceux qui créent"
+            "value" : "Un endroit pour vos idées avant qu'elles ne s'échappent"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "つくる人のために"
+            "value" : "アイデアがこぼれ落ちる前の居場所"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "창작하는 사람들을 위해"
+            "value" : "생각이 흩어지기 전에 붙잡아둘 곳"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "为创作者而生"
+            "value" : "在想法溜走前，先接住它们的地方"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "為創作者而生"
+            "value" : "在想法溜走前，先接住它們的地方"
           }
         }
       }
@@ -3873,49 +3873,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "„Den Funken festhalten.\nSpäter formen.“"
+            "value" : "\"Erst raus damit.\nDann in Form bringen.\""
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Capture the spark.\nShape it later.\""
+            "value" : "\"Brain dump first.\nShape it later.\""
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "«Captura la chispa.\nDale forma después.»"
+            "value" : "\"Sácalo primero.\nDale forma después.\""
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "« Capture l’étincelle.\nFaçonne-la plus tard. »"
+            "value" : "\"Sortez-le d'abord.\nDonnez-lui une forme ensuite.\""
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「ひらめきをつかむ。\n形にするのはあとで。」"
+            "value" : "「まずはブレインダンプ。\n整えるのはあとで。」"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“반짝이는 순간을 붙잡고.\n다듬는 건 나중에.”"
+            "value" : "\"먼저 쏟아내고,\n나중에 다듬으세요.\""
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "“先抓住火花。\n稍后再雕琢。”"
+            "value" : "“先把想法说出来，\n再慢慢整理。”"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「先抓住火花。\n稍後再雕琢。」"
+            "value" : "「先把想法說出來，\n再慢慢整理。」"
           }
         }
       }
@@ -3926,49 +3926,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote ist für Menschen, die etwas erschaffen.\n\nEs existiert, um dir zu helfen, Ideen festzuhalten, solange sie noch lebendig sind, bevor sie wegredigiert, aufgeschoben oder vergessen werden. Sprich die rohe Version jetzt aus. Forme daraus etwas Nützliches, wenn du bereit bist."
+            "value" : "ChillNote ist da, damit sich ein Braindump leicht, schnell und lohnend anfühlt.\n\nEs hilft dir, Gedanken festzuhalten, solange sie noch lebendig sind, und sie dann in etwas Klares, Nützliches und Wiederverwendbares zu formen, wenn du bereit bist."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote is for people who create.\n\nIt exists to help you catch ideas while they are still alive, before they get edited away, delayed, or forgotten. Speak the rough version now. Shape it into something useful when you are ready."
+            "value" : "ChillNote exists to make brain dumping feel easy, fast, and worth returning to.\n\nIt helps you get thoughts out while they are still alive, then shape them into something clear, useful, and reusable when you are ready."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote es para la gente que crea.\n\nExiste para ayudarte a atrapar ideas mientras todavía están vivas, antes de que se editen de más, se pospongan o se olviden. Di ahora la versión en bruto. Cuando estés listo, conviértela en algo realmente útil."
+            "value" : "ChillNote existe para que la descarga mental se sienta fácil, rápida y valga la pena repetirla.\n\nTe ayuda a sacar tus pensamientos mientras todavía están vivos y luego a convertirlos en algo claro, útil y reutilizable cuando estés listo."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote est fait pour les personnes qui créent.\n\nIl existe pour vous aider à saisir les idées tant qu’elles sont encore vivantes, avant qu’elles ne soient trop éditées, repoussées ou oubliées. Dites d’abord la version brute. Transformez-la ensuite en quelque chose d’utile quand vous serez prêt."
+            "value" : "ChillNote existe pour que vider sa tête soit simple, rapide et donne envie d'y revenir.\n\nIl vous aide à sortir vos pensées tant qu'elles sont encore vivantes, puis à les transformer en quelque chose de clair, utile et réutilisable quand vous êtes prêt."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote は、何かを生み出す人のためのものです。\n\nアイデアがまだ生きているうちに、書き直されすぎたり、後回しにされたり、忘れられたりする前に、それをつかまえるために存在しています。まずは粗いまま話してください。準備ができたら、それを役立つ形へ整えればいいのです。"
+            "value" : "ChillNote は、ブレインダンプを気軽に、素早く、また戻ってきたくなるものにするためにあります。\n\nまだ生きている考えをまず外に出し、準備ができたときに、それを明確で役に立ち、再利用できる形へ整える手助けをします。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote는 창작하는 사람들을 위한 도구입니다.\n\n아이디어가 아직 살아 있을 때, 지나치게 다듬어지거나 미뤄지거나 잊히기 전에 먼저 붙잡을 수 있도록 존재합니다. 지금은 거친 버전 그대로 말하세요. 준비가 되었을 때 그것을 유용한 무언가로 다듬으면 됩니다."
+            "value" : "ChillNote는 생각 정리가 쉽고, 빠르고, 다시 돌아오고 싶은 일이 되도록 존재합니다.\n\n아직 살아 있는 생각을 먼저 꺼내고, 준비가 되었을 때 그것을 또렷하고 유용하며 다시 활용할 수 있는 형태로 다듬도록 도와줍니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 是为创作者而生的。\n\n它存在的意义，是帮你在想法还鲜活的时候先把它留住，在它被过度修改、拖延，或彻底遗忘之前。先把粗糙版本说出来，等你准备好了，再把它打磨成真正有用的东西。"
+            "value" : "ChillNote 的存在，是为了让“清空大脑”这件事变得轻松、快速，而且值得你一再回来使用。\n\n它帮助你在想法还鲜活的时候先把它说出来，等你准备好了，再把它整理成清晰、有用、还能反复利用的内容。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 是為創作者而生的。\n\n它存在的意義，是幫你在想法還鮮活的時候先把它留住，在它被過度修改、拖延，或徹底遺忘之前。先把粗糙版本說出來，等你準備好了，再把它打磨成真正有用的東西。"
+            "value" : "ChillNote 的存在，是為了讓「清空大腦」這件事變得輕鬆、快速，而且值得你一再回來使用。\n\n它幫助你在想法還鮮活的時候先把它說出來，等你準備好了，再把它整理成清晰、有用、還能反覆利用的內容。"
           }
         }
       }
@@ -4562,49 +4562,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Veröffentlichen"
+            "value" : "Handeln"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Publish"
+            "value" : "Act"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Publicar"
+            "value" : "Actuar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Publier"
+            "value" : "Agir"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "発信"
+            "value" : "行動"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "공유"
+            "value" : "실행"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "发布"
+            "value" : "行动"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "發佈"
+            "value" : "行動"
           }
         }
       }
@@ -8696,49 +8696,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Entwickelt für Menschen, die etwas erschaffen."
+            "value" : "Lass deine Ideen hier als Braindump raus."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Designed for people who create."
+            "value" : "Brain dump your ideas here."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diseñado para quienes crean."
+            "value" : "Vacía aquí tus ideas."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Conçu pour celles et ceux qui créent."
+            "value" : "Déversez vos idées ici."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "何かを生み出す人のために設計されています。"
+            "value" : "ここにアイデアを書き出そう。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "무언가를 만들어내는 사람들을 위해 설계되었습니다."
+            "value" : "여기에 아이디어를 쏟아두세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "为所有持续创造的人而设计。"
+            "value" : "把你的想法先倒在这里。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "為所有持續創造的人而設計。"
+            "value" : "把你的想法先倒在這裡。"
           }
         }
       }
@@ -20516,695 +20516,6 @@
         }
       }
     },
-    "home.first_use.card.skip" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Überspringen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skip"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Omitir"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Passer"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "スキップ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "건너뛰기"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "跳过"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "略過"
-          }
-        }
-      }
-    },
-    "home.first_use.card.tap_mic" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tippe unten auf das Mikrofon, um zu starten"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tap the mic below to start"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Toca el micrófono de abajo para empezar"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Touchez le micro ci-dessous pour commencer"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下のマイクをタップして始めましょう"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "아래 마이크를 눌러 시작하세요"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "点下面的麦克风开始"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "點下面的麥克風開始"
-          }
-        }
-      }
-    },
-    "home.first_use.card.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Starte in 3 Schritten"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Get started in 3 steps"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Empieza en 3 pasos"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Commencez en 3 étapes"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "3ステップで始めましょう"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "3단계로 시작해보세요"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "3 步开始上手"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "3 步開始上手"
-          }
-        }
-      }
-    },
-    "home.first_use.completion.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tippe beim nächsten Mal auf das Koala-Symbol, wähle eine Notiz aus und entscheide dich für einen Skill."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Next time, tap the koala icon, select a note, and choose a Skill."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La próxima vez, toca el icono del koala, selecciona una nota y elige un Skill."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "La prochaine fois, touchez l’icône koala, sélectionnez une note et choisissez un Skill."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "次からは、コアラのアイコンをタップしてノートを選び、Skill をひとつ選ぶだけです。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "다음부터는 코알라 아이콘을 누르고 노트를 선택한 뒤 Skill을 고르면 돼요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下次只要点一下考拉图标，选中一条笔记，再选择一个 Skill 就可以了。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "下次只要點一下考拉圖示，選取一條筆記，再選擇一個 Skill 就可以了。"
-          }
-        }
-      }
-    },
-    "home.first_use.completion.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Alles ist bereit!"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You're all set!"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "¡Todo está listo!"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Tout est pret !"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "準備は完了です！"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "모든 준비가 끝났어요!"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一切就绪！"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "一切就緒！"
-          }
-        }
-      }
-    },
-    "home.first_use.completion.try_another_skill" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Noch einen Skill ausprobieren"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Try another Skill"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Probar otro Skill"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Essayer un autre Skill"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "別の Skill を試す"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "다른 Skill 써보기"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "再试一个 Skill"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "再試一個 Skill"
-          }
-        }
-      }
-    },
-    "home.first_use.step.choose_skill" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Einen Skill auswählen"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose a Skill"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elige un Skill"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choisissez un Skill"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skill を選ぶ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skill 선택하기"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择一个 Skill"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "選擇一個 Skill"
-          }
-        }
-      }
-    },
-    "home.first_use.step.record" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nimm eine Notiz auf"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Record a note"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Graba una nota"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrez une note"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "ノートを録音する"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "노트 녹음하기"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "录一条笔记"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "錄一條筆記"
-          }
-        }
-      }
-    },
-    "home.first_use.step.select" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle diese Notiz aus"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Select that note"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Selecciona esa nota"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sélectionnez cette note"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "そのノートを選ぶ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "그 노트 선택하기"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选中那条笔记"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "選取那條筆記"
-          }
-        }
-      }
-    },
-    "home.first_use.subtitle.choose_skill" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle einen Skill aus und lass dir von ChillNote mit deiner Notiz helfen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choose a Skill and let ChillNote help with your note."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elige un Skill y deja que ChillNote te ayude con tu nota."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choisissez un Skill et laissez ChillNote vous aider avec votre note."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skill をひとつ選んで、このノートで ChillNote を試してみましょう。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Skill을 하나 골라 이 노트에서 ChillNote의 도움을 받아보세요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "选择一个 Skill，让 ChillNote 帮你处理这条笔记。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "選擇一個 Skill，讓 ChillNote 幫你處理這條筆記。"
-          }
-        }
-      }
-    },
-    "home.first_use.subtitle.completed" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du hast die erste Einführung schon abgeschlossen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You already finished the first-time guide."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ya terminaste la guía inicial."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous avez déjà terminé le guide de démarrage."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "最初のガイドはもう完了しています。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "첫 사용 가이드를 이미 완료했어요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你已经完成首次引导了。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你已經完成首次引導了。"
-          }
-        }
-      }
-    },
-    "home.first_use.subtitle.record" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nimm zuerst eine kurze Notiz auf. Du kannst alles sagen, was dir einfällt."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Record a quick note first. You can say anything."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Primero graba una nota rápida. Puedes decir cualquier cosa."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Enregistrez d’abord une note rapide. Vous pouvez dire ce que vous voulez."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "まずは短いノートを録音しましょう。内容は何でも大丈夫です。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "먼저 짧게 노트를 녹음해보세요. 어떤 내용이든 괜찮아요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "先随手录一条笔记。你想说什么都可以。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "先隨手錄一條筆記。你想說什麼都可以。"
-          }
-        }
-      }
-    },
-    "home.first_use.subtitle.select" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Super. Tippe jetzt auf das Koala-Symbol und wähle die Notiz aus, die du gerade aufgenommen hast."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nice. Now tap the koala icon and select the note you just recorded."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Bien. Ahora toca el icono del koala y selecciona la nota que acabas de grabar."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Parfait. Touchez maintenant l’icône koala et sélectionnez la note que vous venez d’enregistrer."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "いいですね。次はコアラのアイコンをタップして、今録音したノートを選びましょう。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "좋아요. 이제 코알라 아이콘을 누르고 방금 녹음한 노트를 선택해보세요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "很好。现在点一下考拉图标，选中你刚刚录好的那条笔记。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "很好。現在點一下考拉圖示，選取你剛剛錄好的那條筆記。"
-          }
-        }
-      }
-    },
     "home.header.accessibility.create_blank_note" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -22318,112 +21629,6 @@
         }
       }
     },
-    "home.selection_overlay.guide.choose_skill" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Super. Wähle jetzt einen Skill wie Summarize, um zu sehen, wie es funktioniert."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Great. Now choose a Skill like Summarize to see how it works."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Genial. Ahora elige un Skill como Summarize para ver cómo funciona."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Super. Choisissez maintenant un Skill comme Summarize pour voir comment cela fonctionne."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "いいですね。Summarize のような Skill を選んで、どう動くか試してみましょう。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "좋아요. Summarize 같은 Skill을 골라서 어떻게 동작하는지 확인해보세요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "很好。现在选一个像 Summarize 这样的 Skill，看看它是怎么工作的。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "很好。現在選一個像 Summarize 這樣的 Skill，看看它是怎麼運作的。"
-          }
-        }
-      }
-    },
-    "home.selection_overlay.guide.select_note" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle zuerst die Notiz aus, die du gerade aufgenommen hast, und wähle dann einen Skill aus."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Select the note you just recorded, then choose a Skill."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Selecciona la nota que acabas de grabar y luego elige un Skill."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Sélectionnez la note que vous venez d’enregistrer, puis choisissez un Skill."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "今録音したノートを選んでから、Skill を選んでください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "방금 녹음한 노트를 먼저 선택한 다음, Skill을 골라보세요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "先选中你刚录好的那条笔记，再选择一个 Skill。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "先選取你剛錄好的那條筆記，再選擇一個 Skill。"
-          }
-        }
-      }
-    },
     "home.selection_overlay.skills_title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -22589,49 +21794,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ich denke gerade über den Content für morgen nach ... ich sollte wahrscheinlich, äh, zuerst das Thema festlegen. Warte, nein, vielleicht sollte ich erst mal mit meinem Team sprechen. Ach, und denk dran, auf dem Heimweg Kaffee mitzunehmen."
+            "value" : "Ich denke gerade über den Ablauf von morgen nach ... ich sollte wahrscheinlich, äh, zuerst die Prioritäten klären. Warte, nein, vielleicht sollte ich erst mal mit meinem Team sprechen. Ach, und denk dran, auf dem Heimweg Kaffee mitzunehmen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I'm thinking about tomorrow's content... I should probably, uh, figure out the topic first. Wait, no, maybe I should talk to my team first. Also, remember to pick up coffee on the way home."
+            "value" : "I'm thinking about tomorrow's schedule... I should probably, uh, figure out the priorities first. Wait, no, maybe I should talk to my team first. Also, remember to pick up coffee on the way home."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estoy pensando en el contenido de mañana... debería, eh, definir primero el tema. Espera, no, mejor debería hablar primero con mi equipo. Ah, y acuérdate de pasar por café de camino a casa."
+            "value" : "Estoy pensando en el horario de mañana... debería, eh, aclarar primero las prioridades. Espera, no, mejor debería hablar primero con mi equipo. Ah, y acuérdate de pasar por café de camino a casa."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Je pense au contenu de demain... je devrais sans doute, euh, trouver le sujet d’abord. Attends, non, peut-être que je devrais d’abord en parler avec mon équipe. Ah, et pense à prendre du café en rentrant."
+            "value" : "Je pense au programme de demain... je devrais sans doute, euh, clarifier les priorités d'abord. Attends, non, peut-être que je devrais d'abord en parler avec mon équipe. Ah, et pense à prendre du café en rentrant."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "明日のコンテンツのことを考えてるんだけど……たぶん、えっと、まずはテーマを決めたほうがいいかな。待って、やっぱり先にチームに相談したほうがいいかも。あと、帰りにコーヒーを買うのも忘れないで。"
+            "value" : "明日の予定のことを考えてるんだけど……たぶん、えっと、まずは優先順位をはっきりさせたほうがいいかな。待って、やっぱり先にチームに相談したほうがいいかも。あと、帰りにコーヒーを買うのも忘れないで。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "내일 올릴 콘텐츠 생각 중인데... 아마, 음, 먼저 주제를 정해야 할 것 같아. 잠깐, 아니지, 먼저 팀이랑 얘기해 봐야 할지도. 아, 그리고 집에 가는 길에 커피 사는 것도 잊지 말고."
+            "value" : "내일 일정 생각 중인데... 아마, 음, 먼저 우선순위부터 정해야 할 것 같아. 잠깐, 아니지, 먼저 팀이랑 얘기해 봐야 할지도. 아, 그리고 집에 가는 길에 커피 사는 것도 잊지 말고."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我在想明天的内容……我可能得先，呃，把主题想清楚。等等，不对，也许我应该先和团队聊聊。还有，回家的路上记得买咖啡。"
+            "value" : "我在想明天的安排……我可能得先，呃，把优先级理清楚。等等，不对，也许我应该先和团队聊聊。还有，回家的路上记得买咖啡。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我在想明天的內容……我可能得先，呃，把主題想清楚。等等，不對，也許我應該先和團隊聊聊。還有，回家的路上記得買咖啡。"
+            "value" : "我在想明天的安排……我可能得先，呃，把優先順序理清楚。等等，不對，也許我應該先和團隊聊聊。還有，回家的路上記得買咖啡。"
           }
         }
       }
@@ -27994,49 +27199,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sie laufen alle auf eine Idee hinaus: Moderne Arbeit macht Menschen nicht nur beschäftigt, sondern zersplittert ihre Aufmerksamkeit und hinterlässt eine leise Erschöpfung."
+            "value" : "Sie kreisen alle um dasselbe Gefühl: Moderne Arbeit hält Menschen nicht nur beschäftigt. Sie zerteilt ihre Aufmerksamkeit immer weiter, bis selbst kleine Aufgaben anstrengend wirken."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "They all point to one idea: modern work does not just make people busy, it fragments their attention and leaves them feeling quietly exhausted."
+            "value" : "They all circle the same feeling: modern work doesn't just make people busy. It keeps splitting their attention, until even small tasks start to feel draining."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Todas apuntan a una misma idea: el trabajo moderno no solo nos mantiene ocupados, también fragmenta nuestra atención y nos deja agotados en silencio."
+            "value" : "Todas giran alrededor de la misma sensación: el trabajo moderno no solo mantiene a la gente ocupada. Va partiendo su atención, hasta que incluso las tareas pequeñas empiezan a sentirse agotadoras."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Elles pointent toutes vers la même idée : le travail moderne ne nous occupe pas seulement, il morcelle notre attention et nous laisse épuisés en silence."
+            "value" : "Elles tournent toutes autour de la même sensation : le travail moderne ne fait pas que nous occuper. Il continue de morceler notre attention, jusqu'à ce que même les petites tâches deviennent épuisantes."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "どのメモも一つの考えに向かっています。現代の仕事は人を忙しくするだけでなく、注意力を細かく分断し、静かに消耗させていくということです。"
+            "value" : "どのメモも、同じ感覚のまわりを回っています。現代の仕事は人を忙しくするだけではありません。注意力を少しずつ切り裂いていき、小さな作業でさえ消耗に感じられるようになります。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 메모들은 모두 한 가지를 말하고 있어. 현대의 일은 사람을 바쁘게 만들 뿐 아니라 주의를 산산이 쪼개 놓고, 모르게 지치게 만든다는 거야."
+            "value" : "이 메모들은 모두 같은 감정을 맴돌고 있어. 현대의 일은 사람을 바쁘게 만들기만 하는 게 아니야. 주의를 계속 잘라 놓아서, 작은 일조차도 버겁게 느껴지게 만들지."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "它们都在指向同一个意思：现代工作带来的不只是忙碌，它还会把人的注意力切碎，让人不知不觉地精疲力尽。"
+            "value" : "它们都围绕着同一种感受：现代工作带来的不只是忙碌。它会不断切碎人的注意力，直到连小事都开始让人觉得很耗神。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "它們都在指向同一個意思：現代工作帶來的不只是忙碌，它還會把人的注意力切碎，讓人不知不覺地精疲力盡。"
+            "value" : "它們都圍繞著同一種感受：現代工作帶來的不只是忙碌。它會不斷切碎人的注意力，直到連小事都開始讓人覺得很耗神。"
           }
         }
       }
@@ -28047,49 +27252,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Arbeit kann sich selbst an Tagen erschöpfend anfühlen, die kaum beschäftigt wirken.\n\nNicht, weil du zu viel getan hast.\nSondern weil deine Aufmerksamkeit den ganzen Tag in Stücke gerissen wurde.\n\nModerne Arbeit nimmt dir nicht nur Zeit.\nSie macht es schwer, auch nur eine Stunde lang wirklich präsent zu sein.\n\n#Produktivität #Aufmerksamkeit #Arbeitsleben"
+            "value" : "Ja. Der Kern ist: Erschöpfung kommt nicht immer von zu viel Arbeit. Manchmal kommt sie vom ständigen mentalen Umschalten.\n\nDu könntest das als Notiz über Aufmerksamkeit behalten, in eine kurze Zusammenfassung verwandeln oder später zu etwas Längerem ausbauen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Work feels exhausting even on days that barely look busy.\n\nNot because you did too much.\nBecause your attention got broken into pieces all day.\n\nModern work does not just take your time.\nIt makes it hard to feel fully present for even one hour.\n\n#Productivity #Attention #WorkLife"
+            "value" : "Yes. The core idea is that exhaustion doesn't always come from volume. Sometimes it comes from constant mental switching.\n\nYou could keep this as a note about attention, turn it into a short summary, or build it into a longer piece later."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "El trabajo puede sentirse agotador incluso en días que apenas parecen ocupados.\n\nNo porque hayas hecho demasiado.\nSino porque tu atención se pasó el día hecha pedazos.\n\nEl trabajo moderno no solo te quita tiempo.\nTambién hace difícil sentirte realmente presente aunque sea durante una hora.\n\n#Productividad #Atención #VidaLaboral"
+            "value" : "Sí. La idea central es que el agotamiento no siempre viene del volumen. A veces viene del cambio mental constante.\n\nPuedes dejar esto como una nota sobre la atención, convertirlo en un resumen breve o desarrollarlo más adelante en algo más largo."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le travail peut être épuisant même les jours qui n’ont pas l’air si chargés.\n\nPas parce que tu en as trop fait.\nMais parce que ton attention a été morcelée toute la journée.\n\nLe travail moderne ne te prend pas seulement du temps.\nIl rend difficile le fait d’être vraiment présent, même pendant une heure.\n\n#Productivité #Attention #ViePro"
+            "value" : "Oui. L'idée centrale, c'est que l'épuisement ne vient pas toujours de la quantité. Parfois, il vient du changement mental constant.\n\nVous pouvez garder cela comme une note sur l'attention, en faire un court résumé, ou le développer plus tard en quelque chose de plus long."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "そこまで忙しく見えない日でも、仕事でぐったりしてしまうことがある。\n\nやることが多すぎたからじゃない。\n一日中、注意力が細かく途切れ続けたからだ。\n\n現代の仕事が奪うのは時間だけじゃない。\nたった1時間でも、完全に集中していられる感覚を奪っていく。\n\n#生産性 #注意力 #働き方"
+            "value" : "はい。核にあるのは、疲れがいつも仕事量から来るわけではないということです。絶え間ない思考の切り替えから来ることもあります。\n\nこれは注意力についてのメモとして残してもいいし、短い要約にしてもいいし、あとで長めの内容に育ててもいいと思います。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "겉으로 보기엔 그다지 바쁘지 않은 날에도 일은 사람을 지치게 한다.\n\n너무 많은 일을 해서가 아니다.\n하루 종일 주의력이 잘게 쪼개졌기 때문이다.\n\n현대의 일은 시간을 빼앗는 데서 끝나지 않는다.\n단 한 시간이라도 온전히 집중하고 있다는 감각을 갖기 어렵게 만든다.\n\n#생산성 #집중력 #일하는삶"
+            "value" : "응. 핵심은 이거야. 피로가 항상 일의 양에서만 오는 건 아니라는 것. 때로는 계속되는 머릿속 전환에서 오기도 해.\n\n이건 주의력에 대한 메모로 남겨도 되고, 짧은 요약으로 바꿔도 되고, 나중에 더 긴 글감으로 키워도 돼."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "有些日子看起来明明没那么忙，工作却还是让人筋疲力尽。\n\n不是因为你做得太多。\n而是因为你的注意力一整天都被切得七零八落。\n\n现代工作拿走的不只是时间。\n它还让你连完整专注一个小时都变得很难。\n\n#效率 #注意力 #工作生活"
+            "value" : "可以。核心意思是：让人疲惫的，不一定总是任务太多。有时候，真正让人累的是不停地在脑子里切来切去。\n\n你可以先把它保留成一条关于注意力的笔记，也可以整理成一个简短总结，或者之后再扩展成更完整的内容。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "有些日子看起來明明沒那麼忙，工作卻還是讓人筋疲力盡。\n\n不是因為你做得太多。\n而是因為你的注意力一整天都被切得七零八落。\n\n現代工作拿走的不只是時間。\n它還讓你連完整專注一個小時都變得很難。\n\n#效率 #注意力 #工作生活"
+            "value" : "可以。核心意思是：讓人疲憊的，不一定總是任務太多。有時候，真正讓人累的是不停地在腦子裡切來切去。\n\n你可以先把它保留成一則關於注意力的筆記，也可以整理成一個簡短總結，或是之後再擴展成更完整的內容。"
           }
         }
       }
@@ -28100,49 +27305,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Diese Notizen hängen irgendwie zusammen, aber ich erkenne noch nicht, was der eigentliche Post daraus werden soll."
+            "value" : "Diese Gedanken fühlen sich verbunden an, aber ich sehe den roten Faden noch nicht ganz."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "These notes feel related, but I cannot tell what the actual post is."
+            "value" : "These thoughts feel connected, but I can't quite see the thread yet."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estas notas parecen conectadas, pero todavía no veo cuál sería la publicación real."
+            "value" : "Estos pensamientos se sienten conectados, pero todavía no termino de ver el hilo."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ces notes semblent liées, mais je n’arrive pas encore à voir quel post en tirer au juste."
+            "value" : "Ces pensées semblent liées, mais je n'arrive pas encore à voir le fil conducteur."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "このメモ同士はつながっている気がするけど、肝心の投稿として何を書けばいいのかがまだ見えていない。"
+            "value" : "この考えたちはつながっている気がするけど、まだ流れがはっきり見えてこない。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 메모들이 서로 이어져 있는 느낌은 있는데, 정작 어떤 글로 써야 할지는 아직 잘 모르겠어."
+            "value" : "이 생각들이 서로 이어져 있는 느낌은 드는데, 아직 흐름이 또렷하게 보이진 않아."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "这些笔记看起来彼此有关，但我还说不清最后到底该写成一条什么内容。"
+            "value" : "这些想法好像是连在一起的，但我还看不太清那条线。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "這些筆記看起來彼此有關，但我還說不清最後到底該寫成一則什麼內容。"
+            "value" : "這些想法好像是連在一起的，但我還看不太清那條線。"
           }
         }
       }
@@ -28153,49 +27358,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Kannst du daraus etwas machen, das ich wirklich posten könnte?"
+            "value" : "Kannst du das in etwas Klareres verwandeln, mit dem ich weiterarbeiten kann?"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Can you turn that into something I could actually post?"
+            "value" : "Can you pull that into something clearer I can keep working from?"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "¿Puedes convertir eso en algo que realmente podría publicar?"
+            "value" : "¿Puedes convertir eso en algo más claro sobre lo que pueda seguir trabajando?"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu peux transformer ça en quelque chose que je pourrais vraiment publier ?"
+            "value" : "Est-ce que tu peux transformer ça en quelque chose de plus clair sur lequel je puisse continuer à travailler ?"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "それを実際に投稿できる形にまとめてくれる？"
+            "value" : "これを、ここから続けて考えられるような、もっとはっきりした形にしてくれる？"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "그걸 내가 실제로 올릴 수 있는 글로 정리해줄래?"
+            "value" : "이걸 내가 계속 붙잡고 발전시킬 수 있게 좀 더 또렷한 형태로 정리해줄래?"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你能把这个整理成一段我真的能发出去的内容吗？"
+            "value" : "你能把它整理成一个更清楚、让我可以继续往下想的版本吗？"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你能把這個整理成一段我真的能發出去的內容嗎？"
+            "value" : "你能把它整理成一個更清楚、讓我可以繼續往下想的版本嗎？"
           }
         }
       }
@@ -28524,49 +27729,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Plane meinen nächsten Post"
+            "value" : "Finde den roten Faden"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Plan my next post"
+            "value" : "Find the thread"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ayúdame a planear mi próxima publicación"
+            "value" : "Encuentra el hilo"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aide-moi à préparer mon prochain post"
+            "value" : "Trouve le fil conducteur"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "次の投稿を考えて"
+            "value" : "流れを見つける"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "다음 게시물 구상해줘"
+            "value" : "흐름 찾기"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "帮我构思下一条内容"
+            "value" : "找出那条线"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "幫我構思下一則內容"
+            "value" : "找出那條線"
           }
         }
       }
@@ -28630,49 +27835,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deine Ideen werden gerade zu einem Post-Entwurf geformt..."
+            "value" : "Wir finden gerade den roten Faden in deinem Braindump..."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Shaping your ideas into a post draft..."
+            "value" : "Finding the thread in your brain dump..."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dando forma a tus ideas para convertirlas en un borrador de publicación..."
+            "value" : "Encontrando el hilo dentro de tu descarga mental..."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Transformation de vos idées en brouillon de post..."
+            "value" : "Nous cherchons le fil conducteur dans vos idées en vrac..."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "あなたの考えを投稿の下書きにまとめています..."
+            "value" : "あなたのブレインダンプの流れを見つけています..."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "아이디어를 게시물 초안으로 다듬는 중..."
+            "value" : "생각 정리 안에서 흐름을 찾는 중..."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在把你的想法整理成一篇帖子草稿..."
+            "value" : "正在帮你从清空大脑里找出那条线..."
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "正在把你的想法整理成一篇貼文草稿..."
+            "value" : "正在幫你從清空大腦裡找出那條線..."
           }
         }
       }
@@ -28683,49 +27888,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deine Notizen mit KI-Unterstützung"
+            "value" : "Entdecke Ideen mit KI"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your Notes, Powered by AI"
+            "value" : "Explore Ideas with AI"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tus notas, potenciadas por IA"
+            "value" : "Explora ideas con IA"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos notes, enrichies par l’IA"
+            "value" : "Explorez des idees avec l’IA"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AIが支えるあなたのノート"
+            "value" : "AIと一緒にアイデアを深めよう"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI로 더 똑똑해진 노트"
+            "value" : "AI와 함께 아이디어를 탐색하세요"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "由 AI 助力的笔记"
+            "value" : "用 AI 探索想法"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "由 AI 助力的筆記"
+            "value" : "用 AI 探索想法"
           }
         }
       }
@@ -29266,49 +28471,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Veröffentlichen"
+            "value" : "Handeln"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Publish"
+            "value" : "Act"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Publicar"
+            "value" : "Actuar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Publier"
+            "value" : "Agir"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "発信"
+            "value" : "行動"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "공유"
+            "value" : "실행"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "发布"
+            "value" : "行动"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "發佈"
+            "value" : "行動"
           }
         }
       }
@@ -29362,65 +28567,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "整理成形"
-          }
-        }
-      }
-    },
-    "onboarding.skills_intro.subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "ar" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "لا تكتب الأوامر. فقط انقر."
-          }
-        },
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Nicht tippen. Einfach tippen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Don't prompt. Just Tap."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No escribas. Solo toca."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pas besoin de prompt. Appuyez juste."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "プロンプト不要。ワンタップするだけ。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "프롬프트를 작성하지 마세요. 그냥 탭하세요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "不再写提示词，只需一键点击。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "不再寫提示句子，只需一鍵點擊。"
           }
         }
       }
@@ -29481,52 +28627,58 @@
     "onboarding.skills_intro.title" : {
       "extractionState" : "manual",
       "localizations" : {
+        "ar" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "أخرج أفكارك أولاً. صغها لاحقًا."
+          }
+        },
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Bearbeite Notizen mit KI"
+            "value" : "Erst raus damit. Dann formen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Edit notes with AI"
+            "value" : "Dump first, Shape later"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Edita notas con IA"
+            "value" : "Primero suéltalo. Luego dale forma."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Modifiez vos notes avec l'IA"
+            "value" : "Sortez les idées d'abord. Donnez-leur une forme ensuite."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AIでメモを編集"
+            "value" : "まずはブレインダンプ。整えるのはあとで。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI로 메모 편집"
+            "value" : "먼저 쏟아내고, 정리는 나중에 하세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "用 AI 编辑笔记"
+            "value" : "先把想法说出来，再慢慢整理。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "用 AI 編輯筆記"
+            "value" : "先把想法說出來，再慢慢整理。"
           }
         }
       }
@@ -30120,49 +29272,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ich denke gerade über den Content für morgen nach ... ich sollte wahrscheinlich, äh, zuerst das Thema festlegen. Warte, nein, vielleicht sollte ich erst mal mit meinem Team sprechen. Ach, und denk dran, auf dem Heimweg Kaffee mitzunehmen."
+            "value" : "Ich denke gerade über den Ablauf von morgen nach ... ich sollte wahrscheinlich, äh, zuerst die Prioritäten klären. Warte, nein, vielleicht sollte ich erst mal mit meinem Team sprechen. Ach, und denk dran, auf dem Heimweg Kaffee mitzunehmen."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "I'm thinking about tomorrow's content... I should probably, uh, figure out the topic first. Wait, no, maybe I should talk to my team first. Also, remember to pick up coffee on the way home."
+            "value" : "I'm thinking about tomorrow's schedule... I should probably, uh, figure out the priorities first. Wait, no, maybe I should talk to my team first. Also, remember to pick up coffee on the way home."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Estoy pensando en el contenido de mañana... debería, eh, definir primero el tema. Espera, no, mejor debería hablar primero con mi equipo. Ah, y acuérdate de pasar por café de camino a casa."
+            "value" : "Estoy pensando en el horario de mañana... debería, eh, aclarar primero las prioridades. Espera, no, mejor debería hablar primero con mi equipo. Ah, y acuérdate de pasar por café de camino a casa."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Je pense au contenu de demain... je devrais sans doute, euh, trouver le sujet d’abord. Attends, non, peut-être que je devrais d’abord en parler avec mon équipe. Ah, et pense à prendre du café en rentrant."
+            "value" : "Je pense au programme de demain... je devrais sans doute, euh, clarifier les priorités d'abord. Attends, non, peut-être que je devrais d'abord en parler avec mon équipe. Ah, et pense à prendre du café en rentrant."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "明日のコンテンツのことを考えてるんだけど……たぶん、えっと、まずはテーマを決めたほうがいいかな。待って、やっぱり先にチームに相談したほうがいいかも。あと、帰りにコーヒーを買うのも忘れないで。"
+            "value" : "明日の予定のことを考えてるんだけど……たぶん、えっと、まずは優先順位をはっきりさせたほうがいいかな。待って、やっぱり先にチームに相談したほうがいいかも。あと、帰りにコーヒーを買うのも忘れないで。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "내일 올릴 콘텐츠 생각 중인데... 아마, 음, 먼저 주제를 정해야 할 것 같아. 잠깐, 아니지, 먼저 팀이랑 얘기해 봐야 할지도. 아, 그리고 집에 가는 길에 커피 사는 것도 잊지 말고."
+            "value" : "내일 일정 생각 중인데... 아마, 음, 먼저 우선순위부터 정해야 할 것 같아. 잠깐, 아니지, 먼저 팀이랑 얘기해 봐야 할지도. 아, 그리고 집에 가는 길에 커피 사는 것도 잊지 말고."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我在想明天的内容……我可能得先，呃，把主题想清楚。等等，不对，也许我应该先和团队聊聊。还有，回家的路上记得买咖啡。"
+            "value" : "我在想明天的安排……我可能得先，呃，把优先级理清楚。等等，不对，也许我应该先和团队聊聊。还有，回家的路上记得买咖啡。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "我在想明天的內容……我可能得先，呃，把主題想清楚。等等，不對，也許我應該先和團隊聊聊。還有，回家的路上記得買咖啡。"
+            "value" : "我在想明天的安排……我可能得先，呃，把優先順序理清楚。等等，不對，也許我應該先和團隊聊聊。還有，回家的路上記得買咖啡。"
           }
         }
       }
@@ -33618,49 +32770,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Veröffentlichen"
+            "value" : "Handeln"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Publish"
+            "value" : "Act"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Publicar"
+            "value" : "Actuar"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Publier"
+            "value" : "Agir"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "発信"
+            "value" : "行動"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "공유"
+            "value" : "실행"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "发布"
+            "value" : "行动"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "發佈"
+            "value" : "行動"
           }
         }
       }
@@ -34509,165 +33661,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "還沒有 Skills"
-          }
-        }
-      }
-    },
-    "recipes.first_try.message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Wähle einfach eins aus. Füge es jetzt hinzu und wende es dann sofort auf die Notiz an, die du gerade aufgenommen hast."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Pick just one. Add it now, then go right back and run it on the note you just recorded."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Elige solo uno. Añádelo ahora y vuelve enseguida para usarlo en la nota que acabas de grabar."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Choisissez-en juste un. Ajoutez-le maintenant, puis revenez aussitôt l'utiliser sur la note que vous venez d'enregistrer."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "まずは1つだけ選びましょう。今追加して、さっき録音したノートですぐ試してみてください。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "하나만 골라보세요. 지금 추가한 뒤, 방금 녹음한 노트에 바로 실행해보세요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "先挑一个就好。现在把它加进去，然后马上回去用在你刚录下来的那条笔记上。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "先挑一個就好。現在把它加進去，然後馬上回去用在你剛錄下來的那條筆記上。"
-          }
-        }
-      }
-    },
-    "recipes.first_try.summarize_subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Verwandle eine verstreute Sprachmemo in eine kurze Zusammenfassung."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Turn a rambling voice note into a short summary."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Convierte una nota de voz desordenada en un resumen breve."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Transformez une note vocale décousue en un court résumé."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "まとまりのない音声メモを短い要約にまとめます。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "두서없는 음성 메모를 짧은 요약으로 정리해 줍니다."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "把一段零散的语音笔记整理成简短摘要。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "把一段零散的語音筆記整理成簡短摘要。"
-          }
-        }
-      }
-    },
-    "recipes.first_try.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Empfohlen für den ersten Versuch"
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recommended for your first try"
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recomendado para tu primer intento"
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Recommandé pour votre premier essai"
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "初めての方向けのオススメ"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "첫 번째 시도에 권장됨"
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "适合初次使用的推荐项"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "適合初次使用的推薦項"
           }
         }
       }
@@ -46228,49 +45221,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Schalte das volle Potenzial von ChillNote frei"
+            "value" : "Halte mehr Gedanken fest und bring sie mit KI in Form."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Unlock the full power of ChillNote"
+            "value" : "Capture more thoughts and shape them with AI."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Desbloquea todo el potencial de ChillNote"
+            "value" : "Captura más ideas y dales forma con IA."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Débloquez tout le potentiel de ChillNote"
+            "value" : "Capturez plus d'idées et donnez-leur une forme avec l'IA."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNoteの全機能を解放"
+            "value" : "もっと多くのアイデアを残して、AIで形にしましょう。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote의 모든 기능을 잠금 해제하세요"
+            "value" : "더 많은 생각을 담아두고 AI로 다듬어보세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "解锁 ChillNote 的全部能力"
+            "value" : "记录更多想法，再用 AI 把它们整理成形。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "解鎖 ChillNote 的完整能力"
+            "value" : "記下更多想法，再用 AI 把它們整理成形。"
           }
         }
       }
@@ -51258,59 +50251,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "昨天 %@"
-          }
-        }
-      }
-    },
-    "You already finished the first-time guide." : {
-      "extractionState" : "stale",
-      "localizations" : {
-        "de" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Du hast die erste Einführung schon abgeschlossen."
-          }
-        },
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "You already finished the first-time guide."
-          }
-        },
-        "es" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Ya terminaste la guía inicial."
-          }
-        },
-        "fr" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Vous avez déjà terminé le guide de démarrage."
-          }
-        },
-        "ja" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "最初のガイドはもう完了しています。"
-          }
-        },
-        "ko" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "첫 사용 가이드를 이미 완료했어요."
-          }
-        },
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你已经完成首次引导了。"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "你已經完成首次引導了。"
           }
         }
       }

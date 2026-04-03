@@ -73,7 +73,6 @@ extension HomeView {
             isSelectionMode = true
             selectedNotes.removeAll()
         }
-        syncFirstUseGuideState()
     }
 
     func exitSelectionMode() {
@@ -91,7 +90,6 @@ extension HomeView {
                 selectedNotes.insert(note.id)
             }
         }
-        syncFirstUseGuideState()
     }
 
     func selectAllNotes() {
