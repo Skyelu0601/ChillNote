@@ -247,6 +247,38 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertEqual(fetched[0].updatedAt, anchor)
     }
 
+    func testApplyRemoteDoesNotCreateConflictCopyNotes() throws {
+        let userId = "u1"
+        let base = Date(timeIntervalSince1970: 1_700_000_000)
+
+        let response = SyncResponse(
+            cursor: "1",
+            changes: SyncChanges(
+                notes: [],
+                tags: nil,
+                hardDeletedNoteIds: nil,
+                hardDeletedTagIds: nil,
+                preferences: nil
+            ),
+            conflicts: [
+                ConflictDTO(
+                    entityType: "note",
+                    id: UUID().uuidString,
+                    serverVersion: 2,
+                    serverContent: "server",
+                    clientContent: "client",
+                    message: "笔记在其他设备已更新，发生冲突。"
+                )
+            ],
+            serverTime: iso(base)
+        )
+
+        engine.apply(remote: response, context: context, userId: userId)
+
+        let fetched = try context.fetch(FetchDescriptor<Note>())
+        XCTAssertTrue(fetched.isEmpty, "同步层不应再为冲突创建副本笔记")
+    }
+
     private func iso(_ date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]

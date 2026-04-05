@@ -11,17 +11,9 @@ struct RecordingOverlayView: View {
     @State private var didTriggerStartHaptic = false
     @State private var pendingSave = false
     @State private var didTriggerLimit = false
-    @State private var activePaywallContext: PaywallContext?
     @State private var showSubscription = false
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
-    
-    private func openSubscriptionFromUpgrade() {
-        activePaywallContext = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            showSubscription = true
-        }
-    }
     
     var body: some View {
         ZStack {
@@ -207,7 +199,7 @@ struct RecordingOverlayView: View {
             case .error(let message):
                 if message.localizedCaseInsensitiveContains("daily free voice limit reached")
                     || message.localizedCaseInsensitiveContains("daily voice limit reached") {
-                    activePaywallContext = .dailyVoiceLimit
+                    showSubscription = true
                 } else {
                     notificationHaptic(type: .error)
                 }
@@ -229,7 +221,7 @@ struct RecordingOverlayView: View {
             if elapsed >= limit && !didTriggerLimit {
                 didTriggerLimit = true
                 if StoreService.shared.currentTier == .free {
-                    activePaywallContext = .recordingTimeLimit
+                    showSubscription = true
                 }
                 finishRecording()
             }
@@ -242,15 +234,6 @@ struct RecordingOverlayView: View {
                 print("📍 After stopRecording()")
                 speechRecognizer.shouldStop = false
             }
-        }
-        .sheet(item: $activePaywallContext) { context in
-            UpgradeBottomSheet(
-                content: context.content,
-                onUpgrade: openSubscriptionFromUpgrade,
-                onDismiss: { activePaywallContext = nil }
-            )
-            .presentationDetents([.height(context.content.preferredSheetHeight), .large])
-            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
@@ -305,7 +288,7 @@ struct RecordingOverlayView: View {
         Task { @MainActor in
             let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
             guard canRecord else {
-                activePaywallContext = .dailyVoiceLimit
+                showSubscription = true
                 return
             }
             let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)

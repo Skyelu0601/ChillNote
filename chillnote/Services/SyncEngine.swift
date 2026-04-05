@@ -238,37 +238,6 @@ struct SyncEngine {
         }
 
         print("[TIME] SyncEngine.apply total: \(String(format: "%.3f", CFAbsoluteTimeGetCurrent() - start))s")
-        applyConflicts(remote.conflicts, context: context, userId: userId)
-    }
-
-    private func applyConflicts(_ conflicts: [ConflictDTO], context: ModelContext, userId: String) {
-        guard !conflicts.isEmpty else { return }
-        let now = Date()
-        for conflict in conflicts where conflict.entityType == "note" || conflict.entityType == "tag" {
-            // Ignore idempotent replay conflicts (same content on both sides),
-            // which can happen when duplicate sync requests overlap.
-            let serverText = conflict.serverContent?.trimmingCharacters(in: .whitespacesAndNewlines)
-            let clientText = conflict.clientContent?.trimmingCharacters(in: .whitespacesAndNewlines)
-            if serverText == clientText {
-                continue
-            }
-            let combinedContent = """
-            ## Conflict Copy (\(conflict.entityType.uppercased()))
-            - Entity ID: \(conflict.id)
-            - Server version: \(conflict.serverVersion)
-            - Notes: \(conflict.message)
-
-            ### Server Content
-            \(conflict.serverContent ?? "")
-
-            ### Local Content
-            \(conflict.clientContent ?? "")
-            """
-            let note = Note(content: combinedContent, userId: userId)
-            note.updatedAt = now
-            note.version = 1
-            context.insert(note)
-        }
     }
 
     private func normalizeSyncedUpdatedAt(_ updatedAt: Date, localSyncAnchor: Date) -> Date {

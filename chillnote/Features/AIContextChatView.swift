@@ -182,7 +182,6 @@ struct AIContextChatView: View {
     @State private var errorMessage: String?
     @FocusState private var isInputFocused: Bool
     @State private var isContextExpanded = false // Collapsible context state
-    @State private var activePaywallContext: PaywallContext?
     @State private var showSubscription = false
     @StateObject private var recipeManager = RecipeManager.shared
     @State private var highlightedContextNoteID: UUID?
@@ -202,13 +201,6 @@ struct AIContextChatView: View {
     private let recentHistoryLimit = 8
     private let summaryMessageLimit = 12
     private let summarySnippetLimit = 160
-    
-    private func openSubscriptionFromUpgrade() {
-        activePaywallContext = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            showSubscription = true
-        }
-    }
     
     var body: some View {
         return NavigationStack {
@@ -321,15 +313,6 @@ struct AIContextChatView: View {
         }
         .onDisappear {
             highlightResetTask?.cancel()
-        }
-        .sheet(item: $activePaywallContext) { context in
-            UpgradeBottomSheet(
-                content: context.content,
-                onUpgrade: openSubscriptionFromUpgrade,
-                onDismiss: { activePaywallContext = nil }
-            )
-            .presentationDetents([.height(context.content.preferredSheetHeight), .large])
-            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
@@ -505,7 +488,7 @@ struct AIContextChatView: View {
                     let message = error.localizedDescription
                     if message.localizedCaseInsensitiveContains("daily free ai chat limit reached") {
                         errorMessage = nil
-                        activePaywallContext = .dailyChatLimit
+                        showSubscription = true
                     } else {
                         errorMessage = String(
                             format: L10n.text("ai_chat.error.issue_format"),

@@ -26,7 +26,6 @@ struct ChatInputBar: View {
 
     @State private var elapsed: TimeInterval = 0
     @State private var didTriggerLimit = false
-    @State private var activePaywallContext: PaywallContext?
     @State private var showSubscription = false
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -37,13 +36,6 @@ struct ChatInputBar: View {
         let current = formatter.string(from: elapsed) ?? "00:00"
         let maxTime = formatter.string(from: storeService.recordingTimeLimit) ?? "01:00"
         return "\(current) / \(maxTime)"
-    }
-
-    private func openSubscriptionFromUpgrade() {
-        activePaywallContext = nil
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
-            showSubscription = true
-        }
     }
 
     var body: some View {
@@ -105,7 +97,7 @@ struct ChatInputBar: View {
             if elapsed >= storeService.recordingTimeLimit, speechRecognizer.isRecording {
                 if storeService.currentTier == .free && !didTriggerLimit {
                     didTriggerLimit = true
-                    activePaywallContext = .recordingTimeLimit
+                    showSubscription = true
                 }
                 onConfirmVoice()
             }
@@ -115,15 +107,6 @@ struct ChatInputBar: View {
             if speechRecognizer.recordingState == .recording {
                 didTriggerLimit = false
             }
-        }
-        .sheet(item: $activePaywallContext) { context in
-            UpgradeBottomSheet(
-                content: context.content,
-                onUpgrade: openSubscriptionFromUpgrade,
-                onDismiss: { activePaywallContext = nil }
-            )
-            .presentationDetents([.height(context.content.preferredSheetHeight), .large])
-            .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
@@ -339,7 +322,7 @@ struct ChatInputBar: View {
             let canRecord = await storeService.checkDailyQuotaOnServer(feature: .voice)
             guard canRecord else {
                 await MainActor.run {
-                    activePaywallContext = .dailyVoiceLimit
+                    showSubscription = true
                 }
                 return
             }

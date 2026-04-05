@@ -34,22 +34,6 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
                     ShareSheet(activityItems: [exportURL])
                 }
             }
-            .sheet(item: $viewModel.activePaywallContext) { context in
-                UpgradeBottomSheet(
-                    content: context.content,
-                    onUpgrade: {
-                        viewModel.activePaywallContext = nil
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                            viewModel.showSubscription = true
-                        }
-                    },
-                    onDismiss: {
-                        viewModel.activePaywallContext = nil
-                    }
-                )
-                .presentationDetents([.height(context.content.preferredSheetHeight), .large])
-                .presentationDragIndicator(.visible)
-            }
             .sheet(isPresented: $viewModel.showSubscription) {
                 SubscriptionView()
             }

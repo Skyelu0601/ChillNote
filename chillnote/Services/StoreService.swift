@@ -194,7 +194,7 @@ struct SubscriptionDisplayInfo: Equatable {
             .replacingOccurrences(of: "%@", with: trialDurationText)
         } else {
             ctaText = String(
-                localized: isAnnual ? "Start Annual Plan" : "Start Monthly Plan",
+                localized: isAnnual ? "subscription.cta.start_annual" : "subscription.cta.start_monthly",
                 locale: locale
             )
         }

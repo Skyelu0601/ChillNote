@@ -58,7 +58,6 @@ struct HomeView: View {
     @State var showRecipeHardLimitAlert = false
     @State var pendingRecipeForConfirmation: AgentRecipe?
 
-    @State var activePaywallContext: PaywallContext?
     @State var showSubscription = false
 
     let translateLanguages: [TranslateLanguage] = [
@@ -281,7 +280,7 @@ struct HomeView: View {
                 let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
                 guard canRecord else {
                     await MainActor.run {
-                        activePaywallContext = .dailyVoiceLimit
+                        showSubscription = true
                     }
                     return
                 }
@@ -311,20 +310,6 @@ struct HomeView: View {
 
     private var homeViewWithModals: some View {
         homeViewWithLifecycleHandlers
-        .sheet(item: $activePaywallContext) { context in
-            UpgradeBottomSheet(
-                content: context.content,
-                onUpgrade: {
-                    activePaywallContext = nil
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                        showSubscription = true
-                    }
-                },
-                onDismiss: { activePaywallContext = nil }
-            )
-            .presentationDetents([.height(context.content.preferredSheetHeight), .large])
-            .presentationDragIndicator(.visible)
-        }
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
         }

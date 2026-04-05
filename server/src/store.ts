@@ -80,22 +80,13 @@ export async function getChangesSinceCursor(userId: string, cursor?: string | nu
     const tags = await prisma.tag.findMany({
       where: { userId }
     });
-    const tombstones = await prisma.hardDeleteTombstone.findMany({
-      where: { userId }
-    });
-    const hardDeletedNoteIds = tombstones
-      .filter((item) => item.entityType === "note")
-      .map((item) => item.entityId);
-    const hardDeletedTagIds = tombstones
-      .filter((item) => item.entityType === "tag")
-      .map((item) => item.entityId);
     return {
       cursor: String(newCursor),
       changes: {
         notes: notes.map(mapNoteToDTO),
         tags: tags.map(mapTagToDTO),
-        hardDeletedNoteIds,
-        hardDeletedTagIds
+        hardDeletedNoteIds: [],
+        hardDeletedTagIds: []
       }
     };
   }
@@ -187,6 +178,13 @@ export async function upsertTag(
       parentId: setParent ? incoming.parentId ?? null : null
     }
   });
+  await prisma.hardDeleteTombstone.deleteMany({
+    where: {
+      userId,
+      entityType: "tag",
+      entityId: incoming.id
+    }
+  });
 }
 
 export async function upsertNote(userId: string, incoming: NoteDTO): Promise<void> {
@@ -220,6 +218,13 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
       version: incoming.version ?? 1,
       lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null,
       tags: tagIds ? { connect: tagIds.map((tagId) => ({ id: tagId })) } : undefined
+    }
+  });
+  await prisma.hardDeleteTombstone.deleteMany({
+    where: {
+      userId,
+      entityType: "note",
+      entityId: incoming.id
     }
   });
 }

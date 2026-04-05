@@ -35,24 +35,6 @@ function pickLatestByClientTime<T extends { id: string; clientUpdatedAt?: string
   return deduped;
 }
 
-function buildConflict(params: {
-  entityType: "note" | "tag";
-  id: string;
-  serverVersion: number;
-  serverContent?: string | null;
-  clientContent?: string | null;
-  message: string;
-}): ConflictDTO {
-  return {
-    entityType: params.entityType,
-    id: params.id,
-    serverVersion: params.serverVersion,
-    serverContent: params.serverContent ?? null,
-    clientContent: params.clientContent ?? null,
-    message: params.message
-  };
-}
-
 export async function applySync(payload: SyncPayload, userId: string): Promise<{
   conflicts: ConflictDTO[];
   forcedHardDeletedNoteIds: string[];
@@ -68,7 +50,7 @@ export async function applySync(payload: SyncPayload, userId: string): Promise<{
   const hardDeletedNoteIds = Array.from(new Set((payload.hardDeletedNoteIds ?? []).filter((id): id is string => !!id)));
   const hardDeletedTagIds = Array.from(new Set((payload.hardDeletedTagIds ?? []).filter((id): id is string => !!id)));
 
-  // 0) Apply hard deletes first and persist tombstones to prevent resurrection.
+  // 0) Apply hard deletes first. Later uploads are allowed to recreate the entity.
   for (const noteId of hardDeletedNoteIds) {
     const existing = await prisma.note.findFirst({
       where: { id: noteId, userId }
@@ -79,23 +61,6 @@ export async function applySync(payload: SyncPayload, userId: string): Promise<{
         where: { id: noteId }
       });
     }
-
-    await prisma.hardDeleteTombstone.upsert({
-      where: {
-        userId_entityType_entityId: {
-          userId,
-          entityType: "note",
-          entityId: noteId
-        }
-      },
-      update: { deletedAt: now },
-      create: {
-        userId,
-        entityType: "note",
-        entityId: noteId,
-        deletedAt: now
-      }
-    });
 
     await logSyncChange({
       userId,
@@ -118,23 +83,6 @@ export async function applySync(payload: SyncPayload, userId: string): Promise<{
       });
     }
 
-    await prisma.hardDeleteTombstone.upsert({
-      where: {
-        userId_entityType_entityId: {
-          userId,
-          entityType: "tag",
-          entityId: tagId
-        }
-      },
-      update: { deletedAt: now },
-      create: {
-        userId,
-        entityType: "tag",
-        entityId: tagId,
-        deletedAt: now
-      }
-    });
-
     await logSyncChange({
       userId,
       entityType: "tag",
@@ -150,49 +98,9 @@ export async function applySync(payload: SyncPayload, userId: string): Promise<{
   const tagsToApply: TagDTO[] = [];
 
   for (const tag of dedupedTags.values()) {
-    const tombstone = await prisma.hardDeleteTombstone.findUnique({
-      where: {
-        userId_entityType_entityId: {
-          userId,
-          entityType: "tag",
-          entityId: tag.id
-        }
-      }
-    });
-    if (tombstone) {
-      // Tombstone already exists: no need to write another hard_delete log entry.
-      // Repeated stale payloads should return conflicts without growing sync logs.
-      forcedHardDeletedTagIds.add(tag.id);
-      conflicts.push(
-        buildConflict({
-          entityType: "tag",
-          id: tag.id,
-          serverVersion: 0,
-          serverContent: null,
-          clientContent: tag.name,
-          message: "Tag 在其他设备已被永久删除。"
-        })
-      );
-      continue;
-    }
-
     const existing = await prisma.tag.findFirst({
       where: { id: tag.id, userId }
     });
-    const baseVersion = tag.baseVersion ?? 0;
-    if (existing && baseVersion < (existing.version ?? 0)) {
-      conflicts.push(
-        buildConflict({
-          entityType: "tag",
-          id: tag.id,
-          serverVersion: existing.version ?? 0,
-          serverContent: existing.name,
-          clientContent: tag.name,
-          message: "Tag 在其他设备已更新，发生冲突。"
-        })
-      );
-      continue;
-    }
     const nextVersion = (existing?.version ?? 0) + 1;
     const isDelete = !!tag.deletedAt;
     const serverDeletedAt = isDelete ? nowIso : null;
@@ -225,48 +133,9 @@ export async function applySync(payload: SyncPayload, userId: string): Promise<{
   // 2) Notes: dedupe and apply changes with tag relations.
   const dedupedNotes = pickLatestByClientTime<NoteDTO>(payload.notes);
   for (const note of dedupedNotes.values()) {
-    const tombstone = await prisma.hardDeleteTombstone.findUnique({
-      where: {
-        userId_entityType_entityId: {
-          userId,
-          entityType: "note",
-          entityId: note.id
-        }
-      }
-    });
-    if (tombstone) {
-      // Tombstone already exists: keep this idempotent and avoid duplicate sync logs.
-      forcedHardDeletedNoteIds.add(note.id);
-      conflicts.push(
-        buildConflict({
-          entityType: "note",
-          id: note.id,
-          serverVersion: 0,
-          serverContent: null,
-          clientContent: note.content,
-          message: "笔记在其他设备已被永久删除。"
-        })
-      );
-      continue;
-    }
-
     const existing = await prisma.note.findFirst({
       where: { id: note.id, userId }
     });
-    const baseVersion = note.baseVersion ?? 0;
-    if (existing && baseVersion < (existing.version ?? 0)) {
-      conflicts.push(
-        buildConflict({
-          entityType: "note",
-          id: note.id,
-          serverVersion: existing.version ?? 0,
-          serverContent: existing.content,
-          clientContent: note.content,
-          message: "笔记在其他设备已更新，发生冲突。"
-        })
-      );
-      continue;
-    }
 
     const nextVersion = (existing?.version ?? 0) + 1;
     const isDelete = !!note.deletedAt;

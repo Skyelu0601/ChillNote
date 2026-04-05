@@ -825,7 +825,7 @@ private extension SettingsView {
 
     func handleExportAllTap() {
         guard authService.isSignedIn else {
-            bannerData = BannerData(message: "Sign in required to export.", style: .warning)
+            bannerData = BannerData(message: L10n.text("export.error.sign_in_required"), style: .warning)
             return
         }
         exportViewModel.resetEstimate()

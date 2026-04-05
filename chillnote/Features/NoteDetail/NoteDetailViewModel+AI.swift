@@ -32,7 +32,7 @@ extension NoteDetailViewModel {
             isProcessing = false
             let message = error.localizedDescription
             if message.localizedCaseInsensitiveContains("daily free tidy limit reached") {
-                activePaywallContext = .dailyTidyLimit
+                showSubscription = true
             }
         }
     }
