@@ -13,7 +13,7 @@ struct ContentView: View {
                 if authService.canOptimisticallyEnterHome {
                     HomeView()
                 } else {
-                    ProgressView("Checking session...")
+                    ProgressView(L10n.text("auth.session.checking"))
                 }
             case .signedIn:
                 HomeView()

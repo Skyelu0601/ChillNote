@@ -319,14 +319,19 @@ struct ChatInputBar: View {
         }
 
         Task {
-            let canRecord = await storeService.checkDailyQuotaOnServer(feature: .voice)
-            guard canRecord else {
+            let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
+            guard hasConsent else { return }
+
+            let authorized = await storeService.authorizeVoiceRecordingStart()
+            guard authorized else {
                 await MainActor.run {
                     showSubscription = true
                 }
                 return
             }
-            _ = await speechRecognizer.startRecordingIfPermitted(countsTowardQuota: true)
+            await MainActor.run {
+                speechRecognizer.startRecording(countsTowardQuota: false)
+            }
         }
     }
 }

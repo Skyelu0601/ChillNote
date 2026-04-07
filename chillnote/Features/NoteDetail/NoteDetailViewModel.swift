@@ -9,6 +9,9 @@ final class NoteDetailViewModel: ObservableObject {
         var checkDailyQuota: (DailyQuotaFeature) async -> Bool = { feature in
             await StoreService.shared.checkDailyQuotaOnServer(feature: feature)
         }
+        var authorizeVoiceRecordingStart: () async -> Bool = {
+            await StoreService.shared.authorizeVoiceRecordingStart()
+        }
         var executeTidy: (String) async throws -> String = { content in
             let action = AIQuickAction.ActionType.smartFormat.defaultAction
             return try await action.execute(on: content)
@@ -293,21 +296,22 @@ final class NoteDetailViewModel: ObservableObject {
 
     func startRecording() {
         Task {
-            let canRecord = await dependencies.checkDailyQuota(.voice)
-            guard canRecord else {
+            let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
+            guard hasConsent else { return }
+
+            let authorized = await dependencies.authorizeVoiceRecordingStart()
+            guard authorized else {
                 showSubscription = true
                 return
             }
 
             guard let speechRecognizer else { return }
-            let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
-            guard hasConsent else { return }
             noteInitiatedRecording = true
             isVoiceMode = true
             recordingDuration = 0
             awaitingVoiceEditResult = false
             speechRecognizer.transcript = ""
-            speechRecognizer.startRecording(countsTowardQuota: true)
+            speechRecognizer.startRecording(countsTowardQuota: false)
         }
     }
 

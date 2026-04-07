@@ -61,10 +61,10 @@ struct SettingsView: View {
             }
             .navigationBarHidden(true)
             .sheet(isPresented: $showPrivacy) {
-                LegalTextView(title: L10n.text("settings.support.privacy_policy"), bodyText: privacyText)
+                LegalTextView(title: L10n.text("settings.support.privacy_policy"), bodyKey: "settings.support.privacy_policy_body")
             }
             .sheet(isPresented: $showAgreement) {
-                LegalTextView(title: L10n.text("settings.support.user_agreement"), bodyText: agreementText)
+                LegalTextView(title: L10n.text("settings.support.user_agreement"), bodyKey: "settings.support.user_agreement_body")
             }
             .sheet(isPresented: $showAbout) {
                 AboutView()
@@ -832,58 +832,6 @@ private extension SettingsView {
         showExportAllSheet = true
     }
     
-    var privacyText: String {
-        """
-        ChillNote stores your notes locally and syncs them to the cloud when you're signed in. We protect your data in transit and at rest.
-
-        When you choose to use AI features, the audio or text needed for that request may be sent to ChillNote's secure server and to Google Gemini for processing. We and our third-party partners do not use your notes or recordings to train models.
-
-        Raw audio is processed ephemerally for transcription and is not retained on our servers after processing. Pending recordings may be stored locally on your device for crash recovery and are deleted after successful processing or within 7 days.
-        """
-    }
-    
-    var agreementText: String {
-        """
-        By using ChillNote, you agree to use the app responsibly and understand that your notes are stored locally and synced to the cloud when you're signed in.
-        """
-    }
-    
-    var aboutText: String {
-        """
-        **ChillNote: Design Philosophy**
-
-        "Capturing the speed of thought, one voice at a time."
-
-        ChillNote realigns how we capture thoughts. By prioritizing voice input and AI organization, we bridge the gap between your mind's speed and your typing speed.
-
-        **Who is it for?**
-
-        **1. The ADHD & Hyper-Active Mind**
-        "My thoughts run faster than my fingers." Voice is the path of least resistance, letting your stream of consciousness flow freely.
-
-        **2. The "Struggling Writer"**
-        "I have the idea, but I can't find the words." Pour out messy thoughts, and let ChillNote's AI restructure them into clear prose.
-
-        **3. Creative Workers**
-        "Typing is unnatural; Speaking is instinct." Speak your ideas; let the system handle formatting and structure.
-
-        **4. Reflective Thinkers**
-        "Talk helps untangle thoughts." Use your voice to journal, vent, and reflect.
-
-        **5. The "Format Haters"**
-        "Life is too short to adjust margins." One-click perfection. Focus on content, not aesthetics.
-
-        **What ChillNote is NOT**
-
-        • **Not for Meeting Minutes**: For personal reflections, not polished corporate records.
-        • **Not for Long-Form Writing**: For seeds of ideas, not entire novels.
-        • **The 10-Minute Limit**: If it takes >10 mins, it's not Chill.
-
-        **Our Vision**
-        To return us to a natural, healthy state of being. For the dreamers, the creators, and anyone whose ideas deserve to be heard.
-        """
-    }
-    
     func openAppSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
@@ -922,12 +870,12 @@ private extension SettingsView {
 private struct LegalTextView: View {
     @Environment(\.dismiss) var dismiss
     let title: String
-    let bodyText: String
+    let bodyKey: String
     
     var body: some View {
         NavigationStack {
             ScrollView {
-                Text(LocalizedStringKey(bodyText))
+                Text(L10n.text(bodyKey))
                     .font(.bodyMedium)
                     .foregroundColor(.textMain)
                     .padding(24)

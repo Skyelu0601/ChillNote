@@ -286,18 +286,19 @@ struct RecordingOverlayView: View {
     private func startIfNeeded() {
         guard speechRecognizer.permissionGranted, !speechRecognizer.isRecording else { return }
         Task { @MainActor in
-            let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
-            guard canRecord else {
-                showSubscription = true
-                return
-            }
             let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
             guard hasConsent else {
                 onDismiss()
                 return
             }
+
+            let authorized = await StoreService.shared.authorizeVoiceRecordingStart()
+            guard authorized else {
+                showSubscription = true
+                return
+            }
             await Task.yield()
-            speechRecognizer.startRecording(countsTowardQuota: true)
+            speechRecognizer.startRecording(countsTowardQuota: false)
         }
     }
 

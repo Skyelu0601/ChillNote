@@ -277,8 +277,11 @@ struct HomeView: View {
         }
         .onReceive(NotificationCenter.default.publisher(for: NSNotification.Name("StartRecording"))) { _ in
             Task {
-                let canRecord = await StoreService.shared.checkDailyQuotaOnServer(feature: .voice)
-                guard canRecord else {
+                let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
+                guard hasConsent else { return }
+
+                let authorized = await StoreService.shared.authorizeVoiceRecordingStart()
+                guard authorized else {
                     await MainActor.run {
                         showSubscription = true
                     }
@@ -287,7 +290,8 @@ struct HomeView: View {
                 await MainActor.run {
                     isVoiceMode = true
                 }
-                let started = await speechRecognizer.startRecordingIfPermitted(countsTowardQuota: true)
+                speechRecognizer.startRecording(countsTowardQuota: false)
+                let started = speechRecognizer.isRecording
                 if !started {
                     await MainActor.run {
                         isVoiceMode = false

@@ -529,12 +529,6 @@ struct ProductHeroCard: View {
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
-
-            Text(product.description)
-                .font(.caption)
-                .foregroundColor(.textSub)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)

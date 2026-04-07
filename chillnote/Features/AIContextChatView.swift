@@ -201,6 +201,16 @@ struct AIContextChatView: View {
     private let recentHistoryLimit = 8
     private let summaryMessageLimit = 12
     private let summarySnippetLimit = 160
+
+    private func shouldPresentSubscription(for errorMessage: String) -> Bool {
+        let lowered = errorMessage.lowercased()
+        return lowered.contains("daily free ai chat limit reached")
+            || lowered.contains("daily ai chat limit reached")
+            || lowered.contains("chat limit reached")
+            || lowered.contains("too many requests")
+            || lowered.contains("quota")
+            || lowered.contains("429")
+    }
     
     var body: some View {
         return NavigationStack {
@@ -486,7 +496,7 @@ struct AIContextChatView: View {
                     }
                     isLoading = false
                     let message = error.localizedDescription
-                    if message.localizedCaseInsensitiveContains("daily free ai chat limit reached") {
+                    if shouldPresentSubscription(for: message) {
                         errorMessage = nil
                         showSubscription = true
                     } else {

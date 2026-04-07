@@ -156,7 +156,7 @@ struct SubscriptionDisplayInfo: Equatable {
         let priceText = price.formatted(priceFormatStyle)
         let isAnnual = billingPeriod?.isAnnual == true
         let billingPeriodText = String(
-            localized: isAnnual ? "per year" : "per month",
+            localized: isAnnual ? "subscription.billing_period.yearly" : "subscription.billing_period.monthly",
             locale: locale
         )
 
@@ -173,13 +173,12 @@ struct SubscriptionDisplayInfo: Equatable {
         if let trialDurationText {
             badgeText = String(
                 localized: "subscription.badge.free_trial",
-                defaultValue: "%@ FREE TRIAL",
                 locale: locale
             )
             .replacingOccurrences(of: "%@", with: trialDurationText.uppercased(with: locale))
         } else {
             badgeText = String(
-                localized: isAnnual ? "BEST VALUE" : "FLEXIBLE",
+                localized: isAnnual ? "subscription.badge.best_value" : "subscription.badge.flexible",
                 locale: locale
             )
         }
@@ -188,7 +187,6 @@ struct SubscriptionDisplayInfo: Equatable {
         if let trialDurationText {
             ctaText = String(
                 localized: "subscription.cta.start_free_trial",
-                defaultValue: "Start %@ Free Trial",
                 locale: locale
             )
             .replacingOccurrences(of: "%@", with: trialDurationText)
@@ -218,13 +216,11 @@ struct SubscriptionDisplayInfo: Equatable {
         if let trialDurationText {
             let billedYearlyTemplate = String(
                 localized: "subscription.price_per_year",
-                defaultValue: "%@/year",
                 locale: locale
             )
             let billedYearlyText = String(format: billedYearlyTemplate, locale: locale, priceText)
             let renewalTemplate = String(
                 localized: "subscription.free_trial_then_price",
-                defaultValue: "Free for %@, then %@. Cancel anytime.",
                 locale: locale
             )
             renewalText = String(format: renewalTemplate, locale: locale, trialDurationText, billedYearlyText)
@@ -455,6 +451,10 @@ class StoreService: ObservableObject {
 
     func consumeDailyQuotaOnServer(feature: DailyQuotaFeature) async -> Bool {
         await performDailyQuotaRequest(feature: feature, action: "consume")
+    }
+
+    func authorizeVoiceRecordingStart() async -> Bool {
+        await consumeDailyQuotaOnServer(feature: .voice)
     }
     
     // Product Identifiers

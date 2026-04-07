@@ -339,8 +339,10 @@ struct GeminiService {
                     }
                     
                     guard (200...299).contains(httpResponse.statusCode) else {
-                        // Validate error if possible, though handling bytes error content is tricky without consuming stream
                         print("❌ Stream failed with status: \(httpResponse.statusCode)")
+                        if httpResponse.statusCode == 429 {
+                            throw GeminiError.apiError("Daily free AI chat limit reached")
+                        }
                         throw GeminiError.apiError("Status code: \(httpResponse.statusCode)")
                     }
                     
