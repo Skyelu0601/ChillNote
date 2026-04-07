@@ -12,6 +12,9 @@ struct RecordingOverlayView: View {
     @State private var pendingSave = false
     @State private var didTriggerLimit = false
     @State private var showSubscription = false
+    @State private var ghostPromptIndex = RecordingGhostPromptStore.randomIndex()
+    @State private var isGhostPromptVisible = false
+    @State private var ghostPromptDismissTask: Task<Void, Never>?
 
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
     
@@ -98,10 +101,12 @@ struct RecordingOverlayView: View {
                                 }
                                 .padding(.top, 20)
                             } else {
-                                Text(speechRecognizer.transcript.isEmpty ? L10n.text("recording.listening_prompt") : " ")
+                                Text(ghostPromptText)
                                     .font(.bodyLarge)
                                     .foregroundColor(.textSub)
+                                    .multilineTextAlignment(.center)
                                     .padding()
+                                    .animation(.easeInOut(duration: 0.3), value: ghostPromptIndex)
                             }
                         }
                     }
@@ -161,6 +166,7 @@ struct RecordingOverlayView: View {
             startIfNeeded()
         }
         .onDisappear {
+            ghostPromptDismissTask?.cancel()
             if speechRecognizer.isRecording {
                 speechRecognizer.stopRecording(reason: .cancelled)
             }
@@ -181,6 +187,7 @@ struct RecordingOverlayView: View {
                 startTime = Date()
                 elapsed = 0
                 didTriggerLimit = false
+                showRandomGhostPrompt()
 
                 if !didTriggerStartHaptic {
                     didTriggerStartHaptic = true
@@ -193,10 +200,12 @@ struct RecordingOverlayView: View {
                 elapsed = 0
                 didTriggerStartHaptic = false
                 didTriggerLimit = false
+                dismissGhostPrompt()
                 if pendingSave {
                     finalizeSave()
                 }
             case .error(let message):
+                dismissGhostPrompt()
                 if message.localizedCaseInsensitiveContains("daily free voice limit reached")
                     || message.localizedCaseInsensitiveContains("daily voice limit reached") {
                     showSubscription = true
@@ -238,6 +247,43 @@ struct RecordingOverlayView: View {
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
         }
+    }
+
+    private var ghostPromptText: String {
+        guard shouldShowGhostPrompt else { return " " }
+        return RecordingGhostPromptStore.text(at: ghostPromptIndex)
+    }
+
+    private var shouldShowGhostPrompt: Bool {
+        speechRecognizer.permissionGranted
+            && speechRecognizer.recordingState == .recording
+            && isGhostPromptVisible
+            && !isProcessing
+            && speechRecognizer.transcript.isEmpty
+    }
+
+    private func showRandomGhostPrompt() {
+        ghostPromptDismissTask?.cancel()
+        ghostPromptIndex = RecordingGhostPromptStore.randomIndex()
+        isGhostPromptVisible = true
+
+        ghostPromptDismissTask = Task {
+            let delay = UInt64(RecordingGhostPromptStore.displayDuration * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: delay)
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isGhostPromptVisible = false
+                }
+            }
+        }
+    }
+
+    private func dismissGhostPrompt() {
+        ghostPromptDismissTask?.cancel()
+        ghostPromptDismissTask = nil
+        isGhostPromptVisible = false
     }
     
     func finishRecording() {
