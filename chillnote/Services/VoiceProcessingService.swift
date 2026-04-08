@@ -18,7 +18,7 @@ class VoiceProcessingService: ObservableObject {
     private init() {}
     
     /// Process the note in the background and update it dynamically
-    func startProcessing(note: Note, rawTranscript: String, context: ModelContext) async {
+    func startProcessing(note: Note, rawTranscript: String, context: ModelContext) async -> Bool {
         let noteID = note.id
         let cleanTranscript = removeTimestamps(from: rawTranscript)
         processingStates[noteID] = .processing(stage: .refining)
@@ -47,13 +47,15 @@ class VoiceProcessingService: ObservableObject {
                     }
                 }
             }
-            
+
+            return true
         } catch {
             print("⚠️ AI processing failed: \(error)")
             // AI processing failed; do not apply local fallback.
             // Leave the note content as is (or handled by caller/UI).
             // Reset state so UI knows we are done (or failed).
             processingStates[noteID] = .failed(message: L10n.text("voice_processing.error.refinement_failed"))
+            return false
         }
     }
 

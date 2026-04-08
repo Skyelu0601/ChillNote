@@ -85,6 +85,7 @@ struct HomeView: View {
     @State var autoOpenPendingRecordings = false
     @State var latestTranscriptionFailureMessage = ""
     @State var showTranscriptionFailureAlert = false
+    @State var showAppRatingPrompt = false
 
     @State var hasScheduledInitialMaintenance = false
     @State var lastMaintenanceAt: Date?
@@ -324,6 +325,16 @@ struct HomeView: View {
             Button(L10n.text("common.ok"), role: .cancel) { }
         } message: {
             Text(latestTranscriptionFailureMessage)
+        }
+        .alert(L10n.text("home.rating_prompt.title"), isPresented: $showAppRatingPrompt) {
+            Button(L10n.text("home.rating_prompt.action.dislike")) {
+                AppRatingService.shared.openFeedbackEmail()
+            }
+            Button(L10n.text("home.rating_prompt.action.like")) {
+                AppRatingService.shared.requestInAppReview()
+            }
+        } message: {
+            Text(L10n.text("home.rating_prompt.message"))
         }
     }
 

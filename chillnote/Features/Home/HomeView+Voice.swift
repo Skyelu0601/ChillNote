@@ -73,8 +73,24 @@ extension HomeView {
                 }
 
                 Task {
-                    await VoiceProcessingService.shared.startProcessing(note: note, rawTranscript: trimmed, context: modelContext)
+                    let didFinishProcessing = await VoiceProcessingService.shared.startProcessing(
+                        note: note,
+                        rawTranscript: trimmed,
+                        context: modelContext
+                    )
                     persistAndSync()
+                    await MainActor.run {
+                        guard didFinishProcessing else { return }
+                        VoiceNotePaywallService.shared.registerSuccessfulVoiceNoteSave()
+                        if AppRatingService.shared.registerSuccessfulVoiceNoteSave() {
+                            Task {
+                                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                                await MainActor.run {
+                                    showAppRatingPrompt = true
+                                }
+                            }
+                        }
+                    }
                 }
 
             case .failure(let reason, let message):

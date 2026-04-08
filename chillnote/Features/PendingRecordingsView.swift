@@ -407,6 +407,9 @@ struct PendingRecordingsView: View {
                             rawTranscript: trimmed,
                             context: modelContext
                         )
+                        await MainActor.run {
+                            VoiceNotePaywallService.shared.registerSuccessfulVoiceNoteSave()
+                        }
                     }
 
                     RecordingFileManager.shared.completeRecording(fileURL: recording.fileURL)

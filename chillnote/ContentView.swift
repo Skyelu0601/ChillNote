@@ -4,9 +4,9 @@ import SwiftData
 struct ContentView: View {
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var aiConsentManager: AIConsentManager
-    @StateObject private var storeService = StoreService.shared
+    @StateObject private var voiceNotePaywallService = VoiceNotePaywallService.shared
     @State private var consentSheetHeight: CGFloat = 360
-    @State private var showPostLoginPaywall = false
+    @State private var showPostFirstVoiceSavePaywall = false
 
     var body: some View {
         Group {
@@ -25,10 +25,10 @@ struct ContentView: View {
                 LoginView()
             }
         }
-        .onChange(of: authService.shouldShowPostLoginPaywall) { _, shouldShow in
-            guard shouldShow, storeService.currentTier != .pro else { return }
-            showPostLoginPaywall = true
-            authService.consumePostLoginPaywallRequest()
+        .onChange(of: voiceNotePaywallService.shouldShowPaywall) { _, shouldShow in
+            guard shouldShow else { return }
+            showPostFirstVoiceSavePaywall = true
+            voiceNotePaywallService.consumePaywallRequest()
         }
         .sheet(item: consentPromptBinding) { prompt in
             AIConsentSheet(
@@ -38,7 +38,7 @@ struct ContentView: View {
             )
             .presentationDetents([.height(consentSheetDetentHeight)])
         }
-        .sheet(isPresented: $showPostLoginPaywall) {
+        .sheet(isPresented: $showPostFirstVoiceSavePaywall) {
             SubscriptionView()
         }
     }

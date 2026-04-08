@@ -52,9 +52,6 @@ final class AuthService: ObservableObject {
     @Published var errorMessage: String?
     @Published var isPro: Bool = false
     @Published var currentUser: User?
-    @Published private(set) var shouldShowPostLoginPaywall = false
-
-    private var pendingPostLoginPaywall = false
     
     // To prevent replay attacks with Apple Sign In
     var currentNonce: String?
@@ -102,7 +99,6 @@ final class AuthService: ObservableObject {
 
     func checkSession() async {
         do {
-            let previousState = state
             let session = try await supabase.auth.session
             
             // Check if the session is expired
@@ -115,22 +111,10 @@ final class AuthService: ObservableObject {
             self.currentUser = session.user
             UserDefaults.standard.set(session.accessToken, forKey: "syncAuthToken")
             await StoreService.shared.refreshSubscriptionStatus()
-
-            let justCompletedInteractiveLogin = pendingPostLoginPaywall || {
-                if case .signingIn = previousState { return true }
-                return false
-            }()
-            let shouldPresentPaywall = justCompletedInteractiveLogin && StoreService.shared.currentTier != .pro
-            pendingPostLoginPaywall = false
-
-            if shouldPresentPaywall {
-                shouldShowPostLoginPaywall = true
-            }
         } catch {
             self.state = .signedOut
             UserDefaults.standard.removeObject(forKey: "syncAuthToken")
             StoreService.shared.currentTier = .free
-            pendingPostLoginPaywall = false
         }
     }
     
@@ -154,14 +138,12 @@ final class AuthService: ObservableObject {
     func signInWithApple(_ credential: ASAuthorizationAppleIDCredential) async -> Bool {
         errorMessage = nil
         state = .signingIn
-        pendingPostLoginPaywall = true
         
         guard let idTokenData = credential.identityToken,
               let idToken = String(data: idTokenData, encoding: .utf8),
               let nonce = currentNonce else {
             errorMessage = AppErrorCode.authInvalidAppleCredential.message
             state = .signedOut
-            pendingPostLoginPaywall = false
             return false
         }
         
@@ -176,7 +158,6 @@ final class AuthService: ObservableObject {
             print("❌ Apple Sign In Error: \(error)")
             errorMessage = error.localizedDescription
             state = .signedOut
-            pendingPostLoginPaywall = false
             return false
         }
     }
@@ -185,13 +166,11 @@ final class AuthService: ObservableObject {
     func signInWithGoogle() async -> Bool {
         errorMessage = nil
         state = .signingIn
-        pendingPostLoginPaywall = true
         
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootViewController = windowScene.windows.first?.rootViewController else {
             errorMessage = AppErrorCode.authRootViewControllerMissing.message
             state = .signedOut
-            pendingPostLoginPaywall = false
             return false
         }
         
@@ -200,7 +179,6 @@ final class AuthService: ObservableObject {
             guard let idToken = result.user.idToken?.tokenString else {
                 errorMessage = AppErrorCode.authGoogleTokenMissing.message
                 state = .signedOut
-                pendingPostLoginPaywall = false
                 return false
             }
             
@@ -213,7 +191,6 @@ final class AuthService: ObservableObject {
             print("❌ Google Sign In Error: \(error)")
             errorMessage = error.localizedDescription
             state = .signedOut
-            pendingPostLoginPaywall = false
             return false
         }
     }
@@ -225,13 +202,7 @@ final class AuthService: ObservableObject {
             currentUser = nil
             UserDefaults.standard.removeObject(forKey: "syncAuthToken")
             StoreService.shared.currentTier = .free
-            pendingPostLoginPaywall = false
-            shouldShowPostLoginPaywall = false
         }
-    }
-
-    func consumePostLoginPaywallRequest() {
-        shouldShowPostLoginPaywall = false
     }
     
     func deleteAccount() async -> Bool {
@@ -315,7 +286,6 @@ final class AuthService: ObservableObject {
 
     private func signInWithAppReviewCredential(email: String, code: String) async -> Bool {
         state = .signingIn
-        pendingPostLoginPaywall = true
         do {
             try await supabase.auth.signIn(email: email, password: code)
             return true
@@ -323,7 +293,6 @@ final class AuthService: ObservableObject {
             print("❌ App Review Quick Login Error: \(error)")
             errorMessage = error.localizedDescription
             state = .signedOut
-            pendingPostLoginPaywall = false
             return false
         }
     }

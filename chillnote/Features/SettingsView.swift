@@ -838,8 +838,7 @@ private extension SettingsView {
     }
     
     func sendFeedback() {
-        guard let url = URL(string: "mailto:support@chillnoteai.com?subject=ChillNote%20Feedback") else { return }
-        UIApplication.shared.open(url)
+        AppRatingService.shared.openFeedbackEmail()
     }
     
     func openPrivacyPolicy() {
