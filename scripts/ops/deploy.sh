@@ -64,26 +64,29 @@ set -euo pipefail
 
 BASE_DIR="/root/chillnote-api"
 APP_DIR="$BASE_DIR/current"
+SHARED_DIR="$BASE_DIR/shared"
+SHARED_ENV_FILE="$SHARED_DIR/.env"
 RESOLVE_ROLLED_BACK="${RESOLVE_ROLLED_BACK:-}"
 
 mkdir -p "$APP_DIR"
+mkdir -p "$SHARED_DIR"
 cd "$BASE_DIR"
 
 # 写入 .env（如果推送了）
 if [ -f "/tmp/chillnote-api.env" ]; then
-  echo "🔐 写入 $APP_DIR/.env..."
-  install -m 600 "/tmp/chillnote-api.env" "$APP_DIR/.env"
+  echo "🔐 写入 $SHARED_ENV_FILE..."
+  install -m 600 "/tmp/chillnote-api.env" "$SHARED_ENV_FILE"
   rm -f "/tmp/chillnote-api.env"
 fi
 
-# 向后兼容：若旧路径存在 .env，则复制到 current 供 PM2 使用
-if [ ! -f "$APP_DIR/.env" ] && [ -f "$BASE_DIR/.env" ]; then
-  echo "ℹ️ 检测到旧路径 $BASE_DIR/.env，复制到 $APP_DIR/.env..."
-  install -m 600 "$BASE_DIR/.env" "$APP_DIR/.env"
+# 首次迁移到 shared/.env 时，从当前发布目录复制现有配置。
+if [ ! -f "$SHARED_ENV_FILE" ] && [ -f "$APP_DIR/.env" ]; then
+  echo "ℹ️ 初始化 $SHARED_ENV_FILE（来源：$APP_DIR/.env）..."
+  install -m 600 "$APP_DIR/.env" "$SHARED_ENV_FILE"
 fi
 
-if [ ! -f "$APP_DIR/.env" ]; then
-  echo "❌ 错误: 未检测到 $APP_DIR/.env"
+if [ ! -f "$SHARED_ENV_FILE" ]; then
+  echo "❌ 错误: 未检测到 $SHARED_ENV_FILE"
   exit 1
 fi
 
@@ -91,6 +94,10 @@ echo "📦 解压代码..."
 rm -rf "$APP_DIR/dist" "$APP_DIR/prisma"
 tar -xzf /tmp/server-deploy.tar.gz -C "$APP_DIR"
 rm /tmp/server-deploy.tar.gz
+
+echo "🔐 将当前发布目录 .env 链接到共享环境文件..."
+rm -f "$APP_DIR/.env"
+ln -s "$SHARED_ENV_FILE" "$APP_DIR/.env"
 
 cd "$APP_DIR"
 

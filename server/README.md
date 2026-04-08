@@ -16,7 +16,7 @@ cp .env.example .env
    - `APPLE_PRIVATE_KEY` (p8 content, use `\n` for newlines)
    - `APPLE_REDIRECT_URI` (optional)
 4) Set AI config:
-   - `VERTEX_AI_API_KEY` (recommended for Vertex AI API key mode)
+   - `GEMINI_API_KEY`
    - `GEMINI_MODEL` (optional, defaults to `gemini-3.1-flash-lite-preview`)
 
 5) Create schema
@@ -60,14 +60,19 @@ See [Upload Limits Configuration Guide](../docs/upload-limits-config.md) for det
 # In your .env file
 MAX_VOICE_NOTE_AUDIO_MB=50
 VOICE_NOTE_TIMEOUT_MS=180000
-VERTEX_AI_API_KEY=your_vertex_ai_api_key
+GEMINI_API_KEY=your_gemini_api_key
 ```
 
-### Vertex AI API Key Migration Notes
+### Gemini API Notes
 
-- The backend now sends Gemini requests to Vertex AI's `aiplatform.googleapis.com` endpoint.
-- Set `VERTEX_AI_API_KEY` for the new Vertex AI API key flow.
-- `GEMINI_API_KEY` is still accepted as a fallback env var during migration, but new setups should use `VERTEX_AI_API_KEY`.
+- The backend sends Gemini requests to `generativelanguage.googleapis.com`.
+- Use a paid Gemini API key in `GEMINI_API_KEY` for production usage.
+
+### Deployment Layout
+
+- Production releases live under `/root/chillnote-api/current`.
+- Shared runtime env now lives at `/root/chillnote-api/shared/.env`.
+- The deploy script keeps `/root/chillnote-api/current/.env` in sync with `/root/chillnote-api/shared/.env`.
 
 ```nginx
 # In your Nginx config
