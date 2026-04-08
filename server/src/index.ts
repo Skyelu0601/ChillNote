@@ -85,6 +85,19 @@ app.use((req, res, next) => {
 
 const PORT = Number(process.env.PORT ?? 4000);
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite-preview";
+const VERTEX_AI_API_KEY =
+  process.env.VERTEX_AI_API_KEY?.trim()
+  || process.env.GEMINI_API_KEY?.trim()
+  || "";
+const VERTEX_AI_API_BASE_URL =
+  process.env.VERTEX_AI_API_BASE_URL?.trim()
+  || "https://aiplatform.googleapis.com/v1";
+
+function buildVertexAIGenerateContentURL(model: string, apiKey: string): string {
+  const encodedModel = encodeURIComponent(model);
+  const encodedApiKey = encodeURIComponent(apiKey);
+  return `${VERTEX_AI_API_BASE_URL}/publishers/google/models/${encodedModel}:generateContent?key=${encodedApiKey}`;
+}
 
 const isoDateString = z
   .string()
@@ -802,10 +815,9 @@ async function verifyReceiptWithApple(receiptData: string, sharedSecret: string)
 
 // Voice Note Endpoint: Audio -> Raw transcript only (no intent rewrite)
 app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async (req, res) => {
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_API_KEY) {
-    console.error("❌ GEMINI_API_KEY is not configured");
-    res.status(500).json({ error: "AI Service key is not configured on server" });
+  if (!VERTEX_AI_API_KEY) {
+    console.error("❌ VERTEX_AI_API_KEY is not configured");
+    res.status(500).json({ error: "Vertex AI API key is not configured on server" });
     return;
   }
 
@@ -857,7 +869,7 @@ app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async 
       `🗣️ VoiceNote Request: audioBase64=${audioBase64Kb}KB, audioDecoded=${audioDecodedKb}KB`
     );
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    const url = buildVertexAIGenerateContentURL(GEMINI_MODEL, VERTEX_AI_API_KEY);
 
     const normalizedLanguageHint = spokenLanguageHint?.trim();
     const hasPreferredLanguageHint =
@@ -1163,9 +1175,8 @@ app.get("/subscription/status", requireAuth, async (req, res) => {
 
 // Gemini Endpoint: Supports Multimodal (Audio + Text)
 app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, res) => {
-  const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-  if (!GEMINI_API_KEY) {
-    res.status(500).json({ error: "AI Service key is not configured" });
+  if (!VERTEX_AI_API_KEY) {
+    res.status(500).json({ error: "Vertex AI API key is not configured" });
     return;
   }
 
@@ -1187,7 +1198,7 @@ app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, r
       }
     }
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`;
+    const url = buildVertexAIGenerateContentURL(GEMINI_MODEL, VERTEX_AI_API_KEY);
 
     const contentsParts: any[] = [];
     if (audioBase64) {
