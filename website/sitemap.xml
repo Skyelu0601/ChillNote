@@ -16,11 +16,6 @@
     <priority>0.4</priority>
   </url>
   <url>
-    <loc>https://www.chillnoteai.com/use-cases.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
     <loc>https://www.chillnoteai.com/college.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.8</priority>
@@ -31,11 +26,6 @@
     <priority>0.8</priority>
   </url>
   <url>
-    <loc>https://www.chillnoteai.com/about.html</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.6</priority>
-  </url>
-  <url>
     <loc>https://www.chillnoteai.com/contact.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
@@ -43,7 +33,7 @@
   <url>
     <loc>https://www.chillnoteai.com/guides.html</loc>
     <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
+    <priority>0.7</priority>
   </url>
   <url>
     <loc>https://www.chillnoteai.com/faq.html</loc>
@@ -51,28 +41,13 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://www.chillnoteai.com/compare.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
+    <loc>https://www.chillnoteai.com/how-to-use-brain-dump.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
   </url>
   <url>
     <loc>https://www.chillnoteai.com/updates.html</loc>
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
-  </url>
-  <url>
-    <loc>https://www.chillnoteai.com/voice-to-markdown.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.chillnoteai.com/voice-journaling.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>https://www.chillnoteai.com/ai-chat-notes.html</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.8</priority>
   </url>
 </urlset>
