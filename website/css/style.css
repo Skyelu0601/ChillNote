@@ -1422,6 +1422,15 @@ footer {
   overflow: hidden;
 }
 
+.blog-hero {
+  padding-top: 6.4rem;
+  padding-bottom: 0.8rem;
+}
+
+.blog-hero + section {
+  padding-top: 1.6rem;
+}
+
 .blog-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr);
@@ -1863,6 +1872,15 @@ footer {
 
   .subpage-hero + section {
     padding-top: 2.5rem;
+  }
+
+  .blog-hero {
+    padding-top: 7.2rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .blog-hero + section {
+    padding-top: 1.2rem;
   }
 
   .hero-story {
