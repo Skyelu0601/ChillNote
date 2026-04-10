@@ -1468,8 +1468,8 @@ footer {
 
 .footer-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 2rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.5rem;
   align-items: start;
 }
 
@@ -1967,11 +1967,14 @@ footer {
   .use-case-grid,
   .faq-list,
   .blog-grid,
-  .footer-grid,
   .pricing-layout,
   .pricing-grid,
   .contact-grid {
     grid-template-columns: 1fr;
+  }
+
+  .footer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .compare-row {
@@ -1988,6 +1991,10 @@ footer {
 @media (max-width: 768px) {
   .site-header {
     padding: 1rem 0;
+  }
+
+  .footer-grid {
+    grid-template-columns: 1fr;
   }
 
   .header-inner {
