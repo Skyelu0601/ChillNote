@@ -50,4 +50,34 @@
     <changefreq>weekly</changefreq>
     <priority>0.6</priority>
   </url>
+  <url>
+    <loc>https://www.chillnoteai.com/use-cases/index.html</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://www.chillnoteai.com/use-cases/voice-notes-app-for-adhd-and-overthinking.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.chillnoteai.com/use-cases/voice-to-markdown-for-obsidian-users.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.chillnoteai.com/use-cases/brain-dump-by-voice-on-iphone.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.chillnoteai.com/use-cases/idea-capture-app-for-founders-and-builders.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://www.chillnoteai.com/use-cases/voice-journaling-app-for-mental-clarity.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
 </urlset>

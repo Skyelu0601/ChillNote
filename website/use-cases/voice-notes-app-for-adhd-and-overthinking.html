@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="index, follow">
+    <meta name="description"
+        content="ChillNote is the ideal voice notes app for ADHD and overthinking. Just speak your mind without worrying about structure, and let AI organize it into clean notes.">
+    <title>Voice Notes App for ADHD and Overthinking | ChillNote</title>
+    <link rel="canonical" href="https://www.chillnoteai.com/use-cases/voice-notes-app-for-adhd-and-overthinking.html">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,200..800;1,6..72,200..800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="../css/style.css">
+    <style>
+        .usecase-hero {
+            text-align: center;
+            padding: 4rem 1.5rem;
+            background: linear-gradient(to bottom, var(--surface-100), transparent);
+            border-radius: var(--radius-lg);
+            margin-bottom: 4rem;
+        }
+        .usecase-hero h1 {
+            font-size: clamp(2rem, 5vw, 3.5rem);
+            margin-bottom: 1.5rem;
+            color: var(--text-strong);
+            line-height: 1.1;
+        }
+        .usecase-hero p {
+            font-size: clamp(1.1rem, 2vw, 1.25rem);
+            max-width: 700px;
+            margin: 0 auto 2.5rem;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+        .tag-row {
+            display: flex;
+            gap: 0.5rem;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 3rem;
+        }
+        .tag-pill {
+            background: var(--surface-100);
+            color: var(--text-main);
+            padding: 0.4rem 1rem;
+            border-radius: 99px;
+            font-size: 0.9rem;
+            border: 1px solid var(--border-color);
+        }
+        .content-section {
+            margin-bottom: 6rem;
+        }
+        .section-title {
+            text-align: center;
+            font-size: 2.5rem;
+            margin-bottom: 3rem;
+            color: var(--text-strong);
+        }
+        .grid-cards {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        @media (min-width: 768px) {
+            .grid-cards {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+        .info-card {
+            background: var(--surface-50);
+            border: 1px solid var(--border-color);
+            padding: 2.5rem 2rem;
+            border-radius: var(--radius-lg);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+        .info-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 24px -10px rgba(0,0,0,0.1);
+            border-color: #d1d5db;
+        }
+        .info-card-icon {
+            font-size: 2rem;
+            margin-bottom: 1.5rem;
+            opacity: 0.9;
+        }
+        .info-card h3 {
+            color: var(--text-strong);
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+        .info-card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            margin: 0;
+            font-size: 1.05rem;
+        }
+        
+        .problem-list {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #fffafa;
+            border: 1px solid #fee2e2;
+            padding: 2.5rem;
+            border-radius: var(--radius-lg);
+        }
+        .problem-item {
+            position: relative;
+            padding-left: 2rem;
+            margin-bottom: 1.25rem;
+            color: #7f1d1d;
+            font-size: 1.05rem;
+            line-height: 1.6;
+        }
+        .problem-item::before {
+            content: "\2715";
+            position: absolute;
+            left: 0;
+            color: #ef4444;
+            font-weight: bold;
+        }
+        .problem-list > .problem-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .feature-stack {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .feature-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 1.5rem;
+            padding: 2rem;
+            background: var(--surface-0);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+        .feature-row:hover {
+            border-color: var(--text-muted);
+        }
+        .feature-mark {
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            background: var(--surface-100);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        
+        .perfect-for {
+            text-align: center;
+            max-width: 700px;
+            margin: 0 auto;
+            padding: 3rem;
+            background: var(--surface-100);
+            border-radius: var(--radius-lg);
+            border: 1px dashed var(--border-color);
+        }
+        .perfect-for p {
+            font-size: 1.25rem;
+            line-height: 1.8;
+            color: var(--text-strong);
+            margin: 0;
+        }
+        
+        @media (prefers-color-scheme: dark) {
+            .problem-list {
+                background: #2a1111;
+                border-color: #451a1a;
+            }
+            .problem-item {
+                color: #fca5a5;
+            }
+            .info-card:hover {
+                border-color: #4b5563;
+                box-shadow: 0 12px 24px -10px rgba(0,0,0,0.5);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="container header-inner">
+            <a href="../index.html" class="logo">
+                <img src="../assets/chillo.png" alt="ChillNote Logo" class="logo-icon">
+                <span>ChillNote</span>
+            </a>
+            <nav class="nav-links">
+                <a href="../faq.html">FAQ</a>
+                <a href="../pricing.html">Pricing</a>
+                <a href="../contact.html">Contact</a>
+                <a href="https://apps.apple.com/us/app/chillnote-ai-quick-capture/id6758427839"
+                    class="btn btn-primary btn-sm nav-cta" aria-label="Get ChillNote on iOS from the App Store">
+                    Get ChillNote on iOS
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="section">
+            <div class="container container-md">
+                
+                <!-- Hero Section -->
+                <div class="usecase-hero" data-reveal>
+                    <div class="tag-row">
+                        <span class="tag-pill">ADHDers</span>
+                        <span class="tag-pill">Overthinkers</span>
+                        <span class="tag-pill">Fast Talkers</span>
+                    </div>
+                    <h1 class="serif">Voice Notes App for ADHD and Overthinking</h1>
+                    <p>
+                        Speak freely without worrying about structure, formatting, or typing speed. ChillNote turns messy thoughts into clean, useful notes.
+                    </p>
+                    <a href="https://apps.apple.com/us/app/chillnote-ai-quick-capture/id6758427839" class="btn btn-primary btn-lg">
+                        <span class="btn-text">Download App Free</span>
+                    </a>
+                </div>
+
+                <!-- The Problem Section -->
+                <div class="content-section" data-reveal>
+                    <h2 class="serif section-title">The Problem</h2>
+                    <div class="problem-list">
+                        <div class="problem-item">Thoughts race much faster than you can type them out.</div>
+                        <div class="problem-item">The blank page of a traditional note app feels paralyzing and overwhelming.</div>
+                        <div class="problem-item">You easily get distracted by formatting or trying to write "perfectly".</div>
+                        <div class="problem-item">Great ideas vanish while you are setting up folders, tags, and titles.</div>
+                        <div class="problem-item">Mental clutter builds up over the day, causing anxiety and brain fog.</div>
+                    </div>
+                </div>
+
+                <!-- Why It Works Section -->
+                <div class="content-section" data-reveal>
+                    <h2 class="serif section-title">Why It Works</h2>
+                    <div class="grid-cards">
+                        <div class="info-card">
+                            <div class="info-card-icon">⚡️</div>
+                            <h3>Zero Friction Capture</h3>
+                            <p>Just tap and talk. No need to organize, title, or structure your thoughts beforehand.</p>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-icon">🌀</div>
+                            <h3>Embraces Tangents</h3>
+                            <p>Go completely off-topic. The AI is smart enough to weave it back into a cohesive summary later.</p>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-icon">🧠</div>
+                            <h3>Reduces Executive Dysfunction</h3>
+                            <p>Takes the heavy lifting out of note-taking. You do the thinking, we do the formatting.</p>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-card-icon">⏳</div>
+                            <h3>Separates Creation from Editing</h3>
+                            <p>Dump your brain now while the idea is hot, review the clean output later when you have the energy.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Features Section -->
+                <div class="content-section" data-reveal>
+                    <h2 class="serif section-title">Designed for Mental Freedom</h2>
+                    <div class="feature-stack">
+                        <div class="feature-row">
+                            <div class="feature-mark">🎙️</div>
+                            <div>
+                                <h3 style="margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--text-strong);">Instant Voice Capture</h3>
+                                <p style="color: var(--text-muted); line-height: 1.6; margin: 0;">Open ChillNote and start recording instantly. Say whatever is on your mind—unfinished sentences, half-baked ideas, things you need to do—without worrying about sounding professional.</p>
+                            </div>
+                        </div>
+                        <div class="feature-row">
+                            <div class="feature-mark">✨</div>
+                            <div>
+                                <h3 style="margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--text-strong);">AI Structuring</h3>
+                                <p style="color: var(--text-muted); line-height: 1.6; margin: 0;">After you stop talking, AI automatically turns your rambling into structured paragraphs and bullet points, fixing grammar and summarizing core concepts without losing your unique voice.</p>
+                            </div>
+                        </div>
+                        <div class="feature-row">
+                            <div class="feature-mark">🎯</div>
+                            <div>
+                                <h3 style="margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--text-strong);">Action Items Extraction</h3>
+                                <p style="color: var(--text-muted); line-height: 1.6; margin: 0;">Did you casually mention a task while brain dumping? ChillNote explicitly pulls out your to-dos and highlights them so you don't forget what to do next.</p>
+                            </div>
+                        </div>
+                        <div class="feature-row">
+                            <div class="feature-mark">📄</div>
+                            <div>
+                                <h3 style="margin-bottom: 0.5rem; font-size: 1.2rem; color: var(--text-strong);">Markdown Export</h3>
+                                <p style="color: var(--text-muted); line-height: 1.6; margin: 0;">Your organized thoughts are saved in standard Markdown, perfect for pasting directly into Notion, Obsidian, Bear, or simply an email draft.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Perfect For Section -->
+                <div class="content-section" data-reveal>
+                    <div class="perfect-for">
+                        <div style="font-size: 2.5rem; margin-bottom: 1.5rem;">🫶</div>
+                        <p>
+                            <strong>Perfect for people who feel like they have too many browser tabs open in their brain.</strong><br><br>
+                            If you find typing tedious, often lose your train of thought midway through writing, or just need a safe space to verbalize your anxieties and brilliant ideas, ChillNote is built specifically for you.
+                        </p>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
+        <section class="section support">
+            <div class="container support-inner" data-reveal>
+                <div>
+                    <h2 class="serif">Ready to clear your mind?</h2>
+                    <p>Download the iOS app and start brain dumping.</p>
+                </div>
+                <div class="support-actions">
+                    <a href="https://apps.apple.com/us/app/chillnote-ai-quick-capture/id6758427839"
+                        class="btn btn-primary">Download on the App Store</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container footer-stack">
+            <div class="footer-grid">
+                <div class="footer-group">
+                    <h3>Product</h3>
+                    <a href="../pricing.html">Pricing</a>
+                    <a href="../updates.html">Updates</a>
+                    <a href="../comparisons/index.html">Comparisons</a>
+                    <a href="index.html">Use Cases</a>
+                </div>
+                <div class="footer-group">
+                    <h3>Resources</h3>
+                    <a href="../blog.html">Blog</a>
+                    <a href="../faq.html">FAQ</a>
+                </div>
+                <div class="footer-group">
+                    <h3>Company</h3>
+                    <a href="../contact.html">Contact Us</a>
+                    <a href="../privacy.html">Privacy Policy</a>
+                    <a href="../terms.html">Terms of Use</a>
+                </div>
+            </div>
+            <div class="footer-inner">
+                <p class="copyright">&copy; 2026 ChillNote. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="../js/main.js"></script>
+</body>
+
+</html>
