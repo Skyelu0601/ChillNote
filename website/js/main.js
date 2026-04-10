@@ -1,6 +1,29 @@
 document.addEventListener('DOMContentLoaded', () => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+    const billingButtons = document.querySelectorAll('[data-billing-target]');
+    if (billingButtons.length) {
+        const billingPanels = document.querySelectorAll('.pricing-plan-panel');
+
+        billingButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const targetId = button.dataset.billingTarget;
+
+                billingButtons.forEach(item => {
+                    const isActive = item === button;
+                    item.classList.toggle('is-active', isActive);
+                    item.setAttribute('aria-selected', String(isActive));
+                });
+
+                billingPanels.forEach(panel => {
+                    const isActive = panel.id === targetId;
+                    panel.classList.toggle('is-active', isActive);
+                    panel.hidden = !isActive;
+                });
+            });
+        });
+    }
+
     // Smooth scroll for nav links
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
