@@ -306,9 +306,9 @@ struct HomeView: View {
         }
         .task {
             await checkForPendingRecordingsAsync()
-            scheduleInitialMaintenance()
             guard let userId = currentUserId else { return }
             await bootstrapHome(for: userId, source: .initialTask)
+            scheduleInitialMaintenance()
         }
         )
     }

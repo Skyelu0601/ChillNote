@@ -18,9 +18,13 @@ struct HomeNotesListView: View {
     let onTogglePin: (Note) -> Void
     let onDeleteNote: (Note) -> Void
 
+    private var shouldShowBlockingLoadingState: Bool {
+        cachedVisibleNotes.isEmpty && (isLoading || !hasLoadedAtLeastOnce)
+    }
+
     var body: some View {
         if cachedVisibleNotes.isEmpty {
-            if isLoading || isSyncing || !hasLoadedAtLeastOnce {
+            if shouldShowBlockingLoadingState {
                 HomeNotesLoadingView()
             } else if isTrashSelected {
                 Text(L10n.text("home.notes.empty.trash"))
