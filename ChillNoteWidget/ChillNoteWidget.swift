@@ -1,19 +1,9 @@
-import WidgetKit
 import SwiftUI
-import AppIntents
+import WidgetKit
 
-struct ChillNoteWidget: Widget {
-    let kind: String = "ChillNoteWidget"
+private let brainDumpWidgetURL = URL(string: "chillnote://record?source=lockscreen_widget")!
 
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            QuickCaptureWidgetEntryView(entry: entry)
-        }
-        .configurationDisplayName(String(localized: "Quick Capture"))
-        .description(String(localized: "Instantly start recording your thoughts."))
-        .supportedFamilies([.accessoryCircular, .accessoryRectangular, .systemSmall])
-    }
-}
+// MARK: - Timeline Provider
 
 struct Provider: TimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
@@ -21,13 +11,11 @@ struct Provider: TimelineProvider {
     }
 
     func getSnapshot(in context: Context, completion: @escaping (SimpleEntry) -> Void) {
-        let entry = SimpleEntry(date: Date())
-        completion(entry)
+        completion(SimpleEntry(date: Date()))
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<Entry>) -> Void) {
-        let entry = SimpleEntry(date: Date())
-        let timeline = Timeline(entries: [entry], policy: .atEnd)
+        let timeline = Timeline(entries: [SimpleEntry(date: Date())], policy: .never)
         completion(timeline)
     }
 }
@@ -36,46 +24,84 @@ struct SimpleEntry: TimelineEntry {
     let date: Date
 }
 
-struct QuickCaptureWidgetEntryView : View {
+// MARK: - Widget Configuration
+
+struct ChillNoteWidget: Widget {
+    let kind: String = "ChillNoteWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: Provider()) { entry in
+            ChillNoteWidgetEntryView(entry: entry)
+        }
+        .configurationDisplayName(String(localized: "widget.brain_dump.display_name"))
+        .description(String(localized: "widget.brain_dump.description"))
+        .supportedFamilies([.accessoryCircular])
+    }
+}
+
+// MARK: - Entry View
+
+struct ChillNoteWidgetEntryView: View {
     var entry: Provider.Entry
-    @Environment(\.widgetFamily) var family
+    @Environment(\.widgetFamily) private var family
 
     var body: some View {
-        switch family {
-        case .accessoryCircular:
-            ZStack {
-                AccessoryWidgetBackground()
-                Image(systemName: "mic.fill")
-                    .font(.title2)
-            }
-            .widgetURL(URL(string: "chillnote://record"))
-            
-        case .accessoryRectangular:
-            HStack(spacing: 8) {
-                Image(systemName: "mic.fill")
-                    .foregroundColor(.accentColor)
-                Text("ChillNote")
-                    .fontWeight(.bold)
-            }
-            .containerBackground(.clear, for: .widget)
-            .widgetURL(URL(string: "chillnote://record"))
-            
-        default:
-            VStack {
-                Circle()
-                    .fill(LinearGradient(colors: [Color.blue, Color.purple], startPoint: .topLeading, endPoint: .bottomTrailing))
-                    .frame(width: 50, height: 50)
-                    .overlay(
-                        Image(systemName: "mic.fill")
-                            .foregroundColor(.white)
-                            .font(.title)
-                    )
-                Text(String(localized: "Record"))
-                    .font(.caption)
-                    .fontWeight(.medium)
-            }
-            .containerBackground(.clear, for: .widget)
-            .widgetURL(URL(string: "chillnote://record"))
+        if family == .accessoryCircular {
+            CircularWidgetView()
+        } else {
+            CircularWidgetView()
         }
     }
+}
+
+// MARK: - Lock Screen Widget Views
+
+private struct CircularWidgetView: View {
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(
+                    LinearGradient(
+                        colors: [WidgetPalette.accentStart, WidgetPalette.accentEnd],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .padding(6)
+                .widgetAccentable()
+
+            VStack(spacing: 3) {
+                Image(systemName: "mic.fill")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+
+                HStack(spacing: 2) {
+                    ForEach(Array([6, 10, 14, 10, 6].enumerated()), id: \.offset) { _, height in
+                        Capsule()
+                            .fill(.white.opacity(0.9))
+                            .frame(width: 2.5, height: CGFloat(height))
+                    }
+                }
+            }
+        }
+        .containerBackground(.clear, for: .widget)
+        .widgetURL(brainDumpWidgetURL)
+        .accessibilityLabel(Text(LocalizedStringResource("widget.brain_dump.accessibility.label")))
+        .accessibilityHint(Text(LocalizedStringResource("widget.brain_dump.accessibility.hint")))
+    }
+}
+
+// MARK: - Widget Palette
+
+private enum WidgetPalette {
+    static let accentStart = Color(red: 0.90, green: 0.64, blue: 0.33)
+    static let accentEnd = Color(red: 0.92, green: 0.69, blue: 0.46)
+}
+
+// MARK: - Previews
+
+#Preview(as: .accessoryCircular) {
+    ChillNoteWidget()
+} timeline: {
+    SimpleEntry(date: .now)
 }

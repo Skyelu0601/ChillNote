@@ -1,57 +1,21 @@
-//
-//  ChillNoteWidgetControl.swift
-//  ChillNoteWidget
-//
-//  Created by 陆文婷 on 2026/1/22.
-//
-
 import AppIntents
 import SwiftUI
 import WidgetKit
 
+@available(iOSApplicationExtension 18.0, *)
 struct ChillNoteWidgetControl: ControlWidget {
+    private static let brainDumpControlURL = URL(string: "chillnote://record?source=control_widget")!
+
     var body: some ControlWidgetConfiguration {
-        StaticControlConfiguration(
-            kind: "com.sponteoai.chillnote.ChillNoteWidget",
-            provider: Provider()
-        ) { value in
-            ControlWidgetToggle(
-                String(localized: "Start Timer"),
-                isOn: value,
-                action: StartTimerIntent()
-            ) { isRunning in
+        StaticControlConfiguration(kind: "com.sponteoai.chillnote.brain_dump_control") {
+            ControlWidgetButton(action: OpenURLIntent(Self.brainDumpControlURL)) {
                 Label(
-                    isRunning ? String(localized: "On") : String(localized: "Off"),
-                    systemImage: "timer"
+                    LocalizedStringResource("widget.brain_dump.control.title"),
+                    systemImage: "waveform.and.mic"
                 )
             }
         }
-        .displayName("Timer")
-        .description("An example control that runs a timer.")
-    }
-}
-
-extension ChillNoteWidgetControl {
-    struct Provider: ControlValueProvider {
-        var previewValue: Bool {
-            false
-        }
-
-        func currentValue() async throws -> Bool {
-            let isRunning = true // Check if the timer is running
-            return isRunning
-        }
-    }
-}
-
-struct StartTimerIntent: SetValueIntent {
-    static let title: LocalizedStringResource = "Start a timer"
-
-    @Parameter(title: "Timer is running")
-    var value: Bool
-
-    func perform() async throws -> some IntentResult {
-        // Start / stop the timer based on `value`.
-        return .result()
+        .displayName(LocalizedStringResource("widget.brain_dump.control.display_name"))
+        .description(LocalizedStringResource("widget.brain_dump.control.description"))
     }
 }

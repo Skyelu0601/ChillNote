@@ -10,6 +10,7 @@
 		493CE1B92F21DB9600F2A94F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 493CE1B82F21DB9600F2A94F /* WidgetKit.framework */; };
 		493CE1BB2F21DB9600F2A94F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 493CE1BA2F21DB9600F2A94F /* SwiftUI.framework */; };
 		493CE1C82F21DB9900F2A94F /* ChillNoteWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 493CE1B72F21DB9600F2A94F /* ChillNoteWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		497C0A612F21DB9900A00001 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 497C0A602F21DB9900A00001 /* Localizable.xcstrings */; };
 		49862ACB2F28AB9E00ADFB08 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ACA2F28AB9E00ADFB08 /* GoogleSignIn */; };
 		49862ACE2F28AC7000ADFB08 /* RichTextKit in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ACD2F28AC7000ADFB08 /* RichTextKit */; };
 		49862ADB2F29C5F400ADFB08 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ADA2F29C5F400ADFB08 /* Supabase */; };
@@ -59,6 +60,7 @@
 		493CE1B72F21DB9600F2A94F /* ChillNoteWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ChillNoteWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		493CE1B82F21DB9600F2A94F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		493CE1BA2F21DB9600F2A94F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		497C0A602F21DB9900A00001 /* Localizable.xcstrings */ = {isa = PBXFileReference; lastKnownFileType = text.json.xcstrings; name = Localizable.xcstrings; path = chillnote/Resources/Localizable.xcstrings; sourceTree = SOURCE_ROOT; };
 		499583C62F0BD2740053760D /* chillnote.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = chillnote.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		499583DC2F0BD2770053760D /* chillnoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = chillnoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		499583E62F0BD2770053760D /* chillnoteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = chillnoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -348,6 +350,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				497C0A612F21DB9900A00001 /* Localizable.xcstrings in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -434,7 +437,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ChillNoteWidget;
+				INFOPLIST_KEY_CFBundleDisplayName = ChillNote;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -461,7 +464,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ChillNoteWidget;
+				INFOPLIST_KEY_CFBundleDisplayName = ChillNote;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

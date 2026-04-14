@@ -10,8 +10,11 @@ import SwiftUI
 
 @main
 struct ChillNoteWidgetBundle: WidgetBundle {
+    @WidgetBundleBuilder
     var body: some Widget {
         ChillNoteWidget()
-        ChillNoteWidgetControl()
+        if #available(iOSApplicationExtension 18.0, *) {
+            ChillNoteWidgetControl()
+        }
     }
 }
