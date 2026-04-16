@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct HomeBodyView: View {
     private enum TagApplyState {
@@ -359,6 +360,7 @@ struct HomeBodyView: View {
             .onEnded { value in
                 guard shouldOpenSidebar(from: value) else { return }
                 dispatch(.openSidebar)
+                triggerSidebarHaptic()
             }
     }
 
@@ -376,6 +378,11 @@ struct HomeBodyView: View {
         let isMostlyHorizontal = horizontal > vertical + sidebarOpenHorizontalBias
 
         return hasEnoughHorizontalDistance && isMostlyHorizontal
+    }
+
+    private func triggerSidebarHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
     }
 
     private var mainContent: some View {

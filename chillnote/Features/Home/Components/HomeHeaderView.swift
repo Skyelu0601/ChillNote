@@ -73,13 +73,13 @@ struct HomeHeaderView: View {
                         .accessibilityLabel(L10n.text("home.header.accessibility.create_blank_note"))
 
                         Button(action: onEnterSelectionMode) {
-                            Image("carbon--ai")
+                            Image("ai4")
                                 .resizable()
                                 .scaledToFit()
-                                .frame(width: 34, height: 34)
+                                .frame(width: 27, height: 27)
                                 .frame(width: 36, height: 36)
                                 .grayscale(isRecording ? 1.0 : 0.0)
-                                .padding(1)
+                                .padding(4)
                                 .background(
                                     Circle()
                                         .fill(highlightSelectionEntry ? Color.accentPrimary.opacity(0.14) : Color.clear)
@@ -95,7 +95,6 @@ struct HomeHeaderView: View {
                                 )
                         }
                         .buttonStyle(.bouncy)
-                        .padding(.leading, -4)
                         .disabled(isRecording)
                         .accessibilityLabel(L10n.text("home.header.accessibility.enter_ai_context_mode"))
                     }

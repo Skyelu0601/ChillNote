@@ -2,9 +2,6 @@ import SwiftUI
 import UIKit
 
 struct ChatInputBar: View {
-    private static let templateCardWidth: CGFloat = 252
-    private static let templateCardSpacing: CGFloat = 12
-
     enum RecordTriggerMode {
         case releaseBased
         case tapToRecord
@@ -33,8 +30,9 @@ struct ChatInputBar: View {
     @State private var didTriggerLimit = false
     @State private var showSubscription = false
     @State private var showBrainDumpOnboarding = false
-    @State private var centeredTemplateID: String? = BrainDumpTemplate.all.first?.id
-    @State private var lastHapticTemplateID: String? = BrainDumpTemplate.all.first?.id
+    @State private var ghostPromptIndex = RecordingGhostPromptStore.randomIndex()
+    @State private var isGhostPromptVisible = false
+    @State private var ghostPromptDismissTask: Task<Void, Never>?
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var timeText: String {
@@ -99,6 +97,9 @@ struct ChatInputBar: View {
         .onAppear {
             syncElapsed()
         }
+        .onDisappear {
+            ghostPromptDismissTask?.cancel()
+        }
         .onReceive(timer) { _ in
             syncElapsed()
 
@@ -114,16 +115,10 @@ struct ChatInputBar: View {
             syncElapsed()
             if speechRecognizer.recordingState == .recording {
                 didTriggerLimit = false
-                centeredTemplateID = centeredTemplateID ?? BrainDumpTemplate.all.first?.id
+                showRandomGhostPrompt()
+            } else {
+                dismissGhostPrompt()
             }
-        }
-        .onChange(of: centeredTemplateID) { _, newValue in
-            guard let newValue, newValue != lastHapticTemplateID else { return }
-
-            let feedback = UISelectionFeedbackGenerator()
-            feedback.prepare()
-            feedback.selectionChanged()
-            lastHapticTemplateID = newValue
         }
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
@@ -141,9 +136,9 @@ struct ChatInputBar: View {
     }
 
     private var voiceCenterView: some View {
-        VStack(spacing: 12) {
+        VStack(spacing: 10) {
             if speechRecognizer.isRecording {
-                recordingTemplateCarousel
+                ghostPromptView
                     .transition(.move(edge: .top).combined(with: .opacity))
             }
 
@@ -159,32 +154,30 @@ struct ChatInputBar: View {
         .padding(.top, 4)
         .frame(maxWidth: .infinity)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: speechRecognizer.recordingState)
+        .animation(.easeInOut(duration: 0.25), value: shouldShowGhostPrompt)
     }
 
-    private var recordingTemplateCarousel: some View {
-        GeometryReader { geometry in
-            let horizontalInset = max((geometry.size.width - Self.templateCardWidth) / 2, 0)
-            let selectedContainerHeight: CGFloat = 236
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: Self.templateCardSpacing) {
-                    ForEach(BrainDumpTemplate.all) { template in
-                        BrainDumpTemplateCardView(
-                            template: template,
-                            isSelected: centeredTemplateID == template.id
-                        )
-                        .frame(height: selectedContainerHeight, alignment: .bottom)
-                        .id(template.id)
-                    }
-                }
-                .scrollTargetLayout()
-                .padding(.horizontal, horizontalInset)
-            }
-            .scrollTargetBehavior(.viewAligned(limitBehavior: .alwaysByOne))
-            .scrollPosition(id: $centeredTemplateID)
-        }
-        .scrollClipDisabled()
-        .frame(height: 236)
+    private var ghostPromptView: some View {
+        Text(RecordingGhostPromptStore.text(at: ghostPromptIndex))
+            .font(.bodySmall)
+            .foregroundColor(.textSub.opacity(0.78))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 10)
+            .frame(maxWidth: 300)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.86))
+                    .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+            )
+            .overlay(
+                Capsule(style: .continuous)
+                    .stroke(Color.black.opacity(0.04), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
+            .opacity(shouldShowGhostPrompt ? 1 : 0)
+            .accessibilityHidden(!shouldShowGhostPrompt)
+            .animation(.easeInOut(duration: 0.3), value: ghostPromptIndex)
     }
 
     private var idleGlassCapsule: some View {
@@ -395,6 +388,12 @@ struct ChatInputBar: View {
         }
     }
 
+    private var shouldShowGhostPrompt: Bool {
+        speechRecognizer.isRecording
+            && isGhostPromptVisible
+            && speechRecognizer.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     private func presentOnboardingOrStartRecording() {
         guard !speechRecognizer.isRecording else { return }
 
@@ -405,6 +404,30 @@ struct ChatInputBar: View {
 
         hasSeenBrainDumpOnboarding = true
         showBrainDumpOnboarding = true
+    }
+
+    private func showRandomGhostPrompt() {
+        ghostPromptDismissTask?.cancel()
+        ghostPromptIndex = RecordingGhostPromptStore.randomIndex()
+        isGhostPromptVisible = true
+
+        ghostPromptDismissTask = Task {
+            let delay = UInt64(RecordingGhostPromptStore.displayDuration * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: delay)
+            guard !Task.isCancelled else { return }
+
+            await MainActor.run {
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    isGhostPromptVisible = false
+                }
+            }
+        }
+    }
+
+    private func dismissGhostPrompt() {
+        ghostPromptDismissTask?.cancel()
+        ghostPromptDismissTask = nil
+        isGhostPromptVisible = false
     }
 }
 

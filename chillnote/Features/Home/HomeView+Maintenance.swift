@@ -38,13 +38,11 @@ extension HomeView {
             TrashPolicy.purgeExpiredTags(context: modelContext, userId: userId)
         }
 
-        Task {
-            switch reason {
-            case .initial, .userChanged:
-                await syncAndSeedStarterGuideIfNeeded()
-            case .foreground:
-                await syncManager.syncIfNeeded(context: modelContext)
-            }
+        switch reason {
+        case .initial, .userChanged:
+            await syncAndSeedStarterGuideIfNeeded()
+        case .foreground:
+            await syncManager.syncIfNeeded(context: modelContext)
         }
 
         await checkForPendingRecordingsAsync()

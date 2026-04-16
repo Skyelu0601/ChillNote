@@ -53,7 +53,8 @@ class DataService: ObservableObject {
         do {
             let schema = Schema([
                 Note.self,
-                Tag.self
+                Tag.self,
+                ChecklistItem.self
             ])
             
             let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)

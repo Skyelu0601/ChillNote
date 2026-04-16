@@ -576,6 +576,7 @@ struct HomeView: View {
             await NotesSearchIndexer.shared.rebuildIfNeeded(context: modelContext, userId: userId)
         }
     }
+
 }
 
 #Preview {

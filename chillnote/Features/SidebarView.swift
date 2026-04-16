@@ -177,6 +177,7 @@ struct SidebarView: View {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
                     isPresented = false
                 }
+                triggerSidebarHaptic()
             }
     }
     
@@ -193,6 +194,11 @@ struct SidebarView: View {
         let isMostlyHorizontal = abs(horizontal) > vertical + sidebarCloseHorizontalBias
         
         return hasEnoughLeftDistance && isMostlyHorizontal
+    }
+
+    private func triggerSidebarHaptic() {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.impactOccurred()
     }
     
     private func handleRootDrop(items: [String]) -> Bool {
