@@ -31,7 +31,7 @@ struct BrainDumpOnboardingSheet: View {
                     .padding(.vertical, 15)
                     .background(
                         LinearGradient(
-                            colors: [Color.accentPrimary, Color.mellowOrange],
+                            colors: [Color.accentPrimary, Color.accentPrimary.opacity(0.88)],
                             startPoint: .leading,
                             endPoint: .trailing
                         )

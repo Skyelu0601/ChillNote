@@ -8,6 +8,7 @@ struct SidebarView: View {
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var syncManager: SyncManager
     @StateObject private var storeService = StoreService.shared
+    @Query(filter: #Predicate<Note> { $0.deletedAt == nil }, sort: \Note.createdAt) private var _activeNotes: [Note]
     @Query(filter: #Predicate<Tag> { $0.deletedAt == nil }, sort: \Tag.name) private var _allTags: [Tag]
     
     @Binding var isPresented: Bool
@@ -27,6 +28,15 @@ struct SidebarView: View {
     private var allTags: [Tag] {
         guard let userId = authService.currentUserId else { return [] }
         return _allTags.filter { $0.userId == userId }
+    }
+
+    private var activeNotes: [Note] {
+        guard let userId = authService.currentUserId else { return [] }
+        return _activeNotes.filter { $0.userId == userId }
+    }
+
+    private var monthlyStats: SidebarMonthlyStats {
+        SidebarMonthlyStats(notes: activeNotes, referenceDate: Date())
     }
     
     /// Root-level tags (those without a parent)
@@ -73,6 +83,9 @@ struct SidebarView: View {
                     }
                     .padding(.top, 60)
                     .padding(.horizontal, 20)
+
+                    SidebarMonthlyStatsCard(stats: monthlyStats)
+                        .padding(.horizontal, 16)
                     
                     // Main Navigation
                     VStack(spacing: 6) {
@@ -150,9 +163,9 @@ struct SidebarView: View {
                         .padding(.horizontal, 16)
                         .padding(.bottom, 24)
                 }
-                .frame(width: 290)
+                .frame(width: 320)
                 .background(Color.bgSecondary) // 纯净背景
-                .offset(x: isPresented ? 0 : -290)
+                .offset(x: isPresented ? 0 : -320)
                 
                 Spacer()
             }
@@ -258,6 +271,146 @@ struct SidebarView: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+private struct SidebarMonthlyStats {
+    let monthLabel: String
+    let dayCount: Int
+    let noteCount: Int
+    let recordedDays: Int
+    let streakCount: Int
+    let recordedDayNumbers: Set<Int>
+
+    init(notes: [Note], referenceDate: Date, calendar: Calendar = .current) {
+        let interval = calendar.dateInterval(of: .month, for: referenceDate) ?? DateInterval(start: referenceDate, duration: 0)
+        let monthlyNotes = notes.filter { note in
+            interval.contains(note.createdAt)
+        }
+        let recordedDayNumbers = Set(
+            monthlyNotes.compactMap { note in
+                calendar.component(.day, from: note.createdAt)
+            }
+        )
+
+        self.monthLabel = Self.makeMonthLabel(from: interval.start)
+        self.dayCount = calendar.range(of: .day, in: .month, for: referenceDate)?.count ?? 30
+        self.noteCount = monthlyNotes.count
+        self.recordedDays = recordedDayNumbers.count
+        self.streakCount = Self.makeRecentStreak(from: recordedDayNumbers)
+        self.recordedDayNumbers = recordedDayNumbers
+    }
+
+    private static func makeMonthLabel(from date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.setLocalizedDateFormatFromTemplate("MMM")
+        return formatter.string(from: date)
+    }
+
+    private static func makeRecentStreak(from recordedDayNumbers: Set<Int>) -> Int {
+        guard var day = recordedDayNumbers.max() else { return 0 }
+
+        var streak = 0
+        while recordedDayNumbers.contains(day) {
+            streak += 1
+            day -= 1
+        }
+        return streak
+    }
+}
+
+private struct SidebarMonthlyStatsCard: View {
+    let stats: SidebarMonthlyStats
+
+    private let gridColumns = Array(repeating: GridItem(.flexible(), spacing: 6), count: 10)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            HStack(alignment: .top, spacing: 10) {
+                SidebarMetricItem(
+                    value: stats.noteCount,
+                    titleKey: "sidebar.stats.note_count",
+                    alignment: .leading
+                )
+                SidebarMetricItem(
+                    value: stats.recordedDays,
+                    titleKey: "sidebar.stats.recorded_days",
+                    alignment: .center
+                )
+                SidebarMetricItem(
+                    value: stats.streakCount,
+                    titleKey: "sidebar.stats.streak",
+                    alignment: .trailing
+                )
+            }
+            .frame(maxWidth: .infinity)
+
+            LazyVGrid(columns: gridColumns, alignment: .leading, spacing: 8) {
+                ForEach(1...stats.dayCount, id: \.self) { day in
+                    SidebarDailyCheckDot(isRecorded: stats.recordedDayNumbers.contains(day))
+                }
+            }
+
+            Text(stats.monthLabel)
+                .font(.system(size: 12, weight: .semibold, design: .serif))
+                .foregroundColor(.textSub.opacity(0.7))
+                .frame(maxWidth: .infinity, alignment: .center)
+        }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color.textMain.opacity(0.025))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20)
+                .stroke(Color.textMain.opacity(0.05), lineWidth: 1)
+        )
+    }
+}
+
+private struct SidebarMetricItem: View {
+    let value: Int
+    let titleKey: String
+    let alignment: Alignment
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Text("\(value)")
+                .font(.system(size: 28, weight: .semibold, design: .rounded))
+                .foregroundColor(.textMain)
+
+            Text(L10n.text(titleKey))
+                .font(.system(size: 12, weight: .medium, design: .serif))
+                .foregroundColor(.textSub)
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(minWidth: 72)
+        .multilineTextAlignment(.center)
+        .frame(maxWidth: .infinity, alignment: alignment)
+    }
+}
+
+private struct SidebarDailyCheckDot: View {
+    let isRecorded: Bool
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(isRecorded ? Color.accentPrimary.opacity(0.12) : Color.textMain.opacity(0.06))
+                .overlay(
+                    Circle()
+                        .stroke(isRecorded ? Color.accentPrimary.opacity(0.18) : Color.clear, lineWidth: 1)
+                )
+
+            if isRecorded {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 8, weight: .bold))
+                    .foregroundColor(.accentPrimary)
+            }
+        }
+        .frame(width: 18, height: 18)
     }
 }
 

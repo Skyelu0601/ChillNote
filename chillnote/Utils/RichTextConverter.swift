@@ -1,3 +1,4 @@
+import SwiftUI
 import UIKit
 
 /// Utility for converting between Markdown and NSAttributedString
@@ -11,11 +12,16 @@ struct RichTextConverter {
         static let h1Size: CGFloat = 24
         static let h2Size: CGFloat = 20
         static let h3Size: CGFloat = 17 // Same as base but bold
+        static let checkboxUncheckedSymbol = "○"
+        static let checkboxCheckedSymbol = "◉"
+        static let checkboxAttachmentPrefix = "\u{FFFC} "
+        static let checkboxSymbolFontSizeOffset: CGFloat = 10
+        static let checkboxBaselineOffset: CGFloat = -2
         
-        static let bulletColor = UIColor.systemOrange
-        static let checkboxUncheckedColor = UIColor.systemOrange
+        static let listPrefixColor = UIColor.secondaryLabel
+        static let checkboxUncheckedColor = UIColor(Color.accentPrimary)
         static let checkboxCheckedColor = UIColor.systemGreen
-        static let quoteBarColor = UIColor.systemOrange
+        static let quoteBarColor = UIColor(Color.accentPrimary)
         static let codeColor = UIColor.systemPurple
         static let codeBgColor = UIColor.systemGray6
         
@@ -24,6 +30,26 @@ struct RichTextConverter {
             let style = NSMutableParagraphStyle()
             style.lineSpacing = 6
             style.paragraphSpacing = 12
+            return style
+        }
+
+        static func checkboxStyle() -> NSMutableParagraphStyle {
+            let style = baseStyle()
+            style.headIndent = 24
+            style.firstLineHeadIndent = 0
+            return style
+        }
+
+        static func headerStyle(level: Int) -> NSMutableParagraphStyle {
+            let style = baseStyle()
+            switch level {
+            case 1:
+                style.paragraphSpacingBefore = 16
+            case 2, 3:
+                style.paragraphSpacingBefore = 12
+            default:
+                break
+            }
             return style
         }
     }
@@ -117,24 +143,22 @@ struct RichTextConverter {
     private static func parseHeader(_ text: String, level: Int, textColor: UIColor, paragraphStyle: NSMutableParagraphStyle) -> NSAttributedString {
         let fontSize: CGFloat
         let fontWeight: UIFont.Weight
+        let headerStyle = Config.headerStyle(level: level)
         
         switch level {
         case 1:
             fontSize = Config.h1Size
             fontWeight = .bold
-            paragraphStyle.paragraphSpacingBefore = 16
         case 2:
             fontSize = Config.h2Size
             fontWeight = .semibold
-            paragraphStyle.paragraphSpacingBefore = 12
         default:
             fontSize = Config.h3Size
             fontWeight = .semibold
-            paragraphStyle.paragraphSpacingBefore = 12
         }
         
         let font = UIFont.systemFont(ofSize: fontSize, weight: fontWeight)
-        let attrText = parseInlineFormatting(text, baseFont: font, textColor: textColor, paragraphStyle: paragraphStyle)
+        let attrText = parseInlineFormatting(text, baseFont: font, textColor: textColor, paragraphStyle: headerStyle)
         let result = NSMutableAttributedString(attributedString: attrText)
         
         result.addAttribute(Key.headerLevel, value: level, range: NSRange(location: 0, length: result.length))
@@ -144,25 +168,26 @@ struct RichTextConverter {
     
     private static func parseCheckbox(_ text: String, checked: Bool, baseFont: UIFont, textColor: UIColor, paragraphStyle: NSMutableParagraphStyle) -> NSAttributedString {
         let result = NSMutableAttributedString()
-        
-        // Symbol
-        let symbol = checked ? "☑ " : "☐ "
-        let symbolFont = UIFont.systemFont(ofSize: baseFont.pointSize + 8, weight: .medium)
-        let symbolColor = checked ? Config.checkboxCheckedColor : Config.checkboxUncheckedColor
-        paragraphStyle.headIndent = 24
-        paragraphStyle.firstLineHeadIndent = 0
-        
-        let symbolAttrs: [NSAttributedString.Key: Any] = [
-            .font: symbolFont,
-            .foregroundColor: symbolColor,
-            .paragraphStyle: paragraphStyle,
-            Key.checkbox: checked
-        ]
-        result.append(NSAttributedString(string: symbol, attributes: symbolAttrs))
+        let checkboxStyle = Config.checkboxStyle()
+
+        if checked {
+            result.append(makeCheckedCheckboxPrefix(baseFont: baseFont, paragraphStyle: checkboxStyle))
+        } else {
+            let symbol = "\(Config.checkboxUncheckedSymbol) "
+            let symbolFont = UIFont.systemFont(ofSize: baseFont.pointSize + Config.checkboxSymbolFontSizeOffset, weight: .medium)
+            let symbolAttrs: [NSAttributedString.Key: Any] = [
+                .font: symbolFont,
+                .foregroundColor: Config.checkboxUncheckedColor,
+                .baselineOffset: Config.checkboxBaselineOffset,
+                .paragraphStyle: checkboxStyle,
+                Key.checkbox: false
+            ]
+            result.append(NSAttributedString(string: symbol, attributes: symbolAttrs))
+        }
         
         // Content
         let contentColor = checked ? UIColor.secondaryLabel : textColor
-        let contentText = parseInlineFormatting(text, baseFont: baseFont, textColor: contentColor, paragraphStyle: paragraphStyle)
+        let contentText = parseInlineFormatting(text, baseFont: baseFont, textColor: contentColor, paragraphStyle: checkboxStyle)
         let mutableContent = NSMutableAttributedString(attributedString: contentText)
         
         if checked {
@@ -182,7 +207,7 @@ struct RichTextConverter {
         
         let bulletAttrs: [NSAttributedString.Key: Any] = [
             .font: baseFont,
-            .foregroundColor: Config.bulletColor,
+            .foregroundColor: Config.listPrefixColor,
             .paragraphStyle: style,
             Key.bullet: true
         ]
@@ -202,7 +227,7 @@ struct RichTextConverter {
         // Number part "1. "
         let numberAttrs: [NSAttributedString.Key: Any] = [
             .font: UIFont.monospacedDigitSystemFont(ofSize: baseFont.pointSize, weight: .medium),
-            .foregroundColor: Config.bulletColor,
+            .foregroundColor: Config.listPrefixColor,
             .paragraphStyle: style,
             Key.orderedList: prefix // Persist the number used
         ]
@@ -349,8 +374,11 @@ struct RichTextConverter {
         // 2. Checkbox
         if let isChecked = attributes[Key.checkbox] as? Bool {
             let prefix = isChecked ? "- [x] " : "- [ ] "
-            // The text usually contains "☑ " or "☐ " at start, we should strip it
-            let contentStr = stripPrefixTokens(text, tokens: ["☑ ", "☐ "])
+            // The text usually contains the visual checkbox symbol at start, we should strip it
+            let contentStr = stripPrefixTokens(
+                text,
+                tokens: [Config.checkboxAttachmentPrefix, "\(Config.checkboxCheckedSymbol) ", "\(Config.checkboxUncheckedSymbol) "]
+            )
             let contentAttr = stripPrefixTokenLen(fullAttributedLine, length: text.count - contentStr.count)
             return "\(prefix)\(inlineToMarkdown(contentAttr))"
         }
@@ -460,6 +488,30 @@ struct RichTextConverter {
         if result.hasSuffix(" ") {
             result.removeLast()
         }
+        return result
+    }
+
+    static func makeCheckedCheckboxPrefix(baseFont: UIFont, paragraphStyle: NSParagraphStyle) -> NSAttributedString {
+        let symbolPointSize = baseFont.pointSize + Config.checkboxSymbolFontSizeOffset
+        let imageConfig = UIImage.SymbolConfiguration(pointSize: symbolPointSize, weight: .semibold)
+        let image = UIImage(systemName: "checkmark.circle.fill", withConfiguration: imageConfig)?
+            .withTintColor(Config.checkboxCheckedColor, renderingMode: .alwaysOriginal)
+
+        let attachment = NSTextAttachment()
+        attachment.image = image
+        attachment.bounds = CGRect(
+            x: 0,
+            y: Config.checkboxBaselineOffset,
+            width: symbolPointSize,
+            height: symbolPointSize
+        )
+
+        let result = NSMutableAttributedString(attachment: attachment)
+        result.addAttributes([
+            .paragraphStyle: paragraphStyle,
+            Key.checkbox: true
+        ], range: NSRange(location: 0, length: result.length))
+        result.append(NSAttributedString(string: " ", attributes: [.paragraphStyle: paragraphStyle]))
         return result
     }
 }

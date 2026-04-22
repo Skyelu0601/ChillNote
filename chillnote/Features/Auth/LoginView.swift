@@ -2,8 +2,9 @@ import SwiftUI
 import AuthenticationServices
 
 struct LoginView: View {
-    private let primaryButtonHeight: CGFloat = 52
-    private let primaryButtonCornerRadius: CGFloat = 10
+    private let primaryButtonHeight: CGFloat = 54
+    private let primaryButtonCornerRadius: CGFloat = 14
+    private let contentMaxWidth: CGFloat = 360
 
     @Environment(\.dismiss) var dismiss
     @EnvironmentObject var authService: AuthService
@@ -15,140 +16,39 @@ struct LoginView: View {
     @State private var isVerifyingCode = false
     
     var body: some View {
-        ZStack {
-            Color.bgPrimary.ignoresSafeArea()
-            
-            VStack(spacing: 36) {
-                Spacer()
+        GeometryReader { geometry in
+            ZStack {
+                Color.bgPrimary.ignoresSafeArea()
                 
-                // MARK: - Brand Header
                 VStack(spacing: 0) {
-                    Image("chillohead_touming")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 88, height: 88)
-                    
-                    Spacer()
-                        .frame(height: 24)
-                    
-                    Text(L10n.text("auth.login.brand_title"))
-                        .font(.system(size: 38, weight: .bold, design: .serif))
-                        .foregroundColor(.textMain)
-                    
-                    Spacer()
-                        .frame(height: 12)
-                    
-                    Text(L10n.text("auth.login.subtitle"))
-                        .multilineTextAlignment(.center)
-                        .font(.system(size: 16, weight: .regular))
-                        .kerning(0.4)
-                        .foregroundColor(.textSub.opacity(0.9))
-                        .lineLimit(3)
-                        .minimumScaleFactor(0.85)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .layoutPriority(1)
-                }
-                .padding(.horizontal, 24)
-                
-                if showEmailLogin {
-                    // MARK: - Email Login Form
-                    emailLoginForm
-                } else {
-                    // MARK: - Social Login Buttons
-                    VStack(spacing: 16) {
-                        // Apple Sign In
-                        SignInWithAppleButton(
-                            onRequest: { request in
-                                authService.handleAppleRequest(request)
-                            },
-                            onCompletion: { result in
-                                print("🍎 [Apple Sign In] Completion callback triggered")
-                                switch result {
-                                case .success(let authorization):
-                                    print("✅ [Apple Sign In] Authorization successful")
-                                    print("   Credential type: \(type(of: authorization.credential))")
-                                    
-                                    if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
-                                        print("   User ID: \(appleIDCredential.user)")
-                                        print("   Has identity token: \(appleIDCredential.identityToken != nil)")
-                                        print("   Has authorization code: \(appleIDCredential.authorizationCode != nil)")
-                                        print("   Email: \(appleIDCredential.email ?? "nil")")
-                                        print("   Full name: \(appleIDCredential.fullName?.givenName ?? "nil")")
-                                        
-                                        Task {
-                                            print("🚀 [Apple Sign In] Starting backend authentication...")
-                                            let success = await authService.signInWithApple(appleIDCredential)
-                                            print("🎯 [Apple Sign In] Backend result: \(success ? "✅ SUCCESS" : "❌ FAILED")")
-                                            if !success {
-                                                print("⚠️ [Apple Sign In] Error message: \(authService.errorMessage ?? "Unknown error")")
-                                            }
-                                        }
-                                    } else {
-                                        print("❌ [Apple Sign In] Failed to cast credential to ASAuthorizationAppleIDCredential")
-                                    }
-                                case .failure(let error):
-                                    print("❌ [Apple Sign In] Authorization failed")
-                                    print("   Error: \(error.localizedDescription)")
-                                    print("   Error code: \((error as NSError).code)")
-                                    print("   Error domain: \((error as NSError).domain)")
-                                }
+                    Spacer(minLength: max(68, geometry.size.height * 0.13))
+
+                    VStack(spacing: 26) {
+                        LoginBrandHeader()
+                            .padding(.horizontal, 24)
+
+                        Group {
+                            if showEmailLogin {
+                                emailLoginForm
+                            } else {
+                                socialLoginButtons
                             }
-                        )
-                        .signInWithAppleButtonStyle(.black)
-                        .frame(height: primaryButtonHeight)
-                        
-                        // Google Sign In (Custom Button)
-                        Button(action: {
-                            Task {
-                                let success = await authService.signInWithGoogle()
-                                if !success {
-                                    print("Google Sign In failed: \(authService.errorMessage ?? "Unknown error")")
-                                }
-                            }
-                        }) {
-                            HStack {
-                                Image("GoogleLogo")
-                                    .resizable()
-                                    .renderingMode(.original)
-                                    .frame(width: 18, height: 18)
-                                Text(L10n.text("auth.login.google_button"))
-                                    .font(.system(size: 17, weight: .medium))
-                            }
-                            .foregroundColor(.black)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: primaryButtonHeight)
-                            .background(Color.white)
-                            .cornerRadius(primaryButtonCornerRadius)
-                            .shadow(color: Color.black.opacity(0.1), radius: 4, x: 0, y: 2)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: primaryButtonCornerRadius)
-                                    .stroke(Color.gray.opacity(0.2), lineWidth: 1)
-                            )
                         }
-                        
-                        // Email Toggle
-                        Button(action: {
-                            withAnimation { showEmailLogin = true }
-                        }) {
-                            Text(L10n.text("auth.login.email_button"))
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.textSub)
-                        }
-                        .padding(.top, 10)
+                        .frame(maxWidth: contentMaxWidth)
                     }
-                    .padding(.horizontal, 24)
+                    
+                    Spacer(minLength: max(40, geometry.size.height * 0.08))
+                    
+                    Text(.init(L10n.text("auth.login.legal_markdown")))
+                        .font(.caption)
+                        .foregroundColor(.textSub.opacity(0.8))
+                        .tint(.textSub.opacity(0.95))
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: contentMaxWidth)
+                        .padding(.horizontal, 32)
+                        .padding(.bottom, 20)
                 }
-                
-                Spacer()
-                
-                // MARK: - Terms
-                Text(.init(L10n.text("auth.login.legal_markdown")))
-                    .font(.caption)
-                    .foregroundColor(.textSub.opacity(0.8))
-                    .tint(.textSub.opacity(0.95))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                    .padding(.bottom, 20)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
         .onChange(of: authService.isSignedIn) { oldValue, newValue in
@@ -158,6 +58,92 @@ struct LoginView: View {
         }
     }
     
+    var socialLoginButtons: some View {
+        VStack(spacing: 16) {
+            Button(action: {
+                Task {
+                    let success = await authService.signInWithGoogle()
+                    if !success {
+                        print("Google Sign In failed: \(authService.errorMessage ?? "Unknown error")")
+                    }
+                }
+            }) {
+                HStack(spacing: 10) {
+                    Image("GoogleLogo")
+                        .resizable()
+                        .renderingMode(.original)
+                        .frame(width: 18, height: 18)
+                    Text(L10n.text("auth.login.google_button"))
+                        .font(.system(size: 19, weight: .medium))
+                }
+                .foregroundColor(.black)
+                .frame(maxWidth: .infinity)
+                .frame(height: primaryButtonHeight)
+                .background(Color.white)
+                .cornerRadius(primaryButtonCornerRadius)
+                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
+                .overlay(
+                    RoundedRectangle(cornerRadius: primaryButtonCornerRadius)
+                        .stroke(Color.gray.opacity(0.18), lineWidth: 1)
+                )
+            }
+
+            SignInWithAppleButton(
+                onRequest: { request in
+                    authService.handleAppleRequest(request)
+                },
+                onCompletion: { result in
+                    print("🍎 [Apple Sign In] Completion callback triggered")
+                    switch result {
+                    case .success(let authorization):
+                        print("✅ [Apple Sign In] Authorization successful")
+                        print("   Credential type: \(type(of: authorization.credential))")
+                        
+                        if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
+                            print("   User ID: \(appleIDCredential.user)")
+                            print("   Has identity token: \(appleIDCredential.identityToken != nil)")
+                            print("   Has authorization code: \(appleIDCredential.authorizationCode != nil)")
+                            print("   Email: \(appleIDCredential.email ?? "nil")")
+                            print("   Full name: \(appleIDCredential.fullName?.givenName ?? "nil")")
+                            
+                            Task {
+                                print("🚀 [Apple Sign In] Starting backend authentication...")
+                                let success = await authService.signInWithApple(appleIDCredential)
+                                print("🎯 [Apple Sign In] Backend result: \(success ? "✅ SUCCESS" : "❌ FAILED")")
+                                if !success {
+                                    print("⚠️ [Apple Sign In] Error message: \(authService.errorMessage ?? "Unknown error")")
+                                }
+                            }
+                        } else {
+                            print("❌ [Apple Sign In] Failed to cast credential to ASAuthorizationAppleIDCredential")
+                        }
+                    case .failure(let error):
+                        print("❌ [Apple Sign In] Authorization failed")
+                        print("   Error: \(error.localizedDescription)")
+                        print("   Error code: \((error as NSError).code)")
+                        print("   Error domain: \((error as NSError).domain)")
+                    }
+                }
+            )
+            .signInWithAppleButtonStyle(.black)
+            .frame(height: primaryButtonHeight)
+            .clipShape(RoundedRectangle(cornerRadius: primaryButtonCornerRadius))
+            
+            Button(action: {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showEmailLogin = true
+                }
+            }) {
+                Text(L10n.text("auth.login.email_button"))
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundColor(.textSub)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 6)
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+    
     var emailLoginForm: some View {
         VStack(spacing: 20) {
             if !sentCode {
@@ -165,11 +151,12 @@ struct LoginView: View {
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .autocapitalization(.none)
-                    .padding()
+                    .padding(.horizontal, 16)
+                    .frame(height: 54)
                     .background(Color.bgSecondary)
-                    .cornerRadius(12)
+                    .cornerRadius(primaryButtonCornerRadius)
                     .overlay(
-                        RoundedRectangle(cornerRadius: 12)
+                        RoundedRectangle(cornerRadius: primaryButtonCornerRadius)
                             .stroke(Color.textSub.opacity(0.1), lineWidth: 1)
                     )
                 
@@ -219,11 +206,12 @@ struct LoginView: View {
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.center)
                         .font(.title2)
-                        .padding()
+                        .padding(.horizontal, 16)
+                        .frame(height: 54)
                         .background(Color.bgSecondary)
-                        .cornerRadius(12)
+                        .cornerRadius(primaryButtonCornerRadius)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: primaryButtonCornerRadius)
                                 .stroke(Color.textSub.opacity(0.1), lineWidth: 1)
                         )
                 }
@@ -272,5 +260,37 @@ struct LoginView: View {
         }
         .padding(.horizontal, 24)
         .transition(.move(edge: .trailing))
+    }
+}
+
+private struct LaunchScreenStyleWordmark: View {
+    var body: some View {
+        HStack(spacing: 0) {
+            Text(verbatim: "Chill")
+                .font(.custom("AvenirNext-DemiBold", size: 42))
+                .foregroundColor(Color(red: 0.184, green: 0.525, blue: 1.0))
+
+            Text(verbatim: "Note")
+                .font(.custom("AvenirNext-HeavyItalic", size: 44))
+                .foregroundColor(Color(red: 0.365, green: 0.569, blue: 0.961))
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(L10n.text("auth.login.brand_title")))
+    }
+}
+
+private struct LoginBrandHeader: View {
+    var body: some View {
+        VStack(spacing: 14) {
+            Image("LoginBrandIcon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 68, height: 68)
+                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                .shadow(color: Color.black.opacity(0.08), radius: 14, x: 0, y: 8)
+
+            LaunchScreenStyleWordmark()
+        }
+        .frame(maxWidth: .infinity)
     }
 }

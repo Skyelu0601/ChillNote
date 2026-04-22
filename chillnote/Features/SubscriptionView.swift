@@ -158,17 +158,18 @@ struct SubscriptionView: View {
         VStack(spacing: 32) {
             // Header
             VStack(spacing: 16) {
-                Image("pro")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 108, height: 108)
-                    .shadow(color: .yellow.opacity(0.2), radius: 10, x: 0, y: 5)
-                
-                VStack(spacing: 8) {
-                    Text(L10n.text("subscription.brand.pro_title"))
-                        .font(.system(size: 28, weight: .bold, design: .serif))
-                        .foregroundColor(.textMain)
+                ProBrandHeader()
+
+                HStack(spacing: 6) {
+                    Image(systemName: "crown.fill")
+                        .foregroundColor(.yellow)
+                    Text(L10n.text("subscription.current_plan"))
                 }
+                .font(.footnote.weight(.medium))
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.black.opacity(0.05))
+                .clipShape(Capsule())
             }
             .padding(.top, 20)
             
@@ -286,21 +287,7 @@ struct SubscriptionView: View {
     
     private var heroSection: some View {
         VStack(spacing: 20) {
-            Image("coffee")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 106, height: 106)
-                .offset(y: 8)
-            
-            VStack(spacing: 8) {
-                Text(L10n.text("subscription.upgrade_title"))
-                    .font(.system(size: 28, weight: .bold, design: .serif))
-                    .foregroundColor(.textMain)
-                
-                Text(L10n.text("subscription.upgrade_subtitle"))
-                    .font(.body)
-                    .foregroundColor(.textSub)
-            }
+            ProBrandHeader()
             
             if storeService.currentTier == .pro {
                 HStack(spacing: 6) {
@@ -541,6 +528,28 @@ struct ProductHeroCard: View {
             RoundedRectangle(cornerRadius: 24)
                 .stroke(displayInfo.isAnnual ? Color.accentPrimary : Color.clear, lineWidth: 2)
         )
+    }
+}
+
+private struct ProBrandHeader: View {
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: 10) {
+            LaunchStyleWordmark()
+
+            Text("Pro")
+                .font(.system(size: 31, weight: .semibold, design: .rounded))
+                .foregroundColor(Color(red: 0.184, green: 0.525, blue: 1.0))
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text(L10n.text("subscription.brand.pro_title")))
+    }
+}
+
+private struct LaunchStyleWordmark: View {
+    var body: some View {
+        Text(L10n.text("auth.login.brand_title"))
+            .font(.system(size: 31, weight: .semibold, design: .serif))
+            .foregroundColor(.black)
     }
 }
 

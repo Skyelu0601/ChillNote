@@ -87,6 +87,14 @@ struct RichTextEditorView: UIViewRepresentable {
             let oldLength: Int
             let typingAttributes: [NSAttributedString.Key: Any]
         }
+
+        private var checkboxParagraphStyle: NSParagraphStyle {
+            RichTextConverter.Config.checkboxStyle()
+        }
+
+        private func headerParagraphStyle(level: Int) -> NSParagraphStyle {
+            RichTextConverter.Config.headerStyle(level: level)
+        }
         
         init(_ parent: RichTextEditorView) {
             self.parent = parent
@@ -184,7 +192,15 @@ struct RichTextEditorView: UIViewRepresentable {
             let lineText = nsText.substring(with: lineRange) as String
             
             // Check prefixes
-            let prefixes = ["- [ ] ", "- [x] ", "☑ ", "☐ ", "• ", "- "]
+            let prefixes = [
+                "- [ ] ",
+                "- [x] ",
+                RichTextConverter.Config.checkboxAttachmentPrefix,
+                "\(RichTextConverter.Config.checkboxCheckedSymbol) ",
+                "\(RichTextConverter.Config.checkboxUncheckedSymbol) ",
+                "• ",
+                "- "
+            ]
             for prefix in prefixes {
                 if lineText.hasPrefix(prefix) {
                     let prefixLen = prefix.count
@@ -200,6 +216,14 @@ struct RichTextEditorView: UIViewRepresentable {
                         textView.textStorage.beginEditing()
                         textView.textStorage.replaceCharacters(in: absolutePrefixRange, with: "")
                         textView.textStorage.endEditing()
+                        let remainingLength = max(0, lineRange.length - absolutePrefixRange.length)
+                        if remainingLength > 0 {
+                            textView.textStorage.addAttribute(
+                                .paragraphStyle,
+                                value: RichTextConverter.Config.baseStyle(),
+                                range: NSRange(location: lineRange.location, length: remainingLength)
+                            )
+                        }
                         textView.selectedRange = NSRange(location: lineRange.location, length: 0)
                         applyDefaultTypingAttributes(to: textView)
                         textViewDidChange(textView)
@@ -217,6 +241,14 @@ struct RichTextEditorView: UIViewRepresentable {
                      textView.textStorage.beginEditing()
                      textView.textStorage.replaceCharacters(in: absolutePrefixRange, with: "")
                      textView.textStorage.endEditing()
+                     let remainingLength = max(0, lineRange.length - absolutePrefixRange.length)
+                     if remainingLength > 0 {
+                         textView.textStorage.addAttribute(
+                             .paragraphStyle,
+                             value: RichTextConverter.Config.baseStyle(),
+                             range: NSRange(location: lineRange.location, length: remainingLength)
+                         )
+                     }
                      textView.selectedRange = NSRange(location: lineRange.location, length: 0)
                      applyDefaultTypingAttributes(to: textView)
                      textViewDidChange(textView)
@@ -252,12 +284,12 @@ struct RichTextEditorView: UIViewRepresentable {
                 replacement = String(leadingSpaces) + "• "
             } else if trimmed == "[]" || trimmed == "[ ]" || trimmed == "- [ ]" || trimmed == "* [ ]" {
                 // Checkbox
-                replacement = String(leadingSpaces) + "☐ "
+                replacement = String(leadingSpaces) + "\(RichTextConverter.Config.checkboxUncheckedSymbol) "
                 isCheckbox = true
                 checkboxState = false
             } else if trimmed.lowercased() == "- [x]" || trimmed.lowercased() == "* [x]" {
                 // Checked checkbox
-                replacement = String(leadingSpaces) + "☑ "
+                replacement = String(leadingSpaces) + RichTextConverter.Config.checkboxAttachmentPrefix
                 isCheckbox = true
                 checkboxState = true
             } else if let _ = trimmed.range(of: #"^\d+\.$"#, options: .regularExpression) {
@@ -278,33 +310,47 @@ struct RichTextEditorView: UIViewRepresentable {
             
             // Apply Styles to the Prefix (Orange Zone)
             if isCheckbox {
-                let symbolFont = UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium)
+                let symbolFont = UIFont.systemFont(
+                    ofSize: parent.font.pointSize + RichTextConverter.Config.checkboxSymbolFontSizeOffset,
+                    weight: .medium
+                )
                 let isChecked = checkboxState ?? false
                 let symbolColor = isChecked ? RichTextConverter.Config.checkboxCheckedColor : RichTextConverter.Config.checkboxUncheckedColor
                 let symbolRange = NSRange(location: stylingRange.location, length: min(1, stylingRange.length))
                 let spacerRange = NSRange(location: stylingRange.location + symbolRange.length, length: max(0, stylingRange.length - symbolRange.length))
-                textView.textStorage.addAttributes([
-                    .foregroundColor: symbolColor,
-                    .font: symbolFont,
-                    RichTextConverter.Key.checkbox: isChecked
-                ], range: symbolRange)
+                if isChecked {
+                    let prefix = RichTextConverter.makeCheckedCheckboxPrefix(
+                        baseFont: parent.font,
+                        paragraphStyle: checkboxParagraphStyle
+                    )
+                    textView.textStorage.replaceCharacters(in: stylingRange, with: prefix)
+                } else {
+                    textView.textStorage.addAttributes([
+                        .foregroundColor: symbolColor,
+                        .font: symbolFont,
+                        .baselineOffset: RichTextConverter.Config.checkboxBaselineOffset,
+                        .paragraphStyle: checkboxParagraphStyle,
+                        RichTextConverter.Key.checkbox: isChecked
+                    ], range: symbolRange)
+                }
                 
                 // Ensure no strikethrough (safety)
                 textView.textStorage.removeAttribute(.strikethroughStyle, range: symbolRange)
                 if spacerRange.length > 0 {
-                    textView.textStorage.setAttributes(defaultTypingAttributes(), range: spacerRange)
+                    textView.textStorage.setAttributes(checkboxTypingAttributes(), range: spacerRange)
                 }
+                applyCheckboxParagraphStyle(in: textView, at: NSRange(location: lineRange.location, length: max(newText.count, 1)))
                 
             } else if isOrdered {
                 textView.textStorage.addAttributes([
-                    .foregroundColor: RichTextConverter.Config.bulletColor,
+                    .foregroundColor: RichTextConverter.Config.listPrefixColor,
                     .font: UIFont.monospacedDigitSystemFont(ofSize: parent.font.pointSize, weight: .medium),
                     RichTextConverter.Key.orderedList: newText
                 ], range: stylingRange)
             } else {
                 // Bullet
                 textView.textStorage.addAttributes([
-                    .foregroundColor: RichTextConverter.Config.bulletColor,
+                    .foregroundColor: RichTextConverter.Config.listPrefixColor,
                     .font: parent.font,
                     RichTextConverter.Key.bullet: true
                 ], range: stylingRange)
@@ -319,7 +365,7 @@ struct RichTextEditorView: UIViewRepresentable {
             let cleanAttributes: [NSAttributedString.Key: Any] = [
                 .font: parent.font,
                 .foregroundColor: parent.textColor,
-                .paragraphStyle: RichTextConverter.Config.baseStyle()
+                .paragraphStyle: isCheckbox ? checkboxParagraphStyle : RichTextConverter.Config.baseStyle()
             ]
             textView.typingAttributes = cleanAttributes
             
@@ -340,8 +386,12 @@ struct RichTextEditorView: UIViewRepresentable {
             var isOrdered = false
             
             // Checkboxes (Visual or Markdown)
-            if trimmedLine.hasPrefix("☑ ") || trimmedLine.hasPrefix("☐ ") || trimmedLine.hasPrefix("- [ ] ") || trimmedLine.hasPrefix("- [x] ") {
-                detectedPrefix = String(leadingSpaces) + "☐ " // Always reset to unchecked state for new line
+            if trimmedLine.hasPrefix("\(RichTextConverter.Config.checkboxCheckedSymbol) ")
+                || trimmedLine.hasPrefix(RichTextConverter.Config.checkboxAttachmentPrefix)
+                || trimmedLine.hasPrefix("\(RichTextConverter.Config.checkboxUncheckedSymbol) ")
+                || trimmedLine.hasPrefix("- [ ] ")
+                || trimmedLine.hasPrefix("- [x] ") {
+                detectedPrefix = String(leadingSpaces) + "\(RichTextConverter.Config.checkboxUncheckedSymbol) " // Always reset to unchecked state for new line
                 isCheckbox = true
             } 
             // Bullets
@@ -358,8 +408,9 @@ struct RichTextEditorView: UIViewRepresentable {
             
             // 2. Check for "Empty" Line to Exit List
             // If the line contains ONLY the prefix (ignoring whitespace), we exit the list mode
-            let currentVisual = (trimmedLine.hasPrefix("☑ ") ? "☑ " : nil) ??
-                                (trimmedLine.hasPrefix("☐ ") ? "☐ " : nil) ??
+            let currentVisual = (trimmedLine.hasPrefix(RichTextConverter.Config.checkboxAttachmentPrefix) ? RichTextConverter.Config.checkboxAttachmentPrefix : nil) ??
+                                (trimmedLine.hasPrefix("\(RichTextConverter.Config.checkboxCheckedSymbol) ") ? "\(RichTextConverter.Config.checkboxCheckedSymbol) " : nil) ??
+                                (trimmedLine.hasPrefix("\(RichTextConverter.Config.checkboxUncheckedSymbol) ") ? "\(RichTextConverter.Config.checkboxUncheckedSymbol) " : nil) ??
                                 (trimmedLine.hasPrefix("• ") ? "• " : nil) ??
                                 prefix.trimmingCharacters(in: .whitespaces) // fallback
             
@@ -399,31 +450,37 @@ struct RichTextEditorView: UIViewRepresentable {
             
             // Apply Styles to the Prefix (Orange Zone)
             if isCheckbox {
-                let symbolFont = UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium)
+                let symbolFont = UIFont.systemFont(
+                    ofSize: parent.font.pointSize + RichTextConverter.Config.checkboxSymbolFontSizeOffset,
+                    weight: .medium
+                )
                 let symbolRange = NSRange(location: prefixRange.location, length: min(1, prefixRange.length))
                 let spacerRange = NSRange(location: prefixRange.location + symbolRange.length, length: max(0, prefixRange.length - symbolRange.length))
                 textView.textStorage.addAttributes([
                     .foregroundColor: RichTextConverter.Config.checkboxUncheckedColor,
                     .font: symbolFont,
+                    .baselineOffset: RichTextConverter.Config.checkboxBaselineOffset,
+                    .paragraphStyle: checkboxParagraphStyle,
                     RichTextConverter.Key.checkbox: false
                 ], range: symbolRange)
                 
                 // Ensure no strikethrough on the checkbox itself (safety)
                 textView.textStorage.removeAttribute(.strikethroughStyle, range: symbolRange)
                 if spacerRange.length > 0 {
-                    textView.textStorage.setAttributes(defaultTypingAttributes(), range: spacerRange)
+                    textView.textStorage.setAttributes(checkboxTypingAttributes(), range: spacerRange)
                 }
+                applyCheckboxParagraphStyle(in: textView, at: prefixRange)
                 
             } else if isOrdered {
                 textView.textStorage.addAttributes([
-                    .foregroundColor: RichTextConverter.Config.bulletColor,
+                    .foregroundColor: RichTextConverter.Config.listPrefixColor,
                     .font: UIFont.monospacedDigitSystemFont(ofSize: parent.font.pointSize, weight: .medium),
                     RichTextConverter.Key.orderedList: nextPrefix
                 ], range: prefixRange)
             } else {
                 // Bullet
                 textView.textStorage.addAttributes([
-                    .foregroundColor: RichTextConverter.Config.bulletColor,
+                    .foregroundColor: RichTextConverter.Config.listPrefixColor,
                     .font: parent.font,
                     RichTextConverter.Key.bullet: true
                 ], range: prefixRange)
@@ -438,7 +495,11 @@ struct RichTextEditorView: UIViewRepresentable {
             
             // Force reset typing attributes to Clean State (Black Text, No Strikethrough)
             // This ensures the next character typed by the user is clean
-            applyDefaultTypingAttributes(to: textView)
+            if isCheckbox {
+                textView.typingAttributes = checkboxTypingAttributes()
+            } else {
+                applyDefaultTypingAttributes(to: textView)
+            }
             
             textViewDidChange(textView)
             return false
@@ -575,12 +636,14 @@ struct RichTextEditorView: UIViewRepresentable {
                 textView.textStorage.removeAttribute(RichTextConverter.Key.headerLevel, range: lineRange)
                 // Reset font to base
                 textView.textStorage.addAttribute(.font, value: parent.font, range: lineRange)
+                textView.textStorage.addAttribute(.paragraphStyle, value: RichTextConverter.Config.baseStyle(), range: lineRange)
             } else {
                 // Apply header style
                 textView.textStorage.addAttribute(RichTextConverter.Key.headerLevel, value: level, range: lineRange)
                 let fontSize: CGFloat = level == 1 ? 24 : 20
                 let font = UIFont.systemFont(ofSize: fontSize, weight: .bold)
                 textView.textStorage.addAttribute(.font, value: font, range: lineRange)
+                textView.textStorage.addAttribute(.paragraphStyle, value: headerParagraphStyle(level: level), range: lineRange)
             }
             
             textView.textStorage.endEditing()
@@ -594,16 +657,21 @@ struct RichTextEditorView: UIViewRepresentable {
             textView.textStorage.beginEditing()
             
             // Check if already a checkbox
-            if lineText.hasPrefix("☐ ") || lineText.hasPrefix("☑ ") {
+            if lineText.hasPrefix(RichTextConverter.Config.checkboxAttachmentPrefix)
+                || lineText.hasPrefix("\(RichTextConverter.Config.checkboxUncheckedSymbol) ")
+                || lineText.hasPrefix("\(RichTextConverter.Config.checkboxCheckedSymbol) ") {
                 // Remove checkbox
                 textView.textStorage.replaceCharacters(in: NSRange(location: lineRange.location, length: 2), with: "")
                 let newFullRange = NSRange(location: lineRange.location, length: lineRange.length - 2)
                 textView.textStorage.removeAttribute(RichTextConverter.Key.checkbox, range: newFullRange)
+                if newFullRange.length > 0 {
+                    textView.textStorage.addAttribute(.paragraphStyle, value: RichTextConverter.Config.baseStyle(), range: newFullRange)
+                }
                 let shiftedLocation = max(lineRange.location, range.location - 2)
                 textView.selectedRange = NSRange(location: shiftedLocation, length: 0)
             } else {
                 // Add checkbox symbol at start of line
-                let symbol = "☐ "
+                let symbol = "\(RichTextConverter.Config.checkboxUncheckedSymbol) "
                 textView.textStorage.replaceCharacters(in: NSRange(location: lineRange.location, length: 0), with: symbol)
                 
                 // Set Attributes
@@ -611,13 +679,31 @@ struct RichTextEditorView: UIViewRepresentable {
                 let spacerRange = NSRange(location: lineRange.location + 1, length: 1)
                 textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: false, range: symbolRange)
                 textView.textStorage.addAttribute(.foregroundColor, value: RichTextConverter.Config.checkboxUncheckedColor, range: symbolRange)
-                textView.textStorage.addAttribute(.font, value: UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium), range: symbolRange)
-                textView.textStorage.setAttributes(defaultTypingAttributes(), range: spacerRange)
+                textView.textStorage.addAttribute(.baselineOffset, value: RichTextConverter.Config.checkboxBaselineOffset, range: symbolRange)
+                textView.textStorage.addAttribute(.paragraphStyle, value: checkboxParagraphStyle, range: symbolRange)
+                textView.textStorage.addAttribute(
+                    .font,
+                    value: UIFont.systemFont(
+                        ofSize: parent.font.pointSize + RichTextConverter.Config.checkboxSymbolFontSizeOffset,
+                        weight: .medium
+                    ),
+                    range: symbolRange
+                )
+                textView.textStorage.setAttributes(checkboxTypingAttributes(), range: spacerRange)
+                applyCheckboxParagraphStyle(in: textView, at: NSRange(location: lineRange.location, length: max(lineRange.length + 2, 1)))
                 textView.selectedRange = NSRange(location: spacerRange.upperBound, length: 0)
             }
             
             textView.textStorage.endEditing()
-            applyDefaultTypingAttributes(to: textView)
+            if textView.textStorage.length > 0,
+               let lineRangeAfterEdit = currentLineRange(in: textView) {
+                applyCheckboxParagraphStyle(in: textView, at: lineRangeAfterEdit)
+            }
+            if isCursorInCheckboxLine(in: textView) {
+                textView.typingAttributes = checkboxTypingAttributes()
+            } else {
+                applyDefaultTypingAttributes(to: textView)
+            }
         }
         
         // Existing toggleCheckbox from previous turn, updated for range
@@ -626,25 +712,49 @@ struct RichTextEditorView: UIViewRepresentable {
                 return
             }
             
+            let replacementRange = checkboxReplacementRange(for: range, in: textView)
             let newState = !checkboxState
             textView.textStorage.beginEditing()
             
-            let newSymbol = newState ? "☑ " : "☐ "
             let newColor = newState ? RichTextConverter.Config.checkboxCheckedColor : RichTextConverter.Config.checkboxUncheckedColor
+
+            let replacementLength: Int
+            if newState {
+                let replacement = RichTextConverter.makeCheckedCheckboxPrefix(
+                    baseFont: parent.font,
+                    paragraphStyle: checkboxParagraphStyle
+                )
+                replacementLength = replacement.length
+                textView.textStorage.replaceCharacters(in: replacementRange, with: replacement)
+            } else {
+                let newSymbol = "\(RichTextConverter.Config.checkboxUncheckedSymbol) "
+                replacementLength = (newSymbol as NSString).length
+                textView.textStorage.replaceCharacters(in: replacementRange, with: newSymbol)
+            }
             
-            textView.textStorage.replaceCharacters(in: range, with: newSymbol)
-            
-            let newRange = NSRange(location: range.location, length: newSymbol.count)
+            let newRange = NSRange(location: replacementRange.location, length: replacementLength)
             let symbolRange = NSRange(location: newRange.location, length: min(1, newRange.length))
             let spacerRange = NSRange(location: newRange.location + symbolRange.length, length: max(0, newRange.length - symbolRange.length))
             textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: newState, range: symbolRange)
-            textView.textStorage.addAttribute(.foregroundColor, value: newColor, range: symbolRange)
-            textView.textStorage.addAttribute(.font, value: UIFont.systemFont(ofSize: parent.font.pointSize + 8, weight: .medium), range: symbolRange)
+            if !newState {
+                textView.textStorage.addAttribute(.foregroundColor, value: newColor, range: symbolRange)
+                textView.textStorage.addAttribute(.baselineOffset, value: RichTextConverter.Config.checkboxBaselineOffset, range: symbolRange)
+                textView.textStorage.addAttribute(.paragraphStyle, value: checkboxParagraphStyle, range: symbolRange)
+                textView.textStorage.addAttribute(
+                    .font,
+                    value: UIFont.systemFont(
+                        ofSize: parent.font.pointSize + RichTextConverter.Config.checkboxSymbolFontSizeOffset,
+                        weight: .medium
+                    ),
+                    range: symbolRange
+                )
+            }
             if spacerRange.length > 0 {
-                textView.textStorage.setAttributes(defaultTypingAttributes(), range: spacerRange)
+                textView.textStorage.setAttributes(checkboxTypingAttributes(), range: spacerRange)
             }
             
             let lineRange = (textView.text as NSString).lineRange(for: newRange)
+            applyCheckboxParagraphStyle(in: textView, at: lineRange)
             let contentRange = NSRange(location: newRange.upperBound, length: lineRange.upperBound - newRange.upperBound)
             
             if contentRange.length > 0 {
@@ -659,8 +769,22 @@ struct RichTextEditorView: UIViewRepresentable {
             
             textView.textStorage.endEditing()
             textView.selectedRange = NSRange(location: newRange.upperBound, length: 0)
-            applyDefaultTypingAttributes(to: textView)
+            textView.typingAttributes = checkboxTypingAttributes()
             textViewDidChange(textView)
+        }
+
+        private func checkboxReplacementRange(for range: NSRange, in textView: UITextView) -> NSRange {
+            let nsText = textView.text as NSString
+            let safeLocation = min(max(range.location, 0), nsText.length)
+            let safeLength = min(range.length, max(0, nsText.length - safeLocation))
+            var replacementRange = NSRange(location: safeLocation, length: safeLength)
+
+            let upperBound = replacementRange.location + replacementRange.length
+            if upperBound < nsText.length, nsText.substring(with: NSRange(location: upperBound, length: 1)) == " " {
+                replacementRange.length += 1
+            }
+
+            return replacementRange
         }
 
         private func defaultTypingAttributes() -> [NSAttributedString.Key: Any] {
@@ -668,6 +792,14 @@ struct RichTextEditorView: UIViewRepresentable {
                 .font: parent.font,
                 .foregroundColor: parent.textColor,
                 .paragraphStyle: RichTextConverter.Config.baseStyle()
+            ]
+        }
+
+        private func checkboxTypingAttributes() -> [NSAttributedString.Key: Any] {
+            [
+                .font: parent.font,
+                .foregroundColor: parent.textColor,
+                .paragraphStyle: checkboxParagraphStyle
             ]
         }
 
@@ -696,7 +828,42 @@ struct RichTextEditorView: UIViewRepresentable {
             }
             guard isListPrefixChar else { return }
 
-            applyDefaultTypingAttributes(to: textView)
+            if isCursorInCheckboxLine(in: textView) {
+                textView.typingAttributes = checkboxTypingAttributes()
+            } else {
+                applyDefaultTypingAttributes(to: textView)
+            }
+        }
+
+        private func applyCheckboxParagraphStyle(in textView: UITextView, at range: NSRange) {
+            guard let lineRange = lineRangeContaining(range, in: textView) else { return }
+            textView.textStorage.addAttribute(.paragraphStyle, value: checkboxParagraphStyle, range: lineRange)
+        }
+
+        private func lineRangeContaining(_ range: NSRange, in textView: UITextView) -> NSRange? {
+            let nsText = textView.text as NSString
+            guard nsText.length > 0 else { return nil }
+            let safeLocation = min(max(range.location, 0), max(nsText.length - 1, 0))
+            return nsText.lineRange(for: NSRange(location: safeLocation, length: 0))
+        }
+
+        private func currentLineRange(in textView: UITextView) -> NSRange? {
+            lineRangeContaining(textView.selectedRange, in: textView)
+        }
+
+        private func isCursorInCheckboxLine(in textView: UITextView) -> Bool {
+            guard let lineRange = currentLineRange(in: textView) else { return false }
+            guard lineRange.length > 0 else { return false }
+            let nsText = textView.text as NSString
+            let lineText = nsText.substring(with: lineRange)
+            let trimmedLine = lineText.trimmingCharacters(in: .whitespacesAndNewlines)
+
+            return trimmedLine.hasPrefix(RichTextConverter.Config.checkboxAttachmentPrefix)
+                || trimmedLine.hasPrefix("\(RichTextConverter.Config.checkboxCheckedSymbol) ")
+                || trimmedLine.hasPrefix("\(RichTextConverter.Config.checkboxUncheckedSymbol) ")
+                || trimmedLine.hasPrefix("- [ ] ")
+                || trimmedLine.hasPrefix("- [x] ")
+                || trimmedLine.hasPrefix("- [X] ")
         }
     }
 }
@@ -712,6 +879,8 @@ class EditorFormattingToolbar: UIView {
     var onSelectionChange: ((EditorAction) -> Void)?
     private let textView: UITextView
     private var buttons: [EditorAction: UIButton] = [:]
+    private let activeTintColor = UIColor(Color.accentPrimary)
+    private let inactiveTintColor = UIColor.secondaryLabel
     
     init(textView: UITextView) {
         self.textView = textView
@@ -750,7 +919,7 @@ class EditorFormattingToolbar: UIView {
             let btn = UIButton(type: .system)
             let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
             btn.setImage(UIImage(systemName: icon, withConfiguration: config), for: .normal)
-            btn.tintColor = .systemOrange // Matching ChillNote Theme
+            btn.tintColor = inactiveTintColor
             btn.addAction(UIAction { [weak self] _ in
                 self?.onAction?(action)
                 // Haptic feedback
@@ -781,9 +950,7 @@ class EditorFormattingToolbar: UIView {
 
     func setActive(_ action: EditorAction, isActive: Bool) {
         guard let button = buttons[action] else { return }
-        let activeColor = UIColor.systemOrange
-        let inactiveColor = UIColor.secondaryLabel
-        button.tintColor = isActive ? activeColor : inactiveColor
+        button.tintColor = isActive ? activeTintColor : inactiveTintColor
     }
 
     func setEnabled(_ action: EditorAction, isEnabled: Bool) {
@@ -797,6 +964,8 @@ class EditorFormattingToolbar: UIView {
 
 class InteractiveTextView: UITextView {
     var onCheckboxTap: ((Int, NSRange) -> Void)?
+    private let checkboxTapTargetWidth: CGFloat = 44
+    private let checkboxTapVerticalPadding: CGFloat = 10
     
     override init(frame: CGRect, textContainer: NSTextContainer?) {
         super.init(frame: frame, textContainer: textContainer)
@@ -892,17 +1061,115 @@ class InteractiveTextView: UITextView {
     
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         let location = gesture.location(in: self)
-        guard let position = closestPosition(to: location) else { return }
-        let index = offset(from: beginningOfDocument, to: position)
-        
-        if index < textStorage.length {
-            if textStorage.attribute(RichTextConverter.Key.checkbox, at: index, effectiveRange: nil) != nil {
-                var range = NSRange(location: 0, length: 0)
-                _ = textStorage.attribute(RichTextConverter.Key.checkbox, at: index, effectiveRange: &range)
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                onCheckboxTap?(0, range)
-            }
+        if let range = checkboxRangeForTap(at: location) {
+            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            onCheckboxTap?(0, range)
         }
+    }
+
+    private func checkboxRangeForTap(at location: CGPoint) -> NSRange? {
+        if let index = characterIndex(at: location),
+           let range = checkboxRange(atCharacterIndex: index) {
+            return range
+        }
+
+        guard let lineRange = lineCharacterRange(at: location),
+              let checkboxRange = firstCheckboxRange(in: lineRange),
+              isPointInsideExpandedCheckboxZone(location, checkboxRange: checkboxRange) else {
+            return nil
+        }
+
+        return checkboxRange
+    }
+
+    private func characterIndex(at location: CGPoint) -> Int? {
+        guard let position = closestPosition(to: location) else { return nil }
+        let index = offset(from: beginningOfDocument, to: position)
+        return index < textStorage.length ? index : nil
+    }
+
+    private func checkboxRange(atCharacterIndex index: Int) -> NSRange? {
+        guard index >= 0, index < textStorage.length else { return nil }
+        guard textStorage.attribute(RichTextConverter.Key.checkbox, at: index, effectiveRange: nil) != nil else {
+            return nil
+        }
+
+        var range = NSRange(location: 0, length: 0)
+        _ = textStorage.attribute(RichTextConverter.Key.checkbox, at: index, effectiveRange: &range)
+        return range
+    }
+
+    private func lineCharacterRange(at location: CGPoint) -> NSRange? {
+        guard textStorage.length > 0 else { return nil }
+
+        let containerPoint = CGPoint(
+            x: location.x - textContainerInset.left,
+            y: location.y - textContainerInset.top
+        )
+        let glyphIndex = layoutManager.glyphIndex(
+            for: containerPoint,
+            in: textContainer,
+            fractionOfDistanceThroughGlyph: nil
+        )
+        guard glyphIndex < layoutManager.numberOfGlyphs else { return nil }
+
+        var lineGlyphRange = NSRange(location: 0, length: 0)
+        _ = layoutManager.lineFragmentUsedRect(
+            forGlyphAt: glyphIndex,
+            effectiveRange: &lineGlyphRange,
+            withoutAdditionalLayout: true
+        )
+        return layoutManager.characterRange(forGlyphRange: lineGlyphRange, actualGlyphRange: nil)
+    }
+
+    private func firstCheckboxRange(in lineRange: NSRange) -> NSRange? {
+        guard lineRange.length > 0 else { return nil }
+
+        let lineUpperBound = lineRange.location + lineRange.length
+        var index = lineRange.location
+
+        while index < lineUpperBound {
+            var effectiveRange = NSRange(location: 0, length: 0)
+            let value = textStorage.attribute(
+                RichTextConverter.Key.checkbox,
+                at: index,
+                effectiveRange: &effectiveRange
+            )
+
+            if value != nil {
+                return NSIntersectionRange(lineRange, effectiveRange)
+            }
+
+            index += 1
+        }
+
+        return nil
+    }
+
+    private func isPointInsideExpandedCheckboxZone(_ location: CGPoint, checkboxRange: NSRange) -> Bool {
+        guard checkboxRange.location < textStorage.length else { return false }
+
+        let containerPoint = CGPoint(
+            x: location.x - textContainerInset.left,
+            y: location.y - textContainerInset.top
+        )
+        let glyphIndex = layoutManager.glyphIndexForCharacter(at: checkboxRange.location)
+
+        var lineGlyphRange = NSRange(location: 0, length: 0)
+        let lineRect = layoutManager.lineFragmentUsedRect(
+            forGlyphAt: glyphIndex,
+            effectiveRange: &lineGlyphRange,
+            withoutAdditionalLayout: true
+        )
+
+        let tapZone = CGRect(
+            x: 0,
+            y: lineRect.minY - checkboxTapVerticalPadding,
+            width: min(lineRect.minX + checkboxTapTargetWidth, textContainer.size.width),
+            height: lineRect.height + (checkboxTapVerticalPadding * 2)
+        )
+
+        return tapZone.contains(containerPoint)
     }
     
     deinit {
@@ -916,14 +1183,7 @@ extension InteractiveTextView: UIGestureRecognizerDelegate {
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if let tapGesture = gestureRecognizer as? UITapGestureRecognizer {
             let location = tapGesture.location(in: self)
-            if let position = closestPosition(to: location) {
-                let index = offset(from: beginningOfDocument, to: position)
-                if index < textStorage.length {
-                    if textStorage.attribute(RichTextConverter.Key.checkbox, at: index, effectiveRange: nil) != nil {
-                        return true
-                    }
-                }
-            }
+            return checkboxRangeForTap(at: location) != nil
         }
         return false
     }

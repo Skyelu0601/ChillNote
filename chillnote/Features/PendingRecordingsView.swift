@@ -402,7 +402,7 @@ struct PendingRecordingsView: View {
 
                     VoiceProcessingService.shared.processingStates[note.id] = .processing(stage: .refining)
                     Task {
-                        await VoiceProcessingService.shared.startProcessing(
+                        _ = await VoiceProcessingService.shared.startProcessing(
                             note: note,
                             rawTranscript: trimmed,
                             context: modelContext

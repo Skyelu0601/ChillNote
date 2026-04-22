@@ -73,26 +73,10 @@ struct HomeHeaderView: View {
                         .accessibilityLabel(L10n.text("home.header.accessibility.create_blank_note"))
 
                         Button(action: onEnterSelectionMode) {
-                            Image("ai4")
-                                .resizable()
-                                .scaledToFit()
-                                .frame(width: 27, height: 27)
-                                .frame(width: 36, height: 36)
-                                .grayscale(isRecording ? 1.0 : 0.0)
-                                .padding(4)
-                                .background(
-                                    Circle()
-                                        .fill(highlightSelectionEntry ? Color.accentPrimary.opacity(0.14) : Color.clear)
-                                )
-                                .overlay(
-                                    Circle()
-                                        .stroke(highlightSelectionEntry ? Color.accentPrimary : Color.clear, lineWidth: 1.5)
-                                )
-                                .shadow(
-                                    color: highlightSelectionEntry ? Color.accentPrimary.opacity(0.28) : .clear,
-                                    radius: 10,
-                                    y: 4
-                                )
+                            HomeAIEntryIcon(
+                                isRecording: isRecording,
+                                isHighlighted: highlightSelectionEntry
+                            )
                         }
                         .buttonStyle(.bouncy)
                         .disabled(isRecording)
@@ -163,5 +147,57 @@ struct HomeHeaderView: View {
         }
         .padding(.horizontal, 24)
         .padding(.top, 20)
+    }
+}
+
+private struct HomeAIEntryIcon: View {
+    let isRecording: Bool
+    let isHighlighted: Bool
+
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(backgroundFill)
+                .frame(width: 30, height: 30)
+
+            LightningGlyph()
+                .fill(iconColor)
+                .frame(width: 13, height: 16)
+                .offset(x: -0.4, y: 0.3)
+        }
+        .frame(width: 36, height: 36)
+        .opacity(isRecording ? 0.72 : 1.0)
+    }
+
+    private var backgroundFill: Color {
+        if isRecording {
+            return Color.textMain.opacity(0.04)
+        }
+
+        if isHighlighted {
+            return Color.accentPrimary.opacity(0.12)
+        }
+
+        return .clear
+    }
+
+    private var iconColor: Color {
+        isRecording ? Color.textSub.opacity(0.92) : Color.textMain
+    }
+}
+
+private struct LightningGlyph: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+
+        path.move(to: CGPoint(x: rect.minX + rect.width * 0.62, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.22, y: rect.minY + rect.height * 0.56))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.47, y: rect.minY + rect.height * 0.56))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.34, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.38))
+        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.68, y: rect.minY + rect.height * 0.38))
+        path.closeSubpath()
+
+        return path
     }
 }

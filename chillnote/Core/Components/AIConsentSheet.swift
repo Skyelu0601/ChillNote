@@ -55,7 +55,7 @@ struct AIConsentSheet: View {
                         .padding(.vertical, 13)
                         .background(
                             LinearGradient(
-                                colors: [Color.accentPrimary, Color.mellowOrange],
+                                colors: [Color.accentPrimary, Color.accentPrimary.opacity(0.88)],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )

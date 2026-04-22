@@ -250,4 +250,51 @@ final class chillnoteTests: XCTestCase {
             _ = NoteTextNormalizer.normalizeContent(markdown)
         }
     }
+
+    // MARK: - Rich Text Layout Tests
+
+    func testRichTextConverterUsesConsistentParagraphSpacingForChecklistAndBullet() {
+        let markdown = """
+        - [ ] Task
+        - Bullet
+        """
+
+        let attributed = RichTextConverter.markdownToAttributedString(markdown)
+        let nsString = attributed.string as NSString
+
+        let checklistAttrs = attributed.attributes(at: 0, effectiveRange: nil)
+        let bulletLocation = nsString.range(of: "• ").location
+        XCTAssertNotEqual(bulletLocation, NSNotFound)
+        let bulletAttrs = attributed.attributes(at: bulletLocation, effectiveRange: nil)
+
+        let checklistStyle = checklistAttrs[.paragraphStyle] as? NSParagraphStyle
+        let bulletStyle = bulletAttrs[.paragraphStyle] as? NSParagraphStyle
+
+        XCTAssertEqual(checklistStyle?.paragraphSpacing, RichTextConverter.Config.baseStyle().paragraphSpacing)
+        XCTAssertEqual(bulletStyle?.paragraphSpacing, RichTextConverter.Config.baseStyle().paragraphSpacing)
+        XCTAssertEqual(checklistStyle?.lineSpacing, bulletStyle?.lineSpacing)
+    }
+
+    func testRichTextConverterAppliesHeaderParagraphSpacingBefore() {
+        let attributed = RichTextConverter.markdownToAttributedString("# Heading")
+        let attrs = attributed.attributes(at: 0, effectiveRange: nil)
+        let style = attrs[.paragraphStyle] as? NSParagraphStyle
+
+        XCTAssertEqual(style?.paragraphSpacingBefore, RichTextConverter.Config.headerStyle(level: 1).paragraphSpacingBefore)
+    }
+
+    func testRichTextConverterRoundTripsMixedChecklistBulletAndHeaderMarkdown() {
+        let markdown = """
+        - [ ] Task 1
+        - Bullet 1
+
+        # Heading
+        - [x] Done
+        """
+
+        let attributed = RichTextConverter.markdownToAttributedString(markdown)
+        let roundTrip = RichTextConverter.attributedStringToMarkdown(attributed)
+
+        XCTAssertEqual(roundTrip, markdown)
+    }
 }

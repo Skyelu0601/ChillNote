@@ -30,9 +30,6 @@ struct ChatInputBar: View {
     @State private var didTriggerLimit = false
     @State private var showSubscription = false
     @State private var showBrainDumpOnboarding = false
-    @State private var ghostPromptIndex = RecordingGhostPromptStore.randomIndex()
-    @State private var isGhostPromptVisible = false
-    @State private var ghostPromptDismissTask: Task<Void, Never>?
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var timeText: String {
@@ -97,9 +94,6 @@ struct ChatInputBar: View {
         .onAppear {
             syncElapsed()
         }
-        .onDisappear {
-            ghostPromptDismissTask?.cancel()
-        }
         .onReceive(timer) { _ in
             syncElapsed()
 
@@ -115,9 +109,6 @@ struct ChatInputBar: View {
             syncElapsed()
             if speechRecognizer.recordingState == .recording {
                 didTriggerLimit = false
-                showRandomGhostPrompt()
-            } else {
-                dismissGhostPrompt()
             }
         }
         .sheet(isPresented: $showSubscription) {
@@ -154,30 +145,37 @@ struct ChatInputBar: View {
         .padding(.top, 4)
         .frame(maxWidth: .infinity)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: speechRecognizer.recordingState)
-        .animation(.easeInOut(duration: 0.25), value: shouldShowGhostPrompt)
+        .animation(.easeInOut(duration: 0.25), value: shouldShowFreeTierUpgradePrompt)
     }
 
     private var ghostPromptView: some View {
-        Text(RecordingGhostPromptStore.text(at: ghostPromptIndex))
-            .font(.bodySmall)
-            .foregroundColor(.textSub.opacity(0.78))
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 10)
-            .frame(maxWidth: 300)
-            .background(
-                Capsule(style: .continuous)
-                    .fill(Color.white.opacity(0.86))
-                    .background(.ultraThinMaterial, in: Capsule(style: .continuous))
-            )
-            .overlay(
-                Capsule(style: .continuous)
-                    .stroke(Color.black.opacity(0.04), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
-            .opacity(shouldShowGhostPrompt ? 1 : 0)
-            .accessibilityHidden(!shouldShowGhostPrompt)
-            .animation(.easeInOut(duration: 0.3), value: ghostPromptIndex)
+        Button {
+            showSubscription = true
+        } label: {
+            Text(L10n.text("recording.free_tier_prompt.longer_time"))
+                .font(.bodySmall)
+                .foregroundColor(.accentPrimary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .frame(maxWidth: 320)
+                .underline()
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(0.86))
+                        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(Color.black.opacity(0.04), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
+        }
+        .buttonStyle(.plain)
+        .opacity(shouldShowFreeTierUpgradePrompt ? 1 : 0)
+        .accessibilityHidden(!shouldShowFreeTierUpgradePrompt)
+        .accessibilityHint(L10n.text("recording.free_tier_prompt.longer_time_hint"))
+        .allowsHitTesting(shouldShowFreeTierUpgradePrompt)
     }
 
     private var idleGlassCapsule: some View {
@@ -215,15 +213,9 @@ struct ChatInputBar: View {
             Capsule()
                 .fill(Color.bgPrimary)
                 .frame(width: 90, height: 56)
-                .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 4)
                 .overlay(
                     Capsule()
                         .stroke(highlightIdleMic ? Color.accentPrimary : Color.clear, lineWidth: 2)
-                )
-                .shadow(
-                    color: highlightIdleMic ? Color.accentPrimary.opacity(0.28) : .clear,
-                    radius: 16,
-                    y: 6
                 )
                 .overlay(
                     HStack(spacing: 8) {
@@ -256,7 +248,6 @@ struct ChatInputBar: View {
                 .fill(Color.white)
                 .frame(height: 56)
                 .frame(maxWidth: .infinity)
-                .shadow(color: Color.accentPrimary.opacity(0.15), radius: 12, x: 0, y: 8)
                 .overlay(
                     HStack(spacing: 16) {
                         Button(action: onCancelVoice) {
@@ -301,7 +292,6 @@ struct ChatInputBar: View {
                                 .background(
                                     Circle()
                                         .fill(Color.accentPrimary)
-                                        .shadow(color: .accentPrimary.opacity(0.4), radius: 6, y: 3)
                                 )
                         }
                         .buttonStyle(.bouncy)
@@ -388,9 +378,9 @@ struct ChatInputBar: View {
         }
     }
 
-    private var shouldShowGhostPrompt: Bool {
+    private var shouldShowFreeTierUpgradePrompt: Bool {
         speechRecognizer.isRecording
-            && isGhostPromptVisible
+            && storeService.currentTier == .free
             && speechRecognizer.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
@@ -404,30 +394,6 @@ struct ChatInputBar: View {
 
         hasSeenBrainDumpOnboarding = true
         showBrainDumpOnboarding = true
-    }
-
-    private func showRandomGhostPrompt() {
-        ghostPromptDismissTask?.cancel()
-        ghostPromptIndex = RecordingGhostPromptStore.randomIndex()
-        isGhostPromptVisible = true
-
-        ghostPromptDismissTask = Task {
-            let delay = UInt64(RecordingGhostPromptStore.displayDuration * 1_000_000_000)
-            try? await Task.sleep(nanoseconds: delay)
-            guard !Task.isCancelled else { return }
-
-            await MainActor.run {
-                withAnimation(.easeInOut(duration: 0.3)) {
-                    isGhostPromptVisible = false
-                }
-            }
-        }
-    }
-
-    private func dismissGhostPrompt() {
-        ghostPromptDismissTask?.cancel()
-        ghostPromptDismissTask = nil
-        isGhostPromptVisible = false
     }
 }
 

@@ -50,9 +50,9 @@ final class Note {
         // Remove code
         result = result.replacingOccurrences(of: "`", with: "")
         // Keep checklist intent in home preview using visual checkboxes
-        result = result.replacingOccurrences(of: "- [ ] ", with: "☐ ")
-        result = result.replacingOccurrences(of: "- [x] ", with: "☑ ")
-        result = result.replacingOccurrences(of: "- [X] ", with: "☑ ")
+        result = result.replacingOccurrences(of: "- [ ] ", with: "\(RichTextConverter.Config.checkboxUncheckedSymbol) ")
+        result = result.replacingOccurrences(of: "- [x] ", with: "\(RichTextConverter.Config.checkboxCheckedSymbol) ")
+        result = result.replacingOccurrences(of: "- [X] ", with: "\(RichTextConverter.Config.checkboxCheckedSymbol) ")
         // Remove bullet markers
         result = result.replacingOccurrences(of: #"^[\-\•]\s+"#, with: "", options: .regularExpression)
         return result
@@ -160,7 +160,7 @@ final class Note {
 
     private func makePreviewPlainText() -> String {
         let sourceText = stripMarkdownFormatting(content)
-        let limit = 200
+        let limit = 360
         if sourceText.count <= limit {
             return sourceText
         }

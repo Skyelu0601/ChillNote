@@ -12,6 +12,7 @@ struct HomeSelectionOverlayView: View {
     let onHandleAgentActionRequest: (AgentRecipe) -> Void
 
     @State private var shouldHighlightAddButton = false
+    @State private var shouldShowSelectionHint = false
 
     var body: some View {
         if isSelectionMode {
@@ -90,6 +91,10 @@ struct HomeSelectionOverlayView: View {
                                 ], spacing: 16) {
                                     ForEach(recipeManager.savedRecipes) { recipe in
                                         Button(action: {
+                                            guard selectedNotesCount > 0 else {
+                                                presentSelectionHint()
+                                                return
+                                            }
                                             onCloseMenu()
                                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                                 onHandleAgentActionRequest(recipe)
@@ -122,47 +127,100 @@ struct HomeSelectionOverlayView: View {
                         .transition(.move(edge: .bottom).combined(with: .opacity).combined(with: .scale(scale: 0.95)))
                     }
 
-                    HStack(spacing: 16) {
-                        Button(action: onStartAIChat) {
+                    VStack(spacing: 12) {
+                        if shouldShowSelectionHint && selectedNotesCount == 0 {
+                            HStack(spacing: 8) {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.orange)
+
+                                Text(L10n.text("home.selection_overlay.select_notes_hint"))
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundColor(.textMain)
+                                    .multilineTextAlignment(.leading)
+
+                                Spacer(minLength: 0)
+                            }
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 12)
+                            .background(Color.orange.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(Color.orange.opacity(0.22), lineWidth: 1)
+                            )
+                            .transition(.move(edge: .bottom).combined(with: .opacity))
+                        }
+
+                        HStack(spacing: 16) {
+                            Button(action: handleAskAIButtonTap) {
                             Text(L10n.text("home.selection_overlay.ask_ai"))
                                 .font(.system(size: 18, weight: .bold, design: .rounded))
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(
-                                LinearGradient(
-                                    colors: [Color.accentPrimary, Color.accentPrimary.opacity(0.9)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(
+                                    LinearGradient(
+                                        colors: [Color.accentPrimary, Color.accentPrimary.opacity(0.9)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
                                 )
-                            )
-                            .clipShape(Capsule())
-                            .shadow(color: Color.accentPrimary.opacity(0.35), radius: 10, x: 0, y: 5)
-                        }
-
-                        Button(action: onToggleAgentMenu) {
-                            HStack(spacing: 6) {
-                                Text(L10n.text("home.selection_overlay.skills_title"))
-                                    .font(.system(size: 16, weight: .semibold, design: .rounded))
-
-                                Image(systemName: "chevron.up")
-                                    .font(.system(size: 14, weight: .bold))
-                                    .rotationEffect(.degrees(isAgentMenuOpen ? 180 : 0))
+                                .clipShape(Capsule())
+                                .shadow(color: Color.accentPrimary.opacity(0.35), radius: 10, x: 0, y: 5)
                             }
-                            .foregroundColor(.accentPrimary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(Color.white)
-                            .clipShape(Capsule())
-                            .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
+
+                            Button(action: handleAISkillsButtonTap) {
+                                HStack(spacing: 6) {
+                                    Text(L10n.text("home.selection_overlay.skills_title"))
+                                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+
+                                    Image(systemName: "chevron.up")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .rotationEffect(.degrees(isAgentMenuOpen ? 180 : 0))
+                                }
+                                .foregroundColor(.accentPrimary)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(Color.white)
+                                .clipShape(Capsule())
+                                .shadow(color: Color.black.opacity(0.08), radius: 10, x: 0, y: 4)
+                            }
                         }
+                        .padding(.horizontal, 24)
                     }
-                    .padding(.horizontal, 24)
                     .padding(.bottom, 32)
+                }
+            }
+            .onChange(of: selectedNotesCount) { _, newValue in
+                if newValue > 0 {
+                    shouldShowSelectionHint = false
                 }
             }
             .transition(.move(edge: .bottom).combined(with: .opacity))
             .zIndex(100)
+        }
+    }
+
+    private func handleAskAIButtonTap() {
+        guard selectedNotesCount > 0 else {
+            presentSelectionHint()
+            return
+        }
+        onStartAIChat()
+    }
+
+    private func handleAISkillsButtonTap() {
+        guard selectedNotesCount > 0 else {
+            presentSelectionHint()
+            return
+        }
+        onToggleAgentMenu()
+    }
+
+    private func presentSelectionHint() {
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.85)) {
+            shouldShowSelectionHint = true
         }
     }
 }

@@ -1,30 +1,35 @@
 import SwiftUI
 
 extension Color {
-    // MARK: - Brand Palette (Japandi / Warm & Mellow)
-    static let mellowYellow = Color(hex: "F3E2A9") // Softer, pastel yellow (Butter)
-    static let mellowOrange = Color(hex: "EBB176") // Soft Apricot
-    static let paleCream = Color(hex: "FDFCF8")    // Paper White (Main Background)
-    
-    // MARK: - Aesthetic Accents
-    static let sageGreen = Color(hex: "9CAF88")    // Muted earthy green
-    static let dustyBlue = Color(hex: "8DA399")    // Muted blue-grey
-    
+    // MARK: - Brand Palette (Clean / Fast / Modern)
+    //
+    // Goal: "秒开、秒记、秒同步" 的轻快工具感
+    // - More neutral backgrounds (less warm paper tone)
+    // - Crisp separators instead of heavy shadows
+    // - iOS-like blue, slightly lighter than systemBlue (#007AFF)
+    static let brandBlue = Color(hex: "2F86FF") // light iOS-like blue
+    static let brandBlueSoft = Color(hex: "EAF2FF") // selection / subtle highlight
+
     // MARK: - Semantic Colors
-    static let bgPrimary = Color(hex: "FDFCF8")    // Paper White
-    static let bgSecondary = Color(hex: "F4F2EB")  // Warm light grey/beige
-    static let cardBackground = Color.white
-    
+    static let bgPrimary = Color(hex: "F7F7F8") // neutral near-white
+    static let bgSecondary = Color(hex: "FFFFFF")
+    static let cardBackground = Color(hex: "FFFFFF")
+
+    // Surfaces & Separators
+    static let separator = Color(hex: "E6E6E8")
+    static let borderSubtle = Color(hex: "ECECEF")
+
     // Actions & Highlights
-    static let accentPrimary = Color(hex: "E6A355") // Warm Bronze/Orange for primary actions
-    static let selectionHighlight = Color(hex: "FFF8E1") // Very pale warm highlight
-    
+    static let accentPrimary = brandBlue
+    static let selectionHighlight = brandBlueSoft
+
     // Text Colors
-    static let textMain = Color(hex: "2D2A26")     // Soft Charcoal
-    static let textSub = Color(hex: "85807A")      // Warm Grey
-    
-    // Shadows
-    static let shadowColor = Color(hex: "5A4C38").opacity(0.08) // Warm diffused shadow
+    static let textMain = Color(hex: "111114") // near-black
+    static let textSub = Color(hex: "6B6B73")  // system-like secondary
+    static let textTertiary = Color(hex: "9A9AA3")
+
+    // Shadows (kept subtle; prefer separators/borders for structure)
+    static let shadowColor = Color(hex: "0B0B10").opacity(0.06)
     
     // MARK: - Helpers
     init(hex: String) {

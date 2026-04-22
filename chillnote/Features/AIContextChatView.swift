@@ -781,7 +781,7 @@ struct ChatMessageBubble: View {
                             .font(.bodyMedium)
                             .foregroundColor(.textMain)
                             .padding(12)
-                            .background(Color.mellowYellow)
+                            .background(Color.selectionHighlight)
                             .cornerRadius(16)
                     }
                     
@@ -1089,18 +1089,20 @@ private struct InteractiveMarkdownTextView: UIViewRepresentable {
 
         func textView(
             _ textView: UITextView,
-            shouldInteractWith URL: URL,
-            in characterRange: NSRange,
-            interaction: UITextItemInteraction
-        ) -> Bool {
-            guard URL.scheme == "chillnote-citation",
-                  let host = URL.host,
+            primaryActionFor textItem: UITextItem,
+            defaultAction: UIAction
+        ) -> UIAction? {
+            guard case let .link(url) = textItem.content,
+                  url.scheme == "chillnote-citation",
+                  let host = url.host,
                   let number = Int(host),
                   let citation = citations[number] else {
-                return true
+                return defaultAction
             }
-            onCitationTap?(citation)
-            return false
+
+            return UIAction { [weak self] _ in
+                self?.onCitationTap?(citation)
+            }
         }
     }
 }

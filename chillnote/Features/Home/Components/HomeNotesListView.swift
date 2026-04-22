@@ -22,6 +22,10 @@ struct HomeNotesListView: View {
         cachedVisibleNotes.isEmpty && (isLoading || !hasLoadedAtLeastOnce)
     }
 
+    private var usePlainPreviewForCurrentList: Bool {
+        !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
     var body: some View {
         if cachedVisibleNotes.isEmpty {
             if shouldShowBlockingLoadingState {
@@ -50,7 +54,7 @@ struct HomeNotesListView: View {
                     let item = NoteListItemViewData(
                         note: note,
                         searchQuery: searchQuery,
-                        usePlainPreview: FeatureFlags.usePlainPreviewInList
+                        usePlainPreview: usePlainPreviewForCurrentList
                     )
                     Group {
                         if isTrashSelected {
@@ -338,12 +342,12 @@ struct NoteCard: View {
                             if item.usePlainPreview {
                                 Text(item.highlightedPreviewText)
                                     .font(.bodyMedium)
-                                    .lineLimit(3)
+                                    .lineLimit(5)
                                     .multilineTextAlignment(.leading)
                             } else {
                                 RichTextPreview(
                                     content: item.markdownPreviewText,
-                                    lineLimit: 3,
+                                    lineLimit: 5,
                                     font: .bodyMedium,
                                     textColor: .textMain
                                 )

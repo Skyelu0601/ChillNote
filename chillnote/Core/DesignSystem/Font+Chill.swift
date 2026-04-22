@@ -1,17 +1,17 @@
 import SwiftUI
 
 extension Font {
-    // We use Serif for titles to give a premium, organic "Japandi" feel.
-    // Body text remains sans-serif (Default or Rounded) for legibility.
-    
-    static let displayLarge = Font.system(.largeTitle, design: .serif).weight(.medium)
-    static let displayMedium = Font.system(.title2, design: .serif).weight(.medium)
-    static let displaySmall = Font.system(.headline, design: .serif).weight(.medium)
-    
+    // New direction: Clean / fast / modern.
+    // Avoid serif (it reads "slow journal"). Use system sans-serif and hierarchy via size/weight.
+
+    static let displayLarge = Font.system(.largeTitle, design: .default).weight(.semibold)
+    static let displayMedium = Font.system(.title2, design: .default).weight(.semibold)
+    static let displaySmall = Font.system(.headline, design: .default).weight(.semibold)
+
     static let bodyLarge = Font.system(.body, design: .default)
     static let bodyMedium = Font.system(.callout, design: .default)
     static let bodySmall = Font.system(.subheadline, design: .default).weight(.medium)
-    
+
     static let chillCaption = Font.system(.caption, design: .default).weight(.medium)
 }
 

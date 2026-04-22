@@ -21,6 +21,9 @@ struct SettingsView: View {
     @StateObject private var exportViewModel = ExportViewModel()
     @State private var showExportAllSheet = false
     @State private var showVoiceLanguageSheet = false
+
+    private let settingsIconColor = Color.textMain.opacity(0.6)
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -236,7 +239,7 @@ struct SettingsView: View {
             Button(action: handleExportAllTap) {
                 SettingItem(
                     icon: "square.and.arrow.up",
-                    iconColor: .accentPrimary,
+                    iconColor: settingsIconColor,
                     label: "settings.data.export_all_notes"
                 )
             }
@@ -247,7 +250,7 @@ struct SettingsView: View {
             Button(action: { showVoiceLanguageSheet = true }) {
                 SettingItem(
                     icon: "globe",
-                    iconColor: .accentPrimary,
+                    iconColor: settingsIconColor,
                     label: "settings.data.voice_language",
                     value: voiceTranscriptionLanguageSummary
                 )
@@ -259,7 +262,7 @@ struct SettingsView: View {
 
             
             Button(action: openAppSettings) {
-                SettingItem(icon: "shield", iconColor: .accentPrimary, label: "settings.data.permissions")
+                SettingItem(icon: "shield", iconColor: settingsIconColor, label: "settings.data.permissions")
             }
             .buttonStyle(.plain)
         }
@@ -271,7 +274,7 @@ struct SettingsView: View {
     private var supportSection: some View {
         VStack(spacing: 0) {
             Button(action: sendFeedback) {
-                SettingItem(icon: "envelope", iconColor: .accentPrimary, label: "settings.support.send_feedback")
+                SettingItem(icon: "envelope", iconColor: settingsIconColor, label: "settings.support.send_feedback")
             }
             .buttonStyle(.plain)
             
@@ -279,21 +282,21 @@ struct SettingsView: View {
 
             
             Button(action: openPrivacyPolicy) {
-                SettingItem(icon: "hand.raised", iconColor: .accentPrimary, label: "settings.support.privacy_policy")
+                SettingItem(icon: "hand.raised", iconColor: settingsIconColor, label: "settings.support.privacy_policy")
             }
             .buttonStyle(.plain)
             
             Divider().padding(.leading, 56)
             
             Button(action: openUserAgreement) {
-                SettingItem(icon: "doc.text", iconColor: .accentPrimary, label: "settings.support.user_agreement")
+                SettingItem(icon: "doc.text", iconColor: settingsIconColor, label: "settings.support.user_agreement")
             }
             .buttonStyle(.plain)
             
             Divider().padding(.leading, 56)
             
             Button(action: { showAbout = true }) {
-                SettingItem(icon: "info.circle", iconColor: .accentPrimary, label: "settings.support.about")
+                SettingItem(icon: "info.circle", iconColor: settingsIconColor, label: "settings.support.about")
             }
             .buttonStyle(.plain)
             
@@ -303,7 +306,7 @@ struct SettingsView: View {
                 Button {
                     showDeleteAlert = true
                 } label: {
-                    SettingItem(icon: "trash", iconColor: .accentPrimary, label: "settings.account.delete_account", showChevron: true)
+                    SettingItem(icon: "trash", iconColor: settingsIconColor, label: "settings.account.delete_account", showChevron: true)
                 }
                 .buttonStyle(.plain)
             }
