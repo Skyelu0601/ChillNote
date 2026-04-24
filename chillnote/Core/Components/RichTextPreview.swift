@@ -19,11 +19,11 @@ struct RichTextPreview: View {
     /// Parse markdown text and convert to SwiftUI Text for inline symbol support
     private func parseMarkdownToText(_ markdown: String) -> Text {
         let lines = markdown.components(separatedBy: "\n")
-        return lines.enumerated().reduce(Text("")) { partial, item in
+        return lines.enumerated().reduce(Text(verbatim: "")) { partial, item in
             let (index, line) = item
             let parsedLine = parseLine(line)
             if index < lines.count - 1 {
-                return partial + parsedLine + Text("\n")
+                return partial + parsedLine + Text(verbatim: "\n")
             }
             return partial + parsedLine
         }
@@ -62,7 +62,7 @@ struct RichTextPreview: View {
         }
 
         if trimmed == "---" || trimmed.hasPrefix("═") {
-            return Text("───").foregroundColor(.secondary)
+            return Text(verbatim: "───").foregroundColor(.secondary)
         }
 
         return parseInlineFormatting(line)
@@ -79,10 +79,10 @@ struct RichTextPreview: View {
                 Text(Image(systemName: "checkmark.circle.fill"))
                 .foregroundColor(.green)
                 .font(.system(size: 16, weight: .semibold))
-                + Text(" ")
+                + Text(verbatim: " ")
         } else {
             prefix =
-                Text("\(RichTextConverter.Config.checkboxUncheckedSymbol) ")
+                Text(verbatim: "\(RichTextConverter.Config.checkboxUncheckedSymbol) ")
                 .foregroundColor(.accentPrimary)
                 .baselineOffset(RichTextConverter.Config.checkboxBaselineOffset)
         }
@@ -95,27 +95,27 @@ struct RichTextPreview: View {
     }
 
     private func parseBulletPoint(_ text: String) -> Text {
-        Text("• ").foregroundColor(.secondary) + parseInlineFormatting(text)
+        Text(verbatim: "• ").foregroundColor(.secondary) + parseInlineFormatting(text)
     }
 
     private func parseNumberedItem(number: String, content: String) -> Text {
-        Text(number).foregroundColor(.secondary) + parseInlineFormatting(content)
+        Text(verbatim: number).foregroundColor(.secondary) + parseInlineFormatting(content)
     }
 
     private func parseBlockquote(_ text: String) -> Text {
-        Text("│ ").foregroundColor(.accentPrimary) + parseInlineFormatting(text).foregroundColor(.secondary)
+        Text(verbatim: "│ ").foregroundColor(.accentPrimary) + parseInlineFormatting(text).foregroundColor(.secondary)
     }
 
     /// Parse inline formatting (**bold**, *italic*, `code`)
     private func parseInlineFormatting(_ text: String) -> Text {
         var currentIndex = text.startIndex
-        var result = Text("")
+        var result = Text(verbatim: "")
 
         while currentIndex < text.endIndex {
             if text[currentIndex...].hasPrefix("**"),
                let endIndex = text.range(of: "**", range: text.index(currentIndex, offsetBy: 2)..<text.endIndex)?.lowerBound {
                 let boldContent = String(text[text.index(currentIndex, offsetBy: 2)..<endIndex])
-                result = result + Text(boldContent).bold()
+                result = result + Text(verbatim: boldContent).bold()
                 currentIndex = text.index(endIndex, offsetBy: 2)
                 continue
             }
@@ -124,7 +124,7 @@ struct RichTextPreview: View {
                !text[currentIndex...].hasPrefix("**"),
                let endIndex = text.range(of: "*", range: text.index(currentIndex, offsetBy: 1)..<text.endIndex)?.lowerBound {
                 let italicContent = String(text[text.index(currentIndex, offsetBy: 1)..<endIndex])
-                result = result + Text(italicContent).italic()
+                result = result + Text(verbatim: italicContent).italic()
                 currentIndex = text.index(endIndex, offsetBy: 1)
                 continue
             }
@@ -132,12 +132,12 @@ struct RichTextPreview: View {
             if text[currentIndex] == "`",
                let endIndex = text.range(of: "`", range: text.index(currentIndex, offsetBy: 1)..<text.endIndex)?.lowerBound {
                 let codeContent = String(text[text.index(currentIndex, offsetBy: 1)..<endIndex])
-                result = result + Text(" \(codeContent) ").font(.system(size: 13, design: .monospaced)).foregroundColor(.purple)
+                result = result + Text(verbatim: " \(codeContent) ").font(.system(size: 13, design: .monospaced)).foregroundColor(.purple)
                 currentIndex = text.index(endIndex, offsetBy: 1)
                 continue
             }
 
-            result = result + Text(String(text[currentIndex]))
+            result = result + Text(verbatim: String(text[currentIndex]))
             currentIndex = text.index(after: currentIndex)
         }
 

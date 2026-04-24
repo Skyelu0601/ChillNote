@@ -14,6 +14,11 @@ struct LoginView: View {
     @State private var sentCode = false
     @State private var isSendingCode = false
     @State private var isVerifyingCode = false
+
+    private var emailLoginErrorMessage: String? {
+        guard showEmailLogin, let message = authService.errorMessage, !message.isEmpty else { return nil }
+        return message
+    }
     
     var body: some View {
         GeometryReader { geometry in
@@ -151,6 +156,9 @@ struct LoginView: View {
                     .textContentType(.emailAddress)
                     .keyboardType(.emailAddress)
                     .autocapitalization(.none)
+                    .onChange(of: email) { _, _ in
+                        authService.errorMessage = nil
+                    }
                     .padding(.horizontal, 16)
                     .frame(height: 54)
                     .background(Color.bgSecondary)
@@ -206,14 +214,37 @@ struct LoginView: View {
                         .keyboardType(.numberPad)
                         .multilineTextAlignment(.center)
                         .font(.title2)
+                        .onChange(of: otpCode) { _, _ in
+                            authService.errorMessage = nil
+                        }
                         .padding(.horizontal, 16)
                         .frame(height: 54)
                         .background(Color.bgSecondary)
                         .cornerRadius(primaryButtonCornerRadius)
                         .overlay(
                             RoundedRectangle(cornerRadius: primaryButtonCornerRadius)
-                                .stroke(Color.textSub.opacity(0.1), lineWidth: 1)
+                                .stroke(
+                                    emailLoginErrorMessage == nil ? Color.textSub.opacity(0.1) : Color.red.opacity(0.45),
+                                    lineWidth: 1
+                                )
                         )
+
+                    if let errorMessage = emailLoginErrorMessage {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .foregroundColor(.red)
+
+                            Text(errorMessage)
+                                .font(.footnote)
+                                .foregroundColor(.red)
+                                .multilineTextAlignment(.leading)
+
+                            Spacer(minLength: 0)
+                        }
+                        .padding(.top, 2)
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(errorMessage)
+                    }
                 }
                 
                 Button(action: {
@@ -250,6 +281,7 @@ struct LoginView: View {
 
             Button(L10n.text("auth.login.back_to_options")) {
                 withAnimation {
+                    authService.errorMessage = nil
                     showEmailLogin = false
                     sentCode = false
                     otpCode = ""

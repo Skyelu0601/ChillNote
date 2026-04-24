@@ -11,7 +11,6 @@ struct ChatInputBar: View {
     @Binding var isVoiceMode: Bool
     @ObservedObject var speechRecognizer: SpeechRecognizer
     @StateObject private var storeService = StoreService.shared
-    @AppStorage("recording.has_seen_brain_dump_onboarding") private var hasSeenBrainDumpOnboarding = false
 
     var onSendText: () -> Void
     var onCancelVoice: () -> Void
@@ -29,7 +28,6 @@ struct ChatInputBar: View {
     @State private var elapsed: TimeInterval = 0
     @State private var didTriggerLimit = false
     @State private var showSubscription = false
-    @State private var showBrainDumpOnboarding = false
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
     private var timeText: String {
@@ -113,16 +111,6 @@ struct ChatInputBar: View {
         }
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
-        }
-        .sheet(isPresented: $showBrainDumpOnboarding) {
-            BrainDumpOnboardingSheet(
-                onStart: {
-                    showBrainDumpOnboarding = false
-                    tryStartRecordingWithQuotaCheck()
-                }
-            )
-            .presentationDetents([.medium, .large])
-            .presentationDragIndicator(.visible)
         }
     }
 
@@ -342,7 +330,7 @@ struct ChatInputBar: View {
                 isPressed = false
             }
         }
-        presentOnboardingOrStartRecording()
+        tryStartRecordingWithQuotaCheck()
     }
 
     private func resetPressState() {
@@ -384,17 +372,6 @@ struct ChatInputBar: View {
             && speechRecognizer.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func presentOnboardingOrStartRecording() {
-        guard !speechRecognizer.isRecording else { return }
-
-        if hasSeenBrainDumpOnboarding {
-            tryStartRecordingWithQuotaCheck()
-            return
-        }
-
-        hasSeenBrainDumpOnboarding = true
-        showBrainDumpOnboarding = true
-    }
 }
 
 private struct RecordGestureModifier: ViewModifier {

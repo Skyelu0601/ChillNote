@@ -273,6 +273,20 @@ final class AuthService: ObservableObject {
         code.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    private func userFacingEmailOTPErrorMessage(for error: Error) -> String {
+        let message = error.localizedDescription.lowercased()
+
+        if message.contains("token")
+            || message.contains("otp")
+            || message.contains("code")
+            || message.contains("expired")
+            || message.contains("invalid") {
+            return L10n.text("auth.login.error.invalid_verification_code")
+        }
+
+        return L10n.text("auth.login.error.verification_failed")
+    }
+
     private func isAppReviewQuickCredential(email: String, code: String) -> Bool {
         guard AppConfig.isAppReviewQuickLoginEnabled else { return false }
         let inWhitelist = AppConfig.appReviewWhitelistEmails.contains(email)
@@ -335,7 +349,7 @@ final class AuthService: ObservableObject {
             return true
         } catch {
             print("❌ Verify OTP Error: \(error)")
-            errorMessage = error.localizedDescription
+            errorMessage = userFacingEmailOTPErrorMessage(for: error)
             return false
         }
     }
