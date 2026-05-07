@@ -298,6 +298,25 @@ final class chillnoteTests: XCTestCase {
         XCTAssertEqual(roundTrip, markdown)
     }
 
+    func testRichTextConverterRoundTripsLocalImageMarkdown() {
+        let markdown = "![](file:///tmp/chillnote-test-image.jpg)"
+
+        let attributed = RichTextConverter.markdownToAttributedString(markdown)
+        let roundTrip = RichTextConverter.attributedStringToMarkdown(attributed)
+
+        XCTAssertEqual(roundTrip, markdown)
+    }
+
+    func testNoteDisplayTextOmitsMarkdownImages() {
+        let note = Note(content: """
+        ![](file:///tmp/chillnote-test-image.jpg)
+
+        Captured text
+        """, userId: "u1")
+
+        XCTAssertEqual(note.displayText.trimmingCharacters(in: .whitespacesAndNewlines), "Captured text")
+    }
+
     // MARK: - Sync Checkpoint Tests
 
     func testSyncCheckpointFallsBackToFullSyncWhenLocalNotesAreEmpty() {

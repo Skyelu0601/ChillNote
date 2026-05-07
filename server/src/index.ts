@@ -1310,7 +1310,7 @@ app.get("/subscription/status", requireAuth, async (req, res) => {
   }
 });
 
-// Gemini Endpoint: Supports Multimodal (Audio + Text)
+// Gemini Endpoint: Supports Multimodal (Audio/Image + Text)
 app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, res) => {
   if (!GEMINI_API_KEY) {
     res.status(500).json({ error: "GEMINI_API_KEY is not configured on server" });
@@ -1318,7 +1318,7 @@ app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, r
   }
 
   try {
-    const { prompt, systemPrompt, audioBase64, mimeType, jsonMode, usageType } = req.body;
+    const { prompt, systemPrompt, audioBase64, imageBase64, mimeType, imageMimeType, jsonMode, usageType } = req.body;
 
     if (typeof usageType === "string" && dailyQuotaFeatures.has(usageType as DailyQuotaFeature)) {
       const feature = usageType as DailyQuotaFeature;
@@ -1335,6 +1335,7 @@ app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, r
       }
     }
 
+    const usesImageOCRModel = Boolean(imageBase64) && !audioBase64;
     const url = buildGeminiGenerateContentURL(GEMINI_MODEL);
 
     const contentsParts: any[] = [];
@@ -1343,9 +1344,14 @@ app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, r
         inlineData: { mimeType: mimeType || "audio/wav", data: audioBase64 }
       });
     }
+    if (imageBase64) {
+      contentsParts.push({
+        inlineData: { mimeType: imageMimeType || mimeType || "image/jpeg", data: imageBase64 }
+      });
+    }
     contentsParts.push({ text: prompt });
 
-    const generationConfig: any = { temperature: 0.7 };
+    const generationConfig: any = { temperature: usesImageOCRModel ? 0.1 : 0.7 };
     if (jsonMode) generationConfig.responseMimeType = "application/json";
 
     const body: any = {

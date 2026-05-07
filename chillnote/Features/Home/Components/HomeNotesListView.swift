@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import UIKit
 
 struct HomeNotesListView: View {
     let cachedVisibleNotes: [Note]
@@ -223,6 +224,7 @@ struct NoteListItemViewData: Identifiable {
     let markdownPreviewText: String
     let usePlainPreview: Bool
     let isEmpty: Bool
+    let firstImageURL: URL?
     let tags: [NoteListTagViewData]
     let hiddenTagCount: Int
     let source: NoteSourceMetadata?
@@ -249,7 +251,8 @@ struct NoteListItemViewData: Identifiable {
             highlightBackground: Color.accentPrimary.opacity(0.18),
             highlightFont: .bodyMedium.weight(.semibold)
         )
-        markdownPreviewText = trimmed
+        markdownPreviewText = NoteImageStorage.removingMarkdownImages(from: trimmed)
+        firstImageURL = NoteImageStorage.markdownImageFileURLs(in: note.content).first
 
         let prefixTags = Array(note.tags.prefix(3))
         tags = prefixTags.map { tag in
@@ -339,7 +342,12 @@ struct NoteCard: View {
                     }
                     .padding(.top, 2)
                 } else {
-                    if !item.isEmpty {
+                    if let firstImageURL = item.firstImageURL {
+                        NoteCardImagePreview(url: firstImageURL)
+                    }
+
+                    if !item.previewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                        || !item.markdownPreviewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                         Group {
                             if item.usePlainPreview {
                                 Text(item.highlightedPreviewText)
@@ -388,6 +396,22 @@ struct NoteCard: View {
         .background(Color.cardBackground)
         .cornerRadius(16)
         .shadow(color: Color.shadowColor, radius: 8, y: 4)
+    }
+}
+
+private struct NoteCardImagePreview: View {
+    let url: URL
+
+    var body: some View {
+        if let image = UIImage(contentsOfFile: url.path) {
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFill()
+                .frame(maxWidth: .infinity)
+                .frame(height: 180)
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                .clipped()
+        }
     }
 }
 

@@ -1,7 +1,7 @@
+import AVFoundation
 import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
-@preconcurrency import Vision
 
 struct ChatInputBar: View {
     enum RecordTriggerMode {
@@ -570,8 +570,15 @@ struct ChatInputBar: View {
         }
 
         do {
+            let transcriptionFileURL = await preparedMediaFileURLForTranscription(from: url)
+            defer {
+                if transcriptionFileURL != url {
+                    try? FileManager.default.removeItem(at: transcriptionFileURL)
+                }
+            }
+
             let rawTranscript = try await GeminiService.shared.transcribeAudio(
-                audioFileURL: url,
+                audioFileURL: transcriptionFileURL,
                 countUsage: true
             )
             let noteText = try await QuickCaptureImportService.shared.makeMediaTranscriptNote(
@@ -584,6 +591,57 @@ struct ChatInputBar: View {
         }
     }
 
+    private func preparedMediaFileURLForTranscription(from url: URL) async -> URL {
+        guard Self.shouldExtractAudioBeforeTranscription(from: url) else {
+            return url
+        }
+
+        do {
+            return try await Self.extractAudioTrackForTranscription(from: url)
+        } catch {
+            return url
+        }
+    }
+
+    private static func shouldExtractAudioBeforeTranscription(from url: URL) -> Bool {
+        guard let type = UTType(filenameExtension: url.pathExtension) else {
+            return false
+        }
+        return type.conforms(to: .movie) || type.conforms(to: .video)
+    }
+
+    private static func extractAudioTrackForTranscription(from url: URL) async throws -> URL {
+        let asset = AVURLAsset(url: url)
+        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else {
+            throw QuickCaptureImportError.emptyContent
+        }
+
+        let outputURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("chillnote-video-audio-\(UUID().uuidString)")
+            .appendingPathExtension("m4a")
+
+        exportSession.outputURL = outputURL
+        exportSession.outputFileType = .m4a
+        exportSession.shouldOptimizeForNetworkUse = true
+        let exportBox = QuickCaptureMediaExportSessionBox(exportSession)
+
+        return try await withCheckedThrowingContinuation { continuation in
+            exportBox.session.exportAsynchronously {
+                let session = exportBox.session
+                switch session.status {
+                case .completed:
+                    continuation.resume(returning: outputURL)
+                case .failed, .cancelled:
+                    try? FileManager.default.removeItem(at: outputURL)
+                    continuation.resume(throwing: session.error ?? QuickCaptureImportError.emptyContent)
+                default:
+                    try? FileManager.default.removeItem(at: outputURL)
+                    continuation.resume(throwing: QuickCaptureImportError.emptyContent)
+                }
+            }
+        }
+    }
+
     private func handleSelectedImage(_ image: UIImage) async {
         isRecognizingImageText = true
         quickCaptureProgressState = .image
@@ -592,51 +650,27 @@ struct ChatInputBar: View {
         showMoreSheet = false
 
         do {
-            guard let cgImage = image.cgImage else {
-                captureErrorMessage = L10n.text("quick_capture.error.image_load_failed")
+            let imageURL = try NoteImageStorage.saveImportedImage(image)
+            let imageMarkdown = NoteImageStorage.markdownImageLine(for: imageURL)
+
+            let recognizedText: String
+            do {
+                recognizedText = try await GeminiService.shared.extractTextFromImage(imageFileURL: imageURL)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+            } catch {
+                onImportImageText(imageMarkdown)
                 return
             }
 
-            let recognizedText = try await recognizeText(in: cgImage)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-
             guard !recognizedText.isEmpty else {
-                captureErrorMessage = L10n.text("quick_capture.error.no_image_text")
+                onImportImageText(imageMarkdown)
                 return
             }
 
             let noteText = await QuickCaptureImportService.shared.makeImageTextNote(recognizedText)
-            onImportImageText(noteText)
+            onImportImageText("\(imageMarkdown)\n\n\(noteText)")
         } catch {
             captureErrorMessage = L10n.text("quick_capture.error.image_load_failed")
-        }
-    }
-
-    private func recognizeText(in cgImage: CGImage) async throws -> String {
-        try await withCheckedThrowingContinuation { continuation in
-            let request = VNRecognizeTextRequest { request, error in
-                if let error {
-                    continuation.resume(throwing: error)
-                    return
-                }
-
-                let observations = request.results as? [VNRecognizedTextObservation] ?? []
-                let lines = observations.compactMap { observation in
-                    observation.topCandidates(1).first?.string
-                }
-                continuation.resume(returning: lines.joined(separator: "\n"))
-            }
-
-            request.recognitionLevel = .accurate
-            request.usesLanguageCorrection = true
-
-            DispatchQueue.global(qos: .userInitiated).async {
-                do {
-                    try VNImageRequestHandler(cgImage: cgImage, options: [:]).perform([request])
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
         }
     }
 
@@ -707,6 +741,14 @@ struct ChatInputBar: View {
     private static let maxImportableMediaMB = 100
     private static let maxImportableMediaBytes = maxImportableMediaMB * 1024 * 1024
 
+}
+
+private final class QuickCaptureMediaExportSessionBox: @unchecked Sendable {
+    let session: AVAssetExportSession
+
+    init(_ session: AVAssetExportSession) {
+        self.session = session
+    }
 }
 
 private struct QuickCaptureImagePickerRoute: Identifiable {

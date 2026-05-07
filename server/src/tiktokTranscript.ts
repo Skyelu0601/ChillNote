@@ -392,12 +392,18 @@ async function prepareMediaWithResolver(
     if (payload.mediaBase64) {
       const bytes = Buffer.from(payload.mediaBase64, "base64");
       assertMediaSize(bytes.byteLength);
-      return {
+      const prepared: PreparedMedia = {
         bytes,
         mimeType: payload.mimeType || "video/mp4",
         fileName: payload.fileName,
         durationSec: payload.durationSec
       };
+      if (MEDIA_LINK_EXTRACT_AUDIO !== "false" && prepared.mimeType.startsWith("video/")) {
+        const extracted = await maybeExtractAudio(prepared, undefined, platform);
+        extracted.durationSec = payload.durationSec;
+        return extracted;
+      }
+      return prepared;
     }
 
     if (payload.mediaURL) {

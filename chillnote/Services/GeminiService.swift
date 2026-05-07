@@ -62,6 +62,14 @@ struct GeminiService {
 
     private static func mediaMimeType(for url: URL) -> String {
         switch url.pathExtension.lowercased() {
+        case "jpg", "jpeg":
+            return "image/jpeg"
+        case "png":
+            return "image/png"
+        case "heic":
+            return "image/heic"
+        case "webp":
+            return "image/webp"
         case "wav":
             return "audio/wav"
         case "m4a":
@@ -108,6 +116,7 @@ struct GeminiService {
     func generateContent(
         prompt: String,
         audioFileURL: URL? = nil,
+        imageFileURL: URL? = nil,
         systemInstruction: String? = nil,
         jsonMode: Bool = false,
         countUsage: Bool = false,
@@ -140,12 +149,19 @@ struct GeminiService {
         }
         
         // Add media if present
-        if let audioURL = audioFileURL, let audioData = try? Data(contentsOf: audioURL) {
+        if let audioURL = audioFileURL {
+            let audioData = try Data(contentsOf: audioURL)
             let base64Audio = audioData.base64EncodedString()
             let mimeType = Self.mediaMimeType(for: audioURL)
             
             requestBody["audioBase64"] = base64Audio
             requestBody["mimeType"] = mimeType
+        }
+
+        if let imageURL = imageFileURL {
+            let imageData = try Data(contentsOf: imageURL)
+            requestBody["imageBase64"] = imageData.base64EncodedString()
+            requestBody["imageMimeType"] = Self.mediaMimeType(for: imageURL)
         }
         
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
@@ -334,6 +350,31 @@ struct GeminiService {
         }
 
         return try JSONDecoder().decode(MediaLinkTranscriptionResult.self, from: data)
+    }
+
+    func extractTextFromImage(imageFileURL: URL) async throws -> String {
+        let prompt = """
+        Extract all readable text from the attached image.
+
+        Rules:
+        - Return plain text only.
+        - Preserve the original language.
+        - Preserve useful line breaks when they help readability.
+        - Do not summarize.
+        - Do not describe the image unless the description is visible text.
+        - If there is no readable text, return an empty string.
+        """
+
+        let text = try await generateContent(
+            prompt: prompt,
+            imageFileURL: imageFileURL,
+            systemInstruction: """
+            You are an OCR assistant. Return only text found in the image.
+            """,
+            countUsage: false
+        )
+
+        return text.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     func transcribeTikTokLink(_ url: URL) async throws -> MediaLinkTranscriptionResult {

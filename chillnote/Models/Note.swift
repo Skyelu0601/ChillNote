@@ -63,6 +63,8 @@ final class Note {
         result = result.replacingOccurrences(of: "*", with: "")
         // Remove code
         result = result.replacingOccurrences(of: "`", with: "")
+        // Remove local image markdown from card/search previews.
+        result = result.replacingOccurrences(of: #"!\[[^\]]*\]\([^)]+\)"#, with: "", options: .regularExpression)
         // Keep checklist intent in home preview using visual checkboxes
         result = result.replacingOccurrences(of: "- [ ] ", with: "\(RichTextConverter.Config.checkboxUncheckedSymbol) ")
         result = result.replacingOccurrences(of: "- [x] ", with: "\(RichTextConverter.Config.checkboxCheckedSymbol) ")

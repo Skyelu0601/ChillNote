@@ -272,7 +272,9 @@ struct QuickCaptureImportService {
             - Add a short summary when the transcript has enough substance.
             - Capture key points and action items when present.
             - Do not invent facts, dates, names, decisions, or tasks.
-            - Include a "Transcript" section with the cleaned transcript.
+            - Include a "Transcript" section with a polished transcript, not the raw transcript.
+            - In the polished transcript, remove filler words, false starts, repeated fragments, and obvious speech-to-text noise.
+            - Keep the speaker's meaning, order, names, numbers, and concrete details intact.
             - If the transcript is very short, keep the note simple.
             """
 
@@ -373,7 +375,7 @@ extension QuickCaptureImportService {
             if let transcript = await fetchCreatorMediaTranscript(for: candidateURL),
                !transcript.isEmpty {
                 return LinkImportResult(
-                    noteText: makeCreatorMediaTranscriptNote(
+                    noteText: await makeCreatorMediaTranscriptNote(
                         metadata: creatorMetadata,
                         transcript: transcript
                     ),
@@ -413,7 +415,7 @@ extension QuickCaptureImportService {
         if let transcript = await fetchCreatorMediaTranscript(for: url),
            !transcript.isEmpty {
             return LinkImportResult(
-                noteText: makeCreatorMediaTranscriptNote(
+                noteText: await makeCreatorMediaTranscriptNote(
                     metadata: creatorMetadata,
                     transcript: transcript
                 ),
@@ -446,7 +448,7 @@ extension QuickCaptureImportService {
         if let transcript = await fetchCreatorMediaTranscript(for: url),
            !transcript.isEmpty {
             return LinkImportResult(
-                noteText: makeCreatorMediaTranscriptNote(
+                noteText: await makeCreatorMediaTranscriptNote(
                     metadata: creatorMetadata,
                     transcript: transcript
                 ),
@@ -812,8 +814,9 @@ extension QuickCaptureImportService {
 
     func makeCreatorMediaTranscriptNote(
         metadata: CreatorMediaMetadata,
-        transcript: String
-    ) -> String {
+        transcript: String,
+        polishTranscript: Bool = true
+    ) async -> String {
         let baseNote = makeCreatorMediaLinkNote(metadata: metadata)
         let cleanedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -821,28 +824,74 @@ extension QuickCaptureImportService {
             return baseNote
         }
 
+        let finalTranscript: String
+        if polishTranscript {
+            finalTranscript = await polishedCreatorMediaTranscript(cleanedTranscript)
+        } else {
+            finalTranscript = cleanedTranscript
+        }
+
         return """
         \(baseNote)
 
         ## \(L10n.text("quick_capture.media_link.transcript_heading"))
 
-        \(cleanedTranscript)
+        \(finalTranscript)
         """
+    }
+
+    func polishedCreatorMediaTranscript(_ transcript: String) async -> String {
+        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return trimmed }
+
+        let prompt = """
+        Polish this media transcript for a personal quick-capture note.
+
+        Raw transcript:
+        \(trimmed.prefix(30_000))
+        """
+
+        let systemInstruction = """
+        You clean up audio/video transcripts for a personal notes app.
+        Return only the polished transcript text. Do not add a title, summary, bullet list, or explanation.
+
+        Rules:
+        - Preserve the transcript's original language. Do not translate unless the transcript asks for translation.
+        - Keep the speaker's meaning, order, names, numbers, and concrete details intact.
+        - Remove filler words, false starts, repeated fragments, and obvious speech-to-text noise.
+        - Fix punctuation, paragraph breaks, and minor grammar only when the intended meaning is clear.
+        - Do not invent facts, dates, names, decisions, or tasks.
+        - If the raw transcript is already clean, lightly format it.
+        """
+
+        do {
+            let polished = try await GeminiService.shared.generateContent(
+                prompt: prompt,
+                systemInstruction: systemInstruction,
+                countUsage: false
+            )
+            let result = polished.trimmingCharacters(in: .whitespacesAndNewlines)
+            return result.isEmpty ? trimmed : result
+        } catch {
+            return trimmed
+        }
     }
 
     func makeTikTokTranscriptNote(
         title: String,
         metadata: TikTokOEmbedResponse,
-        transcript: String
-    ) -> String {
-        makeCreatorMediaTranscriptNote(
+        transcript: String,
+        polishTranscript: Bool = true
+    ) async -> String {
+        await makeCreatorMediaTranscriptNote(
             metadata: CreatorMediaMetadata(
                 title: title,
                 authorName: metadata.authorName,
                 authorURL: metadata.authorURL,
                 authorHandle: metadata.authorUniqueID
             ),
-            transcript: transcript
+            transcript: transcript,
+            polishTranscript: polishTranscript
         )
     }
 

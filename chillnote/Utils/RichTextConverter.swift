@@ -17,6 +17,8 @@ struct RichTextConverter {
         static let checkboxAttachmentPrefix = "\u{FFFC} "
         static let checkboxSymbolFontSizeOffset: CGFloat = 10
         static let checkboxBaselineOffset: CGFloat = -2
+        static let imageMaxWidth: CGFloat = 320
+        static let imageMaxHeight: CGFloat = 260
         
         static let listPrefixColor = UIColor.secondaryLabel
         static let checkboxUncheckedColor = UIColor(Color.accentPrimary)
@@ -63,6 +65,7 @@ struct RichTextConverter {
         static let orderedList = NSAttributedString.Key("richTextOrderedList") // String (e.g. "1.")
         static let blockquote = NSAttributedString.Key("richTextBlockquote") // Bool
         static let divider = NSAttributedString.Key("richTextDivider") // Bool
+        static let imageURL = NSAttributedString.Key("richTextImageURL") // String
     }
     
     // MARK: - Markdown -> AttributedString
@@ -86,6 +89,10 @@ struct RichTextConverter {
     private static func parseLine(_ line: String, baseFont: UIFont, textColor: UIColor) -> NSAttributedString {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
         let paragraphStyle = Config.baseStyle()
+
+        if let imageURL = parseMarkdownImageURL(from: trimmed) {
+            return parseImage(urlString: imageURL, paragraphStyle: paragraphStyle)
+        }
         
         // --- Headers ---
         if trimmed.hasPrefix("### ") {
@@ -279,6 +286,47 @@ struct RichTextConverter {
         // Using a visual line
         return NSAttributedString(string: "─────────────────────────", attributes: attrs)
     }
+
+    private static func parseImage(urlString: String, paragraphStyle: NSParagraphStyle) -> NSAttributedString {
+        let attachment = NSTextAttachment()
+        attachment.image = loadMarkdownImage(from: urlString)
+        if let image = attachment.image {
+            attachment.bounds = imageBounds(for: image.size)
+        }
+
+        let result = NSMutableAttributedString(attachment: attachment)
+        result.addAttributes([
+            .paragraphStyle: paragraphStyle,
+            Key.imageURL: urlString
+        ], range: NSRange(location: 0, length: result.length))
+        return result
+    }
+
+    private static func parseMarkdownImageURL(from line: String) -> String? {
+        guard line.hasPrefix("![]("), line.hasSuffix(")") else { return nil }
+        let start = line.index(line.startIndex, offsetBy: 4)
+        let end = line.index(before: line.endIndex)
+        let urlString = String(line[start..<end]).trimmingCharacters(in: .whitespacesAndNewlines)
+        return urlString.isEmpty ? nil : urlString
+    }
+
+    private static func loadMarkdownImage(from urlString: String) -> UIImage? {
+        guard let url = URL(string: urlString), url.isFileURL else { return nil }
+        return UIImage(contentsOfFile: url.path)
+    }
+
+    private static func imageBounds(for size: CGSize) -> CGRect {
+        guard size.width > 0, size.height > 0 else {
+            return CGRect(x: 0, y: 0, width: Config.imageMaxWidth, height: Config.imageMaxHeight)
+        }
+
+        let scale = min(
+            Config.imageMaxWidth / size.width,
+            Config.imageMaxHeight / size.height,
+            1
+        )
+        return CGRect(x: 0, y: 0, width: size.width * scale, height: size.height * scale)
+    }
     
     private static func parseInlineFormatting(_ text: String, baseFont: UIFont, textColor: UIColor, paragraphStyle: NSParagraphStyle) -> NSAttributedString {
         let result = NSMutableAttributedString()
@@ -364,6 +412,10 @@ struct RichTextConverter {
     }
     
     private static func processLineToMarkdown(_ text: String, attributes: [NSAttributedString.Key: Any], fullAttributedLine: NSAttributedString) -> String {
+        if let imageURL = attributes[Key.imageURL] as? String {
+            return "![](\(imageURL))"
+        }
+
         // 1. Header
         if let level = attributes[Key.headerLevel] as? Int {
             let prefix = String(repeating: "#", count: level)

@@ -145,6 +145,29 @@ extension AgentRecipe {
             category: .think
         ),
         AgentRecipe(
+            id: "why_viral",
+            icon: "📈",
+            systemIcon: "chart.line.uptrend.xyaxis",
+            name: "Why Viral",
+            description: "agent_recipe.why_viral.description",
+            prompt: """
+            You are analyzing why a piece of content might spread based on a user’s existing note (not a chat message). Explain the likely viral mechanics without pretending you have real platform metrics.
+
+            - Keep the output in the same language as the note.
+            - Identify the core promise, emotional trigger, audience, tension, novelty, and shareability.
+            - Separate what is strong from what is weak or missing.
+            - Give 3 concrete ways to make the idea more shareable while staying truthful.
+            - Avoid vague advice like "make it more engaging"; be specific.
+
+            Output as:
+            1. Viral thesis
+            2. Why it could spread
+            3. What holds it back
+            4. How to strengthen it
+            """,
+            category: .think
+        ),
+        AgentRecipe(
             id: "summarize",
             icon: "📝",
             systemIcon: "doc.text",
@@ -208,6 +231,26 @@ extension AgentRecipe {
             - Do not invent new facts; add detail by clarifying, giving plausible examples, or drawing out implications already present.
             - If the note is very short, provide a conservative expansion without adding new facts.
             - Preserve formatting if the note has structure.
+            """,
+            category: .shape
+        ),
+        AgentRecipe(
+            id: "style_match",
+            icon: "🎭",
+            systemIcon: "paintbrush.pointed",
+            name: "Style Match",
+            description: "agent_recipe.style_match.description",
+            prompt: """
+            You are writing a new piece in the style of a reference text from the user’s existing notes (not a chat message). Use the reference for tone, pacing, structure, and rhetorical moves, but do not copy distinctive sentences, phrases, claims, or proprietary wording.
+
+            - Keep the output in the same language as the note unless the notes clearly request another language.
+            - If multiple notes are provided, treat the first note as the style reference and the remaining notes as source material for the new piece.
+            - If only one note is provided, infer the style from that note and create a fresh piece on the same idea without reusing its wording.
+            - Preserve the intended audience and format when they are clear.
+            - Keep the result original, useful, and ready to edit.
+            - Do not explain the style analysis unless the note explicitly asks for analysis.
+
+            Output only the new piece.
             """,
             category: .shape
         ),

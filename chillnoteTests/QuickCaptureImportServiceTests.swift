@@ -10,7 +10,7 @@ final class QuickCaptureImportServiceTests: XCTestCase {
         XCTAssertEqual(title, "学英语口语 每天10分钟")
     }
 
-    func testMakeTikTokTranscriptNoteKeepsTitleBoldWithoutMarkdownHeading() {
+    func testMakeTikTokTranscriptNoteKeepsTitleBoldWithoutMarkdownHeading() async {
         let service = QuickCaptureImportService.shared
         let metadata = QuickCaptureImportService.TikTokOEmbedResponse(
             title: "示例标题 #tag",
@@ -19,10 +19,11 @@ final class QuickCaptureImportServiceTests: XCTestCase {
             authorUniqueID: "creator"
         )
 
-        let note = service.makeTikTokTranscriptNote(
+        let note = await service.makeTikTokTranscriptNote(
             title: service.sanitizedTikTokTitle(metadata.title ?? ""),
             metadata: metadata,
-            transcript: "第一句转写"
+            transcript: "第一句转写",
+            polishTranscript: false
         )
 
         XCTAssertTrue(note.hasPrefix("**示例标题**\n\n## "))
