@@ -84,7 +84,7 @@ Recommended environment variables:
 - `MEDIA_LINK_YTDLP_BIN`: Optional path to `yt-dlp`.
 - `MEDIA_LINK_FFMPEG_BIN`: Optional path to `ffmpeg` for video-to-audio extraction.
 - `MEDIA_LINK_TRANSCRIPT_EXTRACT_AUDIO`: Defaults to `true`. Extracts audio before transcription when possible.
-- `MEDIA_LINK_TRANSCRIPT_MAX_MEDIA_MB`: Max media size accepted for transcription. Defaults to `25`.
+- `MEDIA_LINK_TRANSCRIPT_MAX_MEDIA_MB`: Max media size accepted for transcription. Defaults to `100`.
 - `MEDIA_LINK_TRANSCRIPT_DOWNLOAD_TIMEOUT_MS`: Media download timeout. Defaults to `90000`.
 - `MEDIA_LINK_TRANSCRIPT_TIMEOUT_MS`: Gemini transcription timeout. Defaults to `180000`.
 
@@ -94,13 +94,13 @@ Recommended environment variables:
 - `TIKTOK_YTDLP_BIN`: Optional path to `yt-dlp`.
 - `TIKTOK_FFMPEG_BIN`: Optional path to `ffmpeg` for video-to-audio extraction.
 - `TIKTOK_TRANSCRIPT_EXTRACT_AUDIO`: Defaults to `true`. Extracts audio before transcription when possible.
-- `TIKTOK_TRANSCRIPT_MAX_MEDIA_MB`: Max media size accepted for transcription. Defaults to `25`.
+- `TIKTOK_TRANSCRIPT_MAX_MEDIA_MB`: Max media size accepted for transcription. Defaults to `100`.
 - `TIKTOK_TRANSCRIPT_DOWNLOAD_TIMEOUT_MS`: Media download timeout. Defaults to `90000`.
 - `TIKTOK_TRANSCRIPT_TIMEOUT_MS`: Gemini transcription timeout. Defaults to `180000`.
 
 The `TIKTOK_*` variables remain supported as fallbacks for backward compatibility.
 
-For YouTube, the worker first tries to read available captions or auto-captions through `yt-dlp`, then falls back to media download and transcription. This avoids the common case where a YouTube audio download exceeds `MEDIA_LINK_TRANSCRIPT_MAX_MEDIA_MB`.
+For YouTube, TikTok, and Instagram/Reels, the worker first tries to read available captions or auto-captions through `yt-dlp`, then falls back to media download and transcription. This avoids the common case where a media download exceeds `MEDIA_LINK_TRANSCRIPT_MAX_MEDIA_MB`.
 
 If neither `MEDIA_LINK_TRANSCRIPT_RESOLVER_URL` nor a working `yt-dlp` binary is available, the endpoint will return `available: false` and the iOS app will fall back to a metadata-only link note.
 

@@ -53,7 +53,7 @@ const MEDIA_LINK_TRANSCRIBE_TIMEOUT_MS = Number(
 const MEDIA_LINK_MAX_MEDIA_MB = Number(
   process.env.MEDIA_LINK_TRANSCRIPT_MAX_MEDIA_MB
   ?? process.env.TIKTOK_TRANSCRIPT_MAX_MEDIA_MB
-  ?? 25
+  ?? 100
 );
 
 const mediaOEmbedSchema = z.object({
@@ -153,22 +153,20 @@ export async function transcribeMediaLinkURL(rawURL: string): Promise<MediaLinkT
   const resolvedURL = await resolveMediaLinkURL(rawURL, platform);
   const metadata = await fetchMediaLinkMetadata(resolvedURL, platform);
 
-  if (platform === "youtube") {
-    const captionText = await fetchYouTubeCaptionTranscript(resolvedURL);
-    if (captionText) {
-      return {
-        available: true,
-        text: captionText,
-        reason: null,
-        metadata: {
-          resolvedURL,
-          videoID: metadata.videoID,
-          title: metadata.title,
-          authorName: metadata.authorName,
-          mimeType: "text/vtt"
-        }
-      };
-    }
+  const caption = await fetchMediaCaptionTranscript(resolvedURL);
+  if (caption) {
+    return {
+      available: true,
+      text: caption.text,
+      reason: null,
+      metadata: {
+        resolvedURL,
+        videoID: metadata.videoID,
+        title: metadata.title,
+        authorName: metadata.authorName,
+        mimeType: caption.mimeType
+      }
+    };
   }
 
   const media = await prepareMediaLinkMedia(resolvedURL, metadata);
@@ -480,7 +478,7 @@ async function prepareMediaWithYtDlp(url: string, platform: MediaLinkPlatform): 
   }
 }
 
-async function fetchYouTubeCaptionTranscript(url: string): Promise<string | null> {
+async function fetchMediaCaptionTranscript(url: string): Promise<{ text: string; mimeType: string } | null> {
   if (MEDIA_LINK_USE_YTDLP === "false") {
     return null;
   }
@@ -494,11 +492,12 @@ async function fetchYouTubeCaptionTranscript(url: string): Promise<string | null
 
     const rawCaption = await downloadCaptionText(caption.url);
     const ext = caption.ext?.toLowerCase();
-    const transcript = ext === "json3"
-      ? parseYouTubeJSON3Caption(rawCaption)
-      : parseWebVTTCaption(rawCaption);
+    const transcript = parseCaptionText(rawCaption, ext);
+    const normalized = normalizeCaptionTranscript(transcript);
 
-    return normalizeCaptionTranscript(transcript);
+    return normalized
+      ? { text: normalized, mimeType: mimeTypeForCaptionExtension(ext) }
+      : null;
   } catch {
     return null;
   }
@@ -551,6 +550,36 @@ function selectBestCaptionFormat(formats: YtDlpCaptionFormat[]): YtDlpCaptionFor
     if (match) return match;
   }
   return formats.find((format) => format.url) ?? null;
+}
+
+function parseCaptionText(raw: string, ext?: string): string {
+  switch (ext) {
+    case "json3":
+      return parseYouTubeJSON3Caption(raw);
+    case "ttml":
+    case "srv3":
+    case "srv2":
+    case "srv1":
+      return parseXMLCaption(raw);
+    case "vtt":
+    default:
+      return parseWebVTTCaption(raw);
+  }
+}
+
+function mimeTypeForCaptionExtension(ext?: string): string {
+  switch (ext) {
+    case "json3":
+      return "application/json";
+    case "ttml":
+    case "srv3":
+    case "srv2":
+    case "srv1":
+      return "application/xml";
+    case "vtt":
+    default:
+      return "text/vtt";
+  }
 }
 
 async function downloadCaptionText(captionURL: string): Promise<string> {
@@ -608,6 +637,28 @@ function parseWebVTTCaption(raw: string): string {
     });
 
   return dedupeAdjacentCaptionCues(cueTexts).join(" ");
+}
+
+function parseXMLCaption(raw: string): string {
+  const cueTexts = Array.from(raw.matchAll(/<text\b[^>]*>([\s\S]*?)<\/text>/gi))
+    .map((match) => decodeCaptionEntities(match[1] ?? "").replace(/<[^>]+>/g, " "));
+
+  if (cueTexts.length) {
+    return dedupeAdjacentCaptionCues(cueTexts).join(" ");
+  }
+
+  return decodeCaptionEntities(raw.replace(/<[^>]+>/g, " "));
+}
+
+function decodeCaptionEntities(text: string): string {
+  return text
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, decimal: string) => String.fromCodePoint(parseInt(decimal, 10)))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, "\"");
 }
 
 function dedupeAdjacentCaptionCues(cueTexts: string[]): string[] {
