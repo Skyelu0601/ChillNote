@@ -18,7 +18,7 @@ struct RichTextEditorView: UIViewRepresentable {
         textView.backgroundColor = .clear
         textView.isEditable = isEditable
         textView.allowsEditingTextAttributes = true
-        textView.isScrollEnabled = isScrollEnabled
+        textView.setEditorScrollingEnabled(isScrollEnabled)
         
         // Set default font and text color - ensures cursor has correct height when empty
         textView.font = font
@@ -59,7 +59,7 @@ struct RichTextEditorView: UIViewRepresentable {
     
     func updateUIView(_ textView: InteractiveTextView, context: Context) {
         textView.isEditable = isEditable
-        textView.isScrollEnabled = isScrollEnabled
+        textView.setEditorScrollingEnabled(isScrollEnabled)
         
         // Update styling if needed (though usually controlled by attributes)
         // We only do a full re-render if the text actually changed from the outside
@@ -966,6 +966,7 @@ class InteractiveTextView: UITextView {
     var onCheckboxTap: ((Int, NSRange) -> Void)?
     private let checkboxTapTargetWidth: CGFloat = 44
     private let checkboxTapVerticalPadding: CGFloat = 10
+    private weak var checkboxTapGesture: UITapGestureRecognizer?
     
     override init(frame: CGRect, textContainer: NSTextContainer?) {
         super.init(frame: frame, textContainer: textContainer)
@@ -983,6 +984,14 @@ class InteractiveTextView: UITextView {
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         tapGesture.delegate = self
         addGestureRecognizer(tapGesture)
+        checkboxTapGesture = tapGesture
+    }
+
+    func setEditorScrollingEnabled(_ enabled: Bool) {
+        isScrollEnabled = enabled
+        panGestureRecognizer.isEnabled = enabled
+        showsVerticalScrollIndicator = enabled
+        alwaysBounceVertical = enabled
     }
     
     private func setupTextChangeObserver() {
@@ -1181,10 +1190,16 @@ class InteractiveTextView: UITextView {
 
 extension InteractiveTextView: UIGestureRecognizerDelegate {
     override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
-        if let tapGesture = gestureRecognizer as? UITapGestureRecognizer {
+        if gestureRecognizer === panGestureRecognizer && !isScrollEnabled {
+            return false
+        }
+
+        if let tapGesture = gestureRecognizer as? UITapGestureRecognizer,
+           tapGesture === checkboxTapGesture {
             let location = tapGesture.location(in: self)
             return checkboxRangeForTap(at: location) != nil
         }
-        return false
+
+        return super.gestureRecognizerShouldBegin(gestureRecognizer)
     }
 }
