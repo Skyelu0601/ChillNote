@@ -123,13 +123,6 @@ struct HomeBodyView: View {
         )
     }
 
-    private var inputTextBinding: Binding<String> {
-        Binding(
-            get: { state.inputText },
-            set: { dispatch(.setInputText($0)) }
-        )
-    }
-
     private var voiceModeBinding: Binding<Bool> {
         Binding(
             get: { state.isVoiceMode },
@@ -472,17 +465,22 @@ struct HomeBodyView: View {
         Group {
             if !state.isSelectionMode && !isSearchFocused && state.searchText.isEmpty && !state.isTrashSelected {
                 ChatInputBar(
-                    text: inputTextBinding,
                     isVoiceMode: voiceModeBinding,
                     speechRecognizer: state.speechRecognizer,
-                    onSendText: {
-                        dispatch(.submitText)
-                    },
                     onCancelVoice: {
                         dispatch(.cancelVoice)
                     },
                     onConfirmVoice: {
                         dispatch(.confirmVoice)
+                    },
+                    onPasteLink: {
+                        dispatch(.pasteLink($0))
+                    },
+                    onImportImageText: {
+                        dispatch(.importImageText($0))
+                    },
+                    onCreateBlankNote: {
+                        dispatch(.createBlankNote)
                     },
                     recordTriggerMode: .tapToRecord,
                     highlightIdleMic: false

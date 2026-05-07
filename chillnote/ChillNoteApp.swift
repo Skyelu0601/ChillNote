@@ -37,7 +37,9 @@ struct ChillNoteApp: App {
                             
                             if url.scheme == "chillnote" && url.host == "record" {
                                 NotificationCenter.default.post(name: NSNotification.Name("StartRecording"), object: nil)
+                                return
                             }
+
                         }
                 } else {
                     DataInitializationFailedView(

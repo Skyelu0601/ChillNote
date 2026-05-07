@@ -92,7 +92,7 @@ final class NoteDetailViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.aiOriginalContent, "messy")
     }
 
-    func testExecuteTidyActionLimitErrorShowsUpgradeSheet() async {
+    func testExecuteTidyActionLimitErrorShowsSubscriptionSheet() async {
         let note = Note(content: "messy", userId: "u1")
         context.insert(note)
 
@@ -106,8 +106,8 @@ final class NoteDetailViewModelTests: XCTestCase {
 
         await viewModel.executeTidyAction()
 
-        XCTAssertTrue(viewModel.showUpgradeSheet)
-        XCTAssertEqual(viewModel.upgradeTitle, "Daily Tidy limit reached")
+        XCTAssertTrue(viewModel.showSubscription)
+        XCTAssertFalse(viewModel.isProcessing)
     }
 
     func testHandleAIInputWithEmptyInputSkipsRequest() async {

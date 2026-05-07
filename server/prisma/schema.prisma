@@ -53,6 +53,12 @@ model Note {
   serverUpdatedAt     DateTime @default(now())
   serverDeletedAt     DateTime?
   lastModifiedByDeviceId String?
+  sourceURL           String?
+  sourceTitle         String?
+  sourcePlatformID    String?
+  sourcePlatformName  String?
+  sourceHost          String?
+  sourceCapturedAt    DateTime?
   tags                Tag[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

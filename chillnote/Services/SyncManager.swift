@@ -17,6 +17,12 @@ final class SyncManager: ObservableObject {
     
     private let minimumSyncInterval: TimeInterval = 60
 
+    struct SyncCheckpoint: Equatable {
+        let since: Date?
+        let cursor: String?
+        let shouldMarkUploadedLocalAfterSuccess: Bool
+    }
+
     init() {
         if !isEnabled {
             isEnabled = true
@@ -85,14 +91,17 @@ final class SyncManager: ObservableObject {
                     note.userId == userIdForSync
                 }
                 let localNotesCount = (try? backgroundContext.fetchCount(userNotesDescriptor)) ?? 0
-                let shouldForceFullSync = !hasUploadedLocalSnapshot && localNotesCount > 0
-                let sinceDate = shouldForceFullSync ? nil : lastSyncAt
-                let cursorValue = shouldForceFullSync ? nil : (cursorSnapshot.isEmpty ? nil : cursorSnapshot)
+                let checkpoint = Self.resolveCheckpoint(
+                    lastSyncAt: lastSyncAt,
+                    cursor: cursorSnapshot,
+                    hasUploadedLocal: hasUploadedLocalSnapshot,
+                    localNotesCount: localNotesCount
+                )
                 let config = SyncConfig(
                     baseURL: url,
                     authToken: tokenForSync,
-                    since: sinceDate,
-                    cursor: cursorValue,
+                    since: checkpoint.since,
+                    cursor: checkpoint.cursor,
                     localSyncAnchor: syncStartedAt,
                     userId: userIdForSync,
                     deviceId: deviceIdSnapshot,
@@ -104,7 +113,7 @@ final class SyncManager: ObservableObject {
                 TagService.shared.cleanupEmptyTags(context: backgroundContext, shouldSave: false)
                 try backgroundContext.save()
                 let postSyncNotesCount = (try? backgroundContext.fetchCount(userNotesDescriptor)) ?? 0
-                return (result, postSyncNotesCount)
+                return (result, postSyncNotesCount, checkpoint.shouldMarkUploadedLocalAfterSuccess)
             }.value
             HardDeleteQueueStore.dequeue(noteIDs: hardDeletedNoteIdsSnapshot, for: currentUserId)
             HardDeleteQueueStore.dequeue(tagIDs: hardDeletedTagIdsSnapshot, for: currentUserId)
@@ -121,7 +130,7 @@ final class SyncManager: ObservableObject {
             if let cursor = syncOutcome.0.cursor, !cursor.isEmpty {
                 syncCursor = cursor
             }
-            self.hasUploadedLocal = syncOutcome.1 > 0
+            self.hasUploadedLocal = syncOutcome.2 ? true : (syncOutcome.1 > 0)
 
             if FeatureFlags.useLocalFTSSearch {
                 let hardDeletedNoteUUIDs = syncOutcome.0.remoteHardDeletedNoteIds.compactMap(UUID.init(uuidString:))
@@ -164,5 +173,42 @@ final class SyncManager: ObservableObject {
             return false
         }
         return true
+    }
+
+    nonisolated static func resolveCheckpoint(
+        lastSyncAt: Date?,
+        cursor: String,
+        hasUploadedLocal: Bool,
+        localNotesCount: Int
+    ) -> SyncCheckpoint {
+        let normalizedCursor = cursor.isEmpty ? nil : cursor
+
+        // If local storage is empty, incremental sync is unsafe because the server
+        // will only return recent changes after the saved cursor. Fall back to a
+        // full sync so historical notes can be downloaded again after relogin,
+        // migration resets, or store recreation.
+        if localNotesCount == 0 {
+            return SyncCheckpoint(
+                since: nil,
+                cursor: nil,
+                shouldMarkUploadedLocalAfterSuccess: false
+            )
+        }
+
+        // Existing local notes that were never uploaded should also avoid using an
+        // incremental cursor, otherwise remote history may be skipped.
+        if !hasUploadedLocal {
+            return SyncCheckpoint(
+                since: nil,
+                cursor: nil,
+                shouldMarkUploadedLocalAfterSuccess: true
+            )
+        }
+
+        return SyncCheckpoint(
+            since: lastSyncAt,
+            cursor: normalizedCursor,
+            shouldMarkUploadedLocalAfterSuccess: true
+        )
     }
 }

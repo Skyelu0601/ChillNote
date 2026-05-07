@@ -48,7 +48,7 @@ struct HomeHeaderView: View {
 
                 Spacer()
 
-                HStack(spacing: 2) {
+                HStack(spacing: 10) {
                     Button(action: onToggleSearch) {
                         Image(systemName: "magnifyingglass")
                             .font(.system(size: 17, weight: .medium))
@@ -61,17 +61,6 @@ struct HomeHeaderView: View {
                     .accessibilityLabel(L10n.text("home.header.accessibility.search"))
 
                     if !isTrashSelected {
-                        Button(action: onCreateBlankNote) {
-                            Image(systemName: "plus")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.textMain)
-                                .frame(width: 36, height: 36)
-                                .contentShape(Circle())
-                        }
-                        .buttonStyle(.bouncy)
-                        .disabled(isRecording)
-                        .accessibilityLabel(L10n.text("home.header.accessibility.create_blank_note"))
-
                         Button(action: onEnterSelectionMode) {
                             HomeAIEntryIcon(
                                 isRecording: isRecording,

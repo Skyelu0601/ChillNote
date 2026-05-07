@@ -26,7 +26,13 @@ struct SyncMapper {
             version: nil,
             baseVersion: note.version,
             clientUpdatedAt: dateFormatter.string(from: note.updatedAt),
-            lastModifiedByDeviceId: note.lastModifiedByDeviceId
+            lastModifiedByDeviceId: note.lastModifiedByDeviceId,
+            sourceURL: note.sourceURL,
+            sourceTitle: note.sourceTitle,
+            sourcePlatformID: note.sourcePlatformID,
+            sourcePlatformName: note.sourcePlatformName,
+            sourceHost: note.sourceHost,
+            sourceCapturedAt: note.sourceCapturedAt.map { dateFormatter.string(from: $0) }
         )
     }
 
@@ -81,6 +87,12 @@ struct SyncMapper {
         if let deviceId = dto.lastModifiedByDeviceId {
             note.lastModifiedByDeviceId = deviceId
         }
+        note.sourceURL = dto.sourceURL
+        note.sourceTitle = dto.sourceTitle
+        note.sourcePlatformID = dto.sourcePlatformID
+        note.sourcePlatformName = dto.sourcePlatformName
+        note.sourceHost = dto.sourceHost
+        note.sourceCapturedAt = dto.sourceCapturedAt.flatMap { parseDate($0) }
         // Tags are handled separately in SyncEngine to resolve relationships
     }
 

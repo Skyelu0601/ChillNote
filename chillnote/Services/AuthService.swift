@@ -64,12 +64,15 @@ final class AuthService: ObservableObject {
     /// If we have a local auth token, we can show home first while verifying session in background.
     var canOptimisticallyEnterHome: Bool {
         guard case .checking = state else { return false }
-        return hasCachedSessionToken
+        return hasCachedSessionToken && lastAuthenticatedUserId != nil
     }
     
     var currentUserId: String? {
         if case .signedIn(let userId) = state {
             return userId
+        }
+        if case .checking = state {
+            return lastAuthenticatedUserId
         }
         return nil
     }
@@ -82,6 +85,11 @@ final class AuthService: ObservableObject {
     private var hasCachedSessionToken: Bool {
         guard let token = UserDefaults.standard.string(forKey: "syncAuthToken") else { return false }
         return !token.isEmpty
+    }
+
+    private var lastAuthenticatedUserId: String? {
+        guard let userId = UserDefaults.standard.string(forKey: "auth.lastAuthenticatedUserId") else { return nil }
+        return userId.isEmpty ? nil : userId
     }
 
     private init() {
@@ -104,17 +112,17 @@ final class AuthService: ObservableObject {
             // Check if the session is expired
             if session.isExpired {
                 self.state = .signedOut
+                clearCachedSession()
                 return
             }
             
+            persistSession(session)
             self.state = .signedIn(userId: session.user.id.uuidString)
             self.currentUser = session.user
-            UserDefaults.standard.set(session.accessToken, forKey: "syncAuthToken")
             await StoreService.shared.refreshSubscriptionStatus()
         } catch {
             self.state = .signedOut
-            UserDefaults.standard.removeObject(forKey: "syncAuthToken")
-            StoreService.shared.currentTier = .free
+            clearCachedSession()
         }
     }
     
@@ -200,8 +208,7 @@ final class AuthService: ObservableObject {
             try? await supabase.auth.signOut()
             state = .signedOut
             currentUser = nil
-            UserDefaults.standard.removeObject(forKey: "syncAuthToken")
-            StoreService.shared.currentTier = .free
+            clearCachedSession()
         }
     }
     
@@ -358,11 +365,23 @@ final class AuthService: ObservableObject {
     func getSessionToken() async -> String? {
         do {
             let session = try await supabase.auth.session
-            UserDefaults.standard.set(session.accessToken, forKey: "syncAuthToken")
+            persistSession(session)
             return session.accessToken
         } catch {
-            UserDefaults.standard.removeObject(forKey: "syncAuthToken")
+            clearCachedSession()
             return nil
         }
+    }
+
+    private func persistSession(_ session: Session) {
+        UserDefaults.standard.set(session.accessToken, forKey: "syncAuthToken")
+        UserDefaults.standard.set(session.user.id.uuidString, forKey: "auth.lastAuthenticatedUserId")
+    }
+
+    private func clearCachedSession() {
+        currentUser = nil
+        UserDefaults.standard.removeObject(forKey: "syncAuthToken")
+        UserDefaults.standard.removeObject(forKey: "auth.lastAuthenticatedUserId")
+        StoreService.shared.currentTier = .free
     }
 }

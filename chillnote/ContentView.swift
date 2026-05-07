@@ -69,7 +69,11 @@ struct ContentView: View {
             } else {
             switch authService.state {
             case .checking:
-                ProgressView(L10n.text("auth.session.checking"))
+                if authService.canOptimisticallyEnterHome, hasCompletedOnboarding {
+                    HomeView()
+                } else {
+                    ProgressView(L10n.text("auth.session.checking"))
+                }
             case .signedIn(let userId):
                 if hasCompletedOnboarding {
                     HomeView()

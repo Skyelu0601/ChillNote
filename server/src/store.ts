@@ -39,7 +39,13 @@ function mapNoteToDTO(note: any): NoteDTO {
       ? note.tags.filter((tag: any) => tag.serverDeletedAt == null && tag.deletedAt == null).map((tag: any) => tag.id)
       : [],
     version: note.version ?? 1,
-    lastModifiedByDeviceId: note.lastModifiedByDeviceId ?? null
+    lastModifiedByDeviceId: note.lastModifiedByDeviceId ?? null,
+    sourceURL: note.sourceURL ?? null,
+    sourceTitle: note.sourceTitle ?? null,
+    sourcePlatformID: note.sourcePlatformID ?? null,
+    sourcePlatformName: note.sourcePlatformName ?? null,
+    sourceHost: note.sourceHost ?? null,
+    sourceCapturedAt: note.sourceCapturedAt?.toISOString() ?? null
   };
 }
 
@@ -56,6 +62,46 @@ function mapTagToDTO(tag: any): TagDTO {
     deletedAt: tag.serverDeletedAt?.toISOString() ?? tag.deletedAt?.toISOString() ?? null,
     version: tag.version ?? 1,
     lastModifiedByDeviceId: tag.lastModifiedByDeviceId ?? null
+  };
+}
+
+function hasOwnField<T extends object>(value: T, key: keyof NoteDTO): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function sourceUpdateData(incoming: NoteDTO) {
+  const data: Record<string, string | Date | null> = {};
+
+  if (hasOwnField(incoming, "sourceURL")) {
+    data.sourceURL = incoming.sourceURL ?? null;
+  }
+  if (hasOwnField(incoming, "sourceTitle")) {
+    data.sourceTitle = incoming.sourceTitle ?? null;
+  }
+  if (hasOwnField(incoming, "sourcePlatformID")) {
+    data.sourcePlatformID = incoming.sourcePlatformID ?? null;
+  }
+  if (hasOwnField(incoming, "sourcePlatformName")) {
+    data.sourcePlatformName = incoming.sourcePlatformName ?? null;
+  }
+  if (hasOwnField(incoming, "sourceHost")) {
+    data.sourceHost = incoming.sourceHost ?? null;
+  }
+  if (hasOwnField(incoming, "sourceCapturedAt")) {
+    data.sourceCapturedAt = incoming.sourceCapturedAt ? new Date(incoming.sourceCapturedAt) : null;
+  }
+
+  return data;
+}
+
+function sourceCreateData(incoming: NoteDTO) {
+  return {
+    sourceURL: incoming.sourceURL ?? null,
+    sourceTitle: incoming.sourceTitle ?? null,
+    sourcePlatformID: incoming.sourcePlatformID ?? null,
+    sourcePlatformName: incoming.sourcePlatformName ?? null,
+    sourceHost: incoming.sourceHost ?? null,
+    sourceCapturedAt: incoming.sourceCapturedAt ? new Date(incoming.sourceCapturedAt) : null
   };
 }
 
@@ -190,6 +236,9 @@ export async function upsertTag(
 export async function upsertNote(userId: string, incoming: NoteDTO): Promise<void> {
   const serverUpdatedAt = incoming.updatedAt ? new Date(incoming.updatedAt) : new Date();
   const tagIds = incoming.tagIds ?? undefined;
+  const sourceUpdate = sourceUpdateData(incoming);
+  const sourceCreate = sourceCreateData(incoming);
+
   await prisma.note.upsert({
     where: { id: incoming.id },
     update: {
@@ -203,6 +252,7 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
       serverDeletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
       version: incoming.version ?? 1,
       lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null,
+      ...sourceUpdate,
       tags: tagIds ? { set: tagIds.map((tagId) => ({ id: tagId })) } : undefined
     },
     create: {
@@ -217,6 +267,7 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
       serverDeletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
       version: incoming.version ?? 1,
       lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null,
+      ...sourceCreate,
       tags: tagIds ? { connect: tagIds.map((tagId) => ({ id: tagId })) } : undefined
     }
   });

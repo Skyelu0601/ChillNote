@@ -1,2 +1,4 @@
 "NSMicrophoneUsageDescription" = "ChillNote necesita acceso al micrófono para grabar tus ideas.";
 "NSSpeechRecognitionUsageDescription" = "ChillNote usa reconocimiento de voz para transcribir tu voz a texto.";
+"NSCameraUsageDescription" = "ChillNote usa la cámara para capturar texto de pizarras, páginas, capturas e ideas cotidianas.";
+"NSPhotoLibraryUsageDescription" = "ChillNote usa el acceso a tus fotos para importar imágenes y convertir el texto visible en notas.";

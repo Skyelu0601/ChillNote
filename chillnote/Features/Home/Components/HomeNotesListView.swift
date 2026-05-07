@@ -225,6 +225,7 @@ struct NoteListItemViewData: Identifiable {
     let isEmpty: Bool
     let tags: [NoteListTagViewData]
     let hiddenTagCount: Int
+    let source: NoteSourceMetadata?
 
     init(note: Note, searchQuery: String, usePlainPreview: Bool = true) {
         id = note.id
@@ -268,6 +269,7 @@ struct NoteListItemViewData: Identifiable {
             )
         }
         hiddenTagCount = max(0, note.tags.count - prefixTags.count)
+        source = note.sourceMetadata
     }
 }
 
@@ -371,6 +373,11 @@ struct NoteCard: View {
                                     .foregroundColor(.textSub)
                             }
                         }
+                    }
+
+                    if let source = item.source {
+                        NoteSourceCard(source: source, compact: true)
+                            .padding(.top, item.tags.isEmpty ? 2 : 4)
                     }
                 }
             }

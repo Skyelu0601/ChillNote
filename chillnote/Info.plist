@@ -38,6 +38,10 @@
 	</array>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>ChillNote uses the microphone to record voice notes and, with your permission, send audio for secure AI transcription.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>ChillNote uses the camera to capture text from whiteboards, pages, screenshots, and everyday ideas.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>ChillNote uses photo library access so you can import images and turn visible text into notes.</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIBackgroundModes</key>

@@ -6,6 +6,14 @@ enum NoteContentFormat: String {
     case checklist
 }
 
+struct NoteSourceMetadata: Equatable, Sendable {
+    let url: String
+    let title: String
+    let platformID: String
+    let platformName: String
+    let host: String
+}
+
 @Model
 final class Note {
     var id: UUID
@@ -27,6 +35,12 @@ final class Note {
     var serverDeletedAt: Date?
     var lastModifiedByDeviceId: String?
     var contentParseBackup: String?
+    var sourceURL: String?
+    var sourceTitle: String?
+    var sourcePlatformID: String?
+    var sourcePlatformName: String?
+    var sourceHost: String?
+    var sourceCapturedAt: Date?
     
     @Relationship
     var tags: [Tag] = []
@@ -78,6 +92,12 @@ final class Note {
         self.serverDeletedAt = nil
         self.lastModifiedByDeviceId = nil
         self.contentParseBackup = nil
+        self.sourceURL = nil
+        self.sourceTitle = nil
+        self.sourcePlatformID = nil
+        self.sourcePlatformName = nil
+        self.sourceHost = nil
+        self.sourceCapturedAt = nil
         self.tags = []
         self.suggestedTags = []
 
@@ -99,6 +119,41 @@ final class Note {
 
     var isEmptyNote: Bool {
         content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var sourceMetadata: NoteSourceMetadata? {
+        guard let sourceURL,
+              let url = URL(string: sourceURL),
+              ["http", "https"].contains(url.scheme?.lowercased() ?? "") else {
+            return nil
+        }
+
+        let host = sourceHost?.trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? url.host(percentEncoded: false)
+            ?? ""
+        let platformID = sourcePlatformID?.trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? NoteSourcePlatformResolver.platform(for: url).id
+        let platformName = sourcePlatformName?.trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? NoteSourcePlatformResolver.platform(for: url).displayName
+        let title = sourceTitle?.trimmingCharacters(in: .whitespacesAndNewlines)
+            ?? host
+
+        return NoteSourceMetadata(
+            url: sourceURL,
+            title: title.isEmpty ? sourceURL : title,
+            platformID: platformID,
+            platformName: platformName,
+            host: host
+        )
+    }
+
+    func applySourceMetadata(_ source: NoteSourceMetadata?) {
+        sourceURL = source?.url
+        sourceTitle = source?.title
+        sourcePlatformID = source?.platformID
+        sourcePlatformName = source?.platformName
+        sourceHost = source?.host
+        sourceCapturedAt = source == nil ? nil : Date()
     }
 
     func syncContentStructure(with context: ModelContext) {

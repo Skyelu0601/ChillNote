@@ -12,6 +12,50 @@ struct NoteDTO: Codable {
     let baseVersion: Int?
     let clientUpdatedAt: String?
     let lastModifiedByDeviceId: String?
+    let sourceURL: String?
+    let sourceTitle: String?
+    let sourcePlatformID: String?
+    let sourcePlatformName: String?
+    let sourceHost: String?
+    let sourceCapturedAt: String?
+
+    init(
+        id: String,
+        content: String,
+        createdAt: String,
+        updatedAt: String?,
+        deletedAt: String?,
+        pinnedAt: String?,
+        tagIds: [String]?,
+        version: Int?,
+        baseVersion: Int?,
+        clientUpdatedAt: String?,
+        lastModifiedByDeviceId: String?,
+        sourceURL: String? = nil,
+        sourceTitle: String? = nil,
+        sourcePlatformID: String? = nil,
+        sourcePlatformName: String? = nil,
+        sourceHost: String? = nil,
+        sourceCapturedAt: String? = nil
+    ) {
+        self.id = id
+        self.content = content
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.deletedAt = deletedAt
+        self.pinnedAt = pinnedAt
+        self.tagIds = tagIds
+        self.version = version
+        self.baseVersion = baseVersion
+        self.clientUpdatedAt = clientUpdatedAt
+        self.lastModifiedByDeviceId = lastModifiedByDeviceId
+        self.sourceURL = sourceURL
+        self.sourceTitle = sourceTitle
+        self.sourcePlatformID = sourcePlatformID
+        self.sourcePlatformName = sourcePlatformName
+        self.sourceHost = sourceHost
+        self.sourceCapturedAt = sourceCapturedAt
+    }
 }
 
 struct TagDTO: Codable {

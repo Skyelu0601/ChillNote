@@ -19,6 +19,14 @@ struct NoteDetailEditorSectionView: View {
                     .padding(.horizontal, 20)
                     .padding(.bottom, 8)
 
+                if let source = note.sourceMetadata {
+                    NoteSourceCard(source: source)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 14)
+                        .opacity(isDeleted ? 0.5 : 1)
+                        .allowsHitTesting(!isDeleted)
+                }
+
                 TagBannerView(
                     tags: note.tags,
                     suggestedTags: note.suggestedTags,

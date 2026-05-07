@@ -20,7 +20,6 @@ struct HomeView: View {
     @StateObject var speechRecognizer = SpeechRecognizer()
     @State var navigationPath = NavigationPath()
     @State var showingSettings = false
-    @State var inputText = ""
     @State var isVoiceMode = true
     @State var pendingVoiceNoteByPath: [String: UUID] = [:]
 
@@ -133,7 +132,6 @@ struct HomeView: View {
             selectedTag: selectedTag,
             selectedNotes: selectedNotes,
             notesToDeleteAfterMerge: notesToDeleteAfterMerge,
-            inputText: inputText,
             isVoiceMode: isVoiceMode,
             cachedVisibleNotes: homeViewModel.items,
             isLoadingNotes: homeViewModel.isLoading,
@@ -344,8 +342,6 @@ struct HomeView: View {
             navigationPath = value
         case .setSearchText(let value):
             searchText = value
-        case .setInputText(let value):
-            inputText = value
         case .setVoiceMode(let value):
             isVoiceMode = value
         case .setShowingSettings(let value):
@@ -425,12 +421,14 @@ struct HomeView: View {
             handleAgentActionRequest(recipe)
         case .startAIChat:
             startAIChat()
-        case .submitText:
-            handleTextSubmit()
         case .cancelVoice:
             speechRecognizer.stopRecording(reason: .cancelled)
         case .confirmVoice:
             handleVoiceConfirmation()
+        case .pasteLink(let link):
+            savePastedLink(link)
+        case .importImageText(let text):
+            saveImportedImageText(text)
         case .createBlankNote:
             createAndOpenBlankNote()
 

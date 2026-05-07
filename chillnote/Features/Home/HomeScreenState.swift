@@ -31,7 +31,6 @@ struct HomeScreenState {
     let selectedTag: Tag?
     let selectedNotes: Set<UUID>
     let notesToDeleteAfterMerge: [Note]
-    let inputText: String
     let isVoiceMode: Bool
 
     let cachedVisibleNotes: [Note]
@@ -64,7 +63,6 @@ struct HomeScreenState {
 enum HomeScreenAction {
     case setNavigationPath(NavigationPath)
     case setSearchText(String)
-    case setInputText(String)
     case setVoiceMode(Bool)
     case setShowingSettings(Bool)
     case setAutoOpenPendingRecordings(Bool)
@@ -100,9 +98,10 @@ enum HomeScreenAction {
 
     case handleAgentRecipeRequest(AgentRecipe)
     case startAIChat
-    case submitText
     case cancelVoice
     case confirmVoice
+    case pasteLink(QuickCaptureImportService.LinkImportResult)
+    case importImageText(String)
     case createBlankNote
 
     case deleteSelectedNotes

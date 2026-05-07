@@ -51,8 +51,39 @@ struct VoiceTranscriptionPreferences {
     }
 }
 
+struct MediaLinkTranscriptionResult: Decodable {
+    let available: Bool
+    let text: String?
+    let reason: String?
+}
+
 struct GeminiService {
     static let shared = GeminiService()
+
+    private static func mediaMimeType(for url: URL) -> String {
+        switch url.pathExtension.lowercased() {
+        case "wav":
+            return "audio/wav"
+        case "m4a":
+            return "audio/m4a"
+        case "mp3":
+            return "audio/mp3"
+        case "aac":
+            return "audio/aac"
+        case "aiff", "aif":
+            return "audio/aiff"
+        case "flac":
+            return "audio/flac"
+        case "mp4":
+            return "video/mp4"
+        case "mov":
+            return "video/quicktime"
+        case "m4v":
+            return "video/x-m4v"
+        default:
+            return "application/octet-stream"
+        }
+    }
 
     private func makeAuthorizedJSONRequest(url: URL, timeout: TimeInterval) async throws -> URLRequest {
         var request = URLRequest(url: url)
@@ -108,11 +139,10 @@ struct GeminiService {
             requestBody["usageType"] = usageType.rawValue
         }
         
-        // Add Audio if present
+        // Add media if present
         if let audioURL = audioFileURL, let audioData = try? Data(contentsOf: audioURL) {
             let base64Audio = audioData.base64EncodedString()
-            let ext = audioURL.pathExtension.lowercased()
-            let mimeType = ext == "m4a" ? "audio/m4a" : (ext == "mp3" ? "audio/mp3" : "audio/wav")
+            let mimeType = Self.mediaMimeType(for: audioURL)
             
             requestBody["audioBase64"] = base64Audio
             requestBody["mimeType"] = mimeType
@@ -184,8 +214,7 @@ struct GeminiService {
         }
 
         let base64Audio = audioData.base64EncodedString()
-        let ext = audioFileURL.pathExtension.lowercased()
-        let mimeType = ext == "wav" ? "audio/wav" : (ext == "m4a" ? "audio/m4a" : (ext == "mp3" ? "audio/mp3" : "application/octet-stream"))
+        let mimeType = Self.mediaMimeType(for: audioFileURL)
         let transcriptionPreferences = VoiceTranscriptionPreferences.load()
 
         var requestBody: [String: Any] = [
@@ -218,7 +247,7 @@ struct GeminiService {
                     languageHintLine = ""
                 }
                 let fallbackPrompt = """
-                Transcribe the attached audio verbatim and return plain text only.
+                Transcribe the attached audio or video verbatim and return plain text only.
                 Requirements:
                 - Preserve the speaker's original wording and order.
                 - Preserve fillers, repetitions, and self-corrections when present.
@@ -233,7 +262,7 @@ struct GeminiService {
                     prompt: fallbackPrompt,
                     audioFileURL: audioFileURL,
                     systemInstruction: """
-                    You are a professional voice transcription assistant.
+                    You are a professional media transcription assistant.
                     Rules:
                     - Do NOT translate; keep the original language(s) spoken. \(languageHintLine)
                     - Preserve multilingual/code-switched speech exactly as spoken.
@@ -282,6 +311,33 @@ struct GeminiService {
         } catch {
             throw GeminiError.networkError(error)
         }
+    }
+
+    func transcribeMediaLink(_ url: URL) async throws -> MediaLinkTranscriptionResult {
+        let serverURL = AppConfig.backendBaseURL + "/ai/media-link-transcript"
+        guard let endpointURL = URL(string: serverURL) else {
+            throw GeminiError.invalidURL
+        }
+
+        var request = try await makeAuthorizedJSONRequest(url: endpointURL, timeout: 300)
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "url": url.absoluteString
+        ])
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GeminiError.invalidResponse
+        }
+
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw GeminiError.apiError("Status code: \(httpResponse.statusCode)")
+        }
+
+        return try JSONDecoder().decode(MediaLinkTranscriptionResult.self, from: data)
+    }
+
+    func transcribeTikTokLink(_ url: URL) async throws -> MediaLinkTranscriptionResult {
+        try await transcribeMediaLink(url)
     }
 
     /// Backward compatible alias. Intentionally returns STT-only text now.

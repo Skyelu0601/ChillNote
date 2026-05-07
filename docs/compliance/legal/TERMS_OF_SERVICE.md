@@ -26,6 +26,8 @@ You retain ownership of all notes, audio recordings, and other content ("User Co
 ### 2.2 Responsibility
 You are solely responsible for your User Content. You agree not to create or store content that is offensive, infringing, or otherwise unlawful.
 
+When you submit, upload, paste, or import content from third-party sources, including web links, you represent that you have the rights, permissions, or lawful basis needed to process, store, summarize, or otherwise use that content in ChillNote.
+
 ## 3. Privacy
 
 Your privacy is important to us. Please review our **[Privacy Policy]**, which explains how we collect, use, and protect your personal information. By using the App, you agree to the collection and use of information in accordance with our Privacy Policy.

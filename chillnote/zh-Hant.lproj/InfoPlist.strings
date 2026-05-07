@@ -1,2 +1,4 @@
 "NSMicrophoneUsageDescription" = "ChillNote 需要麥克風權限來記錄你的想法。";
 "NSSpeechRecognitionUsageDescription" = "ChillNote 使用語音辨識將你的語音轉寫為文字。";
+"NSCameraUsageDescription" = "ChillNote 需要相機權限，用來拍攝白板、書頁、截圖和日常靈感中的文字。";
+"NSPhotoLibraryUsageDescription" = "ChillNote 需要照片存取權限，用來匯入圖片並把可見文字變成筆記。";

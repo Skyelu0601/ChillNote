@@ -597,7 +597,14 @@ final class NotesSearchIndexer {
     }
 
     private func makeDocument(note: Note) -> NoteSearchDocument {
-        let normalizedContent = NoteTextNormalizer.normalizeContent(note.content)
+        let sourceSearchText = [
+            note.sourcePlatformName,
+            note.sourceHost,
+            note.sourceTitle
+        ]
+            .compactMap { $0 }
+            .joined(separator: " ")
+        let normalizedContent = NoteTextNormalizer.normalizeContent([note.content, sourceSearchText].joined(separator: " "))
         return NoteSearchDocument(
             noteId: note.id,
             userId: note.userId,

@@ -16,6 +16,7 @@ We collect limited information to provide the core functionality of ChillNote.
 ### B. Notes and Text Content
 *   **Notes You Save:** The notes you create are stored securely on our servers to enable synchronization between your devices.
 *   **Text You Intentionally Submit to AI:** When you ask ChillNote to tidy, rewrite, summarize, translate, or otherwise process text with AI, the text you choose to submit may be sent for that request.
+*   **Links You Import:** When you choose to import a web link, ChillNote may read publicly available page metadata and text from that link and may send the extracted text to AI only to generate the note you requested.
 
 ### C. Audio Data
 *   **Voice Notes:** We process audio data **only when you actively record a voice note** or choose to transcribe a pending recording.
@@ -41,6 +42,7 @@ AI processing happens only when you intentionally use an AI feature in the app a
 
 *   **Voice transcription:** May send raw audio and necessary technical parameters such as file type or language hints.
 *   **Text AI features:** May send the note text, prompt text, or selected content you intentionally submit for AI processing.
+*   **Link note generation:** May send publicly available text extracted from a link you import so ChillNote can create a concise note from that page.
 *   **Processing purpose:** The data is used only to complete the specific AI request you made.
 
 ## 4. Third-Party Data Sharing & AI Processors
@@ -48,7 +50,7 @@ AI processing happens only when you intentionally use an AI feature in the app a
 To provide AI functionality, ChillNote may send data to ChillNote's secure server, which then forwards only the data needed for the active request to our AI processor.
 
 *   **Recipient:** Google Gemini via Google Cloud.
-*   **Data types:** Audio, text prompts, and note text intentionally submitted to AI.
+*   **Data types:** Audio, text prompts, note text, and link-derived text intentionally submitted to AI.
 *   **Purpose:** Transcription, summarization, note improvement, translation, and other AI features requested by the user.
 *   **Training commitment:** We and our third-party partners do not use the audio or text you submit through these AI features to train models.
 

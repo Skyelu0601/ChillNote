@@ -1,2 +1,4 @@
 "NSMicrophoneUsageDescription" = "ChillNote benötigt Mikrofonzugriff, um deine Gedanken aufzuzeichnen.";
 "NSSpeechRecognitionUsageDescription" = "ChillNote verwendet Spracherkennung, um deine Stimme in Text umzuwandeln.";
+"NSCameraUsageDescription" = "ChillNote verwendet die Kamera, um Text von Whiteboards, Seiten, Screenshots und Alltagsideen zu erfassen.";
+"NSPhotoLibraryUsageDescription" = "ChillNote verwendet den Zugriff auf deine Fotos, damit du Bilder importieren und sichtbaren Text in Notizen verwandeln kannst.";

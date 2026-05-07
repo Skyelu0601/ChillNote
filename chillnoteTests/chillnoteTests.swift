@@ -297,4 +297,46 @@ final class chillnoteTests: XCTestCase {
 
         XCTAssertEqual(roundTrip, markdown)
     }
+
+    // MARK: - Sync Checkpoint Tests
+
+    func testSyncCheckpointFallsBackToFullSyncWhenLocalNotesAreEmpty() {
+        let checkpoint = SyncManager.resolveCheckpoint(
+            lastSyncAt: Date(timeIntervalSince1970: 1_700_000_000),
+            cursor: "123",
+            hasUploadedLocal: true,
+            localNotesCount: 0
+        )
+
+        XCTAssertNil(checkpoint.since)
+        XCTAssertNil(checkpoint.cursor)
+        XCTAssertFalse(checkpoint.shouldMarkUploadedLocalAfterSuccess)
+    }
+
+    func testSyncCheckpointFallsBackToFullSyncWhenLocalNotesExistButNeverUploaded() {
+        let checkpoint = SyncManager.resolveCheckpoint(
+            lastSyncAt: Date(timeIntervalSince1970: 1_700_000_000),
+            cursor: "123",
+            hasUploadedLocal: false,
+            localNotesCount: 2
+        )
+
+        XCTAssertNil(checkpoint.since)
+        XCTAssertNil(checkpoint.cursor)
+        XCTAssertTrue(checkpoint.shouldMarkUploadedLocalAfterSuccess)
+    }
+
+    func testSyncCheckpointKeepsIncrementalStateWhenLocalSnapshotExists() {
+        let lastSyncAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let checkpoint = SyncManager.resolveCheckpoint(
+            lastSyncAt: lastSyncAt,
+            cursor: "123",
+            hasUploadedLocal: true,
+            localNotesCount: 2
+        )
+
+        XCTAssertEqual(checkpoint.since, lastSyncAt)
+        XCTAssertEqual(checkpoint.cursor, "123")
+        XCTAssertTrue(checkpoint.shouldMarkUploadedLocalAfterSuccess)
+    }
 }

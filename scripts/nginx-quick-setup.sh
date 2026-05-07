@@ -83,7 +83,7 @@ if grep -q "client_max_body_size" "$CONFIG_FILE"; then
     echo ""
     echo -e "${YELLOW}⚠️  配置文件中已存在 client_max_body_size: $CURRENT_SIZE${NC}"
     echo ""
-    read -p "是否要更新为 50m？(y/n): " UPDATE_CONFIRM
+    read -p "是否要更新为 150m？(y/n): " UPDATE_CONFIRM
     
     if [ "$UPDATE_CONFIRM" != "y" ]; then
         echo "取消更新"
@@ -91,8 +91,8 @@ if grep -q "client_max_body_size" "$CONFIG_FILE"; then
     fi
     
     # 更新现有配置
-    sed -i.tmp "s/client_max_body_size.*;/client_max_body_size 50m;/" "$CONFIG_FILE"
-    echo -e "${GREEN}✅ 已更新 client_max_body_size 为 50m${NC}"
+    sed -i.tmp "s/client_max_body_size.*;/client_max_body_size 150m;/" "$CONFIG_FILE"
+    echo -e "${GREEN}✅ 已更新 client_max_body_size 为 150m${NC}"
 else
     # 添加新配置
     echo ""
@@ -100,9 +100,9 @@ else
     
     # 在 server 块中添加配置
     # 这里使用简单的方法：在第一个 server { 后面添加
-    sed -i.tmp '/server {/a\    # Upload limits for ChillNote voice recordings\n    client_max_body_size 50m;\n    client_body_buffer_size 128k;\n    client_body_timeout 300s;\n' "$CONFIG_FILE"
+    sed -i.tmp '/server {/a\    # Upload limits for ChillNote voice recordings\n    client_max_body_size 150m;\n    client_body_buffer_size 128k;\n    client_body_timeout 300s;\n' "$CONFIG_FILE"
     
-    echo -e "${GREEN}✅ 已添加 client_max_body_size 50m${NC}"
+    echo -e "${GREEN}✅ 已添加 client_max_body_size 150m${NC}"
 fi
 
 # 检查是否有 proxy_read_timeout
@@ -155,11 +155,11 @@ echo ""
 echo "📋 配置摘要："
 echo "  - 配置文件: $CONFIG_FILE"
 echo "  - 备份文件: $BACKUP_FILE"
-echo "  - 最大上传: 50MB"
+echo "  - 最大上传: 150MB"
 echo "  - 超时时间: 300秒"
 echo ""
 echo "📝 下一步："
-echo "  1. 更新应用配置: 在 .env 中设置 MAX_VOICE_NOTE_AUDIO_MB=50"
+echo "  1. 更新应用配置: 在 .env 中设置 MAX_VOICE_NOTE_AUDIO_MB=100 和 AI_JSON_LIMIT=150mb"
 echo "  2. 重启应用: pm2 restart chillnote-api"
 echo "  3. 测试上传: curl https://api.chillnoteai.com/health"
 echo ""

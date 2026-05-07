@@ -9,28 +9,34 @@ struct RichTextPreview: View {
     var textColor: Color = .textMain
 
     var body: some View {
-        parseMarkdownToText(content)
+        Text(makePreviewAttributedString(from: content))
             .font(font)
             .foregroundColor(textColor)
             .lineLimit(lineLimit)
             .multilineTextAlignment(.leading)
     }
 
-    /// Parse markdown text and convert to SwiftUI Text for inline symbol support
-    private func parseMarkdownToText(_ markdown: String) -> Text {
+    /// Parse markdown text into a flat AttributedString.
+    ///
+    /// Building a preview with thousands of concatenated `Text` values can make
+    /// SwiftUI recurse until the main thread stack overflows. AttributedString
+    /// keeps the same lightweight preview behavior without deep Text nesting.
+    private func makePreviewAttributedString(from markdown: String) -> AttributedString {
         let lines = markdown.components(separatedBy: "\n")
-        return lines.enumerated().reduce(Text(verbatim: "")) { partial, item in
-            let (index, line) = item
-            let parsedLine = parseLine(line)
+        var result = AttributedString()
+
+        for (index, line) in lines.enumerated() {
+            result += parseLine(line)
             if index < lines.count - 1 {
-                return partial + parsedLine + Text(verbatim: "\n")
+                result += AttributedString("\n")
             }
-            return partial + parsedLine
         }
+
+        return result
     }
 
     /// Parse a single line of markdown
-    private func parseLine(_ line: String) -> Text {
+    private func parseLine(_ line: String) -> AttributedString {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
 
         if trimmed.hasPrefix("### ") {
@@ -62,60 +68,75 @@ struct RichTextPreview: View {
         }
 
         if trimmed == "---" || trimmed.hasPrefix("═") {
-            return Text(verbatim: "───").foregroundColor(.secondary)
+            var separator = AttributedString("───")
+            separator.foregroundColor = .secondary
+            return separator
         }
 
         return parseInlineFormatting(line)
     }
 
-    private func parseHeader(_ text: String, weight: Font.Weight) -> Text {
-        parseInlineFormatting(text).font(.system(size: 15, weight: weight))
+    private func parseHeader(_ text: String, weight: Font.Weight) -> AttributedString {
+        var attributed = parseInlineFormatting(text)
+        attributed.font = .system(size: 15, weight: weight)
+        return attributed
     }
 
-    private func parseCheckbox(_ text: String, isChecked: Bool) -> Text {
-        let prefix: Text
+    private func parseCheckbox(_ text: String, isChecked: Bool) -> AttributedString {
+        var prefix: AttributedString
         if isChecked {
-            prefix =
-                Text(Image(systemName: "checkmark.circle.fill"))
-                .foregroundColor(.green)
-                .font(.system(size: 16, weight: .semibold))
-                + Text(verbatim: " ")
+            prefix = AttributedString("\(RichTextConverter.Config.checkboxCheckedSymbol) ")
+            prefix.foregroundColor = .green
+            prefix.font = .system(size: 16, weight: .semibold)
         } else {
-            prefix =
-                Text(verbatim: "\(RichTextConverter.Config.checkboxUncheckedSymbol) ")
-                .foregroundColor(.accentPrimary)
-                .baselineOffset(RichTextConverter.Config.checkboxBaselineOffset)
+            prefix = AttributedString("\(RichTextConverter.Config.checkboxUncheckedSymbol) ")
+            prefix.foregroundColor = .accentPrimary
         }
 
-        let contentText = parseInlineFormatting(text)
+        var contentText = parseInlineFormatting(text)
         if isChecked {
-            return prefix + contentText.foregroundColor(.secondary).strikethrough()
+            contentText.foregroundColor = .secondary
+            contentText.strikethroughStyle = .single
         }
-        return prefix + contentText
+        prefix += contentText
+        return prefix
     }
 
-    private func parseBulletPoint(_ text: String) -> Text {
-        Text(verbatim: "• ").foregroundColor(.secondary) + parseInlineFormatting(text)
+    private func parseBulletPoint(_ text: String) -> AttributedString {
+        var prefix = AttributedString("• ")
+        prefix.foregroundColor = .secondary
+        prefix += parseInlineFormatting(text)
+        return prefix
     }
 
-    private func parseNumberedItem(number: String, content: String) -> Text {
-        Text(verbatim: number).foregroundColor(.secondary) + parseInlineFormatting(content)
+    private func parseNumberedItem(number: String, content: String) -> AttributedString {
+        var prefix = AttributedString(number)
+        prefix.foregroundColor = .secondary
+        prefix += parseInlineFormatting(content)
+        return prefix
     }
 
-    private func parseBlockquote(_ text: String) -> Text {
-        Text(verbatim: "│ ").foregroundColor(.accentPrimary) + parseInlineFormatting(text).foregroundColor(.secondary)
+    private func parseBlockquote(_ text: String) -> AttributedString {
+        var prefix = AttributedString("│ ")
+        prefix.foregroundColor = .accentPrimary
+        var content = parseInlineFormatting(text)
+        content.foregroundColor = .secondary
+        prefix += content
+        return prefix
     }
 
     /// Parse inline formatting (**bold**, *italic*, `code`)
-    private func parseInlineFormatting(_ text: String) -> Text {
+    private func parseInlineFormatting(_ text: String) -> AttributedString {
         var currentIndex = text.startIndex
-        var result = Text(verbatim: "")
+        var result = AttributedString()
 
         while currentIndex < text.endIndex {
             if text[currentIndex...].hasPrefix("**"),
                let endIndex = text.range(of: "**", range: text.index(currentIndex, offsetBy: 2)..<text.endIndex)?.lowerBound {
                 let boldContent = String(text[text.index(currentIndex, offsetBy: 2)..<endIndex])
-                result = result + Text(verbatim: boldContent).bold()
+                var segment = AttributedString(boldContent)
+                segment.inlinePresentationIntent = .stronglyEmphasized
+                result += segment
                 currentIndex = text.index(endIndex, offsetBy: 2)
                 continue
             }
@@ -124,7 +145,9 @@ struct RichTextPreview: View {
                !text[currentIndex...].hasPrefix("**"),
                let endIndex = text.range(of: "*", range: text.index(currentIndex, offsetBy: 1)..<text.endIndex)?.lowerBound {
                 let italicContent = String(text[text.index(currentIndex, offsetBy: 1)..<endIndex])
-                result = result + Text(verbatim: italicContent).italic()
+                var segment = AttributedString(italicContent)
+                segment.inlinePresentationIntent = .emphasized
+                result += segment
                 currentIndex = text.index(endIndex, offsetBy: 1)
                 continue
             }
@@ -132,12 +155,16 @@ struct RichTextPreview: View {
             if text[currentIndex] == "`",
                let endIndex = text.range(of: "`", range: text.index(currentIndex, offsetBy: 1)..<text.endIndex)?.lowerBound {
                 let codeContent = String(text[text.index(currentIndex, offsetBy: 1)..<endIndex])
-                result = result + Text(verbatim: " \(codeContent) ").font(.system(size: 13, design: .monospaced)).foregroundColor(.purple)
+                var segment = AttributedString(" \(codeContent) ")
+                segment.font = .system(size: 13, design: .monospaced)
+                segment.foregroundColor = .purple
+                result += segment
                 currentIndex = text.index(endIndex, offsetBy: 1)
                 continue
             }
 
-            result = result + Text(verbatim: String(text[currentIndex]))
+            let nextIndex = text.index(after: currentIndex)
+            result += AttributedString(String(text[currentIndex..<nextIndex]))
             currentIndex = text.index(after: currentIndex)
         }
 

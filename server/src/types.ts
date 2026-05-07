@@ -10,6 +10,12 @@ export type NoteDTO = {
   baseVersion?: number | null;
   clientUpdatedAt?: string | null;
   lastModifiedByDeviceId?: string | null;
+  sourceURL?: string | null;
+  sourceTitle?: string | null;
+  sourcePlatformID?: string | null;
+  sourcePlatformName?: string | null;
+  sourceHost?: string | null;
+  sourceCapturedAt?: string | null;
 };
 
 export type TagDTO = {

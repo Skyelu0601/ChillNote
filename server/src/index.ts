@@ -55,6 +55,13 @@ import { prisma } from "./db.js"; // Import prisma for direct queries in index.t
 import type { SyncPayload } from "./types.js";
 import { supabaseAdmin } from "./supabase.js";
 import { InviteError, bindInviteCode, getInviteConfig, getInviteMonthlyRewardCount, getOrCreateInviteCode } from "./invite.js";
+import {
+  isSupportedMediaLinkURL,
+  isHandledTikTokTranscriptError,
+  isTikTokURL,
+  transcribeMediaLinkURL,
+  transcribeTikTokURL
+} from "./tiktokTranscript.js";
 import fetch from "node-fetch";
 
 const app = express();
@@ -65,7 +72,7 @@ const defaultFormParser = express.urlencoded({
   limit: process.env.DEFAULT_FORM_LIMIT ?? "1mb",
   extended: true
 });
-const aiJsonParser = express.json({ limit: process.env.AI_JSON_LIMIT ?? "50mb" });
+const aiJsonParser = express.json({ limit: process.env.AI_JSON_LIMIT ?? "150mb" });
 
 app.use((req, res, next) => {
   if (req.path.startsWith("/ai/")) {
@@ -109,7 +116,13 @@ const noteSchema = z.object({
   version: z.number().int().optional(),
   baseVersion: z.number().int().optional(),
   clientUpdatedAt: isoDateString.nullish(),
-  lastModifiedByDeviceId: z.string().nullish()
+  lastModifiedByDeviceId: z.string().nullish(),
+  sourceURL: z.string().nullish(),
+  sourceTitle: z.string().nullish(),
+  sourcePlatformID: z.string().nullish(),
+  sourcePlatformName: z.string().nullish(),
+  sourceHost: z.string().nullish(),
+  sourceCapturedAt: isoDateString.nullish()
 });
 
 const syncSchema = z.object({
@@ -289,6 +302,25 @@ const geminiRateLimit = createTierRateLimit({
   freeMax: Number(process.env.AI_GEMINI_RATE_LIMIT_FREE_MAX ?? 20),
   proMax: Number(process.env.AI_GEMINI_RATE_LIMIT_PRO_MAX ?? process.env.AI_GEMINI_RATE_LIMIT_MAX ?? 600),
   key: (req) => `${req.userId ?? "anon"}:gemini`
+});
+
+const mediaLinkTranscriptRateLimit = createTierRateLimit({
+  windowMs: Number(
+    process.env.AI_MEDIA_LINK_TRANSCRIPT_RATE_LIMIT_WINDOW_MS
+    ?? process.env.AI_TIKTOK_TRANSCRIPT_RATE_LIMIT_WINDOW_MS
+    ?? 10 * 60 * 1000
+  ),
+  freeMax: Number(
+    process.env.AI_MEDIA_LINK_TRANSCRIPT_RATE_LIMIT_FREE_MAX
+    ?? process.env.AI_TIKTOK_TRANSCRIPT_RATE_LIMIT_FREE_MAX
+    ?? 20
+  ),
+  proMax: Number(
+    process.env.AI_MEDIA_LINK_TRANSCRIPT_RATE_LIMIT_PRO_MAX
+    ?? process.env.AI_TIKTOK_TRANSCRIPT_RATE_LIMIT_PRO_MAX
+    ?? 300
+  ),
+  key: (req) => `${req.userId ?? "anon"}:media-link-transcript`
 });
 
 type DailyQuotaFeature = "voice" | "tidy" | "agent_recipe" | "chat";
@@ -683,6 +715,10 @@ const voiceNoteSchema = z.object({
   countUsage: z.boolean().optional()
 });
 
+const tiktokTranscriptSchema = z.object({
+  url: z.string().url()
+});
+
 function extractFirstJSONObjectSnippet(raw: string): string | null {
   const start = raw.indexOf("{");
   if (start < 0) return null;
@@ -845,7 +881,7 @@ app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async 
     const audioDecodedBytes = Buffer.byteLength(audioBase64, "base64");
     const audioDecodedMb = audioDecodedBytes / 1024 / 1024;
 
-    const maxAudioMb = Number(process.env.MAX_VOICE_NOTE_AUDIO_MB ?? 30);
+    const maxAudioMb = Number(process.env.MAX_VOICE_NOTE_AUDIO_MB ?? 100);
     if (Number.isFinite(maxAudioMb) && maxAudioMb > 0 && audioDecodedMb > maxAudioMb) {
       console.warn(
         `🗣️ VoiceNote Rejected: audioDecoded=${audioDecodedMb.toFixed(2)}MB > max=${maxAudioMb}MB`
@@ -962,6 +998,113 @@ app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async 
     }
   } catch (error) {
     console.error("❌ VoiceNote Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/ai/media-link-transcript", aiJsonParser, requireAuth, mediaLinkTranscriptRateLimit, async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    console.error("❌ GEMINI_API_KEY is not configured");
+    res.status(500).json({ error: "GEMINI_API_KEY is not configured on server" });
+    return;
+  }
+
+  const parsed = tiktokTranscriptSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid payload" });
+    return;
+  }
+
+  const { url } = parsed.data;
+  if (!isSupportedMediaLinkURL(url)) {
+    res.status(400).json({ error: "Only TikTok, YouTube, and Instagram URLs are supported" });
+    return;
+  }
+
+  try {
+    const quotaState = await consumeDailyQuota(req.userId as string, "voice");
+    if (!quotaState.allowed) {
+      console.warn(
+        `🚫 Media Link Transcript Quota Denied: user=${req.userId}, tier=${quotaState.tier}, ` +
+        `used=${quotaState.used}, limit=${quotaState.limit}, remaining=${quotaState.remaining}`
+      );
+      res.status(200).json({
+        available: false,
+        text: null,
+        reason: "rate_limited"
+      });
+      return;
+    }
+
+    const startedAt = Date.now();
+    const result = await transcribeMediaLinkURL(url);
+    console.log(
+      `✅ Media Link Transcript: user=${req.userId}, available=${result.available}, ` +
+      `elapsedMs=${Date.now() - startedAt}, resolvedURL=${result.metadata?.resolvedURL ?? url}`
+    );
+    res.json(result);
+  } catch (error) {
+    if (isHandledTikTokTranscriptError(error)) {
+      console.warn(
+        `⚠️ Media Link Transcript Unavailable: user=${req.userId}, url=${url}, ` +
+        `reason=${error.reason}, message=${error.message}`
+      );
+      res.status(200).json({
+        available: false,
+        text: null,
+        reason: error.reason
+      });
+      return;
+    }
+
+    console.error("❌ Media Link Transcript Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/ai/tiktok-transcript", aiJsonParser, requireAuth, mediaLinkTranscriptRateLimit, async (req, res) => {
+  if (!GEMINI_API_KEY) {
+    console.error("❌ GEMINI_API_KEY is not configured");
+    res.status(500).json({ error: "GEMINI_API_KEY is not configured on server" });
+    return;
+  }
+
+  const parsed = tiktokTranscriptSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid payload" });
+    return;
+  }
+
+  const { url } = parsed.data;
+  if (!isTikTokURL(url)) {
+    res.status(400).json({ error: "Only TikTok URLs are supported" });
+    return;
+  }
+
+  try {
+    const quotaState = await consumeDailyQuota(req.userId as string, "voice");
+    if (!quotaState.allowed) {
+      res.status(200).json({
+        available: false,
+        text: null,
+        reason: "rate_limited"
+      });
+      return;
+    }
+
+    const result = await transcribeTikTokURL(url);
+    res.json(result);
+  } catch (error) {
+    if (isHandledTikTokTranscriptError(error)) {
+      res.status(200).json({
+        available: false,
+        text: null,
+        reason: error.reason
+      });
+      return;
+    }
+
+    console.error("❌ TikTok Transcript Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });

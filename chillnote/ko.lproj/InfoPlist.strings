@@ -1,2 +1,4 @@
 "NSMicrophoneUsageDescription" = "ChillNote는 생각을 녹음하기 위해 마이크 접근 권한이 필요합니다.";
 "NSSpeechRecognitionUsageDescription" = "ChillNote는 음성을 텍스트로 변환하기 위해 음성 인식을 사용합니다.";
+"NSCameraUsageDescription" = "ChillNote는 화이트보드, 페이지, 스크린샷, 일상 아이디어의 텍스트를 캡처하기 위해 카메라를 사용합니다.";
+"NSPhotoLibraryUsageDescription" = "ChillNote는 이미지를 가져와 보이는 텍스트를 노트로 바꾸기 위해 사진 접근 권한을 사용합니다.";

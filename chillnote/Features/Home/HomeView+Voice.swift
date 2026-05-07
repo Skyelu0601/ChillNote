@@ -2,13 +2,6 @@ import SwiftUI
 import SwiftData
 
 extension HomeView {
-    func handleTextSubmit() {
-        let trimmed = inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        _ = saveNote(text: trimmed)
-        inputText = ""
-    }
-
     func handleVoiceConfirmation() {
         guard speechRecognizer.isRecording else { return }
         guard let fileURL = speechRecognizer.getCurrentAudioFileURL() else {
@@ -124,13 +117,22 @@ extension HomeView {
         navigationPath.append(note)
     }
 
+    func savePastedLink(_ result: QuickCaptureImportService.LinkImportResult) {
+        _ = saveNote(text: result.noteText, source: result.source, shouldNavigate: true)
+    }
+
+    func saveImportedImageText(_ text: String) {
+        _ = saveNote(text: text, shouldNavigate: true)
+    }
+
     @discardableResult
-    func saveNote(text: String, shouldNavigate: Bool = false) -> Note? {
+    func saveNote(text: String, source: NoteSourceMetadata? = nil, shouldNavigate: Bool = false) -> Note? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
         guard let userId = currentUserId else { return nil }
 
         let note = Note(content: trimmed, userId: userId)
+        note.applySourceMetadata(source)
         applyCurrentTagContext(to: note)
 
         withAnimation {
