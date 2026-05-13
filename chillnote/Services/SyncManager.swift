@@ -57,7 +57,7 @@ final class SyncManager: ObservableObject {
             lastError = AppErrorCode.syncServerURLRequired.message
             return false
         }
-        guard let currentUserId = AuthService.shared.currentUserId else {
+        guard let currentUserId = AuthService.shared.confirmedUserId else {
             lastError = AppErrorCode.syncSignInRequired.message
             return false
         }
@@ -167,7 +167,7 @@ final class SyncManager: ObservableObject {
     
     private func shouldSyncNow() -> Bool {
         guard isEnabled, !isSyncing else { return false }
-        guard AuthService.shared.currentUserId != nil else { return false }
+        guard AuthService.shared.confirmedUserId != nil else { return false }
         guard URL(string: serverURLString) != nil else { return false }
         if let lastSyncAt, Date().timeIntervalSince(lastSyncAt) < minimumSyncInterval {
             return false

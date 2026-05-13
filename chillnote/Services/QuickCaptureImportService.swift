@@ -770,35 +770,70 @@ extension QuickCaptureImportService {
     }
 
     func makeCreatorMediaLinkNote(metadata: CreatorMediaMetadata) -> String {
+        makeCreatorMediaLinkNote(metadata: metadata, topic: creatorMediaTopic(metadata: metadata, transcript: nil))
+    }
+
+    func makeCreatorMediaLinkNote(metadata: CreatorMediaMetadata, topic: String) -> String {
+        let authorLine = creatorMediaAuthorDisplayName(metadata: metadata)
+        let description = metadata.title.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        return """
+        ## \(L10n.text("quick_capture.media_link.topic_heading"))
+
+        \(topic)
+
+        ## \(L10n.text("quick_capture.media_link.description_heading"))
+
+        \(description)
+
+        ## \(L10n.text("quick_capture.media_link.author_label"))
+
+        \(authorLine)
+        """
+    }
+
+    func creatorMediaAuthorDisplayName(metadata: CreatorMediaMetadata) -> String {
         let authorName = metadata.authorName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let authorHandle = metadata.authorHandle?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        let authorLine: String
-        if !authorName.isEmpty, !authorHandle.isEmpty {
-            authorLine = "\(authorName) (@\(authorHandle))"
-        } else if !authorName.isEmpty {
-            authorLine = authorName
-        } else if !authorHandle.isEmpty {
-            authorLine = "@\(authorHandle)"
-        } else {
-            authorLine = L10n.text("quick_capture.media_link.author_unknown")
+        if !authorName.isEmpty {
+            return authorName
         }
 
-        var sections = [
-            "**\(metadata.title)**",
-            """
+        let authorHandle = metadata.authorHandle?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "@"))
+            ?? ""
 
-            ## \(L10n.text("quick_capture.media_link.source_heading"))
+        return authorHandle.isEmpty ? L10n.text("quick_capture.media_link.author_unknown") : authorHandle
+    }
 
-            \(L10n.text("quick_capture.media_link.author_label")): \(authorLine)
-            """
+    func creatorMediaTopic(metadata: CreatorMediaMetadata, transcript: String?) -> String {
+        let candidates = [
+            transcript?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
+            metadata.title.trimmingCharacters(in: .whitespacesAndNewlines)
         ]
 
-        if let authorURL = metadata.authorURL?.trimmingCharacters(in: .whitespacesAndNewlines),
-           !authorURL.isEmpty {
-            sections.append("\(L10n.text("quick_capture.media_link.author_link_label")): \(authorURL)")
+        let source = candidates.first { !$0.isEmpty } ?? ""
+        let firstLine = source
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty } ?? source
+
+        let sentenceEndings = CharacterSet(charactersIn: ".!?。！？")
+        let firstSentence = firstLine.rangeOfCharacter(from: sentenceEndings).map {
+            String(firstLine[firstLine.startIndex...$0.lowerBound])
+        } ?? firstLine
+
+        let collapsed = collapseWhitespace(firstSentence)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !collapsed.isEmpty else {
+            return L10n.text("quick_capture.link.summary_unavailable")
         }
 
-        return sections.joined(separator: "\n")
+        if collapsed.count <= 120 {
+            return collapsed
+        }
+
+        return String(collapsed.prefix(120)).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
     }
 
     func makeTikTokLinkNote(title: String, metadata: TikTokOEmbedResponse) -> String {
@@ -815,10 +850,17 @@ extension QuickCaptureImportService {
     func makeCreatorMediaTranscriptNote(
         metadata: CreatorMediaMetadata,
         transcript: String,
-        polishTranscript: Bool = true
+        polishTranscript: Bool = true,
+        summarizeTopic: Bool = true
     ) async -> String {
-        let baseNote = makeCreatorMediaLinkNote(metadata: metadata)
         let cleanedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        let topic: String
+        if summarizeTopic, !cleanedTranscript.isEmpty {
+            topic = await summarizedCreatorMediaTopic(metadata: metadata, transcript: cleanedTranscript)
+        } else {
+            topic = creatorMediaTopic(metadata: metadata, transcript: cleanedTranscript)
+        }
+        let baseNote = makeCreatorMediaLinkNote(metadata: metadata, topic: topic)
 
         guard !cleanedTranscript.isEmpty else {
             return baseNote
@@ -840,6 +882,44 @@ extension QuickCaptureImportService {
         """
     }
 
+    func summarizedCreatorMediaTopic(metadata: CreatorMediaMetadata, transcript: String) async -> String {
+        let fallback = creatorMediaTopic(metadata: metadata, transcript: transcript)
+        let title = metadata.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedTranscript.isEmpty else { return fallback }
+
+        let prompt = """
+        Video description:
+        \(title)
+
+        Transcript:
+        \(trimmedTranscript.prefix(20_000))
+        """
+
+        let systemInstruction = """
+        You summarize videos for a personal notes app.
+
+        Return only one concise sentence that describes the video's main topic.
+        Use the same language as the transcript when possible.
+        Preserve concrete names, topics, and intent from the video.
+        Do not add a heading, bullet, quote, or explanation.
+        Do not invent facts that are not supported by the description or transcript.
+        """
+
+        do {
+            let summarized = try await GeminiService.shared.generateContent(
+                prompt: prompt,
+                systemInstruction: systemInstruction,
+                countUsage: false
+            )
+            let result = collapseWhitespace(summarized)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            return result.isEmpty ? fallback : result
+        } catch {
+            return fallback
+        }
+    }
+
     func polishedCreatorMediaTranscript(_ transcript: String) async -> String {
         let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return trimmed }
@@ -853,15 +933,11 @@ extension QuickCaptureImportService {
 
         let systemInstruction = """
         You clean up audio/video transcripts for a personal notes app.
-        Return only the polished transcript text. Do not add a title, summary, bullet list, or explanation.
 
-        Rules:
-        - Preserve the transcript's original language. Do not translate unless the transcript asks for translation.
-        - Keep the speaker's meaning, order, names, numbers, and concrete details intact.
-        - Remove filler words, false starts, repeated fragments, and obvious speech-to-text noise.
-        - Fix punctuation, paragraph breaks, and minor grammar only when the intended meaning is clear.
-        - Do not invent facts, dates, names, decisions, or tasks.
-        - If the raw transcript is already clean, lightly format it.
+        Return only the cleaned transcript text.
+        Keep the speaker's original language, meaning, order, and wording.
+        Add helpful punctuation and paragraph breaks.
+        Clean obvious transcription noise when needed.
         """
 
         do {
@@ -881,7 +957,8 @@ extension QuickCaptureImportService {
         title: String,
         metadata: TikTokOEmbedResponse,
         transcript: String,
-        polishTranscript: Bool = true
+        polishTranscript: Bool = true,
+        summarizeTopic: Bool = true
     ) async -> String {
         await makeCreatorMediaTranscriptNote(
             metadata: CreatorMediaMetadata(
@@ -891,7 +968,8 @@ extension QuickCaptureImportService {
                 authorHandle: metadata.authorUniqueID
             ),
             transcript: transcript,
-            polishTranscript: polishTranscript
+            polishTranscript: polishTranscript,
+            summarizeTopic: summarizeTopic
         )
     }
 

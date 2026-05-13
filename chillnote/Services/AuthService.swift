@@ -76,6 +76,13 @@ final class AuthService: ObservableObject {
         }
         return nil
     }
+
+    var confirmedUserId: String? {
+        if case .signedIn(let userId) = state {
+            return userId
+        }
+        return nil
+    }
     
     var loginProvider: String {
         guard let user = currentUser else { return "email" }
@@ -92,6 +99,8 @@ final class AuthService: ObservableObject {
         return userId.isEmpty ? nil : userId
     }
 
+    private var sessionCheckGeneration = 0
+
     private init() {
         // Listen to Auth State Changes
         Task {
@@ -106,8 +115,12 @@ final class AuthService: ObservableObject {
     }
 
     func checkSession() async {
+        sessionCheckGeneration += 1
+        let generation = sessionCheckGeneration
+
         do {
             let session = try await supabase.auth.session
+            guard generation == sessionCheckGeneration else { return }
             
             // Check if the session is expired
             if session.isExpired {
@@ -121,6 +134,7 @@ final class AuthService: ObservableObject {
             self.currentUser = session.user
             await StoreService.shared.refreshSubscriptionStatus()
         } catch {
+            guard generation == sessionCheckGeneration else { return }
             self.state = .signedOut
             clearCachedSession()
         }
@@ -161,7 +175,8 @@ final class AuthService: ObservableObject {
                 idToken: idToken,
                 nonce: nonce
             ))
-            return true
+            await checkSession()
+            return isSignedIn
         } catch {
             print("❌ Apple Sign In Error: \(error)")
             errorMessage = error.localizedDescription
@@ -194,7 +209,8 @@ final class AuthService: ObservableObject {
                 provider: .google,
                 idToken: idToken
             ))
-            return true
+            await checkSession()
+            return isSignedIn
         } catch {
             print("❌ Google Sign In Error: \(error)")
             errorMessage = error.localizedDescription
@@ -309,7 +325,8 @@ final class AuthService: ObservableObject {
         state = .signingIn
         do {
             try await supabase.auth.signIn(email: email, password: code)
-            return true
+            await checkSession()
+            return isSignedIn
         } catch {
             print("❌ App Review Quick Login Error: \(error)")
             errorMessage = error.localizedDescription
@@ -352,8 +369,8 @@ final class AuthService: ObservableObject {
                 token: normalizedCode,
                 type: .email
             )
-            // Session listener will flip state to .signedIn automatically
-            return true
+            await checkSession()
+            return isSignedIn
         } catch {
             print("❌ Verify OTP Error: \(error)")
             errorMessage = userFacingEmailOTPErrorMessage(for: error)
@@ -363,6 +380,8 @@ final class AuthService: ObservableObject {
     // MARK: - Token Helper
     
     func getSessionToken() async -> String? {
+        guard isSignedIn else { return nil }
+
         do {
             let session = try await supabase.auth.session
             persistSession(session)
@@ -382,6 +401,6 @@ final class AuthService: ObservableObject {
         currentUser = nil
         UserDefaults.standard.removeObject(forKey: "syncAuthToken")
         UserDefaults.standard.removeObject(forKey: "auth.lastAuthenticatedUserId")
-        StoreService.shared.currentTier = .free
+        StoreService.shared.resetForSignedOut()
     }
 }

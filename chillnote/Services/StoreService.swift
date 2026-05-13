@@ -411,7 +411,7 @@ class StoreService: ObservableObject {
         // Pro users have unlimited access — skip the server quota check entirely.
         if currentTier == .pro { return true }
 
-        guard AuthService.shared.isSignedIn else { return true }
+        guard AuthService.shared.confirmedUserId != nil else { return true }
         guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else { return true }
 
         let url = URL(string: "\(AppConfig.backendBaseURL)/quota/daily")!
@@ -465,6 +465,19 @@ class StoreService: ObservableObject {
         let tier: String?
         let expiresAt: String?
     }
+
+    private struct CachedBackendSubscriptionStatus: Codable {
+        let tier: String
+        let expiresAt: String?
+    }
+
+    private struct BackendSubscriptionSnapshot {
+        let tier: SubscriptionTier
+        let expiresAt: Date?
+    }
+
+    private static let legacyBackendTierCacheKey = "cached_backend_subscription_tier"
+    private static let backendTierCacheKeyPrefix = "cached_backend_subscription_tier."
     
     init() {
         // Start listening for transaction updates
@@ -557,6 +570,13 @@ class StoreService: ObservableObject {
         await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
     }
 
+    func resetForSignedOut() {
+        currentTier = .free
+        subscriptionExpirationDate = nil
+        activeSubscriptionProductId = nil
+        UserDefaults.standard.removeObject(forKey: Self.legacyBackendTierCacheKey)
+    }
+
     func refreshProducts() async {
         await fetchProducts()
     }
@@ -578,7 +598,7 @@ class StoreService: ObservableObject {
     // MARK: - App Account Token
     // Optional: Use this to link the purchase to the user account in Apple's system (obfuscated)
     private var appAccountToken: UUID? {
-        guard let userId = AuthService.shared.currentUserId else { return nil }
+        guard let userId = AuthService.shared.confirmedUserId else { return nil }
         return UUID(uuidString: userId) // Simplified, ideally hash checking
     }
     
@@ -601,6 +621,8 @@ class StoreService: ObservableObject {
     }
     
     private func updateSubscriptionStatus(syncActiveTransactionToBackend: Bool) async {
+        let userIdAtStart = AuthService.shared.confirmedUserId
+
         // 1. Check Local StoreKit Entitlements — used only to sync to backend
         var activeTransaction: Transaction? = nil
         self.subscriptionExpirationDate = nil
@@ -629,20 +651,22 @@ class StoreService: ObservableObject {
         }
          
         // 3. Backend is the single source of truth for membership
-        let backendTier = await fetchBackendSubscriptionTier()
-        self.currentTier = backendTier
+        let backendStatus = await fetchBackendSubscriptionStatus()
+        guard AuthService.shared.confirmedUserId == userIdAtStart else { return }
+
+        self.currentTier = backendStatus.tier
+        if backendStatus.tier == .pro {
+            self.subscriptionExpirationDate = backendStatus.expiresAt ?? self.subscriptionExpirationDate
+        }
     }
 
-    private static let backendTierCacheKey = "cached_backend_subscription_tier"
-
-    private func fetchBackendSubscriptionTier() async -> SubscriptionTier {
-        guard AuthService.shared.isSignedIn else {
-            // Clear cache on sign-out so a new user starts fresh
-            UserDefaults.standard.removeObject(forKey: Self.backendTierCacheKey)
-            return .free
+    private func fetchBackendSubscriptionStatus() async -> BackendSubscriptionSnapshot {
+        guard let userId = AuthService.shared.confirmedUserId else {
+            UserDefaults.standard.removeObject(forKey: Self.legacyBackendTierCacheKey)
+            return BackendSubscriptionSnapshot(tier: .free, expiresAt: nil)
         }
         guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else {
-            return cachedBackendTier()
+            return cachedBackendStatus(for: userId)
         }
 
         let url = URL(string: "\(AppConfig.backendBaseURL)/subscription/status")!
@@ -653,29 +677,73 @@ class StoreService: ObservableObject {
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else {
-                return cachedBackendTier()
+                return cachedBackendStatus(for: userId)
             }
             guard (200...299).contains(http.statusCode) else {
-                return cachedBackendTier()
+                if http.statusCode == 401 || http.statusCode == 403 {
+                    return BackendSubscriptionSnapshot(tier: .free, expiresAt: nil)
+                }
+                return cachedBackendStatus(for: userId)
             }
             let decoded = try JSONDecoder().decode(BackendSubscriptionStatus.self, from: data)
-            let tier: SubscriptionTier = (decoded.tier?.lowercased() == "pro") ? .pro : .free
+            let expiresAt = parseBackendDate(decoded.expiresAt)
+            let tier = backendTier(from: decoded.tier, expiresAt: expiresAt)
             // Cache successful result for offline fallback
-            UserDefaults.standard.set(tier.rawValue, forKey: Self.backendTierCacheKey)
-            return tier
+            cacheBackendStatus(tier: tier, expiresAt: decoded.expiresAt, for: userId)
+            UserDefaults.standard.removeObject(forKey: Self.legacyBackendTierCacheKey)
+            return BackendSubscriptionSnapshot(tier: tier, expiresAt: expiresAt)
         } catch {
             // Network failure: return last known backend tier
-            return cachedBackendTier()
+            return cachedBackendStatus(for: userId)
         }
     }
 
-    private func cachedBackendTier() -> SubscriptionTier {
-        let cached = UserDefaults.standard.string(forKey: Self.backendTierCacheKey) ?? SubscriptionTier.free.rawValue
-        return SubscriptionTier(rawValue: cached) ?? .free
+    private func backendTierCacheKey(for userId: String) -> String {
+        Self.backendTierCacheKeyPrefix + userId
+    }
+
+    private func cacheBackendStatus(tier: SubscriptionTier, expiresAt: String?, for userId: String) {
+        let cached = CachedBackendSubscriptionStatus(tier: tier.rawValue, expiresAt: expiresAt)
+        guard let data = try? JSONEncoder().encode(cached),
+              let json = String(data: data, encoding: .utf8) else {
+            return
+        }
+        UserDefaults.standard.set(json, forKey: backendTierCacheKey(for: userId))
+    }
+
+    private func cachedBackendStatus(for userId: String) -> BackendSubscriptionSnapshot {
+        let raw = UserDefaults.standard.string(forKey: backendTierCacheKey(for: userId)) ?? SubscriptionTier.free.rawValue
+        if let data = raw.data(using: .utf8),
+           let cached = try? JSONDecoder().decode(CachedBackendSubscriptionStatus.self, from: data) {
+            let expiresAt = parseBackendDate(cached.expiresAt)
+            return BackendSubscriptionSnapshot(
+                tier: backendTier(from: cached.tier, expiresAt: expiresAt),
+                expiresAt: expiresAt
+            )
+        }
+
+        let tier = SubscriptionTier(rawValue: raw) ?? .free
+        return BackendSubscriptionSnapshot(tier: tier, expiresAt: nil)
+    }
+
+    private func backendTier(from rawTier: String?, expiresAt: Date?) -> SubscriptionTier {
+        guard rawTier?.lowercased() == SubscriptionTier.pro.rawValue else { return .free }
+        guard let expiresAt else { return .pro }
+        return expiresAt > Date() ? .pro : .free
+    }
+
+    private func parseBackendDate(_ value: String?) -> Date? {
+        guard let value, !value.isEmpty else { return nil }
+        let fractionalFormatter = ISO8601DateFormatter()
+        fractionalFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        if let date = fractionalFormatter.date(from: value) {
+            return date
+        }
+        return ISO8601DateFormatter().date(from: value)
     }
 
     private func syncSubscriptionWithBackendIfNeeded(_ transaction: Transaction) async {
-        guard AuthService.shared.isSignedIn else { return }
+        guard AuthService.shared.confirmedUserId != nil else { return }
 
         do {
             try await verifySubscriptionWithBackend(transaction)
@@ -691,7 +759,7 @@ class StoreService: ObservableObject {
     }
     
     private func verifySubscriptionWithBackend(_ transaction: Transaction) async throws {
-        guard AuthService.shared.isSignedIn else { return }
+        guard AuthService.shared.confirmedUserId != nil else { return }
         guard let token = await AuthService.shared.getSessionToken() else { return }
         
         let url = URL(string: "\(AppConfig.backendBaseURL)/subscription/verify")!
