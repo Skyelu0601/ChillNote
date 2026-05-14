@@ -3,6 +3,11 @@ import SwiftUI
 
 final class RecipeManager: ObservableObject {
     static let shared = RecipeManager()
+    private static let retiredRecipeIds: Set<String> = [
+        "devils_advocate",
+        "fix_grammar",
+        "release_notes"
+    ]
 
     @AppStorage("savedRecipesJSON") private var savedRecipesJSON: String = "[]"
     @AppStorage("customRecipesJSON") private var customRecipesJSON: String = "[]"
@@ -73,7 +78,7 @@ final class RecipeManager: ObservableObject {
             return
         }
 
-        let defaultIDs = ["summarize", "fix_grammar", "draft_email"]
+        let defaultIDs = ["summarize", "humanizer", "draft_email"]
         let defaults = AgentRecipe.allRecipes.filter { defaultIDs.contains($0.id) }
         guard !defaults.isEmpty else { return }
 
@@ -92,12 +97,12 @@ final class RecipeManager: ObservableObject {
 
         if let data = savedRecipesJSON.data(using: .utf8),
            let decoded = try? JSONDecoder().decode([AgentRecipe].self, from: data) {
-            savedRecipes = decoded
-            savedRecipeIds = Set(decoded.map { $0.id })
+            savedRecipes = decoded.filter { !Self.retiredRecipeIds.contains($0.id) }
         } else {
             savedRecipes = []
             savedRecipeIds = []
         }
+        savedRecipeIds = Set(savedRecipes.map { $0.id })
     }
 
     private func saveToDisk() {

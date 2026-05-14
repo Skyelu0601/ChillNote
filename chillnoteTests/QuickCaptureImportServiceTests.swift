@@ -2,9 +2,9 @@ import XCTest
 @testable import chillnote
 
 final class QuickCaptureImportServiceTests: XCTestCase {
-    private var topicHeading: String { L10n.text("quick_capture.media_link.topic_heading") }
     private var descriptionHeading: String { L10n.text("quick_capture.media_link.description_heading") }
     private var authorHeading: String { L10n.text("quick_capture.media_link.author_label") }
+    private var hookHeading: String { L10n.text("quick_capture.media_link.hook_heading") }
     private var transcriptHeading: String { L10n.text("quick_capture.media_link.transcript_heading") }
 
     func testSanitizedTikTokTitleRemovesHashtagsAndCollapsesWhitespace() {
@@ -15,7 +15,7 @@ final class QuickCaptureImportServiceTests: XCTestCase {
         XCTAssertEqual(title, "学英语口语 每天10分钟")
     }
 
-    func testMakeTikTokTranscriptNoteUsesTopicDescriptionAuthorTranscriptFormat() async {
+    func testMakeTikTokTranscriptNoteUsesDescriptionAuthorHookTranscriptFormat() async {
         let service = QuickCaptureImportService.shared
         let metadata = QuickCaptureImportService.TikTokOEmbedResponse(
             title: "示例标题 #tag",
@@ -29,16 +29,47 @@ final class QuickCaptureImportServiceTests: XCTestCase {
             metadata: metadata,
             transcript: "第一句转写",
             polishTranscript: false,
-            summarizeTopic: false
+            extractHook: false,
+            preferences: .all
         )
 
-        XCTAssertTrue(note.hasPrefix("## \(topicHeading)\n\n第一句转写\n\n## \(descriptionHeading)\n\n示例标题\n\n## \(authorHeading)\n\nCreator\n\n## \(transcriptHeading)"))
+        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\n\n示例标题\n\n## \(authorHeading)\n\nCreator\n\n## \(hookHeading)\n\n第一句转写\n\n## \(transcriptHeading)"))
         XCTAssertFalse(note.hasPrefix("# "))
         XCTAssertFalse(note.contains("**示例标题**"))
         XCTAssertFalse(note.contains("#tag"))
+        XCTAssertFalse(note.contains(L10n.text("quick_capture.media_link.topic_heading")))
         XCTAssertFalse(note.contains("## \(L10n.text("quick_capture.media_link.source_heading"))"))
         XCTAssertFalse(note.contains(L10n.text("quick_capture.media_link.author_link_label")))
         XCTAssertFalse(note.contains("@creator"))
+    }
+
+    func testMakeCreatorMediaTranscriptNoteCanShowTranscriptOnly() async {
+        let service = QuickCaptureImportService.shared
+        let metadata = QuickCaptureImportService.CreatorMediaMetadata(
+            title: "Video Title",
+            authorName: "Creator Name",
+            authorURL: nil,
+            authorHandle: nil
+        )
+        let preferences = MediaLinkTranscriptSectionPreferences(
+            showDescription: false,
+            showAuthor: false,
+            showHook: false,
+            showTranscript: true
+        )
+
+        let note = await service.makeCreatorMediaTranscriptNote(
+            metadata: metadata,
+            transcript: "Only the transcript",
+            polishTranscript: false,
+            extractHook: false,
+            preferences: preferences
+        )
+
+        XCTAssertEqual(note, "## \(transcriptHeading)\n\nOnly the transcript")
+        XCTAssertFalse(note.contains(descriptionHeading))
+        XCTAssertFalse(note.contains(authorHeading))
+        XCTAssertFalse(note.contains(hookHeading))
     }
 
     func testMakeCreatorMediaLinkNoteUsesSimplifiedYouTubeAuthorMetadata() {
@@ -52,8 +83,9 @@ final class QuickCaptureImportServiceTests: XCTestCase {
 
         let note = service.makeCreatorMediaLinkNote(metadata: metadata)
 
-        XCTAssertTrue(note.hasPrefix("## \(topicHeading)\n\nVideo Title\n\n## \(descriptionHeading)\n\nVideo Title\n\n## \(authorHeading)\n\nCreator Name"))
+        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\n\nVideo Title\n\n## \(authorHeading)\n\nCreator Name"))
         XCTAssertTrue(note.contains("Creator Name"))
+        XCTAssertFalse(note.contains(L10n.text("quick_capture.media_link.topic_heading")))
         XCTAssertFalse(note.contains("https://youtube.com/@creator"))
         XCTAssertFalse(note.contains(L10n.text("quick_capture.media_link.author_link_label")))
     }
@@ -97,7 +129,7 @@ final class QuickCaptureImportServiceTests: XCTestCase {
             )
         )
 
-        XCTAssertTrue(note.hasPrefix("## \(topicHeading)\n\nLast year I introduced a food program for CampTO\n\n## \(descriptionHeading)"))
+        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\n\nLast year I introduced a food program for CampTO\n\n## \(authorHeading)"))
         XCTAssertTrue(note.contains("Mayor Olivia Chow 🇨🇦"))
         XCTAssertFalse(note.contains("未知作者"))
     }

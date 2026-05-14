@@ -6,6 +6,10 @@ struct SettingsView: View {
     @EnvironmentObject private var authService: AuthService
     @AppStorage(VoiceTranscriptionPreferences.modeStorageKey) private var voiceLanguageModeRawValue = VoiceTranscriptionLanguageMode.auto.rawValue
     @AppStorage(VoiceTranscriptionPreferences.hintStorageKey) private var voiceLanguageHint = ""
+    @AppStorage(MediaLinkTranscriptSectionPreferences.descriptionStorageKey) private var showMediaLinkDescription = true
+    @AppStorage(MediaLinkTranscriptSectionPreferences.authorStorageKey) private var showMediaLinkAuthor = true
+    @AppStorage(MediaLinkTranscriptSectionPreferences.hookStorageKey) private var showMediaLinkHook = true
+    @AppStorage(MediaLinkTranscriptSectionPreferences.transcriptStorageKey) private var showMediaLinkTranscript = true
     
     @State private var showPrivacy = false
     @State private var showAgreement = false
@@ -20,6 +24,7 @@ struct SettingsView: View {
     @State private var showDeleteError = false
     @StateObject private var exportViewModel = ExportViewModel()
     @State private var showExportAllSheet = false
+    @State private var showMediaLinkSectionsSheet = false
     @State private var showVoiceLanguageSheet = false
 
     private let settingsIconColor = Color.textMain.opacity(0.6)
@@ -74,6 +79,14 @@ struct SettingsView: View {
             }
             .sheet(isPresented: $showSubscription) {
                 SubscriptionView()
+            }
+            .sheet(isPresented: $showMediaLinkSectionsSheet) {
+                MediaLinkTranscriptSectionsSheet(
+                    showDescription: $showMediaLinkDescription,
+                    showAuthor: $showMediaLinkAuthor,
+                    showHook: $showMediaLinkHook,
+                    showTranscript: $showMediaLinkTranscript
+                )
             }
             .sheet(isPresented: $showExportAllSheet, onDismiss: {
                 exportViewModel.resetEstimate()
@@ -253,6 +266,18 @@ struct SettingsView: View {
                     iconColor: settingsIconColor,
                     label: "settings.data.voice_language",
                     value: voiceTranscriptionLanguageSummary
+                )
+            }
+            .buttonStyle(.plain)
+
+            Divider().padding(.leading, 56)
+
+            Button(action: { showMediaLinkSectionsSheet = true }) {
+                SettingItem(
+                    icon: "checklist",
+                    iconColor: settingsIconColor,
+                    label: "settings.data.media_link_sections",
+                    value: mediaLinkTranscriptSectionsSummary
                 )
             }
             .buttonStyle(.plain)
@@ -552,6 +577,93 @@ struct VoiceLanguagePreferenceSheet: View {
     }
 }
 
+private struct MediaLinkTranscriptSectionsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    @Binding var showDescription: Bool
+    @Binding var showAuthor: Bool
+    @Binding var showHook: Bool
+    @Binding var showTranscript: Bool
+
+    private var selectedCount: Int {
+        [showDescription, showAuthor, showHook, showTranscript].filter { $0 }.count
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(L10n.text("settings.media_link_sections.subtitle"))
+                    .font(.bodySmall)
+                    .foregroundColor(.textSub)
+                    .padding(.horizontal, 20)
+
+                VStack(spacing: 0) {
+                    sectionToggle(
+                        title: L10n.text("quick_capture.media_link.description_heading"),
+                        isOn: guardedBinding($showDescription)
+                    )
+
+                    Divider().padding(.leading, 20)
+
+                    sectionToggle(
+                        title: L10n.text("quick_capture.media_link.author_label"),
+                        isOn: guardedBinding($showAuthor)
+                    )
+
+                    Divider().padding(.leading, 20)
+
+                    sectionToggle(
+                        title: L10n.text("quick_capture.media_link.hook_heading"),
+                        isOn: guardedBinding($showHook)
+                    )
+
+                    Divider().padding(.leading, 20)
+
+                    sectionToggle(
+                        title: L10n.text("quick_capture.media_link.transcript_heading"),
+                        isOn: guardedBinding($showTranscript)
+                    )
+                }
+                .background(Color.white)
+                .cornerRadius(16)
+                .padding(.horizontal, 20)
+
+                Spacer(minLength: 0)
+            }
+            .padding(.top, 16)
+            .background(Color.bgPrimary.ignoresSafeArea())
+            .navigationTitle(L10n.text("settings.media_link_sections.title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(L10n.text("common.done")) { dismiss() }
+                }
+            }
+        }
+    }
+
+    private func sectionToggle(title: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            Text(title)
+                .font(.bodyMedium)
+                .foregroundColor(.textMain)
+        }
+        .toggleStyle(.switch)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+    }
+
+    private func guardedBinding(_ binding: Binding<Bool>) -> Binding<Bool> {
+        Binding(
+            get: { binding.wrappedValue },
+            set: { newValue in
+                guard newValue || selectedCount > 1 else { return }
+                binding.wrappedValue = newValue
+            }
+        )
+    }
+}
+
 
 
 private struct ExportAllNotesSheet: View {
@@ -818,6 +930,34 @@ private extension SettingsView {
             guard !trimmed.isEmpty else { return L10n.text("settings.voice.summary.not_set") }
             return VoiceLanguageOption.shortDisplayName(for: trimmed)
         }
+    }
+
+    var mediaLinkTranscriptSectionsSummary: String {
+        let selected = mediaLinkTranscriptSectionNames
+        guard !selected.isEmpty, selected.count < 4 else {
+            return L10n.text("settings.media_link_sections.summary.all")
+        }
+        if selected.count == 1 {
+            return selected[0]
+        }
+        return L10n.text("settings.media_link_sections.summary.count", selected.count)
+    }
+
+    var mediaLinkTranscriptSectionNames: [String] {
+        var names: [String] = []
+        if showMediaLinkDescription {
+            names.append(L10n.text("quick_capture.media_link.description_heading"))
+        }
+        if showMediaLinkAuthor {
+            names.append(L10n.text("quick_capture.media_link.author_label"))
+        }
+        if showMediaLinkHook {
+            names.append(L10n.text("quick_capture.media_link.hook_heading"))
+        }
+        if showMediaLinkTranscript {
+            names.append(L10n.text("quick_capture.media_link.transcript_heading"))
+        }
+        return names
     }
 
     var appVersion: String {

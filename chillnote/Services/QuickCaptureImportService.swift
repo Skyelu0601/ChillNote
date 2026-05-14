@@ -32,6 +32,48 @@ enum QuickCaptureImportError: LocalizedError {
     }
 }
 
+struct MediaLinkTranscriptSectionPreferences: Equatable {
+    static let descriptionStorageKey = "media_link_transcript_show_description"
+    static let authorStorageKey = "media_link_transcript_show_author"
+    static let hookStorageKey = "media_link_transcript_show_hook"
+    static let transcriptStorageKey = "media_link_transcript_show_transcript"
+
+    let showDescription: Bool
+    let showAuthor: Bool
+    let showHook: Bool
+    let showTranscript: Bool
+
+    var selectedCount: Int {
+        [showDescription, showAuthor, showHook, showTranscript].filter { $0 }.count
+    }
+
+    static var all: MediaLinkTranscriptSectionPreferences {
+        MediaLinkTranscriptSectionPreferences(
+            showDescription: true,
+            showAuthor: true,
+            showHook: true,
+            showTranscript: true
+        )
+    }
+
+    static func load(from userDefaults: UserDefaults = .standard) -> MediaLinkTranscriptSectionPreferences {
+        let preferences = MediaLinkTranscriptSectionPreferences(
+            showDescription: userDefaults.mediaLinkTranscriptSectionBool(forKey: descriptionStorageKey),
+            showAuthor: userDefaults.mediaLinkTranscriptSectionBool(forKey: authorStorageKey),
+            showHook: userDefaults.mediaLinkTranscriptSectionBool(forKey: hookStorageKey),
+            showTranscript: userDefaults.mediaLinkTranscriptSectionBool(forKey: transcriptStorageKey)
+        )
+
+        return preferences.selectedCount == 0 ? .all : preferences
+    }
+}
+
+private extension UserDefaults {
+    func mediaLinkTranscriptSectionBool(forKey key: String) -> Bool {
+        object(forKey: key) == nil ? true : bool(forKey: key)
+    }
+}
+
 private extension QuickCaptureLinkParser {
     static let linkDetector: NSDataDetector? = try? NSDataDetector(types: NSTextCheckingResult.CheckingType.link.rawValue)
 
@@ -769,27 +811,36 @@ extension QuickCaptureImportService {
         """
     }
 
-    func makeCreatorMediaLinkNote(metadata: CreatorMediaMetadata) -> String {
-        makeCreatorMediaLinkNote(metadata: metadata, topic: creatorMediaTopic(metadata: metadata, transcript: nil))
-    }
-
-    func makeCreatorMediaLinkNote(metadata: CreatorMediaMetadata, topic: String) -> String {
+    func makeCreatorMediaLinkNote(
+        metadata: CreatorMediaMetadata,
+        preferences: MediaLinkTranscriptSectionPreferences = .load()
+    ) -> String {
         let authorLine = creatorMediaAuthorDisplayName(metadata: metadata)
         let description = metadata.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        var sections: [String] = []
 
-        return """
-        ## \(L10n.text("quick_capture.media_link.topic_heading"))
+        if preferences.showDescription {
+            sections.append(markdownSection(
+                heading: L10n.text("quick_capture.media_link.description_heading"),
+                body: description
+            ))
+        }
 
-        \(topic)
+        if preferences.showAuthor {
+            sections.append(markdownSection(
+                heading: L10n.text("quick_capture.media_link.author_label"),
+                body: authorLine
+            ))
+        }
 
-        ## \(L10n.text("quick_capture.media_link.description_heading"))
+        if sections.isEmpty {
+            sections.append(markdownSection(
+                heading: L10n.text("quick_capture.media_link.description_heading"),
+                body: description
+            ))
+        }
 
-        \(description)
-
-        ## \(L10n.text("quick_capture.media_link.author_label"))
-
-        \(authorLine)
-        """
+        return sections.joined(separator: "\n\n")
     }
 
     func creatorMediaAuthorDisplayName(metadata: CreatorMediaMetadata) -> String {
@@ -804,36 +855,6 @@ extension QuickCaptureImportService {
             ?? ""
 
         return authorHandle.isEmpty ? L10n.text("quick_capture.media_link.author_unknown") : authorHandle
-    }
-
-    func creatorMediaTopic(metadata: CreatorMediaMetadata, transcript: String?) -> String {
-        let candidates = [
-            transcript?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "",
-            metadata.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        ]
-
-        let source = candidates.first { !$0.isEmpty } ?? ""
-        let firstLine = source
-            .components(separatedBy: .newlines)
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .first { !$0.isEmpty } ?? source
-
-        let sentenceEndings = CharacterSet(charactersIn: ".!?。！？")
-        let firstSentence = firstLine.rangeOfCharacter(from: sentenceEndings).map {
-            String(firstLine[firstLine.startIndex...$0.lowerBound])
-        } ?? firstLine
-
-        let collapsed = collapseWhitespace(firstSentence)
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !collapsed.isEmpty else {
-            return L10n.text("quick_capture.link.summary_unavailable")
-        }
-
-        if collapsed.count <= 120 {
-            return collapsed
-        }
-
-        return String(collapsed.prefix(120)).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
     }
 
     func makeTikTokLinkNote(title: String, metadata: TikTokOEmbedResponse) -> String {
@@ -851,39 +872,59 @@ extension QuickCaptureImportService {
         metadata: CreatorMediaMetadata,
         transcript: String,
         polishTranscript: Bool = true,
-        summarizeTopic: Bool = true
+        extractHook: Bool = true,
+        preferences: MediaLinkTranscriptSectionPreferences = .load()
     ) async -> String {
         let cleanedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        let topic: String
-        if summarizeTopic, !cleanedTranscript.isEmpty {
-            topic = await summarizedCreatorMediaTopic(metadata: metadata, transcript: cleanedTranscript)
-        } else {
-            topic = creatorMediaTopic(metadata: metadata, transcript: cleanedTranscript)
-        }
-        let baseNote = makeCreatorMediaLinkNote(metadata: metadata, topic: topic)
+        let effectivePreferences = preferences.selectedCount == 0 ? .all : preferences
 
         guard !cleanedTranscript.isEmpty else {
-            return baseNote
+            return makeCreatorMediaLinkNote(metadata: metadata, preferences: effectivePreferences)
         }
 
+        let hook = effectivePreferences.showHook && extractHook
+            ? await extractedCreatorMediaHook(metadata: metadata, transcript: cleanedTranscript)
+            : fallbackCreatorMediaHook(transcript: cleanedTranscript)
+
         let finalTranscript: String
-        if polishTranscript {
+        if effectivePreferences.showTranscript && polishTranscript {
             finalTranscript = await polishedCreatorMediaTranscript(cleanedTranscript)
         } else {
             finalTranscript = cleanedTranscript
         }
 
-        return """
-        \(baseNote)
+        var sections: [String] = []
 
-        ## \(L10n.text("quick_capture.media_link.transcript_heading"))
+        if effectivePreferences.showDescription || effectivePreferences.showAuthor {
+            sections.append(makeCreatorMediaLinkNote(metadata: metadata, preferences: effectivePreferences))
+        }
 
-        \(finalTranscript)
-        """
+        if effectivePreferences.showHook {
+            sections.append(markdownSection(
+                heading: L10n.text("quick_capture.media_link.hook_heading"),
+                body: hook
+            ))
+        }
+
+        if effectivePreferences.showTranscript {
+            sections.append(markdownSection(
+                heading: L10n.text("quick_capture.media_link.transcript_heading"),
+                body: finalTranscript
+            ))
+        }
+
+        if sections.isEmpty {
+            sections.append(markdownSection(
+                heading: L10n.text("quick_capture.media_link.transcript_heading"),
+                body: cleanedTranscript
+            ))
+        }
+
+        return sections.joined(separator: "\n\n")
     }
 
-    func summarizedCreatorMediaTopic(metadata: CreatorMediaMetadata, transcript: String) async -> String {
-        let fallback = creatorMediaTopic(metadata: metadata, transcript: transcript)
+    func extractedCreatorMediaHook(metadata: CreatorMediaMetadata, transcript: String) async -> String {
+        let fallback = fallbackCreatorMediaHook(transcript: transcript)
         let title = metadata.title.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmedTranscript.isEmpty else { return fallback }
@@ -897,27 +938,53 @@ extension QuickCaptureImportService {
         """
 
         let systemInstruction = """
-        You summarize videos for a personal notes app.
+        You identify the hook in short-form videos for a personal notes app.
 
-        Return only one concise sentence that describes the video's main topic.
+        Return only the opening hook that is used to grab attention.
         Use the same language as the transcript when possible.
-        Preserve concrete names, topics, and intent from the video.
+        Prefer the creator's exact opening wording if it is present in the transcript.
+        If the hook is implied instead of spoken directly, write one concise sentence that captures it.
         Do not add a heading, bullet, quote, or explanation.
         Do not invent facts that are not supported by the description or transcript.
         """
 
         do {
-            let summarized = try await GeminiService.shared.generateContent(
+            let extracted = try await GeminiService.shared.generateContent(
                 prompt: prompt,
                 systemInstruction: systemInstruction,
                 countUsage: false
             )
-            let result = collapseWhitespace(summarized)
+            let result = collapseWhitespace(extracted)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
             return result.isEmpty ? fallback : result
         } catch {
             return fallback
         }
+    }
+
+    func fallbackCreatorMediaHook(transcript: String) -> String {
+        let source = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
+        let firstLine = source
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .first { !$0.isEmpty } ?? source
+
+        let sentenceEndings = CharacterSet(charactersIn: ".!?。！？")
+        let firstSentence = firstLine.rangeOfCharacter(from: sentenceEndings).map {
+            String(firstLine[firstLine.startIndex...$0.lowerBound])
+        } ?? firstLine
+
+        let collapsed = collapseWhitespace(firstSentence)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !collapsed.isEmpty else {
+            return L10n.text("quick_capture.link.summary_unavailable")
+        }
+
+        if collapsed.count <= 160 {
+            return collapsed
+        }
+
+        return String(collapsed.prefix(160)).trimmingCharacters(in: .whitespacesAndNewlines) + "..."
     }
 
     func polishedCreatorMediaTranscript(_ transcript: String) async -> String {
@@ -958,7 +1025,8 @@ extension QuickCaptureImportService {
         metadata: TikTokOEmbedResponse,
         transcript: String,
         polishTranscript: Bool = true,
-        summarizeTopic: Bool = true
+        extractHook: Bool = true,
+        preferences: MediaLinkTranscriptSectionPreferences = .load()
     ) async -> String {
         await makeCreatorMediaTranscriptNote(
             metadata: CreatorMediaMetadata(
@@ -969,8 +1037,17 @@ extension QuickCaptureImportService {
             ),
             transcript: transcript,
             polishTranscript: polishTranscript,
-            summarizeTopic: summarizeTopic
+            extractHook: extractHook,
+            preferences: preferences
         )
+    }
+
+    func markdownSection(heading: String, body: String) -> String {
+        """
+        ## \(heading)
+
+        \(body)
+        """
     }
 
     func makeAIOrganizedLinkNote(url: URL, extracted: ExtractedWebContent, fallback: String) async throws -> String {

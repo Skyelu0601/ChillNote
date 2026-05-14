@@ -111,23 +111,6 @@ extension AgentRecipe {
     static let allRecipes: [AgentRecipe] = [
         // MARK: - Think
         AgentRecipe(
-            id: "devils_advocate",
-            icon: "⚖️",
-            systemIcon: "scale.3d",
-            name: "Advocate",
-            description: "agent_recipe.devils_advocate.description",
-            prompt: """
-            You are critically evaluating a user’s existing note (not a chat message). Provide a balanced critique: list 3 strong advantages, and 3 critical flaws or unaddressed tradeoffs.
-
-            - Keep the output in the same language as the note.
-            - Play the role of a supportive but strict strategic partner.
-            - Ensure the feedback is pragmatic and helps refine the idea.
-            
-            Output only the evaluation.
-            """,
-            category: .think
-        ),
-        AgentRecipe(
             id: "brainstorm",
             icon: "💡",
             systemIcon: "lightbulb",
@@ -203,18 +186,58 @@ extension AgentRecipe {
             category: .shape
         ),
         AgentRecipe(
-            id: "fix_grammar",
-            icon: "✅",
-            systemIcon: "checkmark.circle",
-            name: "Polish",
-            description: "agent_recipe.fix_grammar.description",
+            id: "humanizer",
+            icon: "✍️",
+            systemIcon: "person.text.rectangle",
+            name: "Humanizer",
+            description: "agent_recipe.humanizer.description",
             prompt: """
-            You are fixing grammar in a user’s existing note (not a chat message). Correct grammar and spelling while preserving the original meaning and tone.
+            You are editing a user’s existing note (not a chat message) to make it sound more natural, human-written, and specific.
+
+            Work privately in two passes:
+            1. Scan the note for the 29 AI-writing patterns below and rewrite the affected parts.
+            2. Ask yourself what still sounds obviously AI-generated, then revise once more.
 
             - Keep the output in the same language as the note.
-            - Make minimal edits; do not rephrase unless needed for correctness.
+            - Preserve the note’s core meaning, facts, structure, and intended audience.
+            - Replace stiff, padded, promotional, or over-polished phrasing with simpler, more concrete wording.
+            - Vary sentence rhythm where it helps, but do not add fake personality, fake citations, fake anecdotes, or unsupported claims.
+            - Keep useful first-person voice, uncertainty, humor, and rough edges when they fit the original note.
             - Preserve formatting (headings, lists, line breaks).
-            - If something is unclear, keep the original wording rather than guessing.
+            - If the note is already natural, make only light edits.
+
+            Check and remove these 29 AI-writing patterns:
+            1. Inflated significance, legacy, or broader-trend claims: "pivotal moment", "testament", "underscores its importance", "reflects broader", "sets the stage", "evolving landscape".
+            2. Notability name-dropping: lists of media outlets, experts, or social proof without a concrete point.
+            3. Superficial "-ing" analysis: dangling phrases like "highlighting", "reflecting", "showcasing", "contributing to", "ensuring", "fostering".
+            4. Promotional language: "boasts", "vibrant", "rich", "profound", "renowned", "breathtaking", "must-visit", "stunning", "nestled", "in the heart of".
+            5. Vague attribution: "experts argue", "observers note", "industry reports suggest", "some critics say" unless the source is specific in the note.
+            6. Formulaic challenges/future sections: "Despite these challenges...", "continues to thrive", "future outlook", "challenges and legacy".
+            7. Overused AI vocabulary: actually, additionally, align with, crucial, delve, enduring, enhance, garner, highlight, interplay, intricate, key, landscape, pivotal, showcase, tapestry, testament, underscore, valuable, vibrant.
+            8. Copula avoidance: replace "serves as", "stands as", "functions as", "represents", "features", "boasts", "offers" with simpler "is", "has", or a direct verb when clearer.
+            9. Negative parallelisms and tailing negations: "not only... but...", "not just X, it is Y", and clipped endings like ", no guessing" or ", no wasted motion".
+            10. Forced rule of three: lists or adjective triples that exist only to sound complete.
+            11. Synonym cycling: using many labels for the same thing when repeating the clearest term would be better.
+            12. False ranges: "from X to Y" pairs that are not a real scale or useful contrast.
+            13. Passive voice and subjectless fragments: clarify the actor when it improves the sentence, especially lines like "No configuration needed" or "The results are preserved automatically."
+            14. Em dash overuse: replace unnecessary em dashes with commas, periods, parentheses, or cleaner sentence breaks.
+            15. Boldface overuse: remove mechanical bolding unless it genuinely helps the note.
+            16. Inline-header vertical lists: avoid repetitive bullets like "**Performance:** Performance improved"; convert to natural prose or cleaner bullets.
+            17. Title Case headings: use natural sentence-style headings unless the original format requires title case.
+            18. Decorative emojis: remove emoji decoration unless it is clearly part of the user’s voice or original meaning.
+            19. Curly quotation marks: prefer straight quotes unless the note’s language or format clearly expects typographic quotes.
+            20. Chatbot artifacts: remove "Of course", "Certainly", "Great question", "I hope this helps", "let me know", and "Would you like me to..." when pasted into content.
+            21. Knowledge-cutoff disclaimers: remove "as of my last update", "based on available information", "details are limited" unless the uncertainty is genuinely part of the note.
+            22. Sycophantic tone: remove excessive agreement or flattery such as "You're absolutely right" and "excellent point."
+            23. Filler phrases: shorten "in order to" to "to", "due to the fact that" to "because", "at this point in time" to "now", and similar padding.
+            24. Excessive hedging: reduce stacked qualifiers like "could potentially possibly be argued" to a single honest qualifier.
+            25. Generic positive conclusions: remove vague endings like "the future looks bright", "exciting times lie ahead", and "journey toward excellence."
+            26. Hyphenated word-pair overuse: remove unnecessary hyphens from common word pairs when grammar allows it, while keeping technical or required compounds.
+            27. Persuasive authority tropes: simplify "the real question is", "at its core", "fundamentally", "the heart of the matter", and similar ceremony.
+            28. Signposting announcements: remove "let's dive in", "let's explore", "let's break this down", "here's what you need to know", and "without further ado."
+            29. Fragmented headers: remove one-line warmups after headings when they only restate the heading.
+
+            Output only the humanized text.
             """,
             category: .shape
         ),
@@ -291,24 +314,6 @@ extension AgentRecipe {
             Output only the 5 hooks.
             """,
             category: .shape
-        ),
-        AgentRecipe(
-            id: "release_notes",
-            icon: "📢",
-            systemIcon: "megaphone",
-            name: "Release Notes",
-            description: "agent_recipe.release_notes.description",
-            prompt: """
-            You are turning fragmented development notes or bug fixes into engaging, user-facing release notes. The note was not written for chat.
-
-            - Keep the output in the same language as the note.
-            - Focus on the value to the user, not the technical implementation.
-            - Keep it brief, structured, and energetic.
-            - Use clear bullet points under friendly category headers (e.g., "New", "Fixed").
-            
-            Output only the release notes.
-            """,
-            category: .publish
         ),
         AgentRecipe(
             id: "twitter_post",
