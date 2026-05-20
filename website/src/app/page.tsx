@@ -135,11 +135,11 @@ export default function LandingPage() {
         <div className="final-cta">
           <FileText size={22} />
           <div>
-            <strong>Start a creator swipe file in the web app.</strong>
+            <strong>Start a creator swipe file in ChillNote.</strong>
             <p>Use ChillNote on desktop for deeper breakdowns, and iOS for quick capture when ideas show up between tasks.</p>
           </div>
           <a className="primary-button compact" href="/app">
-            Enter Web App
+            Sign in
             <ArrowRight size={17} />
           </a>
         </div>

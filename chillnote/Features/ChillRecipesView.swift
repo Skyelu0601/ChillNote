@@ -129,10 +129,13 @@ struct ChillRecipesView: View {
                     HStack {
                         Spacer()
                         Button {
-                            if storeService.currentTier == .free {
-                                showingSubscription = true
-                            } else {
-                                showingCreateRecipe = true
+                            Task {
+                                await storeService.ensureSubscriptionStatusReadyForFeatureGate()
+                                if storeService.currentTier == .free {
+                                    showingSubscription = true
+                                } else {
+                                    showingCreateRecipe = true
+                                }
                             }
                         } label: {
                             HStack(spacing: 8) {

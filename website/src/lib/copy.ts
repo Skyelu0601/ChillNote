@@ -1,7 +1,7 @@
 export const copy = {
   productName: "ChillNote",
   nav: {
-    app: "Open Web App",
+    app: "Sign in",
     pricing: "Pricing",
     privacy: "Privacy",
     terms: "Terms",
@@ -13,7 +13,7 @@ export const copy = {
     subtitle:
       "ChillNote helps creators save videos, transcribe them, break down hooks, descriptions, and transcripts, then reuse the best ideas with AI Skills.",
     primaryAction: "Sign up free",
-    secondaryAction: "Open Web App",
+    secondaryAction: "Sign in",
     status: "Creator workspace",
     featureTitle: "Capture the pattern, not just the link",
     featureBody:
@@ -38,7 +38,7 @@ export const copy = {
     codePlaceholder: "123456",
     codeSentTo: "Code sent to {email}",
     legal: "By continuing, you agree to ChillNote's Terms and Privacy Policy.",
-    previewLabel: "ChillNote Web",
+    previewLabel: "ChillNote",
     previewTitle: "Your iOS notes, ready on the big screen",
     previewBody: "Capture on iPhone. Organize, search, and reuse your notes from the browser.",
     previewSync: "Syncs with the same ChillNote account",
@@ -46,28 +46,23 @@ export const copy = {
     callbackError: "Sign-in could not be completed. Please try again.",
   },
   app: {
-    title: "ChillNote Web",
-    subtitle: "Online notes, voice capture, AI tidy, and Pro status in one desktop workspace.",
+    title: "ChillNote",
     panels: {
       notes: {
         nav: "Notes",
-        title: "ChillNote Web",
-        subtitle: "Online notes, voice capture, AI tidy, and Pro status in one desktop workspace.",
+        title: "Notes",
       },
       stats: {
         nav: "Stats",
         title: "Stats",
-        subtitle: "A quick health check from the same synced notes and tags used by iOS.",
       },
       skills: {
         nav: "AI Skills",
         title: "AI Skills",
-        subtitle: "Choose the same core recipes as iOS and create a new note from the result.",
       },
       settings: {
         nav: "Settings",
         title: "Settings",
-        subtitle: "Account, sync, subscription, and web-only preferences.",
       },
     },
     sections: "App sections",
@@ -110,10 +105,6 @@ export const copy = {
     addTagPlaceholder: "Add tag",
     sourcePlaceholder: "Source URL",
     clearSource: "Clear source",
-    voiceQuota: "Voice",
-    tidyQuota: "Tidy",
-    agentQuota: "Skills",
-    unlimited: "Unlimited",
     emptyChecklistItem: "Empty task",
   },
   stats: {

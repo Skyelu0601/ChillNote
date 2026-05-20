@@ -125,6 +125,8 @@ Temporary Items
 # Node.js
 node_modules/
 dist/
+.next/
+website/.next/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -143,3 +145,4 @@ build/
 bin/
 obj/
 *.db-journal
+.vercel

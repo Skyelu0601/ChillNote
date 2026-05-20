@@ -18,14 +18,21 @@ cp .env.example .env
 4) Set AI config:
    - `GEMINI_API_KEY`
    - `GEMINI_MODEL` (optional, defaults to `gemini-3.1-flash-lite-preview`)
+5) Set Creem billing config if web checkout is enabled:
+   - `CREEM_API_KEY`
+   - `CREEM_WEBHOOK_SECRET`
+   - `CREEM_MONTHLY_PRODUCT_ID`
+   - `CREEM_YEARLY_PRODUCT_ID`
+   - `WEB_APP_BASE_URL` (for checkout success redirects)
+   - `CREEM_TEST_MODE=true` for Creem test mode, or set `CREEM_API_BASE_URL` directly
 
-5) Create schema
+6) Create schema
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-6) Run dev server
+7) Run dev server
 
 ```bash
 npm run dev
@@ -38,6 +45,8 @@ npm run dev
 - `POST /auth/refresh`
 - `POST /sync`
   - Optional query: `?since=ISO8601` to return only changes since that time
+- `POST /billing/creem/checkout` - Create a Creem checkout session for the signed-in web user
+- `POST /webhooks/creem` - Receive Creem subscription lifecycle webhooks
 - `POST /ai/voice-note` - Voice transcription only (no polishing)
 - `POST /ai/media-link-transcript` - TikTok / YouTube / Instagram link transcription with backend worker
 - `POST /ai/tiktok-transcript` - Backward-compatible TikTok-only alias

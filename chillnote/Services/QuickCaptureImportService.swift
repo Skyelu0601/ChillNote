@@ -66,6 +66,21 @@ struct MediaLinkTranscriptSectionPreferences: Equatable {
 
         return preferences.selectedCount == 0 ? .all : preferences
     }
+
+    static func syncToShareExtension(
+        from userDefaults: UserDefaults = .standard,
+        sharedDefaults: UserDefaults? = SharedImportQueue.sharedDefaults()
+    ) {
+        guard let sharedDefaults else { return }
+        load(from: userDefaults).save(to: sharedDefaults)
+    }
+
+    func save(to userDefaults: UserDefaults) {
+        userDefaults.set(showDescription, forKey: Self.descriptionStorageKey)
+        userDefaults.set(showAuthor, forKey: Self.authorStorageKey)
+        userDefaults.set(showHook, forKey: Self.hookStorageKey)
+        userDefaults.set(showTranscript, forKey: Self.transcriptStorageKey)
+    }
 }
 
 private extension UserDefaults {

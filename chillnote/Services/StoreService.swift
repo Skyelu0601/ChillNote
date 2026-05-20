@@ -408,6 +408,8 @@ class StoreService: ObservableObject {
         feature: DailyQuotaFeature,
         action: String
     ) async -> Bool {
+        await ensureSubscriptionStatusReadyForFeatureGate()
+
         // Pro users have unlimited access — skip the server quota check entirely.
         if currentTier == .pro { return true }
 
@@ -474,12 +476,16 @@ class StoreService: ObservableObject {
     private struct BackendSubscriptionSnapshot {
         let tier: SubscriptionTier
         let expiresAt: Date?
+        let isFreshFromBackend: Bool
     }
 
     private static let legacyBackendTierCacheKey = "cached_backend_subscription_tier"
     private static let backendTierCacheKeyPrefix = "cached_backend_subscription_tier."
+    private var lastFreshSubscriptionStatusUserId: String?
     
     init() {
+        hydrateCachedSubscriptionStatusForLastAuthenticatedUser()
+
         // Start listening for transaction updates
         transactionListener = listenForTransactions()
         
@@ -570,10 +576,25 @@ class StoreService: ObservableObject {
         await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
     }
 
+    func ensureSubscriptionStatusReadyForFeatureGate() async {
+        hydrateCachedSubscriptionStatusForCurrentUserIfNeeded()
+
+        guard currentTier != .pro else { return }
+        guard AuthService.shared.currentUserId != nil else { return }
+
+        if AuthService.shared.confirmedUserId == nil {
+            await AuthService.shared.waitForSessionResolution()
+        }
+
+        guard statusNeedsBackendConfirmationForCurrentUser else { return }
+        await refreshSubscriptionStatus()
+    }
+
     func resetForSignedOut() {
         currentTier = .free
         subscriptionExpirationDate = nil
         activeSubscriptionProductId = nil
+        lastFreshSubscriptionStatusUserId = nil
         UserDefaults.standard.removeObject(forKey: Self.legacyBackendTierCacheKey)
     }
 
@@ -621,7 +642,8 @@ class StoreService: ObservableObject {
     }
     
     private func updateSubscriptionStatus(syncActiveTransactionToBackend: Bool) async {
-        let userIdAtStart = AuthService.shared.confirmedUserId
+        hydrateCachedSubscriptionStatusForCurrentUserIfNeeded()
+        let userIdAtStart = AuthService.shared.currentUserId
 
         // 1. Check Local StoreKit Entitlements — used only to sync to backend
         var activeTransaction: Transaction? = nil
@@ -651,20 +673,24 @@ class StoreService: ObservableObject {
         }
          
         // 3. Backend is the single source of truth for membership
-        let backendStatus = await fetchBackendSubscriptionStatus()
-        guard AuthService.shared.confirmedUserId == userIdAtStart else { return }
+        let backendStatus = await fetchBackendSubscriptionStatus(for: userIdAtStart)
+        guard AuthService.shared.currentUserId == userIdAtStart else { return }
 
         self.currentTier = backendStatus.tier
         if backendStatus.tier == .pro {
             self.subscriptionExpirationDate = backendStatus.expiresAt ?? self.subscriptionExpirationDate
         }
+        if backendStatus.isFreshFromBackend {
+            lastFreshSubscriptionStatusUserId = userIdAtStart
+        }
     }
 
-    private func fetchBackendSubscriptionStatus() async -> BackendSubscriptionSnapshot {
-        guard let userId = AuthService.shared.confirmedUserId else {
+    private func fetchBackendSubscriptionStatus(for userId: String?) async -> BackendSubscriptionSnapshot {
+        guard let userId else {
             UserDefaults.standard.removeObject(forKey: Self.legacyBackendTierCacheKey)
-            return BackendSubscriptionSnapshot(tier: .free, expiresAt: nil)
+            return BackendSubscriptionSnapshot(tier: .free, expiresAt: nil, isFreshFromBackend: false)
         }
+
         guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else {
             return cachedBackendStatus(for: userId)
         }
@@ -681,7 +707,8 @@ class StoreService: ObservableObject {
             }
             guard (200...299).contains(http.statusCode) else {
                 if http.statusCode == 401 || http.statusCode == 403 {
-                    return BackendSubscriptionSnapshot(tier: .free, expiresAt: nil)
+                    cacheBackendStatus(tier: .free, expiresAt: nil, for: userId)
+                    return BackendSubscriptionSnapshot(tier: .free, expiresAt: nil, isFreshFromBackend: true)
                 }
                 return cachedBackendStatus(for: userId)
             }
@@ -691,10 +718,39 @@ class StoreService: ObservableObject {
             // Cache successful result for offline fallback
             cacheBackendStatus(tier: tier, expiresAt: decoded.expiresAt, for: userId)
             UserDefaults.standard.removeObject(forKey: Self.legacyBackendTierCacheKey)
-            return BackendSubscriptionSnapshot(tier: tier, expiresAt: expiresAt)
+            return BackendSubscriptionSnapshot(tier: tier, expiresAt: expiresAt, isFreshFromBackend: true)
         } catch {
             // Network failure: return last known backend tier
             return cachedBackendStatus(for: userId)
+        }
+    }
+
+    private var statusNeedsBackendConfirmationForCurrentUser: Bool {
+        guard let userId = AuthService.shared.currentUserId else { return false }
+        return lastFreshSubscriptionStatusUserId != userId
+    }
+
+    private func hydrateCachedSubscriptionStatusForLastAuthenticatedUser() {
+        guard let userId = UserDefaults.standard.string(forKey: AuthService.lastAuthenticatedUserIdKey),
+              !userId.isEmpty else {
+            return
+        }
+        applyCachedSubscriptionStatus(for: userId)
+    }
+
+    private func hydrateCachedSubscriptionStatusForCurrentUserIfNeeded() {
+        guard let userId = AuthService.shared.currentUserId else { return }
+        guard currentTier != .pro || lastFreshSubscriptionStatusUserId != userId else { return }
+        applyCachedSubscriptionStatus(for: userId)
+    }
+
+    private func applyCachedSubscriptionStatus(for userId: String) {
+        let cached = cachedBackendStatus(for: userId)
+        currentTier = cached.tier
+        if cached.tier == .pro {
+            subscriptionExpirationDate = cached.expiresAt
+        } else {
+            subscriptionExpirationDate = nil
         }
     }
 
@@ -718,12 +774,13 @@ class StoreService: ObservableObject {
             let expiresAt = parseBackendDate(cached.expiresAt)
             return BackendSubscriptionSnapshot(
                 tier: backendTier(from: cached.tier, expiresAt: expiresAt),
-                expiresAt: expiresAt
+                expiresAt: expiresAt,
+                isFreshFromBackend: false
             )
         }
 
         let tier = SubscriptionTier(rawValue: raw) ?? .free
-        return BackendSubscriptionSnapshot(tier: tier, expiresAt: nil)
+        return BackendSubscriptionSnapshot(tier: tier, expiresAt: nil, isFreshFromBackend: false)
     }
 
     private func backendTier(from rawTier: String?, expiresAt: Date?) -> SubscriptionTier {

@@ -15,14 +15,35 @@ export async function updateSubscriptionStatus(
   userId: string,
   tier: string,
   expiresAt: Date | null,
-  originalTransactionId: string | null
+  originalTransactionId: string | null,
+  provider?: string | null
 ): Promise<void> {
   await prisma.user.update({
     where: { id: userId },
     data: {
       subscriptionTier: tier,
       subscriptionExpiresAt: expiresAt,
-      originalTransactionId: originalTransactionId
+      originalTransactionId: originalTransactionId,
+      ...(provider !== undefined ? { subscriptionProvider: provider } : {})
+    }
+  });
+}
+
+export async function updateCreemSubscriptionStatus(params: {
+  userId: string;
+  tier: string;
+  expiresAt: Date | null;
+  customerId?: string | null;
+  subscriptionId?: string | null;
+}): Promise<void> {
+  await prisma.user.update({
+    where: { id: params.userId },
+    data: {
+      subscriptionTier: params.tier,
+      subscriptionExpiresAt: params.expiresAt,
+      subscriptionProvider: "creem",
+      creemCustomerId: params.customerId ?? undefined,
+      creemSubscriptionId: params.subscriptionId ?? undefined
     }
   });
 }

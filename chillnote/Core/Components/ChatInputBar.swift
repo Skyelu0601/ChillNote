@@ -481,21 +481,22 @@ struct ChatInputBar: View {
     }
 
     private func handlePasteLink() {
-        guard canUseQuickCaptureMoreFeature else {
-            presentQuickCaptureUpgrade()
-            return
-        }
+        Task { @MainActor in
+            await storeService.ensureSubscriptionStatusReadyForFeatureGate()
+            guard canUseQuickCaptureMoreFeature else {
+                presentQuickCaptureUpgrade()
+                return
+            }
 
-        let pastedText = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        guard let url = QuickCaptureLinkParser.extractWebURL(from: pastedText) else {
-            captureErrorMessage = L10n.text("quick_capture.error.no_link")
-            return
-        }
+            let pastedText = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard let url = QuickCaptureLinkParser.extractWebURL(from: pastedText) else {
+                captureErrorMessage = L10n.text("quick_capture.error.no_link")
+                return
+            }
 
-        showMoreSheet = false
-        quickCaptureProgressState = .link(.resolvingSource)
+            showMoreSheet = false
+            quickCaptureProgressState = .link(.resolvingSource)
 
-        Task {
             defer { quickCaptureProgressState = nil }
 
             do {
@@ -512,26 +513,32 @@ struct ChatInputBar: View {
     }
 
     private func handlePhotoOrImage() {
-        guard canUseQuickCaptureMoreFeature else {
-            presentQuickCaptureUpgrade()
-            return
-        }
+        Task { @MainActor in
+            await storeService.ensureSubscriptionStatusReadyForFeatureGate()
+            guard canUseQuickCaptureMoreFeature else {
+                presentQuickCaptureUpgrade()
+                return
+            }
 
-        showMoreSheet = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            showImageSourceDialog = true
+            showMoreSheet = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                showImageSourceDialog = true
+            }
         }
     }
 
     private func handleMediaFile() {
-        guard canUseQuickCaptureMoreFeature else {
-            presentQuickCaptureUpgrade()
-            return
-        }
+        Task { @MainActor in
+            await storeService.ensureSubscriptionStatusReadyForFeatureGate()
+            guard canUseQuickCaptureMoreFeature else {
+                presentQuickCaptureUpgrade()
+                return
+            }
 
-        showMoreSheet = false
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-            showMediaFileImporter = true
+            showMoreSheet = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                showMediaFileImporter = true
+            }
         }
     }
 

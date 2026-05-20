@@ -35,6 +35,8 @@ enum AuthState: Equatable {
 @MainActor
 final class AuthService: ObservableObject {
     static let shared = AuthService()
+    static let cachedSessionTokenKey = "syncAuthToken"
+    static let lastAuthenticatedUserIdKey = "auth.lastAuthenticatedUserId"
 
     // Initialize Supabase Client
     let supabase = SupabaseClient(
@@ -90,12 +92,18 @@ final class AuthService: ObservableObject {
     }
 
     private var hasCachedSessionToken: Bool {
-        guard let token = UserDefaults.standard.string(forKey: "syncAuthToken") else { return false }
+        guard let token = UserDefaults.standard.string(forKey: Self.cachedSessionTokenKey)
+            ?? SharedImportQueue.sharedDefaults()?.string(forKey: Self.cachedSessionTokenKey) else {
+            return false
+        }
         return !token.isEmpty
     }
 
     private var lastAuthenticatedUserId: String? {
-        guard let userId = UserDefaults.standard.string(forKey: "auth.lastAuthenticatedUserId") else { return nil }
+        guard let userId = UserDefaults.standard.string(forKey: Self.lastAuthenticatedUserIdKey)
+            ?? SharedImportQueue.sharedDefaults()?.string(forKey: Self.lastAuthenticatedUserIdKey) else {
+            return nil
+        }
         return userId.isEmpty ? nil : userId
     }
 
@@ -104,8 +112,8 @@ final class AuthService: ObservableObject {
     private init() {
         // Listen to Auth State Changes
         Task {
-            for await _ in supabase.auth.authStateChanges {
-                await checkSession()
+            for await (_, session) in supabase.auth.authStateChanges {
+                await handleAuthStateChange(session)
             }
         }
         
@@ -129,15 +137,57 @@ final class AuthService: ObservableObject {
                 return
             }
             
-            persistSession(session)
-            self.state = .signedIn(userId: session.user.id.uuidString)
-            self.currentUser = session.user
+            applyAuthenticatedSession(session)
             await StoreService.shared.refreshSubscriptionStatus()
         } catch {
             guard generation == sessionCheckGeneration else { return }
-            self.state = .signedOut
+            handleSessionLookupFailure(error)
+        }
+    }
+
+    func waitForSessionResolution(timeout: TimeInterval = 2.0) async {
+        let deadline = Date().addingTimeInterval(timeout)
+        while case .checking = state {
+            guard Date() < deadline else { return }
+            try? await Task.sleep(nanoseconds: 50_000_000)
+        }
+    }
+
+    private func handleAuthStateChange(_ session: Session?) async {
+        guard let session else {
+            state = .signedOut
+            clearCachedSession()
+            return
+        }
+
+        if session.isExpired {
+            await checkSession()
+            return
+        }
+
+        applyAuthenticatedSession(session)
+        await StoreService.shared.refreshSubscriptionStatus()
+    }
+
+    private func applyAuthenticatedSession(_ session: Session) {
+        persistSession(session)
+        state = .signedIn(userId: session.user.id.uuidString)
+        currentUser = session.user
+    }
+
+    private func handleSessionLookupFailure(_ error: Error) {
+        if isMissingSessionError(error) || !hasCachedSessionToken {
+            state = .signedOut
             clearCachedSession()
         }
+    }
+
+    private func isMissingSessionError(_ error: Error) -> Bool {
+        let text = "\(error) \(error.localizedDescription)".lowercased()
+        return text.contains("sessionnotfound")
+            || text.contains("session not found")
+            || text.contains("auth session missing")
+            || text.contains("missing session")
     }
     
     // MARK: - Apple Sign In
@@ -380,27 +430,38 @@ final class AuthService: ObservableObject {
     // MARK: - Token Helper
     
     func getSessionToken() async -> String? {
-        guard isSignedIn else { return nil }
-
         do {
             let session = try await supabase.auth.session
+            if session.isExpired {
+                clearCachedSession()
+                state = .signedOut
+                return nil
+            }
             persistSession(session)
+            if !isSignedIn {
+                state = .signedIn(userId: session.user.id.uuidString)
+                currentUser = session.user
+            }
             return session.accessToken
         } catch {
-            clearCachedSession()
+            handleSessionLookupFailure(error)
             return nil
         }
     }
 
     private func persistSession(_ session: Session) {
-        UserDefaults.standard.set(session.accessToken, forKey: "syncAuthToken")
-        UserDefaults.standard.set(session.user.id.uuidString, forKey: "auth.lastAuthenticatedUserId")
+        UserDefaults.standard.set(session.accessToken, forKey: Self.cachedSessionTokenKey)
+        UserDefaults.standard.set(session.user.id.uuidString, forKey: Self.lastAuthenticatedUserIdKey)
+        SharedImportQueue.sharedDefaults()?.set(session.accessToken, forKey: Self.cachedSessionTokenKey)
+        SharedImportQueue.sharedDefaults()?.set(session.user.id.uuidString, forKey: Self.lastAuthenticatedUserIdKey)
     }
 
     private func clearCachedSession() {
         currentUser = nil
-        UserDefaults.standard.removeObject(forKey: "syncAuthToken")
-        UserDefaults.standard.removeObject(forKey: "auth.lastAuthenticatedUserId")
+        UserDefaults.standard.removeObject(forKey: Self.cachedSessionTokenKey)
+        UserDefaults.standard.removeObject(forKey: Self.lastAuthenticatedUserIdKey)
+        SharedImportQueue.sharedDefaults()?.removeObject(forKey: Self.cachedSessionTokenKey)
+        SharedImportQueue.sharedDefaults()?.removeObject(forKey: Self.lastAuthenticatedUserIdKey)
         StoreService.shared.resetForSignedOut()
     }
 }

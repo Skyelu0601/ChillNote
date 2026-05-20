@@ -408,8 +408,8 @@ struct SubscriptionView: View {
             }
             
             HStack(spacing: 16) {
-                Link(L10n.text("subscription.terms_of_use"), destination: URL(string: "https://www.chillnoteai.com/terms.html")!)
-                Link(L10n.text("subscription.privacy_policy"), destination: URL(string: "https://www.chillnoteai.com/privacy.html")!)
+                Link(L10n.text("subscription.terms_of_use"), destination: URL(string: "https://www.chillnoteai.com/terms")!)
+                Link(L10n.text("subscription.privacy_policy"), destination: URL(string: "https://www.chillnoteai.com/privacy")!)
             }
             .font(.caption)
             .foregroundColor(.textSub.opacity(0.6))

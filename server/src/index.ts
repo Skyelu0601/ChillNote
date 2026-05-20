@@ -49,8 +49,9 @@ import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { z } from "zod";
+import { createHmac, randomUUID, timingSafeEqual } from "crypto";
 import { applySync } from "./sync.js";
-import { getChangesSinceCursor, upsertUser, deleteUser, updateSubscriptionStatus } from "./store.js";
+import { getChangesSinceCursor, upsertUser, deleteUser, updateCreemSubscriptionStatus, updateSubscriptionStatus } from "./store.js";
 import { prisma } from "./db.js"; // Import prisma for direct queries in index.ts if needed, though best to abstract
 import type { SyncPayload } from "./types.js";
 import { supabaseAdmin } from "./supabase.js";
@@ -75,7 +76,7 @@ const defaultFormParser = express.urlencoded({
 const aiJsonParser = express.json({ limit: process.env.AI_JSON_LIMIT ?? "150mb" });
 
 app.use((req, res, next) => {
-  if (req.path.startsWith("/ai/")) {
+  if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem") {
     next();
     return;
   }
@@ -83,7 +84,7 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  if (req.path.startsWith("/ai/")) {
+  if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem") {
     next();
     return;
   }
@@ -93,6 +94,13 @@ app.use((req, res, next) => {
 const PORT = Number(process.env.PORT ?? 4000);
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite-preview";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() || "";
+const CREEM_API_KEY = process.env.CREEM_API_KEY?.trim() || "";
+const CREEM_WEBHOOK_SECRET = process.env.CREEM_WEBHOOK_SECRET?.trim() || "";
+const CREEM_API_BASE_URL = process.env.CREEM_API_BASE_URL?.trim()
+  || (process.env.CREEM_TEST_MODE === "true" ? "https://test-api.creem.io" : "https://api.creem.io");
+const CREEM_MONTHLY_PRODUCT_ID = process.env.CREEM_MONTHLY_PRODUCT_ID?.trim() || "";
+const CREEM_YEARLY_PRODUCT_ID = process.env.CREEM_YEARLY_PRODUCT_ID?.trim() || "";
+const WEB_APP_BASE_URL = process.env.WEB_APP_BASE_URL?.trim() || "https://www.chillnoteai.com";
 
 function buildGeminiGenerateContentURL(model: string): string {
   const encodedModel = encodeURIComponent(model);
@@ -170,6 +178,7 @@ async function requireAuth(req: express.Request, res: express.Response, next: ex
     }
 
     req.userId = user.id;
+    req.userEmail = user.email ?? undefined;
     req.userCreatedAt = user.created_at;
     next();
   } catch (err) {
@@ -350,6 +359,55 @@ const bindInviteSchema = z.object({
   code: z.string().trim().min(4).max(32)
 });
 
+const creemCheckoutSchema = z.object({
+  plan: z.enum(["monthly", "yearly"]).default("monthly")
+});
+
+function verifyCreemSignature(payload: string, signature: string | string[] | undefined): boolean {
+  if (!CREEM_WEBHOOK_SECRET || !signature || Array.isArray(signature)) {
+    return false;
+  }
+
+  const computed = createHmac("sha256", CREEM_WEBHOOK_SECRET)
+    .update(payload)
+    .digest("hex");
+
+  const received = signature.includes("=") ? signature.split("=").pop() ?? "" : signature;
+  const computedBuffer = Buffer.from(computed, "hex");
+  const receivedBuffer = Buffer.from(received, "hex");
+  return computedBuffer.length === receivedBuffer.length
+    && timingSafeEqual(computedBuffer, receivedBuffer);
+}
+
+function creemProductIdForPlan(plan: "monthly" | "yearly"): string {
+  return plan === "yearly" ? CREEM_YEARLY_PRODUCT_ID : CREEM_MONTHLY_PRODUCT_ID;
+}
+
+function creemSubscriptionExpiry(object: any): Date | null {
+  const raw =
+    object?.current_period_end_date
+    ?? object?.current_period_end
+    ?? object?.period_end_date
+    ?? object?.subscription?.current_period_end_date
+    ?? object?.subscription?.current_period_end
+    ?? null;
+  if (!raw) return null;
+  const parsed = new Date(raw);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function creemMetadata(object: any): Record<string, unknown> {
+  return object?.metadata ?? object?.subscription?.metadata ?? object?.checkout?.metadata ?? {};
+}
+
+function creemCustomerId(object: any): string | null {
+  return object?.customer?.id ?? object?.customer_id ?? object?.subscription?.customer?.id ?? null;
+}
+
+function creemSubscriptionId(object: any): string | null {
+  return object?.subscription?.id ?? object?.subscription_id ?? object?.id ?? null;
+}
+
 function currentUtcDateKey(): string {
   return new Date().toISOString().slice(0, 10);
 }
@@ -484,6 +542,128 @@ app.get("/health", (_req, res) => {
 
 app.get("/version", (_req, res) => {
   res.json({ version: "1.0.3", updated: new Date().toISOString() });
+});
+
+app.post("/billing/creem/checkout", requireAuth, async (req, res) => {
+  if (!CREEM_API_KEY) {
+    res.status(500).json({ error: "CREEM_API_KEY is not configured" });
+    return;
+  }
+
+  const parsed = creemCheckoutSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid payload" });
+    return;
+  }
+
+  const productId = creemProductIdForPlan(parsed.data.plan);
+  if (!productId) {
+    res.status(500).json({ error: "Creem product ID is not configured" });
+    return;
+  }
+
+  const userId = req.userId as string;
+  const successUrl = `${WEB_APP_BASE_URL.replace(/\/$/, "")}/app?checkout=success`;
+
+  try {
+    await upsertUser(userId);
+    const response = await fetch(`${CREEM_API_BASE_URL.replace(/\/$/, "")}/v1/checkouts`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": CREEM_API_KEY
+      },
+      body: JSON.stringify({
+        product_id: productId,
+        request_id: `chillnote-${userId}-${randomUUID()}`,
+        units: 1,
+        success_url: successUrl,
+        customer: req.userEmail ? { email: req.userEmail } : undefined,
+        metadata: {
+          userId,
+          plan: parsed.data.plan,
+          provider: "creem"
+        }
+      })
+    });
+
+    const body = await response.json().catch(() => ({})) as any;
+    if (!response.ok) {
+      console.error("❌ Creem checkout failed:", body);
+      res.status(response.status).json({ error: "Creem checkout failed" });
+      return;
+    }
+
+    res.json({
+      checkoutUrl: body.checkout_url ?? body.checkoutUrl,
+      checkoutId: body.id ?? null
+    });
+  } catch (error) {
+    console.error("❌ Creem Checkout Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/webhooks/creem", express.raw({ type: "application/json", limit: "1mb" }), async (req, res) => {
+  const rawBody = Buffer.isBuffer(req.body) ? req.body.toString("utf8") : "";
+  const signature = req.headers["creem-signature"];
+
+  if (!verifyCreemSignature(rawBody, signature)) {
+    res.status(401).json({ error: "Invalid signature" });
+    return;
+  }
+
+  let event: any;
+  try {
+    event = JSON.parse(rawBody);
+  } catch {
+    res.status(400).json({ error: "Invalid JSON" });
+    return;
+  }
+
+  const eventType = event.eventType ?? event.type;
+  const object = event.object ?? event.data?.object ?? event.data ?? {};
+  const metadata = creemMetadata(object);
+  const userId = typeof metadata.userId === "string"
+    ? metadata.userId
+    : typeof metadata.referenceId === "string"
+      ? metadata.referenceId
+      : null;
+
+  if (!userId) {
+    console.warn("⚠️ Creem webhook missing userId metadata:", eventType);
+    res.json({ received: true, ignored: true });
+    return;
+  }
+
+  try {
+    await upsertUser(userId);
+
+    if (["subscription.active", "subscription.trialing", "subscription.paid", "checkout.completed"].includes(eventType)) {
+      await updateCreemSubscriptionStatus({
+        userId,
+        tier: "pro",
+        expiresAt: creemSubscriptionExpiry(object),
+        customerId: creemCustomerId(object),
+        subscriptionId: creemSubscriptionId(object)
+      });
+      invalidateUserTierCache(userId);
+    } else if (["subscription.canceled", "subscription.expired"].includes(eventType)) {
+      await updateCreemSubscriptionStatus({
+        userId,
+        tier: "free",
+        expiresAt: creemSubscriptionExpiry(object),
+        customerId: creemCustomerId(object),
+        subscriptionId: creemSubscriptionId(object)
+      });
+      invalidateUserTierCache(userId);
+    }
+
+    res.json({ received: true });
+  } catch (error) {
+    console.error("❌ Creem Webhook Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 app.get("/invite/me", requireAuth, async (req, res) => {
@@ -1201,7 +1381,7 @@ app.post("/subscription/verify", requireAuth, async (req, res) => {
       }
 
       // 4) Save to DB
-      await updateSubscriptionStatus(userId, tier, expiresAt, originalTransactionId);
+      await updateSubscriptionStatus(userId, tier, expiresAt, originalTransactionId, "apple");
       invalidateUserTierCache(userId);
 
       console.log(`✅ Verified Subscription (receipt): user=${userId}, tier=${tier}, transactionId=${transactionId ?? "n/a"}`);
@@ -1266,7 +1446,7 @@ app.post("/subscription/verify", requireAuth, async (req, res) => {
     }
 
     // Save to DB
-    await updateSubscriptionStatus(userId, tier, expiresAt, originalTransactionId);
+    await updateSubscriptionStatus(userId, tier, expiresAt, originalTransactionId, "apple");
     invalidateUserTierCache(userId);
 
     console.log(`✅ Verified Subscription (StoreKit2): user=${userId}, tier=${tier}, originalTxn=${originalTransactionId}, transactionId=${transactionId ?? "n/a"}`);
@@ -1389,6 +1569,7 @@ declare global {
   namespace Express {
     interface Request {
       userId?: string;
+      userEmail?: string;
       userCreatedAt?: string;
     }
   }

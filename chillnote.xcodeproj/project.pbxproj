@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		3D61A20292BAAFD3B14AF5A3 /* ShareModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3491B96189736026BC88AF /* ShareModels.swift */; };
 		493CE1B92F21DB9600F2A94F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 493CE1B82F21DB9600F2A94F /* WidgetKit.framework */; };
 		493CE1BB2F21DB9600F2A94F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 493CE1BA2F21DB9600F2A94F /* SwiftUI.framework */; };
 		493CE1C82F21DB9900F2A94F /* ChillNoteWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 493CE1B72F21DB9600F2A94F /* ChillNoteWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -16,6 +17,13 @@
 		49862ADB2F29C5F400ADFB08 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ADA2F29C5F400ADFB08 /* Supabase */; };
 		499584AF2F0C01EE0053760D /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 499584AE2F0C01EE0053760D /* StoreKit.framework */; };
 		4A7E0504320A111A0031D6A4 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 4A7E0503320A111A0031D6A4 /* ZIPFoundation */; };
+		51BBCBCA3E5F5686457FE3C9 /* ShareL10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7C8A054AC616AD68350DA3 /* ShareL10n.swift */; };
+		932170DB1678D35ED224F76C /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 737E7F76A4F0D5112A54E704 /* ShareViewController.swift */; };
+		9339EBEAC205D67B1EE414EF /* ChillNoteShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CEF4C767BEF8D0B5809BF10B /* ChillNoteShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		93598F33657753834F17A12B /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A394DF5102EAAD547044F83F /* Foundation.framework */; };
+		A9DB9CC5162604B8BD1A6343 /* ShareImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848A4B6DBF955B10631AC303 /* ShareImportService.swift */; };
+		DEBEC0C3C895D347A75F8B73 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 497C0A602F21DB9900A00001 /* Localizable.xcstrings */; };
+		F38C205AC1D86771C0A0921A /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05334515EB91675E72A377E2 /* ShareView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +48,13 @@
 			remoteGlobalIDString = 499583C52F0BD2740053760D;
 			remoteInfo = chillnote;
 		};
+		8AEDDA399F4DE5FC7DF8BF8B /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 499583BE2F0BD2730053760D /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 456F6CA9BFCDB7D81E8ECBD0;
+			remoteInfo = ChillNoteShareExtension;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -50,6 +65,7 @@
 			dstSubfolderSpec = 13;
 			files = (
 				493CE1C82F21DB9900F2A94F /* ChillNoteWidgetExtension.appex in Embed Foundation Extensions */,
+				9339EBEAC205D67B1EE414EF /* ChillNoteShareExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -57,6 +73,8 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		05334515EB91675E72A377E2 /* ShareView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareView.swift; sourceTree = "<group>"; };
+		3C24F2EF12D1C8B9A2CE0E34 /* ChillNoteShareExtension.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = ChillNoteShareExtension.entitlements; sourceTree = "<group>"; };
 		493CE1B72F21DB9600F2A94F /* ChillNoteWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ChillNoteWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		493CE1B82F21DB9600F2A94F /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		493CE1BA2F21DB9600F2A94F /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -65,6 +83,13 @@
 		499583DC2F0BD2770053760D /* chillnoteTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = chillnoteTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		499583E62F0BD2770053760D /* chillnoteUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = chillnoteUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		499584AE2F0C01EE0053760D /* StoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = StoreKit.framework; path = System/Library/Frameworks/StoreKit.framework; sourceTree = SDKROOT; };
+		737E7F76A4F0D5112A54E704 /* ShareViewController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareViewController.swift; sourceTree = "<group>"; };
+		848A4B6DBF955B10631AC303 /* ShareImportService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareImportService.swift; sourceTree = "<group>"; };
+		8C0EEF582DE2948A8CE64F2C /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A394DF5102EAAD547044F83F /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		CEF4C767BEF8D0B5809BF10B /* ChillNoteShareExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = ChillNoteShareExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		DD7C8A054AC616AD68350DA3 /* ShareL10n.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareL10n.swift; sourceTree = "<group>"; };
+		EE3491B96189736026BC88AF /* ShareModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ShareModels.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -103,17 +128,29 @@
 		};
 		499583DF2F0BD2770053760D /* chillnoteTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = chillnoteTests;
 			sourceTree = "<group>";
 		};
 		499583E92F0BD2770053760D /* chillnoteUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = chillnoteUITests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		1402B9626595982F829904D2 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				93598F33657753834F17A12B /* Foundation.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		493CE1B42F21DB9600F2A94F /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -152,6 +189,28 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		07359CA7493B467EBE89C049 /* ChillNoteShareExtension */ = {
+			isa = PBXGroup;
+			children = (
+				EE3491B96189736026BC88AF /* ShareModels.swift */,
+				848A4B6DBF955B10631AC303 /* ShareImportService.swift */,
+				DD7C8A054AC616AD68350DA3 /* ShareL10n.swift */,
+				05334515EB91675E72A377E2 /* ShareView.swift */,
+				737E7F76A4F0D5112A54E704 /* ShareViewController.swift */,
+				8C0EEF582DE2948A8CE64F2C /* Info.plist */,
+				3C24F2EF12D1C8B9A2CE0E34 /* ChillNoteShareExtension.entitlements */,
+			);
+			path = ChillNoteShareExtension;
+			sourceTree = "<group>";
+		};
+		178561F0533D51184700F8A0 /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+				A394DF5102EAAD547044F83F /* Foundation.framework */,
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
 		4919C2A12F975CC600F4860A /* Recovered References */ = {
 			isa = PBXGroup;
 			children = (
@@ -170,6 +229,7 @@
 				499584AD2F0C01EE0053760D /* Frameworks */,
 				499583C72F0BD2740053760D /* Products */,
 				4919C2A12F975CC600F4860A /* Recovered References */,
+				07359CA7493B467EBE89C049 /* ChillNoteShareExtension */,
 			);
 			sourceTree = "<group>";
 		};
@@ -180,6 +240,7 @@
 				499583DC2F0BD2770053760D /* chillnoteTests.xctest */,
 				499583E62F0BD2770053760D /* chillnoteUITests.xctest */,
 				493CE1B72F21DB9600F2A94F /* ChillNoteWidgetExtension.appex */,
+				CEF4C767BEF8D0B5809BF10B /* ChillNoteShareExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -190,6 +251,7 @@
 				499584AE2F0C01EE0053760D /* StoreKit.framework */,
 				493CE1B82F21DB9600F2A94F /* WidgetKit.framework */,
 				493CE1BA2F21DB9600F2A94F /* SwiftUI.framework */,
+				178561F0533D51184700F8A0 /* iOS */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -197,6 +259,23 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		456F6CA9BFCDB7D81E8ECBD0 /* ChillNoteShareExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 8AD9EF47A9FFF39951A1C5DF /* Build configuration list for PBXNativeTarget "ChillNoteShareExtension" */;
+			buildPhases = (
+				CD774289AAFB45336DC0C0D4 /* Sources */,
+				1402B9626595982F829904D2 /* Frameworks */,
+				E5EF5B7ED6C6CBF4582CE278 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ChillNoteShareExtension;
+			productName = ChillNoteShareExtension;
+			productReference = CEF4C767BEF8D0B5809BF10B /* ChillNoteShareExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		493CE1B62F21DB9600F2A94F /* ChillNoteWidgetExtension */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 493CE1C92F21DB9900F2A94F /* Build configuration list for PBXNativeTarget "ChillNoteWidgetExtension" */;
@@ -213,8 +292,6 @@
 				493CE1BC2F21DB9600F2A94F /* ChillNoteWidget */,
 			);
 			name = ChillNoteWidgetExtension;
-			packageProductDependencies = (
-			);
 			productName = ChillNoteWidgetExtension;
 			productReference = 493CE1B72F21DB9600F2A94F /* ChillNoteWidgetExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -232,6 +309,7 @@
 			);
 			dependencies = (
 				493CE1C72F21DB9900F2A94F /* PBXTargetDependency */,
+				F01D8CA4C7CC9F6AB312B798 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				499583C82F0BD2740053760D /* chillnote */,
@@ -264,8 +342,6 @@
 				499583DF2F0BD2770053760D /* chillnoteTests */,
 			);
 			name = chillnoteTests;
-			packageProductDependencies = (
-			);
 			productName = chillnoteTests;
 			productReference = 499583DC2F0BD2770053760D /* chillnoteTests.xctest */;
 			productType = "com.apple.product-type.bundle.unit-test";
@@ -287,8 +363,6 @@
 				499583E92F0BD2770053760D /* chillnoteUITests */,
 			);
 			name = chillnoteUITests;
-			packageProductDependencies = (
-			);
 			productName = chillnoteUITests;
 			productReference = 499583E62F0BD2770053760D /* chillnoteUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
@@ -350,6 +424,7 @@
 				499583DB2F0BD2770053760D /* chillnoteTests */,
 				499583E52F0BD2770053760D /* chillnoteUITests */,
 				493CE1B62F21DB9600F2A94F /* ChillNoteWidgetExtension */,
+				456F6CA9BFCDB7D81E8ECBD0 /* ChillNoteShareExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -384,6 +459,14 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E5EF5B7ED6C6CBF4582CE278 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				DEBEC0C3C895D347A75F8B73 /* Localizable.xcstrings in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -415,6 +498,18 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CD774289AAFB45336DC0C0D4 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3D61A20292BAAFD3B14AF5A3 /* ShareModels.swift in Sources */,
+				A9DB9CC5162604B8BD1A6343 /* ShareImportService.swift in Sources */,
+				51BBCBCA3E5F5686457FE3C9 /* ShareL10n.swift in Sources */,
+				F38C205AC1D86771C0A0921A /* ShareView.swift in Sources */,
+				932170DB1678D35ED224F76C /* ShareViewController.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -433,9 +528,48 @@
 			target = 499583C52F0BD2740053760D /* chillnote */;
 			targetProxy = 499583E72F0BD2770053760D /* PBXContainerItemProxy */;
 		};
+		F01D8CA4C7CC9F6AB312B798 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = ChillNoteShareExtension;
+			target = 456F6CA9BFCDB7D81E8ECBD0 /* ChillNoteShareExtension */;
+			targetProxy = 8AEDDA399F4DE5FC7DF8BF8B /* PBXContainerItemProxy */;
+		};
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		2649CF717904053D5548BF0D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = ChillNoteShareExtension/ChillNoteShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y6A6D9322M;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ChillNoteShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ChillNote;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
 		493CE1CA2F21DB9900F2A94F /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -453,7 +587,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ChillNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -480,7 +614,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ChillNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -511,7 +645,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -545,7 +679,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -688,7 +822,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -707,7 +841,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -724,7 +858,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -741,13 +875,47 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.1.1;
+				MARKETING_VERSION = 1.1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = chillnote;
+			};
+			name = Release;
+		};
+		BBD7C9BE09C198B8F0A8B958 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_ENTITLEMENTS = ChillNoteShareExtension/ChillNoteShareExtension.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = Y6A6D9322M;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = ChillNoteShareExtension/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = ChillNote;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.1.2;
+				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ShareExtension;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = NO;
+				SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
 		};
@@ -795,6 +963,15 @@
 			buildConfigurations = (
 				499583F82F0BD2770053760D /* Debug */,
 				499583F92F0BD2770053760D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		8AD9EF47A9FFF39951A1C5DF /* Build configuration list for PBXNativeTarget "ChillNoteShareExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				BBD7C9BE09C198B8F0A8B958 /* Release */,
+				2649CF717904053D5548BF0D /* Debug */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

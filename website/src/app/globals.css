@@ -1,19 +1,23 @@
 :root {
-  --background: #f7f8f4;
+  --background: #f7f7f8;
   --surface: #ffffff;
-  --surface-muted: #eef4ff;
-  --ink: #111827;
-  --muted: #637083;
-  --line: #dfe6f2;
+  --surface-raised: #fbfbfc;
+  --surface-muted: #eaf2ff;
+  --ink: #111114;
+  --muted: #6b6b73;
+  --muted-weak: #9a9aa3;
+  --line: #e6e6e8;
+  --line-soft: #ececef;
   --primary: #2f86ff;
-  --primary-strong: #155ee8;
-  --accent: #f2b84b;
-  --accent-soft: #fff5dd;
-  --mint: #18a999;
-  --mint-soft: #e7f8f5;
+  --primary-strong: #1d6ff0;
+  --accent: #10a7a1;
+  --accent-soft: #e8f8f7;
+  --mint: #24a06c;
+  --mint-soft: #e8f7ef;
   --danger: #d94b5f;
   --success: #138f6a;
-  --shadow: 0 18px 60px rgba(27, 68, 138, 0.12);
+  --shadow: 0 8px 28px rgba(11, 11, 16, 0.06);
+  --shadow-soft: 0 4px 16px rgba(11, 11, 16, 0.045);
 }
 
 * {
@@ -49,7 +53,7 @@ button {
 
 .site-shell {
   min-height: 100vh;
-  background: linear-gradient(180deg, #ffffff 0%, #f4f8ff 48%, #fffaf0 100%);
+  background: linear-gradient(180deg, #ffffff 0%, var(--background) 38%, #ffffff 100%);
 }
 
 .marketing-header {
@@ -65,7 +69,8 @@ button {
   align-items: center;
   display: inline-flex;
   gap: 10px;
-  font-weight: 760;
+  font-weight: 720;
+  letter-spacing: 0;
 }
 
 .brand-lockup img {
@@ -107,7 +112,7 @@ button {
 
 .secondary-button {
   background: #fff;
-  border: 1px solid rgba(21, 94, 232, 0.2);
+  border: 1px solid rgba(47, 134, 255, 0.22);
   color: var(--primary-strong);
   font-weight: 750;
 }
@@ -170,7 +175,7 @@ button {
 }
 
 .hero-copy h1 {
-  font-size: clamp(44px, 6.8vw, 82px);
+  font-size: clamp(42px, 6.2vw, 76px);
   letter-spacing: 0;
   line-height: 1;
   margin: 14px 0 22px;
@@ -179,8 +184,8 @@ button {
 .hero-copy p:not(.eyebrow),
 .section-heading p {
   color: var(--muted);
-  font-size: 19px;
-  line-height: 1.65;
+  font-size: 18px;
+  line-height: 1.62;
 }
 
 .hero-actions {
@@ -213,8 +218,8 @@ button {
 }
 
 .creator-preview {
-  background: #101827;
-  border: 1px solid rgba(17, 24, 39, 0.1);
+  background: #111114;
+  border: 1px solid rgba(17, 17, 20, 0.08);
   border-radius: 8px;
   box-shadow: var(--shadow);
   overflow: hidden;
@@ -253,7 +258,7 @@ button {
 .video-panel {
   align-items: center;
   aspect-ratio: 1 / 1;
-  background: #142037;
+  background: #111114;
   color: #fff;
   display: flex;
   flex-direction: column;
@@ -264,7 +269,7 @@ button {
 }
 
 .video-panel svg {
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .video-panel span,
@@ -303,7 +308,7 @@ button {
 
 .skill-panel {
   align-items: center;
-  background: var(--accent-soft);
+  background: var(--surface-muted);
   display: flex;
   gap: 12px;
   grid-column: 1 / -1;
@@ -311,7 +316,7 @@ button {
 }
 
 .skill-panel svg {
-  color: #a66b00;
+  color: var(--primary-strong);
   flex: 0 0 auto;
 }
 
@@ -410,7 +415,7 @@ button {
 
 .final-cta {
   align-items: center;
-  background: #101827;
+  background: #111114;
   border-radius: 8px;
   color: #fff;
   display: grid;
@@ -421,7 +426,7 @@ button {
 }
 
 .final-cta > svg {
-  color: var(--accent);
+  color: var(--primary);
 }
 
 .final-cta p {
@@ -506,8 +511,8 @@ button {
 }
 
 .pricing-card.featured {
-  background: #101827;
-  border-color: #101827;
+  background: #111114;
+  border-color: #111114;
   color: #fff;
 }
 
@@ -547,9 +552,9 @@ button {
 }
 
 .price-note {
-  background: var(--accent-soft);
+  background: var(--surface-muted);
   border-radius: 8px;
-  color: #8a5d00;
+  color: var(--primary-strong);
   display: inline-flex;
   font-size: 13px;
   font-weight: 750;
@@ -610,10 +615,7 @@ button {
 }
 
 .auth-shell {
-  background:
-    radial-gradient(circle at 20% 18%, rgba(47, 134, 255, 0.16), transparent 28%),
-    radial-gradient(circle at 82% 72%, rgba(242, 184, 75, 0.16), transparent 30%),
-    linear-gradient(180deg, #fbfcff 0%, #f7f8f4 100%);
+  background: linear-gradient(180deg, #ffffff 0%, var(--background) 100%);
 }
 
 .auth-stage {
@@ -631,9 +633,10 @@ button {
 }
 
 .auth-brand-panel::before {
-  background: linear-gradient(135deg, rgba(47, 134, 255, 0.95), rgba(108, 144, 245, 0.84));
-  border-radius: 32px;
-  box-shadow: 0 28px 80px rgba(31, 92, 174, 0.22);
+  background: linear-gradient(180deg, #ffffff 0%, var(--surface-muted) 100%);
+  border: 1px solid rgba(47, 134, 255, 0.14);
+  border-radius: 22px;
+  box-shadow: var(--shadow);
   content: "";
   inset: 34px 28px 58px 0;
   position: absolute;
@@ -641,9 +644,9 @@ button {
 
 .auth-preview-card {
   background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(255, 255, 255, 0.78);
-  border-radius: 26px;
-  box-shadow: 0 22px 60px rgba(30, 61, 114, 0.2);
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
   position: absolute;
 }
 
@@ -665,7 +668,7 @@ button {
 }
 
 .auth-preview-card-primary strong {
-  color: #14233d;
+  color: var(--ink);
   font-size: 30px;
   line-height: 1.08;
   max-width: 300px;
@@ -688,7 +691,7 @@ button {
 }
 
 .auth-preview-card-secondary svg {
-  color: var(--success);
+  color: var(--primary);
   flex: 0 0 auto;
 }
 
@@ -707,8 +710,8 @@ button {
 }
 
 .auth-logo {
-  border-radius: 18px;
-  box-shadow: 0 14px 34px rgba(17, 24, 39, 0.1);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
   height: 68px;
   width: 68px;
 }
@@ -764,7 +767,7 @@ button {
 .auth-form input {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: 12px;
   color: var(--ink);
   min-height: 54px;
   outline: none;
@@ -821,7 +824,7 @@ button {
 .auth-primary-button {
   align-items: center;
   border: 0;
-  border-radius: 14px;
+  border-radius: 12px;
   display: inline-flex;
   font-size: 18px;
   font-weight: 650;
@@ -835,8 +838,8 @@ button {
 .auth-provider-button {
   background: #fff;
   border: 1px solid rgba(17, 24, 39, 0.09);
-  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
-  color: #111827;
+  box-shadow: var(--shadow-soft);
+  color: var(--ink);
 }
 
 .auth-provider-button img {
@@ -931,9 +934,7 @@ button {
 
 .auth-callback-shell {
   align-items: center;
-  background:
-    radial-gradient(circle at 48% 20%, rgba(47, 134, 255, 0.14), transparent 30%),
-    linear-gradient(180deg, #fbfcff 0%, #f7f8f4 100%);
+  background: linear-gradient(180deg, #ffffff 0%, var(--background) 100%);
   display: flex;
   justify-content: center;
   min-height: 100vh;
@@ -960,19 +961,21 @@ button {
 }
 
 .web-app-shell {
+  background: var(--background);
   display: grid;
-  grid-template-columns: 330px minmax(0, 1fr);
+  grid-template-columns: 336px minmax(0, 1fr);
   min-height: 100vh;
 }
 
 .sidebar {
-  background: #fff;
+  background: var(--surface-raised);
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
   min-height: 100vh;
-  padding: 20px;
+  min-width: 0;
+  padding: 20px 18px;
 }
 
 .sidebar-top,
@@ -989,7 +992,7 @@ button {
 .danger-button {
   align-items: center;
   background: #fff;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
   color: var(--ink);
   display: inline-flex;
@@ -997,6 +1000,13 @@ button {
   justify-content: center;
   min-height: 38px;
   padding: 0 12px;
+}
+
+.icon-button:hover,
+.ghost-button:hover,
+.danger-button:hover,
+.mini-button:hover {
+  background: #f6f8fb;
 }
 
 .icon-button {
@@ -1012,7 +1022,7 @@ button {
 .subscription-strip {
   align-items: center;
   background: var(--surface-muted);
-  border: 1px solid rgba(47, 134, 255, 0.14);
+  border: 1px solid rgba(47, 134, 255, 0.16);
   border-radius: 8px;
   display: flex;
   justify-content: space-between;
@@ -1047,22 +1057,6 @@ button {
   padding: 0 10px;
 }
 
-.quota-row {
-  color: var(--muted);
-  display: grid;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 700;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.quota-row span {
-  background: #f8fbff;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 8px;
-}
-
 .app-nav {
   display: grid;
   gap: 8px;
@@ -1081,15 +1075,23 @@ button {
   text-align: left;
 }
 
+.app-nav button svg,
+.toolbar button svg,
+.new-note-button svg,
+.ghost-button svg,
+.danger-button svg {
+  flex: 0 0 auto;
+}
+
 .app-nav button.active,
 .app-nav button:hover {
-  background: #f3f7ff;
+  background: var(--surface-muted);
   border-color: rgba(47, 134, 255, 0.18);
   color: var(--primary-strong);
 }
 
 .feed-tabs {
-  background: #eef2f7;
+  background: #ececef;
   border-radius: 8px;
   display: grid;
   gap: 4px;
@@ -1126,6 +1128,7 @@ button {
 }
 
 .search-box input {
+  border-color: var(--line-soft);
   padding-left: 38px;
 }
 
@@ -1166,7 +1169,9 @@ button {
 
 .notes-list {
   display: grid;
+  flex: 1 1 auto;
   gap: 8px;
+  min-height: 0;
   overflow-y: auto;
   padding-right: 2px;
 }
@@ -1176,15 +1181,17 @@ button {
   border: 1px solid transparent;
   border-radius: 8px;
   display: grid;
-  gap: 5px;
-  padding: 12px;
+  gap: 6px;
+  min-height: 68px;
+  padding: 12px 11px;
   text-align: left;
 }
 
 .note-row:hover,
 .note-row.active {
-  background: #f3f7ff;
+  background: #fff;
   border-color: rgba(47, 134, 255, 0.18);
+  box-shadow: var(--shadow-soft);
 }
 
 .note-row span {
@@ -1197,14 +1204,17 @@ button {
 
 .note-row small {
   color: var(--muted);
+  font-size: 12px;
+  font-weight: 620;
 }
 
 .workspace {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 14px;
+  min-height: 100vh;
   min-width: 0;
-  padding: 26px;
+  padding: 24px;
 }
 
 .workspace-header {
@@ -1215,12 +1225,16 @@ button {
 }
 
 .workspace-header h1 {
-  font-size: 30px;
+  font-size: 28px;
+  font-weight: 680;
+  letter-spacing: 0;
   margin: 4px 0 0;
 }
 
 .workspace-header p {
   color: var(--muted);
+  font-size: 14px;
+  line-height: 1.45;
   margin: 0;
 }
 
@@ -1231,16 +1245,20 @@ button {
   justify-content: flex-end;
 }
 
+.toolbar button {
+  white-space: nowrap;
+}
+
 .editor-shell {
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 16px;
   box-shadow: var(--shadow);
   display: flex;
-  flex: 1;
+  flex: 0 0 auto;
   flex-direction: column;
   min-height: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .metadata-bar {
@@ -1248,7 +1266,7 @@ button {
   display: grid;
   gap: 12px;
   grid-template-columns: minmax(240px, 0.9fr) minmax(280px, 1.1fr);
-  padding: 14px 18px;
+  padding: 14px 16px;
 }
 
 .tag-editor,
@@ -1271,7 +1289,7 @@ button {
 .tag-editor input,
 .source-editor input {
   background: #fff;
-  border: 1px solid var(--line);
+  border: 1px solid var(--line-soft);
   border-radius: 8px;
   color: var(--ink);
   min-height: 34px;
@@ -1301,7 +1319,7 @@ button {
 
 .source-card {
   align-items: center;
-  background: #f8fbff;
+  background: #fbfcff;
   border-bottom: 1px solid var(--line);
   color: var(--muted);
   display: flex;
@@ -1348,7 +1366,7 @@ button {
 }
 
 .checklist-panel button:hover {
-  background: #f3f7ff;
+  background: #f6f8fb;
 }
 
 .checklist-panel svg {
@@ -1361,17 +1379,109 @@ button {
   text-decoration: line-through;
 }
 
-.editor-shell textarea {
+.rich-note-editor {
   border: 0;
   color: var(--ink);
-  flex: 1;
+  flex: 0 0 auto;
   font-size: 18px;
-  line-height: 1.72;
-  min-height: 520px;
+  line-height: 1.7;
+  min-height: clamp(360px, 54vh, 620px);
   outline: none;
+  overflow-wrap: anywhere;
+  overflow-y: visible;
   padding: 28px;
-  resize: none;
+  white-space: normal;
   width: 100%;
+}
+
+.rich-note-editor:empty::before {
+  color: var(--muted-weak);
+  content: attr(data-placeholder);
+}
+
+.rich-note-editor h1,
+.rich-note-editor h2,
+.rich-note-editor h3,
+.rich-note-editor h4,
+.rich-note-editor h5,
+.rich-note-editor h6,
+.rich-note-editor p,
+.rich-note-editor blockquote,
+.rich-note-editor ul {
+  margin: 0 0 14px;
+}
+
+.rich-note-editor h1 {
+  font-size: 32px;
+  line-height: 1.25;
+}
+
+.rich-note-editor h2 {
+  font-size: 26px;
+  line-height: 1.3;
+}
+
+.rich-note-editor h3 {
+  font-size: 22px;
+  line-height: 1.35;
+}
+
+.rich-note-editor ul {
+  padding-left: 26px;
+}
+
+.rich-note-editor li {
+  margin: 4px 0;
+}
+
+.rich-note-editor li[data-task="true"] {
+  list-style: none;
+  margin-left: -26px;
+}
+
+.rich-note-editor .task-box {
+  align-items: center;
+  border: 1.5px solid var(--primary);
+  border-radius: 5px;
+  color: var(--primary-strong);
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  height: 18px;
+  justify-content: center;
+  margin-right: 9px;
+  transform: translateY(-1px);
+  width: 18px;
+}
+
+.rich-note-editor blockquote {
+  border-left: 3px solid var(--primary);
+  color: var(--muted);
+  padding-left: 14px;
+}
+
+.rich-note-editor code {
+  background: #f0f3f7;
+  border-radius: 5px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.88em;
+  padding: 2px 5px;
+}
+
+.rich-note-editor hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 20px 0;
+}
+
+.tag-editor input:focus,
+.source-editor input:focus,
+.field-label input:focus,
+.field-label select:focus,
+.search-box input:focus,
+.rich-note-editor:focus {
+  border-color: rgba(47, 134, 255, 0.45);
+  box-shadow: 0 0 0 4px rgba(47, 134, 255, 0.1);
 }
 
 .editor-footer {
@@ -1421,7 +1531,7 @@ button {
 }
 
 .stat-tile {
-  background: #f8fbff;
+  background: #fbfcff;
   border: 1px solid var(--line);
   border-radius: 8px;
   display: grid;
@@ -1460,7 +1570,7 @@ button {
 
 .recipe-tabs,
 .segmented-control {
-  background: #eef2f7;
+  background: #ececef;
   border-radius: 8px;
   display: grid;
   gap: 4px;
@@ -1508,7 +1618,7 @@ button {
 
 .recipe-card.selected {
   border-color: rgba(47, 134, 255, 0.42);
-  box-shadow: 0 10px 30px rgba(47, 134, 255, 0.1);
+  box-shadow: 0 8px 22px rgba(47, 134, 255, 0.1);
 }
 
 .recipe-main {
@@ -1643,7 +1753,18 @@ button {
   }
 
   .sidebar {
+    border-bottom: 1px solid var(--line);
+    border-right: 0;
     min-height: auto;
+  }
+
+  .notes-list {
+    flex: none;
+    max-height: 300px;
+  }
+
+  .workspace {
+    max-height: none;
   }
 
   .workspace-header {

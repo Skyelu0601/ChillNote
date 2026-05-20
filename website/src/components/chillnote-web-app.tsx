@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
   BarChart3,
   Bot,
@@ -79,6 +79,179 @@ type VoiceLanguageMode = "auto" | "prefer";
 const WEB_SAVED_RECIPE_IDS_KEY = "chillnote.web.saved_recipe_ids";
 const WEB_VOICE_LANGUAGE_MODE_KEY = "chillnote.web.voice_language_mode";
 const WEB_VOICE_LANGUAGE_HINT_KEY = "chillnote.web.voice_language_hint";
+
+function escapeHtml(value: string) {
+  return value
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+function renderInlineMarkdown(value: string) {
+  const escaped = escapeHtml(value);
+  return escaped
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*([^*]+)\*/g, "<em>$1</em>");
+}
+
+function markdownToEditorHtml(markdown: string) {
+  if (!markdown.trim()) return "";
+  const lines = markdown.split("\n");
+  const blocks: string[] = [];
+  let index = 0;
+
+  while (index < lines.length) {
+    const line = lines[index];
+    const trimmed = line.trim();
+
+    if (!trimmed) {
+      blocks.push("<p><br></p>");
+      index += 1;
+      continue;
+    }
+
+    if (/^---+$/.test(trimmed)) {
+      blocks.push("<hr>");
+      index += 1;
+      continue;
+    }
+
+    const headingMatch = /^(#{1,6})\s+(.+)$/.exec(line);
+    if (headingMatch) {
+      const level = headingMatch[1].length;
+      blocks.push(`<h${level}>${renderInlineMarkdown(headingMatch[2])}</h${level}>`);
+      index += 1;
+      continue;
+    }
+
+    if (trimmed.startsWith("> ")) {
+      blocks.push(`<blockquote>${renderInlineMarkdown(trimmed.slice(2))}</blockquote>`);
+      index += 1;
+      continue;
+    }
+
+    if (/^[-*]\s+(\[[ xX]\]\s*)?/.test(trimmed)) {
+      const items: string[] = [];
+      while (index < lines.length) {
+        const itemMatch = /^[-*]\s+(?:\[([ xX])\]\s*)?(.*)$/.exec(lines[index].trim());
+        if (!itemMatch) break;
+        const checked = itemMatch[1]?.toLowerCase() === "x";
+        const content = renderInlineMarkdown(itemMatch[2]);
+        if (itemMatch[1]) {
+          items.push(`<li data-task="true" data-checked="${checked ? "true" : "false"}"><span class="task-box">${checked ? "✓" : ""}</span>${content || "&nbsp;"}</li>`);
+        } else {
+          items.push(`<li>${content || "&nbsp;"}</li>`);
+        }
+        index += 1;
+      }
+      blocks.push(`<ul>${items.join("")}</ul>`);
+      continue;
+    }
+
+    blocks.push(`<p>${renderInlineMarkdown(line)}</p>`);
+    index += 1;
+  }
+
+  return blocks.join("");
+}
+
+function inlineNodeToMarkdown(node: Node): string {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? "";
+  if (!(node instanceof HTMLElement)) return "";
+
+  const content = Array.from(node.childNodes).map(inlineNodeToMarkdown).join("");
+  if (node.matches(".task-box")) return "";
+  if (node.tagName === "STRONG" || node.tagName === "B") return `**${content}**`;
+  if (node.tagName === "EM" || node.tagName === "I") return `*${content}*`;
+  if (node.tagName === "CODE") return `\`${content}\``;
+  if (node.tagName === "BR") return "\n";
+  return content;
+}
+
+function editorHtmlToMarkdown(root: HTMLElement) {
+  const lines: string[] = [];
+
+  for (const child of Array.from(root.childNodes)) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      const text = child.textContent ?? "";
+      if (text.trim()) lines.push(text);
+      continue;
+    }
+    if (!(child instanceof HTMLElement)) continue;
+
+    const tagName = child.tagName;
+    const text = Array.from(child.childNodes).map(inlineNodeToMarkdown).join("").replace(/\u00a0/g, " ").trimEnd();
+
+    if (/^H[1-6]$/.test(tagName)) {
+      lines.push(`${"#".repeat(Number(tagName.slice(1)))} ${text.trim()}`);
+    } else if (tagName === "BLOCKQUOTE") {
+      lines.push(`> ${text.trim()}`);
+    } else if (tagName === "UL" || tagName === "OL") {
+      for (const item of Array.from(child.children)) {
+        if (!(item instanceof HTMLElement) || item.tagName !== "LI") continue;
+        const itemText = Array.from(item.childNodes).map(inlineNodeToMarkdown).join("").replace(/\u00a0/g, " ").trim();
+        if (item.dataset.task === "true") {
+          lines.push(`- [${item.dataset.checked === "true" ? "x" : " "}] ${itemText}`.trimEnd());
+        } else {
+          lines.push(`- ${itemText}`.trimEnd());
+        }
+      }
+    } else if (tagName === "HR") {
+      lines.push("---");
+    } else {
+      lines.push(text.trim() ? text : "");
+    }
+  }
+
+  return lines.join("\n").replace(/\n{3,}/g, "\n\n").trim();
+}
+
+function MarkdownRichEditor({
+  value,
+  onChange,
+  placeholder,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  disabled: boolean;
+}) {
+  const editorRef = useRef<HTMLDivElement | null>(null);
+  const lastMarkdownRef = useRef<string | null>(null);
+
+  useLayoutEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || value === lastMarkdownRef.current) return;
+    if (document.activeElement === editor) return;
+    editor.innerHTML = markdownToEditorHtml(value);
+    lastMarkdownRef.current = value;
+  }, [value]);
+
+  function handleInput() {
+    const editor = editorRef.current;
+    if (!editor) return;
+    const nextValue = editorHtmlToMarkdown(editor);
+    lastMarkdownRef.current = nextValue;
+    onChange(nextValue);
+  }
+
+  return (
+    <div
+      ref={editorRef}
+      className="rich-note-editor"
+      contentEditable={!disabled}
+      data-placeholder={placeholder}
+      onInput={handleInput}
+      role="textbox"
+      aria-multiline="true"
+      spellCheck
+      suppressContentEditableWarning
+    />
+  );
+}
 
 function formatDate(value?: string | null) {
   if (!value) return copy.app.neverSynced;
@@ -160,8 +333,6 @@ export function ChillNoteWebApp() {
   const [feedMode, setFeedMode] = useState<FeedMode>("active");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
-  const [voiceRemaining, setVoiceRemaining] = useState<number | null>(null);
-  const [tidyRemaining, setTidyRemaining] = useState<number | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
@@ -179,7 +350,6 @@ export function ChillNoteWebApp() {
   const [recipeScope, setRecipeScope] = useState<RecipeScope>("active");
   const [recipeInstruction, setRecipeInstruction] = useState("English");
   const [runningRecipe, setRunningRecipe] = useState(false);
-  const [agentRemaining, setAgentRemaining] = useState<number | null>(null);
   const [voiceLanguageMode, setVoiceLanguageMode] = useState<VoiceLanguageMode>("auto");
   const [voiceLanguageHint, setVoiceLanguageHint] = useState("");
   const recorderRef = useRef<MediaRecorder | null>(null);
@@ -287,17 +457,6 @@ export function ChillNoteWebApp() {
     setActiveId(visibleNotes[0]?.id ?? null);
   }, [activeId, visibleNotes]);
 
-  async function refreshQuota(token: string) {
-    const [voiceQuota, tidyQuota, agentQuota] = await Promise.all([
-      checkDailyQuota(token, "voice").catch(() => null),
-      checkDailyQuota(token, "tidy").catch(() => null),
-      checkDailyQuota(token, "agent_recipe").catch(() => null),
-    ]);
-    setVoiceRemaining(voiceQuota?.remaining ?? null);
-    setTidyRemaining(tidyQuota?.remaining ?? null);
-    setAgentRemaining(agentQuota?.remaining ?? null);
-  }
-
   async function refreshAll(nextCursor = cursor) {
     if (!session) return;
     setSyncing(true);
@@ -325,7 +484,6 @@ export function ChillNoteWebApp() {
         syncResponse.changes.tags ?? [],
         syncResponse.changes.hardDeletedTagIds ?? []
       ));
-      await refreshQuota(session.access_token);
     } catch (error) {
       setError(error instanceof Error ? error.message : copy.errors.generic);
     } finally {
@@ -427,7 +585,6 @@ export function ChillNoteWebApp() {
       const tidied = await tidyNote(session.access_token, draft);
       setDraft(tidied);
       await saveDraft(tidied);
-      await refreshQuota(session.access_token);
     } catch (error) {
       const message = error instanceof Error ? error.message : copy.errors.generic;
       setError(message);
@@ -446,8 +603,7 @@ export function ChillNoteWebApp() {
         return;
       }
 
-      const quota = await checkDailyQuota(session.access_token, "voice", "consume");
-      setVoiceRemaining(quota.remaining);
+      await checkDailyQuota(session.access_token, "voice", "consume");
       const stream = await getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       chunksRef.current = [];
@@ -518,7 +674,6 @@ export function ChillNoteWebApp() {
       } else {
         createNote(text);
       }
-      await refreshQuota(session.access_token);
     } catch (error) {
       setError(error instanceof Error ? error.message : copy.errors.generic);
     } finally {
@@ -642,7 +797,6 @@ export function ChillNoteWebApp() {
       setActiveId(note.id);
       setDraft(result);
       await pushChanges({ notes: [note] });
-      await refreshQuota(session.access_token);
     } catch (error) {
       setError(error instanceof Error ? error.message : copy.errors.generic);
     } finally {
@@ -658,7 +812,6 @@ export function ChillNoteWebApp() {
     setActiveId(null);
     setCursor(null);
     setSubscription(null);
-    setAgentRemaining(null);
   }
 
   async function startCheckout() {
@@ -688,7 +841,6 @@ export function ChillNoteWebApp() {
   }
 
   const panelTitle = copy.app.panels[mainPanel].title;
-  const panelSubtitle = copy.app.panels[mainPanel].subtitle;
 
   return (
     <main className="web-app-shell">
@@ -714,12 +866,6 @@ export function ChillNoteWebApp() {
               {checkoutLoading ? copy.app.checkoutLoading : copy.app.upgrade}
             </button>
           )}
-        </div>
-
-        <div className="quota-row">
-          <span>{copy.app.voiceQuota}: {isPro ? copy.app.unlimited : (voiceRemaining ?? "-")}</span>
-          <span>{copy.app.tidyQuota}: {isPro ? copy.app.unlimited : (tidyRemaining ?? "-")}</span>
-          <span>{copy.app.agentQuota}: {isPro ? copy.app.unlimited : (agentRemaining ?? "-")}</span>
         </div>
 
         <nav className="app-nav" aria-label={copy.app.sections}>
@@ -797,7 +943,6 @@ export function ChillNoteWebApp() {
       <section className="workspace">
         <header className="workspace-header">
           <div>
-            <p>{panelSubtitle}</p>
             <h1>{panelTitle}</h1>
           </div>
           {mainPanel === "notes" ? (
@@ -895,11 +1040,10 @@ export function ChillNoteWebApp() {
                 </div>
               ) : null}
 
-              <textarea
+              <MarkdownRichEditor
                 value={draft}
-                onChange={(event) => setDraft(event.target.value)}
+                onChange={setDraft}
                 placeholder={copy.app.editorPlaceholder}
-                spellCheck
                 disabled={Boolean(activeNote.deletedAt)}
               />
               <footer className="editor-footer">

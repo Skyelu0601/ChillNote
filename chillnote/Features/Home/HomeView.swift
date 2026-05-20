@@ -298,14 +298,19 @@ struct HomeView: View {
                 }
             }
         }
+        .onReceive(NotificationCenter.default.publisher(for: .sharedImportsRequested)) { _ in
+            importPendingSharedNotes(navigateToLatest: true)
+        }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
+            importPendingSharedNotes(navigateToLatest: false)
             scheduleMaintenance(reason: .foreground)
         }
         .task {
             await checkForPendingRecordingsAsync()
             guard let userId = currentUserId else { return }
             await bootstrapHome(for: userId, source: .initialTask)
+            importPendingSharedNotes(navigateToLatest: false)
             scheduleInitialMaintenance()
         }
         )

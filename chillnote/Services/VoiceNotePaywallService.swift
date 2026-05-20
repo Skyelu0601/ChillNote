@@ -15,8 +15,11 @@ final class VoiceNotePaywallService: ObservableObject {
 
         hasCompletedFirstVoiceSave = true
 
-        guard StoreService.shared.currentTier == .free else { return }
-        shouldShowPaywall = true
+        Task {
+            await StoreService.shared.ensureSubscriptionStatusReadyForFeatureGate()
+            guard StoreService.shared.currentTier == .free else { return }
+            shouldShowPaywall = true
+        }
     }
 
     func consumePaywallRequest() {

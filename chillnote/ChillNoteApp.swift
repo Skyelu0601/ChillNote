@@ -11,6 +11,8 @@ struct ChillNoteApp: App {
 
     
     init() {
+        MediaLinkTranscriptSectionPreferences.syncToShareExtension()
+
         // Ensure data is seeded on launch
         Task { @MainActor in
             // Clean up old recording files (>24 hours)
@@ -40,6 +42,10 @@ struct ChillNoteApp: App {
                                 return
                             }
 
+                            if url.scheme == "chillnote" && url.host == "shared-imports" {
+                                NotificationCenter.default.post(name: .sharedImportsRequested, object: nil)
+                                return
+                            }
                         }
                 } else {
                     DataInitializationFailedView(

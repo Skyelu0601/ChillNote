@@ -88,6 +88,11 @@ struct SettingsView: View {
                     showTranscript: $showMediaLinkTranscript
                 )
             }
+            .onAppear(perform: syncMediaLinkTranscriptPreferencesToShareExtension)
+            .onChange(of: showMediaLinkDescription) { _, _ in syncMediaLinkTranscriptPreferencesToShareExtension() }
+            .onChange(of: showMediaLinkAuthor) { _, _ in syncMediaLinkTranscriptPreferencesToShareExtension() }
+            .onChange(of: showMediaLinkHook) { _, _ in syncMediaLinkTranscriptPreferencesToShareExtension() }
+            .onChange(of: showMediaLinkTranscript) { _, _ in syncMediaLinkTranscriptPreferencesToShareExtension() }
             .sheet(isPresented: $showExportAllSheet, onDismiss: {
                 exportViewModel.resetEstimate()
             }) {
@@ -974,6 +979,16 @@ private extension SettingsView {
         exportViewModel.resetEstimate()
         showExportAllSheet = true
     }
+
+    func syncMediaLinkTranscriptPreferencesToShareExtension() {
+        MediaLinkTranscriptSectionPreferences(
+            showDescription: showMediaLinkDescription,
+            showAuthor: showMediaLinkAuthor,
+            showHook: showMediaLinkHook,
+            showTranscript: showMediaLinkTranscript
+        )
+        .save(to: SharedImportQueue.sharedDefaults() ?? .standard)
+    }
     
     func openAppSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
@@ -985,12 +1000,12 @@ private extension SettingsView {
     }
     
     func openPrivacyPolicy() {
-        guard let url = URL(string: "https://www.chillnoteai.com/privacy.html") else { return }
+        guard let url = URL(string: "https://www.chillnoteai.com/privacy") else { return }
         UIApplication.shared.open(url)
     }
     
     func openUserAgreement() {
-        guard let url = URL(string: "https://www.chillnoteai.com/terms.html") else { return }
+        guard let url = URL(string: "https://www.chillnoteai.com/terms") else { return }
         UIApplication.shared.open(url)
     }
     

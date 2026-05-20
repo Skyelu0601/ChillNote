@@ -19,7 +19,7 @@ enum NoteSourcePlatformResolver {
             return NoteSourcePlatform(id: "tiktok", displayName: "TikTok")
         }
         if host.matchesAnyDomain(["instagram.com"]) {
-            return NoteSourcePlatform(id: "instagram", displayName: "Instagram")
+            return NoteSourcePlatform(id: "instagram", displayName: "Instagram Reels")
         }
         if host.matchesAnyDomain(["threads.net"]) {
             return NoteSourcePlatform(id: "threads", displayName: "Threads")

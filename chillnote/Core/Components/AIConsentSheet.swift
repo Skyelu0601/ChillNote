@@ -100,7 +100,7 @@ struct AIConsentSheet: View {
     }
 
     private func openPrivacyPolicy() {
-        guard let url = URL(string: "https://www.chillnoteai.com/privacy.html") else { return }
+        guard let url = URL(string: "https://www.chillnoteai.com/privacy") else { return }
         UIApplication.shared.open(url)
     }
 }

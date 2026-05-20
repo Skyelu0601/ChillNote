@@ -38,7 +38,7 @@ export function MarketingFooter() {
         <a href="/privacy">Privacy</a>
         <a href="/terms">Terms</a>
         <a href="/app">
-          Open Web App
+          Sign in
           <ArrowRight size={16} />
         </a>
       </nav>

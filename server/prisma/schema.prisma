@@ -15,7 +15,10 @@ model User {
   // Subscription Info
   subscriptionTier      String    @default("free") // "free" or "pro"
   subscriptionExpiresAt DateTime?
+  subscriptionProvider  String?
   originalTransactionId String?   @unique // To link Apple receipt to User
+  creemCustomerId       String?
+  creemSubscriptionId   String?   @unique
   
   notes     Note[]
   tags      Tag[]
