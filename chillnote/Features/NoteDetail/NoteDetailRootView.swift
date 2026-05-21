@@ -75,7 +75,6 @@ struct NoteDetailView: View {
                     isDeleted: viewModel.isDeleted,
                     isProcessing: viewModel.isProcessing,
                     isVoiceProcessing: viewModel.isVoiceProcessing,
-                    onConfirmTag: { viewModel.send(.confirmTagTapped($0)) },
                     onRemoveTag: { viewModel.send(.removeTagTapped($0)) },
                     onAddTagClick: { viewModel.resetNewTagInput() }
                 )
@@ -139,10 +138,6 @@ struct NoteDetailView: View {
                 speechRecognizer: speechRecognizer,
                 dismissAction: { dismiss() }
             )
-            viewModel.send(.onAppear)
-        }
-        .onChange(of: note.content) { oldValue, newValue in
-            viewModel.onContentChange(oldValue: oldValue, newValue: newValue)
         }
     }
 }

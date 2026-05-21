@@ -45,8 +45,6 @@ final class Note {
     @Relationship
     var tags: [Tag] = []
     
-    var suggestedTags: [String] = []
-    
     /// Get display text for previews (strips Markdown formatting)
     var displayText: String {
         return makePreviewPlainText()
@@ -101,7 +99,6 @@ final class Note {
         self.sourceHost = nil
         self.sourceCapturedAt = nil
         self.tags = []
-        self.suggestedTags = []
 
         if let parsed = ChecklistMarkdown.parse(content) {
             self.contentFormat = NoteContentFormat.checklist.rawValue

@@ -167,10 +167,9 @@ final class NoteDetailViewModelTests: XCTestCase {
         XCTAssertFalse(viewModel.isProcessing)
     }
 
-    func testConfirmTagUsesExistingTagAndRemovesSuggestion() {
+    func testConfirmTagUsesExistingTagOnlyOnce() {
         let note = Note(content: "content", userId: "u1")
         let existingTag = Tag(name: "Work", userId: "u1")
-        note.suggestedTags = ["Work"]
         context.insert(note)
         context.insert(existingTag)
 
@@ -180,7 +179,6 @@ final class NoteDetailViewModelTests: XCTestCase {
         viewModel.confirmTag("Work")
         viewModel.confirmTag("Work")
 
-        XCTAssertFalse(note.suggestedTags.contains("Work"))
         XCTAssertEqual(note.tags.filter { $0.id == existingTag.id }.count, 1)
     }
 

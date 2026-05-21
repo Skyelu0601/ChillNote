@@ -137,9 +137,6 @@ extension HomeView {
 
         withAnimation {
             modelContext.insert(note)
-            Task {
-                await generateTags(for: note)
-            }
         }
 
         persistAndSync()
@@ -149,23 +146,5 @@ extension HomeView {
         }
 
         return note
-    }
-
-    func generateTags(for note: Note) async {
-        do {
-            let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
-            let allTags = (try? modelContext.fetch(fetchDescriptor))?.map { $0.name } ?? []
-
-            let suggestions = try await TagService.shared.suggestTags(for: note.content, existingTags: allTags)
-
-            if !suggestions.isEmpty {
-                await MainActor.run {
-                    note.suggestedTags = suggestions
-                    persistAndSync()
-                }
-            }
-        } catch {
-            print("⚠️ Failed to generate tags: \(error)")
-        }
     }
 }

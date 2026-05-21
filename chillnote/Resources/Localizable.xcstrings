@@ -2336,49 +2336,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "ChillNote will kein weiterer schwerer Workspace sein, der ständiges Sortieren, Taggen und Pflegen verlangt."
+            "value": "ChillNote will kein weiterer schwerer Workspace sein, der ständiges Sortieren, Organisieren nach Themen und Pflegen verlangt."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "ChillNote is not trying to become a heavy workspace that demands constant sorting, tagging, and upkeep."
+            "value": "ChillNote is not trying to become a heavy workspace that demands constant sorting, organizing by topic, and upkeep."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "ChillNote no intenta convertirse en otro espacio de trabajo pesado que exija ordenar, etiquetar y mantener todo constantemente."
+            "value": "ChillNote no intenta convertirse en otro espacio de trabajo pesado que exija ordenar, organizar por temas y mantener todo constantemente."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "ChillNote n'essaie pas de devenir un espace de travail lourd qui exige de trier, étiqueter et entretenir sans cesse."
+            "value": "ChillNote n'essaie pas de devenir un espace de travail lourd qui exige de trier, organiser par sujet et entretenir sans cesse."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "ChillNote が目指しているのは、分類やタグ付け、手入れを常に求める重たいワークスペースになることではありません。"
+            "value": "ChillNote が目指しているのは、分類やトピックごとの整理、手入れを常に求める重たいワークスペースになることではありません。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "ChillNote는 끊임없이 정리하고 태그를 붙이고 관리해야 하는 무거운 작업 공간이 되려는 것이 아닙니다."
+            "value": "ChillNote는 끊임없이 정리하고 주제별로 분류하고 관리해야 하는 무거운 작업 공간이 되려는 것이 아닙니다."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "ChillNote 并不想变成另一个需要你不断分类、打标签、维护的笨重工作台。"
+            "value": "ChillNote 并不想变成另一个需要你不断分类、按主题整理、维护的笨重工作台。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "ChillNote 並不想變成另一個需要你不斷分類、加標籤、維護的笨重工作台。"
+            "value": "ChillNote 並不想變成另一個需要你不斷分類、按主題整理、維護的笨重工作台。"
           }
         }
       }
@@ -12306,49 +12306,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Keine Tags verfügbar"
+            "value": "Keine Themen verfügbar"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "No tags available"
+            "value": "No topics available"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "No hay etiquetas disponibles"
+            "value": "No hay temas disponibles"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aucune balise disponible"
+            "value": "Aucun sujet disponible"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "使用可能なタグがありません"
+            "value": "使用可能なトピックがありません"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "사용 가능한 태그가 없습니다."
+            "value": "사용 가능한 주제가 없습니다."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "没有可用的标签"
+            "value": "没有可用的主题"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "沒有可用的標籤"
+            "value": "沒有可用的主題"
           }
         }
       }
@@ -12412,49 +12412,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag hinzufügen"
+            "value": "Thema hinzufügen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add Tag"
+            "value": "Add Topic"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Agregar etiqueta"
+            "value": "Agregar tema"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajouter une balise"
+            "value": "Ajouter un sujet"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "タグの追加"
+            "value": "トピックを追加"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "태그 추가"
+            "value": "주제 추가"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加标签"
+            "value": "添加主题"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加標籤"
+            "value": "添加主題"
           }
         }
       }
@@ -14372,49 +14372,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag-Name"
+            "value": "Themenname"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag name"
+            "value": "Topic name"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nombre de la etiqueta"
+            "value": "Nombre del tema"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nom du tag"
+            "value": "Nom du sujet"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "タグ名"
+            "value": "トピック名"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "태그 이름"
+            "value": "주제 이름"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "标签名称"
+            "value": "主题名称"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "標籤名稱"
+            "value": "主題名稱"
           }
         }
       }
@@ -14425,49 +14425,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "New Tag"
+            "value": "Neues Thema"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "New Tag"
+            "value": "New Topic"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "New Tag"
+            "value": "Tema nuevo"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "New Tag"
+            "value": "Nouveau sujet"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "New Tag"
+            "value": "新しいトピック"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "New Tag"
+            "value": "새 주제"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "New Tag"
+            "value": "新主题"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "New Tag"
+            "value": "新主題"
           }
         }
       }
@@ -14531,49 +14531,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag hinzufügen"
+            "value": "Thema hinzufügen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add Tag"
+            "value": "Add Topic"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Agregar etiqueta"
+            "value": "Agregar tema"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajouter une balise"
+            "value": "Ajouter un sujet"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "タグの追加"
+            "value": "トピックを追加"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "태그 추가"
+            "value": "주제 추가"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加标签"
+            "value": "添加主题"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加標籤"
+            "value": "添加主題"
           }
         }
       }
@@ -15379,49 +15379,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag hinzufügen"
+            "value": "Thema hinzufügen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Add Tag"
+            "value": "Add Topic"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Agregar etiqueta"
+            "value": "Agregar tema"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ajouter une balise"
+            "value": "Ajouter un sujet"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "タグを追加"
+            "value": "トピックを追加"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "태그 추가"
+            "value": "주제 추가"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加标签"
+            "value": "添加主题"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "添加標籤"
+            "value": "添加主題"
           }
         }
       }
@@ -18877,49 +18877,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 👋 Willkommen bei ChillNote\n\n> ChillNote ist dein Sprach-Workspace.\n> Sprich es aus, halte es sofort fest und erhalte mit einem Tippen genau das Ergebnis, das du brauchst.\n\n---\n\n## ✨ So legst du los\n\n- [ ] **🎙️ Nimm deine erste Notiz auf**\nTippe unten auf die Aufnahmetaste und sag einfach, was dir gerade durch den Kopf geht.\n\n- [ ] **Sieh, wie ChillNote daraus eine Notiz macht**\nDeine Stimme wird in Text umgewandelt, bereinigt und mit vorgeschlagenen Tags versehen.\n\n- [ ] **⚡️ Probiere den Lightning Button aus**\nWähle eine oder mehrere Notizen aus und nutze dann **AI Skills** oder **Ask AI**.\n\n- [ ] **🪄 Probiere den Zauberstab-Button aus**\nÖffne eine Notiz und tippe oben rechts auf den Zauberstab-Button, um **Auto Format** zu verwenden und die Notiz leichter lesbar zu machen."
+            "value": "# 👋 Willkommen bei ChillNote\n\n> ChillNote ist dein Sprach-Workspace.\n> Sprich es aus, halte es sofort fest und erhalte mit einem Tippen genau das Ergebnis, das du brauchst.\n\n---\n\n## ✨ So legst du los\n\n- [ ] **🎙️ Nimm deine erste Notiz auf**\nTippe unten auf die Aufnahmetaste und sag einfach, was dir gerade durch den Kopf geht.\n\n- [ ] **Sieh, wie ChillNote daraus eine Notiz macht**\nDeine Stimme wird in Text umgewandelt, bereinigt und kann später nach Themen organisiert werden.\n\n- [ ] **⚡️ Probiere den Lightning Button aus**\nWähle eine oder mehrere Notizen aus und nutze dann **AI Skills** oder **Ask AI**.\n\n- [ ] **🪄 Probiere den Zauberstab-Button aus**\nÖffne eine Notiz und tippe oben rechts auf den Zauberstab-Button, um **Auto Format** zu verwenden und die Notiz leichter lesbar zu machen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 👋 Welcome to ChillNote\n\n> ChillNote is your voice workspace.\n> Say it, capture it instantly, then get the result you want in one tap.\n\n---\n\n## ✨ How to Get Started\n\n- [ ] **🎙️ Record your first note**\nTap the record button at the bottom and say anything on your mind.\n\n- [ ] **See how ChillNote turns it into a note**\nYour voice is turned into text, cleaned up, and given suggested tags.\n\n- [ ] **⚡️ Try the Lightning Button**\nSelect one or more notes, then use **AI Skills** or **Ask AI**.\n\n- [ ] **🪄 Try the magic wand button**\nOpen a note, then tap the magic wand button in the top right to use **Auto Format** and make it easier to read."
+            "value": "# 👋 Welcome to ChillNote\n\n> ChillNote is your voice workspace.\n> Say it, capture it instantly, then get the result you want in one tap.\n\n---\n\n## ✨ How to Get Started\n\n- [ ] **🎙️ Record your first note**\nTap the record button at the bottom and say anything on your mind.\n\n- [ ] **See how ChillNote turns it into a note**\nYour voice is turned into text, cleaned up, and ready to organize by topic later.\n\n- [ ] **⚡️ Try the Lightning Button**\nSelect one or more notes, then use **AI Skills** or **Ask AI**.\n\n- [ ] **🪄 Try the magic wand button**\nOpen a note, then tap the magic wand button in the top right to use **Auto Format** and make it easier to read."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 👋 Bienvenido a ChillNote\n\n> ChillNote es tu espacio de trabajo por voz.\n> Dilo, guárdalo al instante y consigue el resultado que quieres con un toque.\n\n---\n\n## ✨ Cómo empezar\n\n- [ ] **🎙️ Graba tu primera nota**\nToca el botón de grabación de abajo y di lo que tengas en mente.\n\n- [ ] **Mira cómo ChillNote la convierte en una nota**\nTu voz se convierte en texto, se limpia y recibe etiquetas sugeridas.\n\n- [ ] **⚡️ Prueba el Lightning Button**\nSelecciona una o más notas y luego usa **AI Skills** o **Ask AI**.\n\n- [ ] **🪄 Prueba el botón de la varita mágica**\nAbre una nota y toca el botón de la varita mágica en la esquina superior derecha para usar **Auto Format** y hacerla más fácil de leer."
+            "value": "# 👋 Bienvenido a ChillNote\n\n> ChillNote es tu espacio de trabajo por voz.\n> Dilo, guárdalo al instante y consigue el resultado que quieres con un toque.\n\n---\n\n## ✨ Cómo empezar\n\n- [ ] **🎙️ Graba tu primera nota**\nToca el botón de grabación de abajo y di lo que tengas en mente.\n\n- [ ] **Mira cómo ChillNote la convierte en una nota**\nTu voz se convierte en texto, se limpia y queda lista para organizarse por temas más tarde.\n\n- [ ] **⚡️ Prueba el Lightning Button**\nSelecciona una o más notas y luego usa **AI Skills** o **Ask AI**.\n\n- [ ] **🪄 Prueba el botón de la varita mágica**\nAbre una nota y toca el botón de la varita mágica en la esquina superior derecha para usar **Auto Format** y hacerla más fácil de leer."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 👋 Bienvenue sur ChillNote\n\n> ChillNote est votre espace de travail vocal.\n> Dites-le, notez-le instantanément, puis obtenez le resultat voulu en un geste.\n\n---\n\n## ✨ Comment démarrer\n\n- [ ] **🎙️ Enregistrez votre première note**\nTouchez le bouton d'enregistrement en bas et dites simplement ce que vous avez en tête.\n\n- [ ] **Voyez comment ChillNote la transforme en note**\nVotre voix est transformée en texte, nettoyée et accompagnée de tags suggérés.\n\n- [ ] **⚡️ Essayez le Lightning Button**\nSélectionnez une ou plusieurs notes, puis utilisez **AI Skills** ou **Ask AI**.\n\n- [ ] **🪄 Essayez le bouton baguette magique**\nOuvrez une note, puis touchez le bouton baguette magique en haut à droite pour utiliser **Auto Format** et la rendre plus facile à lire."
+            "value": "# 👋 Bienvenue sur ChillNote\n\n> ChillNote est votre espace de travail vocal.\n> Dites-le, notez-le instantanément, puis obtenez le resultat voulu en un geste.\n\n---\n\n## ✨ Comment démarrer\n\n- [ ] **🎙️ Enregistrez votre première note**\nTouchez le bouton d'enregistrement en bas et dites simplement ce que vous avez en tête.\n\n- [ ] **Voyez comment ChillNote la transforme en note**\nVotre voix est transformée en texte, nettoyée et prête à être organisée par sujet plus tard.\n\n- [ ] **⚡️ Essayez le Lightning Button**\nSélectionnez une ou plusieurs notes, puis utilisez **AI Skills** ou **Ask AI**.\n\n- [ ] **🪄 Essayez le bouton baguette magique**\nOuvrez une note, puis touchez le bouton baguette magique en haut à droite pour utiliser **Auto Format** et la rendre plus facile à lire."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 👋 ChillNoteへようこそ\n\n> ChillNoteはあなたの音声ワークスペースです。\n> 話した瞬間に記録して、欲しい結果までワンタップでたどり着けます。\n\n---\n\n## ✨ はじめ方\n\n- [ ] **🎙️ 最初のノートを録音する**\n下にある録音ボタンをタップして、思いついたことをそのまま話してみてください。\n\n- [ ] **ChillNoteがノートにしてくれる流れを見る**\n音声はテキストに変換され、整えられ、タグ候補も提案されます。\n\n- [ ] **⚡️ Lightning Buttonを試す**\n1つ以上のノートを選択してから、**AI Skills** または **Ask AI** を使ってみてください。\n\n- [ ] **🪄 魔法の杖ボタンを試す**\nノートを開いて右上の魔法の杖ボタンをタップすると、**Auto Format** で読みやすく整えられます。"
+            "value": "# 👋 ChillNoteへようこそ\n\n> ChillNoteはあなたの音声ワークスペースです。\n> 話した瞬間に記録して、欲しい結果までワンタップでたどり着けます。\n\n---\n\n## ✨ はじめ方\n\n- [ ] **🎙️ 最初のノートを録音する**\n下にある録音ボタンをタップして、思いついたことをそのまま話してみてください。\n\n- [ ] **ChillNoteがノートにしてくれる流れを見る**\n音声はテキストに変換され、整えられ、あとからトピックごとに整理できます。\n\n- [ ] **⚡️ Lightning Buttonを試す**\n1つ以上のノートを選択してから、**AI Skills** または **Ask AI** を使ってみてください。\n\n- [ ] **🪄 魔法の杖ボタンを試す**\nノートを開いて右上の魔法の杖ボタンをタップすると、**Auto Format** で読みやすく整えられます。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 👋 ChillNote에 오신 것을 환영합니다\n\n> ChillNote는 당신의 보이스 워크스페이스입니다.\n> 말하면 바로 기록되고, 한 번의 탭으로 원하는 결과까지 이어집니다.\n\n---\n\n## ✨ 시작하는 방법\n\n- [ ] **🎙️ 첫 번째 노트를 녹음해 보세요**\n아래의 녹음 버튼을 누르고 떠오르는 내용을 아무렇게나 말해 보세요.\n\n- [ ] **ChillNote가 노트로 바꾸는 과정을 확인해 보세요**\n당신의 음성은 텍스트로 바뀌고, 다듬어지며, 추천 태그도 함께 제안됩니다.\n\n- [ ] **⚡️ Lightning Button을 사용해 보세요**\n하나 이상의 노트를 선택한 다음 **AI Skills** 또는 **Ask AI**를 사용해 보세요.\n\n- [ ] **🪄 마법 지팡이 버튼을 사용해 보세요**\n노트를 연 뒤 오른쪽 위의 마법 지팡이 버튼을 눌러 **Auto Format**을 사용하면 더 읽기 쉽게 정리할 수 있습니다."
+            "value": "# 👋 ChillNote에 오신 것을 환영합니다\n\n> ChillNote는 당신의 보이스 워크스페이스입니다.\n> 말하면 바로 기록되고, 한 번의 탭으로 원하는 결과까지 이어집니다.\n\n---\n\n## ✨ 시작하는 방법\n\n- [ ] **🎙️ 첫 번째 노트를 녹음해 보세요**\n아래의 녹음 버튼을 누르고 떠오르는 내용을 아무렇게나 말해 보세요.\n\n- [ ] **ChillNote가 노트로 바꾸는 과정을 확인해 보세요**\n당신의 음성은 텍스트로 바뀌고 다듬어지며, 나중에 주제별로 정리할 수 있습니다.\n\n- [ ] **⚡️ Lightning Button을 사용해 보세요**\n하나 이상의 노트를 선택한 다음 **AI Skills** 또는 **Ask AI**를 사용해 보세요.\n\n- [ ] **🪄 마법 지팡이 버튼을 사용해 보세요**\n노트를 연 뒤 오른쪽 위의 마법 지팡이 버튼을 눌러 **Auto Format**을 사용하면 더 읽기 쉽게 정리할 수 있습니다."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 👋 欢迎来到 ChillNote\n\n> ChillNote 是你的语音工作台。\n> 说出来，立刻记录，再一键得到想要的结果。\n\n---\n\n## ✨ 开始使用\n\n- [ ] **🎙️ 录下你的第一条笔记**\n点击底部的录音按钮，把你脑海里的内容直接说出来。\n\n- [ ] **看看 ChillNote 如何把它变成一条笔记**\n你的语音会被转成文字、稍作整理，并附上建议标签。\n\n- [ ] **⚡️ 试试 Lightning Button**\n选择一条或多条笔记，然后使用 **AI Skills** 或 **Ask AI**。\n\n- [ ] **🪄 试试魔法棒按钮**\n打开一条笔记，然后点击右上角的魔法棒按钮，使用 **Auto Format** 让内容更清晰、更易读。"
+            "value": "# 👋 欢迎来到 ChillNote\n\n> ChillNote 是你的语音工作台。\n> 说出来，立刻记录，再一键得到想要的结果。\n\n---\n\n## ✨ 开始使用\n\n- [ ] **🎙️ 录下你的第一条笔记**\n点击底部的录音按钮，把你脑海里的内容直接说出来。\n\n- [ ] **看看 ChillNote 如何把它变成一条笔记**\n你的语音会被转成文字、稍作整理，之后可以按主题归类。\n\n- [ ] **⚡️ 试试 Lightning Button**\n选择一条或多条笔记，然后使用 **AI Skills** 或 **Ask AI**。\n\n- [ ] **🪄 试试魔法棒按钮**\n打开一条笔记，然后点击右上角的魔法棒按钮，使用 **Auto Format** 让内容更清晰、更易读。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 👋 歡迎來到 ChillNote\n\n> ChillNote 是你的語音工作台。\n> 說出來，立刻記錄，再一鍵得到想要的結果。\n\n---\n\n## ✨ 開始使用\n\n- [ ] **🎙️ 錄下你的第一條筆記**\n點擊底部的錄音按鈕，把你腦海裡的內容直接說出來。\n\n- [ ] **看看 ChillNote 如何把它變成一條筆記**\n你的語音會被轉成文字、稍作整理，並附上建議標籤。\n\n- [ ] **⚡️ 試試 Lightning Button**\n選擇一條或多條筆記，然後使用 **AI Skills** 或 **Ask AI**。\n\n- [ ] **🪄 試試魔法棒按鈕**\n打開一條筆記，然後點擊右上角的魔法棒按鈕，使用 **Auto Format** 讓內容更清晰、更易讀。"
+            "value": "# 👋 歡迎來到 ChillNote\n\n> ChillNote 是你的語音工作台。\n> 說出來，立刻記錄，再一鍵得到想要的結果。\n\n---\n\n## ✨ 開始使用\n\n- [ ] **🎙️ 錄下你的第一條筆記**\n點擊底部的錄音按鈕，把你腦海裡的內容直接說出來。\n\n- [ ] **看看 ChillNote 如何把它變成一條筆記**\n你的語音會被轉成文字、稍作整理，之後可以按主題歸類。\n\n- [ ] **⚡️ 試試 Lightning Button**\n選擇一條或多條筆記，然後使用 **AI Skills** 或 **Ask AI**。\n\n- [ ] **🪄 試試魔法棒按鈕**\n打開一條筆記，然後點擊右上角的魔法棒按鈕，使用 **Auto Format** 讓內容更清晰、更易讀。"
           }
         }
       }
@@ -30007,49 +30007,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Mit Tags Ordnung schaffen"
+            "value": "Mit Themen organisieren"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Start organizing with tags"
+            "value": "Start organizing with topics"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Empieza a organizar con etiquetas"
+            "value": "Empieza a organizar con temas"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Commencez à organiser avec des tags"
+            "value": "Commencez à organiser avec des sujets"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "タグを使って整理を始める"
+            "value": "トピックで整理を始める"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "태그로 정리 시작하기"
+            "value": "주제로 정리 시작하기"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "开始使用标签进行组织"
+            "value": "开始使用主题进行组织"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "開始使用標籤進行組織"
+            "value": "開始使用主題進行組織"
           }
         }
       }
@@ -30113,49 +30113,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tags"
+            "value": "Themen"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "TAGS"
+            "value": "TOPICS"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "ETIQUETAS"
+            "value": "TEMAS"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "ÉTIQUETTES"
+            "value": "SUJETS"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "タグ"
+            "value": "トピック"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "태그"
+            "value": "주제"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "标签"
+            "value": "主题"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "標籤"
+            "value": "主題"
           }
         }
       }
@@ -34030,49 +34030,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag-Farbe %@"
+            "value": "Themenfarbe %@"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tag color %@"
+            "value": "Topic color %@"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Color de etiqueta %@"
+            "value": "Color del tema %@"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Couleur du tag %@"
+            "value": "Couleur du sujet %@"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "タグの色 %@"
+            "value": "トピックの色 %@"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "태그 색상 %@"
+            "value": "주제 색상 %@"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "标签颜色 %@"
+            "value": "主题颜色 %@"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "標籤顏色 %@"
+            "value": "主題顏色 %@"
           }
         }
       }

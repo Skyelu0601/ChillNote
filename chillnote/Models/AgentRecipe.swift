@@ -277,26 +277,6 @@ extension AgentRecipe {
             """,
             category: .shape
         ),
-        // MARK: - Publish
-        AgentRecipe(
-            id: "draft_email",
-            icon: "✉️",
-            systemIcon: "envelope",
-            name: "Email",
-            description: "agent_recipe.draft_email.description",
-            prompt: """
-            You are drafting an email based on a user’s existing note (not a chat message). Turn the note into a clear, well-structured email while preserving the user’s intent and tone.
-
-            - Keep the email in the same language as the note.
-            - Include a Subject line.
-            - If the note doesn’t specify recipient or tone, choose a neutral, professional default.
-            - Preserve key facts, dates, and requested actions.
-            - If critical details are missing, make reasonable assumptions and keep the email concise.
-
-            Output only the email.
-            """,
-            category: .publish
-        ),
         // MARK: - Shape
         AgentRecipe(
             id: "hook_generator",

@@ -4,32 +4,9 @@ import SwiftUI
 
 @MainActor
 extension NoteDetailViewModel {
-    func generateTagsIfNeeded(force: Bool = false) async {
-        guard let modelContext else { return }
-        guard force || !hasRequestedTagSuggestions else { return }
-        guard !note.content.isEmpty else { return }
-        hasRequestedTagSuggestions = true
-
-        do {
-            let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
-            let allTags = (try? modelContext.fetch(fetchDescriptor))?.map { $0.name } ?? []
-
-            let suggestions = try await dependencies.suggestTags(note.content, allTags)
-            guard !suggestions.isEmpty else { return }
-
-            withAnimation {
-                note.suggestedTags = suggestions
-            }
-            try? modelContext.save()
-        } catch {
-            hasRequestedTagSuggestions = false
-        }
-    }
-
     func removeTag(_ tag: Tag) {
         guard let modelContext else { return }
         note.tags.removeAll { $0.id == tag.id }
-        note.suggestedTags.removeAll { $0.compare(tag.name, options: .caseInsensitive) == .orderedSame }
         note.updatedAt = dependencies.now()
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: [tag])
     }
@@ -37,8 +14,6 @@ extension NoteDetailViewModel {
     func confirmTag(_ tagName: String, preferredColorHex: String? = nil) {
         guard let modelContext else { return }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            note.suggestedTags.removeAll { $0.compare(tagName, options: .caseInsensitive) == .orderedSame }
-
             let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
             let allTags = (try? modelContext.fetch(fetchDescriptor)) ?? []
             let existing = allTags.first { $0.name.lowercased() == tagName.lowercased() }

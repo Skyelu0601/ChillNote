@@ -6,7 +6,6 @@ struct NoteDetailEditorSectionView: View {
     let isDeleted: Bool
     let isProcessing: Bool
     let isVoiceProcessing: Bool
-    let onConfirmTag: (String) -> Void
     let onRemoveTag: (Tag) -> Void
     let onAddTagClick: () -> Void
 
@@ -29,8 +28,6 @@ struct NoteDetailEditorSectionView: View {
 
                 TagBannerView(
                     tags: note.tags,
-                    suggestedTags: note.suggestedTags,
-                    onConfirm: onConfirmTag,
                     onRemove: onRemoveTag,
                     onAddClick: onAddTagClick
                 )

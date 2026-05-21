@@ -42,16 +42,12 @@ final class NoteDetailViewModel: ObservableObject {
                 systemInstruction: systemInstruction
             )
         }
-        var suggestTags: (_ content: String, _ existingTags: [String]) async throws -> [String] = { content, existingTags in
-            try await TagService.shared.suggestTags(for: content, existingTags: existingTags)
-        }
         var writeFile: (_ content: String, _ url: URL) throws -> Void = { content, url in
             try content.write(to: url, atomically: true, encoding: .utf8)
         }
     }
 
     enum NoteDetailAction {
-        case onAppear
         case backTapped
         case tidyTapped
         case stopRecordingTapped
@@ -105,7 +101,6 @@ final class NoteDetailViewModel: ObservableObject {
     private(set) var voiceService: VoiceProcessingService = .shared
 
     private var dismissAction: (() -> Void)?
-    var hasRequestedTagSuggestions = false
 
     let dependencies: Dependencies
 
@@ -209,8 +204,6 @@ final class NoteDetailViewModel: ObservableObject {
 
     func send(_ action: NoteDetailAction) {
         switch action {
-        case .onAppear:
-            onAppear()
         case .backTapped:
             updateTimestampAndDismiss()
         case .tidyTapped:
@@ -243,20 +236,6 @@ final class NoteDetailViewModel: ObservableObject {
             speechRecognizer?.dismissError()
         case .dismissVoiceProcessingErrorTapped:
             voiceService.processingStates.removeValue(forKey: note.id)
-        }
-    }
-
-    func onAppear() {
-        guard modelContext != nil else { return }
-        if note.tags.isEmpty && note.suggestedTags.isEmpty && !note.content.isEmpty {
-            Task { await generateTagsIfNeeded(force: true) }
-        }
-    }
-
-    func onContentChange(oldValue: String, newValue: String) {
-        guard modelContext != nil else { return }
-        if oldValue.isEmpty && !newValue.isEmpty && note.tags.isEmpty && note.suggestedTags.isEmpty {
-            Task { await generateTagsIfNeeded(force: true) }
         }
     }
 

@@ -2,8 +2,6 @@ import SwiftUI
 
 struct TagBannerView: View {
     let tags: [Tag]
-    let suggestedTags: [String]
-    let onConfirm: (String) -> Void
     let onRemove: (Tag) -> Void
     let onAddClick: () -> Void
 
@@ -15,15 +13,8 @@ struct TagBannerView: View {
                         title: tag.name,
                         color: tag.color,
                         textColor: tag.labelColor,
-                        isSuggested: false
                     ) {
                         onRemove(tag)
-                    }
-                }
-
-                ForEach(suggestedTags, id: \.self) { tagName in
-                    TagPill(title: tagName, color: .gray, textColor: .textSub, isSuggested: true) {
-                        onConfirm(tagName)
                     }
                 }
 
@@ -48,30 +39,19 @@ struct TagPill: View {
     let title: String
     let color: Color
     let textColor: Color
-    let isSuggested: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            HStack(spacing: 4) {
-                if isSuggested {
-                    Text("#")
-                        .foregroundColor(color.opacity(0.4))
-                }
-                Text(title)
-            }
+            Text(title)
             .font(.system(size: 14, weight: .medium))
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(
                 Capsule()
-                    .fill(isSuggested ? color.opacity(0.12) : color.opacity(TagColorService.tagBackgroundOpacity))
+                    .fill(color.opacity(TagColorService.tagBackgroundOpacity))
             )
-            .foregroundColor(isSuggested ? .textSub : textColor)
-            .overlay(
-                Capsule()
-                    .stroke(isSuggested ? color.opacity(0.2) : Color.clear, lineWidth: 1)
-            )
+            .foregroundColor(textColor)
         }
     }
 }

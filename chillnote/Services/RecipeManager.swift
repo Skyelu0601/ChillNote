@@ -4,6 +4,7 @@ import SwiftUI
 final class RecipeManager: ObservableObject {
     static let shared = RecipeManager()
     private static let retiredRecipeIds: Set<String> = [
+        "draft_email",
         "devils_advocate",
         "fix_grammar",
         "release_notes"
@@ -78,7 +79,7 @@ final class RecipeManager: ObservableObject {
             return
         }
 
-        let defaultIDs = ["summarize", "humanizer", "draft_email"]
+        let defaultIDs = ["hook_generator", "why_viral", "humanizer"]
         let defaults = AgentRecipe.allRecipes.filter { defaultIDs.contains($0.id) }
         guard !defaults.isEmpty else { return }
 

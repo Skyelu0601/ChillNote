@@ -20,7 +20,7 @@ export const recipeCategoryLabels: Record<AgentRecipeCategory, string> = {
   publish: "Act",
 };
 
-export const defaultSavedRecipeIds = ["summarize", "humanizer", "draft_email"];
+export const defaultSavedRecipeIds = ["hook_generator", "why_viral", "humanizer"];
 
 export const agentRecipes: AgentRecipe[] = [
   {
@@ -141,22 +141,6 @@ Output only the humanized text.`,
 - Do not explain the style analysis unless the note explicitly asks for analysis.
 
 Output only the new piece.`,
-  },
-  {
-    id: "draft_email",
-    icon: "✉️",
-    name: "Email",
-    description: "Turn a note into a clear, ready-to-send email.",
-    category: "publish",
-    prompt: `You are drafting an email based on a user's existing note (not a chat message). Turn the note into a clear, well-structured email while preserving the user's intent and tone.
-
-- Keep the email in the same language as the note.
-- Include a Subject line.
-- If the note doesn't specify recipient or tone, choose a neutral, professional default.
-- Preserve key facts, dates, and requested actions.
-- If critical details are missing, make reasonable assumptions and keep the email concise.
-
-Output only the email.`,
   },
   {
     id: "hook_generator",
