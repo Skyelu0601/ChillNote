@@ -4,8 +4,19 @@ import UIKit
 /// A rich text editor that renders markdown as formatted text (WYSIWYG)
 /// Users see formatted rich text instead of raw markdown syntax
 /// Checkboxes are interactive and can be toggled by tapping
+struct RichTextEditorSelection: Equatable {
+    var location: Int = 0
+    var length: Int = 0
+    var selectedText: String = ""
+
+    var isCollapsed: Bool {
+        length == 0
+    }
+}
+
 struct RichTextEditorView: UIViewRepresentable {
     @Binding var text: String
+    var selection: Binding<RichTextEditorSelection>?
     var isEditable: Bool = true
     var font: UIFont = .systemFont(ofSize: 17)
     var textColor: UIColor = .label
@@ -68,6 +79,7 @@ struct RichTextEditorView: UIViewRepresentable {
             let attributedText = RichTextConverter.markdownToAttributedString(text, baseFont: font, textColor: textColor)
             textView.attributedText = attributedText
             context.coordinator.lastKnownMarkdown = text
+            context.coordinator.publishSelection(from: textView)
         }
     }
     
@@ -109,6 +121,7 @@ struct RichTextEditorView: UIViewRepresentable {
             let markdown = RichTextConverter.attributedStringToMarkdown(textView.attributedText)
             lastKnownMarkdown = markdown
             parent.text = markdown
+            publishSelection(from: textView)
             if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
                 updateToolbarState(in: textView, toolbar: toolbar)
             }
@@ -116,8 +129,37 @@ struct RichTextEditorView: UIViewRepresentable {
 
         func textViewDidChangeSelection(_ textView: UITextView) {
             normalizeTypingAttributesForListPrefixIfNeeded(in: textView)
+            publishSelection(from: textView)
             if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
                 updateToolbarState(in: textView, toolbar: toolbar)
+            }
+        }
+
+        func publishSelection(from textView: UITextView) {
+            guard let selection = parent.selection else { return }
+            let selectedRange = textView.selectedRange
+            let fullAttributedText = textView.attributedText ?? NSAttributedString()
+            let boundedLocation = max(0, min(selectedRange.location, fullAttributedText.length))
+            let boundedLength = max(0, min(selectedRange.length, fullAttributedText.length - boundedLocation))
+
+            let prefix = fullAttributedText.attributedSubstring(
+                from: NSRange(location: 0, length: boundedLocation)
+            )
+            let selected = fullAttributedText.attributedSubstring(
+                from: NSRange(location: boundedLocation, length: boundedLength)
+            )
+
+            let markdownPrefix = RichTextConverter.attributedStringToMarkdown(prefix)
+            let markdownSelected = RichTextConverter.attributedStringToMarkdown(selected)
+            let nextSelection = RichTextEditorSelection(
+                location: markdownPrefix.count,
+                length: markdownSelected.count,
+                selectedText: markdownSelected
+            )
+
+            guard selection.wrappedValue != nextSelection else { return }
+            DispatchQueue.main.async {
+                selection.wrappedValue = nextSelection
             }
         }
         

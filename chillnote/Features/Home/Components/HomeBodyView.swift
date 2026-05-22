@@ -81,13 +81,6 @@ struct HomeBodyView: View {
         )
     }
 
-    private var showMergeSuccessAlertBinding: Binding<Bool> {
-        Binding(
-            get: { state.showMergeSuccessAlert },
-            set: { dispatch(.setShowMergeSuccessAlert($0)) }
-        )
-    }
-
     private var showEmptyTrashConfirmationBinding: Binding<Bool> {
         Binding(
             get: { state.showEmptyTrashConfirmation },
@@ -280,14 +273,6 @@ struct HomeBodyView: View {
             }
         } message: {
             Text(deleteNotesMessage)
-        }
-        .alert(L10n.text("home.alert.merge_success.title"), isPresented: showMergeSuccessAlertBinding) {
-            Button(L10n.text("home.alert.merge_success.keep_originals"), role: .cancel) { }
-            Button(L10n.text("home.alert.merge_success.delete_originals"), role: .destructive) {
-                dispatch(.deleteNotesAfterMerge)
-            }
-        } message: {
-            Text(L10n.text("home.alert.merge_success.message", state.notesToDeleteAfterMerge.count))
         }
         .alert(L10n.text("home.alert.empty_recycle_bin.title"), isPresented: showEmptyTrashConfirmationBinding) {
             Button(L10n.text("common.cancel"), role: .cancel) { }

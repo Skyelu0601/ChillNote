@@ -55,6 +55,7 @@ final class NoteDetailViewModel: ObservableObject {
         case deleteTapped
         case deletePermanentlyTapped
         case exportTapped
+        case aiSkillsTapped
         case aiUndoTapped
         case aiSaveTapped
         case aiRetryTapped
@@ -74,6 +75,13 @@ final class NoteDetailViewModel: ObservableObject {
     @Published var showAIToolbar = false
     @Published var aiOriginalContent: String?
     @Published var isProgrammaticContentUpdate = false
+    @Published var editorSelection = RichTextEditorSelection()
+    @Published var showAISkillsSheet = false
+    @Published var showAISkillTranslateSheet = false
+    @Published var aiSkillPreview: NoteAISkillPreview?
+    @Published var aiSkillErrorMessage: String?
+    @Published var pendingAISkillRecipe: AgentRecipe?
+    var lastAITransformation: NoteAITransformation = .tidy
 
     @Published var initialContent: String = ""
     @Published var initialTags: Set<UUID> = []
@@ -202,6 +210,10 @@ final class NoteDetailViewModel: ObservableObject {
         isInteractionEnabled && !note.content.isEmpty
     }
 
+    var isAISkillsEnabled: Bool {
+        isInteractionEnabled
+    }
+
     func send(_ action: NoteDetailAction) {
         switch action {
         case .backTapped:
@@ -218,12 +230,14 @@ final class NoteDetailViewModel: ObservableObject {
             showPermanentDeleteConfirmation = true
         case .exportTapped:
             exportMarkdown()
+        case .aiSkillsTapped:
+            showAISkillsSheet = true
         case .aiUndoTapped:
             undoAIContent()
         case .aiSaveTapped:
             saveAIContentAndDismissToolbar()
         case .aiRetryTapped:
-            Task { await executeTidyAction() }
+            Task { await retryLastAITransformation() }
         case .removeTagTapped(let tag):
             removeTag(tag)
         case .confirmTagTapped(let tagName):

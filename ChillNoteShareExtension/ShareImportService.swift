@@ -78,18 +78,6 @@ struct ShareMediaTranscriptResult: Decodable {
     let reason: String?
 }
 
-private struct ShareAuthRefreshResponse: Decodable {
-    struct User: Decodable {
-        let id: String?
-    }
-
-    let accessToken: String
-    let refreshToken: String
-    let expiresIn: TimeInterval?
-    let expiresAt: TimeInterval?
-    let user: User?
-}
-
 private struct ShareMediaLinkTranscriptSectionPreferences {
     static let descriptionStorageKey = "media_link_transcript_show_description"
     static let authorStorageKey = "media_link_transcript_show_author"
@@ -159,7 +147,9 @@ struct ShareImportService {
         progress: @escaping @MainActor (ShareImportStage) -> Void
     ) async throws -> SharePendingImport {
         await progress(.readingContent)
-        let token = try await authToken()
+        guard let token = authToken(), !token.isEmpty else {
+            throw ShareImportError.missingAuthToken
+        }
 
         try? await Task.sleep(for: .milliseconds(1_400))
         await progress(.extractingTranscript)
@@ -176,21 +166,12 @@ struct ShareImportService {
         return pendingImport
     }
 
-    private func authToken() async throws -> String {
-        guard let sharedDefaults = UserDefaults(suiteName: ShareConstants.appGroupIdentifier),
-              let token = sharedDefaults.string(forKey: ShareConstants.authTokenKey),
-              !token.isEmpty else {
-            throw ShareImportError.missingAuthToken
-        }
-
-        if isTokenNearExpiry(sharedDefaults: sharedDefaults) {
-            return try await refreshAuthToken(sharedDefaults: sharedDefaults)
-        }
-
-        return token
+    private func authToken() -> String? {
+        UserDefaults(suiteName: ShareConstants.appGroupIdentifier)?
+            .string(forKey: ShareConstants.authTokenKey)
     }
 
-    private func transcribeMediaLink(_ url: URL, token: String, retryOnUnauthorized: Bool = true) async throws -> String {
+    private func transcribeMediaLink(_ url: URL, token: String) async throws -> String {
         guard let endpoint = URL(string: backendBaseURL + "/ai/media-link-transcript") else {
             throw ShareImportError.invalidBackendURL
         }
@@ -206,13 +187,6 @@ struct ShareImportService {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ShareImportError.backendError("")
         }
-        if httpResponse.statusCode == 401 {
-            guard retryOnUnauthorized else {
-                throw ShareImportError.missingAuthToken
-            }
-            let refreshedToken = try await refreshedTokenAfterUnauthorized(previousToken: token)
-            return try await transcribeMediaLink(url, token: refreshedToken, retryOnUnauthorized: false)
-        }
         guard (200...299).contains(httpResponse.statusCode) else {
             throw ShareImportError.backendError("Status code: \(httpResponse.statusCode)")
         }
@@ -223,64 +197,6 @@ struct ShareImportService {
         }
 
         return result.text ?? ""
-    }
-
-    private func refreshedTokenAfterUnauthorized(previousToken: String) async throws -> String {
-        guard let sharedDefaults = UserDefaults(suiteName: ShareConstants.appGroupIdentifier) else {
-            throw ShareImportError.missingAuthToken
-        }
-
-        let refreshedToken = try await refreshAuthToken(sharedDefaults: sharedDefaults)
-        guard refreshedToken != previousToken else {
-            throw ShareImportError.missingAuthToken
-        }
-        return refreshedToken
-    }
-
-    private func isTokenNearExpiry(sharedDefaults: UserDefaults, refreshMargin: TimeInterval = 60) -> Bool {
-        let expiresAt = sharedDefaults.double(forKey: ShareConstants.authTokenExpiresAtKey)
-        guard expiresAt > 0 else { return false }
-        return expiresAt <= Date().addingTimeInterval(refreshMargin).timeIntervalSince1970
-    }
-
-    private func refreshAuthToken(sharedDefaults: UserDefaults) async throws -> String {
-        guard let refreshToken = sharedDefaults.string(forKey: ShareConstants.authRefreshTokenKey),
-              !refreshToken.isEmpty,
-              let endpoint = URL(string: "\(ShareConstants.supabaseURL)/auth/v1/token?grant_type=refresh_token") else {
-            throw ShareImportError.missingAuthToken
-        }
-
-        var request = URLRequest(url: endpoint)
-        request.httpMethod = "POST"
-        request.timeoutInterval = 30
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(ShareConstants.supabaseAnonKey, forHTTPHeaderField: "apikey")
-        request.setValue("Bearer \(ShareConstants.supabaseAnonKey)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["refresh_token": refreshToken])
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw ShareImportError.missingAuthToken
-        }
-        guard (200...299).contains(httpResponse.statusCode) else {
-            throw ShareImportError.missingAuthToken
-        }
-
-        let decoder = JSONDecoder()
-        decoder.keyDecodingStrategy = .convertFromSnakeCase
-        let refreshedSession = try decoder.decode(ShareAuthRefreshResponse.self, from: data)
-        let expiresAt = refreshedSession.expiresAt
-            ?? Date().addingTimeInterval(refreshedSession.expiresIn ?? 3_600).timeIntervalSince1970
-
-        sharedDefaults.set(refreshedSession.accessToken, forKey: ShareConstants.authTokenKey)
-        sharedDefaults.set(refreshedSession.refreshToken, forKey: ShareConstants.authRefreshTokenKey)
-        sharedDefaults.set(expiresAt, forKey: ShareConstants.authTokenExpiresAtKey)
-        if let userId = refreshedSession.user?.id, !userId.isEmpty {
-            sharedDefaults.set(userId, forKey: "auth.lastAuthenticatedUserId")
-        }
-        sharedDefaults.synchronize()
-
-        return refreshedSession.accessToken
     }
 
     private func makePendingImport(url: URL, transcript: String) async -> SharePendingImport {

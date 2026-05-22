@@ -47,7 +47,7 @@ export default function PrivacyPage() {
         <h2>2. How We Use Information</h2>
         <ul>
           <li>Authenticate your account and keep you signed in.</li>
-          <li>Sync notes and topics across devices.</li>
+          <li>Sync notes and tags across devices.</li>
           <li>Process AI features you intentionally request.</li>
           <li>Maintain performance, security, and compatibility.</li>
         </ul>

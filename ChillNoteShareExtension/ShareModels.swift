@@ -3,11 +3,7 @@ import Foundation
 enum ShareConstants {
     static let appGroupIdentifier = "group.com.sponteoai.chillnote"
     static let authTokenKey = "syncAuthToken"
-    static let authRefreshTokenKey = "syncRefreshToken"
-    static let authTokenExpiresAtKey = "syncAuthTokenExpiresAt"
     static let pendingImportsDirectoryName = "PendingShareImports"
-    static let supabaseURL = "https://qsyhkpaeyzhjojdvbntq.supabase.co"
-    static let supabaseAnonKey = "sb_publishable_smWWadjejdbKYvmg3fidsg_41XPu70e"
 }
 
 struct SharePendingImport: Codable, Sendable {

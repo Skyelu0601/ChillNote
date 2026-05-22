@@ -33,9 +33,6 @@ struct HomeView: View {
     @State var isExecutingAction = false
     @State var actionProgress: String?
 
-    @State var showMergeSuccessAlert = false
-    @State var notesToDeleteAfterMerge: [Note] = []
-
     @State var showBatchTagSheet = false
     @Query(filter: #Predicate<Tag> { $0.deletedAt == nil }, sort: \Tag.name) var availableTags: [Tag]
 
@@ -59,16 +56,7 @@ struct HomeView: View {
 
     @State var showSubscription = false
 
-    let translateLanguages: [TranslateLanguage] = [
-        TranslateLanguage(id: "zh-Hans", name: "Simplified Chinese", displayName: "简体中文", flag: "🇨🇳"),
-        TranslateLanguage(id: "zh-Hant", name: "Traditional Chinese", displayName: "繁體中文", flag: "🇭🇰"),
-        TranslateLanguage(id: "fr", name: "French", displayName: "Français", flag: "🇫🇷"),
-        TranslateLanguage(id: "en", name: "English", displayName: "English", flag: "🇺🇸"),
-        TranslateLanguage(id: "de", name: "German", displayName: "Deutsch", flag: "🇩🇪"),
-        TranslateLanguage(id: "ja", name: "Japanese", displayName: "日本語", flag: "🇯🇵"),
-        TranslateLanguage(id: "es", name: "Spanish", displayName: "Español", flag: "🇪🇸"),
-        TranslateLanguage(id: "ko", name: "Korean", displayName: "한국어", flag: "🇰🇷")
-    ]
+    let translateLanguages: [TranslateLanguage] = TranslateLanguage.defaultLanguages
 
     @State var isSidebarPresented = false
     @State var selectedTag: Tag? = nil
@@ -125,13 +113,11 @@ struct HomeView: View {
             isTranslateInputPresented: isTranslateInputPresented,
             translateTargetLanguage: translateTargetLanguage,
             showDeleteConfirmation: showDeleteConfirmation,
-            showMergeSuccessAlert: showMergeSuccessAlert,
             showEmptyTrashConfirmation: showEmptyTrashConfirmation,
             showBatchTagSheet: showBatchTagSheet,
             isSidebarPresented: isSidebarPresented,
             selectedTag: selectedTag,
             selectedNotes: selectedNotes,
-            notesToDeleteAfterMerge: notesToDeleteAfterMerge,
             isVoiceMode: isVoiceMode,
             cachedVisibleNotes: homeViewModel.items,
             isLoadingNotes: homeViewModel.isLoading,
@@ -365,8 +351,6 @@ struct HomeView: View {
             isTranslateInputPresented = value
         case .setShowDeleteConfirmation(let value):
             showDeleteConfirmation = value
-        case .setShowMergeSuccessAlert(let value):
-            showMergeSuccessAlert = value
         case .setShowEmptyTrashConfirmation(let value):
             showEmptyTrashConfirmation = value
         case .setShowBatchTagSheet(let value):
@@ -439,9 +423,6 @@ struct HomeView: View {
 
         case .deleteSelectedNotes:
             deleteSelectedNotes()
-        case .deleteNotesAfterMerge:
-            deleteNotes(notesToDeleteAfterMerge)
-            exitSelectionMode()
         case .emptyTrash:
             emptyTrash()
         case .applyTagToSelected(let tag):

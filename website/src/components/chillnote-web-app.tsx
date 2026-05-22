@@ -79,6 +79,7 @@ type VoiceLanguageMode = "auto" | "prefer";
 const WEB_SAVED_RECIPE_IDS_KEY = "chillnote.web.saved_recipe_ids";
 const WEB_VOICE_LANGUAGE_MODE_KEY = "chillnote.web.voice_language_mode";
 const WEB_VOICE_LANGUAGE_HINT_KEY = "chillnote.web.voice_language_hint";
+const validAgentRecipeIds = new Set(agentRecipes.map((recipe) => recipe.id));
 
 function escapeHtml(value: string) {
   return value
@@ -283,7 +284,9 @@ function loadStringArray(key: string, fallback: string[]) {
     const raw = window.localStorage.getItem(key);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === "string") : fallback;
+    return Array.isArray(parsed)
+      ? parsed.filter((item): item is string => typeof item === "string" && validAgentRecipeIds.has(item))
+      : fallback;
   } catch {
     return fallback;
   }

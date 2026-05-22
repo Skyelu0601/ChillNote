@@ -3,6 +3,7 @@ import SwiftUI
 struct NoteDetailEditorSectionView: View {
     let note: Note
     @Binding var noteContent: String
+    @Binding var editorSelection: RichTextEditorSelection
     let isDeleted: Bool
     let isProcessing: Bool
     let isVoiceProcessing: Bool
@@ -38,6 +39,7 @@ struct NoteDetailEditorSectionView: View {
 
                 RichTextEditorView(
                     text: $noteContent,
+                    selection: $editorSelection,
                     isEditable: !isProcessing && !isVoiceProcessing && !isDeleted,
                     font: .systemFont(ofSize: 17),
                     textColor: UIColor(Color.textMain),

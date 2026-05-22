@@ -169,8 +169,7 @@ private struct TranscriptTypingAnimation: View {
     let stage: ShareImportStage
     let tint: Color
 
-    @State private var shimmerPhase = false
-    @State private var typingPhase = false
+    @State private var pulsePhase = false
     @State private var savedPulse = false
 
     private let lineWidths: [CGFloat] = [0.78, 0.56, 0.88, 0.64]
@@ -193,8 +192,7 @@ private struct TranscriptTypingAnimation: View {
                             widthRatio: width,
                             index: index,
                             tint: tint,
-                            shimmerPhase: shimmerPhase,
-                            typingPhase: typingPhase
+                            pulsePhase: pulsePhase
                         )
                     }
                 }
@@ -256,16 +254,11 @@ private struct TranscriptTypingAnimation: View {
     }
 
     private func startAnimations() {
-        shimmerPhase = false
-        typingPhase = false
+        pulsePhase = false
         savedPulse = false
 
-        withAnimation(.linear(duration: 1.15).repeatForever(autoreverses: false)) {
-            shimmerPhase = true
-        }
-
-        withAnimation(.easeInOut(duration: stage == .extractingTranscript ? 1.35 : 0.7).repeatForever(autoreverses: true)) {
-            typingPhase = true
+        withAnimation(.easeInOut(duration: stage == .extractingTranscript ? 1.4 : 0.9).repeatForever(autoreverses: true)) {
+            pulsePhase = true
         }
 
         if stage == .saving {
@@ -281,56 +274,64 @@ private struct TranscriptLine: View {
     let widthRatio: CGFloat
     let index: Int
     let tint: Color
-    let shimmerPhase: Bool
-    let typingPhase: Bool
+    let pulsePhase: Bool
 
-    private var activeRatio: CGFloat {
+    private var lineOpacity: Double {
         switch stage {
         case .readingContent:
-            return 0
+            return pulsePhase ? 0.58 : 0.38
         case .extractingTranscript:
-            let base = typingPhase ? 0.96 : 0.34
-            let stagger = CGFloat(index) * 0.12
-            return min(max(CGFloat(base) - stagger, 0.18), 1)
+            let base = pulsePhase ? 0.84 : 0.5
+            let stagger = Double(index) * 0.07
+            return min(max(base - stagger, 0.42), 0.9)
         case .saving, .completed:
-            return 1
+            return 0.62
+        }
+    }
+
+    private var dotOpacity: Double {
+        switch stage {
+        case .readingContent:
+            return 0.28
+        case .extractingTranscript:
+            let base = pulsePhase ? 0.95 : 0.36
+            let stagger = Double(index) * 0.12
+            return min(max(base - stagger, 0.28), 0.95)
+        case .saving, .completed:
+            return 0.52
         }
     }
 
     var body: some View {
         GeometryReader { geometry in
             let lineWidth = geometry.size.width * widthRatio
-            let fillWidth = max(lineWidth * activeRatio, stage == .readingContent ? 0 : 12)
 
-            ZStack(alignment: .leading) {
+            HStack(spacing: 8) {
+                Circle()
+                    .fill(tint.opacity(dotOpacity))
+                    .frame(width: 6, height: 6)
+                    .animation(
+                        .easeInOut(duration: 1.2)
+                        .delay(Double(index) * 0.1),
+                        value: dotOpacity
+                    )
+
                 Capsule(style: .continuous)
-                    .fill(Color(.systemGray4).opacity(stage == .saving ? 0.42 : 0.72))
+                    .fill(lineFill)
                     .frame(width: lineWidth, height: 8)
-
-                if stage == .readingContent {
-                    MovingLineHighlight(shimmerPhase: shimmerPhase)
-                        .frame(width: lineWidth, height: 8)
-                        .clipShape(Capsule(style: .continuous))
-                        .opacity(0.82)
-                } else {
-                    Capsule(style: .continuous)
-                        .fill(tint.opacity(stage == .saving ? 0.42 : 0.76))
-                        .frame(width: fillWidth, height: 8)
-                        .animation(
-                            .easeInOut(duration: stage == .extractingTranscript ? 0.95 : 0.28)
-                            .delay(Double(index) * 0.08),
-                            value: activeRatio
-                        )
-
-                    if stage == .extractingTranscript {
+                    .overlay(alignment: .leading) {
                         Capsule(style: .continuous)
-                            .fill(tint)
-                            .frame(width: 6, height: 12)
-                            .offset(x: min(fillWidth, lineWidth) + 3)
-                            .opacity(typingPhase ? 0.95 : 0.25)
-                            .animation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true), value: typingPhase)
+                            .fill(tint.opacity(stage == .extractingTranscript ? 0.2 : 0.08))
+                            .frame(width: lineWidth)
                     }
-                }
+                    .opacity(lineOpacity)
+                    .animation(
+                        .easeInOut(duration: 1.2)
+                        .delay(Double(index) * 0.1),
+                        value: lineOpacity
+                    )
+
+                Spacer(minLength: 0)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -339,24 +340,15 @@ private struct TranscriptLine: View {
         .opacity(stage == .saving ? 0.82 : 1)
         .animation(.spring(response: 0.38, dampingFraction: 0.78), value: stage)
     }
-}
 
-private struct MovingLineHighlight: View {
-    let shimmerPhase: Bool
-
-    var body: some View {
-        GeometryReader { geometry in
-            LinearGradient(
-                colors: [
-                    .white.opacity(0),
-                    .white.opacity(0.55),
-                    .white.opacity(0)
-                ],
-                startPoint: .leading,
-                endPoint: .trailing
-            )
-            .frame(width: max(geometry.size.width * 0.42, 34))
-            .offset(x: shimmerPhase ? geometry.size.width : -geometry.size.width * 0.55)
+    private var lineFill: Color {
+        switch stage {
+        case .readingContent:
+            return Color(.systemGray4).opacity(0.72)
+        case .extractingTranscript:
+            return tint.opacity(0.24)
+        case .saving, .completed:
+            return Color(.systemGray4).opacity(0.46)
         }
     }
 }

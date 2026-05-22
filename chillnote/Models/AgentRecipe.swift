@@ -168,15 +168,6 @@ extension AgentRecipe {
             category: .think
         ),
         AgentRecipe(
-            id: "merge_notes",
-            icon: "🧩",
-            systemIcon: "doc.on.doc.fill",
-            name: "Merge Notes",
-            description: "agent_recipe.merge_notes.description",
-            prompt: "(Built-in Logic) Uses advanced internal logic to merge notes intelligently, preserving structure and handling multi-language content.",
-            category: .think
-        ),
-        AgentRecipe(
             id: "translate",
             icon: "🌍",
             systemIcon: "globe",
@@ -360,52 +351,24 @@ extension AgentRecipe {
 import SwiftData
 
 extension AgentRecipe {
-    /// Execute the recipe on given notes
-    @MainActor
-    func execute(on notes: [Note], context: ModelContext, userInstruction: String? = nil) async throws -> Note {
-        // Just join the content directly without adding metadata wrappers which confuse the AI
-        let combinedContent = notes.map { $0.content }.joined(separator: "\n\n---\n\n")
-        
+    /// Generate recipe output without deciding where the result should be saved.
+    func generateResult(from content: String, userInstruction: String? = nil) async throws -> String {
         let prompt: String
         let systemInstruction: String
-        
-        // Helper to detect language
-        let languageRule = LanguageDetection.languagePreservationRule(for: combinedContent)
-        
+        let languageRule = LanguageDetection.languagePreservationRule(for: content)
+
         switch id {
-        case "merge_notes":
-            prompt = """
-            Merge the following notes into a single, cohesive document.
-            
-            Original Notes:
-            \(combinedContent)
-            """
-            
-            let mergeLanguageRule = mergeLanguageLockRule(for: notes)
-            systemInstruction = """
-            You are a professional editor.
-            Rules:
-            \(languageRule)
-            \(mergeLanguageRule)
-            - Merge the content into a single, well-structured markdown document.
-            - Remove redundancy and improve flow.
-            - Use markdown for styling (# Headers, **bold**, - list).
-            - DO NOT wrap the output in markdown code blocks (```).
-            - DO NOT include meta-headers like "Merged Note", "Creation Date", or "[Note 1]".
-            - Start directly with the content.
-            """
-            
         case "translate":
             let targetLanguage = (userInstruction?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
                 ? userInstruction!
                 : "English"
             prompt = """
             Translate the following notes into \(targetLanguage).
-            
+
             Notes:
-            \(combinedContent)
+            \(content)
             """
-            
+
             systemInstruction = """
             You are a professional translator.
             Rules:
@@ -415,19 +378,16 @@ extension AgentRecipe {
             - Do not localize units, dates, or numbers unless explicitly requested.
             - Return only the translated content.
             """
-            
+
         default:
-            // For all other recipes (custom or other built-ins), use the recipe's prompt as the instruction
-            let instruction = self.prompt
-            
             prompt = """
             Instruction:
-            \(instruction)
-            
+            \(self.prompt)
+
             Notes:
-            \(combinedContent)
+            \(content)
             """
-            
+
             systemInstruction = """
             You are a helpful assistant.
             Rules:
@@ -436,12 +396,20 @@ extension AgentRecipe {
             - Return only the result without any extra commentary.
             """
         }
-        
-        let result = try await GeminiService.shared.generateContent(
+
+        return try await GeminiService.shared.generateContent(
             prompt: prompt,
             systemInstruction: systemInstruction,
             usageType: .agentRecipe
         )
+    }
+
+    /// Execute the recipe on given notes
+    @MainActor
+    func execute(on notes: [Note], context: ModelContext, userInstruction: String? = nil) async throws -> Note {
+        // Just join the content directly without adding metadata wrappers which confuse the AI
+        let combinedContent = notes.map { $0.content }.joined(separator: "\n\n---\n\n")
+        let result = try await generateResult(from: combinedContent, userInstruction: userInstruction)
         
         guard let userId = AuthService.shared.currentUserId else {
             throw NSError(
@@ -453,19 +421,5 @@ extension AgentRecipe {
         let note = Note(content: result, userId: userId)
         context.insert(note)
         return note
-    }
-
-    private func mergeLanguageLockRule(for notes: [Note]) -> String {
-        let normalizedTags = notes.compactMap { note in
-            let tag = LanguageDetection.dominantLanguageTag(for: note.content)
-            return tag?.split(separator: "-").first.map(String.init)
-        }
-
-        let uniqueTags = Set(normalizedTags)
-        if uniqueTags.count == 1, let onlyTag = uniqueTags.first {
-            return "- LANGUAGE LOCK: Keep the merged output in \(onlyTag). Do NOT translate unless explicitly requested."
-        }
-
-        return "- LANGUAGE LOCK: If notes contain multiple languages, preserve each language as-is (including code-switching). Do NOT translate unless explicitly requested."
     }
 }

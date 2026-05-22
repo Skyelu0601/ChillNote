@@ -6,6 +6,17 @@ struct TranslateLanguage: Identifiable {
     let name: String
     let displayName: String
     let flag: String
+
+    static let defaultLanguages: [TranslateLanguage] = [
+        TranslateLanguage(id: "zh-Hans", name: "Simplified Chinese", displayName: "简体中文", flag: "🇨🇳"),
+        TranslateLanguage(id: "zh-Hant", name: "Traditional Chinese", displayName: "繁體中文", flag: "🇭🇰"),
+        TranslateLanguage(id: "fr", name: "French", displayName: "Français", flag: "🇫🇷"),
+        TranslateLanguage(id: "en", name: "English", displayName: "English", flag: "🇺🇸"),
+        TranslateLanguage(id: "de", name: "German", displayName: "Deutsch", flag: "🇩🇪"),
+        TranslateLanguage(id: "ja", name: "Japanese", displayName: "日本語", flag: "🇯🇵"),
+        TranslateLanguage(id: "es", name: "Spanish", displayName: "Español", flag: "🇪🇸"),
+        TranslateLanguage(id: "ko", name: "Korean", displayName: "한국어", flag: "🇰🇷")
+    ]
 }
 
 struct HomeScreenState {
@@ -24,13 +35,11 @@ struct HomeScreenState {
     let isTranslateInputPresented: Bool
     let translateTargetLanguage: String
     let showDeleteConfirmation: Bool
-    let showMergeSuccessAlert: Bool
     let showEmptyTrashConfirmation: Bool
     let showBatchTagSheet: Bool
     let isSidebarPresented: Bool
     let selectedTag: Tag?
     let selectedNotes: Set<UUID>
-    let notesToDeleteAfterMerge: [Note]
     let isVoiceMode: Bool
 
     let cachedVisibleNotes: [Note]
@@ -72,7 +81,6 @@ enum HomeScreenAction {
     case setCustomActionPrompt(String)
     case setTranslateInputPresented(Bool)
     case setShowDeleteConfirmation(Bool)
-    case setShowMergeSuccessAlert(Bool)
     case setShowEmptyTrashConfirmation(Bool)
     case setShowBatchTagSheet(Bool)
     case setSidebarPresented(Bool)
@@ -105,7 +113,6 @@ enum HomeScreenAction {
     case createBlankNote
 
     case deleteSelectedNotes
-    case deleteNotesAfterMerge
     case emptyTrash
     case applyTagToSelected(Tag)
     case hideKeyboard

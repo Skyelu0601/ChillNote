@@ -5,10 +5,12 @@ struct NoteDetailHeaderView: View {
     let isRecording: Bool
     let recordingTimeString: String
     let isTidyEnabled: Bool
+    let isAISkillsEnabled: Bool
     let onBack: () -> Void
     let onRestore: () -> Void
     let onStopRecording: () -> Void
     let onTidy: () -> Void
+    let onAISkills: () -> Void
     let onExport: () -> Void
     let onDelete: () -> Void
     let onDeletePermanently: () -> Void
@@ -59,6 +61,18 @@ struct NoteDetailHeaderView: View {
                 .transition(.scale(scale: 0.9).combined(with: .opacity))
             } else {
                 HStack(spacing: 8) {
+                    Button(action: onAISkills) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 16))
+                            .foregroundColor(.accentPrimary)
+                            .frame(width: 32, height: 32)
+                            .background(Color.bgSecondary)
+                            .clipShape(Circle())
+                    }
+                    .accessibilityLabel(L10n.text("note_detail.header.accessibility.ai_skills"))
+                    .disabled(!isAISkillsEnabled)
+                    .opacity(isAISkillsEnabled ? 1 : 0.5)
+
                     Button(action: onTidy) {
                         Image(systemName: "wand.and.stars")
                             .font(.system(size: 16))

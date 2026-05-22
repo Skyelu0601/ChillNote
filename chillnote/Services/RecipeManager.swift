@@ -7,7 +7,8 @@ final class RecipeManager: ObservableObject {
         "draft_email",
         "devils_advocate",
         "fix_grammar",
-        "release_notes"
+        "release_notes",
+        "merge_notes"
     ]
 
     @AppStorage("savedRecipesJSON") private var savedRecipesJSON: String = "[]"

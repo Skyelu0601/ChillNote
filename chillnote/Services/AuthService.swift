@@ -36,8 +36,6 @@ enum AuthState: Equatable {
 final class AuthService: ObservableObject {
     static let shared = AuthService()
     static let cachedSessionTokenKey = "syncAuthToken"
-    static let cachedSessionRefreshTokenKey = "syncRefreshToken"
-    static let cachedSessionExpiresAtKey = "syncAuthTokenExpiresAt"
     static let lastAuthenticatedUserIdKey = "auth.lastAuthenticatedUserId"
 
     // Initialize Supabase Client
@@ -143,11 +141,6 @@ final class AuthService: ObservableObject {
             await StoreService.shared.refreshSubscriptionStatus()
         } catch {
             guard generation == sessionCheckGeneration else { return }
-            if let session = await recoverSessionFromSharedCache() {
-                applyAuthenticatedSession(session)
-                await StoreService.shared.refreshSubscriptionStatus()
-                return
-            }
             handleSessionLookupFailure(error)
         }
     }
@@ -451,62 +444,24 @@ final class AuthService: ObservableObject {
             }
             return session.accessToken
         } catch {
-            if let session = await recoverSessionFromSharedCache() {
-                applyAuthenticatedSession(session)
-                return session.accessToken
-            } else {
-                handleSessionLookupFailure(error)
-            }
-            return nil
-        }
-    }
-
-    private func recoverSessionFromSharedCache() async -> Session? {
-        guard let sharedDefaults = SharedImportQueue.sharedDefaults(),
-              let accessToken = sharedDefaults.string(forKey: Self.cachedSessionTokenKey),
-              let refreshToken = sharedDefaults.string(forKey: Self.cachedSessionRefreshTokenKey),
-              !accessToken.isEmpty,
-              !refreshToken.isEmpty else {
-            return nil
-        }
-
-        do {
-            return try await supabase.auth.setSession(
-                accessToken: accessToken,
-                refreshToken: refreshToken
-            )
-        } catch {
+            handleSessionLookupFailure(error)
             return nil
         }
     }
 
     private func persistSession(_ session: Session) {
         UserDefaults.standard.set(session.accessToken, forKey: Self.cachedSessionTokenKey)
-        UserDefaults.standard.set(session.refreshToken, forKey: Self.cachedSessionRefreshTokenKey)
-        UserDefaults.standard.set(session.expiresAt, forKey: Self.cachedSessionExpiresAtKey)
         UserDefaults.standard.set(session.user.id.uuidString, forKey: Self.lastAuthenticatedUserIdKey)
-
-        let sharedDefaults = SharedImportQueue.sharedDefaults()
-        sharedDefaults?.set(session.accessToken, forKey: Self.cachedSessionTokenKey)
-        sharedDefaults?.set(session.refreshToken, forKey: Self.cachedSessionRefreshTokenKey)
-        sharedDefaults?.set(session.expiresAt, forKey: Self.cachedSessionExpiresAtKey)
-        sharedDefaults?.set(session.user.id.uuidString, forKey: Self.lastAuthenticatedUserIdKey)
-        sharedDefaults?.synchronize()
+        SharedImportQueue.sharedDefaults()?.set(session.accessToken, forKey: Self.cachedSessionTokenKey)
+        SharedImportQueue.sharedDefaults()?.set(session.user.id.uuidString, forKey: Self.lastAuthenticatedUserIdKey)
     }
 
     private func clearCachedSession() {
         currentUser = nil
         UserDefaults.standard.removeObject(forKey: Self.cachedSessionTokenKey)
-        UserDefaults.standard.removeObject(forKey: Self.cachedSessionRefreshTokenKey)
-        UserDefaults.standard.removeObject(forKey: Self.cachedSessionExpiresAtKey)
         UserDefaults.standard.removeObject(forKey: Self.lastAuthenticatedUserIdKey)
-
-        let sharedDefaults = SharedImportQueue.sharedDefaults()
-        sharedDefaults?.removeObject(forKey: Self.cachedSessionTokenKey)
-        sharedDefaults?.removeObject(forKey: Self.cachedSessionRefreshTokenKey)
-        sharedDefaults?.removeObject(forKey: Self.cachedSessionExpiresAtKey)
-        sharedDefaults?.removeObject(forKey: Self.lastAuthenticatedUserIdKey)
-        sharedDefaults?.synchronize()
+        SharedImportQueue.sharedDefaults()?.removeObject(forKey: Self.cachedSessionTokenKey)
+        SharedImportQueue.sharedDefaults()?.removeObject(forKey: Self.lastAuthenticatedUserIdKey)
         StoreService.shared.resetForSignedOut()
     }
 }

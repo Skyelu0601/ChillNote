@@ -46,6 +46,9 @@ final class ShareViewModel: ObservableObject {
             visualProgress = 1.0
             isCompleted = true
             stopVisualProgress()
+
+            try? await Task.sleep(for: .milliseconds(850))
+            extensionContext?.completeRequest(returningItems: nil)
         } catch {
             stopVisualProgress()
             errorMessage = (error as? LocalizedError)?.errorDescription ?? ShareL10n.text("share_extension.failed")

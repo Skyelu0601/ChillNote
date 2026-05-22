@@ -72,15 +72,6 @@ Output as:
 - If something is unclear or conflicting, flag it briefly instead of guessing.`,
   },
   {
-    id: "merge_notes",
-    icon: "🧩",
-    name: "Merge Notes",
-    description: "Merge selected notes into one structured document.",
-    category: "think",
-    prompt: "(Built-in Logic) Uses advanced internal logic to merge notes intelligently.",
-    isBuiltInLogic: true,
-  },
-  {
     id: "translate",
     icon: "🌍",
     name: "Translate",
@@ -216,25 +207,6 @@ export function buildAgentRecipeRequest(recipe: AgentRecipe, notes: NoteDTO[], u
   const languageRule = `- Keep the output in the same language(s) as the input.
 - If the input is mixed-language, preserve each segment's original language instead of normalizing to a single language.
 - Do NOT translate unless explicitly requested.`;
-
-  if (recipe.id === "merge_notes") {
-    return {
-      prompt: `Merge the following notes into a single, cohesive document.
-
-Original Notes:
-${combinedContent}`,
-      systemPrompt: `You are a professional editor.
-Rules:
-${languageRule}
-- If notes contain multiple languages, preserve each language as-is (including code-switching). Do NOT translate unless explicitly requested.
-- Merge the content into a single, well-structured markdown document.
-- Remove redundancy and improve flow.
-- Use markdown for styling (# Headers, **bold**, - list).
-- DO NOT wrap the output in markdown code blocks.
-- DO NOT include meta-headers like "Merged Note", "Creation Date", or "[Note 1]".
-- Start directly with the content.`,
-    };
-  }
 
   if (recipe.id === "translate") {
     const targetLanguage = userInstruction?.trim() || recipe.defaultInstruction || "English";

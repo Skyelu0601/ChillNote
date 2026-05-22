@@ -28,9 +28,6 @@ extension HomeView {
             pendingAgentAction = recipe
             isTranslateInputPresented = true
         } else {
-            // For merge_notes and all other recipes (including custom ones),
-            // we can execute directly. The instruction is handled inside AgentRecipe.execute
-            // or passed as nil for custom recipes (though custom recipes uses self.prompt inside execute)
             Task { await executeAgentAction(recipe) }
         }
     }
@@ -51,13 +48,7 @@ extension HomeView {
                 persistAndSync()
                 isExecutingAction = false
                 actionProgress = nil
-
-                if recipe.id == "merge_notes" {
-                    notesToDeleteAfterMerge = notesToProcess
-                    showMergeSuccessAlert = true
-                } else {
-                    exitSelectionMode()
-                }
+                exitSelectionMode()
             }
         } catch {
             print("⚠️ Agent action failed: \(error)")

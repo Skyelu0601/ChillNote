@@ -24,7 +24,7 @@ const features = [
   {
     icon: Lightbulb,
     title: "Quick Capture Ideas",
-    body: "Grab rough post angles the moment they appear, then attach source links, topics, and creator context later.",
+    body: "Grab rough post angles the moment they appear, then attach source links, tags, and creator context later.",
   },
   {
     icon: Repeat2,
