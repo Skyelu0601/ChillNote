@@ -357,6 +357,48 @@ final class AuthService: ObservableObject {
         return L10n.text("auth.login.error.verification_failed")
     }
 
+    private func shouldRetryAuthNetworkError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        guard nsError.domain == NSURLErrorDomain else { return false }
+
+        switch nsError.code {
+        case NSURLErrorNetworkConnectionLost,
+             NSURLErrorTimedOut,
+             NSURLErrorCannotConnectToHost,
+             NSURLErrorCannotFindHost,
+             NSURLErrorNotConnectedToInternet:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func retryAuthRequest(
+        maxAttempts: Int = 3,
+        operation: () async throws -> Void
+    ) async throws {
+        var lastError: Error?
+
+        for attempt in 1...maxAttempts {
+            do {
+                try await operation()
+                return
+            } catch {
+                lastError = error
+                guard attempt < maxAttempts, shouldRetryAuthNetworkError(error) else {
+                    throw error
+                }
+
+                let delay = UInt64(attempt) * 700_000_000
+                try? await Task.sleep(nanoseconds: delay)
+            }
+        }
+
+        if let lastError {
+            throw lastError
+        }
+    }
+
     private func isAppReviewQuickCredential(email: String, code: String) -> Bool {
         guard AppConfig.isAppReviewQuickLoginEnabled else { return false }
         let inWhitelist = AppConfig.appReviewWhitelistEmails.contains(email)
@@ -392,7 +434,9 @@ final class AuthService: ObservableObject {
         }
         
         do {
-            try await supabase.auth.signInWithOTP(email: normalizedEmail)
+            try await retryAuthRequest {
+                try await supabase.auth.signInWithOTP(email: normalizedEmail)
+            }
             return true
         } catch {
             print("❌ Email OTP Error: \(error)")
@@ -411,11 +455,13 @@ final class AuthService: ObservableObject {
         }
         
         do {
-            try await supabase.auth.verifyOTP(
-                email: normalizedEmail,
-                token: normalizedCode,
-                type: .email
-            )
+            try await retryAuthRequest {
+                try await supabase.auth.verifyOTP(
+                    email: normalizedEmail,
+                    token: normalizedCode,
+                    type: .email
+                )
+            }
             await checkSession()
             return isSignedIn
         } catch {
