@@ -112,7 +112,7 @@ enum HomeScreenAction {
     case startAIChat
     case cancelVoice
     case confirmVoice
-    case pasteLink(QuickCaptureImportService.LinkImportResult)
+    case pasteLink(URL)
     case importImageText(String)
     case createBlankNote
 

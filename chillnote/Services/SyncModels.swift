@@ -19,6 +19,11 @@ struct NoteDTO: Codable {
     let sourceHost: String?
     let sourceCapturedAt: String?
     let section: String?
+    let importStatus: String?
+    let importJobId: String?
+    let importErrorCode: String?
+    let importStartedAt: String?
+    let importCompletedAt: String?
 
     init(
         id: String,
@@ -38,7 +43,12 @@ struct NoteDTO: Codable {
         sourcePlatformName: String? = nil,
         sourceHost: String? = nil,
         sourceCapturedAt: String? = nil,
-        section: String? = nil
+        section: String? = nil,
+        importStatus: String? = nil,
+        importJobId: String? = nil,
+        importErrorCode: String? = nil,
+        importStartedAt: String? = nil,
+        importCompletedAt: String? = nil
     ) {
         self.id = id
         self.content = content
@@ -58,6 +68,11 @@ struct NoteDTO: Codable {
         self.sourceHost = sourceHost
         self.sourceCapturedAt = sourceCapturedAt
         self.section = section
+        self.importStatus = importStatus
+        self.importJobId = importJobId
+        self.importErrorCode = importErrorCode
+        self.importStartedAt = importStartedAt
+        self.importCompletedAt = importCompletedAt
     }
 }
 

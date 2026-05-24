@@ -121,6 +121,67 @@ extension HomeView {
         _ = saveNote(text: result.noteText, source: result.source, shouldNavigate: true)
     }
 
+    func createLinkImportNote(_ url: URL) {
+        guard let userId = currentUserId else { return }
+
+        let service = QuickCaptureImportService.shared
+        let source = service.initialSourceMetadata(for: url)
+        let placeholder = service.placeholderNoteText(for: url)
+        let note = Note(content: placeholder, userId: userId)
+        note.applySourceMetadata(source)
+        note.importStatus = .queued
+        note.importStartedAt = Date()
+        applyCurrentTagContext(to: note)
+
+        withAnimation {
+            modelContext.insert(note)
+        }
+        try? modelContext.save()
+        navigationPath.append(note)
+        requestReload(delayNanoseconds: 60_000_000, keepItemsWhileLoading: true)
+
+        Task {
+            do {
+                let job = try await service.startAsyncWebLinkImport(
+                    url: url,
+                    noteID: note.id,
+                    placeholderContent: placeholder,
+                    source: source,
+                    section: note.section
+                )
+                await MainActor.run {
+                    note.importJobId = job.jobId
+                    note.importStatus = job.status == "processing" ? .processing : .queued
+                    note.updatedAt = Date()
+                    try? modelContext.save()
+                }
+                await syncLinkImportProgress()
+            } catch {
+                await MainActor.run {
+                    note.importStatus = .failed
+                    note.importErrorCode = "job_start_failed"
+                    note.importCompletedAt = Date()
+                    note.updatedAt = Date()
+                    try? modelContext.save()
+                    clipboardLinkImportErrorMessage = error.localizedDescription
+                    showClipboardLinkImportErrorAlert = true
+                    requestReload(keepItemsWhileLoading: true)
+                }
+            }
+        }
+    }
+
+    func syncLinkImportProgress() async {
+        for delay in [3_000_000_000, 10_000_000_000, 25_000_000_000] as [UInt64] {
+            try? await Task.sleep(nanoseconds: delay)
+            guard !Task.isCancelled else { return }
+            await syncManager.syncNow(context: modelContext)
+            await MainActor.run {
+                requestReload(delayNanoseconds: 80_000_000, keepItemsWhileLoading: true)
+            }
+        }
+    }
+
     func saveImportedImageText(_ text: String) {
         _ = saveNote(text: text, shouldNavigate: true)
     }

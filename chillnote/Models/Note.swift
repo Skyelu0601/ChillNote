@@ -6,6 +6,14 @@ enum NoteContentFormat: String {
     case checklist
 }
 
+enum NoteImportStatus: String {
+    case none
+    case queued
+    case processing
+    case completed
+    case failed
+}
+
 struct NoteSourceMetadata: Equatable, Sendable {
     let url: String
     let title: String
@@ -42,6 +50,11 @@ final class Note {
     var sourceHost: String?
     var sourceCapturedAt: Date?
     var sectionRaw: String?
+    var importStatusRaw: String?
+    var importJobId: String?
+    var importErrorCode: String?
+    var importStartedAt: Date?
+    var importCompletedAt: Date?
     
     @Relationship
     var tags: [Tag] = []
@@ -100,6 +113,11 @@ final class Note {
         self.sourceHost = nil
         self.sourceCapturedAt = nil
         self.sectionRaw = NoteSection.inbox.rawValue
+        self.importStatusRaw = nil
+        self.importJobId = nil
+        self.importErrorCode = nil
+        self.importStartedAt = nil
+        self.importCompletedAt = nil
         self.tags = []
 
         if let parsed = ChecklistMarkdown.parse(content) {
@@ -130,6 +148,20 @@ final class Note {
         set {
             sectionRaw = newValue.rawValue
         }
+    }
+
+    var importStatus: NoteImportStatus {
+        get {
+            guard let importStatusRaw else { return .none }
+            return NoteImportStatus(rawValue: importStatusRaw) ?? .none
+        }
+        set {
+            importStatusRaw = newValue == .none ? nil : newValue.rawValue
+        }
+    }
+
+    var isLinkImportInProgress: Bool {
+        importStatus == .queued || importStatus == .processing
     }
 
     var sourceMetadata: NoteSourceMetadata? {

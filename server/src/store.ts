@@ -67,7 +67,12 @@ function mapNoteToDTO(note: any): NoteDTO {
     sourcePlatformName: note.sourcePlatformName ?? null,
     sourceHost: note.sourceHost ?? null,
     sourceCapturedAt: note.sourceCapturedAt?.toISOString() ?? null,
-    section: note.section ?? "inbox"
+    section: note.section ?? "inbox",
+    importStatus: note.importStatus ?? null,
+    importJobId: note.importJobId ?? null,
+    importErrorCode: note.importErrorCode ?? null,
+    importStartedAt: note.importStartedAt?.toISOString() ?? null,
+    importCompletedAt: note.importCompletedAt?.toISOString() ?? null
   };
 }
 
@@ -114,6 +119,38 @@ function sourceUpdateData(incoming: NoteDTO) {
   }
 
   return data;
+}
+
+function importUpdateData(incoming: NoteDTO) {
+  const data: Record<string, string | Date | null> = {};
+
+  if (hasOwnField(incoming, "importStatus")) {
+    data.importStatus = incoming.importStatus ?? null;
+  }
+  if (hasOwnField(incoming, "importJobId")) {
+    data.importJobId = incoming.importJobId ?? null;
+  }
+  if (hasOwnField(incoming, "importErrorCode")) {
+    data.importErrorCode = incoming.importErrorCode ?? null;
+  }
+  if (hasOwnField(incoming, "importStartedAt")) {
+    data.importStartedAt = incoming.importStartedAt ? new Date(incoming.importStartedAt) : null;
+  }
+  if (hasOwnField(incoming, "importCompletedAt")) {
+    data.importCompletedAt = incoming.importCompletedAt ? new Date(incoming.importCompletedAt) : null;
+  }
+
+  return data;
+}
+
+function importCreateData(incoming: NoteDTO) {
+  return {
+    importStatus: incoming.importStatus ?? null,
+    importJobId: incoming.importJobId ?? null,
+    importErrorCode: incoming.importErrorCode ?? null,
+    importStartedAt: incoming.importStartedAt ? new Date(incoming.importStartedAt) : null,
+    importCompletedAt: incoming.importCompletedAt ? new Date(incoming.importCompletedAt) : null
+  };
 }
 
 function sourceCreateData(incoming: NoteDTO) {
@@ -260,6 +297,24 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
   const tagIds = incoming.tagIds ?? undefined;
   const sourceUpdate = sourceUpdateData(incoming);
   const sourceCreate = sourceCreateData(incoming);
+  const importUpdate = importUpdateData(incoming);
+  const importCreate = importCreateData(incoming);
+  const incomingImportStatus = incoming.importStatus ?? null;
+  if (incomingImportStatus === "queued" || incomingImportStatus === "processing") {
+    const existingRows = await prisma.$queryRaw<Array<{ importStatus: string | null; importJobId: string | null }>>`
+      SELECT "importStatus", "importJobId"
+      FROM "Note"
+      WHERE "id" = ${incoming.id}
+        AND "userId" = ${userId}
+      LIMIT 1
+    `;
+    const existing = existingRows[0];
+    const serverFinished = existing?.importStatus === "completed" || existing?.importStatus === "failed";
+    const sameImport = !incoming.importJobId || !existing?.importJobId || incoming.importJobId === existing.importJobId;
+    if (serverFinished && sameImport) {
+      return;
+    }
+  }
 
   await prisma.note.upsert({
     where: { id: incoming.id },
@@ -276,6 +331,7 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
       lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null,
       section: incoming.section ?? "inbox",
       ...sourceUpdate,
+      ...importUpdate,
       tags: tagIds ? { set: tagIds.map((tagId) => ({ id: tagId })) } : undefined
     },
     create: {
@@ -292,6 +348,7 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
       lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null,
       section: incoming.section ?? "inbox",
       ...sourceCreate,
+      ...importCreate,
       tags: tagIds ? { connect: tagIds.map((tagId) => ({ id: tagId })) } : undefined
     }
   });

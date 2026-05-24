@@ -182,6 +182,11 @@ struct QuickCaptureImportService {
         let source: NoteSourceMetadata
     }
 
+    struct AsyncLinkImportJob: Decodable, Equatable, Sendable {
+        let jobId: String
+        let status: String
+    }
+
     enum LinkImportPhase: Sendable {
         case resolvingSource
         case fetchingContent
@@ -192,6 +197,71 @@ struct QuickCaptureImportService {
 
     func importWebLink(_ url: URL) async throws -> LinkImportResult {
         try await importWebLink(url) { _ in }
+    }
+
+    func initialSourceMetadata(for url: URL) -> NoteSourceMetadata {
+        makeSourceMetadata(url: url, extracted: .empty(for: url))
+    }
+
+    func placeholderNoteText(for url: URL) -> String {
+        let source = initialSourceMetadata(for: url)
+        return """
+        # \(L10n.text("quick_capture.link_import.placeholder.title"))
+
+        \(L10n.text("quick_capture.link_import.placeholder.body", source.host.isEmpty ? source.url : source.host))
+        """
+    }
+
+    func startAsyncWebLinkImport(
+        url: URL,
+        noteID: UUID,
+        placeholderContent: String,
+        source: NoteSourceMetadata,
+        section: NoteSection
+    ) async throws -> AsyncLinkImportJob {
+        guard ["http", "https"].contains(url.scheme?.lowercased() ?? "") else {
+            throw QuickCaptureImportError.invalidURL
+        }
+
+        let serverURL = AppConfig.backendBaseURL + "/link-import-jobs"
+        guard let endpointURL = URL(string: serverURL) else {
+            throw GeminiError.invalidURL
+        }
+
+        var request = URLRequest(url: endpointURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.timeoutInterval = 30
+
+        guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else {
+            throw GeminiError.apiError(AppErrorCode.geminiSignInRequired.message)
+        }
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let body: [String: Any] = [
+            "noteId": noteID.uuidString,
+            "url": url.absoluteString,
+            "placeholderContent": placeholderContent,
+            "section": section.rawValue,
+            "source": [
+                "url": source.url,
+                "title": source.title,
+                "platformID": source.platformID,
+                "platformName": source.platformName,
+                "host": source.host
+            ]
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw GeminiError.invalidResponse
+        }
+        guard (200...299).contains(httpResponse.statusCode) else {
+            throw GeminiError.apiError("Status code: \(httpResponse.statusCode)")
+        }
+
+        return try JSONDecoder().decode(AsyncLinkImportJob.self, from: data)
     }
 
     func importWebLink(

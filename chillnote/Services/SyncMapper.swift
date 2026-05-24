@@ -33,7 +33,12 @@ struct SyncMapper {
             sourcePlatformName: note.sourcePlatformName,
             sourceHost: note.sourceHost,
             sourceCapturedAt: note.sourceCapturedAt.map { dateFormatter.string(from: $0) },
-            section: note.section.rawValue
+            section: note.section.rawValue,
+            importStatus: note.importStatusRaw,
+            importJobId: note.importJobId,
+            importErrorCode: note.importErrorCode,
+            importStartedAt: note.importStartedAt.map { dateFormatter.string(from: $0) },
+            importCompletedAt: note.importCompletedAt.map { dateFormatter.string(from: $0) }
         )
     }
 
@@ -95,6 +100,11 @@ struct SyncMapper {
         note.sourceHost = dto.sourceHost
         note.sourceCapturedAt = dto.sourceCapturedAt.flatMap { parseDate($0) }
         note.section = dto.section.flatMap(NoteSection.init(rawValue:)) ?? .inbox
+        note.importStatusRaw = dto.importStatus
+        note.importJobId = dto.importJobId
+        note.importErrorCode = dto.importErrorCode
+        note.importStartedAt = dto.importStartedAt.flatMap { parseDate($0) }
+        note.importCompletedAt = dto.importCompletedAt.flatMap { parseDate($0) }
         // Tags are handled separately in SyncEngine to resolve relationships
     }
 

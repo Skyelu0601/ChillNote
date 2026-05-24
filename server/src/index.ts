@@ -63,6 +63,11 @@ import {
   transcribeMediaLinkURL,
   transcribeTikTokURL
 } from "./tiktokTranscript.js";
+import {
+  enqueueLinkImportJob,
+  makeInitialLinkSource,
+  scheduleLinkImportWorker
+} from "./linkImportJobs.js";
 import fetch from "node-fetch";
 
 const app = express();
@@ -131,7 +136,12 @@ const noteSchema = z.object({
   sourcePlatformName: z.string().nullish(),
   sourceHost: z.string().nullish(),
   sourceCapturedAt: isoDateString.nullish(),
-  section: z.enum(["inbox", "drafts", "published"]).nullish()
+  section: z.enum(["inbox", "drafts", "published"]).nullish(),
+  importStatus: z.enum(["queued", "processing", "completed", "failed"]).nullish(),
+  importJobId: z.string().nullish(),
+  importErrorCode: z.string().nullish(),
+  importStartedAt: isoDateString.nullish(),
+  importCompletedAt: isoDateString.nullish()
 });
 
 const syncSchema = z.object({
@@ -158,6 +168,20 @@ const syncSchema = z.object({
   hardDeletedNoteIds: z.array(z.string().min(1)).nullish(),
   hardDeletedTagIds: z.array(z.string().min(1)).nullish(),
   preferences: z.record(z.string(), z.string()).optional()
+});
+
+const linkImportJobSchema = z.object({
+  noteId: z.string().min(1),
+  url: z.string().url(),
+  placeholderContent: z.string().min(1).max(10_000),
+  source: z.object({
+    url: z.string().url(),
+    title: z.string().min(1),
+    platformID: z.string().min(1),
+    platformName: z.string().min(1),
+    host: z.string()
+  }).optional(),
+  section: z.enum(["inbox", "drafts", "published"]).nullish()
 });
 
 // Middleware to validate Supabase Auth Header
@@ -842,6 +866,33 @@ app.post("/sync", requireAuth, async (req, res) => {
     conflicts,
     serverTime: new Date().toISOString()
   });
+});
+
+app.post("/link-import-jobs", requireAuth, async (req, res) => {
+  const parsed = linkImportJobSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid payload" });
+    return;
+  }
+
+  const userId = req.userId as string;
+  await upsertUser(userId);
+
+  try {
+    const source = parsed.data.source ?? makeInitialLinkSource(parsed.data.url);
+    const job = await enqueueLinkImportJob({
+      userId,
+      noteId: parsed.data.noteId,
+      url: parsed.data.url,
+      placeholderContent: parsed.data.placeholderContent,
+      source,
+      section: parsed.data.section
+    });
+    res.status(202).json(job);
+  } catch (error) {
+    console.error("❌ Link Import Job Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
 });
 
 app.post("/quota/daily", requireAuth, async (req, res) => {
@@ -1561,6 +1612,7 @@ app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, r
 
 app.listen(PORT, () => {
   console.log(`ChillNote backend listening on :${PORT}`);
+  scheduleLinkImportWorker();
 });
 
 declare global {

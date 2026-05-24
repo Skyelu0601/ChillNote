@@ -17,6 +17,11 @@ export type NoteDTO = {
   sourceHost?: string | null;
   sourceCapturedAt?: string | null;
   section?: string | null;
+  importStatus?: string | null;
+  importJobId?: string | null;
+  importErrorCode?: string | null;
+  importStartedAt?: string | null;
+  importCompletedAt?: string | null;
 };
 
 export type TagDTO = {

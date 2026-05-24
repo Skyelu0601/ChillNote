@@ -27,6 +27,22 @@ struct NoteDetailEditorSectionView: View {
                         .allowsHitTesting(!isDeleted)
                 }
 
+                if note.importStatus == .queued || note.importStatus == .processing {
+                    LinkImportStatusBanner(
+                        iconName: "link.badge.plus",
+                        text: L10n.text("quick_capture.link_import.status.processing")
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 14)
+                } else if note.importStatus == .failed {
+                    LinkImportStatusBanner(
+                        iconName: "exclamationmark.triangle.fill",
+                        text: L10n.text("quick_capture.link_import.status.failed")
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 14)
+                }
+
                 TagBannerView(
                     tags: note.tags,
                     onRemove: onRemoveTag,
@@ -53,5 +69,27 @@ struct NoteDetailEditorSectionView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+}
+
+private struct LinkImportStatusBanner: View {
+    let iconName: String
+    let text: String
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: iconName)
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundColor(.accentPrimary)
+            Text(text)
+                .font(.chillCaption)
+                .foregroundColor(.textSub)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.accentPrimary.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
     }
 }

@@ -62,7 +62,7 @@ struct ChatInputBar: View {
 
     var onCancelVoice: () -> Void
     var onConfirmVoice: () -> Void
-    var onPasteLink: (QuickCaptureImportService.LinkImportResult) -> Void = { _ in }
+    var onPasteLink: (URL) -> Void = { _ in }
     var onImportImageText: (String) -> Void = { _ in }
     var onCreateBlankNote: () -> Void = { }
     var enforceVoiceQuota: Bool = true
@@ -480,20 +480,7 @@ struct ChatInputBar: View {
             }
 
             showMoreSheet = false
-            quickCaptureProgressState = .link(.resolvingSource)
-
-            defer { quickCaptureProgressState = nil }
-
-            do {
-                let result = try await QuickCaptureImportService.shared.importWebLink(url) { phase in
-                    await MainActor.run {
-                        quickCaptureProgressState = .link(phase)
-                    }
-                }
-                onPasteLink(result)
-            } catch {
-                captureErrorMessage = L10n.text("quick_capture.error.no_link")
-            }
+            onPasteLink(url)
         }
     }
 

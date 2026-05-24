@@ -238,6 +238,7 @@ struct NoteListItemViewData: Identifiable {
     let tags: [NoteListTagViewData]
     let hiddenTagCount: Int
     let source: NoteSourceMetadata?
+    let importStatus: NoteImportStatus
 
     init(note: Note, searchQuery: String, usePlainPreview: Bool = true) {
         id = note.id
@@ -283,6 +284,7 @@ struct NoteListItemViewData: Identifiable {
         }
         hiddenTagCount = max(0, note.tags.count - prefixTags.count)
         source = note.sourceMetadata
+        importStatus = note.importStatus
     }
 }
 
@@ -336,7 +338,30 @@ struct NoteCard: View {
                     Spacer()
                 }
 
-                if let stage = processingStage {
+                if item.importStatus == .queued || item.importStatus == .processing {
+                    HStack(spacing: 8) {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text(L10n.text("quick_capture.link_import.status.processing"))
+                            .font(.chillCaption)
+                            .foregroundColor(.textSub)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding(.top, 2)
+                } else if item.importStatus == .failed {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundColor(.orange)
+                        Text(L10n.text("quick_capture.link_import.status.failed"))
+                            .font(.chillCaption)
+                            .foregroundColor(.textSub)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .padding(.top, 2)
+                } else if let stage = processingStage {
                     VoiceProcessingWorkflowView(currentStage: stage, style: .compact)
                         .padding(.top, 2)
                 } else if let failure = processingFailureMessage {

@@ -445,8 +445,8 @@ struct HomeView: View {
             speechRecognizer.stopRecording(reason: .cancelled)
         case .confirmVoice:
             handleVoiceConfirmation()
-        case .pasteLink(let link):
-            savePastedLink(link)
+        case .pasteLink(let url):
+            createLinkImportNote(url)
         case .importImageText(let text):
             saveImportedImageText(text)
         case .createBlankNote:

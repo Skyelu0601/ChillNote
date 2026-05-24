@@ -34,26 +34,12 @@ extension HomeView {
     private func importClipboardLink(_ url: URL) async {
         guard !isImportingClipboardLink else { return }
         isImportingClipboardLink = true
-        isExecutingAction = true
-        actionProgress = clipboardLinkImportProgressText(for: .resolvingSource)
 
         defer {
             isImportingClipboardLink = false
-            isExecutingAction = false
-            actionProgress = nil
         }
 
-        do {
-            let result = try await QuickCaptureImportService.shared.importWebLink(url) { phase in
-                await MainActor.run {
-                    actionProgress = clipboardLinkImportProgressText(for: phase)
-                }
-            }
-            savePastedLink(result)
-        } catch {
-            clipboardLinkImportErrorMessage = error.localizedDescription
-            showClipboardLinkImportErrorAlert = true
-        }
+        createLinkImportNote(url)
     }
 
     @MainActor
@@ -81,25 +67,4 @@ extension HomeView {
         }
     }
 
-    private func clipboardLinkImportProgressText(for phase: QuickCaptureImportService.LinkImportPhase) -> String {
-        [
-            L10n.text("quick_capture.import.link.title"),
-            L10n.text(clipboardLinkImportPhaseKey(for: phase))
-        ].joined(separator: "\n")
-    }
-
-    private func clipboardLinkImportPhaseKey(for phase: QuickCaptureImportService.LinkImportPhase) -> String {
-        switch phase {
-        case .resolvingSource:
-            return "quick_capture.import.link.phase.resolving"
-        case .fetchingContent:
-            return "quick_capture.import.link.phase.fetching"
-        case .extractingContent:
-            return "quick_capture.import.link.phase.extracting"
-        case .organizingNote:
-            return "quick_capture.import.link.phase.organizing"
-        case .finalizing:
-            return "quick_capture.import.link.phase.finalizing"
-        }
-    }
 }
