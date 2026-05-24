@@ -44,6 +44,10 @@ final class AuthService: ObservableObject {
         supabaseKey: AppConfig.supabaseAnonKey,
         options: SupabaseClientOptions(
             auth: SupabaseClientOptions.AuthOptions(
+                storage: MigratingAuthLocalStorage(
+                    primary: SharedAuthSessionStorage.sharedKeychain,
+                    fallback: KeychainLocalStorage()
+                ),
                 autoRefreshToken: true,
                 emitLocalSessionAsInitialSession: true
             )
@@ -129,13 +133,6 @@ final class AuthService: ObservableObject {
         do {
             let session = try await supabase.auth.session
             guard generation == sessionCheckGeneration else { return }
-            
-            // Check if the session is expired
-            if session.isExpired {
-                self.state = .signedOut
-                clearCachedSession()
-                return
-            }
             
             applyAuthenticatedSession(session)
             await StoreService.shared.refreshSubscriptionStatus()
@@ -432,11 +429,6 @@ final class AuthService: ObservableObject {
     func getSessionToken() async -> String? {
         do {
             let session = try await supabase.auth.session
-            if session.isExpired {
-                clearCachedSession()
-                state = .signedOut
-                return nil
-            }
             persistSession(session)
             if !isSignedIn {
                 state = .signedIn(userId: session.user.id.uuidString)

@@ -109,6 +109,13 @@ struct HomeBodyView: View {
         )
     }
 
+    private var selectedSectionBinding: Binding<NoteSection?> {
+        Binding(
+            get: { state.selectedSection },
+            set: { dispatch(.setSelectedSection($0)) }
+        )
+    }
+
     private var trashSelectedBinding: Binding<Bool> {
         Binding(
             get: { state.isTrashSelected },
@@ -162,6 +169,7 @@ struct HomeBodyView: View {
             SidebarView(
                 isPresented: sidebarPresentedBinding,
                 selectedTag: selectedTagBinding,
+                selectedSection: selectedSectionBinding,
                 isTrashSelected: trashSelectedBinding,
                 hasPendingRecordings: state.hasPendingRecordings,
                 pendingRecordingsCount: state.pendingRecordingsCount,
@@ -396,6 +404,14 @@ struct HomeBodyView: View {
                             .padding(.horizontal, 24)
                     }
 
+                    if !state.isSelectionMode && !state.isTrashSelected && state.selectedTag == nil {
+                        HomeSectionPicker(
+                            selectedSection: state.selectedSection ?? .inbox,
+                            onSelect: { dispatch(.selectSection($0)) }
+                        )
+                        .padding(.horizontal, 24)
+                    }
+
                     HomeNotesListView(
                         cachedVisibleNotes: state.cachedVisibleNotes,
                         searchQuery: state.searchText,
@@ -411,6 +427,7 @@ struct HomeBodyView: View {
                         onRestoreNote: { dispatch(.restoreNote($0)) },
                         onDeleteNotePermanently: { dispatch(.deleteNotePermanently($0)) },
                         onTogglePin: { dispatch(.togglePin($0)) },
+                        onMoveNote: { dispatch(.moveNote($0, $1)) },
                         onDeleteNote: { dispatch(.deleteNote($0)) }
                     )
                 }

@@ -28,7 +28,7 @@ export default function PrivacyPage() {
         <h3>Notes and Text Content</h3>
         <p>
           Notes you save are stored securely so they can sync across devices. Text you intentionally submit to AI may be
-          sent only for that requested action, such as tidying, rewriting, summarizing, translating, or running an AI Skill.
+          sent only for that requested action, such as rewriting, summarizing, translating, or running an AI Skill.
         </p>
 
         <h3>Audio Data</h3>

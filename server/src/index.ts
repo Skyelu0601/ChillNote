@@ -130,7 +130,8 @@ const noteSchema = z.object({
   sourcePlatformID: z.string().nullish(),
   sourcePlatformName: z.string().nullish(),
   sourceHost: z.string().nullish(),
-  sourceCapturedAt: isoDateString.nullish()
+  sourceCapturedAt: isoDateString.nullish(),
+  section: z.enum(["inbox", "drafts", "published"]).nullish()
 });
 
 const syncSchema = z.object({
@@ -332,7 +333,7 @@ const mediaLinkTranscriptRateLimit = createTierRateLimit({
   key: (req) => `${req.userId ?? "anon"}:media-link-transcript`
 });
 
-type DailyQuotaFeature = "voice" | "tidy" | "agent_recipe" | "chat";
+type DailyQuotaFeature = "voice" | "agent_recipe" | "chat";
 type DailyQuotaState = {
   feature: DailyQuotaFeature;
   tier: UserTier;
@@ -342,16 +343,15 @@ type DailyQuotaState = {
   limit: number | null;
 };
 
-const dailyQuotaFeatures = new Set<DailyQuotaFeature>(["voice", "tidy", "agent_recipe", "chat"]);
+const dailyQuotaFeatures = new Set<DailyQuotaFeature>(["voice", "agent_recipe", "chat"]);
 const freeDailyLimits: Record<DailyQuotaFeature, number> = {
   voice: Number(process.env.DAILY_VOICE_LIMIT_FREE ?? 5),
-  tidy: Number(process.env.DAILY_TIDY_LIMIT_FREE ?? 5),
   agent_recipe: Number(process.env.DAILY_AGENT_RECIPE_LIMIT_FREE ?? 3),
   chat: Number(process.env.DAILY_CHAT_LIMIT_FREE ?? 10)
 };
 
 const quotaRequestSchema = z.object({
-  feature: z.enum(["voice", "tidy", "agent_recipe", "chat"]),
+  feature: z.enum(["voice", "agent_recipe", "chat"]),
   action: z.enum(["check", "consume"]).default("check")
 });
 
@@ -416,8 +416,6 @@ function dailyQuotaErrorMessage(feature: DailyQuotaFeature): string {
   switch (feature) {
     case "voice":
       return "Daily free voice limit reached";
-    case "tidy":
-      return "Daily free tidy limit reached";
     case "agent_recipe":
       return "Daily free agent recipe limit reached";
     case "chat":

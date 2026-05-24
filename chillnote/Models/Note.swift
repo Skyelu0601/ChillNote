@@ -41,6 +41,7 @@ final class Note {
     var sourcePlatformName: String?
     var sourceHost: String?
     var sourceCapturedAt: Date?
+    var sectionRaw: String?
     
     @Relationship
     var tags: [Tag] = []
@@ -98,6 +99,7 @@ final class Note {
         self.sourcePlatformName = nil
         self.sourceHost = nil
         self.sourceCapturedAt = nil
+        self.sectionRaw = NoteSection.inbox.rawValue
         self.tags = []
 
         if let parsed = ChecklistMarkdown.parse(content) {
@@ -118,6 +120,16 @@ final class Note {
 
     var isEmptyNote: Bool {
         content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    var section: NoteSection {
+        get {
+            guard let sectionRaw else { return .inbox }
+            return NoteSection(rawValue: sectionRaw) ?? .inbox
+        }
+        set {
+            sectionRaw = newValue.rawValue
+        }
     }
 
     var sourceMetadata: NoteSourceMetadata? {

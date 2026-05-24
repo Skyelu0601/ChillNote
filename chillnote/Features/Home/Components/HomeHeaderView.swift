@@ -48,13 +48,13 @@ struct HomeHeaderView: View {
 
                 Spacer()
 
-                HStack(spacing: 10) {
+                HStack(spacing: 6) {
                     Button(action: onToggleSearch) {
-                        Image(systemName: "magnifyingglass")
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(isSearchVisible ? .accentPrimary : .textMain)
-                            .frame(width: 36, height: 36)
-                            .contentShape(Circle())
+                        HomeHeaderToolIcon(
+                            systemImage: "magnifyingglass",
+                            tint: isSearchVisible ? .brandBlue : .textSub,
+                            isHighlighted: isSearchVisible
+                        )
                     }
                     .buttonStyle(.bouncy)
                     .disabled(isRecording)
@@ -62,10 +62,7 @@ struct HomeHeaderView: View {
 
                     if !isTrashSelected {
                         Button(action: onEnterSelectionMode) {
-                            HomeAIEntryIcon(
-                                isRecording: isRecording,
-                                isHighlighted: highlightSelectionEntry
-                            )
+                            NoteDetailLightningBallIcon(size: 36)
                         }
                         .buttonStyle(.bouncy)
                         .disabled(isRecording)
@@ -74,20 +71,15 @@ struct HomeHeaderView: View {
 
                     if isTrashSelected {
                         Button(action: onShowEmptyTrashConfirmation) {
-                            Image(systemName: "trash.slash")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundColor(.red.opacity(0.85))
-                                .frame(width: 36, height: 36)
-                                .contentShape(Circle())
+                            HomeHeaderToolIcon(
+                                systemImage: "trash.slash",
+                                tint: .red.opacity(0.85)
+                            )
                         }
                         .buttonStyle(.bouncy)
                         .accessibilityLabel(L10n.text("home.header.accessibility.empty_recycle_bin"))
                     }
                 }
-                .padding(.horizontal, 4)
-                .padding(.vertical, 4)
-                .background(Color.primary.opacity(0.05))
-                .clipShape(Capsule())
                 .opacity(isRecording ? 0.3 : 1.0)
             } else {
                 HStack {
@@ -139,54 +131,42 @@ struct HomeHeaderView: View {
     }
 }
 
-private struct HomeAIEntryIcon: View {
-    let isRecording: Bool
-    let isHighlighted: Bool
+private struct HomeHeaderToolIcon: View {
+    let systemImage: String
+    let tint: Color
+    var isHighlighted: Bool = false
 
     var body: some View {
-        ZStack {
-            Circle()
-                .fill(backgroundFill)
-                .frame(width: 30, height: 30)
-
-            LightningGlyph()
-                .fill(iconColor)
-                .frame(width: 13, height: 16)
-                .offset(x: -0.4, y: 0.3)
-        }
-        .frame(width: 36, height: 36)
-        .opacity(isRecording ? 0.72 : 1.0)
-    }
-
-    private var backgroundFill: Color {
-        if isRecording {
-            return Color.textMain.opacity(0.04)
-        }
-
-        if isHighlighted {
-            return Color.accentPrimary.opacity(0.12)
-        }
-
-        return .clear
-    }
-
-    private var iconColor: Color {
-        isRecording ? Color.textSub.opacity(0.92) : Color.textMain
-    }
-}
-
-private struct LightningGlyph: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-
-        path.move(to: CGPoint(x: rect.minX + rect.width * 0.62, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.22, y: rect.minY + rect.height * 0.56))
-        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.47, y: rect.minY + rect.height * 0.56))
-        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.34, y: rect.maxY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY + rect.height * 0.38))
-        path.addLine(to: CGPoint(x: rect.minX + rect.width * 0.68, y: rect.minY + rect.height * 0.38))
-        path.closeSubpath()
-
-        return path
+        Image(systemName: systemImage)
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(tint)
+            .frame(width: 36, height: 36)
+            .background(
+                Circle()
+                    .fill(Color.bgSecondary)
+            )
+            .overlay(
+                Circle()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.brandBlue.opacity(isHighlighted ? 0.10 : 0.04),
+                                Color.white.opacity(0.02)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            )
+            .clipShape(Circle())
+            .overlay(
+                Circle()
+                    .strokeBorder(
+                        isHighlighted ? Color.brandBlue.opacity(0.18) : Color.borderSubtle,
+                        lineWidth: 1
+                    )
+            )
+            .shadow(color: Color.shadowColor, radius: 5, x: 0, y: 2)
+            .contentShape(Circle())
     }
 }

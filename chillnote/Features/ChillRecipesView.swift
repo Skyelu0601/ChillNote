@@ -7,6 +7,7 @@ struct ChillRecipesView: View {
     @State private var selectedCategory: AgentRecipeCategory? = nil // nil means "All" effectively, or we default to first
     @State private var showingCreateRecipe = false
     @State private var showingSubscription = false
+    @State private var showingCaptionPackSettings = false
     @State private var pendingDeleteRecipe: AgentRecipe?
 
     @State private var newRecipeName = ""
@@ -84,7 +85,8 @@ struct ChillRecipesView: View {
                                         recipe: recipe,
                                         isAdded: recipeManager.isAdded(recipe),
                                         isHighlighted: false,
-                                        subtitleOverride: nil
+                                        subtitleOverride: nil,
+                                        onConfigure: recipe.id == "caption_pack" ? { showingCaptionPackSettings = true } : nil
                                     ) {
                                         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                             recipeManager.toggleRecipe(recipe)
@@ -110,6 +112,7 @@ struct ChillRecipesView: View {
                                         MyRecipeCardRow(
                                             recipe: recipe,
                                             onRemove: { withAnimation { recipeManager.removeRecipe(recipe) } },
+                                            onConfigure: recipe.id == "caption_pack" ? { showingCaptionPackSettings = true } : nil,
                                             onDelete: recipe.isCustom ? { pendingDeleteRecipe = recipe } : nil
                                         )
                                     }
@@ -173,6 +176,9 @@ struct ChillRecipesView: View {
         }
         .sheet(isPresented: $showingSubscription) {
             SubscriptionView()
+        }
+        .sheet(isPresented: $showingCaptionPackSettings) {
+            CaptionPackSettingsSheet()
         }
         .alert(L10n.text("recipes.alert.delete_skill.title"), isPresented: Binding(
             get: { pendingDeleteRecipe != nil },
@@ -244,6 +250,7 @@ private struct RecipeCard: View {
     let isAdded: Bool
     var isHighlighted: Bool = false
     var subtitleOverride: String? = nil
+    var onConfigure: (() -> Void)? = nil
     let onToggle: () -> Void
     
     var body: some View {
@@ -257,6 +264,16 @@ private struct RecipeCard: View {
                         .foregroundColor(isAdded ? .accentPrimary : .textSub.opacity(0.5))
                 }
                 .buttonStyle(.plain)
+
+                if let onConfigure {
+                    Button(action: onConfigure) {
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 18))
+                            .foregroundColor(.textSub.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.text("caption_pack.settings.title"))
+                }
             }
             
             VStack(alignment: .leading, spacing: 4) {
@@ -294,6 +311,7 @@ private struct RecipeCard: View {
 private struct MyRecipeCardRow: View {
     let recipe: AgentRecipe
     let onRemove: () -> Void
+    let onConfigure: (() -> Void)?
     let onDelete: (() -> Void)?
     
     var body: some View {
@@ -313,6 +331,12 @@ private struct MyRecipeCardRow: View {
             Spacer()
             
             Menu {
+                if let onConfigure {
+                    Button(action: onConfigure) {
+                        Label(L10n.text("caption_pack.settings.title"), systemImage: "slider.horizontal.3")
+                    }
+                }
+
                 Button(role: .destructive, action: onRemove) {
                     Label(L10n.text("recipes.action.remove"), systemImage: "minus.circle")
                 }
@@ -336,6 +360,83 @@ private struct MyRecipeCardRow: View {
         .background(Color.white)
         .clipShape(RoundedRectangle(cornerRadius: 16))
         .shadow(color: Color.black.opacity(0.04), radius: 6, x: 0, y: 2)
+    }
+}
+
+private struct CaptionPackSettingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(CaptionPackPreferences.tiktokKey) private var includeTikTok = true
+    @AppStorage(CaptionPackPreferences.youtubeShortsKey) private var includeYouTubeShorts = true
+    @AppStorage(CaptionPackPreferences.instagramReelsKey) private var includeInstagramReels = true
+    @AppStorage(CaptionPackPreferences.goalKey) private var goalRawValue = CaptionPackGoal.startDiscussion.rawValue
+    @AppStorage(CaptionPackPreferences.toneKey) private var toneRawValue = CaptionPackTone.casualUseful.rawValue
+    @AppStorage(CaptionPackPreferences.outputStyleKey) private var outputStyleRawValue = CaptionPackOutputStyle.balanced.rawValue
+
+    private var selectedPlatformCount: Int {
+        [includeTikTok, includeYouTubeShorts, includeInstagramReels].filter { $0 }.count
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(L10n.text("caption_pack.settings.platforms")) {
+                    Toggle(L10n.text("caption_pack.platform.tiktok"), isOn: bindingForPlatform($includeTikTok))
+                    Toggle(L10n.text("caption_pack.platform.youtube_shorts"), isOn: bindingForPlatform($includeYouTubeShorts))
+                    Toggle(L10n.text("caption_pack.platform.instagram_reels"), isOn: bindingForPlatform($includeInstagramReels))
+                }
+
+                Section(L10n.text("caption_pack.settings.goal")) {
+                    Picker(L10n.text("caption_pack.settings.goal"), selection: $goalRawValue) {
+                        ForEach(CaptionPackGoal.allCases) { goal in
+                            Text(goal.localizedTitle).tag(goal.rawValue)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.inline)
+                }
+
+                Section(L10n.text("caption_pack.settings.tone")) {
+                    Picker(L10n.text("caption_pack.settings.tone"), selection: $toneRawValue) {
+                        ForEach(CaptionPackTone.allCases) { tone in
+                            Text(tone.localizedTitle).tag(tone.rawValue)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.inline)
+                }
+
+                Section(L10n.text("caption_pack.settings.output_style")) {
+                    Picker(L10n.text("caption_pack.settings.output_style"), selection: $outputStyleRawValue) {
+                        ForEach(CaptionPackOutputStyle.allCases) { style in
+                            Text(style.localizedTitle).tag(style.rawValue)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.segmented)
+                }
+            }
+            .navigationTitle(L10n.text("caption_pack.settings.title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L10n.text("common.done")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func bindingForPlatform(_ binding: Binding<Bool>) -> Binding<Bool> {
+        Binding(
+            get: { binding.wrappedValue },
+            set: { newValue in
+                if !newValue && selectedPlatformCount <= 1 {
+                    return
+                }
+                binding.wrappedValue = newValue
+            }
+        )
     }
 }
 

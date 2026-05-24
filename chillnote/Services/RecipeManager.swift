@@ -14,6 +14,7 @@ final class RecipeManager: ObservableObject {
     @AppStorage("savedRecipesJSON") private var savedRecipesJSON: String = "[]"
     @AppStorage("customRecipesJSON") private var customRecipesJSON: String = "[]"
     @AppStorage("defaultRecipesInstalled") private var defaultRecipesInstalled = false
+    @AppStorage("captionPackRecipeInstalled") private var captionPackRecipeInstalled = false
 
     @Published var savedRecipes: [AgentRecipe] = [] {
         didSet { saveToDisk() }
@@ -27,6 +28,7 @@ final class RecipeManager: ObservableObject {
     private init() {
         loadFromDisk()
         installDefaultRecipesIfNeeded()
+        installCaptionPackRecipeIfNeeded()
     }
 
     func toggleRecipe(_ recipe: AgentRecipe) {
@@ -80,13 +82,23 @@ final class RecipeManager: ObservableObject {
             return
         }
 
-        let defaultIDs = ["hook_generator", "why_viral", "humanizer"]
+        let defaultIDs = ["hook_generator", "caption_pack", "humanizer"]
         let defaults = AgentRecipe.allRecipes.filter { defaultIDs.contains($0.id) }
         guard !defaults.isEmpty else { return }
 
         savedRecipes = defaults
         savedRecipeIds = Set(defaults.map(\.id))
         defaultRecipesInstalled = true
+    }
+
+    func installCaptionPackRecipeIfNeeded() {
+        guard !captionPackRecipeInstalled else { return }
+        guard let recipe = AgentRecipe.allRecipes.first(where: { $0.id == "caption_pack" }) else { return }
+
+        if !savedRecipeIds.contains(recipe.id) {
+            addRecipe(recipe)
+        }
+        captionPackRecipeInstalled = true
     }
 
     private func loadFromDisk() {

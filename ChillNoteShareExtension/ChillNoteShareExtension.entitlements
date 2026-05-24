@@ -6,5 +6,9 @@
 	<array>
 		<string>group.com.sponteoai.chillnote</string>
 	</array>
+	<key>keychain-access-groups</key>
+	<array>
+		<string>$(AppIdentifierPrefix)com.sponteoai.chillnote.auth</string>
+	</array>
 </dict>
 </plist>

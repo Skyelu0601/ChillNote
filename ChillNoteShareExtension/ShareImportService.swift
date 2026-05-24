@@ -1,4 +1,5 @@
 import Foundation
+import Supabase
 
 enum ShareImportError: LocalizedError {
     case missingLink
@@ -139,15 +140,53 @@ private struct ShareOEmbedResponse: Decodable {
     }
 }
 
+private struct ShareAuthTokenProvider {
+    let supabase = SupabaseClient(
+        supabaseURL: ShareConstants.supabaseURL,
+        supabaseKey: ShareConstants.supabaseAnonKey,
+        options: SupabaseClientOptions(
+            auth: SupabaseClientOptions.AuthOptions(
+                storage: KeychainLocalStorage(
+                    service: ShareConstants.keychainService,
+                    accessGroup: ShareConstants.keychainAccessGroup
+                ),
+                autoRefreshToken: true
+            )
+        )
+    )
+
+    func sessionToken() async -> String? {
+        do {
+            let session = try await supabase.auth.session
+            cache(session: session)
+            return session.accessToken
+        } catch {
+            return cachedSessionToken()
+        }
+    }
+
+    private func cache(session: Session) {
+        let defaults = UserDefaults(suiteName: ShareConstants.appGroupIdentifier)
+        defaults?.set(session.accessToken, forKey: ShareConstants.authTokenKey)
+        defaults?.set(session.user.id.uuidString, forKey: ShareConstants.lastAuthenticatedUserIdKey)
+    }
+
+    private func cachedSessionToken() -> String? {
+        UserDefaults(suiteName: ShareConstants.appGroupIdentifier)?
+            .string(forKey: ShareConstants.authTokenKey)
+    }
+}
+
 struct ShareImportService {
     let backendBaseURL = "https://api.chillnoteai.com"
+    private let authTokenProvider = ShareAuthTokenProvider()
 
     func importSharedURL(
         _ url: URL,
         progress: @escaping @MainActor (ShareImportStage) -> Void
     ) async throws -> SharePendingImport {
         await progress(.readingContent)
-        guard let token = authToken(), !token.isEmpty else {
+        guard let token = await authToken(), !token.isEmpty else {
             throw ShareImportError.missingAuthToken
         }
 
@@ -166,9 +205,8 @@ struct ShareImportService {
         return pendingImport
     }
 
-    private func authToken() -> String? {
-        UserDefaults(suiteName: ShareConstants.appGroupIdentifier)?
-            .string(forKey: ShareConstants.authTokenKey)
+    private func authToken() async -> String? {
+        await authTokenProvider.sessionToken()
     }
 
     private func transcribeMediaLink(_ url: URL, token: String) async throws -> String {

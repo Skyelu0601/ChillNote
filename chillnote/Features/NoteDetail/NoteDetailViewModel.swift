@@ -12,10 +12,6 @@ final class NoteDetailViewModel: ObservableObject {
         var authorizeVoiceRecordingStart: () async -> Bool = {
             await StoreService.shared.authorizeVoiceRecordingStart()
         }
-        var executeTidy: (String) async throws -> String = { content in
-            let action = AIQuickAction.ActionType.smartFormat.defaultAction
-            return try await action.execute(on: content)
-        }
         var generateAIEdit: (_ noteContent: String, _ userInput: String) async throws -> String = { content, userInput in
             let languageRule = LanguageDetection.languagePreservationRule(for: userInput + "\n" + content)
             let systemInstruction = """
@@ -49,7 +45,6 @@ final class NoteDetailViewModel: ObservableObject {
 
     enum NoteDetailAction {
         case backTapped
-        case tidyTapped
         case stopRecordingTapped
         case restoreTapped
         case deleteTapped
@@ -81,7 +76,7 @@ final class NoteDetailViewModel: ObservableObject {
     @Published var aiSkillPreview: NoteAISkillPreview?
     @Published var aiSkillErrorMessage: String?
     @Published var pendingAISkillRecipe: AgentRecipe?
-    var lastAITransformation: NoteAITransformation = .tidy
+    var lastAITransformation: NoteAITransformation?
 
     @Published var initialContent: String = ""
     @Published var initialTags: Set<UUID> = []
@@ -206,10 +201,6 @@ final class NoteDetailViewModel: ObservableObject {
         !isDeleted && !isProcessing && !isVoiceProcessing
     }
 
-    var isTidyEnabled: Bool {
-        isInteractionEnabled && !note.content.isEmpty
-    }
-
     var isAISkillsEnabled: Bool {
         isInteractionEnabled
     }
@@ -218,8 +209,6 @@ final class NoteDetailViewModel: ObservableObject {
         switch action {
         case .backTapped:
             updateTimestampAndDismiss()
-        case .tidyTapped:
-            Task { await executeTidyAction() }
         case .stopRecordingTapped:
             stopRecording()
         case .restoreTapped:

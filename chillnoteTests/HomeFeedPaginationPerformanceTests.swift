@@ -21,7 +21,7 @@ final class HomeFeedPaginationPerformanceTests: XCTestCase {
         measure {
             let exp = expectation(description: "page")
             Task { @MainActor in
-                _ = try? await repository.fetchPage(userId: "u1", mode: .active, tagId: nil, cursor: nil, limit: 50)
+                _ = try? await repository.fetchPage(userId: "u1", mode: .active(section: nil), tagId: nil, cursor: nil, limit: 50)
                 exp.fulfill()
             }
             wait(for: [exp], timeout: 3)

@@ -309,7 +309,6 @@ struct SubscriptionView: View {
             BenefitRow(icon: "waveform", iconColor: .orange, title: L10n.text("subscription.benefit.deep_dives.title"), subtitle: L10n.text("subscription.benefit.deep_dives.subtitle"))
             BenefitRow(icon: "plus.app.fill", iconColor: .green, title: L10n.text("subscription.benefit.flexible_capture.title"), subtitle: L10n.text("subscription.benefit.flexible_capture.subtitle"))
             BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: L10n.text("subscription.benefit.unlimited_chat.title"), subtitle: L10n.text("subscription.benefit.unlimited_chat.subtitle"))
-            BenefitRow(icon: "wand.and.stars", iconColor: .blue, title: L10n.text("subscription.benefit.tidy_polish.title"), subtitle: L10n.text("subscription.benefit.tidy_polish.subtitle"))
             BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: L10n.text("subscription.benefit.custom_skills.title"), subtitle: L10n.text("subscription.benefit.custom_skills.subtitle"))
         }
         .padding(24)

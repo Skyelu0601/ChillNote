@@ -7,14 +7,7 @@ struct AboutView: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
-                    // Header Section
-                    VStack(spacing: 16) {
-                        Image("chillohead_touming")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 120, height: 120)
-                            .shadow(color: Color.black.opacity(0.1), radius: 10, y: 5)
-                        
+                    VStack(spacing: 12) {
                         Text(L10n.text("about.brand"))
                             .font(.system(size: 36, weight: .bold, design: .rounded))
                             .foregroundColor(.textMain)
@@ -33,7 +26,6 @@ struct AboutView: View {
                             .padding(.horizontal)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.bottom, 16)
                     
                     // Introduction
                     Text(L10n.text("about.intro"))
@@ -43,8 +35,7 @@ struct AboutView: View {
                     
                     Divider()
                     
-                    // Section 1
-                    PhilosophySection(
+                    CreatorAboutSection(
                         number: "01",
                         title: "about.section.1.title",
                         quote: "about.section.1.quote",
@@ -55,8 +46,7 @@ struct AboutView: View {
                         ]
                     )
                     
-                    // Section 2
-                    PhilosophySection(
+                    CreatorAboutSection(
                         number: "02",
                         title: "about.section.2.title",
                         quote: "about.section.2.quote",
@@ -67,8 +57,7 @@ struct AboutView: View {
                         ]
                     )
                     
-                    // Section 3
-                    PhilosophySection(
+                    CreatorAboutSection(
                         number: "03",
                         title: "about.section.3.title",
                         quote: "about.section.3.quote",
@@ -79,8 +68,7 @@ struct AboutView: View {
                         ]
                     )
                     
-                    // Section 4
-                    PhilosophySection(
+                    CreatorAboutSection(
                         number: "04",
                         title: "about.section.4.title",
                         quote: "about.section.4.quote",
@@ -91,48 +79,34 @@ struct AboutView: View {
                         ]
                     )
                     
-                    // Section 5
-                    PhilosophySection(
-                        number: "05",
-                        title: "about.section.5.title",
-                        quote: "about.section.5.quote",
-                        content: [
-                            "about.section.5.body.1",
-                            "about.section.5.body.2",
-                            "about.section.5.body.3"
-                        ]
-                    )
-                    
                     Divider()
                     
-                    // What ChillNote is NOT
                     VStack(alignment: .leading, spacing: 20) {
-                        Text(L10n.text("about.not.title"))
+                        Text(L10n.text("about.workflow.title"))
                             .font(.title2)
                             .fontWeight(.bold)
                             .foregroundColor(.textMain)
                         
-                        Text(L10n.text("about.not.quote"))
+                        Text(L10n.text("about.workflow.subtitle"))
                             .font(.subheadline)
-                            .italic()
                             .foregroundColor(.textSub)
                         
-                        NotSection(
-                            icon: "mic.slash.fill",
-                            title: "about.not.meetings.title",
-                            bodyText: "about.not.meetings.body"
+                        WorkflowPoint(
+                            icon: "tray.and.arrow.down.fill",
+                            title: "about.workflow.capture.title",
+                            bodyText: "about.workflow.capture.body"
                         )
                         
-                        NotSection(
-                            icon: "book.closed.fill",
-                            title: "about.not.long_form.title",
-                            bodyText: "about.not.long_form.body"
+                        WorkflowPoint(
+                            icon: "wand.and.stars",
+                            title: "about.workflow.ai.title",
+                            bodyText: "about.workflow.ai.body"
                         )
                         
-                        NotSection(
-                            icon: "clock.badge.exclamationmark.fill",
-                            title: "about.not.heavy_workflow.title",
-                            bodyText: "about.not.heavy_workflow.body"
+                        WorkflowPoint(
+                            icon: "arrow.triangle.2.circlepath",
+                            title: "about.workflow.reuse.title",
+                            bodyText: "about.workflow.reuse.body"
                         )
                     }
                     .padding(.vertical, 8)
@@ -156,7 +130,9 @@ struct AboutView: View {
                     .padding(.bottom, 40)
                     
                 }
-                .padding(24)
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+                .padding(.bottom, 24)
             }
             .background(Color.bgPrimary.ignoresSafeArea())
             .navigationTitle(L10n.text("settings.support.about"))
@@ -175,9 +151,7 @@ struct AboutView: View {
     }
 }
 
-// MARK: - Supporting Views
-
-struct PhilosophySection: View {
+private struct CreatorAboutSection: View {
     let number: String
     let title: LocalizedStringKey
     let quote: LocalizedStringKey
@@ -215,7 +189,7 @@ struct PhilosophySection: View {
     }
 }
 
-struct NotSection: View {
+private struct WorkflowPoint: View {
     let icon: String
     let title: LocalizedStringKey
     let bodyText: LocalizedStringKey
@@ -224,7 +198,7 @@ struct NotSection: View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: icon)
                 .font(.system(size: 20))
-                .foregroundColor(.red.opacity(0.7))
+                .foregroundColor(.accentPrimary)
                 .frame(width: 24)
             
             VStack(alignment: .leading, spacing: 4) {

@@ -78,7 +78,6 @@ struct ChatInputBar: View {
     @State private var isImportingMedia = false
     @State private var quickCaptureProgressState: QuickCaptureProgressState?
     @State private var isPressed = false
-    @State private var isBreathing = false
     @State private var waveformHeights: [CGFloat] = Array(repeating: 6, count: 5)
 
     @State private var elapsed: TimeInterval = 0
@@ -101,10 +100,10 @@ struct ChatInputBar: View {
                 voiceCenterView
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, 16)
+            .padding(.vertical, 13)
         }
         .padding(.horizontal, 16)
-        .padding(.bottom, 8)
+        .padding(.bottom, 4)
         .onAppear {
             syncElapsed()
         }
@@ -238,7 +237,7 @@ struct ChatInputBar: View {
     }
 
     private var idleQuickCaptureDock: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 12) {
             quickCaptureIconButton(
                 systemName: "plus",
                 accessibilityKey: "quick_capture.accessibility.more",
@@ -255,8 +254,8 @@ struct ChatInputBar: View {
                 action: onCreateBlankNote
             )
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 7)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .background(
             Capsule(style: .continuous)
                 .fill(Color.white.opacity(0.82))
@@ -317,30 +316,16 @@ struct ChatInputBar: View {
 
     private var recordButton: some View {
         ZStack {
-            if !isPressed {
-                Capsule()
-                    .fill(Color.accentPrimary.opacity(0.25))
-                    .frame(width: 94, height: 70)
-                    .blur(radius: 12)
-                    .scaleEffect(isBreathing ? 1.08 : 0.96)
-                    .opacity(isBreathing ? 0.32 : 0.10)
-                    .onAppear {
-                        withAnimation(.easeInOut(duration: 4.0).repeatForever(autoreverses: true)) {
-                            isBreathing = true
-                        }
-                    }
-            }
-
             Capsule(style: .continuous)
-                .fill(Color.bgSecondary)
-                .frame(width: 76, height: 56)
+                .fill(Color.borderSubtle)
+                .frame(width: 74, height: 50)
                 .overlay(
                     Capsule(style: .continuous)
                         .stroke(highlightIdleMic ? Color.accentPrimary : Color.clear, lineWidth: 2)
                 )
                 .overlay(
                     Image(systemName: "mic.fill")
-                        .font(.system(size: 25, weight: .semibold))
+                        .font(.system(size: 23, weight: .semibold))
                         .foregroundColor(.textMain)
                 )
                 .scaleEffect(isPressed ? 0.94 : 1)
@@ -362,9 +347,9 @@ struct ChatInputBar: View {
     ) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
-                .font(.system(size: 23, weight: .semibold))
+                .font(.system(size: 22, weight: .semibold))
                 .foregroundColor(.textMain)
-                .frame(width: 54, height: 54)
+                .frame(width: 50, height: 50)
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)

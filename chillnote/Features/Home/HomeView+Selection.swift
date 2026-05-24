@@ -44,6 +44,15 @@ extension HomeView {
 
         let trimmedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return fetched.filter { note in
+            let passesSection: Bool
+            if isTrashSelected {
+                passesSection = true
+            } else if let selectedSection {
+                passesSection = note.section == selectedSection
+            } else {
+                passesSection = true
+            }
+
             let passesTag: Bool
             if let selectedTag {
                 passesTag = note.tags.contains(where: { $0.id == selectedTag.id })
@@ -59,7 +68,7 @@ extension HomeView {
                     || note.tags.contains { $0.name.localizedCaseInsensitiveContains(trimmedQuery) }
             }
 
-            return passesTag && passesSearch
+            return passesSection && passesTag && passesSearch
         }
     }
 
@@ -202,6 +211,33 @@ extension HomeView {
             note.updatedAt = Date()
         }
         persistAndSync()
+    }
+
+    func moveNote(_ note: Note, to section: NoteSection) {
+        guard note.deletedAt == nil else { return }
+        guard note.section != section else { return }
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+            note.section = section
+            note.updatedAt = Date()
+            if !isNoteVisibleInCurrentMode(note) {
+                homeViewModel.removeNoteLocally(id: note.id)
+            }
+        }
+        persistAndSync()
+    }
+
+    func isNoteVisibleInCurrentMode(_ note: Note) -> Bool {
+        if isTrashSelected {
+            return note.deletedAt != nil
+        }
+        guard note.deletedAt == nil else { return false }
+        if let selectedSection, note.section != selectedSection {
+            return false
+        }
+        if let selectedTag, !note.tags.contains(where: { $0.id == selectedTag.id }) {
+            return false
+        }
+        return true
     }
 
     func deleteSelectedNotes() {

@@ -20,7 +20,7 @@ export const recipeCategoryLabels: Record<AgentRecipeCategory, string> = {
   publish: "Act",
 };
 
-export const defaultSavedRecipeIds = ["hook_generator", "why_viral", "humanizer"];
+export const defaultSavedRecipeIds = ["hook_generator", "caption_pack", "humanizer"];
 
 export const agentRecipes: AgentRecipe[] = [
   {
@@ -148,6 +148,15 @@ Output only the new piece.`,
 Output only the 5 hooks.`,
   },
   {
+    id: "caption_pack",
+    icon: "📣",
+    name: "Caption Pack",
+    description: "Create ready-to-post captions for TikTok, Shorts, and Reels.",
+    category: "publish",
+    prompt: "(Built-in Logic) Generates platform-ready captions from creator inspiration notes.",
+    isBuiltInLogic: true,
+  },
+  {
     id: "twitter_post",
     icon: "𝕏",
     name: "X Post",
@@ -222,6 +231,72 @@ Rules:
 - Keep proper nouns, product names, URLs, code, and hashtags intact unless a standard translation exists.
 - Do not localize units, dates, or numbers unless explicitly requested.
 - Return only the translated content.`,
+    };
+  }
+
+  if (recipe.id === "caption_pack") {
+    return {
+      prompt: `Create a Caption Pack for these selected platforms: TikTok, YouTube Shorts, Instagram Reels.
+
+User goal: Start discussion
+Tone: Casual + useful
+Output style: Balanced
+
+Notes:
+${combinedContent}`,
+      systemPrompt: `You create original platform-ready publishing copy for content creators.
+
+The notes may contain third-party creator inspiration, including descriptions, transcripts, hooks, or author metadata. Treat the notes as a private inspiration library, not source copy to rewrite.
+
+Core rules:
+${languageRule}
+- Use the notes only to understand the topic, audience, emotional angle, content pattern, and reusable insight.
+- Do not copy, closely paraphrase, or preserve distinctive wording from the notes.
+- Do not mention the original author unless the notes explicitly ask for attribution.
+- Do not invent claims, stats, personal experiences, product promises, discounts, or results that are not supported.
+- If the notes do not contain enough substance, write safe, editable platform copy based on the broad idea and avoid specific unsupported claims.
+- Return only the Caption Pack. Do not explain your reasoning.
+
+Length and style:
+- TikTok caption target: 300-600 characters.
+- YouTube Shorts title target: 50-70 characters and must be under 100 characters.
+- YouTube Shorts description target: 150-300 characters and must be under 5,000 characters.
+- Instagram Reels caption target: 250-500 characters and must be under 2,200 characters.
+- If a draft exceeds any platform limit, rewrite it shorter before returning.
+
+Platform rules:
+- TikTok: Output Caption and Hashtags. Hashtags must be 5 or fewer.
+- YouTube Shorts: Output Title, Description, and Hashtags. Hashtags must be 3 or fewer.
+- Instagram Reels: Output Caption and Hashtags. Hashtags must be 5 or fewer.
+- For TikTok and Instagram Reels, naturally fold any question or soft call to action into the caption when it fits. Do not create a separate CTA section.
+
+Output format:
+## TikTok
+
+Caption:
+...
+
+Hashtags:
+#creatorworkflow #contentstrategy #shortformvideo #tiktoktips #contentideas
+
+## YouTube Shorts
+
+Title:
+...
+
+Description:
+...
+
+Hashtags:
+#Shorts #ContentStrategy #CreatorTips
+
+## Instagram Reels
+
+Caption:
+...
+
+Hashtags:
+#contentcreator #creatorworkflow #reelstips #contentstrategy #socialmediatips`,
     };
   }
 

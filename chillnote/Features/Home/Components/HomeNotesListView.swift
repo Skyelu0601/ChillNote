@@ -17,6 +17,7 @@ struct HomeNotesListView: View {
     let onRestoreNote: (Note) -> Void
     let onDeleteNotePermanently: (Note) -> Void
     let onTogglePin: (Note) -> Void
+    let onMoveNote: (Note, NoteSection) -> Void
     let onDeleteNote: (Note) -> Void
 
     private var shouldShowBlockingLoadingState: Bool {
@@ -104,6 +105,15 @@ struct HomeNotesListView: View {
                                         note.pinnedAt == nil ? L10n.text("home.notes.action.pin") : L10n.text("home.notes.action.unpin"),
                                         systemImage: note.pinnedAt == nil ? "pin" : "pin.slash"
                                     )
+                                }
+                                ForEach(NoteSection.allCases) { section in
+                                    if note.section != section {
+                                        Button {
+                                            onMoveNote(note, section)
+                                        } label: {
+                                            Label(section.moveActionTitle, systemImage: section.systemImage)
+                                        }
+                                    }
                                 }
                                 Button(role: .destructive) {
                                     onDeleteNote(note)

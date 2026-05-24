@@ -83,6 +83,101 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
     }
 }
 
+enum CaptionPackOutputStyle: String, CaseIterable, Identifiable {
+    case concise
+    case balanced
+    case detailed
+
+    var id: String { rawValue }
+
+    var localizedTitle: String {
+        L10n.text("caption_pack.output_style.\(rawValue)")
+    }
+}
+
+enum CaptionPackGoal: String, CaseIterable, Identifiable {
+    case startDiscussion
+    case getSaves
+    case getShares
+    case driveFollows
+
+    var id: String { rawValue }
+
+    var localizedTitle: String {
+        switch self {
+        case .startDiscussion:
+            return L10n.text("caption_pack.goal.start_discussion")
+        case .getSaves:
+            return L10n.text("caption_pack.goal.get_saves")
+        case .getShares:
+            return L10n.text("caption_pack.goal.get_shares")
+        case .driveFollows:
+            return L10n.text("caption_pack.goal.drive_follows")
+        }
+    }
+}
+
+enum CaptionPackTone: String, CaseIterable, Identifiable {
+    case casualUseful
+    case educational
+    case bold
+    case storyDriven
+    case creatorVoice
+
+    var id: String { rawValue }
+
+    var localizedTitle: String {
+        switch self {
+        case .casualUseful:
+            return L10n.text("caption_pack.tone.casual_useful")
+        case .educational:
+            return L10n.text("caption_pack.tone.educational")
+        case .bold:
+            return L10n.text("caption_pack.tone.bold")
+        case .storyDriven:
+            return L10n.text("caption_pack.tone.story_driven")
+        case .creatorVoice:
+            return L10n.text("caption_pack.tone.creator_voice")
+        }
+    }
+}
+
+struct CaptionPackPreferences {
+    static let tiktokKey = "captionPackPlatformTikTok"
+    static let youtubeShortsKey = "captionPackPlatformYouTubeShorts"
+    static let instagramReelsKey = "captionPackPlatformInstagramReels"
+    static let goalKey = "captionPackGoal"
+    static let toneKey = "captionPackTone"
+    static let outputStyleKey = "captionPackOutputStyle"
+
+    var includeTikTok: Bool
+    var includeYouTubeShorts: Bool
+    var includeInstagramReels: Bool
+    var goal: CaptionPackGoal
+    var tone: CaptionPackTone
+    var outputStyle: CaptionPackOutputStyle
+
+    static var current: CaptionPackPreferences {
+        let defaults = UserDefaults.standard
+        return CaptionPackPreferences(
+            includeTikTok: defaults.object(forKey: tiktokKey) as? Bool ?? true,
+            includeYouTubeShorts: defaults.object(forKey: youtubeShortsKey) as? Bool ?? true,
+            includeInstagramReels: defaults.object(forKey: instagramReelsKey) as? Bool ?? true,
+            goal: CaptionPackGoal(rawValue: defaults.string(forKey: goalKey) ?? "") ?? .startDiscussion,
+            tone: CaptionPackTone(rawValue: defaults.string(forKey: toneKey) ?? "") ?? .casualUseful,
+            outputStyle: CaptionPackOutputStyle(rawValue: defaults.string(forKey: outputStyleKey) ?? "") ?? .balanced
+        )
+    }
+
+    var selectedPlatformNames: [String] {
+        var platforms: [String] = []
+        if includeTikTok { platforms.append("TikTok") }
+        if includeYouTubeShorts { platforms.append("YouTube Shorts") }
+        if includeInstagramReels { platforms.append("Instagram Reels") }
+        return platforms.isEmpty ? ["TikTok", "YouTube Shorts", "Instagram Reels"] : platforms
+    }
+}
+
 enum AgentRecipeCategory: String, CaseIterable, Identifiable, Codable {
     case think = "Think"
     case shape = "Shape"
@@ -287,6 +382,15 @@ extension AgentRecipe {
             category: .shape
         ),
         AgentRecipe(
+            id: "caption_pack",
+            icon: "📣",
+            systemIcon: "megaphone",
+            name: "Caption Pack",
+            description: "agent_recipe.caption_pack.description",
+            prompt: "(Built-in Logic) Generates platform-ready captions from creator inspiration notes.",
+            category: .publish
+        ),
+        AgentRecipe(
             id: "twitter_post",
             icon: "🐦",
             systemIcon: "bubble.left",
@@ -379,6 +483,77 @@ extension AgentRecipe {
             - Return only the translated content.
             """
 
+        case "caption_pack":
+            let preferences = CaptionPackPreferences.current
+            let styleInstruction = Self.captionPackStyleInstruction(for: preferences.outputStyle)
+            let platforms = preferences.selectedPlatformNames.joined(separator: ", ")
+            prompt = """
+            Create a Caption Pack for these selected platforms: \(platforms).
+
+            User goal: \(preferences.goal.localizedTitle)
+            Tone: \(preferences.tone.localizedTitle)
+            Output style: \(preferences.outputStyle.localizedTitle)
+
+            Notes:
+            \(content)
+            """
+
+            systemInstruction = """
+            You create original platform-ready publishing copy for content creators.
+
+            The notes may contain third-party creator inspiration, including descriptions, transcripts, hooks, or author metadata. Treat the notes as a private inspiration library, not source copy to rewrite.
+
+            Core rules:
+            \(languageRule)
+            - Use the notes only to understand the topic, audience, emotional angle, content pattern, and reusable insight.
+            - Do not copy, closely paraphrase, or preserve distinctive wording from the notes.
+            - Do not mention the original author unless the notes explicitly ask for attribution.
+            - Do not invent claims, stats, personal experiences, product promises, discounts, or results that are not supported.
+            - If the notes do not contain enough substance, write safe, editable platform copy based on the broad idea and avoid specific unsupported claims.
+            - Return only the Caption Pack. Do not explain your reasoning.
+
+            Length and style:
+            \(styleInstruction)
+            - Character counts must include the generated field text, not the label.
+            - If a draft exceeds any platform limit, rewrite it shorter before returning.
+
+            Platform rules:
+            - TikTok: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer.
+            - YouTube Shorts: Output Title, Description, and Hashtags. Title must be under 100 characters. Description must be under 5,000 characters. Hashtags must be 3 or fewer.
+            - Instagram Reels: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer.
+            - For TikTok and Instagram Reels, naturally fold any question or soft call to action into the caption when it fits. Do not create a separate CTA section.
+
+            Output format:
+            Use only the selected platforms and keep this exact section style:
+
+            ## TikTok
+
+            Caption:
+            ...
+
+            Hashtags:
+            #creatorworkflow #contentstrategy #shortformvideo #tiktoktips #contentideas
+
+            ## YouTube Shorts
+
+            Title:
+            ...
+
+            Description:
+            ...
+
+            Hashtags:
+            #Shorts #ContentStrategy #CreatorTips
+
+            ## Instagram Reels
+
+            Caption:
+            ...
+
+            Hashtags:
+            #contentcreator #creatorworkflow #reelstips #contentstrategy #socialmediatips
+            """
+
         default:
             prompt = """
             Instruction:
@@ -402,6 +577,32 @@ extension AgentRecipe {
             systemInstruction: systemInstruction,
             usageType: .agentRecipe
         )
+    }
+
+    private static func captionPackStyleInstruction(for style: CaptionPackOutputStyle) -> String {
+        switch style {
+        case .concise:
+            return """
+            - TikTok caption target: 120-220 characters.
+            - YouTube Shorts title target: 35-50 characters.
+            - YouTube Shorts description target: 80-150 characters.
+            - Instagram Reels caption target: 100-180 characters.
+            """
+        case .balanced:
+            return """
+            - TikTok caption target: 300-600 characters.
+            - YouTube Shorts title target: 50-70 characters.
+            - YouTube Shorts description target: 150-300 characters.
+            - Instagram Reels caption target: 250-500 characters.
+            """
+        case .detailed:
+            return """
+            - TikTok caption target: 700-1,200 characters.
+            - YouTube Shorts title target: 70-90 characters.
+            - YouTube Shorts description target: 300-600 characters.
+            - Instagram Reels caption target: 600-1,000 characters.
+            """
+        }
     }
 
     /// Execute the recipe on given notes

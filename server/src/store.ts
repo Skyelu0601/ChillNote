@@ -66,7 +66,8 @@ function mapNoteToDTO(note: any): NoteDTO {
     sourcePlatformID: note.sourcePlatformID ?? null,
     sourcePlatformName: note.sourcePlatformName ?? null,
     sourceHost: note.sourceHost ?? null,
-    sourceCapturedAt: note.sourceCapturedAt?.toISOString() ?? null
+    sourceCapturedAt: note.sourceCapturedAt?.toISOString() ?? null,
+    section: note.section ?? "inbox"
   };
 }
 
@@ -273,6 +274,7 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
       serverDeletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
       version: incoming.version ?? 1,
       lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null,
+      section: incoming.section ?? "inbox",
       ...sourceUpdate,
       tags: tagIds ? { set: tagIds.map((tagId) => ({ id: tagId })) } : undefined
     },
@@ -288,6 +290,7 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
       serverDeletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
       version: incoming.version ?? 1,
       lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null,
+      section: incoming.section ?? "inbox",
       ...sourceCreate,
       tags: tagIds ? { connect: tagIds.map((tagId) => ({ id: tagId })) } : undefined
     }

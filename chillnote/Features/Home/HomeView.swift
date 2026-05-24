@@ -60,6 +60,7 @@ struct HomeView: View {
 
     @State var isSidebarPresented = false
     @State var selectedTag: Tag? = nil
+    @State var selectedSection: NoteSection? = .inbox
     @State var isTrashSelected = false
     @State var showEmptyTrashConfirmation = false
 
@@ -73,6 +74,10 @@ struct HomeView: View {
     @State var latestTranscriptionFailureMessage = ""
     @State var showTranscriptionFailureAlert = false
     @State var showAppRatingPrompt = false
+    @State var lastClipboardLinkPasteboardChangeCount: Int?
+    @State var isImportingClipboardLink = false
+    @State var clipboardLinkImportErrorMessage = ""
+    @State var showClipboardLinkImportErrorAlert = false
 
     @State var hasScheduledInitialMaintenance = false
     @State var lastMaintenanceAt: Date?
@@ -117,6 +122,7 @@ struct HomeView: View {
             showBatchTagSheet: showBatchTagSheet,
             isSidebarPresented: isSidebarPresented,
             selectedTag: selectedTag,
+            selectedSection: selectedSection,
             selectedNotes: selectedNotes,
             isVoiceMode: isVoiceMode,
             cachedVisibleNotes: homeViewModel.items,
@@ -217,13 +223,20 @@ struct HomeView: View {
                 exitSelectionMode()
             }
             Task {
-                await homeViewModel.switchMode(newValue ? .trash : .active)
+                await homeViewModel.switchMode(newValue ? .trash : .active(section: selectedSection))
                 clampSelectionToCurrentFilter()
             }
         }
         .onChange(of: selectedTag) { _, _ in
             Task {
                 await homeViewModel.switchTag(selectedTag?.id)
+                clampSelectionToCurrentFilter()
+            }
+        }
+        .onChange(of: selectedSection) { _, newValue in
+            exitSelectionMode()
+            Task {
+                await homeViewModel.switchMode(isTrashSelected ? .trash : .active(section: newValue))
                 clampSelectionToCurrentFilter()
             }
         }
@@ -234,6 +247,7 @@ struct HomeView: View {
             guard let userId = newUserId else { return }
             Task {
                 await bootstrapHome(for: userId, source: .authChanged)
+                await checkForClipboardLinkImport()
             }
         }
         )
@@ -291,6 +305,9 @@ struct HomeView: View {
             guard newPhase == .active else { return }
             importPendingSharedNotes(navigateToLatest: false)
             scheduleMaintenance(reason: .foreground)
+            Task {
+                await checkForClipboardLinkImport()
+            }
         }
         .task {
             await checkForPendingRecordingsAsync()
@@ -298,6 +315,7 @@ struct HomeView: View {
             await bootstrapHome(for: userId, source: .initialTask)
             importPendingSharedNotes(navigateToLatest: false)
             scheduleInitialMaintenance()
+            await checkForClipboardLinkImport()
         }
         )
     }
@@ -324,6 +342,11 @@ struct HomeView: View {
             }
         } message: {
             Text(L10n.text("home.rating_prompt.message"))
+        }
+        .alert(L10n.text("quick_capture.error.title"), isPresented: $showClipboardLinkImportErrorAlert) {
+            Button(L10n.text("common.ok"), role: .cancel) { }
+        } message: {
+            Text(clipboardLinkImportErrorMessage)
         }
     }
 
@@ -363,8 +386,14 @@ struct HomeView: View {
             showChillRecipes = value
         case .setSelectedTag(let value):
             selectedTag = value
+        case .setSelectedSection(let value):
+            selectedSection = value
         case .setTrashSelected(let value):
             isTrashSelected = value
+        case .selectSection(let section):
+            selectedTag = nil
+            selectedSection = section
+            isTrashSelected = false
 
         case .toggleSidebar:
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
@@ -399,6 +428,8 @@ struct HomeView: View {
             deleteNotePermanently(note)
         case .togglePin(let note):
             togglePin(note)
+        case .moveNote(let note, let section):
+            moveNote(note, to: section)
         case .deleteNote(let note):
             deleteNote(note)
         case .loadMoreIfNeeded(let note):
@@ -469,7 +500,7 @@ struct HomeView: View {
             pendingRecipeForConfirmation = nil
             showRecipeSoftLimitAlert = false
         case .noteDetailDisappear(let note):
-            let isVisibleInCurrentMode = isTrashSelected ? (note.deletedAt != nil) : (note.deletedAt == nil)
+            let isVisibleInCurrentMode = isNoteVisibleInCurrentMode(note)
             if !isVisibleInCurrentMode {
                 homeViewModel.removeNoteLocally(id: note.id)
             }
@@ -544,7 +575,7 @@ struct HomeView: View {
         }
 
         homeViewModel.configure(context: modelContext, userId: userId)
-        await homeViewModel.switchMode(isTrashSelected ? .trash : .active)
+        await homeViewModel.switchMode(isTrashSelected ? .trash : .active(section: selectedSection))
         await homeViewModel.switchTag(selectedTag?.id)
         await homeViewModel.updateSearchQuery(searchText)
         await homeViewModel.reload()

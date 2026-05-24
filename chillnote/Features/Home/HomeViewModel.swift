@@ -10,7 +10,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var totalCount: Int = 0
 
     @Published var query: String = ""
-    @Published var mode: NotesFeedMode = .active
+    @Published var mode: NotesFeedMode = .active(section: .inbox)
     @Published var selectedTagId: UUID?
 
     private var cursor: Int?

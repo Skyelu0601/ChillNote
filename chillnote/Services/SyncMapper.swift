@@ -32,7 +32,8 @@ struct SyncMapper {
             sourcePlatformID: note.sourcePlatformID,
             sourcePlatformName: note.sourcePlatformName,
             sourceHost: note.sourceHost,
-            sourceCapturedAt: note.sourceCapturedAt.map { dateFormatter.string(from: $0) }
+            sourceCapturedAt: note.sourceCapturedAt.map { dateFormatter.string(from: $0) },
+            section: note.section.rawValue
         )
     }
 
@@ -93,6 +94,7 @@ struct SyncMapper {
         note.sourcePlatformName = dto.sourcePlatformName
         note.sourceHost = dto.sourceHost
         note.sourceCapturedAt = dto.sourceCapturedAt.flatMap { parseDate($0) }
+        note.section = dto.section.flatMap(NoteSection.init(rawValue:)) ?? .inbox
         // Tags are handled separately in SyncEngine to resolve relationships
     }
 

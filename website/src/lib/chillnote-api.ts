@@ -19,6 +19,7 @@ export type NoteDTO = {
   sourcePlatformName?: string | null;
   sourceHost?: string | null;
   sourceCapturedAt?: string | null;
+  section?: "inbox" | "drafts" | "published" | string | null;
 };
 
 export type TagDTO = {
@@ -54,7 +55,7 @@ export type SubscriptionStatus = {
   expiresAt: string | null;
 };
 
-export type DailyQuotaFeature = "voice" | "tidy" | "agent_recipe" | "chat";
+export type DailyQuotaFeature = "voice" | "agent_recipe" | "chat";
 
 export type DailyQuotaState = {
   success: boolean;
@@ -155,47 +156,6 @@ export async function transcribeAudio(
   return body.content ?? body.text ?? "";
 }
 
-export async function tidyNote(token: string, content: string) {
-  const systemPrompt = `You are a professional typesetter and document designer.
-Rules:
-- Preserve every word and phrase in the exact language it appears in.
-- If the text contains multiple languages, keep each segment in its original language. Do NOT normalize to a single language.
-- Do NOT translate any word, phrase, or segment unless the user explicitly requests a translation.
-- Your job is ONLY visual formatting - never change the meaning or rewrite content.
-- Use markdown formatting: # headers, **bold**, *italic*, - bullets, - [ ] checkboxes, > quotes, --- dividers
-- Always return only the formatted content without explanations or meta-commentary.`;
-
-  const prompt = `You are a professional typesetter. Your task is to enhance the VISUAL STRUCTURE of the text.
-
-Rules:
-- DO NOT change or rewrite the meaning of the content
-- Add appropriate headers (using # markdown) to organize sections when there are distinct topics
-- Convert lists of items to bullet points (using - )
-- Bold (**text**) key terms, names, or important phrases for emphasis
-- Add line breaks between logical sections for readability
-- If there are actionable items or tasks, format them as checkboxes: - [ ] item
-- For quotes or important callouts, use blockquotes (> text)
-- Use *italic* for supplementary notes or emphasis
-- Keep the original language, do NOT translate
-- Preserve all original information - only improve structure and formatting
-- Return only the formatted content without any explanation
-
-Original content to format:
-${content}`;
-
-  const response = await fetch(`${webConfig.apiBaseUrl}/ai/gemini`, {
-    method: "POST",
-    headers: authHeaders(token),
-    body: JSON.stringify({
-      usageType: "tidy",
-      systemPrompt,
-      prompt,
-    }),
-  });
-  const body = await parseResponse<{ content: string }>(response);
-  return body.content;
-}
-
 export async function runAgentRecipe(token: string, prompt: string, systemPrompt: string) {
   const response = await fetch(`${webConfig.apiBaseUrl}/ai/gemini`, {
     method: "POST",
@@ -272,6 +232,7 @@ export function makeEmptyNote(userId: string): NoteDTO {
     baseVersion: 1,
     clientUpdatedAt: now,
     lastModifiedByDeviceId: getOrCreateDeviceId(),
+    section: "inbox",
   };
 }
 
@@ -286,6 +247,7 @@ export function prepareNoteForSave(note: NoteDTO): NoteDTO {
     version,
     baseVersion: version,
     tagIds: note.tagIds ?? [],
+    section: note.section ?? "inbox",
   };
 }
 

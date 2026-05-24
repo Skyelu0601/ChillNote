@@ -16,6 +16,7 @@ export type NoteDTO = {
   sourcePlatformName?: string | null;
   sourceHost?: string | null;
   sourceCapturedAt?: string | null;
+  section?: string | null;
 };
 
 export type TagDTO = {

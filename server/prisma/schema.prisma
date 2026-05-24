@@ -62,6 +62,7 @@ model Note {
   sourcePlatformName  String?
   sourceHost          String?
   sourceCapturedAt    DateTime?
+  section             String   @default("inbox")
   tags                Tag[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)

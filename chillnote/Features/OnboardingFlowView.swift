@@ -651,6 +651,10 @@ private struct OnboardingSkillsWorkflowPage: View {
     let currentPage: Int
     let totalPages: Int
 
+    private var isCompactHeight: Bool {
+        UIScreen.main.bounds.height <= 700
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 14) {
@@ -665,13 +669,13 @@ private struct OnboardingSkillsWorkflowPage: View {
                     .foregroundStyle(Color.accentPrimary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, 38)
+            .padding(.top, isCompactHeight ? 14 : 38)
 
-            Spacer(minLength: 32)
+            Spacer(minLength: isCompactHeight ? 16 : 32)
 
-            SkillsWorkflowGrid()
+            SkillsWorkflowGrid(isCompactHeight: isCompactHeight)
 
-            Spacer(minLength: 30)
+            Spacer(minLength: isCompactHeight ? 18 : 30)
 
             VStack(spacing: 12) {
                 MoreSkillsBadgeStack()
@@ -685,9 +689,9 @@ private struct OnboardingSkillsWorkflowPage: View {
             }
             .frame(maxWidth: .infinity, alignment: .center)
 
-            Spacer(minLength: 34)
+            Spacer(minLength: isCompactHeight ? 18 : 34)
 
-            Spacer(minLength: 28)
+            Spacer(minLength: isCompactHeight ? 16 : 28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 4)
@@ -698,6 +702,10 @@ private struct OnboardingSkillsWorkflowPage: View {
 private struct OnboardingCustomSkillsPage: View {
     let currentPage: Int
     let totalPages: Int
+
+    private var isCompactHeight: Bool {
+        UIScreen.main.bounds.height <= 700
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -713,21 +721,21 @@ private struct OnboardingCustomSkillsPage: View {
                     .foregroundStyle(Color.accentPrimary)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            .padding(.top, 38)
+            .padding(.top, isCompactHeight ? 14 : 38)
 
-            Spacer(minLength: 26)
+            Spacer(minLength: isCompactHeight ? 14 : 26)
 
-            CustomSkillsPreviewCard()
+            CustomSkillsPreviewCard(isCompactHeight: isCompactHeight)
                 .padding(.horizontal, 10)
 
-            Spacer(minLength: 24)
+            Spacer(minLength: isCompactHeight ? 16 : 24)
 
             CustomSkillsCalloutBubble()
                 .frame(maxWidth: .infinity)
 
-            Spacer(minLength: 34)
+            Spacer(minLength: isCompactHeight ? 18 : 34)
 
-            Spacer(minLength: 28)
+            Spacer(minLength: isCompactHeight ? 16 : 28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .padding(.horizontal, 4)
@@ -736,21 +744,23 @@ private struct OnboardingCustomSkillsPage: View {
 }
 
 private struct CustomSkillsPreviewCard: View {
+    let isCompactHeight: Bool
+
     private let items: [CustomSkillPreviewItem] = [
         .init(
-            icon: .system(name: "envelope.badge.fill"),
+            icon: .system(name: "music.note.tv"),
             iconTint: Color(red: 0.22, green: 0.56, blue: 0.99),
             iconBackground: Color(red: 0.22, green: 0.56, blue: 0.99).opacity(0.12),
             titleKey: "onboarding.flow.page5.skill.newsletter"
         ),
         .init(
-            icon: .system(name: "phone.fill"),
+            icon: .system(name: "play.rectangle.fill"),
             iconTint: Color(red: 0.22, green: 0.67, blue: 0.41),
             iconBackground: Color(red: 0.22, green: 0.67, blue: 0.41).opacity(0.12),
             titleKey: "onboarding.flow.page5.skill.sales_followup"
         ),
         .init(
-            icon: .emoji("⚖️"),
+            icon: .system(name: "quote.bubble.fill"),
             iconTint: Color(red: 0.97, green: 0.49, blue: 0.19),
             iconBackground: Color(red: 0.97, green: 0.49, blue: 0.19).opacity(0.12),
             titleKey: "onboarding.flow.page5.skill.case_brief"
@@ -790,7 +800,7 @@ private struct CustomSkillsPreviewCard: View {
             .padding(.top, 2)
         }
         .padding(.horizontal, 18)
-        .padding(.vertical, 18)
+        .padding(.vertical, isCompactHeight ? 14 : 18)
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
                 .fill(Color.white.opacity(0.95))
@@ -1027,6 +1037,8 @@ private struct AskNotesAnswerCard: View {
 }
 
 private struct SkillsWorkflowGrid: View {
+    let isCompactHeight: Bool
+
     private let columns = [
         GridItem(.flexible(minimum: 0), spacing: 10),
         GridItem(.flexible(minimum: 0), spacing: 10)
@@ -1034,23 +1046,23 @@ private struct SkillsWorkflowGrid: View {
 
     private let items: [SkillsWorkflowItem] = [
         .init(
-            icon: .emoji("⚖️"),
-            titleKey: "onboarding.flow.page4.card.advocate.title",
+            icon: .emoji("🎣"),
+            titleKey: "agent_recipe.hook_generator.name",
             detailKey: "onboarding.flow.page4.card.advocate.detail"
         ),
         .init(
-            icon: .emoji("💡"),
-            titleKey: "onboarding.flow.page4.card.brainstorm.title",
+            icon: .emoji("📣"),
+            titleKey: "agent_recipe.caption_pack.name",
             detailKey: "onboarding.flow.page4.card.brainstorm.detail"
         ),
         .init(
-            icon: .emoji("🌍"),
-            titleKey: "onboarding.flow.page4.card.translate.title",
+            icon: .emoji("📈"),
+            titleKey: "agent_recipe.why_viral.name",
             detailKey: "onboarding.flow.page4.card.translate.detail"
         ),
         .init(
-            icon: .system(name: "paperplane.fill"),
-            titleKey: "onboarding.flow.page4.card.publish.title",
+            icon: .emoji("✍️"),
+            titleKey: "agent_recipe.humanizer.name",
             detailKey: "onboarding.flow.page4.card.publish.detail"
         )
     ]
@@ -1058,7 +1070,7 @@ private struct SkillsWorkflowGrid: View {
     var body: some View {
         LazyVGrid(columns: columns, spacing: 10) {
             ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                SkillsWorkflowCard(item: item)
+                SkillsWorkflowCard(item: item, isCompactHeight: isCompactHeight)
             }
         }
     }
@@ -1066,20 +1078,21 @@ private struct SkillsWorkflowGrid: View {
 
 private struct SkillsWorkflowCard: View {
     let item: SkillsWorkflowItem
+    let isCompactHeight: Bool
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
+        VStack(alignment: .leading, spacing: isCompactHeight ? 8 : 0) {
             switch item.icon {
             case .emoji(let value):
                 Text(verbatim: value)
-                    .font(.system(size: 29))
+                    .font(.system(size: isCompactHeight ? 25 : 29))
             case .system(let name):
                 Image(systemName: name)
-                    .font(.system(size: 28, weight: .semibold))
+                    .font(.system(size: isCompactHeight ? 24 : 28, weight: .semibold))
                     .foregroundStyle(Color(red: 0.26, green: 0.50, blue: 0.97))
             }
 
-            Spacer(minLength: 18)
+            Spacer(minLength: isCompactHeight ? 6 : 18)
 
             Text(L10n.text(item.titleKey))
                 .font(.system(size: 17, weight: .semibold, design: .default))
@@ -1087,7 +1100,7 @@ private struct SkillsWorkflowCard: View {
                 .lineLimit(2)
                 .fixedSize(horizontal: false, vertical: true)
 
-            Spacer(minLength: 8)
+            Spacer(minLength: isCompactHeight ? 2 : 8)
 
             Text(L10n.text(item.detailKey))
                 .font(.system(size: 15, weight: .regular, design: .default))
@@ -1099,8 +1112,8 @@ private struct SkillsWorkflowCard: View {
             Spacer(minLength: 0)
         }
         .padding(.horizontal, 16)
-        .padding(.vertical, 16)
-        .frame(maxWidth: .infinity, minHeight: 176, alignment: .topLeading)
+        .padding(.vertical, isCompactHeight ? 12 : 16)
+        .frame(maxWidth: .infinity, minHeight: isCompactHeight ? 154 : 176, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
                 .fill(Color.white.opacity(0.94))

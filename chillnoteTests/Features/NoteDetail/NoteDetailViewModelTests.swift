@@ -75,41 +75,6 @@ final class NoteDetailViewModelTests: XCTestCase {
         XCTAssertTrue(didDismiss)
     }
 
-    func testExecuteTidyActionSuccessShowsToolbarAndUpdatesContent() async {
-        let note = Note(content: "messy", userId: "u1")
-        context.insert(note)
-
-        var deps = NoteDetailViewModel.Dependencies()
-        deps.executeTidy = { _ in "tidy" }
-
-        let viewModel = NoteDetailViewModel(note: note, dependencies: deps)
-        viewModel.configureForTesting(modelContext: context)
-
-        await viewModel.executeTidyAction()
-
-        XCTAssertEqual(note.content, "tidy")
-        XCTAssertTrue(viewModel.showAIToolbar)
-        XCTAssertEqual(viewModel.aiOriginalContent, "messy")
-    }
-
-    func testExecuteTidyActionLimitErrorShowsSubscriptionSheet() async {
-        let note = Note(content: "messy", userId: "u1")
-        context.insert(note)
-
-        var deps = NoteDetailViewModel.Dependencies()
-        deps.executeTidy = { _ in
-            throw NSError(domain: "Test", code: 1, userInfo: [NSLocalizedDescriptionKey: "daily free tidy limit reached"])
-        }
-
-        let viewModel = NoteDetailViewModel(note: note, dependencies: deps)
-        viewModel.configureForTesting(modelContext: context)
-
-        await viewModel.executeTidyAction()
-
-        XCTAssertTrue(viewModel.showSubscription)
-        XCTAssertFalse(viewModel.isProcessing)
-    }
-
     func testHandleAIInputWithEmptyInputSkipsRequest() async {
         let note = Note(content: "original", userId: "u1")
         context.insert(note)

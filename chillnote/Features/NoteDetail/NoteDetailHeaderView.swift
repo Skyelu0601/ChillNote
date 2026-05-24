@@ -4,12 +4,10 @@ struct NoteDetailHeaderView: View {
     let isDeleted: Bool
     let isRecording: Bool
     let recordingTimeString: String
-    let isTidyEnabled: Bool
     let isAISkillsEnabled: Bool
     let onBack: () -> Void
     let onRestore: () -> Void
     let onStopRecording: () -> Void
-    let onTidy: () -> Void
     let onAISkills: () -> Void
     let onExport: () -> Void
     let onDelete: () -> Void
@@ -60,30 +58,12 @@ struct NoteDetailHeaderView: View {
                 .background(Capsule().fill(Color.bgSecondary))
                 .transition(.scale(scale: 0.9).combined(with: .opacity))
             } else {
-                HStack(spacing: 8) {
-                    Button(action: onAISkills) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 16))
-                            .foregroundColor(.accentPrimary)
-                            .frame(width: 32, height: 32)
-                            .background(Color.bgSecondary)
-                            .clipShape(Circle())
-                    }
-                    .accessibilityLabel(L10n.text("note_detail.header.accessibility.ai_skills"))
-                    .disabled(!isAISkillsEnabled)
-                    .opacity(isAISkillsEnabled ? 1 : 0.5)
-
-                    Button(action: onTidy) {
-                        Image(systemName: "wand.and.stars")
-                            .font(.system(size: 16))
-                            .foregroundColor(.accentPrimary)
-                            .frame(width: 32, height: 32)
-                            .background(Color.bgSecondary)
-                            .clipShape(Circle())
-                    }
-                    .accessibilityLabel(L10n.text("note_detail.header.accessibility.chillo_magic"))
-                    .disabled(!isTidyEnabled)
-                    .opacity(isTidyEnabled ? 1 : 0.5)
+                HStack(spacing: 6) {
+                    NoteDetailLightningBallButton(
+                        action: onAISkills,
+                        isEnabled: isAISkillsEnabled,
+                        size: 36
+                    )
 
                     Menu {
                         Button(action: onExport) {
@@ -101,9 +81,14 @@ struct NoteDetailHeaderView: View {
                         Image(systemName: "ellipsis")
                             .font(.system(size: 16))
                             .foregroundColor(.textSub)
-                            .frame(width: 32, height: 32)
+                            .frame(width: 36, height: 36)
                             .background(Color.bgSecondary)
                             .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .strokeBorder(Color.borderSubtle, lineWidth: 1)
+                            )
+                            .shadow(color: Color.shadowColor, radius: 5, x: 0, y: 2)
                     }
                     .accessibilityLabel(L10n.text("note_detail.header.accessibility.more_actions"))
                 }

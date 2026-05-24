@@ -2,8 +2,13 @@ import Foundation
 import SwiftData
 
 enum NotesFeedMode: Equatable {
-    case active
+    case active(section: NoteSection?)
     case trash
+
+    var section: NoteSection? {
+        guard case .active(let section) = self else { return nil }
+        return section
+    }
 }
 
 struct NotesPage {
@@ -74,7 +79,7 @@ final class SwiftDataNotesRepository: NotesRepository {
         let includeDeleted = mode == .trash
         let startOffset = cursor ?? 0
 
-        if FeatureFlags.useLocalFTSSearch {
+        if FeatureFlags.useLocalFTSSearch, mode.section == nil {
             var collected: [Note] = []
             var searchOffset = startOffset
             let chunkSize = max(limit * 2, 50)
@@ -230,7 +235,19 @@ final class SwiftDataNotesRepository: NotesRepository {
 
     private func basePredicate(userId: String, mode: NotesFeedMode) -> Predicate<Note> {
         switch mode {
-        case .active:
+        case .active(let section):
+            if let section {
+                let sectionRaw = section.rawValue
+                if section == .inbox {
+                    return #Predicate<Note> { note in
+                        note.userId == userId && note.deletedAt == nil && (note.sectionRaw == nil || note.sectionRaw == sectionRaw)
+                    }
+                } else {
+                    return #Predicate<Note> { note in
+                        note.userId == userId && note.deletedAt == nil && note.sectionRaw == sectionRaw
+                    }
+                }
+            }
             return #Predicate<Note> { note in
                 note.userId == userId && note.deletedAt == nil
             }
@@ -253,8 +270,10 @@ final class SwiftDataNotesRepository: NotesRepository {
         let filtered = tag.notes.filter { note in
             guard note.userId == userId else { return false }
             switch mode {
-            case .active:
-                return note.deletedAt == nil
+            case .active(let section):
+                guard note.deletedAt == nil else { return false }
+                guard let section else { return true }
+                return note.section == section
             case .trash:
                 return note.deletedAt != nil
             }

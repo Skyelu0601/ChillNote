@@ -65,6 +65,5 @@ struct NoteAISkillPreview: Identifiable {
 }
 
 enum NoteAITransformation {
-    case tidy
     case aiSkill(NoteAISkillPreview, NoteAISkillApplyMode)
 }

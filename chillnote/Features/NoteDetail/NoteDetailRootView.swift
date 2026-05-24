@@ -40,12 +40,10 @@ struct NoteDetailView: View {
                     isDeleted: viewModel.isDeleted,
                     isRecording: speechRecognizer.isRecording,
                     recordingTimeString: viewModel.timeString(from: viewModel.recordingDuration),
-                    isTidyEnabled: viewModel.isTidyEnabled,
                     isAISkillsEnabled: viewModel.isAISkillsEnabled,
                     onBack: { viewModel.send(.backTapped) },
                     onRestore: { viewModel.send(.restoreTapped) },
                     onStopRecording: { viewModel.send(.stopRecordingTapped) },
-                    onTidy: { viewModel.send(.tidyTapped) },
                     onAISkills: { viewModel.send(.aiSkillsTapped) },
                     onExport: { viewModel.send(.exportTapped) },
                     onDelete: { viewModel.send(.deleteTapped) },
@@ -143,6 +141,7 @@ struct NoteDetailView: View {
             )
         }
     }
+
 }
 
 #Preview {

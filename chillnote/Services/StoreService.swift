@@ -8,7 +8,6 @@ enum SubscriptionTier: String, CaseIterable {
 
 enum DailyQuotaFeature: String {
     case voice
-    case tidy
     case agentRecipe = "agent_recipe"
     case chat
 }
@@ -246,7 +245,6 @@ class StoreService: ObservableObject {
     static let freeRecordingTimeLimit: TimeInterval = 60
     static let proRecordingTimeLimit: TimeInterval = 600
     static let freeDailyVoiceLimit = 5
-    static let freeDailyTidyLimit = 5
     static let freeDailyAgentRecipeLimit = 3
     static let freeDailyAIChatLimit = 10
     
@@ -270,10 +268,6 @@ class StoreService: ObservableObject {
         currentTier == .pro ? Int.max : Self.freeDailyVoiceLimit
     }
 
-    var dailyTidyLimit: Int {
-        currentTier == .pro ? Int.max : Self.freeDailyTidyLimit
-    }
-
     var dailyAgentRecipeLimit: Int {
         currentTier == .pro ? Int.max : Self.freeDailyAgentRecipeLimit
     }
@@ -284,7 +278,6 @@ class StoreService: ObservableObject {
 
     // MARK: - Usage Tracking
     private let voiceUsageKey = "daily_voice_ai_usage"
-    private let tidyUsageKey = "daily_tidy_ai_usage"
     private let agentRecipeUsageKey = "daily_agent_recipe_ai_usage"
     private let chatUsageKey = "daily_chat_ai_usage"
     
@@ -296,12 +289,6 @@ class StoreService: ObservableObject {
     private var currentDailyVoiceUsage: Int {
         let defaults = UserDefaults.standard
         let key = usageKeyForToday(baseKey: voiceUsageKey)
-        return defaults.integer(forKey: key)
-    }
-
-    private var currentDailyTidyUsage: Int {
-        let defaults = UserDefaults.standard
-        let key = usageKeyForToday(baseKey: tidyUsageKey)
         return defaults.integer(forKey: key)
     }
 
@@ -329,11 +316,6 @@ class StoreService: ObservableObject {
         return currentDailyVoiceUsage < dailyVoiceLimit
     }
 
-    func canUseTidyAI() -> Bool {
-        if currentTier == .pro { return true }
-        return currentDailyTidyUsage < dailyTidyLimit
-    }
-
     func canUseAgentRecipeAI() -> Bool {
         if currentTier == .pro { return true }
         return currentDailyAgentRecipeUsage < dailyAgentRecipeLimit
@@ -342,14 +324,6 @@ class StoreService: ObservableObject {
     func canUseAIChat() -> Bool {
         if currentTier == .pro { return true }
         return currentDailyAIChatUsage < dailyAIChatLimit
-    }
-
-    func incrementTidyAIUsage() {
-        if currentTier == .pro { return }
-        let defaults = UserDefaults.standard
-        let key = usageKeyForToday(baseKey: tidyUsageKey)
-        let current = defaults.integer(forKey: key)
-        defaults.set(current + 1, forKey: key)
     }
 
     func incrementAgentRecipeAIUsage() {
@@ -374,13 +348,6 @@ class StoreService: ObservableObject {
         let key = usageKeyForToday(baseKey: voiceUsageKey)
         let current = defaults.integer(forKey: key)
         defaults.set(current + 1, forKey: key)
-    }
-
-    @discardableResult
-    func consumeTidyAIUsage() -> Bool {
-        guard canUseTidyAI() else { return false }
-        incrementTidyAIUsage()
-        return true
     }
 
     @discardableResult

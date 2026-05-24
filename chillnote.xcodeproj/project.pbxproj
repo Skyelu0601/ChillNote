@@ -15,6 +15,7 @@
 		49862ACB2F28AB9E00ADFB08 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ACA2F28AB9E00ADFB08 /* GoogleSignIn */; };
 		49862ACE2F28AC7000ADFB08 /* RichTextKit in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ACD2F28AC7000ADFB08 /* RichTextKit */; };
 		49862ADB2F29C5F400ADFB08 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ADA2F29C5F400ADFB08 /* Supabase */; };
+		49862ADC2F29C5F400ADFB08 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = 49862ADA2F29C5F400ADFB08 /* Supabase */; };
 		499584AF2F0C01EE0053760D /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 499584AE2F0C01EE0053760D /* StoreKit.framework */; };
 		4A7E0504320A111A0031D6A4 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 4A7E0503320A111A0031D6A4 /* ZIPFoundation */; };
 		51BBCBCA3E5F5686457FE3C9 /* ShareL10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7C8A054AC616AD68350DA3 /* ShareL10n.swift */; };
@@ -128,15 +129,11 @@
 		};
 		499583DF2F0BD2770053760D /* chillnoteTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = chillnoteTests;
 			sourceTree = "<group>";
 		};
 		499583E92F0BD2770053760D /* chillnoteUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = chillnoteUITests;
 			sourceTree = "<group>";
 		};
@@ -148,6 +145,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				93598F33657753834F17A12B /* Foundation.framework in Frameworks */,
+				49862ADC2F29C5F400ADFB08 /* Supabase in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -272,6 +270,9 @@
 			dependencies = (
 			);
 			name = ChillNoteShareExtension;
+			packageProductDependencies = (
+				49862ADA2F29C5F400ADFB08 /* Supabase */,
+			);
 			productName = ChillNoteShareExtension;
 			productReference = CEF4C767BEF8D0B5809BF10B /* ChillNoteShareExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
@@ -555,7 +556,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -587,7 +588,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ChillNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -614,7 +615,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ChillNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -645,7 +646,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -679,7 +680,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -822,7 +823,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -841,7 +842,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -858,7 +859,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -875,7 +876,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -903,7 +904,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.1.2;
+				MARKETING_VERSION = 1.1.3;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;

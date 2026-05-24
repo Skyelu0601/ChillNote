@@ -3,41 +3,6 @@ import SwiftUI
 
 @MainActor
 extension NoteDetailViewModel {
-    func executeTidyAction() async {
-        let contentToTransform = note.content
-
-        if !showAIToolbar {
-            aiOriginalContent = note.content
-        }
-        lastAITransformation = .tidy
-
-        isProcessing = true
-
-        do {
-            let result = try await dependencies.executeTidy(contentToTransform)
-
-            isProgrammaticContentUpdate = true
-            note.content = result
-            note.updatedAt = dependencies.now()
-            persistAndSync()
-
-            isProcessing = false
-            withAnimation {
-                showAIToolbar = true
-            }
-
-            DispatchQueue.main.async {
-                self.isProgrammaticContentUpdate = false
-            }
-        } catch {
-            isProcessing = false
-            let message = error.localizedDescription
-            if message.localizedCaseInsensitiveContains("daily free tidy limit reached") {
-                showSubscription = true
-            }
-        }
-    }
-
     func undoAIContent() {
         guard let aiOriginalContent else {
             dismissAIToolbar()
@@ -168,9 +133,9 @@ extension NoteDetailViewModel {
     }
 
     func retryLastAITransformation() async {
-        switch lastAITransformation {
-        case .tidy:
-            await executeTidyAction()
+        guard let transformation = lastAITransformation else { return }
+
+        switch transformation {
         case .aiSkill(let preview, let mode):
             isProcessing = true
             isProgrammaticContentUpdate = true

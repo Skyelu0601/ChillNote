@@ -39,6 +39,7 @@ struct HomeScreenState {
     let showBatchTagSheet: Bool
     let isSidebarPresented: Bool
     let selectedTag: Tag?
+    let selectedSection: NoteSection?
     let selectedNotes: Set<UUID>
     let isVoiceMode: Bool
 
@@ -87,7 +88,9 @@ enum HomeScreenAction {
     case setAgentMenuOpen(Bool)
     case setShowChillRecipes(Bool)
     case setSelectedTag(Tag?)
+    case setSelectedSection(NoteSection?)
     case setTrashSelected(Bool)
+    case selectSection(NoteSection)
 
     case toggleSidebar
     case openSidebar
@@ -100,6 +103,7 @@ enum HomeScreenAction {
     case restoreNote(Note)
     case deleteNotePermanently(Note)
     case togglePin(Note)
+    case moveNote(Note, NoteSection)
     case deleteNote(Note)
     case loadMoreIfNeeded(Note)
     case toggleNoteSelection(Note)

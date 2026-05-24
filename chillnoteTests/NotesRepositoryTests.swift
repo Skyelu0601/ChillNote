@@ -35,16 +35,16 @@ final class NotesRepositoryTests: XCTestCase {
         }
         try context.save()
 
-        let first = try await repository.fetchPage(userId: "u1", mode: .active, tagId: nil, cursor: nil, limit: 50)
+        let first = try await repository.fetchPage(userId: "u1", mode: .active(section: nil), tagId: nil, cursor: nil, limit: 50)
         XCTAssertEqual(first.items.count, 50)
         XCTAssertEqual(first.total, 120)
         XCTAssertEqual(first.nextCursor, 50)
 
-        let second = try await repository.fetchPage(userId: "u1", mode: .active, tagId: nil, cursor: first.nextCursor, limit: 50)
+        let second = try await repository.fetchPage(userId: "u1", mode: .active(section: nil), tagId: nil, cursor: first.nextCursor, limit: 50)
         XCTAssertEqual(second.items.count, 50)
         XCTAssertEqual(second.nextCursor, 100)
 
-        let third = try await repository.fetchPage(userId: "u1", mode: .active, tagId: nil, cursor: second.nextCursor, limit: 50)
+        let third = try await repository.fetchPage(userId: "u1", mode: .active(section: nil), tagId: nil, cursor: second.nextCursor, limit: 50)
         XCTAssertEqual(third.items.count, 20)
         XCTAssertNil(third.nextCursor)
     }
@@ -61,8 +61,28 @@ final class NotesRepositoryTests: XCTestCase {
         context.insert(newUnpinned)
         try context.save()
 
-        let page = try await repository.fetchPage(userId: "u1", mode: .active, tagId: nil, cursor: nil, limit: 10)
+        let page = try await repository.fetchPage(userId: "u1", mode: .active(section: nil), tagId: nil, cursor: nil, limit: 10)
         XCTAssertEqual(page.items.first?.id, oldPinned.id)
+    }
+
+    func testFetchPageFiltersBySection() async throws {
+        let inbox = Note(content: "inbox", userId: "u1")
+        let draft = Note(content: "draft", userId: "u1")
+        draft.section = .drafts
+        let published = Note(content: "published", userId: "u1")
+        published.section = .published
+
+        context.insert(inbox)
+        context.insert(draft)
+        context.insert(published)
+        try context.save()
+
+        let drafts = try await repository.fetchPage(userId: "u1", mode: .active(section: .drafts), tagId: nil, cursor: nil, limit: 10)
+        XCTAssertEqual(drafts.items.map(\.id), [draft.id])
+        XCTAssertEqual(drafts.total, 1)
+
+        let all = try await repository.fetchPage(userId: "u1", mode: .active(section: nil), tagId: nil, cursor: nil, limit: 10)
+        XCTAssertEqual(all.total, 3)
     }
 
     func testSearchPageFallbackContainsAndTagFilter() async throws {
@@ -79,7 +99,7 @@ final class NotesRepositoryTests: XCTestCase {
         let page = try await repository.searchPage(
             userId: "u1",
             query: "meeting",
-            mode: .active,
+            mode: .active(section: nil),
             tagId: tag.id,
             cursor: nil,
             limit: 50
@@ -108,17 +128,17 @@ final class NotesRepositoryTests: XCTestCase {
         let expectedTaggedCount = taggedNotes.count
         XCTAssertEqual(expectedTaggedCount, 5)
 
-        let first = try await repository.fetchPage(userId: "u1", mode: .active, tagId: tag.id, cursor: nil, limit: 2)
+        let first = try await repository.fetchPage(userId: "u1", mode: .active(section: nil), tagId: tag.id, cursor: nil, limit: 2)
         XCTAssertEqual(first.items.count, 2)
         XCTAssertEqual(first.total, expectedTaggedCount)
         XCTAssertEqual(first.nextCursor, 2)
 
-        let second = try await repository.fetchPage(userId: "u1", mode: .active, tagId: tag.id, cursor: first.nextCursor, limit: 2)
+        let second = try await repository.fetchPage(userId: "u1", mode: .active(section: nil), tagId: tag.id, cursor: first.nextCursor, limit: 2)
         XCTAssertEqual(second.items.count, 2)
         XCTAssertEqual(second.total, expectedTaggedCount)
         XCTAssertEqual(second.nextCursor, 4)
 
-        let third = try await repository.fetchPage(userId: "u1", mode: .active, tagId: tag.id, cursor: second.nextCursor, limit: 2)
+        let third = try await repository.fetchPage(userId: "u1", mode: .active(section: nil), tagId: tag.id, cursor: second.nextCursor, limit: 2)
         XCTAssertEqual(third.items.count, 1)
         XCTAssertEqual(third.total, expectedTaggedCount)
         XCTAssertNil(third.nextCursor)
