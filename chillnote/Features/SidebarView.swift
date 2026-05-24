@@ -92,11 +92,11 @@ struct SidebarView: View {
                     VStack(spacing: 6) {
                         SidebarItem(
                             icon: "doc.text",
-                            title: L10n.text("sidebar.nav.all_notes"),
-                            isSelected: selectedTag == nil && selectedSection == nil && !isTrashSelected
+                            title: L10n.text("note_section.inbox"),
+                            isSelected: selectedTag == nil && selectedSection == .inbox && !isTrashSelected
                         ) {
                             selectedTag = nil
-                            selectedSection = nil
+                            selectedSection = .inbox
                             isTrashSelected = false
                             isPresented = false
                         }

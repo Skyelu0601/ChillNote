@@ -1,11 +1,11 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import type { MouseEvent } from "react";
 import {
-  BarChart3,
   Bot,
+  Bold,
   Check,
-  CheckSquare,
   CreditCard,
   ExternalLink,
   FileText,
@@ -24,6 +24,8 @@ import {
   Square,
   Tag,
   Trash2,
+  ListTodo,
+  Undo2,
   X,
 } from "lucide-react";
 import type { Session } from "@supabase/supabase-js";
@@ -42,7 +44,6 @@ import {
   SubscriptionStatus,
   syncNotes,
   TagDTO,
-  tidyNote,
   transcribeAudio,
 } from "@/lib/chillnote-api";
 import {
@@ -54,12 +55,10 @@ import {
   getOrCreateDeviceId,
   metadataFromURL,
   normalizeTagColorHex,
-  parseChecklist,
   previewPlainText,
   PRO_RECORDING_TIME_LIMIT_SECONDS,
   sortNotesForFeed,
   sourceMetadataForNote,
-  toggleChecklistItem,
 } from "@/lib/chillnote-model";
 import {
   agentRecipes,
@@ -72,14 +71,27 @@ import { supabase } from "@/lib/supabase";
 import { AuthPanel } from "./auth-panel";
 
 type FeedMode = "active" | "trash";
-type MainPanel = "notes" | "stats" | "skills" | "settings";
+type MainPanel = "notes" | "skills" | "settings";
+type RecipeSection = "library" | "mySkills";
 type RecipeScope = "active" | "visible";
 type VoiceLanguageMode = "auto" | "prefer";
+type CaptionPackGoal = "startDiscussion" | "getSaves" | "getShares" | "driveFollows";
+type CaptionPackTone = "casualUseful" | "educational" | "bold" | "storyDriven" | "creatorVoice";
+type CaptionPackOutputStyle = "concise" | "balanced" | "detailed";
 
 const WEB_SAVED_RECIPE_IDS_KEY = "chillnote.web.saved_recipe_ids";
 const WEB_VOICE_LANGUAGE_MODE_KEY = "chillnote.web.voice_language_mode";
 const WEB_VOICE_LANGUAGE_HINT_KEY = "chillnote.web.voice_language_hint";
+const WEB_CAPTION_TIKTOK_KEY = "chillnote.web.caption_pack.tiktok";
+const WEB_CAPTION_YOUTUBE_KEY = "chillnote.web.caption_pack.youtube_shorts";
+const WEB_CAPTION_INSTAGRAM_KEY = "chillnote.web.caption_pack.instagram_reels";
+const WEB_CAPTION_GOAL_KEY = "chillnote.web.caption_pack.goal";
+const WEB_CAPTION_TONE_KEY = "chillnote.web.caption_pack.tone";
+const WEB_CAPTION_STYLE_KEY = "chillnote.web.caption_pack.output_style";
 const validAgentRecipeIds = new Set(agentRecipes.map((recipe) => recipe.id));
+const captionGoalOptions = ["startDiscussion", "getSaves", "getShares", "driveFollows"] as const;
+const captionToneOptions = ["casualUseful", "educational", "bold", "storyDriven", "creatorVoice"] as const;
+const captionOutputStyleOptions = ["concise", "balanced", "detailed"] as const;
 
 function escapeHtml(value: string) {
   return value
@@ -214,11 +226,17 @@ function MarkdownRichEditor({
   onChange,
   placeholder,
   disabled,
+  onAISkills,
+  aiSkillsDisabled,
+  aiSkillsRunning,
 }: {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
   disabled: boolean;
+  onAISkills: () => void;
+  aiSkillsDisabled: boolean;
+  aiSkillsRunning: boolean;
 }) {
   const editorRef = useRef<HTMLDivElement | null>(null);
   const lastMarkdownRef = useRef<string | null>(null);
@@ -239,18 +257,97 @@ function MarkdownRichEditor({
     onChange(nextValue);
   }
 
+  function handleEditorClick(event: MouseEvent<HTMLDivElement>) {
+    const target = event.target;
+    if (!(target instanceof HTMLElement) || !target.matches(".task-box")) return;
+
+    event.preventDefault();
+    const item = target.closest('li[data-task="true"]');
+    if (!(item instanceof HTMLElement)) return;
+
+    const checked = item.dataset.checked !== "true";
+    item.dataset.checked = checked ? "true" : "false";
+    target.textContent = checked ? "✓" : "";
+    handleInput();
+  }
+
+  function runEditorCommand(command: "bold" | "undo" | "insertTodo") {
+    const editor = editorRef.current;
+    if (!editor || disabled) return;
+    editor.focus();
+
+    if (command === "insertTodo") {
+      document.execCommand(
+        "insertHTML",
+        false,
+        '<ul><li data-task="true" data-checked="false"><span class="task-box"></span>&nbsp;</li></ul>'
+      );
+    } else {
+      document.execCommand(command === "bold" ? "bold" : "undo");
+    }
+
+    handleInput();
+  }
+
+  function handleToolMouseDown(event: MouseEvent<HTMLButtonElement>, action: () => void) {
+    event.preventDefault();
+    action();
+  }
+
   return (
-    <div
-      ref={editorRef}
-      className="rich-note-editor"
-      contentEditable={!disabled}
-      data-placeholder={placeholder}
-      onInput={handleInput}
-      role="textbox"
-      aria-multiline="true"
-      spellCheck
-      suppressContentEditableWarning
-    />
+    <>
+      <div className="editor-tools" aria-label={copy.editor.toolbarLabel}>
+        <button
+          className="editor-tool-button"
+          disabled={disabled}
+          onMouseDown={(event) => handleToolMouseDown(event, () => runEditorCommand("bold"))}
+          title={copy.editor.bold}
+          aria-label={copy.editor.bold}
+        >
+          <Bold size={16} />
+        </button>
+        <button
+          className="editor-tool-button"
+          disabled={disabled}
+          onMouseDown={(event) => handleToolMouseDown(event, () => runEditorCommand("insertTodo"))}
+          title={copy.editor.todo}
+          aria-label={copy.editor.todo}
+        >
+          <ListTodo size={16} />
+        </button>
+        <button
+          className="editor-tool-button"
+          disabled={disabled}
+          onMouseDown={(event) => handleToolMouseDown(event, () => runEditorCommand("undo"))}
+          title={copy.editor.undo}
+          aria-label={copy.editor.undo}
+        >
+          <Undo2 size={16} />
+        </button>
+        <span className="editor-tools-separator" />
+        <button
+          className="editor-tool-button ai"
+          disabled={aiSkillsDisabled}
+          onClick={onAISkills}
+          title={copy.editor.aiSkills}
+          aria-label={copy.editor.aiSkills}
+        >
+          {aiSkillsRunning ? <Loader2 className="spin" size={16} /> : <Sparkles size={16} />}
+        </button>
+      </div>
+      <div
+        ref={editorRef}
+        className="rich-note-editor"
+        contentEditable={!disabled}
+        data-placeholder={placeholder}
+        onClick={handleEditorClick}
+        onInput={handleInput}
+        role="textbox"
+        aria-multiline="true"
+        spellCheck
+        suppressContentEditableWarning
+      />
+    </>
   );
 }
 
@@ -297,17 +394,18 @@ function saveStringArray(key: string, value: string[]) {
   window.localStorage.setItem(key, JSON.stringify(value));
 }
 
-function startOfToday() {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+function loadBoolean(key: string, fallback: boolean) {
+  if (typeof window === "undefined") return fallback;
+  const raw = window.localStorage.getItem(key);
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  return fallback;
 }
 
-function startOfCurrentWeek() {
-  const today = new Date(startOfToday());
-  const day = today.getDay();
-  const mondayOffset = day === 0 ? -6 : 1 - day;
-  today.setDate(today.getDate() + mondayOffset);
-  return today.getTime();
+function loadOption<T extends string>(key: string, options: readonly T[], fallback: T) {
+  if (typeof window === "undefined") return fallback;
+  const raw = window.localStorage.getItem(key);
+  return raw && options.includes(raw as T) ? (raw as T) : fallback;
 }
 
 function mergeNotes(current: NoteDTO[], incoming: NoteDTO[], hardDeletedIds: string[] = []) {
@@ -340,13 +438,13 @@ export function ChillNoteWebApp() {
   const [error, setError] = useState<string | null>(null);
   const [syncing, setSyncing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [tidying, setTidying] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [newTagName, setNewTagName] = useState("");
   const [sourceURLDraft, setSourceURLDraft] = useState("");
   const [mainPanel, setMainPanel] = useState<MainPanel>("notes");
+  const [recipeSection, setRecipeSection] = useState<RecipeSection>("library");
   const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>(defaultSavedRecipeIds);
   const [selectedRecipeId, setSelectedRecipeId] = useState(defaultSavedRecipeIds[0]);
   const [selectedRecipeCategory, setSelectedRecipeCategory] = useState<AgentRecipeCategory>("think");
@@ -355,6 +453,15 @@ export function ChillNoteWebApp() {
   const [runningRecipe, setRunningRecipe] = useState(false);
   const [voiceLanguageMode, setVoiceLanguageMode] = useState<VoiceLanguageMode>("auto");
   const [voiceLanguageHint, setVoiceLanguageHint] = useState("");
+  const [captionSettingsOpen, setCaptionSettingsOpen] = useState(false);
+  const [captionTikTok, setCaptionTikTok] = useState(true);
+  const [captionYoutubeShorts, setCaptionYoutubeShorts] = useState(true);
+  const [captionInstagramReels, setCaptionInstagramReels] = useState(true);
+  const [captionGoal, setCaptionGoal] = useState<CaptionPackGoal>("startDiscussion");
+  const [captionTone, setCaptionTone] = useState<CaptionPackTone>("casualUseful");
+  const [captionOutputStyle, setCaptionOutputStyle] = useState<CaptionPackOutputStyle>("balanced");
+  const [noteAISkillsOpen, setNoteAISkillsOpen] = useState(false);
+  const [noteSkillInstruction, setNoteSkillInstruction] = useState("English");
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const deviceIdRef = useRef<string | null>(null);
@@ -367,6 +474,12 @@ export function ChillNoteWebApp() {
     const storedMode = window.localStorage.getItem(WEB_VOICE_LANGUAGE_MODE_KEY);
     setVoiceLanguageMode(storedMode === "prefer" ? "prefer" : "auto");
     setVoiceLanguageHint(window.localStorage.getItem(WEB_VOICE_LANGUAGE_HINT_KEY) ?? "");
+    setCaptionTikTok(loadBoolean(WEB_CAPTION_TIKTOK_KEY, true));
+    setCaptionYoutubeShorts(loadBoolean(WEB_CAPTION_YOUTUBE_KEY, true));
+    setCaptionInstagramReels(loadBoolean(WEB_CAPTION_INSTAGRAM_KEY, true));
+    setCaptionGoal(loadOption(WEB_CAPTION_GOAL_KEY, captionGoalOptions, "startDiscussion"));
+    setCaptionTone(loadOption(WEB_CAPTION_TONE_KEY, captionToneOptions, "casualUseful"));
+    setCaptionOutputStyle(loadOption(WEB_CAPTION_STYLE_KEY, captionOutputStyleOptions, "balanced"));
   }, []);
 
   useEffect(() => {
@@ -379,10 +492,19 @@ export function ChillNoteWebApp() {
     window.localStorage.setItem(WEB_VOICE_LANGUAGE_HINT_KEY, voiceLanguageHint);
   }, [voiceLanguageMode, voiceLanguageHint]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem(WEB_CAPTION_TIKTOK_KEY, String(captionTikTok));
+    window.localStorage.setItem(WEB_CAPTION_YOUTUBE_KEY, String(captionYoutubeShorts));
+    window.localStorage.setItem(WEB_CAPTION_INSTAGRAM_KEY, String(captionInstagramReels));
+    window.localStorage.setItem(WEB_CAPTION_GOAL_KEY, captionGoal);
+    window.localStorage.setItem(WEB_CAPTION_TONE_KEY, captionTone);
+    window.localStorage.setItem(WEB_CAPTION_STYLE_KEY, captionOutputStyle);
+  }, [captionGoal, captionInstagramReels, captionOutputStyle, captionTikTok, captionTone, captionYoutubeShorts]);
+
   const activeNote = notes.find((note) => note.id === activeId) ?? null;
   const activeTags = activeTagsForNote(activeNote, tags);
   const sourceMetadata = sourceMetadataForNote(activeNote);
-  const checklist = parseChecklist(draft);
   const isPro = subscription?.tier === "pro";
   const recordingLimit = isPro ? PRO_RECORDING_TIME_LIMIT_SECONDS : FREE_RECORDING_TIME_LIMIT_SECONDS;
 
@@ -407,18 +529,6 @@ export function ChillNoteWebApp() {
     return sortNotesForFeed(filtered);
   }, [feedMode, notes, query, selectedTagId, tags]);
 
-  const activeNotes = useMemo(() => notes.filter((note) => !note.deletedAt), [notes]);
-  const notesStats = useMemo(() => {
-    const todayStart = startOfToday();
-    const weekStart = startOfCurrentWeek();
-    return {
-      totalNotes: activeNotes.length,
-      totalTags: visibleTags.length,
-      todayNew: activeNotes.filter((note) => (dateTimeOrNull(note.createdAt) ?? 0) >= todayStart).length,
-      weekNew: activeNotes.filter((note) => (dateTimeOrNull(note.createdAt) ?? 0) >= weekStart).length,
-    };
-  }, [activeNotes, visibleTags.length]);
-
   const libraryRecipes = useMemo(
     () => agentRecipes.filter((recipe) => recipe.category === selectedRecipeCategory),
     [selectedRecipeCategory]
@@ -432,6 +542,7 @@ export function ChillNoteWebApp() {
   const selectedRecipe = agentRecipes.find((recipe) => recipe.id === selectedRecipeId)
     ?? savedRecipes[0]
     ?? agentRecipes[0];
+  const selectedSavedRecipe = savedRecipes.find((recipe) => recipe.id === selectedRecipeId) ?? savedRecipes[0] ?? null;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -575,25 +686,6 @@ export function ChillNoteWebApp() {
     if (!activeNote) return;
     const pinnedAt = activeNote.pinnedAt ? null : new Date().toISOString();
     await saveDraft(draft, { pinnedAt });
-  }
-
-  async function tidyDraft() {
-    if (!session || !draft.trim()) {
-      setError(copy.errors.emptyNote);
-      return;
-    }
-    setTidying(true);
-    setError(null);
-    try {
-      const tidied = await tidyNote(session.access_token, draft);
-      setDraft(tidied);
-      await saveDraft(tidied);
-    } catch (error) {
-      const message = error instanceof Error ? error.message : copy.errors.generic;
-      setError(message);
-    } finally {
-      setTidying(false);
-    }
   }
 
   async function startRecording() {
@@ -763,18 +855,25 @@ export function ChillNoteWebApp() {
     });
   }
 
-  async function toggleChecklist(index: number) {
-    const nextContent = toggleChecklistItem(draft, index);
-    setDraft(nextContent);
-    await saveDraft(nextContent);
-  }
-
   function toggleSavedRecipe(recipeId: string) {
     setSavedRecipeIds((current) => {
       if (current.includes(recipeId)) return current.filter((id) => id !== recipeId);
       return [...current, recipeId];
     });
     setSelectedRecipeId(recipeId);
+  }
+
+  function setCaptionPlatform(setter: (value: boolean) => void, nextValue: boolean) {
+    const selectedCount = [captionTikTok, captionYoutubeShorts, captionInstagramReels].filter(Boolean).length;
+    if (!nextValue && selectedCount <= 1) return;
+    setter(nextValue);
+  }
+
+  function openNoteAISkills() {
+    if (savedRecipes.length > 0 && !savedRecipes.some((recipe) => recipe.id === selectedRecipeId)) {
+      setSelectedRecipeId(savedRecipes[0].id);
+    }
+    setNoteAISkillsOpen(true);
   }
 
   async function executeSelectedRecipe() {
@@ -800,6 +899,32 @@ export function ChillNoteWebApp() {
       setActiveId(note.id);
       setDraft(result);
       await pushChanges({ notes: [note] });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : copy.errors.generic);
+    } finally {
+      setRunningRecipe(false);
+    }
+  }
+
+  async function applySelectedRecipeToActiveNote() {
+    if (!session || !activeNote || !selectedSavedRecipe) return;
+    if (!draft.trim()) {
+      setError(copy.errors.emptyNote);
+      return;
+    }
+
+    setRunningRecipe(true);
+    setError(null);
+    try {
+      const request = buildAgentRecipeRequest(
+        selectedSavedRecipe,
+        [{ ...activeNote, content: draft }],
+        noteSkillInstruction
+      );
+      const result = await runAgentRecipe(session.access_token, request.prompt, request.systemPrompt);
+      setDraft(result);
+      await saveDraft(result);
+      setNoteAISkillsOpen(false);
     } catch (error) {
       setError(error instanceof Error ? error.message : copy.errors.generic);
     } finally {
@@ -875,10 +1000,6 @@ export function ChillNoteWebApp() {
           <button className={mainPanel === "notes" ? "active" : ""} onClick={() => setMainPanel("notes")}>
             <FileText size={16} />
             {copy.app.panels.notes.nav}
-          </button>
-          <button className={mainPanel === "stats" ? "active" : ""} onClick={() => setMainPanel("stats")}>
-            <BarChart3 size={16} />
-            {copy.app.panels.stats.nav}
           </button>
           <button className={mainPanel === "skills" ? "active" : ""} onClick={() => setMainPanel("skills")}>
             <Bot size={16} />
@@ -962,10 +1083,6 @@ export function ChillNoteWebApp() {
               {recording ? <Square size={17} /> : <Mic size={17} />}
               {recording ? copy.app.stopRecording : transcribing ? copy.app.transcribing : copy.app.startRecording}
             </button>
-            <button className="ghost-button" onClick={tidyDraft} disabled={tidying || !draft.trim()}>
-              {tidying ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
-              {tidying ? copy.app.tidying : copy.app.tidy}
-            </button>
             <button className="primary-button compact" onClick={() => void saveDraft()} disabled={saving || !activeNote || Boolean(activeNote.deletedAt)}>
               {saving ? <Loader2 className="spin" size={17} /> : <Check size={17} />}
               {saving ? copy.app.saving : copy.app.save}
@@ -1032,23 +1149,58 @@ export function ChillNoteWebApp() {
                 </div>
               ) : null}
 
-              {checklist ? (
-                <div className="checklist-panel">
-                  {checklist.items.map((item, index) => (
-                    <button key={`${item.text}-${index}`} onClick={() => void toggleChecklist(index)}>
-                      <CheckSquare size={16} />
-                      <span className={item.isDone ? "done" : ""}>{item.text || copy.app.emptyChecklistItem}</span>
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-
               <MarkdownRichEditor
                 value={draft}
                 onChange={setDraft}
                 placeholder={copy.app.editorPlaceholder}
                 disabled={Boolean(activeNote.deletedAt)}
+                onAISkills={openNoteAISkills}
+                aiSkillsDisabled={Boolean(activeNote.deletedAt) || runningRecipe || savedRecipes.length === 0}
+                aiSkillsRunning={runningRecipe && noteAISkillsOpen}
               />
+              {noteAISkillsOpen ? (
+                <div className="modal-backdrop" role="presentation" onClick={() => setNoteAISkillsOpen(false)}>
+                  <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="note-ai-skills-title" onClick={(event) => event.stopPropagation()}>
+                    <header className="modal-header">
+                      <h2 id="note-ai-skills-title">{copy.editor.aiSkillsTitle}</h2>
+                      <button className="icon-button small" onClick={() => setNoteAISkillsOpen(false)} aria-label={copy.captionPack.done}>
+                        <X size={16} />
+                      </button>
+                    </header>
+
+                    {savedRecipes.length === 0 ? (
+                      <div className="empty-state compact">
+                        <h2>{copy.skills.emptyTitle}</h2>
+                        <p>{copy.skills.emptyBody}</p>
+                      </div>
+                    ) : (
+                      <>
+                        <label className="field-label">
+                          {copy.editor.chooseSkill}
+                          <select value={selectedSavedRecipe?.id ?? ""} onChange={(event) => setSelectedRecipeId(event.target.value)}>
+                            {savedRecipes.map((recipe) => (
+                              <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
+                            ))}
+                          </select>
+                        </label>
+
+                        {selectedSavedRecipe?.requiresInstruction ? (
+                          <label className="field-label">
+                            {copy.skills.targetLanguage}
+                            <input value={noteSkillInstruction} onChange={(event) => setNoteSkillInstruction(event.target.value)} />
+                          </label>
+                        ) : null}
+
+                        <p className="muted-copy">{copy.editor.aiSkillsHint}</p>
+                        <button className="primary-button compact" onClick={() => void applySelectedRecipeToActiveNote()} disabled={runningRecipe || !selectedSavedRecipe}>
+                          {runningRecipe ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
+                          {runningRecipe ? copy.skills.running : copy.editor.applySkill}
+                        </button>
+                      </>
+                    )}
+                  </section>
+                </div>
+              ) : null}
               <footer className="editor-footer">
                 <span>
                   {copy.app.lastSynced}: {formatDate(status)}
@@ -1083,113 +1235,154 @@ export function ChillNoteWebApp() {
               </button>
             </div>
           )
-          ) : mainPanel === "stats" ? (
-            <div className="panel-content">
-              <div className="stats-grid">
-                <article className="stat-tile">
-                  <FileText size={20} />
-                  <span>{copy.stats.totalNotes}</span>
-                  <strong>{notesStats.totalNotes}</strong>
-                </article>
-                <article className="stat-tile">
-                  <Tag size={20} />
-                  <span>{copy.stats.totalTags}</span>
-                  <strong>{notesStats.totalTags}</strong>
-                </article>
-                <article className="stat-tile">
-                  <Plus size={20} />
-                  <span>{copy.stats.todayNew}</span>
-                  <strong>{notesStats.todayNew}</strong>
-                </article>
-                <article className="stat-tile">
-                  <BarChart3 size={20} />
-                  <span>{copy.stats.weekNew}</span>
-                  <strong>{notesStats.weekNew}</strong>
-                </article>
-              </div>
-              <section className="settings-section">
-                <h2>{copy.stats.dataSourceTitle}</h2>
-                <p>{copy.stats.dataSourceBody}</p>
-              </section>
-            </div>
           ) : mainPanel === "skills" ? (
-            <div className="panel-content skills-layout">
-              <section className="recipe-browser">
-                <div className="recipe-tabs">
-                  {(Object.keys(recipeCategoryLabels) as AgentRecipeCategory[]).map((category) => (
-                    <button
-                      key={category}
-                      className={selectedRecipeCategory === category ? "active" : ""}
-                      onClick={() => setSelectedRecipeCategory(category)}
-                    >
-                      {recipeCategoryLabels[category]}
-                    </button>
+            <div className="panel-content skills-manager">
+              <div className="skills-section-tabs">
+                <button className={recipeSection === "library" ? "active" : ""} onClick={() => setRecipeSection("library")}>
+                  {copy.skills.library}
+                </button>
+                <button className={recipeSection === "mySkills" ? "active" : ""} onClick={() => setRecipeSection("mySkills")}>
+                  {copy.skills.mySkills}
+                </button>
+              </div>
+
+              {recipeSection === "library" ? (
+                <>
+                  <div className="recipe-tabs">
+                    {(Object.keys(recipeCategoryLabels) as AgentRecipeCategory[]).map((category) => (
+                      <button
+                        key={category}
+                        className={selectedRecipeCategory === category ? "active" : ""}
+                        onClick={() => setSelectedRecipeCategory(category)}
+                      >
+                        {recipeCategoryLabels[category]}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="recipe-grid">
+                    {libraryRecipes.map((recipe) => {
+                      const isSaved = savedRecipeIds.includes(recipe.id);
+                      return (
+                        <article className={`recipe-card ${isSaved ? "added" : ""}`} key={recipe.id}>
+                          <div className="recipe-main">
+                            <span className="recipe-icon">{recipe.icon}</span>
+                            <strong>{recipe.name}</strong>
+                            <small>{recipe.description}</small>
+                          </div>
+                          <div className="recipe-actions">
+                            <button className="icon-button small" onClick={() => toggleSavedRecipe(recipe.id)} aria-label={isSaved ? copy.skills.added : copy.skills.add}>
+                              {isSaved ? <Check size={17} /> : <Plus size={17} />}
+                            </button>
+                            {recipe.id === "caption_pack" ? (
+                              <button className="icon-button small" onClick={() => setCaptionSettingsOpen(true)} aria-label={copy.skills.configure}>
+                                <SettingsIcon size={16} />
+                              </button>
+                            ) : null}
+                          </div>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </>
+              ) : savedRecipes.length === 0 ? (
+                <div className="empty-state compact">
+                  <h2>{copy.skills.emptyTitle}</h2>
+                  <p>{copy.skills.emptyBody}</p>
+                  <button className="primary-button compact" onClick={() => setRecipeSection("library")}>
+                    <Plus size={17} />
+                    {copy.skills.add}
+                  </button>
+                </div>
+              ) : (
+                <div className="my-recipes-list">
+                  {savedRecipes.map((recipe) => (
+                    <article className="my-recipe-row" key={recipe.id}>
+                      <span className="recipe-icon">{recipe.icon}</span>
+                      <div>
+                        <strong>{recipe.name}</strong>
+                        <small>{recipe.description}</small>
+                      </div>
+                      <div className="recipe-actions">
+                        {recipe.id === "caption_pack" ? (
+                          <button className="icon-button small" onClick={() => setCaptionSettingsOpen(true)} aria-label={copy.skills.configure}>
+                            <SettingsIcon size={16} />
+                          </button>
+                        ) : null}
+                        <button className="icon-button small" onClick={() => toggleSavedRecipe(recipe.id)} aria-label={copy.skills.remove}>
+                          <X size={16} />
+                        </button>
+                      </div>
+                    </article>
                   ))}
                 </div>
-                <div className="recipe-grid">
-                  {libraryRecipes.map((recipe) => {
-                    const isSaved = savedRecipeIds.includes(recipe.id);
-                    const isSelected = selectedRecipe.id === recipe.id;
-                    return (
-                      <article className={`recipe-card ${isSelected ? "selected" : ""}`} key={recipe.id}>
-                        <button className="recipe-main" onClick={() => setSelectedRecipeId(recipe.id)}>
-                          <span className="recipe-icon">{recipe.icon}</span>
-                          <strong>{recipe.name}</strong>
-                          <small>{recipe.description}</small>
-                        </button>
-                        <button className="mini-button" onClick={() => toggleSavedRecipe(recipe.id)}>
-                          {isSaved ? copy.skills.added : copy.skills.add}
-                        </button>
-                      </article>
-                    );
-                  })}
+              )}
+
+              {captionSettingsOpen ? (
+                <div className="modal-backdrop" role="presentation" onClick={() => setCaptionSettingsOpen(false)}>
+                  <section className="modal-panel" role="dialog" aria-modal="true" aria-labelledby="caption-settings-title" onClick={(event) => event.stopPropagation()}>
+                    <header className="modal-header">
+                      <h2 id="caption-settings-title">{copy.captionPack.settingsTitle}</h2>
+                      <button className="icon-button small" onClick={() => setCaptionSettingsOpen(false)} aria-label={copy.captionPack.done}>
+                        <X size={16} />
+                      </button>
+                    </header>
+
+                    <div className="settings-section flat">
+                      <h3>{copy.captionPack.platforms}</h3>
+                      <label className="toggle-row">
+                        <span>{copy.captionPack.platformTikTok}</span>
+                        <input type="checkbox" checked={captionTikTok} onChange={(event) => setCaptionPlatform(setCaptionTikTok, event.target.checked)} />
+                      </label>
+                      <label className="toggle-row">
+                        <span>{copy.captionPack.platformYoutubeShorts}</span>
+                        <input type="checkbox" checked={captionYoutubeShorts} onChange={(event) => setCaptionPlatform(setCaptionYoutubeShorts, event.target.checked)} />
+                      </label>
+                      <label className="toggle-row">
+                        <span>{copy.captionPack.platformInstagramReels}</span>
+                        <input type="checkbox" checked={captionInstagramReels} onChange={(event) => setCaptionPlatform(setCaptionInstagramReels, event.target.checked)} />
+                      </label>
+                    </div>
+
+                    <label className="field-label">
+                      {copy.captionPack.goal}
+                      <select value={captionGoal} onChange={(event) => setCaptionGoal(event.target.value as CaptionPackGoal)}>
+                        <option value="startDiscussion">{copy.captionPack.goals.startDiscussion}</option>
+                        <option value="getSaves">{copy.captionPack.goals.getSaves}</option>
+                        <option value="getShares">{copy.captionPack.goals.getShares}</option>
+                        <option value="driveFollows">{copy.captionPack.goals.driveFollows}</option>
+                      </select>
+                    </label>
+
+                    <label className="field-label">
+                      {copy.captionPack.tone}
+                      <select value={captionTone} onChange={(event) => setCaptionTone(event.target.value as CaptionPackTone)}>
+                        <option value="casualUseful">{copy.captionPack.tones.casualUseful}</option>
+                        <option value="educational">{copy.captionPack.tones.educational}</option>
+                        <option value="bold">{copy.captionPack.tones.bold}</option>
+                        <option value="storyDriven">{copy.captionPack.tones.storyDriven}</option>
+                        <option value="creatorVoice">{copy.captionPack.tones.creatorVoice}</option>
+                      </select>
+                    </label>
+
+                    <div className="segmented-control three">
+                      <button className={captionOutputStyle === "concise" ? "active" : ""} onClick={() => setCaptionOutputStyle("concise")}>
+                        {copy.captionPack.outputStyles.concise}
+                      </button>
+                      <button className={captionOutputStyle === "balanced" ? "active" : ""} onClick={() => setCaptionOutputStyle("balanced")}>
+                        {copy.captionPack.outputStyles.balanced}
+                      </button>
+                      <button className={captionOutputStyle === "detailed" ? "active" : ""} onClick={() => setCaptionOutputStyle("detailed")}>
+                        {copy.captionPack.outputStyles.detailed}
+                      </button>
+                    </div>
+
+                    <button className="primary-button compact" onClick={() => setCaptionSettingsOpen(false)}>
+                      {copy.captionPack.done}
+                    </button>
+                  </section>
                 </div>
-              </section>
-
-              <aside className="run-panel">
-                <h2>{copy.skills.runTitle}</h2>
-                <div className="selected-recipe">
-                  <span className="recipe-icon">{selectedRecipe.icon}</span>
-                  <div>
-                    <strong>{selectedRecipe.name}</strong>
-                    <p>{selectedRecipe.description}</p>
-                  </div>
-                </div>
-
-                <label className="field-label">
-                  {copy.skills.savedSkills}
-                  <select value={selectedRecipeId} onChange={(event) => setSelectedRecipeId(event.target.value)}>
-                    {savedRecipes.map((recipe) => (
-                      <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
-                    ))}
-                    {!savedRecipes.some((recipe) => recipe.id === selectedRecipe.id) ? (
-                      <option value={selectedRecipe.id}>{selectedRecipe.name}</option>
-                    ) : null}
-                  </select>
-                </label>
-
-                <div className="segmented-control">
-                  <button className={recipeScope === "active" ? "active" : ""} onClick={() => setRecipeScope("active")}>
-                    {copy.skills.activeNote}
-                  </button>
-                  <button className={recipeScope === "visible" ? "active" : ""} onClick={() => setRecipeScope("visible")}>
-                    {copy.skills.visibleNotes}
-                  </button>
-                </div>
-
-                {selectedRecipe.requiresInstruction ? (
-                  <label className="field-label">
-                    {copy.skills.targetLanguage}
-                    <input value={recipeInstruction} onChange={(event) => setRecipeInstruction(event.target.value)} />
-                  </label>
-                ) : null}
-
-                <p className="muted-copy">{copy.skills.outputNoteHint}</p>
-                <button className="primary-button compact" onClick={executeSelectedRecipe} disabled={runningRecipe || !selectedRecipe}>
-                  {runningRecipe ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
-                  {runningRecipe ? copy.skills.running : copy.skills.run}
-                </button>
-              </aside>
+              ) : null}
             </div>
           ) : (
             <div className="panel-content settings-grid">

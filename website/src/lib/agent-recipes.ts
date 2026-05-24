@@ -17,7 +17,7 @@ export type AgentRecipe = {
 export const recipeCategoryLabels: Record<AgentRecipeCategory, string> = {
   think: "Think",
   shape: "Shape",
-  publish: "Act",
+  publish: "Publish",
 };
 
 export const defaultSavedRecipeIds = ["hook_generator", "caption_pack", "humanizer"];
