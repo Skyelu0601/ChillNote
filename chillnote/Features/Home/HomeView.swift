@@ -76,6 +76,7 @@ struct HomeView: View {
     @State var showAppRatingPrompt = false
     @State var lastClipboardLinkPasteboardChangeCount: Int?
     @State var isImportingClipboardLink = false
+    @State var recentLinkImportURLs: [String: Date] = [:]
     @State var clipboardLinkImportErrorMessage = ""
     @State var showClipboardLinkImportErrorAlert = false
 

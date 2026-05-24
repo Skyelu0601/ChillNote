@@ -126,6 +126,9 @@ extension HomeView {
 
         let service = QuickCaptureImportService.shared
         let source = service.initialSourceMetadata(for: url)
+        guard !shouldSkipDuplicateLinkImport(sourceURL: source.url, userId: userId) else { return }
+        rememberRecentLinkImport(sourceURL: source.url)
+
         let placeholder = service.placeholderNoteText(for: url)
         let note = Note(content: placeholder, userId: userId)
         note.applySourceMetadata(source)
@@ -168,6 +171,30 @@ extension HomeView {
                 }
             }
         }
+    }
+
+    func shouldSkipDuplicateLinkImport(sourceURL: String, userId: String) -> Bool {
+        let now = Date()
+        recentLinkImportURLs = recentLinkImportURLs.filter { now.timeIntervalSince($0.value) < 60 }
+
+        if let recentDate = recentLinkImportURLs[sourceURL],
+           now.timeIntervalSince(recentDate) < 20 {
+            return true
+        }
+
+        let descriptor = FetchDescriptor<Note>(
+            predicate: #Predicate<Note> {
+                $0.userId == userId
+                && $0.sourceURL == sourceURL
+                && $0.deletedAt == nil
+            }
+        )
+        let existingNotes = (try? modelContext.fetch(descriptor)) ?? []
+        return existingNotes.contains { $0.isLinkImportInProgress }
+    }
+
+    func rememberRecentLinkImport(sourceURL: String) {
+        recentLinkImportURLs[sourceURL] = Date()
     }
 
     func syncLinkImportProgress() async {
