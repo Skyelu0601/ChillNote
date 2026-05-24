@@ -219,6 +219,39 @@ struct QuickCaptureImportService {
         source: NoteSourceMetadata,
         section: NoteSection
     ) async throws -> AsyncLinkImportJob {
+        let maxAttempts = 3
+        var lastError: Error?
+
+        for attempt in 1...maxAttempts {
+            do {
+                return try await startAsyncWebLinkImportOnce(
+                    url: url,
+                    noteID: noteID,
+                    placeholderContent: placeholderContent,
+                    source: source,
+                    section: section
+                )
+            } catch {
+                lastError = error
+                guard attempt < maxAttempts, shouldRetryAsyncLinkImport(error) else {
+                    throw error
+                }
+
+                let delay = UInt64(attempt) * 700_000_000
+                try? await Task.sleep(nanoseconds: delay)
+            }
+        }
+
+        throw lastError ?? GeminiError.networkError(URLError(.unknown))
+    }
+
+    private func startAsyncWebLinkImportOnce(
+        url: URL,
+        noteID: UUID,
+        placeholderContent: String,
+        source: NoteSourceMetadata,
+        section: NoteSection
+    ) async throws -> AsyncLinkImportJob {
         guard ["http", "https"].contains(url.scheme?.lowercased() ?? "") else {
             throw QuickCaptureImportError.invalidURL
         }
@@ -262,6 +295,16 @@ struct QuickCaptureImportService {
         }
 
         return try JSONDecoder().decode(AsyncLinkImportJob.self, from: data)
+    }
+
+    private func shouldRetryAsyncLinkImport(_ error: Error) -> Bool {
+        guard let urlError = error as? URLError else { return false }
+        switch urlError.code {
+        case .networkConnectionLost, .timedOut, .cannotConnectToHost, .cannotFindHost, .notConnectedToInternet:
+            return true
+        default:
+            return false
+        }
     }
 
     func importWebLink(
