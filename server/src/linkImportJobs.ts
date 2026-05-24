@@ -269,11 +269,10 @@ async function buildImportedNote(rawURL: string): Promise<{ content: string; sou
     if (transcript.available && transcript.text?.trim()) {
       const title = transcript.metadata?.title?.trim() || source.title;
       const updatedSource = { ...source, title };
-      const content = await organizeContent({
-        url: rawURL,
-        title,
-        sourceText: transcript.text,
-        kind: "media transcript"
+      const content = await makeCreatorMediaTranscriptNote({
+        description: title,
+        author: transcript.metadata?.authorName?.trim() || "Unknown author",
+        transcript: transcript.text
       });
       return { content, source: updatedSource };
     }
@@ -296,6 +295,147 @@ async function buildImportedNote(rawURL: string): Promise<{ content: string; sou
     kind: "web page"
   });
   return { content, source: updatedSource };
+}
+
+async function makeCreatorMediaTranscriptNote(params: {
+  description: string;
+  author: string;
+  transcript: string;
+}): Promise<string> {
+  const cleanedTranscript = params.transcript.trim();
+  const description = params.description.trim();
+  const author = params.author.trim() || "Unknown author";
+
+  if (!cleanedTranscript) {
+    return [
+      markdownSection("Description", description),
+      markdownSection("Author", author)
+    ].join("\n\n");
+  }
+
+  const [hook, polishedTranscript] = await Promise.all([
+    extractCreatorMediaHook(description, cleanedTranscript),
+    polishCreatorMediaTranscript(cleanedTranscript)
+  ]);
+
+  return [
+    markdownSection("Description", description || "Imported media link"),
+    markdownSection("Author", author),
+    markdownSection("Hook", hook),
+    markdownSection("Transcript", polishedTranscript)
+  ].join("\n\n");
+}
+
+async function extractCreatorMediaHook(description: string, transcript: string): Promise<string> {
+  const fallback = fallbackCreatorMediaHook(transcript);
+  if (!GEMINI_API_KEY || !transcript.trim()) {
+    return fallback;
+  }
+
+  const prompt = `
+Video description:
+${description}
+
+Transcript:
+${transcript.slice(0, 20_000)}
+`.trim();
+
+  const systemInstruction = `
+You identify the hook in short-form videos for a personal notes app.
+
+Return only the opening hook that is used to grab attention.
+Use the same language as the transcript when possible.
+Prefer the creator's exact opening wording if it is present in the transcript.
+If the hook is implied instead of spoken directly, write one concise sentence that captures it.
+Do not add a heading, bullet, quote, or explanation.
+Do not invent facts that are not supported by the description or transcript.
+`.trim();
+
+  try {
+    const result = await generateGeminiText(prompt, systemInstruction, 45_000);
+    return collapseWhitespace(result).trim() || fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function fallbackCreatorMediaHook(transcript: string): string {
+  const source = transcript.trim();
+  const firstLine = source
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .find(Boolean) ?? source;
+
+  const firstSentenceMatch = firstLine.match(/^.*?[.!?。！？]/u);
+  const firstSentence = firstSentenceMatch?.[0] ?? firstLine;
+  const collapsed = collapseWhitespace(firstSentence).trim();
+
+  if (!collapsed) {
+    return "Hook unavailable";
+  }
+
+  return collapsed.length <= 160 ? collapsed : `${collapsed.slice(0, 160).trim()}...`;
+}
+
+async function polishCreatorMediaTranscript(transcript: string): Promise<string> {
+  const trimmed = transcript.trim();
+  if (!GEMINI_API_KEY || !trimmed) {
+    return trimmed;
+  }
+
+  const prompt = `
+Polish this media transcript for a personal quick-capture note.
+
+Raw transcript:
+${trimmed.slice(0, 30_000)}
+`.trim();
+
+  const systemInstruction = `
+You clean up audio/video transcripts for a personal notes app.
+
+Return only the cleaned transcript text.
+Keep the speaker's original language, meaning, order, and wording.
+Add helpful punctuation and paragraph breaks.
+Clean obvious transcription noise when needed.
+`.trim();
+
+  try {
+    const result = await generateGeminiText(prompt, systemInstruction, 90_000);
+    return result.trim() || trimmed;
+  } catch {
+    return trimmed;
+  }
+}
+
+async function generateGeminiText(
+  prompt: string,
+  systemInstruction: string,
+  timeout: number
+): Promise<string> {
+  const body = {
+    contents: [{ role: "user", parts: [{ text: prompt }] }],
+    systemInstruction: {
+      parts: [{ text: systemInstruction }]
+    }
+  };
+
+  const response = await fetch(buildGeminiGenerateContentURL(GEMINI_MODEL), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+    timeout
+  });
+
+  if (!response.ok) {
+    throw new Error(`Gemini generate failed: ${response.status}`);
+  }
+
+  const data = await response.json() as any;
+  return String(data.candidates?.[0]?.content?.parts?.[0]?.text ?? "");
+}
+
+function markdownSection(heading: string, body: string): string {
+  return `## ${heading}\n\n${body.trim()}`;
 }
 
 async function fetchWebPage(rawURL: string): Promise<{ title: string; description: string; text: string }> {
@@ -393,6 +533,10 @@ Rules:
   const data = await response.json() as any;
   const content = String(data.candidates?.[0]?.content?.parts?.[0]?.text ?? "").trim();
   return content || fallbackNote(params.title, trimmed);
+}
+
+function collapseWhitespace(text: string): string {
+  return text.replace(/\s+/g, " ");
 }
 
 function buildGeminiGenerateContentURL(model: string): string {

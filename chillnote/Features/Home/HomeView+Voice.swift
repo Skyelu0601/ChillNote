@@ -137,7 +137,6 @@ extension HomeView {
             modelContext.insert(note)
         }
         try? modelContext.save()
-        navigationPath.append(note)
         requestReload(delayNanoseconds: 60_000_000, keepItemsWhileLoading: true)
 
         Task {
