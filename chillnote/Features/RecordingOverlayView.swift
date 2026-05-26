@@ -237,11 +237,8 @@ struct RecordingOverlayView: View {
             }
         }
         .onChange(of: speechRecognizer.shouldStop) { _, newValue in
-            print("📍 shouldStop changed: \(newValue)")
             if newValue {
-                print("📍 Calling stopRecording()")
                 speechRecognizer.stopRecording()
-                print("📍 After stopRecording()")
                 speechRecognizer.shouldStop = false
             }
         }
@@ -259,13 +256,10 @@ struct RecordingOverlayView: View {
     }
     
     func finishRecording() {
-        print("🔘 Done pressed, isProcessing=\(isProcessing)")
         guard !isProcessing else { return }
         pendingSave = true
         isProcessing = true
-        print("📍 Setting shouldStop = true")
         speechRecognizer.shouldStop = true
-        print("📍 shouldStop set to true")
     }
 
     private var statusTitle: String {

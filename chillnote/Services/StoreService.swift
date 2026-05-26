@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import StoreKit
 
 enum SubscriptionTier: String, CaseIterable {
@@ -138,6 +139,7 @@ struct SubscriptionDisplayInfo: Equatable {
     let ctaText: String
     let billingPeriodText: String
     let equivalentMonthlyText: String?
+    let equivalentWeeklyText: String?
     let renewalText: String?
     let trialDurationText: String?
 
@@ -211,6 +213,14 @@ struct SubscriptionDisplayInfo: Equatable {
             equivalentMonthlyText = nil
         }
 
+        let equivalentWeeklyText: String?
+        if isAnnual {
+            let weeklyPrice = price / Decimal(52)
+            equivalentWeeklyText = weeklyPrice.formatted(priceFormatStyle)
+        } else {
+            equivalentWeeklyText = nil
+        }
+
         let renewalText: String?
         if let trialDurationText {
             let billedYearlyTemplate = String(
@@ -233,6 +243,7 @@ struct SubscriptionDisplayInfo: Equatable {
             ctaText: ctaText,
             billingPeriodText: billingPeriodText,
             equivalentMonthlyText: equivalentMonthlyText,
+            equivalentWeeklyText: equivalentWeeklyText,
             renewalText: renewalText,
             trialDurationText: trialDurationText
         )
@@ -242,6 +253,8 @@ struct SubscriptionDisplayInfo: Equatable {
 @MainActor
 class StoreService: ObservableObject {
     static let shared = StoreService()
+    nonisolated private static let logger = Logger(subsystem: "com.chillnote.app", category: "store")
+
     static let freeRecordingTimeLimit: TimeInterval = 60
     static let proRecordingTimeLimit: TimeInterval = 600
     static let freeDailyVoiceLimit = 5
@@ -481,7 +494,7 @@ class StoreService: ObservableObject {
                     // Always finish a transaction
                     await transaction.finish()
                 } catch {
-                    print("Transaction verification failed: \(error)")
+                    Self.logger.error("Transaction verification failed: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }
@@ -602,7 +615,7 @@ class StoreService: ObservableObject {
                 productsErrorMessage = L10n.text("store.error.no_subscription_products")
             }
         } catch {
-            print("Failed to fetch products: \(error)")
+            Self.logger.error("Failed to fetch products: \(error.localizedDescription, privacy: .public)")
             productsErrorMessage = L10n.text("store.error.unable_to_load_prices")
         }
         isLoadingProducts = false
@@ -630,7 +643,7 @@ class StoreService: ObservableObject {
                     }
                 }
             } catch {
-                print("Failed to verify entitlement: \(error)")
+                Self.logger.error("Failed to verify entitlement: \(error.localizedDescription, privacy: .public)")
             }
         }
         
@@ -773,11 +786,11 @@ class StoreService: ObservableObject {
             try await verifySubscriptionWithBackend(transaction)
         } catch {
             if let urlError = error as? URLError, urlError.code == .dataNotAllowed {
-                print("Backend verification skipped: network data not allowed (-1020).")
+                Self.logger.info("Backend verification skipped: network data not allowed")
             } else if String(describing: error).localizedCaseInsensitiveContains("userCancelled") {
-                print("Backend verification skipped: user cancelled.")
+                Self.logger.info("Backend verification skipped: user cancelled")
             } else {
-                print("Backend verification warning: \(error)")
+                Self.logger.warning("Backend verification warning: \(error.localizedDescription, privacy: .public)")
             }
         }
     }
@@ -824,17 +837,17 @@ class StoreService: ObservableObject {
             } else if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                       let message = json["error"] as? String {
                 self.errorMessage = message
-                print("❌ Subscription verify failed (\(httpResponse.statusCode)): \(message)")
+                Self.logger.error("Subscription verify failed status=\(httpResponse.statusCode, privacy: .public) message=\(message, privacy: .public)")
             } else if let text = String(data: data, encoding: .utf8), !text.isEmpty {
-                print("❌ Subscription verify failed (\(httpResponse.statusCode)): \(text)")
+                Self.logger.error("Subscription verify failed status=\(httpResponse.statusCode, privacy: .public) body=\(text, privacy: .public)")
             } else {
-                print("❌ Subscription verify failed (\(httpResponse.statusCode))")
+                Self.logger.error("Subscription verify failed status=\(httpResponse.statusCode, privacy: .public)")
             }
             throw URLError(.badServerResponse)
         }
         
         // Success
-        print("✅ Subscription verified with backend")
+        Self.logger.info("Subscription verified with backend")
     }
 
     private func fetchAppReceiptData() -> String? {

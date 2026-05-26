@@ -353,7 +353,7 @@ extension AgentRecipe {
             You are writing a new piece in the style of a reference text from the user’s existing notes (not a chat message). Use the reference for tone, pacing, structure, and rhetorical moves, but do not copy distinctive sentences, phrases, claims, or proprietary wording.
 
             - Keep the output in the same language as the note unless the notes clearly request another language.
-            - If multiple notes are provided, treat the first note as the style reference and the remaining notes as source material for the new piece.
+            - If multiple notes are provided, treat the first note as the style reference and the remaining creator notes as context for the new piece.
             - If only one note is provided, infer the style from that note and create a fresh piece on the same idea without reusing its wording.
             - Preserve the intended audience and format when they are clear.
             - Keep the result original, useful, and ready to edit.

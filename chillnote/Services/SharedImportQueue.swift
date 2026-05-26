@@ -1,8 +1,10 @@
 import Foundation
+import OSLog
 
 enum SharedImportQueue {
     static let appGroupIdentifier = "group.com.sponteoai.chillnote"
     static let pendingImportsDirectoryName = "PendingShareImports"
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "shared-imports")
 
     struct PendingImport: Codable, Sendable {
         struct Source: Codable, Sendable {
@@ -35,29 +37,44 @@ enum SharedImportQueue {
     }
 
     static func pendingImports() -> [PendingImportFile] {
-        guard let directory = pendingImportsDirectoryURL(),
-              let fileURLs = try? FileManager.default.contentsOfDirectory(
+        guard let directory = pendingImportsDirectoryURL() else {
+            logger.error("Shared imports directory is unavailable")
+            return []
+        }
+
+        let fileURLs: [URL]
+        do {
+            fileURLs = try FileManager.default.contentsOfDirectory(
                 at: directory,
                 includingPropertiesForKeys: [.contentModificationDateKey],
                 options: [.skipsHiddenFiles]
-              ) else {
+            )
+        } catch {
+            logger.error("Failed to list shared imports: \(error.localizedDescription, privacy: .public)")
             return []
         }
 
         return fileURLs
             .filter { $0.pathExtension == "json" }
             .compactMap { fileURL in
-                guard let data = try? Data(contentsOf: fileURL),
-                      let importItem = try? JSONDecoder.sharedImportDecoder.decode(PendingImport.self, from: data) else {
+                do {
+                    let data = try Data(contentsOf: fileURL)
+                    let importItem = try JSONDecoder.sharedImportDecoder.decode(PendingImport.self, from: data)
+                    return PendingImportFile(importItem: importItem, fileURL: fileURL)
+                } catch {
+                    logger.error("Failed to read shared import \(fileURL.lastPathComponent, privacy: .private): \(error.localizedDescription, privacy: .public)")
                     return nil
                 }
-                return PendingImportFile(importItem: importItem, fileURL: fileURL)
             }
             .sorted { $0.importItem.createdAt < $1.importItem.createdAt }
     }
 
     static func remove(_ file: PendingImportFile) {
-        try? FileManager.default.removeItem(at: file.fileURL)
+        do {
+            try FileManager.default.removeItem(at: file.fileURL)
+        } catch {
+            logger.error("Failed to remove shared import \(file.fileURL.lastPathComponent, privacy: .private): \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     static func sharedDefaults() -> UserDefaults? {

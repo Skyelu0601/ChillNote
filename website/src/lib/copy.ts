@@ -8,16 +8,16 @@ export const copy = {
     appStore: "Get iOS App",
   },
   landing: {
-    eyebrow: "Creator swipe files, from capture to reuse",
-    title: "Turn creator inspiration into reusable AI-ready notes.",
+    eyebrow: "AI creator notes, from capture to reuse",
+    title: "Turn creator inspiration into reusable AI creator notes.",
     subtitle:
       "ChillNote helps creators save videos, transcribe them, break down hooks, descriptions, and transcripts, then reuse the best ideas with AI Skills.",
     primaryAction: "Sign up free",
     secondaryAction: "Sign in",
-    status: "Creator workspace",
+    status: "AI creator notes workspace",
     featureTitle: "Capture the pattern, not just the link",
     featureBody:
-      "Build a private swipe file where every clip, idea, transcript, and reusable prompt stays searchable and ready for your next post.",
+      "Build private creator notes where every clip, idea, transcript, and reusable prompt stays searchable and ready for your next post.",
   },
   auth: {
     brandTitle: "ChillNote",
@@ -178,14 +178,14 @@ export const copy = {
     eyebrow: "Simple pricing",
     title: "Start free. Upgrade when your creator workflow needs more AI.",
     subtitle:
-      "Use ChillNote for quick capture and swipe files first. Pro gives you longer recordings, more AI runs, and custom reusable skills.",
+      "Use ChillNote for quick capture and AI creator notes first. Pro gives you longer recordings, more AI runs, and custom reusable skills.",
     free: {
       name: "Free",
       price: "$0",
       caption: "forever",
       cta: "Start free",
       features: [
-        "Core notes and creator swipe files.",
+        "Core notes and your AI creator notes workspace.",
         "Up to 1 minute per recording.",
         "Daily AI limits for transcription, recipes, and chat.",
       ],

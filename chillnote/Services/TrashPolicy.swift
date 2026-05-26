@@ -1,8 +1,10 @@
 import Foundation
+import OSLog
 import SwiftData
 
 struct TrashPolicy {
     static let retentionDays: Int = 30
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "trash-policy")
 
     static func daysRemaining(from deletedAt: Date) -> Int {
         let expiration = Calendar.current.date(byAdding: .day, value: retentionDays, to: deletedAt) ?? deletedAt
@@ -20,11 +22,16 @@ struct TrashPolicy {
         let descriptor = FetchDescriptor<Note>(predicate: #Predicate { note in
             note.deletedAt != nil && note.deletedAt! < cutoff
         })
-        if let notes = try? context.fetch(descriptor) {
+        do {
+            let notes = try context.fetch(descriptor)
+            guard !notes.isEmpty else { return }
             for note in notes {
                 context.delete(note)
             }
-            try? context.save()
+            try context.save()
+            logger.info("Purged \(notes.count, privacy: .public) expired notes")
+        } catch {
+            logger.error("Failed to purge expired notes: \(error.localizedDescription, privacy: .public)")
         }
     }
 
@@ -34,12 +41,18 @@ struct TrashPolicy {
         let descriptor = FetchDescriptor<Tag>(predicate: #Predicate { tag in
             tag.userId == userId && tag.deletedAt != nil && tag.deletedAt! < cutoff
         })
-        guard let tags = try? context.fetch(descriptor), !tags.isEmpty else { return }
-        let ids = tags.map(\.id)
-        for tag in tags {
-            context.delete(tag)
+        do {
+            let tags = try context.fetch(descriptor)
+            guard !tags.isEmpty else { return }
+            let ids = tags.map(\.id)
+            for tag in tags {
+                context.delete(tag)
+            }
+            HardDeleteQueueStore.enqueue(tagIDs: ids, for: userId)
+            try context.save()
+            logger.info("Purged \(tags.count, privacy: .public) expired tags")
+        } catch {
+            logger.error("Failed to purge expired tags: \(error.localizedDescription, privacy: .public)")
         }
-        HardDeleteQueueStore.enqueue(tagIDs: ids, for: userId)
-        try? context.save()
     }
 }

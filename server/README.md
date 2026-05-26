@@ -17,7 +17,7 @@ cp .env.example .env
    - `APPLE_REDIRECT_URI` (optional)
 4) Set AI config:
    - `GEMINI_API_KEY`
-   - `GEMINI_MODEL` (optional, defaults to `gemini-3.1-flash-lite-preview`)
+   - `GEMINI_MODEL` (optional, defaults to `gemini-3.1-flash-lite`)
 5) Set Creem billing config if web checkout is enabled:
    - `CREEM_API_KEY`
    - `CREEM_WEBHOOK_SECRET`

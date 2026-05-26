@@ -97,7 +97,7 @@ app.use((req, res, next) => {
 });
 
 const PORT = Number(process.env.PORT ?? 4000);
-const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite-preview";
+const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() || "";
 const CREEM_API_KEY = process.env.CREEM_API_KEY?.trim() || "";
 const CREEM_WEBHOOK_SECRET = process.env.CREEM_WEBHOOK_SECRET?.trim() || "";
@@ -1597,6 +1597,17 @@ app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, r
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Gemini API Error:", {
+        status: response.status,
+        statusText: response.statusText,
+        model: GEMINI_MODEL,
+        hasAudio: Boolean(audioBase64),
+        hasImage: Boolean(imageBase64),
+        jsonMode: Boolean(jsonMode),
+        usageType: typeof usageType === "string" ? usageType : undefined,
+        body: errorText.slice(0, 2000)
+      });
       res.status(response.status).json({ error: "AI Provider Error" });
       return;
     }

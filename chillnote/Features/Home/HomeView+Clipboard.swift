@@ -16,14 +16,14 @@ extension HomeView {
         guard pasteboard.hasStrings || pasteboard.hasURLs else { return }
         guard await pasteboardContainsProbableWebURL(pasteboard) else { return }
 
-        await StoreService.shared.ensureSubscriptionStatusReadyForFeatureGate()
-        guard StoreService.shared.currentTier == .pro else {
-            showSubscription = true
+        let url = clipboardCreatorMediaURL(from: pasteboard)
+        guard let url else {
             return
         }
 
-        let url = clipboardWebURL(from: pasteboard)
-        guard let url else {
+        await StoreService.shared.ensureSubscriptionStatusReadyForFeatureGate()
+        guard StoreService.shared.currentTier == .pro else {
+            showSubscription = true
             return
         }
 
@@ -43,14 +43,15 @@ extension HomeView {
     }
 
     @MainActor
-    private func clipboardWebURL(from pasteboard: UIPasteboard) -> URL? {
+    private func clipboardCreatorMediaURL(from pasteboard: UIPasteboard) -> URL? {
         if let pastedText = pasteboard.string?.trimmingCharacters(in: .whitespacesAndNewlines),
-           let url = QuickCaptureLinkParser.extractWebURL(from: pastedText) {
+           let url = QuickCaptureLinkParser.extractCreatorMediaURL(from: pastedText) {
             return url
         }
 
         if let pastedURL = pasteboard.url,
-           let url = QuickCaptureLinkParser.extractWebURL(from: pastedURL.absoluteString) {
+           QuickCaptureLinkParser.isCreatorMediaURL(pastedURL),
+           let url = QuickCaptureLinkParser.extractCreatorMediaURL(from: pastedURL.absoluteString) {
             return url
         }
 

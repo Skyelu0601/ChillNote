@@ -43,6 +43,27 @@ final class QuickCaptureLinkParserTests: XCTestCase {
         XCTAssertNil(url)
     }
 
+    func testCreatorMediaExtractionIgnoresPlainTextAndRegularWebPages() {
+        XCTAssertNil(QuickCaptureLinkParser.extractCreatorMediaURL(from: "remember to buy coffee"))
+        XCTAssertNil(QuickCaptureLinkParser.extractCreatorMediaURL(from: "https://example.com/article?id=42"))
+    }
+
+    func testCreatorMediaExtractionFindsSupportedVideoLinks() {
+        let text = """
+        Useful article: https://example.com/read
+        Video: https://www.youtube.com/shorts/abc123
+        """
+
+        let url = QuickCaptureLinkParser.extractCreatorMediaURL(from: text)
+
+        XCTAssertEqual(url?.absoluteString, "https://www.youtube.com/shorts/abc123")
+    }
+
+    func testCreatorMediaExtractionRejectsPlatformHomePages() {
+        XCTAssertNil(QuickCaptureLinkParser.extractCreatorMediaURL(from: "https://www.youtube.com/"))
+        XCTAssertNil(QuickCaptureLinkParser.extractCreatorMediaURL(from: "https://www.instagram.com/chillnote/"))
+    }
+
     func testRecognizesOverseasCreatorPlatforms() {
         let cases: [(String, String)] = [
             ("https://www.tiktok.com/@creator/video/123", "tiktok"),

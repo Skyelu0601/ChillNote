@@ -9,7 +9,7 @@ import { z } from "zod";
 
 const execFileAsync = promisify(execFile);
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite-preview";
+const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() || "";
 const MEDIA_LINK_RESOLVER_URL =
   process.env.MEDIA_LINK_TRANSCRIPT_RESOLVER_URL?.trim()

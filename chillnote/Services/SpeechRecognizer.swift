@@ -1,6 +1,7 @@
 import Foundation
 import AVFoundation
 import UIKit
+import OSLog
 
 struct TranscriptionEvent: Identifiable, Equatable {
     enum Result: Equatable {
@@ -28,6 +29,8 @@ enum TranscriptionFailureReason: Equatable {
 
 @MainActor
 final class SpeechRecognizer: NSObject, ObservableObject {
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "speech")
+
     // MARK: - Types
     
     enum RecordingState: Equatable {
@@ -158,7 +161,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     }
     
     func startRecording(countsTowardQuota: Bool = true) {
-        print("🎙️ Starting recording...")
+        Self.logger.debug("Starting recording")
         
         // Validation
         guard permissionGranted else {
@@ -168,7 +171,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         }
         
         guard recordingState != .recording else {
-            print("⚠️ Already recording")
+            Self.logger.debug("Start recording ignored because recorder is already active")
             return
         }
         
@@ -185,10 +188,10 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             if shouldClearTranscript {
                 transcript = ""
             }
-            print("✅ Recording started successfully")
+            Self.logger.debug("Recording started successfully")
         } catch {
-            print("❌ Recording failed: \(describeError(error))")
-            print(debugAudioSessionSnapshot())
+            Self.logger.error("Recording failed: \(self.describeError(error), privacy: .public)")
+            Self.logger.debug("Audio session snapshot: \(self.debugAudioSessionSnapshot(), privacy: .private)")
             cleanupRecordingSession()
             setError(
                 L10n.text("speech_recognizer.error.failed_to_start_recording", error.localizedDescription)
@@ -232,7 +235,9 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             sessionPrimed = true
             lastPrewarmAt = Date()
             schedulePrewarmDeactivation()
-        } catch {}
+        } catch {
+            Self.logger.warning("Failed to prewarm recording session: \(error.localizedDescription, privacy: .public)")
+        }
     }
     
     /// Retry transcribing the existing audio file without re-recording
@@ -255,7 +260,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     }
 
     func retryTranscription(fileURL: URL) {
-        print("🔄 Retrying transcription for \(fileURL.lastPathComponent)...")
+        Self.logger.debug("Retrying transcription for \(fileURL.lastPathComponent, privacy: .private)")
         scheduleTranscription(for: fileURL)
     }
 
@@ -267,11 +272,11 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         // Detach the file URL so it becomes a standalone pending recording
         audioFileURL = nil
         recordingState = activeTranscriptionJobIDs.isEmpty ? .idle : .processing
-        print("ℹ️ Error dismissed. Recording preserved in pending.")
+        Self.logger.debug("Recording error dismissed; pending recording preserved")
     }
     
     func stopRecording(reason: StopReason = .user) {
-        print("🛑 Stopping recording, reason: \(reason)")
+        Self.logger.debug("Stopping recording, reason: \(String(describing: reason), privacy: .public)")
         
         guard !isStopping else { return }
         isStopping = true
@@ -303,7 +308,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             
         case .interruption:
             // CRITICAL FIX: Save recording on interruption instead of deleting
-            print("⚠️ Interruption received. Saving recording...")
+            Self.logger.info("Recording interrupted; keeping file for processing")
             break // Fall through to processing logic
             
         case .error(let message):
@@ -315,7 +320,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
                  // Check if file exists and has data
                  if let attr = try? FileManager.default.attributesOfItem(atPath: fileURL.path),
                     let size = attr[.size] as? Int, size > 1024 {
-                     print("⚠️ Error occurred but file seems valid. Keeping for recovery.")
+                     Self.logger.info("Recording error left a valid file; keeping it for recovery")
                  } else {
                      fileManager.cancelRecording(fileURL: fileURL)
                      transcriptionCountUsageByFilePath.removeValue(forKey: fileURL.path)
@@ -340,7 +345,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     // MARK: - Transcription
     
     private func transcribeAudio(jobID: UUID, fileURL: URL) async {
-        print("🎤 Starting transcription...")
+        Self.logger.debug("Starting transcription")
         defer {
             finishTranscriptionJob(jobID, filePath: fileURL.path)
         }
@@ -372,10 +377,10 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         // WARNING: File is huge. We still try to process it,
         // but it might fail at the API level. Better than deleting user data.
         if size > maxAudioBytes {
-            print("⚠️ Audio file is large (\(size) bytes). Attempting to process anyway.")
+            Self.logger.warning("Audio file is large (\(size, privacy: .public) bytes); attempting transcription anyway")
         }
         
-        print("📊 Audio file size: \(size) bytes")
+        Self.logger.debug("Audio file size: \(size, privacy: .public) bytes")
         
         // Transcribe using Gemini
         do {
@@ -387,7 +392,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
                 )
             }
             
-            print("✅ Transcription complete")
+            Self.logger.debug("Transcription complete")
             
             transcript = text.trimmingCharacters(in: .whitespacesAndNewlines)
             completedTranscriptions.append(
@@ -451,7 +456,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     }
     
     private func setError(_ message: String) {
-        print("❌ Error: \(message)")
+        Self.logger.error("Recording error: \(message, privacy: .public)")
         recordingState = .error(message)
     }
 
@@ -640,9 +645,9 @@ private extension SpeechRecognizer {
             fileURL = primed
             primedRecordingURL = nil
         } else {
-            fileURL = makeTempAudioURL(ext: "m4a")
+            fileURL = try makeAudioURL(ext: "m4a")
         }
-        print("📁 Recording to: \(fileURL.path)")
+        Self.logger.debug("Recording to \(fileURL.path, privacy: .private)")
         let recorder: AVAudioRecorder
         if let primedRecorder {
             recorder = primedRecorder
@@ -722,7 +727,9 @@ private extension SpeechRecognizer {
         do {
             let url = try fileManager.createRecordingURL(ext: "m4a", markPending: false)
             primedRecordingURL = url
-        } catch {}
+        } catch {
+            Self.logger.warning("Failed to create primed recording URL: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     func primeRecorderIfNeededAsync() {
@@ -786,18 +793,8 @@ private extension SpeechRecognizer {
         return try AVAudioRecorder(url: fileURL, settings: settings)
     }
 
-    func makeTempAudioURL(ext: String) -> URL {
-        // Use the file manager's safe directory instead of temp
-        do {
-            return try fileManager.createRecordingURL(ext: ext)
-        } catch {
-            print("⚠️ Failed to create recording URL: \(error), falling back to temp")
-            // Fallback to temp if something goes wrong
-            let tempPath = NSTemporaryDirectory()
-            let fileName = "\(UUID().uuidString).\(ext)"
-            let filePath = (tempPath as NSString).appendingPathComponent(fileName)
-            return URL(fileURLWithPath: filePath)
-        }
+    func makeAudioURL(ext: String) throws -> URL {
+        try fileManager.createRecordingURL(ext: ext)
     }
 }
 
@@ -809,8 +806,8 @@ extension SpeechRecognizer: AVAudioRecorderDelegate {
         Task { @MainActor in
             self.audioRecorder = nil
             if let error {
-                print("❌ Recorder encode error: \(self.describeError(error))")
-                print(self.debugAudioSessionSnapshot())
+                Self.logger.error("Recorder encode error: \(self.describeError(error), privacy: .public)")
+                Self.logger.debug("Audio session snapshot: \(self.debugAudioSessionSnapshot(), privacy: .private)")
             }
             self.cleanupRecordingSession()
             self.setError(L10n.text("speech_recognizer.error.recording_failed", message))

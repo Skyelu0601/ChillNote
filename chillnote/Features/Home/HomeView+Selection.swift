@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+import OSLog
+
+private let homeSelectionLogger = Logger(subsystem: "com.chillnote.app", category: "home-selection")
 
 extension HomeView {
     func applyTagToSelected(_ tag: Tag) {
@@ -40,7 +43,13 @@ extension HomeView {
             }
         }
 
-        guard let fetched = try? modelContext.fetch(descriptor) else { return [] }
+        let fetched: [Note]
+        do {
+            fetched = try modelContext.fetch(descriptor)
+        } catch {
+            homeSelectionLogger.error("Failed to fetch filtered notes: \(error.localizedDescription, privacy: .public)")
+            return []
+        }
 
         let trimmedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         return fetched.filter { note in
@@ -116,7 +125,12 @@ extension HomeView {
         descriptor.predicate = #Predicate<Note> { note in
             note.userId == userId && ids.contains(note.id)
         }
-        return (try? modelContext.fetch(descriptor)) ?? []
+        do {
+            return try modelContext.fetch(descriptor)
+        } catch {
+            homeSelectionLogger.error("Failed to fetch selected notes: \(error.localizedDescription, privacy: .public)")
+            return []
+        }
     }
 
     func startAIChat() {
@@ -198,7 +212,12 @@ extension HomeView {
         descriptor.predicate = #Predicate<Note> { note in
             note.userId == userId && note.deletedAt != nil
         }
-        return (try? modelContext.fetch(descriptor)) ?? []
+        do {
+            return try modelContext.fetch(descriptor)
+        } catch {
+            homeSelectionLogger.error("Failed to fetch deleted notes: \(error.localizedDescription, privacy: .public)")
+            return []
+        }
     }
 
     func togglePin(_ note: Note) {
@@ -278,7 +297,12 @@ extension HomeView {
         Task { @MainActor in
             // Let SwiftUI render local list changes first, then persist/sync.
             await Task.yield()
-            try? modelContext.save()
+            do {
+                try modelContext.save()
+            } catch {
+                homeSelectionLogger.error("Failed to save home changes before sync: \(error.localizedDescription, privacy: .public)")
+                return
+            }
             if let userId = currentUserId, FeatureFlags.useLocalFTSSearch {
                 await NotesSearchIndexer.shared.syncIncremental(context: modelContext, userId: userId)
             }

@@ -1,6 +1,9 @@
 import Foundation
+import OSLog
 import SwiftData
 import SwiftUI
+
+private let noteDetailTagLogger = Logger(subsystem: "com.chillnote.app", category: "note-detail-tags")
 
 @MainActor
 extension NoteDetailViewModel {
@@ -15,7 +18,13 @@ extension NoteDetailViewModel {
         guard let modelContext else { return }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
-            let allTags = (try? modelContext.fetch(fetchDescriptor)) ?? []
+            let allTags: [Tag]
+            do {
+                allTags = try modelContext.fetch(fetchDescriptor)
+            } catch {
+                noteDetailTagLogger.error("Failed to fetch tags for note detail confirmation: \(error.localizedDescription, privacy: .public)")
+                return
+            }
             let existing = allTags.first { $0.name.lowercased() == tagName.lowercased() }
 
             if let existing {

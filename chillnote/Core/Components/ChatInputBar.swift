@@ -474,8 +474,7 @@ struct ChatInputBar: View {
             }
 
             let pastedText = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            guard let url = QuickCaptureLinkParser.extractWebURL(from: pastedText) else {
-                captureErrorMessage = L10n.text("quick_capture.error.no_link")
+            guard let url = QuickCaptureLinkParser.extractCreatorMediaURL(from: pastedText) else {
                 return
             }
 

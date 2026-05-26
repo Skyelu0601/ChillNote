@@ -1,5 +1,6 @@
 import Foundation
 import NaturalLanguage
+import OSLog
 
 enum GeminiError: LocalizedError {
     case missingAPIKey
@@ -59,6 +60,7 @@ struct MediaLinkTranscriptionResult: Decodable {
 
 struct GeminiService {
     static let shared = GeminiService()
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "gemini")
 
     private static func mediaMimeType(for url: URL) -> String {
         switch url.pathExtension.lowercased() {
@@ -166,11 +168,11 @@ struct GeminiService {
         
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         
-        print("🌐 Sending request to \(serverURL)")
+        Self.logger.debug("Sending generateContent request to \(serverURL, privacy: .private)")
         // Execute Request
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            print("📥 Got response")
+            Self.logger.debug("Received generateContent response")
             
             guard let httpResponse = response as? HTTPURLResponse else {
                 throw GeminiError.invalidResponse
@@ -245,7 +247,7 @@ struct GeminiService {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
 
-        print("🌐 Sending request to \(serverURL)")
+        Self.logger.debug("Sending transcribeAudio request to \(serverURL, privacy: .private)")
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
@@ -427,7 +429,7 @@ struct GeminiService {
                     
                     request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
                     
-                    print("🌐 Sending streaming request to \(serverURL)")
+                    Self.logger.debug("Sending streaming request to \(serverURL, privacy: .private)")
                     
                     let (bytes, response) = try await URLSession.shared.bytes(for: request)
                     
@@ -436,7 +438,7 @@ struct GeminiService {
                     }
                     
                     guard (200...299).contains(httpResponse.statusCode) else {
-                        print("❌ Stream failed with status: \(httpResponse.statusCode)")
+                        Self.logger.error("Streaming request failed with status \(httpResponse.statusCode, privacy: .public)")
                         if httpResponse.statusCode == 429 {
                             throw GeminiError.apiError("Daily free AI chat limit reached")
                         }
@@ -469,7 +471,7 @@ struct GeminiService {
                     continuation.finish()
                     
                 } catch {
-                    print("❌ Stream error: \(error.localizedDescription)")
+                    Self.logger.error("Stream error: \(error.localizedDescription, privacy: .public)")
                     continuation.finish(throwing: error)
                 }
             }

@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import Supabase
 
 enum SharedAuthSessionStorage {
@@ -13,10 +14,15 @@ enum SharedAuthSessionStorage {
 struct MigratingAuthLocalStorage: AuthLocalStorage {
     let primary: any AuthLocalStorage
     let fallback: any AuthLocalStorage
+    private let logger = Logger(subsystem: "com.chillnote.app", category: "shared-auth-storage")
 
     func store(key: String, value: Data) throws {
         try primary.store(key: key, value: value)
-        try? fallback.store(key: key, value: value)
+        do {
+            try fallback.store(key: key, value: value)
+        } catch {
+            logger.warning("Failed to mirror auth session to fallback storage: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     func retrieve(key: String) throws -> Data? {
@@ -28,12 +34,20 @@ struct MigratingAuthLocalStorage: AuthLocalStorage {
             return nil
         }
 
-        try? primary.store(key: key, value: legacyValue)
+        do {
+            try primary.store(key: key, value: legacyValue)
+        } catch {
+            logger.warning("Failed to migrate auth session from fallback storage: \(error.localizedDescription, privacy: .public)")
+        }
         return legacyValue
     }
 
     func remove(key: String) throws {
         try primary.remove(key: key)
-        try? fallback.remove(key: key)
+        do {
+            try fallback.remove(key: key)
+        } catch {
+            logger.warning("Failed to remove auth session from fallback storage: \(error.localizedDescription, privacy: .public)")
+        }
     }
 }

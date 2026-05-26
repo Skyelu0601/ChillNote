@@ -3,18 +3,60 @@ import UIKit
 
 enum QuickCaptureLinkParser {
     static func extractWebURL(from text: String) -> URL? {
+        extractWebURL(from: text) { _ in true }
+    }
+
+    static func extractCreatorMediaURL(from text: String) -> URL? {
+        extractWebURL(from: text, matching: isCreatorMediaURL)
+    }
+
+    static func isCreatorMediaURL(_ url: URL) -> Bool {
+        let platformID = NoteSourcePlatformResolver.platform(for: url).id
+        let path = url.path.lowercased()
+
+        switch platformID {
+        case "tiktok":
+            return true
+        case "youtube":
+            if NoteSourcePlatformResolver.normalizedHost(from: url) == "youtu.be" {
+                return path.count > 1
+            }
+            let components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+            let hasVideoID = components?.queryItems?.contains {
+                $0.name.lowercased() == "v" && ($0.value?.isEmpty == false)
+            } ?? false
+            return hasVideoID
+                || path.hasPrefix("/shorts/")
+                || path.hasPrefix("/live/")
+                || path.hasPrefix("/embed/")
+        case "instagram":
+            return path.hasPrefix("/reel/")
+                || path.hasPrefix("/reels/")
+                || path.hasPrefix("/p/")
+                || path.hasPrefix("/tv/")
+        default:
+            return false
+        }
+    }
+}
+
+private extension QuickCaptureLinkParser {
+    static func extractWebURL(
+        from text: String,
+        matching isIncluded: (URL) -> Bool
+    ) -> URL? {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return nil }
 
-        if let url = makeWebURL(from: trimmed) {
+        if let url = makeWebURL(from: trimmed), isIncluded(url) {
             return url
         }
 
-        if let detectedURL = firstDataDetectorURL(in: trimmed) {
+        if let detectedURL = firstDataDetectorURL(in: trimmed, matching: isIncluded) {
             return detectedURL
         }
 
-        return firstRegexURL(in: trimmed)
+        return firstRegexURL(in: trimmed, matching: isIncluded)
     }
 }
 
@@ -104,18 +146,20 @@ private extension QuickCaptureLinkParser {
         CharacterSet(charactersIn: "<>[]{}()\"'“”‘’`.,;:!?，。；：！？、")
     )
 
-    static func firstDataDetectorURL(in text: String) -> URL? {
+    static func firstDataDetectorURL(in text: String, matching isIncluded: (URL) -> Bool) -> URL? {
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
         let matches = linkDetector?.matches(in: text, options: [], range: range) ?? []
 
         for match in matches {
-            if let url = match.url, let webURL = makeWebURL(from: url.absoluteString) {
+            if let url = match.url,
+               let webURL = makeWebURL(from: url.absoluteString),
+               isIncluded(webURL) {
                 return webURL
             }
 
             guard let matchRange = Range(match.range, in: text) else { continue }
             let candidate = String(text[matchRange])
-            if let webURL = makeWebURL(from: candidate) {
+            if let webURL = makeWebURL(from: candidate), isIncluded(webURL) {
                 return webURL
             }
         }
@@ -123,14 +167,14 @@ private extension QuickCaptureLinkParser {
         return nil
     }
 
-    static func firstRegexURL(in text: String) -> URL? {
+    static func firstRegexURL(in text: String, matching isIncluded: (URL) -> Bool) -> URL? {
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
         let matches = inlineWebURLRegex?.matches(in: text, options: [], range: range) ?? []
 
         for match in matches {
             guard let matchRange = Range(match.range, in: text) else { continue }
             let candidate = String(text[matchRange])
-            if let webURL = makeWebURL(from: candidate) {
+            if let webURL = makeWebURL(from: candidate), isIncluded(webURL) {
                 return webURL
             }
         }
@@ -389,7 +433,7 @@ struct QuickCaptureImportService {
             """
 
             let systemInstruction = """
-            You organize captured image text for a personal quick-capture notes app.
+            You organize captured image text for an AI creator notes app.
             Return only Markdown. Do not explain your work.
             """
 
@@ -433,7 +477,7 @@ struct QuickCaptureImportService {
             """
 
             let systemInstruction = """
-            You organize imported audio/video transcripts for a personal notes app.
+            You organize imported audio/video transcripts for an AI creator notes app.
             Return only Markdown.
 
             Rules:
@@ -1066,7 +1110,7 @@ extension QuickCaptureImportService {
         """
 
         let systemInstruction = """
-        You identify the hook in short-form videos for a personal notes app.
+        You identify the hook in short-form videos for an AI creator notes app.
 
         Return only the opening hook that is used to grab attention.
         Use the same language as the transcript when possible.
@@ -1120,14 +1164,14 @@ extension QuickCaptureImportService {
         guard !trimmed.isEmpty else { return trimmed }
 
         let prompt = """
-        Polish this media transcript for a personal quick-capture note.
+        Polish this media transcript for an AI creator note.
 
         Raw transcript:
         \(trimmed.prefix(30_000))
         """
 
         let systemInstruction = """
-        You clean up audio/video transcripts for a personal notes app.
+        You clean up audio/video transcripts for an AI creator notes app.
 
         Return only the cleaned transcript text.
         Keep the speaker's original language, meaning, order, and wording.
@@ -1198,7 +1242,7 @@ extension QuickCaptureImportService {
         """
 
         let systemInstruction = """
-        You organize web content for a personal quick-capture notes app.
+        You organize web content for an AI creator notes app.
 
         STRICT RULES:
         - Return only Markdown.

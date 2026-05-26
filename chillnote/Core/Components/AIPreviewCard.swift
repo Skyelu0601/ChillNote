@@ -86,9 +86,9 @@ struct AIPreviewCard: View {
         VStack {
             Spacer()
             AIPreviewCard(
-                onRetry: { print("Retry") },
-                onUndo: { print("Undo") },
-                onSave: { print("Save") }
+                onRetry: {},
+                onUndo: {},
+                onSave: {}
             )
             .padding(.horizontal, 16)
             .padding(.bottom, 20)

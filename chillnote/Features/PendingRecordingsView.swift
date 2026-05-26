@@ -1,6 +1,9 @@
 import SwiftUI
 import SwiftData
 import AVFoundation
+import OSLog
+
+private let pendingRecordingsLogger = Logger(subsystem: "com.chillnote.app", category: "pending-recordings")
 
 // MARK: - Playback Controller
 
@@ -398,7 +401,17 @@ struct PendingRecordingsView: View {
                         note = Note(content: trimmed, userId: userId)
                         modelContext.insert(note)
                     }
-                    try? modelContext.save()
+                    do {
+                        try modelContext.save()
+                    } catch {
+                        pendingRecordingsLogger.error("Failed to save pending recording note: \(error.localizedDescription, privacy: .public)")
+                        processingPaths.remove(path)
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            rowSaveStates[path] = .idle
+                        }
+                        showToast(L10n.text("pending_recordings.toast.save_failed"), isSuccess: false)
+                        return
+                    }
 
                     VoiceProcessingService.shared.processingStates[note.id] = .processing(stage: .refining)
                     Task {
@@ -470,7 +483,12 @@ struct PendingRecordingsView: View {
     private func fetchNote(id: UUID) -> Note? {
         let targetID = id
         let descriptor = FetchDescriptor<Note>(predicate: #Predicate<Note> { $0.id == targetID })
-        return try? modelContext.fetch(descriptor).first
+        do {
+            return try modelContext.fetch(descriptor).first
+        } catch {
+            pendingRecordingsLogger.error("Failed to fetch pending recording note: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
     }
 }
 

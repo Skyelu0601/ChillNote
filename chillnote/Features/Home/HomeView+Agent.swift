@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+import OSLog
+
+private let homeAgentLogger = Logger(subsystem: "com.chillnote.app", category: "home-agent")
 
 extension HomeView {
     func handleAgentActionRequest(_ recipe: AgentRecipe) {
@@ -51,7 +54,7 @@ extension HomeView {
                 exitSelectionMode()
             }
         } catch {
-            print("⚠️ Agent action failed: \(error)")
+            homeAgentLogger.error("Agent action failed: \(error.localizedDescription, privacy: .public)")
             await MainActor.run {
                 isExecutingAction = false
                 actionProgress = nil

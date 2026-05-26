@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+import OSLog
+
+private let aiContextChatLogger = Logger(subsystem: "com.chillnote.app", category: "ai-context-chat")
 
 private func sanitizeAssistantContent(_ text: String) -> String {
     let normalized = text.replacingOccurrences(of: "\r\n", with: "\n")
@@ -649,8 +652,13 @@ struct AIContextChatView: View {
         let content = message.role == .assistant ? sanitizeAssistantContent(message.content) : message.content
         let newNote = Note(content: content, userId: userId)
         modelContext.insert(newNote)
-        
-        try? modelContext.save()
+
+        do {
+            try modelContext.save()
+        } catch {
+            aiContextChatLogger.error("Failed to save chat message as note: \(error.localizedDescription, privacy: .public)")
+            return
+        }
         Task { await syncManager.syncNow(context: modelContext) }
         
         // Show feedback

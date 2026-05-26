@@ -1,9 +1,12 @@
 import Foundation
+import OSLog
 import SwiftData
 import SwiftUI
 
 @MainActor
 final class SyncManager: ObservableObject {
+    nonisolated private static let logger = Logger(subsystem: "com.chillnote.app", category: "sync-manager")
+
     @AppStorage("syncEnabled") var isEnabled: Bool = true
     @AppStorage("syncLastAt") private var lastSyncAtTimestamp: Double = 0
     @AppStorage("syncCursor") private var syncCursor: String = ""
@@ -46,7 +49,7 @@ final class SyncManager: ObservableObject {
     func syncNow(context: ModelContext) async -> Bool {
         if isSyncing {
             hasPendingSyncRequest = true
-            print("[SYNC] syncNow skipped because a sync is already running; queued follow-up sync.")
+            Self.logger.debug("syncNow queued because another sync is already running")
             return false
         }
         guard isEnabled else {
@@ -83,14 +86,22 @@ final class SyncManager: ObservableObject {
             let tokenForSync = currentToken
             let hardDeletedNoteIdsSnapshot = HardDeleteQueueStore.noteIDs(for: userIdForSync)
             let hardDeletedTagIdsSnapshot = HardDeleteQueueStore.tagIDs(for: userIdForSync)
-            print("[SYNC] syncNow user=\(userIdForSync) since=\(lastSyncAt?.description ?? "nil") cursor=\(cursorSnapshot.isEmpty ? "nil" : cursorSnapshot) hardDeletedNotes=\(hardDeletedNoteIdsSnapshot.count) hardDeletedTags=\(hardDeletedTagIdsSnapshot.count)")
+            let sinceText = lastSyncAt?.description ?? "nil"
+            let cursorText = cursorSnapshot.isEmpty ? "nil" : cursorSnapshot
+            Self.logger.debug("syncNow user=\(userIdForSync, privacy: .private) since=\(sinceText, privacy: .public) cursor=\(cursorText, privacy: .private) hardDeletedNotes=\(hardDeletedNoteIdsSnapshot.count, privacy: .public) hardDeletedTags=\(hardDeletedTagIdsSnapshot.count, privacy: .public)")
             let syncOutcome = try await Task.detached(priority: .utility) {
                 let backgroundContext = ModelContext(container)
                 var userNotesDescriptor = FetchDescriptor<Note>()
                 userNotesDescriptor.predicate = #Predicate<Note> { note in
                     note.userId == userIdForSync
                 }
-                let localNotesCount = (try? backgroundContext.fetchCount(userNotesDescriptor)) ?? 0
+                let localNotesCount: Int
+                do {
+                    localNotesCount = try backgroundContext.fetchCount(userNotesDescriptor)
+                } catch {
+                    Self.logger.error("Failed to count local notes before sync: \(error.localizedDescription, privacy: .public)")
+                    throw SyncError.localStoreUnavailable
+                }
                 let checkpoint = Self.resolveCheckpoint(
                     lastSyncAt: lastSyncAt,
                     cursor: cursorSnapshot,
@@ -112,7 +123,13 @@ final class SyncManager: ObservableObject {
                 let result = try await service.syncAll(context: backgroundContext)
                 TagService.shared.cleanupEmptyTags(context: backgroundContext, shouldSave: false)
                 try backgroundContext.save()
-                let postSyncNotesCount = (try? backgroundContext.fetchCount(userNotesDescriptor)) ?? 0
+                let postSyncNotesCount: Int
+                do {
+                    postSyncNotesCount = try backgroundContext.fetchCount(userNotesDescriptor)
+                } catch {
+                    Self.logger.error("Failed to count local notes after sync: \(error.localizedDescription, privacy: .public)")
+                    throw SyncError.localStoreUnavailable
+                }
                 return (result, postSyncNotesCount, checkpoint.shouldMarkUploadedLocalAfterSuccess)
             }.value
             HardDeleteQueueStore.dequeue(noteIDs: hardDeletedNoteIdsSnapshot, for: currentUserId)
@@ -124,7 +141,7 @@ final class SyncManager: ObservableObject {
             if let serverTime = syncOutcome.0.serverTime {
                 let skewSeconds = serverTime.timeIntervalSince(syncStartedAt)
                 if skewSeconds > 60 {
-                    print("⚠️ SyncManager detected server clock ahead by \(Int(skewSeconds))s; using local sync time as incremental anchor.")
+                    Self.logger.warning("Server clock is ahead by \(Int(skewSeconds), privacy: .public)s; using local sync time as incremental anchor")
                 }
             }
             if let cursor = syncOutcome.0.cursor, !cursor.isEmpty {

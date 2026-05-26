@@ -1,7 +1,9 @@
 import Foundation
+import OSLog
 import SwiftData
 
 struct SyncEngine {
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "sync-engine")
     private let mapper = SyncMapper()
 
     func makePayload(
@@ -12,7 +14,7 @@ struct SyncEngine {
         deviceId: String?,
         hardDeletedNoteIds: [String],
         hardDeletedTagIds: [String]
-    ) -> SyncPayload {
+    ) throws -> SyncPayload {
         let start = CFAbsoluteTimeGetCurrent()
         let sinceText = since.map { ISO8601DateFormatter().string(from: $0) } ?? "nil"
         
@@ -31,8 +33,8 @@ struct SyncEngine {
         do {
             notes = try context.fetch(noteDescriptor)
         } catch {
-            print("⚠️ SyncEngine.makePayload notes fetch failed: \(error.localizedDescription)")
-            notes = []
+            Self.logger.error("makePayload notes fetch failed: \(error.localizedDescription, privacy: .public)")
+            throw SyncError.localStoreUnavailable
         }
         
         // 2. Tags (Incremental) - filtered by userId
@@ -50,8 +52,8 @@ struct SyncEngine {
         do {
             tags = try context.fetch(tagDescriptor)
         } catch {
-            print("⚠️ SyncEngine.makePayload tags fetch failed: \(error.localizedDescription)")
-            tags = []
+            Self.logger.error("makePayload tags fetch failed: \(error.localizedDescription, privacy: .public)")
+            throw SyncError.localStoreUnavailable
         }
         
 
@@ -72,17 +74,17 @@ struct SyncEngine {
             hardDeletedTagIds: hardDeletedTagIds.isEmpty ? nil : hardDeletedTagIds,
             preferences: prefs
         )
-        print("[SYNC] makePayload since=\(sinceText) notes=\(notes.count) tags=\(tags.count) hardDeletedNotes=\(hardDeletedNoteIds.count) hardDeletedTags=\(hardDeletedTagIds.count)")
-        print("[TIME] SyncEngine.makePayload total: \(String(format: "%.3f", CFAbsoluteTimeGetCurrent() - start))s")
+        let elapsed = CFAbsoluteTimeGetCurrent() - start
+        Self.logger.debug("makePayload since=\(sinceText, privacy: .public) notes=\(notes.count, privacy: .public) tags=\(tags.count, privacy: .public) hardDeletedNotes=\(hardDeletedNoteIds.count, privacy: .public) hardDeletedTags=\(hardDeletedTagIds.count, privacy: .public) elapsed=\(elapsed, privacy: .public)s")
         return payload
     }
 
-    func apply(remote: SyncResponse, context: ModelContext, userId: String, localSyncAnchor: Date = Date()) {
+    func apply(remote: SyncResponse, context: ModelContext, userId: String, localSyncAnchor: Date = Date()) throws {
         let start = CFAbsoluteTimeGetCurrent()
         
         let remoteNotesCount = remote.changes.notes.count
         let remoteTagsCount = remote.changes.tags?.count ?? 0
-        print("[TIME] SyncEngine.apply: remote notes=\(remoteNotesCount), tags=\(remoteTagsCount)")
+        Self.logger.debug("apply remote notes=\(remoteNotesCount, privacy: .public) tags=\(remoteTagsCount, privacy: .public)")
         func shouldApply(remoteVersion: Int?, remoteUpdatedAt: Date?, localVersion: Int, localUpdatedAt: Date?) -> Bool {
             if let remoteVersion, remoteVersion > localVersion { return true }
             if let remoteVersion, remoteVersion < localVersion { return false }
@@ -106,10 +108,14 @@ struct SyncEngine {
             descriptor.predicate = #Predicate<Tag> { tag in
                 tag.userId == userId && hardDeletedTagIds.contains(tag.id)
             }
-            if let tagsToDelete = try? context.fetch(descriptor) {
+            do {
+                let tagsToDelete = try context.fetch(descriptor)
                 for tag in tagsToDelete {
                     context.delete(tag)
                 }
+            } catch {
+                Self.logger.error("apply hard-deleted tags fetch failed: \(error.localizedDescription, privacy: .public)")
+                throw SyncError.localStoreUnavailable
             }
         }
 
@@ -119,10 +125,14 @@ struct SyncEngine {
             descriptor.predicate = #Predicate<Note> { note in
                 note.userId == userId && hardDeletedNoteIds.contains(note.id)
             }
-            if let notesToDelete = try? context.fetch(descriptor) {
+            do {
+                let notesToDelete = try context.fetch(descriptor)
                 for note in notesToDelete {
                     context.delete(note)
                 }
+            } catch {
+                Self.logger.error("apply hard-deleted notes fetch failed: \(error.localizedDescription, privacy: .public)")
+                throw SyncError.localStoreUnavailable
             }
         }
         
@@ -152,9 +162,14 @@ struct SyncEngine {
             tagDescriptor.predicate = #Predicate<Tag> { tag in
                 tag.userId == userId && tagIds.contains(tag.id)
             }
-            localTags = (try? context.fetch(tagDescriptor)) ?? []
+            do {
+                localTags = try context.fetch(tagDescriptor)
+            } catch {
+                Self.logger.error("apply local tags fetch failed: \(error.localizedDescription, privacy: .public)")
+                throw SyncError.localStoreUnavailable
+            }
         }
-        print("[TIME] SyncEngine.apply: matched local tags=\(localTags.count)/\(tagIdSet.count)")
+        Self.logger.debug("apply matched local tags=\(localTags.count, privacy: .public)/\(tagIdSet.count, privacy: .public)")
         var tagMap = Dictionary(uniqueKeysWithValues: localTags.map { ($0.id, $0) })
         
         // Apply Tags
@@ -199,9 +214,14 @@ struct SyncEngine {
             noteDescriptor.predicate = #Predicate<Note> { note in
                 note.userId == userId && remoteNoteIds.contains(note.id)
             }
-            localNotes = (try? context.fetch(noteDescriptor)) ?? []
+            do {
+                localNotes = try context.fetch(noteDescriptor)
+            } catch {
+                Self.logger.error("apply local notes fetch failed: \(error.localizedDescription, privacy: .public)")
+                throw SyncError.localStoreUnavailable
+            }
         }
-        print("[TIME] SyncEngine.apply: matched local notes=\(localNotes.count)/\(remoteNoteIds.count)")
+        Self.logger.debug("apply matched local notes=\(localNotes.count, privacy: .public)/\(remoteNoteIds.count, privacy: .public)")
         var notesById: [UUID: Note] = Dictionary(uniqueKeysWithValues: localNotes.map { ($0.id, $0) })
 
         for dto in remote.changes.notes {
@@ -237,7 +257,8 @@ struct SyncEngine {
             }
         }
 
-        print("[TIME] SyncEngine.apply total: \(String(format: "%.3f", CFAbsoluteTimeGetCurrent() - start))s")
+        let elapsed = CFAbsoluteTimeGetCurrent() - start
+        Self.logger.debug("apply elapsed=\(elapsed, privacy: .public)s")
     }
 
     private func normalizeSyncedUpdatedAt(_ updatedAt: Date, localSyncAnchor: Date) -> Date {

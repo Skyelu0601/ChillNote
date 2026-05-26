@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 import SwiftData
 import ZIPFoundation
 
@@ -87,6 +88,7 @@ enum ExportError: LocalizedError {
 
 actor NotesExportService: NotesExporting {
     static let shared = NotesExportService()
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "notes-export")
 
     private let fileManager: FileManager
     private let isoFormatter: ISO8601DateFormatter
@@ -245,7 +247,7 @@ actor NotesExportService: NotesExporting {
             let zipURL = fileManager.temporaryDirectory
                 .appendingPathComponent("\(containerName).zip", isDirectory: false)
             if fileManager.fileExists(atPath: zipURL.path) {
-                try? fileManager.removeItem(at: zipURL)
+                try removeTemporaryItem(at: zipURL)
             }
 
             let archive: Archive
@@ -257,7 +259,7 @@ actor NotesExportService: NotesExporting {
 
             try addFilesRecursively(from: exportRoot, baseURL: tempRoot, to: archive)
 
-            try? fileManager.removeItem(at: tempRoot)
+            removeTemporaryItemAfterExport(at: tempRoot)
 
             emitProgress(
                 onProgress,
@@ -271,24 +273,24 @@ actor NotesExportService: NotesExporting {
             return zipURL
         } catch is CancellationError {
             if let stagingRootURL {
-                try? fileManager.removeItem(at: stagingRootURL)
+                removeTemporaryItemAfterExport(at: stagingRootURL)
             }
             throw ExportError.cancelled
         } catch let exportError as ExportError {
             if let stagingRootURL {
-                try? fileManager.removeItem(at: stagingRootURL)
+                removeTemporaryItemAfterExport(at: stagingRootURL)
             }
             throw exportError
         } catch {
             if let stagingRootURL {
-                try? fileManager.removeItem(at: stagingRootURL)
+                removeTemporaryItemAfterExport(at: stagingRootURL)
             }
             throw ExportError.unknown(error.localizedDescription)
         }
     }
 
     func cleanupExportArtifact(at url: URL) async {
-        try? fileManager.removeItem(at: url)
+        removeTemporaryItemAfterExport(at: url)
     }
 
     private func resolveContainer() async throws -> ModelContainer {
@@ -342,6 +344,23 @@ actor NotesExportService: NotesExporting {
             } catch {
                 throw ExportError.zipFailed
             }
+        }
+    }
+
+    private func removeTemporaryItem(at url: URL) throws {
+        do {
+            try fileManager.removeItem(at: url)
+        } catch {
+            Self.logger.error("Failed to remove temporary export item \(url.path, privacy: .private): \(error.localizedDescription, privacy: .public)")
+            throw error
+        }
+    }
+
+    private func removeTemporaryItemAfterExport(at url: URL) {
+        do {
+            try fileManager.removeItem(at: url)
+        } catch {
+            Self.logger.warning("Failed to clean temporary export item \(url.path, privacy: .private): \(error.localizedDescription, privacy: .public)")
         }
     }
 

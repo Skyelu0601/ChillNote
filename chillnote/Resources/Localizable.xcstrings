@@ -800,49 +800,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote ist ein KI-Werkzeug fuer Creator, die jeden Tag Ideen, Clips, Hooks, Beschreibungen und Transkripte sammeln.\n\nEs geht nicht darum, noch eine chaotische Notizsammlung zu bauen. Es geht darum, Inspiration so festzuhalten, dass du sie spaeter wiederfinden, verstehen und in eigene Inhalte verwandeln kannst.\n\nSpeichere ein Video, sprich eine rohe Idee ein oder importiere Material. ChillNote hilft dir, daraus eine private, durchsuchbare Swipe File zu machen, die bereit fuer deine naechste Aufnahme, deinen naechsten Post oder dein naechstes Skript ist."
+            "value" : "ChillNote ist ein KI-Werkzeug fuer Creator, die jeden Tag Ideen, Clips, Hooks, Beschreibungen und Transkripte sammeln.\n\nEs geht nicht darum, noch eine chaotische Notizsammlung zu bauen. Es geht darum, Inspiration so festzuhalten, dass du sie spaeter wiederfinden, verstehen und in eigene Inhalte verwandeln kannst.\n\nSpeichere ein Video, sprich eine rohe Idee ein oder importiere Material. ChillNote hilft dir, daraus private, durchsuchbare AI Creator Notes zu machen, bereit fuer deine naechste Aufnahme, deinen naechsten Post oder dein naechstes Skript."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote is an AI tool for creators who collect ideas, clips, hooks, descriptions, and transcripts every day.\n\nIt is not about building another messy pile of notes. It is about saving inspiration in a form you can find again, understand quickly, and turn into your own work.\n\nSave a video, speak a raw idea, or import source material. ChillNote helps turn it into a private, searchable swipe file that is ready for your next recording, post, or script."
+            "value" : "ChillNote is an AI creator notes app for creators who collect ideas, clips, hooks, descriptions, and transcripts every day.\n\nIt is not about building another messy pile of notes. It is about saving inspiration in a form you can find again, understand quickly, and turn into your own work.\n\nSave a video, speak a raw idea, or import creator material. ChillNote helps turn it into private, searchable AI creator notes that are ready for your next recording, post, or script."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote es una herramienta de IA para creadores que guardan ideas, clips, hooks, descripciones y transcripciones todos los dias.\n\nNo se trata de crear otra pila desordenada de notas. Se trata de guardar la inspiracion en una forma que puedas volver a encontrar, entender rapido y convertir en trabajo propio.\n\nGuarda un video, graba una idea en bruto o importa material de referencia. ChillNote te ayuda a convertirlo en un swipe file privado y buscable, listo para tu proxima grabacion, publicacion o guion."
+            "value" : "ChillNote es una app de notas con IA para creadores que guardan ideas, clips, hooks, descripciones y transcripciones todos los dias.\n\nNo se trata de crear otra pila desordenada de notas. Se trata de guardar la inspiracion en una forma que puedas volver a encontrar, entender rapido y convertir en trabajo propio.\n\nGuarda un video, graba una idea en bruto o importa material de referencia. ChillNote te ayuda a convertirlo en notas de creador privadas y buscables, listas para tu proxima grabacion, publicacion o guion."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote est un outil IA pour les createurs qui collectent chaque jour des idees, des clips, des hooks, des descriptions et des transcriptions.\n\nIl ne s agit pas de creer une autre pile de notes desordonnee. Il s agit de sauvegarder l inspiration sous une forme que vous pouvez retrouver, comprendre vite et transformer en creation personnelle.\n\nEnregistrez une video, dictez une idee brute ou importez une source. ChillNote vous aide a en faire un swipe file prive et consultable, pret pour votre prochain enregistrement, post ou script."
+            "value" : "ChillNote est une app de notes IA pour les createurs qui collectent chaque jour des idees, des clips, des hooks, des descriptions et des transcriptions.\n\nIl ne s agit pas de creer une autre pile de notes desordonnee. Il s agit de sauvegarder l inspiration sous une forme que vous pouvez retrouver, comprendre vite et transformer en creation personnelle.\n\nEnregistrez une video, dictez une idee brute ou importez une source. ChillNote vous aide a en faire des notes creator privees et consultables, pretes pour votre prochain enregistrement, post ou script."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNoteは、アイデア、動画クリップ、フック、説明文、文字起こしを日々集めるクリエイターのためのAIツールです。\n\n目的は、散らかったノートをもう一つ増やすことではありません。インスピレーションをあとで見つけ直し、すばやく理解し、自分の制作へ変えられる形で残すことです。\n\n動画を保存する。ラフなアイデアを話す。素材を取り込む。ChillNoteはそれらを、次の収録、投稿、台本に使える、プライベートで検索しやすいスワイプファイルへ整えます。"
+            "value" : "ChillNoteは、アイデア、動画クリップ、フック、説明文、文字起こしを日々集めるクリエイターのためのAIクリエイターノートアプリです。\n\n目的は、散らかったノートをもう一つ増やすことではありません。インスピレーションをあとで見つけ直し、すばやく理解し、自分の制作へ変えられる形で残すことです。\n\n動画を保存する。ラフなアイデアを話す。素材を取り込む。ChillNoteはそれらを、次の収録、投稿、台本に使える、プライベートで検索しやすいクリエイターノートへ整えます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote는 아이디어, 영상 클립, 훅, 설명, 전사문을 매일 모으는 크리에이터를 위한 AI 도구입니다.\n\n또 하나의 어지러운 메모 더미를 만들기 위한 앱이 아닙니다. 영감을 다시 찾고, 빠르게 이해하고, 나만의 작업으로 바꿀 수 있는 형태로 저장하기 위한 앱입니다.\n\n영상을 저장하고, 거친 아이디어를 말하고, 참고 자료를 가져오세요. ChillNote는 그것을 다음 녹화, 게시물, 스크립트에 바로 쓸 수 있는 비공개 검색형 스와이프 파일로 정리해줍니다."
+            "value" : "ChillNote는 아이디어, 영상 클립, 훅, 설명, 전사문을 매일 모으는 크리에이터를 위한 AI 크리에이터 노트 앱입니다.\n\n또 하나의 어지러운 메모 더미를 만들기 위한 앱이 아닙니다. 영감을 다시 찾고, 빠르게 이해하고, 나만의 작업으로 바꿀 수 있는 형태로 저장하기 위한 앱입니다.\n\n영상을 저장하고, 거친 아이디어를 말하고, 참고 자료를 가져오세요. ChillNote는 그것을 다음 녹화, 게시물, 스크립트에 바로 쓸 수 있는 비공개 검색형 크리에이터 노트로 정리해줍니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 是一个服务于创作者的 AI 工具，适合每天收集灵感、视频、开头钩子、描述文案和转录内容的人。\n\n它不是让你再多维护一堆乱糟糟的笔记，而是把那些有用的创作素材，保存成之后能找回、能看懂、也能继续改造成自己作品的形式。\n\n你可以保存一条视频，说出一个粗糙想法，或者导入一份素材。ChillNote 会帮你把它变成一个私人的、可搜索的创作灵感库，随时准备服务下一次拍摄、发帖或写脚本。"
+            "value" : "ChillNote 是一个 AI creator notes 应用，适合每天收集灵感、视频、开头钩子、描述文案和转录内容的创作者。\n\n它不是让你再多维护一堆乱糟糟的笔记，而是把那些有用的创作素材，保存成之后能找回、能看懂、也能继续改造成自己作品的形式。\n\n你可以保存一条视频，说出一个粗糙想法，或者导入一份素材。ChillNote 会帮你把它变成私人的、可搜索的创作者笔记，随时准备服务下一次拍摄、发帖或写脚本。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillNote 是一個服務於創作者的 AI 工具，適合每天收集靈感、影片、開頭鉤子、描述文案和轉錄內容的人。\n\n它不是讓你再多維護一堆亂糟糟的筆記，而是把那些有用的創作素材，保存成之後能找回、能看懂、也能繼續改造成自己作品的形式。\n\n你可以保存一則影片，說出一個粗糙想法，或匯入一份素材。ChillNote 會幫你把它變成一個私人的、可搜尋的創作靈感庫，隨時準備服務下一次拍攝、發文或寫腳本。"
+            "value" : "ChillNote 是一個 AI creator notes 應用，適合每天收集靈感、影片、開頭鉤子、描述文案和轉錄內容的創作者。\n\n它不是讓你再多維護一堆亂糟糟的筆記，而是把那些有用的創作素材，保存成之後能找回、能看懂、也能繼續改造成自己作品的形式。\n\n你可以保存一則影片，說出一個粗糙想法，或匯入一份素材。ChillNote 會幫你把它變成私人的、可搜尋的創作者筆記，隨時準備服務下一次拍攝、發文或寫腳本。"
           }
         }
       }
@@ -1754,49 +1754,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Das Ergebnis:** Deine Swipe File bleibt privat, organisiert und hilfreich, damit du aus mehr Quellen lernen kannst, ohne deine eigene Stimme zu verlieren."
+            "value" : "**Das Ergebnis:** Deine AI Creator Notes bleiben privat, organisiert und hilfreich, damit du aus mehr Quellen lernen kannst, ohne deine eigene Stimme zu verlieren."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**The Result:** Your swipe file stays private, organized, and useful, so you can learn from more sources without losing your own voice."
+            "value" : "**The Result:** Your AI creator notes stay private, organized, and useful, so you can learn from more sources without losing your own voice."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**El resultado:** Tu swipe file se mantiene privado, organizado y util, para que puedas aprender de mas fuentes sin perder tu propia voz."
+            "value" : "**El resultado:** Tus notas de creador con IA se mantienen privadas, organizadas y utiles, para que puedas aprender de mas fuentes sin perder tu propia voz."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Le resultat :** Votre swipe file reste prive, organise et utile, afin d apprendre de plus de sources sans perdre votre propre voix."
+            "value" : "**Le resultat :** Vos notes creator IA restent privees, organisees et utiles, afin d apprendre de plus de sources sans perdre votre propre voix."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**結果:** スワイプファイルはプライベートで整理された実用的な場所になり、自分の声を失わずにより多くの素材から学べます。"
+            "value" : "**結果:** AIクリエイターノートはプライベートで整理された実用的な場所になり、自分の声を失わずにより多くの素材から学べます。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**결과:** 스와이프 파일은 비공개로 정리되고 유용하게 유지되어, 나만의 목소리를 잃지 않으면서 더 많은 자료에서 배울 수 있습니다."
+            "value" : "**결과:** AI 크리에이터 노트는 비공개로 정리되고 유용하게 유지되어, 나만의 목소리를 잃지 않으면서 더 많은 자료에서 배울 수 있습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**结果：** 你的灵感库会保持私密、有序、好用，让你能从更多来源学习，同时不丢掉自己的表达。"
+            "value" : "**结果：** 你的 AI creator notes 会保持私密、有序、好用，让你能从更多来源学习，同时不丢掉自己的表达。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**結果：** 你的靈感庫會保持私密、有序、好用，讓你能從更多來源學習，同時不丟掉自己的表達。"
+            "value" : "**結果：** 你的 AI creator notes 會保持私密、有序、好用，讓你能從更多來源學習，同時不丟掉自己的表達。"
           }
         }
       }
@@ -1913,49 +1913,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "KI-Notizen fuer Creator-Swipe-Files"
+            "value" : "AI Creator Notes fuer deinen Workflow"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI notes for creator swipe files"
+            "value" : "AI creator notes for your workflow"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notas con IA para swipe files de creadores"
+            "value" : "Notas de creador con IA para tu flujo"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notes IA pour swipe files de createurs"
+            "value" : "Notes creator IA pour ton workflow"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "クリエイターのスワイプファイルを支えるAIノート"
+            "value" : "制作ワークフローのためのAIクリエイターノート"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "크리에이터 스와이프 파일을 위한 AI 노트"
+            "value" : "크리에이터 워크플로를 위한 AI 노트"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "为创作者打造的 AI 灵感库"
+            "value" : "为创作者工作流打造的 AI creator notes"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "為創作者打造的 AI 靈感庫"
+            "value" : "為創作者工作流打造的 AI creator notes"
           }
         }
       }
@@ -17865,6 +17865,136 @@
         }
       }
     },
+    "onboarding.capture.links.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Paste TikTok, YouTube, or Instagram to get the full transcript" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Paste TikTok, YouTube, or Instagram to get the full transcript" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Paste TikTok, YouTube, or Instagram to get the full transcript" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Paste TikTok, YouTube, or Instagram to get the full transcript" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "TikTok・YouTube・InstagramのURLを貼り付けてトランスクリプトを取得" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Paste TikTok, YouTube, or Instagram to get the full transcript" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "粘贴 TikTok、YouTube 或 Instagram 链接，即可获取完整文字稿" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "貼上 TikTok、YouTube 或 Instagram 連結，即可取得完整文字稿" } }
+      }
+    },
+    "onboarding.capture.links.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Video links" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Video links" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Video links" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Video links" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "動画リンク" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Video links" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "视频链接" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "影片連結" } }
+      }
+    },
+    "onboarding.capture.media.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Import any audio or video file and get an instant transcript" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Import any audio or video file and get an instant transcript" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Import any audio or video file and get an instant transcript" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Import any audio or video file and get an instant transcript" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "音声・動画ファイルをインポートして即座に文字起こし" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Import any audio or video file and get an instant transcript" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "导入任意音频或视频文件，立即获取文字稿" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "匯入任何音訊或影片檔案，立即取得文字稿" } }
+      }
+    },
+    "onboarding.capture.media.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Audio & Video" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Audio & Video" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Audio & Video" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Audio & Video" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "音声・動画" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Audio & Video" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "音频和视频" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "音訊和影片" } }
+      }
+    },
+    "onboarding.capture.photos.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Screenshots, slides, menus — text extracted instantly" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Screenshots, slides, menus — text extracted instantly" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Screenshots, slides, menus — text extracted instantly" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Screenshots, slides, menus — text extracted instantly" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "スクリーンショット、スライド、メニュー等からテキストを即抽出" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Screenshots, slides, menus — text extracted instantly" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "截图、幻灯片、菜单——文字即时提取" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "截圖、投影片、菜單——文字即時提取" } }
+      }
+    },
+    "onboarding.capture.photos.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Photos" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Photos" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Photos" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Photos" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "写真" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Photos" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "图片" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "圖片" } }
+      }
+    },
+    "onboarding.capture.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Voice, links, photos—every idea, one place." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Voice, links, photos—every idea, one place." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Voice, links, photos—every idea, one place." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Voice, links, photos—every idea, one place." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "音声・リンク・写真、すべてのアイデアをひとつに。" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Voice, links, photos—every idea, one place." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "语音、链接、图片——所有灵感，一个地方。" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "語音、連結、圖片——所有靈感，一個地方。" } }
+      }
+    },
+    "onboarding.capture.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Capture from anywhere" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Capture from anywhere" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Capture from anywhere" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Capture from anywhere" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "どこからでもキャプチャ" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Capture from anywhere" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "随处捕捉灵感" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "隨處捕捉靈感" } }
+      }
+    },
+    "onboarding.capture.voice.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Speak your idea and get an instant note" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Speak your idea and get an instant note" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Speak your idea and get an instant note" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Speak your idea and get an instant note" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "話しかけるだけで即ノートに変換" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Speak your idea and get an instant note" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "说出你的想法，立即生成笔记" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "說出你的想法，立即生成筆記" } }
+      }
+    },
+    "onboarding.capture.voice.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Voice" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Voice" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Voice" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Voice" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "音声" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Voice" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "语音" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "語音" } }
+      }
+    },
     "onboarding.flow.action.get_started" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -17924,49 +18054,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Deine Creator-Swipe-File,\nmit KI"
+            "value" : "Deine Creator Notes,\nmit KI"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your Creator Swipe File,\nPowered by AI"
+            "value" : "Your creator notes,\npowered by AI"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu archivo swipe de creador,\ncon IA"
+            "value" : "Tus notas de creador,\ncon IA"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ton swipe file de creator,\npropulse par l IA"
+            "value" : "Tes notes creator,\npropulsees par l IA"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "クリエイターのスワイプファイルを\nAIで"
+            "value" : "クリエイターノートを\nAIで"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI로 움직이는\n크리에이터 스와이프 파일"
+            "value" : "AI로 움직이는\n크리에이터 노트"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的创作者灵感库，\nAI 帮你复用"
+            "value" : "你的 creator notes，\nAI 帮你复用"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "你的創作者靈感庫，\nAI 幫你複用"
+            "value" : "你的 creator notes，\nAI 幫你複用"
           }
         }
       }
@@ -19461,49 +19591,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hol mehr aus jeder Notiz."
+            "value" : "Turn every idea into great content."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Create more from every note."
+            "value" : "Turn every idea into great content."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Crea más con cada nota."
+            "value" : "Turn every idea into great content."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tirez plus de chaque note."
+            "value" : "Turn every idea into great content."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "どのノートからも、もっと生み出せる。"
+            "value" : "Turn every idea into great content."
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "모든 노트에서 더 많은 걸 해낼 수 있어요."
+            "value" : "Turn every idea into great content."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每条笔记，都能做更多。"
+            "value" : "把每个灵感变成精彩内容。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "每條筆記，都能做更多。"
+            "value" : "把每個靈感變成精彩內容。"
           }
         }
       }
@@ -19514,49 +19644,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "KI-Skills"
+            "value" : "AI Creator Skills"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI Skills"
+            "value" : "AI creator skills"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skills de IA"
+            "value" : "AI creator skills"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skills IA"
+            "value" : "AI creator skills"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI Skills"
+            "value" : "AI creator skills"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI Skills"
+            "value" : "AI creator skills"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI Skills"
+            "value" : "AI 创作技能"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI Skills"
+            "value" : "AI 創作技能"
           }
         }
       }
@@ -20203,49 +20333,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Aus deiner Swipe-File:"
+            "value" : "Aus deinen Creator Notes:"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "From your swipe file:"
+            "value" : "From your creator notes:"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Desde tu swipe file:"
+            "value" : "Desde tus notas de creador:"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Depuis ton swipe file :"
+            "value" : "Depuis tes notes creator :"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "スワイプファイルから:"
+            "value" : "クリエイターノートから:"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "스와이프 파일에서:"
+            "value" : "크리에이터 노트에서:"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "根据你的灵感库："
+            "value" : "根据你的 creator notes："
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "根據你的靈感庫："
+            "value" : "根據你的 creator notes："
           }
         }
       }
@@ -20409,55 +20539,250 @@
         }
       }
     },
+    "onboarding.survey.content_type.long_form" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Long-form video" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Long-form video" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Long-form video" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Long-form video" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "長尺動画" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Long-form video" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "长视频" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "長影片" } }
+      }
+    },
+    "onboarding.survey.content_type.long_form.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "YouTube, Podcast" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "YouTube, Podcast" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "YouTube, Podcast" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "YouTube, Podcast" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "YouTube、ポッドキャスト" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "YouTube, Podcast" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "YouTube、播客" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "YouTube、Podcast" } }
+      }
+    },
+    "onboarding.survey.content_type.mixed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "A bit of everything" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "A bit of everything" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "A bit of everything" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "A bit of everything" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "いろいろ" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "A bit of everything" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "什么都做" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "什麼都做" } }
+      }
+    },
+    "onboarding.survey.content_type.mixed.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "" } }
+      }
+    },
+    "onboarding.survey.content_type.question" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "What type of content do you create?" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "What type of content do you create?" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "What type of content do you create?" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "What type of content do you create?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "どんなコンテンツを作っていますか？" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "What type of content do you create?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你创作什么类型的内容？" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "你創作什麼類型的內容？" } }
+      }
+    },
+    "onboarding.survey.content_type.short_form" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Short-form video" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Short-form video" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Short-form video" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Short-form video" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ショート動画" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Short-form video" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "短视频" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "短影片" } }
+      }
+    },
+    "onboarding.survey.content_type.short_form.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "TikTok, Reels, Shorts" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "TikTok, Reels, Shorts" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "TikTok, Reels, Shorts" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "TikTok, Reels, Shorts" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "TikTok、リール、Shorts" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "TikTok, Reels, Shorts" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "TikTok、Reels、Shorts" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "TikTok、Reels、Shorts" } }
+      }
+    },
+    "onboarding.survey.content_type.written" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Written content" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Written content" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Written content" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Written content" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "文章コンテンツ" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Written content" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "文字内容" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "文字內容" } }
+      }
+    },
+    "onboarding.survey.content_type.written.detail" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Blog, Newsletter" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Blog, Newsletter" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Blog, Newsletter" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Blog, Newsletter" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ブログ、ニュースレター" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Blog, Newsletter" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "博客、简报" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "部落格、電子報" } }
+      }
+    },
+    "onboarding.survey.goals.capture_ideas" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Never lose a good idea" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Never lose a good idea" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Never lose a good idea" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Never lose a good idea" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "良いアイデアを逃さない" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Never lose a good idea" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不错过任何好灵感" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "不錯過任何好靈感" } }
+      }
+    },
+    "onboarding.survey.goals.improve_quality" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Make my content better" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Make my content better" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Make my content better" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Make my content better" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コンテンツの質を上げる" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Make my content better" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "提升内容质量" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "提升內容品質" } }
+      }
+    },
+    "onboarding.survey.goals.plan_calendar" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Plan my content calendar" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Plan my content calendar" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Plan my content calendar" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Plan my content calendar" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "コンテンツカレンダーを計画する" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Plan my content calendar" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "规划我的内容日历" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "規劃我的內容日曆" } }
+      }
+    },
+    "onboarding.survey.goals.question" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "What's your main goal?" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "What's your main goal?" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "What's your main goal?" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "What's your main goal?" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "主な目的は何ですか？" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "What's your main goal?" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的主要目标是什么？" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "你的主要目標是什麼？" } }
+      }
+    },
+    "onboarding.survey.goals.repurpose" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Repurpose across platforms" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Repurpose across platforms" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Repurpose across platforms" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Repurpose across platforms" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "複数のプラットフォームで再利用する" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Repurpose across platforms" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "跨平台重新利用内容" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "跨平台重新利用內容" } }
+      }
+    },
+    "onboarding.survey.goals.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Select all that apply" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select all that apply" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Select all that apply" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Select all that apply" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "当てはまるものをすべて選んでください" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "Select all that apply" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "选择所有适用的选项" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇所有適用的選項" } }
+      }
+    },
     "onboarding.welcome_note.content" : {
       "extractionState" : "manual",
       "localizations" : {
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "# 👋 Willkommen bei ChillNote\n\n> ChillNote ist dein Sprach-Workspace.\n> Sprich es aus, halte es sofort fest und erhalte mit einem Tippen genau das Ergebnis, das du brauchst.\n\n---\n\n## ✨ So legst du los\n\n- [ ] **🎙️ Nimm deine erste Notiz auf**\nTippe unten auf die Aufnahmetaste und sag einfach, was dir gerade durch den Kopf geht.\n\n- [ ] **Sieh, wie ChillNote daraus eine Notiz macht**\nDeine Stimme wird in Text umgewandelt, bereinigt und kann später mit Tags organisiert werden.\n\n- [ ] **⚡️ Probiere den Lightning Button aus**\nWähle eine oder mehrere Notizen aus und nutze dann **AI Skills** oder **Ask AI**.\n\n- [ ] **🪄 Probiere den Zauberstab-Button aus**\nÖffne eine Notiz und tippe oben rechts auf den Zauberstab-Button, um **Auto Format** zu verwenden und die Notiz leichter lesbar zu machen."
+            "value" : "# Willkommen bei ChillNote\n\n> ChillNote ist dein Eingangskorb für Ideen und Quellenmaterial.  \n> Lege zuerst einen Gedanken, einen Videolink, einen Screenshot oder eine Audiodatei ab. Organisieren und weiterverwenden kannst du alles später.\n\n---\n\n## Erst etwas erfassen\n\nUnten gibt es drei Hauptbuttons:\n\n- [ ] **Sprachnotiz aufnehmen**  \nTippe auf das Mikrofon und sag, was dir gerade durch den Kopf geht. ChillNote macht daraus eine Notiz und bereitet sie lesbarer auf.\n\n- [ ] **Textnotiz schreiben**  \nTippe auf den Schreibbutton, um eine leere Notiz zu erstellen. Gut für kurze Gedanken, Todos, Entwürfe oder alles, was du direkt tippen möchtest.\n\n- [ ] **Mit + mehr hinzufügen**  \nTippe auf **+**, um weitere Arten von Inhalt zu erfassen.\n\n---\n\n## Was + erfassen kann\n\n- [ ] **Link einfügen**  \nKopiere zuerst einen Link und tippe dann auf **+ → Link einfügen**.  \nNutze das für TikTok, YouTube Shorts, Instagram Reels oder Webseiten. ChillNote versucht Titel, Beschreibung, Creator, Transkript oder Seitenzusammenfassung zu erfassen.\n\n- [ ] **Foto oder Bild hinzufügen**  \nTippe auf **+ → Foto / Bild**, um ein Foto aufzunehmen oder eines aus deiner Mediathek zu wählen.  \nGut für Screenshots, Buchseiten, Whiteboards, Folien, Chat-Screenshots oder handschriftliche Notizen. ChillNote behält das Bild und versucht, den Text zu extrahieren.\n\n- [ ] **Audio- oder Videodatei importieren**  \nTippe auf **+ → Audio- / Videodatei**, um Dateien wie MP3, WAV oder MOV zu importieren.  \nChillNote versucht, den Ton zu transkribieren und daraus eine Notiz zu machen.\n\n---\n\n## Später organisieren\n\n- [ ] **Notizen in Bereiche verschieben**  \nNutze Bereiche wie Inbox, Entwürfe und Veröffentlicht, um deinen Arbeitsbereich übersichtlich zu halten.\n\n- [ ] **Tags hinzufügen**  \nWechsle in den Auswahlmodus, um eine oder mehrere Notizen zu taggen. Tags helfen bei Projekten, Themen, Plattformen oder Quellentypen.\n\n- [ ] **Notizen suchen**  \nNutze die Suche, um gespeicherte Ideen über Inhalt oder Quelleninformationen wiederzufinden.\n\n---\n\n## Mit AI wiederverwenden\n\n- [ ] **AI Skills in einer Notiz nutzen**  \nÖffne eine Notiz und tippe oben rechts auf den Blitzbutton. Wähle einen Skill wie Zusammenfassen, Übersetzen, Hook Generator, Humanizer oder Caption Pack.  \nChillNote zeigt zuerst eine Vorschau. Danach kannst du einfügen, anhängen, ausgewählten Text ersetzen oder die ganze Note ersetzen.\n\n- [ ] **AI zu mehreren Notizen fragen**  \nTippe auf dem Home-Bildschirm auf den Blitzbutton, wähle eine oder mehrere Notizen aus und nutze dann **Ask AI**.  \nDamit kannst du mehrere Notizen zusammenfassen, Muster finden, Ideen vergleichen oder entscheiden, was du als Nächstes schreibst.\n\n- [ ] **Lieblings-AI-Skills speichern**  \nÖffne **AI Skills** in der Seitenleiste, um integrierte Skills zu speichern oder eigene zu erstellen.  \nSo kannst du denselben Workflow wiederverwenden, ohne jedes Mal den Prompt neu zu schreiben.\n\n---\n\n## Ein einfacher Workflow\n\nDu musst nicht sofort alles organisieren.\n\nSpeichere nützliche Videolinks, wenn du sie siehst.  \nImportiere Screenshots, bevor du vergisst, warum sie wichtig waren.  \nNimm rohe Gedanken auf, solange sie frisch sind.  \nLege Audio- oder Videodateien ab, wenn du ein Transkript brauchst.\n\nWenn du schreiben, planen, zusammenfassen oder veröffentlichen möchtest, helfen Tags, Suche, Ask AI und AI Skills dabei, diese gespeicherten Teile in den nächsten Schritt zu verwandeln."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "# 👋 Welcome to ChillNote\n\n> ChillNote is your voice workspace.\n> Say it, capture it instantly, then get the result you want in one tap.\n\n---\n\n## ✨ How to Get Started\n\n- [ ] **🎙️ Record your first note**\nTap the record button at the bottom and say anything on your mind.\n\n- [ ] **See how ChillNote turns it into a note**\nYour voice is turned into text, cleaned up, and ready to organize with tags later.\n\n- [ ] **⚡️ Try the Lightning Button**\nSelect one or more notes, then use **AI Skills** or **Ask AI**.\n\n- [ ] **🪄 Try the magic wand button**\nOpen a note, then tap the magic wand button in the top right to use **Auto Format** and make it easier to read."
+            "value" : "# Welcome to ChillNote\n\n> ChillNote is your AI creator notes workspace.  \n> Drop in a thought, a video link, a screenshot, or an audio file first. Organize and reuse it later.\n\n---\n\n## Capture Something First\n\nThere are three main buttons at the bottom:\n\n- [ ] **Record a voice note**  \nTap the microphone and say what is on your mind. ChillNote will turn your voice into a note and clean it up into something easier to read.\n\n- [ ] **Write a text note**  \nTap the writing button to create a blank note. Use it for quick thoughts, todos, drafts, or anything you want to type directly.\n\n- [ ] **Use + to add more**  \nTap **+** to bring in other kinds of content.\n\n---\n\n## What + Can Capture\n\n- [ ] **Paste a link**  \nCopy a link first, then tap **+ → Paste Link**.  \nUse this for TikTok, YouTube Shorts, Instagram Reels, or web pages. ChillNote will try to capture the title, description, creator, transcript, or page summary.\n\n- [ ] **Add a photo or image**  \nTap **+ → Photo / Image** to take a photo or choose one from your library.  \nUse this for screenshots, book pages, whiteboards, slides, chat screenshots, or handwritten notes. ChillNote keeps the image and tries to extract the text.\n\n- [ ] **Import an audio or video file**  \nTap **+ → Audio / Video File** to import files like MP3, WAV, or MOV.  \nChillNote will try to transcribe the audio and turn it into a note.\n\n---\n\n## Organize It Later\n\n- [ ] **Move notes into sections**  \nUse sections like Inbox, Drafts, and Published to keep your workspace tidy.\n\n- [ ] **Add tags**  \nEnter selection mode to tag one or more notes. Tags are useful for projects, topics, platforms, or source types.\n\n- [ ] **Search your notes**  \nUse search to find saved ideas by note content or source information.\n\n---\n\n## Reuse It With AI\n\n- [ ] **Use AI Skills inside a note**  \nOpen a note and tap the lightning button in the top right. Choose a Skill like Summarize, Translate, Hook Generator, Humanizer, or Caption Pack.  \nChillNote will show a preview first, then you can insert, append, replace selected text, or replace the whole note.\n\n- [ ] **Ask AI about multiple notes**  \nOn the home screen, tap the lightning button, select one or more notes, then use **Ask AI**.  \nUse it to summarize several notes, find patterns, compare ideas, or decide what to write next.\n\n- [ ] **Save your favorite AI Skills**  \nOpen **AI Skills** from the sidebar to save built-in Skills or create your own.  \nThis lets you reuse the same workflow without rewriting the prompt every time.\n\n---\n\n## A Simple Workflow\n\nDo not worry about organizing everything right away.\n\nSave useful video links when you see them.  \nImport screenshots before you forget why they mattered.  \nRecord rough thoughts while they are fresh.  \nDrop in audio or video files when you need a transcript.\n\nWhen you are ready to write, plan, summarize, or publish, use tags, search, Ask AI, and AI Skills to turn those creator notes into your next step."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "# 👋 Bienvenido a ChillNote\n\n> ChillNote es tu espacio de trabajo por voz.\n> Dilo, guárdalo al instante y consigue el resultado que quieres con un toque.\n\n---\n\n## ✨ Cómo empezar\n\n- [ ] **🎙️ Graba tu primera nota**\nToca el botón de grabación de abajo y di lo que tengas en mente.\n\n- [ ] **Mira cómo ChillNote la convierte en una nota**\nTu voz se convierte en texto, se limpia y queda lista para organizarse con etiquetas más tarde.\n\n- [ ] **⚡️ Prueba el Lightning Button**\nSelecciona una o más notas y luego usa **AI Skills** o **Ask AI**.\n\n- [ ] **🪄 Prueba el botón de la varita mágica**\nAbre una nota y toca el botón de la varita mágica en la esquina superior derecha para usar **Auto Format** y hacerla más fácil de leer."
+            "value" : "# Bienvenido a ChillNote\n\n> ChillNote es tu bandeja de entrada para ideas y material de referencia.  \n> Guarda primero una idea, un enlace de video, una captura de pantalla o un archivo de audio. Organízalo y reutilízalo después.\n\n---\n\n## Captura algo primero\n\nAbajo hay tres botones principales:\n\n- [ ] **Graba una nota de voz**  \nToca el micrófono y di lo que tienes en mente. ChillNote convertirá tu voz en una nota y la dejará más fácil de leer.\n\n- [ ] **Escribe una nota de texto**  \nToca el botón de escritura para crear una nota en blanco. Úsala para ideas rápidas, tareas, borradores o cualquier cosa que quieras escribir directamente.\n\n- [ ] **Usa + para añadir más**  \nToca **+** para traer otros tipos de contenido.\n\n---\n\n## Qué puede capturar +\n\n- [ ] **Pegar un enlace**  \nCopia primero un enlace y luego toca **+ → Pegar enlace**.  \nÚsalo para TikTok, YouTube Shorts, Instagram Reels o páginas web. ChillNote intentará capturar el título, la descripción, el creador, la transcripción o el resumen de la página.\n\n- [ ] **Añadir una foto o imagen**  \nToca **+ → Foto / Imagen** para hacer una foto o elegir una de tu biblioteca.  \nÚsalo para capturas, páginas de libros, pizarras, diapositivas, chats o notas manuscritas. ChillNote conserva la imagen e intenta extraer el texto.\n\n- [ ] **Importar un archivo de audio o video**  \nToca **+ → Archivo de audio / video** para importar archivos como MP3, WAV o MOV.  \nChillNote intentará transcribir el audio y convertirlo en una nota.\n\n---\n\n## Organízalo después\n\n- [ ] **Mueve notas a secciones**  \nUsa secciones como Inbox, Borradores y Publicado para mantener ordenado tu espacio de trabajo.\n\n- [ ] **Añade etiquetas**  \nEntra en modo de selección para etiquetar una o varias notas. Las etiquetas sirven para proyectos, temas, plataformas o tipos de fuente.\n\n- [ ] **Busca tus notas**  \nUsa la búsqueda para encontrar ideas guardadas por contenido o información de origen.\n\n---\n\n## Reutilízalo con AI\n\n- [ ] **Usa AI Skills dentro de una nota**  \nAbre una nota y toca el botón de rayo en la esquina superior derecha. Elige un Skill como Resumen, Traducción, Hook Generator, Humanizer o Caption Pack.  \nChillNote mostrará primero una vista previa. Después puedes insertar, añadir al final, reemplazar el texto seleccionado o reemplazar toda la Note.\n\n- [ ] **Pregunta a AI sobre varias notas**  \nEn la pantalla principal, toca el botón de rayo, selecciona una o varias notas y usa **Ask AI**.  \nÚsalo para resumir varias notas, encontrar patrones, comparar ideas o decidir qué escribir después.\n\n- [ ] **Guarda tus AI Skills favoritos**  \nAbre **AI Skills** desde la barra lateral para guardar Skills integrados o crear los tuyos.  \nAsí puedes reutilizar el mismo flujo sin volver a escribir el prompt cada vez.\n\n---\n\n## Un flujo sencillo\n\nNo te preocupes por organizarlo todo de inmediato.\n\nGuarda enlaces de video útiles cuando los veas.  \nImporta capturas antes de olvidar por qué importaban.  \nGraba ideas en bruto mientras están frescas.  \nAñade archivos de audio o video cuando necesites una transcripción.\n\nCuando quieras escribir, planear, resumir o publicar, usa etiquetas, búsqueda, Ask AI y AI Skills para convertir esas piezas guardadas en tu siguiente paso."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "# 👋 Bienvenue sur ChillNote\n\n> ChillNote est votre espace de travail vocal.\n> Dites-le, notez-le instantanément, puis obtenez le resultat voulu en un geste.\n\n---\n\n## ✨ Comment démarrer\n\n- [ ] **🎙️ Enregistrez votre première note**\nTouchez le bouton d'enregistrement en bas et dites simplement ce que vous avez en tête.\n\n- [ ] **Voyez comment ChillNote la transforme en note**\nVotre voix est transformée en texte, nettoyée et prête à être organisée avec des tags plus tard.\n\n- [ ] **⚡️ Essayez le Lightning Button**\nSélectionnez une ou plusieurs notes, puis utilisez **AI Skills** ou **Ask AI**.\n\n- [ ] **🪄 Essayez le bouton baguette magique**\nOuvrez une note, puis touchez le bouton baguette magique en haut à droite pour utiliser **Auto Format** et la rendre plus facile à lire."
+            "value" : "# Bienvenue sur ChillNote\n\n> ChillNote est votre boîte de réception pour les idées et les sources.  \n> Déposez d'abord une idée, un lien vidéo, une capture d'écran ou un fichier audio. Vous pourrez organiser et réutiliser tout cela plus tard.\n\n---\n\n## Capturez d'abord quelque chose\n\nTrois boutons principaux se trouvent en bas :\n\n- [ ] **Enregistrer une note vocale**  \nTouchez le micro et dites ce que vous avez en tête. ChillNote transforme votre voix en note et la rend plus facile à lire.\n\n- [ ] **Écrire une note texte**  \nTouchez le bouton d'écriture pour créer une note vide. Utilisez-la pour des idées rapides, des tâches, des brouillons ou tout ce que vous voulez saisir directement.\n\n- [ ] **Utiliser + pour ajouter plus**  \nTouchez **+** pour importer d'autres types de contenu.\n\n---\n\n## Ce que + peut capturer\n\n- [ ] **Coller un lien**  \nCopiez d'abord un lien, puis touchez **+ → Coller le lien**.  \nUtilisez cela pour TikTok, YouTube Shorts, Instagram Reels ou des pages web. ChillNote essaiera de capturer le titre, la description, le créateur, la transcription ou le résumé de la page.\n\n- [ ] **Ajouter une photo ou une image**  \nTouchez **+ → Photo / Image** pour prendre une photo ou en choisir une dans votre bibliothèque.  \nUtilisez cela pour des captures d'écran, pages de livre, tableaux blancs, diapositives, conversations ou notes manuscrites. ChillNote garde l'image et essaie d'en extraire le texte.\n\n- [ ] **Importer un fichier audio ou vidéo**  \nTouchez **+ → Fichier audio / vidéo** pour importer des fichiers comme MP3, WAV ou MOV.  \nChillNote essaiera de transcrire l'audio et d'en faire une note.\n\n---\n\n## Organisez plus tard\n\n- [ ] **Déplacer les notes dans des sections**  \nUtilisez des sections comme Inbox, Brouillons et Publié pour garder votre espace de travail clair.\n\n- [ ] **Ajouter des tags**  \nPassez en mode sélection pour taguer une ou plusieurs notes. Les tags sont utiles pour les projets, sujets, plateformes ou types de source.\n\n- [ ] **Rechercher vos notes**  \nUtilisez la recherche pour retrouver vos idées par contenu ou informations de source.\n\n---\n\n## Réutiliser avec AI\n\n- [ ] **Utiliser AI Skills dans une note**  \nOuvrez une note et touchez le bouton éclair en haut à droite. Choisissez un Skill comme Résumé, Traduction, Hook Generator, Humanizer ou Caption Pack.  \nChillNote affiche d'abord un aperçu. Vous pouvez ensuite insérer, ajouter à la fin, remplacer le texte sélectionné ou remplacer toute la Note.\n\n- [ ] **Poser une question à AI sur plusieurs notes**  \nSur l'écran d'accueil, touchez le bouton éclair, sélectionnez une ou plusieurs notes, puis utilisez **Ask AI**.  \nUtilisez-le pour résumer plusieurs notes, trouver des motifs, comparer des idées ou décider quoi écrire ensuite.\n\n- [ ] **Enregistrer vos AI Skills favoris**  \nOuvrez **AI Skills** depuis la barre latérale pour enregistrer des Skills intégrés ou créer les vôtres.  \nVous pourrez réutiliser le même workflow sans réécrire le prompt à chaque fois.\n\n---\n\n## Un workflow simple\n\nNe vous inquiétez pas de tout organiser tout de suite.\n\nEnregistrez les liens vidéo utiles quand vous les voyez.  \nImportez les captures avant d'oublier pourquoi elles comptaient.  \nEnregistrez vos idées brutes tant qu'elles sont fraîches.  \nDéposez des fichiers audio ou vidéo quand vous avez besoin d'une transcription.\n\nQuand vous êtes prêt à écrire, planifier, résumer ou publier, utilisez les tags, la recherche, Ask AI et AI Skills pour transformer ces éléments en prochaine étape."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "# 👋 ChillNoteへようこそ\n\n> ChillNoteはあなたの音声ワークスペースです。\n> 話した瞬間に記録して、欲しい結果までワンタップでたどり着けます。\n\n---\n\n## ✨ はじめ方\n\n- [ ] **🎙️ 最初のノートを録音する**\n下にある録音ボタンをタップして、思いついたことをそのまま話してみてください。\n\n- [ ] **ChillNoteがノートにしてくれる流れを見る**\n音声はテキストに変換され、整えられ、あとからタグで整理できます。\n\n- [ ] **⚡️ Lightning Buttonを試す**\n1つ以上のノートを選択してから、**AI Skills** または **Ask AI** を使ってみてください。\n\n- [ ] **🪄 魔法の杖ボタンを試す**\nノートを開いて右上の魔法の杖ボタンをタップすると、**Auto Format** で読みやすく整えられます。"
+            "value" : "# ChillNoteへようこそ\n\n> ChillNoteは、アイデアや素材を入れておくための受信箱です。  \n> 思いついたこと、動画リンク、スクリーンショット、音声ファイルをまず入れておき、整理や再利用はあとでできます。\n\n---\n\n## まず何かを保存する\n\n画面下には主なボタンが3つあります。\n\n- [ ] **音声ノートを録音する**  \nマイクをタップして、頭にあることをそのまま話してください。ChillNoteが音声をノートに変換し、読みやすく整えます。\n\n- [ ] **テキストノートを書く**  \n書き込みボタンをタップすると、空のノートを作成できます。短いアイデア、ToDo、下書き、直接入力したい内容に使えます。\n\n- [ ] **+ でさらに追加する**  \n**+** をタップすると、ほかの種類のコンテンツを取り込めます。\n\n---\n\n## + で取り込めるもの\n\n- [ ] **リンクを貼り付ける**  \n先にリンクをコピーしてから、**+ → リンクを貼り付け** をタップします。  \nTikTok、YouTube Shorts、Instagram Reels、Webページに使えます。ChillNoteはタイトル、説明、作成者、文字起こし、ページ要約を取得しようとします。\n\n- [ ] **写真や画像を追加する**  \n**+ → 写真 / 画像** をタップして、写真を撮るかライブラリから選びます。  \nスクリーンショット、本のページ、ホワイトボード、スライド、チャット画面、手書きメモに便利です。ChillNoteは画像を保存し、文字の抽出を試みます。\n\n- [ ] **音声または動画ファイルを読み込む**  \n**+ → 音声 / 動画ファイル** をタップして、MP3、WAV、MOVなどのファイルを読み込みます。  \nChillNoteは音声を文字起こしし、ノートに変換しようとします。\n\n---\n\n## あとで整理する\n\n- [ ] **ノートをセクションに移動する**  \nInbox、下書き、公開済みなどのセクションを使うと、ワークスペースを整理できます。\n\n- [ ] **タグを追加する**  \n選択モードに入り、1つ以上のノートにタグを付けられます。タグはプロジェクト、トピック、プラットフォーム、素材の種類で整理するのに便利です。\n\n- [ ] **ノートを検索する**  \n検索を使うと、ノート本文やソース情報から保存したアイデアを見つけられます。\n\n---\n\n## AIで再利用する\n\n- [ ] **ノート内でAI Skillsを使う**  \nノートを開き、右上の稲妻ボタンをタップします。要約、翻訳、Hook Generator、Humanizer、Caption PackなどのSkillを選びます。  \nChillNoteは先にプレビューを表示します。そのあと、挿入、末尾に追加、選択テキストの置き換え、Note全体の置き換えを選べます。\n\n- [ ] **複数のノートについてAIに聞く**  \nホーム画面で稲妻ボタンをタップし、1つ以上のノートを選択して **Ask AI** を使います。  \n複数ノートの要約、パターン探し、アイデア比較、次に書く内容の検討に使えます。\n\n- [ ] **よく使うAI Skillsを保存する**  \nサイドバーから **AI Skills** を開き、組み込みSkillを保存したり、自分のSkillを作成したりできます。  \n同じワークフローを、毎回プロンプトを書き直さずに再利用できます。\n\n---\n\n## シンプルな使い方\n\n最初から完璧に整理しなくて大丈夫です。\n\n役立つ動画リンクを見つけたら保存する。  \nなぜ大事だったか忘れる前にスクリーンショットを取り込む。  \n新鮮なうちに荒い考えを録音する。  \n文字起こしが必要な音声や動画ファイルを入れる。\n\n書く、計画する、要約する、公開する準備ができたら、タグ、検索、Ask AI、AI Skillsを使って、保存した素材を次の一歩に変えましょう。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "# 👋 ChillNote에 오신 것을 환영합니다\n\n> ChillNote는 당신의 보이스 워크스페이스입니다.\n> 말하면 바로 기록되고, 한 번의 탭으로 원하는 결과까지 이어집니다.\n\n---\n\n## ✨ 시작하는 방법\n\n- [ ] **🎙️ 첫 번째 노트를 녹음해 보세요**\n아래의 녹음 버튼을 누르고 떠오르는 내용을 아무렇게나 말해 보세요.\n\n- [ ] **ChillNote가 노트로 바꾸는 과정을 확인해 보세요**\n당신의 음성은 텍스트로 바뀌고 다듬어지며, 나중에 태그로 정리할 수 있습니다.\n\n- [ ] **⚡️ Lightning Button을 사용해 보세요**\n하나 이상의 노트를 선택한 다음 **AI Skills** 또는 **Ask AI**를 사용해 보세요.\n\n- [ ] **🪄 마법 지팡이 버튼을 사용해 보세요**\n노트를 연 뒤 오른쪽 위의 마법 지팡이 버튼을 눌러 **Auto Format**을 사용하면 더 읽기 쉽게 정리할 수 있습니다."
+            "value" : "# ChillNote에 오신 것을 환영합니다\n\n> ChillNote는 아이디어와 자료를 모아 두는 받은편지함입니다.  \n> 생각, 영상 링크, 스크린샷, 오디오 파일을 먼저 넣어 두고 정리와 재사용은 나중에 하세요.\n\n---\n\n## 먼저 무언가를 캡처하세요\n\n아래에는 주요 버튼이 세 개 있습니다.\n\n- [ ] **음성 노트 녹음하기**  \n마이크를 누르고 떠오르는 생각을 말해 보세요. ChillNote가 음성을 노트로 바꾸고 읽기 쉽게 정리합니다.\n\n- [ ] **텍스트 노트 작성하기**  \n쓰기 버튼을 눌러 빈 노트를 만드세요. 짧은 생각, 할 일, 초안, 바로 입력하고 싶은 내용에 적합합니다.\n\n- [ ] **+로 더 추가하기**  \n**+** 를 누르면 다른 종류의 콘텐츠를 가져올 수 있습니다.\n\n---\n\n## +로 캡처할 수 있는 것\n\n- [ ] **링크 붙여넣기**  \n먼저 링크를 복사한 다음 **+ → 링크 붙여넣기** 를 누르세요.  \nTikTok, YouTube Shorts, Instagram Reels 또는 웹페이지에 사용할 수 있습니다. ChillNote는 제목, 설명, 크리에이터, 전사문 또는 페이지 요약을 가져오려고 합니다.\n\n- [ ] **사진 또는 이미지 추가하기**  \n**+ → 사진 / 이미지** 를 눌러 사진을 찍거나 라이브러리에서 선택하세요.  \n스크린샷, 책 페이지, 화이트보드, 슬라이드, 채팅 캡처, 손글씨 메모에 좋습니다. ChillNote는 이미지를 보관하고 텍스트 추출을 시도합니다.\n\n- [ ] **오디오 또는 비디오 파일 가져오기**  \n**+ → 오디오 / 비디오 파일** 을 눌러 MP3, WAV, MOV 같은 파일을 가져오세요.  \nChillNote는 오디오를 전사하고 노트로 만들려고 합니다.\n\n---\n\n## 나중에 정리하세요\n\n- [ ] **노트를 섹션으로 이동하기**  \nInbox, 초안, 게시됨 같은 섹션을 사용해 작업 공간을 깔끔하게 유지하세요.\n\n- [ ] **태그 추가하기**  \n선택 모드에서 하나 이상의 노트에 태그를 추가할 수 있습니다. 태그는 프로젝트, 주제, 플랫폼, 자료 유형별로 정리할 때 유용합니다.\n\n- [ ] **노트 검색하기**  \n검색으로 노트 내용이나 출처 정보를 기준으로 저장한 아이디어를 다시 찾을 수 있습니다.\n\n---\n\n## AI로 재사용하세요\n\n- [ ] **노트 안에서 AI Skills 사용하기**  \n노트를 열고 오른쪽 위의 번개 버튼을 누르세요. 요약, 번역, Hook Generator, Humanizer, Caption Pack 같은 Skill을 선택할 수 있습니다.  \nChillNote는 먼저 미리보기를 보여 줍니다. 그런 다음 삽입, 끝에 추가, 선택한 텍스트 바꾸기, Note 전체 바꾸기를 선택할 수 있습니다.\n\n- [ ] **여러 노트에 대해 Ask AI 사용하기**  \n홈 화면에서 번개 버튼을 누르고 하나 이상의 노트를 선택한 뒤 **Ask AI** 를 사용하세요.  \n여러 노트를 요약하거나, 패턴을 찾거나, 아이디어를 비교하거나, 다음에 무엇을 쓸지 정할 때 유용합니다.\n\n- [ ] **즐겨 쓰는 AI Skills 저장하기**  \n사이드바에서 **AI Skills** 를 열어 기본 Skills를 저장하거나 직접 만들 수 있습니다.  \n매번 프롬프트를 다시 쓰지 않고 같은 워크플로를 재사용할 수 있습니다.\n\n---\n\n## 간단한 흐름\n\n처음부터 모든 것을 정리하려고 하지 않아도 됩니다.\n\n유용한 영상 링크를 보면 저장하세요.  \n왜 중요했는지 잊기 전에 스크린샷을 가져오세요.  \n생각이 생생할 때 거친 아이디어를 녹음하세요.  \n전사가 필요할 때 오디오나 비디오 파일을 넣으세요.\n\n글쓰기, 계획, 요약, 게시를 준비할 때 태그, 검색, Ask AI, AI Skills를 사용해 저장한 조각들을 다음 단계로 바꿔 보세요."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "# 👋 欢迎来到 ChillNote\n\n> ChillNote 是你的语音工作台。\n> 说出来，立刻记录，再一键得到想要的结果。\n\n---\n\n## ✨ 开始使用\n\n- [ ] **🎙️ 录下你的第一条笔记**\n点击底部的录音按钮，把你脑海里的内容直接说出来。\n\n- [ ] **看看 ChillNote 如何把它变成一条笔记**\n你的语音会被转成文字、稍作整理，之后可以添加标签来归类。\n\n- [ ] **⚡️ 试试 Lightning Button**\n选择一条或多条笔记，然后使用 **AI Skills** 或 **Ask AI**。\n\n- [ ] **🪄 试试魔法棒按钮**\n打开一条笔记，然后点击右上角的魔法棒按钮，使用 **Auto Format** 让内容更清晰、更易读。"
+            "value" : "# 欢迎来到 ChillNote\n\n> ChillNote 是你的 AI creator notes 工作台。  \n> 不管是一段想法、一条视频链接、一张截图，还是一份音视频文件，都可以先放进来，再慢慢整理和复用。\n\n---\n\n## 先放进来\n\n底部有三个常用入口：\n\n- [ ] **录音**  \n点击中间的麦克风，把脑子里的想法直接说出来。ChillNote 会把语音转成一条笔记，并尽量整理成更容易读的内容。\n\n- [ ] **写一条文字笔记**  \n点击右侧的写字按钮，直接创建一条空白笔记。适合记录短想法、待办、草稿或临时备忘。\n\n- [ ] **用 + 放入更多内容**  \n点击左侧的 **+**，你可以选择更多捕捉方式。\n\n---\n\n## + 里可以放什么\n\n- [ ] **粘贴链接**  \n先复制一个链接，再点 **+ → 粘贴链接**。  \n适合保存 TikTok、YouTube Shorts、Instagram Reels 或网页内容。ChillNote 会尝试读取标题、描述、作者、转写文字或网页摘要，并整理成笔记。\n\n- [ ] **拍照/图片**  \n点 **+ → 拍照/图片**，可以拍照，也可以从相册选择图片。  \n适合保存截图、书页、白板、课程幻灯片、聊天记录或手写内容。ChillNote 会保留图片，并尝试识别图片里的文字。\n\n- [ ] **音视频文件**  \n点 **+ → 音视频文件**，可以导入 MP3、WAV、MOV 等文件。  \nChillNote 会尝试转写里面的声音，并整理成一条笔记。\n\n---\n\n## 之后再整理\n\n- [ ] **把笔记移动到分区**  \n用收集箱、草稿、已发布这些分区，让工作台保持清楚。\n\n- [ ] **添加标签**  \n进入选择模式后，可以给一条或多条笔记添加标签。标签适合用来整理项目、主题、平台或素材来源。\n\n- [ ] **搜索你的笔记**  \n用搜索按内容或来源信息找回之前保存的素材。\n\n---\n\n## 用 AI 复用\n\n- [ ] **在笔记里使用 AI Skills**  \n打开一条笔记，点击右上角闪电按钮。选择一个 Skill，比如摘要、翻译、标题灵感、Humanizer 或 Caption Pack。  \nChillNote 会先显示预览，然后你可以选择插入、追加、替换选中内容，或者替换整篇 Note。\n\n- [ ] **选择多条笔记，问 Ask AI**  \n在首页点击右上角闪电按钮，选择一条或多条笔记，然后使用 **Ask AI**。  \n适合让 AI 总结多条笔记、找共同点、比较想法，或者帮你决定下一步写什么。\n\n- [ ] **保存常用 AI Skills**  \n从侧边栏进入 **AI Skills**，保存内置 Skills，也可以创建自己的 Skill。  \n以后处理相似素材时，就不用每次重新写提示词。\n\n---\n\n## 一个简单流程\n\n不用一开始就整理得很完美。\n\n看到有用的视频，先复制链接放进来。  \n看到有价值的截图，先用图片导入。  \n想到一个点子，趁新鲜先录音。  \n拿到音视频文件，需要转写时就导入。\n\n等你准备写作、规划、总结或发布时，再用标签、搜索、Ask AI 和 AI Skills，把这些 creator notes 变成下一步。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "# 👋 歡迎來到 ChillNote\n\n> ChillNote 是你的語音工作台。\n> 說出來，立刻記錄，再一鍵得到想要的結果。\n\n---\n\n## ✨ 開始使用\n\n- [ ] **🎙️ 錄下你的第一條筆記**\n點擊底部的錄音按鈕，把你腦海裡的內容直接說出來。\n\n- [ ] **看看 ChillNote 如何把它變成一條筆記**\n你的語音會被轉成文字、稍作整理，之後可以添加標籤來歸類。\n\n- [ ] **⚡️ 試試 Lightning Button**\n選擇一條或多條筆記，然後使用 **AI Skills** 或 **Ask AI**。\n\n- [ ] **🪄 試試魔法棒按鈕**\n打開一條筆記，然後點擊右上角的魔法棒按鈕，使用 **Auto Format** 讓內容更清晰、更易讀。"
+            "value" : "# 歡迎來到 ChillNote\n\n> ChillNote 是你的 AI creator notes 工作台。  \n> 不管是一段想法、一條影片連結、一張截圖，還是一份音影片檔案，都可以先放進來，再慢慢整理和複用。\n\n---\n\n## 先放進來\n\n底部有三個常用入口：\n\n- [ ] **錄音**  \n點擊中間的麥克風，把腦中的想法直接說出來。ChillNote 會把語音轉成一條筆記，並盡量整理成更容易閱讀的內容。\n\n- [ ] **寫一條文字筆記**  \n點擊右側的書寫按鈕，直接建立一條空白筆記。適合記錄短想法、待辦、草稿或臨時備忘。\n\n- [ ] **用 + 放入更多內容**  \n點擊左側的 **+**，你可以選擇更多捕捉方式。\n\n---\n\n## + 裡可以放什麼\n\n- [ ] **貼上連結**  \n先複製一個連結，再點 **+ → 貼上連結**。  \n適合保存 TikTok、YouTube Shorts、Instagram Reels 或網頁內容。ChillNote 會嘗試讀取標題、描述、作者、轉寫文字或網頁摘要，並整理成筆記。\n\n- [ ] **拍照/圖片**  \n點 **+ → 拍照/圖片**，可以拍照，也可以從相簿選擇圖片。  \n適合保存截圖、書頁、白板、課程投影片、聊天記錄或手寫內容。ChillNote 會保留圖片，並嘗試辨識圖片裡的文字。\n\n- [ ] **音影片檔案**  \n點 **+ → 音影片檔案**，可以匯入 MP3、WAV、MOV 等檔案。  \nChillNote 會嘗試轉寫裡面的聲音，並整理成一條筆記。\n\n---\n\n## 之後再整理\n\n- [ ] **把筆記移動到分區**  \n用收件箱、草稿、已發布這些分區，讓工作台保持清楚。\n\n- [ ] **添加標籤**  \n進入選擇模式後，可以給一條或多條筆記添加標籤。標籤適合用來整理專案、主題、平台或素材來源。\n\n- [ ] **搜尋你的筆記**  \n用搜尋按內容或來源資訊找回之前保存的素材。\n\n---\n\n## 用 AI 複用\n\n- [ ] **在筆記裡使用 AI Skills**  \n打開一條筆記，點擊右上角閃電按鈕。選擇一個 Skill，比如摘要、翻譯、標題靈感、Humanizer 或 Caption Pack。  \nChillNote 會先顯示預覽，然後你可以選擇插入、追加、替換選取內容，或者替換整篇 Note。\n\n- [ ] **選擇多條筆記，問 Ask AI**  \n在首頁點擊右上角閃電按鈕，選擇一條或多條筆記，然後使用 **Ask AI**。  \n適合讓 AI 總結多條筆記、找共同點、比較想法，或者幫你決定下一步寫什麼。\n\n- [ ] **保存常用 AI Skills**  \n從側邊欄進入 **AI Skills**，保存內建 Skills，也可以建立自己的 Skill。  \n以後處理相似素材時，就不用每次重新寫提示詞。\n\n---\n\n## 一個簡單流程\n\n不用一開始就整理得很完美。\n\n看到有用的影片，先複製連結放進來。  \n看到有價值的截圖，先用圖片匯入。  \n想到一個點子，趁新鮮先錄音。  \n拿到音影片檔案，需要轉寫時就匯入。\n\n等你準備寫作、規劃、總結或發布時，再用標籤、搜尋、Ask AI 和 AI Skills，把這些 creator notes 變成下一步。"
           }
         }
       }
@@ -38106,6 +38431,642 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "YouTube 腳本"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Wir möchten, dass du\nChillnote kostenlos ausprobierst."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "We want you to try\nChillnote for free."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Queremos que pruebes\nChillnote gratis."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nous voulons que vous essayiez\nChillnote gratuitement."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chillnoteを\n無料で試してみてください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chillnote를\n무료로 사용해 보세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我们想让你免费试试\nChillnote。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "我們想讓你免費試試\nChillnote。"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.trial_title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ kostenlos"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ for free"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gratis"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ gratuits"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@無料"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 무료"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 免费"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 免費"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.trial_title_fallback" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kostenlos testen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try It for Free"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pruébalo gratis"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Essayez gratuitement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無料で試す"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무료로 사용해 보기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免费试用"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "免費試用"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.weekly_price_after_trial" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "danach %@ / Woche"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Then %@ / week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "luego %@ / semana"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "puis %@ / semaine"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "その後 %@ / 週"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이후 주당 %@"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "之后 %@ / 周"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "之後 %@ / 週"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.no_payment_due_now" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jetzt keine Zahlung fällig"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No payment due now"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No pagas nada ahora"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucun paiement maintenant"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今すぐの支払いは不要"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "지금 결제 없음"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "现在无需付款"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "現在無需付款"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.cta.start_free_week" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Kostenlose Woche starten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start My FREE Week"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Empezar mi semana GRATIS"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Commencer ma semaine GRATUITE"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無料の1週間を始める"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "무료 일주일 시작하기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "开始我的免费一周"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開始我的免費一週"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.billing_after_trial" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Jährlich nach dem Testzeitraum abgerechnet"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Billed annually after trial"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Facturado anualmente después de la prueba"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Facturé annuellement après l’essai"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "トライアル後は年額請求"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "체험 후 연간 청구"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "试用结束后按年计费"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "試用結束後按年計費"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.cta.next" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Weiter"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Next"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Siguiente"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suivant"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次へ"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다음"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一步"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下一步"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.feature.video_to_text" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Social-Media-Videos in Text verwandeln"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Turn social media videos into text"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Convierte videos de redes sociales en texto"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Transformez les vidéos sociales en texte"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "SNS動画をテキストに変換"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "소셜 미디어 영상을 텍스트로 변환"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "将社交媒体视频转成文字"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "將社群媒體影片轉成文字"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.feature.ai_skills" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Skills helfen dir beim Schreiben von Scripts"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use AI Skills to help write scripts"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usa AI Skills para escribir guiones"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utilisez les AI Skills pour écrire des scripts"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Skillsでスクリプト作成をサポート"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Skills로 스크립트 작성 지원"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用多种 AI Skills 辅助编写脚本"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用多種 AI Skills 輔助撰寫腳本"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.feature.capture_anywhere" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ideen per Foto, Sprache, Text oder Link festhalten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capture ideas from photos, voice, text, or links"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Captura ideas con fotos, voz, texto o enlaces"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Capturez vos idées par photo, voix, texte ou lien"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "写真、音声、テキスト、リンクでアイデアを保存"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "사진, 음성, 텍스트, 링크로 아이디어 캡처"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用照片、语音、文字或链接随时记录灵感"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用照片、語音、文字或連結隨時記錄靈感"
+          }
+        }
+      }
+    },
+    "subscription.onboarding.annual_billing_after_trial" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%@ jährlich nach dem Testzeitraum)"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%@ billed annually after trial)"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%@ facturado anualmente después de la prueba)"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(%@ facturé annuellement après l’essai)"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "（トライアル後は年額%@）"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "(체험 후 연간 %@ 청구)"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "（试用结束后按年收取 %@）"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "（試用結束後按年收取 %@）"
           }
         }
       }

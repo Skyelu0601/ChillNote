@@ -1,8 +1,11 @@
 import Foundation
+import OSLog
 import SwiftData
 
 class TagService {
     static let shared = TagService()
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "tags")
+
     private init() {}
     
     /// Marks tags that are no longer associated with any active notes as deleted (soft-delete for sync).
@@ -18,7 +21,12 @@ class TagService {
             }
         } else {
             let fetchDescriptor = FetchDescriptor<Tag>()
-            tagsToCheck = (try? context.fetch(fetchDescriptor)) ?? []
+            do {
+                tagsToCheck = try context.fetch(fetchDescriptor)
+            } catch {
+                Self.logger.error("Failed to fetch tags for cleanup: \(error.localizedDescription, privacy: .public)")
+                return
+            }
         }
         for tag in tagsToCheck {
             let activeNotes = tag.notes.filter { $0.deletedAt == nil }
@@ -32,7 +40,7 @@ class TagService {
         do {
             try context.save()
         } catch {
-            print("⚠️ TagService Cleanup Error: \(error)")
+            Self.logger.error("Tag cleanup failed: \(error.localizedDescription, privacy: .public)")
         }
     }
 }

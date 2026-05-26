@@ -1,5 +1,8 @@
 import SwiftUI
 import SwiftData
+import OSLog
+
+private let homeVoiceLogger = Logger(subsystem: "com.chillnote.app", category: "home-voice")
 
 extension HomeView {
     func handleVoiceConfirmation() {
@@ -18,7 +21,12 @@ extension HomeView {
         let note = Note(content: "", userId: userId)
         applyCurrentTagContext(to: note)
         modelContext.insert(note)
-        try? modelContext.save()
+        guard saveHomeVoiceContext(reason: "creating voice note") else {
+            modelContext.delete(note)
+            speechRecognizer.stopRecording()
+            isVoiceMode = false
+            return
+        }
 
         pendingVoiceNoteByPath[fileURL.path] = note.id
         // Persist the link so PendingRecordingsView can find this Note after a crash/restart
@@ -87,7 +95,7 @@ extension HomeView {
                 }
 
             case .failure(let reason, let message):
-                print("⚠️ Home voice transcription failed: \(message)")
+                homeVoiceLogger.error("Home voice transcription failed: \(message, privacy: .public)")
                 let userFacing = reason.pendingRecoveryMessage
                 VoiceProcessingService.shared.processingStates[noteID] = .failed(message: userFacing)
                 latestTranscriptionFailureMessage = userFacing
@@ -105,7 +113,12 @@ extension HomeView {
         }
         let targetID = noteID
         let descriptor = FetchDescriptor<Note>(predicate: #Predicate<Note> { $0.id == targetID })
-        return try? modelContext.fetch(descriptor).first
+        do {
+            return try modelContext.fetch(descriptor).first
+        } catch {
+            homeVoiceLogger.error("Failed to resolve voice note: \(error.localizedDescription, privacy: .public)")
+            return nil
+        }
     }
 
     func createAndOpenBlankNote() {
@@ -139,7 +152,7 @@ extension HomeView {
         withAnimation {
             modelContext.insert(note)
         }
-        try? modelContext.save()
+        guard saveHomeVoiceContext(reason: "creating link import note") else { return }
         requestReload(delayNanoseconds: 60_000_000, keepItemsWhileLoading: true)
 
         Task {
@@ -151,12 +164,13 @@ extension HomeView {
                     source: source,
                     section: note.section
                 )
-                await MainActor.run {
+                let didSaveJob = await MainActor.run {
                     note.importJobId = job.jobId
                     note.importStatus = job.status == "processing" ? .processing : .queued
                     note.updatedAt = Date()
-                    try? modelContext.save()
+                    return saveHomeVoiceContext(reason: "saving link import job")
                 }
+                guard didSaveJob else { return }
                 await syncLinkImportProgress()
             } catch {
                 await MainActor.run {
@@ -164,7 +178,7 @@ extension HomeView {
                     note.importErrorCode = "job_start_failed"
                     note.importCompletedAt = Date()
                     note.updatedAt = Date()
-                    try? modelContext.save()
+                    _ = saveHomeVoiceContext(reason: "saving failed link import")
                     clipboardLinkImportErrorMessage = error.localizedDescription
                     showClipboardLinkImportErrorAlert = true
                     requestReload(keepItemsWhileLoading: true)
@@ -189,7 +203,13 @@ extension HomeView {
                 && $0.deletedAt == nil
             }
         )
-        let existingNotes = (try? modelContext.fetch(descriptor)) ?? []
+        let existingNotes: [Note]
+        do {
+            existingNotes = try modelContext.fetch(descriptor)
+        } catch {
+            homeVoiceLogger.error("Failed to check duplicate link import: \(error.localizedDescription, privacy: .public)")
+            return true
+        }
         return existingNotes.contains { $0.isLinkImportInProgress }
     }
 
@@ -210,6 +230,17 @@ extension HomeView {
 
     func saveImportedImageText(_ text: String) {
         _ = saveNote(text: text, shouldNavigate: true)
+    }
+
+    @discardableResult
+    func saveHomeVoiceContext(reason: String) -> Bool {
+        do {
+            try modelContext.save()
+            return true
+        } catch {
+            homeVoiceLogger.error("Failed to save home voice context while \(reason, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
+        }
     }
 
     @discardableResult

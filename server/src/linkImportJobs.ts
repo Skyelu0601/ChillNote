@@ -23,7 +23,7 @@ type LinkImportSource = {
   host: string;
 };
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite-preview";
+const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() || "";
 const MAX_WEB_TEXT_CHARS = Number(process.env.LINK_IMPORT_MAX_WEB_TEXT_CHARS ?? 18_000);
 const JOB_MAX_ATTEMPTS = Number(process.env.LINK_IMPORT_MAX_ATTEMPTS ?? 2);

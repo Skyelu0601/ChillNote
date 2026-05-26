@@ -1,9 +1,12 @@
 import Foundation
+import OSLog
 import SwiftData
 import SwiftUI
 
 @MainActor
 final class NoteDetailViewModel: ObservableObject {
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "note-detail")
+
     struct Dependencies {
         var now: () -> Date = Date.init
         var checkDailyQuota: (DailyQuotaFeature) async -> Bool = { feature in
@@ -312,7 +315,15 @@ final class NoteDetailViewModel: ObservableObject {
         newTagName = ""
         if let modelContext {
             let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
-            let allTags = (try? modelContext.fetch(fetchDescriptor)) ?? []
+            let allTags: [Tag]
+            do {
+                allTags = try modelContext.fetch(fetchDescriptor)
+            } catch {
+                Self.logger.error("Failed to fetch tags for new tag color: \(error.localizedDescription, privacy: .public)")
+                newTagColorHex = TagColorService.defaultColorHex
+                showAddTagAlert = true
+                return
+            }
             newTagColorHex = TagColorService.autoColorHex(for: "", existingTags: allTags)
         } else {
             newTagColorHex = TagColorService.defaultColorHex
@@ -342,6 +353,9 @@ final class NoteDetailViewModel: ObservableObject {
         }
 
         if hasChanged {
+            if let modelContext {
+                note.syncContentStructure(with: modelContext)
+            }
             note.updatedAt = dependencies.now()
             if let modelContext {
                 TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
@@ -362,7 +376,12 @@ final class NoteDetailViewModel: ObservableObject {
 
     func persistAndSync() {
         guard let modelContext else { return }
-        try? modelContext.save()
+        do {
+            try modelContext.save()
+        } catch {
+            Self.logger.error("Failed to save note detail changes before sync: \(error.localizedDescription, privacy: .public)")
+            return
+        }
         if let syncManager {
             Task { await syncManager.syncNow(context: modelContext) }
         }

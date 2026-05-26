@@ -5,6 +5,7 @@ struct OnboardingStateStore {
     private static let completedPerUserKey = "onboarding.completedByUserId"
     private static let paywallGlobalKey = "onboarding.hasShownIntroPaywall"
     private static let paywallPerUserKey = "onboarding.introPaywallShownByUserId"
+    private static let preferencesGlobalKey = "onboarding.creatorPreferences"
 
     static func hasCompleted(for userId: String?) -> Bool {
         value(for: userId, perUserKey: completedPerUserKey, globalKey: completedGlobalKey)
@@ -20,6 +21,19 @@ struct OnboardingStateStore {
 
     static func setHasShownIntroPaywall(_ value: Bool, for userId: String?) {
         setValue(value, for: userId, perUserKey: paywallPerUserKey, globalKey: paywallGlobalKey)
+    }
+
+    static func savePreferences(_ preferences: OnboardingPreferences) {
+        guard let data = try? JSONEncoder().encode(preferences) else { return }
+        UserDefaults.standard.set(data, forKey: preferencesGlobalKey)
+    }
+
+    static func loadPreferences() -> OnboardingPreferences {
+        guard
+            let data = UserDefaults.standard.data(forKey: preferencesGlobalKey),
+            let preferences = try? JSONDecoder().decode(OnboardingPreferences.self, from: data)
+        else { return OnboardingPreferences() }
+        return preferences
     }
 
     private static func value(for userId: String?, perUserKey: String, globalKey: String) -> Bool {

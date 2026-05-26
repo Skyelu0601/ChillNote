@@ -14,7 +14,7 @@ const features = [
   {
     icon: PlaySquare,
     title: "Video to text",
-    body: "Save creator videos and turn the source material into clean transcripts you can search, quote, and remix.",
+    body: "Save creator videos and turn them into clean creator notes you can search, quote, and remix.",
   },
   {
     icon: Scissors,
@@ -29,14 +29,14 @@ const features = [
   {
     icon: Repeat2,
     title: "Reusable AI Skills",
-    body: "Run saved creative workflows against your swipe files to draft new posts from patterns you already trust.",
+    body: "Run saved creative workflows against your creator notes to draft new posts from patterns you already trust.",
   },
 ];
 
 const workflow = [
   "Capture a video, link, quote, or messy idea.",
   "Transcribe and split the material into hook, description, and transcript.",
-  "Save the pattern as a swipe file and reuse it with AI Skills.",
+  "Save the pattern in your AI creator notes and reuse it with AI Skills.",
 ];
 
 export default function LandingPage() {
@@ -59,14 +59,14 @@ export default function LandingPage() {
           <div className="hero-tags" aria-label="Core creator workflows">
             <span>Video transcript</span>
             <span>Hook analysis</span>
-            <span>Swipe file</span>
+            <span>Creator notes</span>
             <span>AI Skills</span>
           </div>
         </div>
         <div className="product-shot" aria-label={copy.landing.status}>
           <div className="creator-preview">
             <div className="preview-toolbar">
-              <span>Creator Swipe File</span>
+              <span>Creator Notes</span>
               <strong>TikTok launch teardown</strong>
             </div>
             <div className="preview-grid">
@@ -92,7 +92,7 @@ export default function LandingPage() {
               <div className="skill-panel">
                 <Sparkles size={20} />
                 <strong>AI Skill</strong>
-                <p>Generate 5 new hooks from this swipe file.</p>
+                <p>Generate 5 new hooks from these creator notes.</p>
               </div>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function LandingPage() {
         <div className="final-cta">
           <FileText size={22} />
           <div>
-            <strong>Start a creator swipe file in ChillNote.</strong>
+            <strong>Start your AI creator notes in ChillNote.</strong>
             <p>Use ChillNote on desktop for deeper breakdowns, and iOS for quick capture when ideas show up between tasks.</p>
           </div>
           <a className="primary-button compact" href="/app">

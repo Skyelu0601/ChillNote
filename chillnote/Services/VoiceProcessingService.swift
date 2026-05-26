@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import OSLog
 
 enum VoiceNoteState: Equatable {
     case idle
@@ -12,6 +13,7 @@ enum VoiceNoteState: Equatable {
 @MainActor
 class VoiceProcessingService: ObservableObject {
     static let shared = VoiceProcessingService()
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "voice-processing")
     
     @Published var processingStates: [UUID: VoiceNoteState] = [:]
     
@@ -25,16 +27,22 @@ class VoiceProcessingService: ObservableObject {
         
         do {
             let processedText = try await processTranscript(cleanTranscript)
-            
 
-            
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                // Update the note content
                 note.content = processedText
                 note.syncContentStructure(with: context)
                 note.updatedAt = Date()
-                try? context.save()
+            }
 
+            do {
+                try context.save()
+            } catch {
+                Self.logger.error("Failed to save processed voice note: \(error.localizedDescription, privacy: .public)")
+                processingStates[noteID] = .failed(message: L10n.text("voice_processing.error.refinement_failed"))
+                return false
+            }
+
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
                 processingStates[noteID] = .completed(originalText: cleanTranscript)
             }
             
@@ -50,7 +58,7 @@ class VoiceProcessingService: ObservableObject {
 
             return true
         } catch {
-            print("⚠️ AI processing failed: \(error)")
+            Self.logger.error("AI processing failed: \(error.localizedDescription, privacy: .public)")
             // AI processing failed; do not apply local fallback.
             // Leave the note content as is (or handled by caller/UI).
             // Reset state so UI knows we are done (or failed).
@@ -125,19 +133,6 @@ class VoiceProcessingService: ObservableObject {
         )
     }
     
-    /// Process voice command for the Voice Agent (placeholder for future expansion)
-    /// Currently returns the command for logging, but will be expanded for actual agent actions
-    func processAgentCommand(_ rawTranscript: String) async throws -> AgentCommandResult {
-        let trimmed = rawTranscript.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        // For now, just return a placeholder result
-        // This will be expanded when Voice Agent features are defined
-        return AgentCommandResult(
-            command: trimmed,
-            action: .unknown,
-            message: "Voice Agent received: \(trimmed)"
-        )
-    }
 }
 
 private extension VoiceProcessingService {
@@ -202,21 +197,4 @@ private extension VoiceProcessingService {
             return text
         }
     }
-}
-
-// MARK: - Voice Agent Types (Placeholder for future expansion)
-
-struct AgentCommandResult {
-    let command: String
-    let action: AgentAction
-    let message: String
-}
-
-enum AgentAction {
-    case unknown
-    case createNote
-    case searchNotes
-    case summarizeNotes
-    case deleteNote
-    // Future actions to be added
 }

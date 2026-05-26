@@ -39,7 +39,6 @@ struct AppConfig {
     
     // Supabase Configuration
     static let supabaseURL = URL(string: "https://qsyhkpaeyzhjojdvbntq.supabase.co")!
-    // TODO: Replace with your actual Anon Key from Supabase Dashboard -> Settings -> API
     static let supabaseAnonKey = "sb_publishable_smWWadjejdbKYvmg3fidsg_41XPu70e" 
     
     static var isAIEnabled: Bool {

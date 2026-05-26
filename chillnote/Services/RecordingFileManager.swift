@@ -1,5 +1,6 @@
 import Foundation
 import AVFoundation
+import OSLog
 
 extension Notification.Name {
     static let pendingRecordingsDidChange = Notification.Name("PendingRecordingsDidChange")
@@ -12,6 +13,7 @@ extension Notification.Name {
 /// Files are stored in a "safe" directory and cleaned up after successful transcription
 final class RecordingFileManager {
     static let shared = RecordingFileManager()
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "recording-files")
     
     // MARK: - Constants
     
@@ -59,7 +61,7 @@ final class RecordingFileManager {
             markAsPending(fileURL: fileURL)
         }
         
-        print("📁 Created recording at: \(fileURL.path)")
+        Self.logger.debug("Created recording at \(fileURL.path, privacy: .private)")
         return fileURL
     }
 
@@ -73,7 +75,7 @@ final class RecordingFileManager {
         var mapping = noteIDMapping()
         mapping[fileURL.path] = noteID.uuidString
         UserDefaults.standard.set(mapping, forKey: pendingNoteIDsKey)
-        print("🔗 Linked note \(noteID) to recording: \(fileURL.lastPathComponent)")
+        Self.logger.debug("Linked note \(noteID.uuidString, privacy: .private) to recording \(fileURL.lastPathComponent, privacy: .private)")
     }
 
     /// Returns the Note ID previously linked to this recording file, if any.
@@ -88,15 +90,15 @@ final class RecordingFileManager {
         clearPending(fileURL: fileURL)
         
         // Delete the file
-        try? FileManager.default.removeItem(at: fileURL)
-        print("✅ Cleaned up recording: \(fileURL.lastPathComponent)")
+        removeRecordingFile(fileURL, action: "complete")
+        Self.logger.debug("Cleaned up recording \(fileURL.lastPathComponent, privacy: .private)")
     }
     
     /// Cancels a recording and deletes it
     func cancelRecording(fileURL: URL) {
         clearPending(fileURL: fileURL)
-        try? FileManager.default.removeItem(at: fileURL)
-        print("❌ Cancelled recording: \(fileURL.lastPathComponent)")
+        removeRecordingFile(fileURL, action: "cancel")
+        Self.logger.debug("Cancelled recording \(fileURL.lastPathComponent, privacy: .private)")
     }
     
     /// Checks for any pending recordings from previous sessions (crash recovery)
@@ -106,17 +108,26 @@ final class RecordingFileManager {
         
         for path in pendingPaths {
             let url = URL(fileURLWithPath: path)
-            
-            // Check if file exists and get its creation date
-            if FileManager.default.fileExists(atPath: path),
-               let attributes = try? FileManager.default.attributesOfItem(atPath: path),
-               let creationDate = attributes[.creationDate] as? Date {
-                
+
+            guard FileManager.default.fileExists(atPath: path) else {
+                Self.logger.debug("Pending recording no longer exists: \(url.lastPathComponent, privacy: .private)")
+                continue
+            }
+
+            do {
+                let attributes = try FileManager.default.attributesOfItem(atPath: path)
+                guard let creationDate = attributes[.creationDate] as? Date else {
+                    Self.logger.warning("Pending recording has no creation date: \(url.lastPathComponent, privacy: .private)")
+                    continue
+                }
+
                 validRecordings.append(PendingRecording(
                     fileURL: url,
                     createdAt: creationDate,
                     duration: recordingDuration(for: url) ?? 0
                 ))
+            } catch {
+                Self.logger.error("Unable to read pending recording attributes: \(error.localizedDescription, privacy: .public)")
             }
         }
         
@@ -147,36 +158,56 @@ final class RecordingFileManager {
     
     /// Clean up old recordings (older than maxFileAgeHours)
     func cleanupOldRecordings() {
-        guard let directory = try? pendingRecordingsDirectory else { return }
+        let directory: URL
+        do {
+            directory = try pendingRecordingsDirectory
+        } catch {
+            Self.logger.error("Unable to resolve pending recordings directory: \(error.localizedDescription, privacy: .public)")
+            return
+        }
         
         let fileManager = FileManager.default
-        guard let files = try? fileManager.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [.creationDateKey],
-            options: [.skipsHiddenFiles]
-        ) else { return }
+        let files: [URL]
+        do {
+            files = try fileManager.contentsOfDirectory(
+                at: directory,
+                includingPropertiesForKeys: [.creationDateKey],
+                options: [.skipsHiddenFiles]
+            )
+        } catch {
+            Self.logger.error("Unable to list pending recordings: \(error.localizedDescription, privacy: .public)")
+            return
+        }
         
         let now = Date()
         var cleanedCount = 0
         
         for fileURL in files {
-            guard let attributes = try? fileManager.attributesOfItem(atPath: fileURL.path),
-                  let creationDate = attributes[.creationDate] as? Date else {
+            let attributes: [FileAttributeKey: Any]
+            do {
+                attributes = try fileManager.attributesOfItem(atPath: fileURL.path)
+            } catch {
+                Self.logger.error("Unable to read recording attributes during cleanup: \(error.localizedDescription, privacy: .public)")
+                continue
+            }
+
+            guard let creationDate = attributes[.creationDate] as? Date else {
+                Self.logger.warning("Recording has no creation date during cleanup: \(fileURL.lastPathComponent, privacy: .private)")
                 continue
             }
             
             let ageInHours = now.timeIntervalSince(creationDate) / 3600
             
             if ageInHours > maxFileAgeHours {
-                try? fileManager.removeItem(at: fileURL)
+                removeRecordingFile(fileURL, action: "cleanup")
                 clearPending(fileURL: fileURL)
                 cleanedCount += 1
-                print("🧹 Cleaned up old recording: \(fileURL.lastPathComponent)")
+                Self.logger.debug("Cleaned up old recording \(fileURL.lastPathComponent, privacy: .private)")
             }
         }
         
         if cleanedCount > 0 {
-            print("🧹 Total cleaned: \(cleanedCount) old recordings")
+            Self.logger.info("Cleaned up \(cleanedCount, privacy: .public) old recordings")
         }
     }
     
@@ -189,7 +220,7 @@ final class RecordingFileManager {
         if !pending.contains(path) {
             pending.append(path)
             UserDefaults.standard.set(pending, forKey: pendingRecordingsKey)
-            print("🔒 Marked as pending: \(fileURL.lastPathComponent)")
+            Self.logger.debug("Marked recording as pending \(fileURL.lastPathComponent, privacy: .private)")
             NotificationCenter.default.post(name: .pendingRecordingsDidChange, object: nil)
         }
     }
@@ -207,13 +238,23 @@ final class RecordingFileManager {
             mapping.removeValue(forKey: path)
             UserDefaults.standard.set(mapping, forKey: pendingNoteIDsKey)
 
-            print("🔓 Cleared pending: \(fileURL.lastPathComponent)")
+            Self.logger.debug("Cleared pending recording \(fileURL.lastPathComponent, privacy: .private)")
             NotificationCenter.default.post(name: .pendingRecordingsDidChange, object: nil)
         }
     }
 
     private func noteIDMapping() -> [String: String] {
         UserDefaults.standard.dictionary(forKey: pendingNoteIDsKey) as? [String: String] ?? [:]
+    }
+
+    private func removeRecordingFile(_ fileURL: URL, action: String) {
+        do {
+            try FileManager.default.removeItem(at: fileURL)
+        } catch CocoaError.fileNoSuchFile {
+            Self.logger.debug("Recording already removed during \(action, privacy: .public): \(fileURL.lastPathComponent, privacy: .private)")
+        } catch {
+            Self.logger.error("Failed to remove recording during \(action, privacy: .public): \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     private func recordingDuration(for fileURL: URL) -> TimeInterval? {

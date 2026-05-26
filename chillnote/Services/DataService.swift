@@ -1,5 +1,6 @@
 import SwiftUI
 import SwiftData
+import OSLog
 
 struct WelcomeNoteFlagStore {
     private static let globalKey = "hasSeededWelcomeNote"
@@ -38,6 +39,7 @@ struct WelcomeNoteFlagStore {
 @MainActor
 class DataService: ObservableObject {
     static let shared = DataService()
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "data")
     
     @Published private(set) var container: ModelContainer?
     @Published private(set) var initializationErrorMessage: String?
@@ -59,34 +61,13 @@ class DataService: ObservableObject {
             
             let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
 
-            // Ensure the Application Support directory exists to prevent Core Data errors
-            try? FileManager.default.createDirectory(at: .applicationSupportDirectory, withIntermediateDirectories: true)
-            
-            // Try to create container with migration support
-            do {
-                container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-                print("✅ ModelContainer created successfully")
-            } catch {
-                // If migration fails, try to delete and recreate the store
-                print("⚠️ Migration failed, attempting to reset database...")
-                print("⚠️ Error: \(error)")
-                
-                // Get the default store URL
-                let storeURL = URL.applicationSupportDirectory.appending(path: "default.store")
-                
-                // Delete old store files
-                try? FileManager.default.removeItem(at: storeURL)
-                try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("shm"))
-                try? FileManager.default.removeItem(at: storeURL.appendingPathExtension("wal"))
-                
-                print("🗑️ Old database deleted")
-                
-                // Create fresh container
-                container = try ModelContainer(for: schema, configurations: [modelConfiguration])
-                print("✅ Fresh ModelContainer created")
-            }
+            // Ensure the Application Support directory exists before SwiftData opens the store.
+            try FileManager.default.createDirectory(at: .applicationSupportDirectory, withIntermediateDirectories: true)
+
+            container = try ModelContainer(for: schema, configurations: [modelConfiguration])
+            Self.logger.info("ModelContainer created successfully")
         } catch {
-            print("CRITICAL ERROR: Could not create ModelContainer: \(error)")
+            Self.logger.error("Could not create ModelContainer: \(error.localizedDescription, privacy: .public)")
             initializationErrorMessage = error.localizedDescription
         }
     }

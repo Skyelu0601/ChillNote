@@ -1,14 +1,25 @@
 import SwiftUI
 import StoreKit
 
+enum SubscriptionViewContext {
+    case standard
+    case onboardingTrial
+}
+
 struct SubscriptionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
     @StateObject private var storeService = StoreService.shared
+    private let context: SubscriptionViewContext
     
     // Animation States
     @State private var showContent = false
     @State private var isAnnual: Bool = true // Default to Annual
+    @State private var onboardingTrialPage = 0
+
+    init(context: SubscriptionViewContext = .standard) {
+        self.context = context
+    }
     
     private var yearlyProduct: Product? {
         storeService.availableProducts.first(where: { $0.subscription?.subscriptionPeriod.unit == .year })
@@ -33,6 +44,10 @@ struct SubscriptionView: View {
     }
 
     var selectedProduct: Product? {
+        if context == .onboardingTrial {
+            return yearlyProduct
+        }
+
         if isAnnual {
             return yearlyProduct ?? monthlyProduct
         }
@@ -62,7 +77,11 @@ struct SubscriptionView: View {
                     .scrollIndicators(.hidden)
                 } else {
                     // Upgrade View
-                    upgradeView
+                    if context == .onboardingTrial {
+                        onboardingTrialView
+                    } else {
+                        upgradeView
+                    }
                 }
                 
                 // Loading Overlay
@@ -98,6 +117,196 @@ struct SubscriptionView: View {
     }
 
     // MARK: - Views
+
+    private var onboardingTrialView: some View {
+        VStack(spacing: 0) {
+            TabView(selection: $onboardingTrialPage) {
+                onboardingTrialIntroPage
+                    .tag(0)
+
+                onboardingTrialPricePage
+                    .tag(1)
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .animation(.spring(response: 0.45, dampingFraction: 0.9), value: onboardingTrialPage)
+            .opacity(showContent ? 1 : 0)
+            .offset(y: showContent ? 0 : 18)
+
+            VStack(spacing: 16) {
+                if onboardingTrialPage == 1 {
+                    OnboardingTrialNoPaymentView(textKey: "subscription.onboarding.no_payment_due_now")
+                }
+
+                onboardingTrialCTA
+
+                onboardingTrialFooter
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 18)
+            .background(
+                LinearGradient(
+                    colors: [.white.opacity(0.0), .white, .white],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea(edges: .bottom)
+            )
+            .opacity(showContent ? 1 : 0)
+        }
+    }
+
+    private var onboardingTrialIntroPage: some View {
+        VStack(spacing: 34) {
+            Text(L10n.text("subscription.onboarding.title"))
+                .font(.system(size: 32, weight: .bold, design: .default))
+                .foregroundColor(.textMain)
+                .multilineTextAlignment(.center)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 4)
+
+            Spacer(minLength: 10)
+
+            OnboardingTrialLogo(size: 148)
+
+            Spacer(minLength: 18)
+
+            OnboardingTrialNoPaymentView(textKey: "subscription.onboarding.no_payment_due_now")
+
+            Spacer(minLength: 22)
+        }
+        .padding(.horizontal, 28)
+        .padding(.top, 50)
+        .padding(.bottom, 18)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private var onboardingTrialPricePage: some View {
+        if let product = selectedProduct,
+           let displayInfo = selectedProductDisplayInfo {
+            VStack(spacing: 0) {
+                OnboardingTrialLogo(size: 112)
+
+                VStack(spacing: 12) {
+                    Text(onboardingTrialTitle(for: displayInfo))
+                        .font(.system(size: 38, weight: .bold, design: .default))
+                        .foregroundColor(.textMain)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.78)
+
+                    VStack(spacing: 5) {
+                        if let weeklyPrice = displayInfo.equivalentWeeklyText {
+                            Text(L10n.text("subscription.onboarding.weekly_price_after_trial", weeklyPrice))
+                                .font(.system(size: 22, weight: .semibold, design: .default))
+                                .foregroundColor(.textMain)
+                        }
+
+                        Text(L10n.text("subscription.onboarding.annual_billing_after_trial", product.displayPrice))
+                            .font(.system(size: 17, weight: .medium, design: .default))
+                            .foregroundColor(.textMain.opacity(0.82))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.86)
+                    }
+                }
+                .padding(.top, 20)
+
+                OnboardingTrialFeatureList()
+                    .padding(.top, 34)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 30)
+            .padding(.bottom, 18)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        } else if storeService.isLoadingProducts {
+            ProgressView(L10n.text("subscription.loading_prices"))
+                .padding(.top, 16)
+        } else if let error = storeService.productsErrorMessage {
+            VStack(spacing: 12) {
+                Text(error)
+                    .font(.callout)
+                    .foregroundColor(.red)
+                    .multilineTextAlignment(.center)
+                Button(L10n.text("common.retry")) {
+                    Task { await storeService.refreshProducts() }
+                }
+                .font(.callout.weight(.semibold))
+                .foregroundColor(.accentPrimary)
+            }
+            .padding(.top, 16)
+        } else {
+            VStack(spacing: 12) {
+                Text(L10n.text("subscription.unavailable"))
+                    .font(.callout)
+                    .foregroundColor(.textSub)
+                    .multilineTextAlignment(.center)
+                Button(L10n.text("common.retry")) {
+                    Task { await storeService.refreshProducts() }
+                }
+                .font(.callout.weight(.semibold))
+                .foregroundColor(.accentPrimary)
+            }
+            .padding(.top, 16)
+        }
+    }
+
+    private var onboardingTrialCTA: some View {
+        Button {
+            if onboardingTrialPage == 0 {
+                onboardingTrialPage = 1
+            } else if let product = selectedProduct {
+                Task { await storeService.purchase(product) }
+            }
+        } label: {
+            HStack(spacing: 8) {
+                Text(onboardingTrialPage == 0 ? L10n.text("subscription.onboarding.cta.next") : L10n.text("subscription.onboarding.cta.start_free_week"))
+                    .font(.system(size: onboardingTrialPage == 0 ? 16 : 22, weight: .bold, design: .default))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.74)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: onboardingTrialPage == 0 ? 13 : 20, weight: .bold))
+                    .foregroundColor(.white)
+            }
+            .padding(.horizontal, onboardingTrialPage == 0 ? 20 : 26)
+            .frame(maxWidth: onboardingTrialPage == 0 ? nil : .infinity)
+            .frame(height: onboardingTrialPage == 0 ? 48 : 68)
+            .background(Color.accentPrimary)
+            .clipShape(RoundedRectangle(cornerRadius: onboardingTrialPage == 0 ? 999 : 18, style: .continuous))
+            .shadow(color: .accentPrimary.opacity(0.22), radius: onboardingTrialPage == 0 ? 10 : 14, x: 0, y: onboardingTrialPage == 0 ? 4 : 7)
+        }
+        .frame(maxWidth: .infinity, alignment: onboardingTrialPage == 0 ? .trailing : .center)
+        .disabled((onboardingTrialPage == 1 && selectedProduct == nil) || storeService.isPurchasing)
+    }
+
+    private var onboardingTrialFooter: some View {
+        HStack(spacing: 18) {
+            Link(L10n.text("subscription.terms_of_use"), destination: URL(string: "https://www.chillnoteai.com/terms")!)
+
+            Button {
+                Task { await storeService.restorePurchases() }
+            } label: {
+                Text(L10n.text("subscription.restore_purchases"))
+            }
+
+            Link(L10n.text("subscription.privacy_policy"), destination: URL(string: "https://www.chillnoteai.com/privacy")!)
+        }
+        .font(.system(size: 13, weight: .medium))
+        .foregroundColor(.textSub.opacity(0.72))
+        .lineLimit(1)
+        .minimumScaleFactor(0.72)
+        .padding(.top, 8)
+    }
+
+    private func onboardingTrialTitle(for displayInfo: SubscriptionDisplayInfo) -> String {
+        if let trialDurationText = displayInfo.trialDurationText {
+            return L10n.text("subscription.onboarding.trial_title", trialDurationText)
+        }
+
+        return L10n.text("subscription.onboarding.trial_title_fallback")
+    }
     
     private var upgradeView: some View {
         ZStack {
@@ -553,6 +762,76 @@ private struct LaunchStyleWordmark: View {
     }
 }
 
+private struct OnboardingTrialLogo: View {
+    let size: CGFloat
+
+    var body: some View {
+        Image("LoginBrandIcon")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
+            .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 10)
+            .accessibilityHidden(true)
+    }
+}
+
+private struct OnboardingTrialNoPaymentView: View {
+    let textKey: String
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "checkmark")
+                .font(.system(size: 23, weight: .bold))
+                .foregroundColor(.green)
+
+            Text(L10n.text(textKey))
+                .font(.system(size: 25, weight: .semibold, design: .default))
+                .foregroundColor(.textMain)
+                .lineLimit(1)
+                .minimumScaleFactor(0.72)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+private struct OnboardingTrialFeatureList: View {
+    private let featureKeys = [
+        "subscription.onboarding.feature.video_to_text",
+        "subscription.onboarding.feature.ai_skills",
+        "subscription.onboarding.feature.capture_anywhere"
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(featureKeys, id: \.self) { key in
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.accentPrimary)
+                        .padding(.top, 1)
+
+                    Text(L10n.text(key))
+                        .font(.system(size: 16, weight: .semibold, design: .default))
+                        .foregroundColor(.textMain)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .fill(Color.white.opacity(0.92))
+                .shadow(color: Color.shadowColor.opacity(0.8), radius: 16, x: 0, y: 8)
+        )
+    }
+}
+
 #Preview {
     SubscriptionView()
+}
+
+#Preview("Onboarding Trial") {
+    SubscriptionView(context: .onboardingTrial)
 }

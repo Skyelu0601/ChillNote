@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import AuthenticationServices
 import GoogleSignIn
+import OSLog
 import Supabase
 import CryptoKit
 
@@ -37,6 +38,7 @@ final class AuthService: ObservableObject {
     static let shared = AuthService()
     static let cachedSessionTokenKey = "syncAuthToken"
     static let lastAuthenticatedUserIdKey = "auth.lastAuthenticatedUserId"
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "auth")
 
     // Initialize Supabase Client
     let supabase = SupabaseClient(
@@ -225,7 +227,7 @@ final class AuthService: ObservableObject {
             await checkSession()
             return isSignedIn
         } catch {
-            print("❌ Apple Sign In Error: \(error)")
+            Self.logger.error("Apple sign in failed: \(error.localizedDescription, privacy: .public)")
             errorMessage = error.localizedDescription
             state = .signedOut
             return false
@@ -259,7 +261,7 @@ final class AuthService: ObservableObject {
             await checkSession()
             return isSignedIn
         } catch {
-            print("❌ Google Sign In Error: \(error)")
+            Self.logger.error("Google sign in failed: \(error.localizedDescription, privacy: .public)")
             errorMessage = error.localizedDescription
             state = .signedOut
             return false
@@ -268,7 +270,11 @@ final class AuthService: ObservableObject {
     
     func signOut() {
         Task {
-            try? await supabase.auth.signOut()
+            do {
+                try await supabase.auth.signOut()
+            } catch {
+                Self.logger.error("Supabase sign out failed: \(error.localizedDescription, privacy: .public)")
+            }
             state = .signedOut
             currentUser = nil
             clearCachedSession()
@@ -280,7 +286,13 @@ final class AuthService: ObservableObject {
         // usually you call an Edge Function or Backend endpoint.
         // We will call our Backend endpoint which requires the JWT.
         
-        guard let session = try? await supabase.auth.session else { return false }
+        let session: Session
+        do {
+            session = try await supabase.auth.session
+        } catch {
+            Self.logger.error("Failed to load session before account deletion: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
         let token = session.accessToken
         
         guard let url = URL(string: AppConfig.backendBaseURL + "/auth/account") else { return false }
@@ -296,7 +308,7 @@ final class AuthService: ObservableObject {
                 return true
             }
         } catch {
-            print("Delete account error: \(error)")
+            Self.logger.error("Delete account failed: \(error.localizedDescription, privacy: .public)")
         }
         return false
     }
@@ -417,7 +429,7 @@ final class AuthService: ObservableObject {
             await checkSession()
             return isSignedIn
         } catch {
-            print("❌ App Review Quick Login Error: \(error)")
+            Self.logger.error("App Review quick login failed: \(error.localizedDescription, privacy: .public)")
             errorMessage = error.localizedDescription
             state = .signedOut
             return false
@@ -439,7 +451,7 @@ final class AuthService: ObservableObject {
             }
             return true
         } catch {
-            print("❌ Email OTP Error: \(error)")
+            Self.logger.error("Email OTP request failed: \(error.localizedDescription, privacy: .public)")
             errorMessage = error.localizedDescription
             return false
         }
@@ -465,7 +477,7 @@ final class AuthService: ObservableObject {
             await checkSession()
             return isSignedIn
         } catch {
-            print("❌ Verify OTP Error: \(error)")
+            Self.logger.error("Email OTP verification failed: \(error.localizedDescription, privacy: .public)")
             errorMessage = userFacingEmailOTPErrorMessage(for: error)
             return false
         }

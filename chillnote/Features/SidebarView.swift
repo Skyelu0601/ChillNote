@@ -2,6 +2,9 @@ import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
 import UIKit
+import OSLog
+
+private let sidebarLogger = Logger(subsystem: "com.chillnote.app", category: "sidebar")
 
 struct SidebarView: View {
     @Environment(\.modelContext) private var modelContext
@@ -237,7 +240,14 @@ struct SidebarView: View {
         }
         
         let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.id == droppedId })
-        guard let droppedTag = try? modelContext.fetch(fetchDescriptor).first else { return false }
+        let droppedTag: Tag
+        do {
+            guard let fetched = try modelContext.fetch(fetchDescriptor).first else { return false }
+            droppedTag = fetched
+        } catch {
+            sidebarLogger.error("Failed to fetch dropped root tag: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
         
         // Only proceed if tag is not already root
         if droppedTag.parent == nil { return false }
@@ -250,7 +260,16 @@ struct SidebarView: View {
             }
             droppedTag.parent = nil
             droppedTag.updatedAt = now
-            try? modelContext.save()
+        }
+        return saveSidebarChangesAndSync(reason: "moving tag to root")
+    }
+
+    private func saveSidebarChangesAndSync(reason: String) -> Bool {
+        do {
+            try modelContext.save()
+        } catch {
+            sidebarLogger.error("Failed to save sidebar changes while \(reason, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
         }
         Task {
             await syncManager.syncNow(context: modelContext)
@@ -494,12 +513,9 @@ struct TagTreeItemView: View {
                 parent.updatedAt = now
                 tag.parent = nil
                 tag.updatedAt = now
-                try? modelContext.save()
             }
         }
-        Task {
-            await syncManager.syncNow(context: modelContext)
-        }
+        _ = saveTagRowChangesAndSync(reason: "moving tag row to root")
     }
     
     private func deleteTag() {
@@ -511,16 +527,20 @@ struct TagTreeItemView: View {
             }
             tag.deletedAt = Date()
             tag.updatedAt = tag.deletedAt ?? Date()
-            try? modelContext.save()
         }
-        Task {
-            await syncManager.syncNow(context: modelContext)
-        }
+        _ = saveTagRowChangesAndSync(reason: "deleting tag row")
     }
 
     private func handleDrop(droppedTagId: UUID, onto targetTag: Tag) -> Bool {
         let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.id == droppedTagId })
-        guard let droppedTag = try? modelContext.fetch(fetchDescriptor).first else { return false }
+        let droppedTag: Tag
+        do {
+            guard let fetched = try modelContext.fetch(fetchDescriptor).first else { return false }
+            droppedTag = fetched
+        } catch {
+            sidebarLogger.error("Failed to fetch dropped child tag: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
         
         guard droppedTag.id != targetTag.id else { return false }
         guard !droppedTag.isAncestor(of: targetTag) else { return false }
@@ -537,7 +557,16 @@ struct TagTreeItemView: View {
             }
             droppedTag.updatedAt = now
             targetTag.updatedAt = now
-            try? modelContext.save()
+        }
+        return saveTagRowChangesAndSync(reason: "moving tag under another tag")
+    }
+
+    private func saveTagRowChangesAndSync(reason: String) -> Bool {
+        do {
+            try modelContext.save()
+        } catch {
+            sidebarLogger.error("Failed to save tag row changes while \(reason, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
         }
         Task {
             await syncManager.syncNow(context: modelContext)
@@ -590,7 +619,14 @@ struct RootDropZone: View {
     
     private func handleDropToRoot(droppedTagId: UUID) -> Bool {
         let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.id == droppedTagId })
-        guard let droppedTag = try? modelContext.fetch(fetchDescriptor).first else { return false }
+        let droppedTag: Tag
+        do {
+            guard let fetched = try modelContext.fetch(fetchDescriptor).first else { return false }
+            droppedTag = fetched
+        } catch {
+            sidebarLogger.error("Failed to fetch tag dropped to root zone: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
         
         if droppedTag.parent == nil { return false }
         
@@ -602,7 +638,16 @@ struct RootDropZone: View {
             }
             droppedTag.parent = nil
             droppedTag.updatedAt = now
-            try? modelContext.save()
+        }
+        return saveRootDropChangesAndSync(reason: "dropping tag to root")
+    }
+
+    private func saveRootDropChangesAndSync(reason: String) -> Bool {
+        do {
+            try modelContext.save()
+        } catch {
+            sidebarLogger.error("Failed to save root drop changes while \(reason, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
         }
         Task {
             await syncManager.syncNow(context: modelContext)
@@ -649,7 +694,14 @@ struct TrashDropZone: View {
     
     private func handleDeleteDrop(droppedTagId: UUID) -> Bool {
         let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.id == droppedTagId })
-        guard let droppedTag = try? modelContext.fetch(fetchDescriptor).first else { return false }
+        let droppedTag: Tag
+        do {
+            guard let fetched = try modelContext.fetch(fetchDescriptor).first else { return false }
+            droppedTag = fetched
+        } catch {
+            sidebarLogger.error("Failed to fetch tag dropped to trash: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
         
         withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
             // Remove from parent if needed (SwiftData usually handles relationship cleanup, but manual is safer for tree UI)
@@ -662,16 +714,26 @@ struct TrashDropZone: View {
             }
             droppedTag.deletedAt = Date()
             droppedTag.updatedAt = droppedTag.deletedAt ?? Date()
-            try? modelContext.save()
         }
-        Task {
-            await syncManager.syncNow(context: modelContext)
-        }
+        guard saveTrashDropChangesAndSync(reason: "dropping tag to trash") else { return false }
         
         // Haptic feedback
         let generator = UIImpactFeedbackGenerator(style: .medium)
         generator.impactOccurred()
         
+        return true
+    }
+
+    private func saveTrashDropChangesAndSync(reason: String) -> Bool {
+        do {
+            try modelContext.save()
+        } catch {
+            sidebarLogger.error("Failed to save trash drop changes while \(reason, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
+        }
+        Task {
+            await syncManager.syncNow(context: modelContext)
+        }
         return true
     }
 }

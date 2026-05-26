@@ -42,6 +42,22 @@ final class NoteDetailViewModelTests: XCTestCase {
         XCTAssertTrue(didDismiss)
     }
 
+    func testUpdateTimestampAndDismissSyncsChecklistStructureAfterManualEdit() {
+        let note = Note(content: "old", userId: "u1")
+        context.insert(note)
+
+        let viewModel = NoteDetailViewModel(note: note)
+        viewModel.configureForTesting(modelContext: context)
+
+        note.content = "- [ ] Buy milk\n- [x] Walk home"
+        viewModel.updateTimestampAndDismiss()
+
+        XCTAssertTrue(note.isChecklist)
+        XCTAssertEqual(note.checklistItems.count, 2)
+        XCTAssertEqual(note.checklistItems.sorted { $0.sortOrder < $1.sortOrder }.map(\.text), ["Buy milk", "Walk home"])
+        XCTAssertEqual(note.checklistItems.sorted { $0.sortOrder < $1.sortOrder }.map(\.isDone), [false, true])
+    }
+
     func testUpdateTimestampAndDismissDeletesWhenContentEmpty() {
         let note = Note(content: "text", userId: "u1")
         context.insert(note)

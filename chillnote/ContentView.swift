@@ -52,7 +52,7 @@ struct ContentView: View {
                 SubscriptionView()
             }
             .fullScreenCover(isPresented: $showPostOnboardingPaywall, onDismiss: markIntroPaywallSeen) {
-                SubscriptionView()
+                SubscriptionView(context: .onboardingTrial)
             }
     }
 
@@ -107,25 +107,48 @@ struct ContentView: View {
     }
 
     private func finishOnboarding(for userId: String) {
-        OnboardingStateStore.setHasCompleted(true, for: userId)
-        hasCompletedOnboarding = true
-
         if OnboardingStateStore.hasShownIntroPaywall(for: userId) {
+            completeOnboarding(for: userId)
             return
         }
 
         Task {
-            await resolvePostOnboardingDestination(for: userId)
+            await resolveIntroPaywallBeforeHome(for: userId)
         }
     }
 
     private func markIntroPaywallSeen() {
         guard let userId = authService.currentUserId else { return }
         OnboardingStateStore.setHasShownIntroPaywall(true, for: userId)
+        completeOnboarding(for: userId)
     }
 
     private func syncOnboardingState(for userId: String?) {
         hasCompletedOnboarding = OnboardingStateStore.hasCompleted(for: userId)
+    }
+
+    private func completeOnboarding(for userId: String) {
+        OnboardingStateStore.setHasCompleted(true, for: userId)
+        hasCompletedOnboarding = true
+    }
+
+    private func resolveIntroPaywallBeforeHome(for userId: String) async {
+        await storeService.refreshSubscriptionStatus()
+
+        guard authService.currentUserId == userId else { return }
+        guard !OnboardingStateStore.hasShownIntroPaywall(for: userId) else {
+            completeOnboarding(for: userId)
+            return
+        }
+
+        if storeService.currentTier == .pro {
+            OnboardingStateStore.setHasShownIntroPaywall(true, for: userId)
+            completeOnboarding(for: userId)
+            showPostOnboardingPaywall = false
+            return
+        }
+
+        showPostOnboardingPaywall = true
     }
 
     private func resolvePostOnboardingDestination(for userId: String) async {

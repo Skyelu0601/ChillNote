@@ -5,12 +5,14 @@ struct OnboardingFlowView: View {
     let onFinish: () -> Void
 
     @State private var currentPage = 0
+    @State private var preferences = OnboardingPreferences()
     private let initialPage: Int
 
     private let pages: [OnboardingPage] = [
         .positioning,
-        .voiceFirst,
-        .aiProcessing,
+        .captureModes,
+        .surveyContentType,
+        .surveyGoals,
         .skillsWorkflow,
         .customSkills,
         .askNotes
@@ -18,6 +20,19 @@ struct OnboardingFlowView: View {
 
     private var isLastPage: Bool {
         currentPage == pages.count - 1
+    }
+
+    private var currentOnboardingPage: OnboardingPage {
+        guard currentPage < pages.count else { return pages.last ?? .askNotes }
+        return pages[currentPage]
+    }
+
+    private var shouldShowActionBar: Bool {
+        currentOnboardingPage != .surveyContentType
+    }
+
+    private var isActionBarButtonDisabled: Bool {
+        currentOnboardingPage == .surveyGoals && preferences.goals.isEmpty
     }
 
     init(initialPage: Int = 0, onFinish: @escaping () -> Void) {
@@ -46,44 +61,51 @@ struct OnboardingFlowView: View {
         }
         .background(Color.bgPrimary.ignoresSafeArea())
         .safeAreaInset(edge: .bottom) {
-            onboardingActionBar
-                .padding(.horizontal, 24)
-                .padding(.top, 12)
-                .padding(.bottom, 16)
-                .background(
-                    LinearGradient(
-                        colors: [
-                            Color.bgPrimary.opacity(0.0),
-                            Color.bgPrimary.opacity(0.92),
-                            Color.bgPrimary
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
+            if shouldShowActionBar {
+                onboardingActionBar
+                    .padding(.horizontal, 24)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
+                    .background(
+                        LinearGradient(
+                            colors: [
+                                Color.bgPrimary.opacity(0.0),
+                                Color.bgPrimary.opacity(0.92),
+                                Color.bgPrimary
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
                     )
-                )
+            }
         }
     }
 
     @ViewBuilder
     private func onboardingPageView(for page: OnboardingPage) -> some View {
         if page == .positioning {
-            OnboardingHeroPage(currentPage: currentPage, totalPages: pages.count)
-        } else if page == .voiceFirst {
-            OnboardingVoiceFirstPage(currentPage: currentPage, totalPages: pages.count)
-        } else if page == .aiProcessing {
-            OnboardingAIProcessingPage(currentPage: currentPage, totalPages: pages.count)
-        } else if page == .skillsWorkflow {
-            OnboardingSkillsWorkflowPage(currentPage: currentPage, totalPages: pages.count)
-        } else if page == .customSkills {
-            OnboardingCustomSkillsPage(currentPage: currentPage, totalPages: pages.count)
-        } else if page == .askNotes {
-            OnboardingAskNotesPage(currentPage: currentPage, totalPages: pages.count)
-        } else {
-            OnboardingPlaceholderPage(
-                page: page,
-                currentPage: currentPage,
-                totalPages: pages.count
+            OnboardingHeroPage()
+        } else if page == .captureModes {
+            OnboardingCaptureModesPage()
+        } else if page == .surveyContentType {
+            OnboardingSurveyContentTypePage(
+                selectedType: $preferences.contentType,
+                onSelect: {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                        currentPage += 1
+                    }
+                }
             )
+        } else if page == .surveyGoals {
+            OnboardingSurveyGoalsPage(selectedGoals: $preferences.goals)
+        } else if page == .skillsWorkflow {
+            OnboardingSkillsWorkflowPage()
+        } else if page == .customSkills {
+            OnboardingCustomSkillsPage()
+        } else if page == .askNotes {
+            OnboardingAskNotesPage()
+        } else {
+            OnboardingPlaceholderPage(page: page)
         }
     }
 
@@ -135,16 +157,20 @@ struct OnboardingFlowView: View {
                 .padding(.vertical, 13)
                 .background(
                     RoundedRectangle(cornerRadius: 999, style: .continuous)
-                        .fill(Color.accentPrimary)
+                        .fill(isActionBarButtonDisabled
+                              ? Color.accentPrimary.opacity(0.45)
+                              : Color.accentPrimary)
                 )
                 .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .shadow(color: Color.accentPrimary.opacity(0.22), radius: 10, x: 0, y: 4)
+                .shadow(color: Color.accentPrimary.opacity(isActionBarButtonDisabled ? 0 : 0.22), radius: 10, x: 0, y: 4)
             }
+            .disabled(isActionBarButtonDisabled)
         }
     }
 
     private func handlePrimaryAction() {
         if isLastPage {
+            OnboardingStateStore.savePreferences(preferences)
             onFinish()
             return
         }
@@ -158,8 +184,9 @@ struct OnboardingFlowView: View {
 
 private enum OnboardingPage: Int, CaseIterable {
     case positioning
-    case voiceFirst
-    case aiProcessing
+    case captureModes
+    case surveyContentType
+    case surveyGoals
     case skillsWorkflow
     case customSkills
     case askNotes
@@ -170,10 +197,12 @@ private enum OnboardingPage: Int, CaseIterable {
         switch self {
         case .positioning:
             return "onboarding.flow.page1.title"
-        case .voiceFirst:
-            return "onboarding.flow.page2.title"
-        case .aiProcessing:
-            return "onboarding.flow.page3.title"
+        case .captureModes:
+            return "onboarding.capture.title"
+        case .surveyContentType:
+            return "onboarding.survey.content_type.question"
+        case .surveyGoals:
+            return "onboarding.survey.goals.question"
         case .skillsWorkflow:
             return "onboarding.flow.page4.title"
         case .customSkills:
@@ -187,10 +216,12 @@ private enum OnboardingPage: Int, CaseIterable {
         switch self {
         case .positioning:
             return "onboarding.flow.page1.subtitle"
-        case .voiceFirst:
-            return "onboarding.flow.page2.subtitle"
-        case .aiProcessing:
-            return "onboarding.flow.page3.subtitle"
+        case .captureModes:
+            return "onboarding.capture.subtitle"
+        case .surveyContentType:
+            return ""
+        case .surveyGoals:
+            return "onboarding.survey.goals.subtitle"
         case .skillsWorkflow:
             return "onboarding.flow.page4.subtitle"
         case .customSkills:
@@ -204,10 +235,12 @@ private enum OnboardingPage: Int, CaseIterable {
         switch self {
         case .positioning:
             return "sparkles"
-        case .voiceFirst:
-            return "waveform"
-        case .aiProcessing:
-            return "wand.and.stars"
+        case .captureModes:
+            return "square.grid.2x2"
+        case .surveyContentType:
+            return "questionmark.circle"
+        case .surveyGoals:
+            return "checkmark.circle"
         case .skillsWorkflow:
             return "square.stack.3d.up"
         case .customSkills:
@@ -219,9 +252,6 @@ private enum OnboardingPage: Int, CaseIterable {
 }
 
 private struct OnboardingHeroPage: View {
-    let currentPage: Int
-    let totalPages: Int
-
     private let heroIcons: [HeroRingIcon] = [
         HeroRingIcon(
             id: "mail",
@@ -331,8 +361,6 @@ private struct OnboardingHeroPage: View {
 
 private struct OnboardingPlaceholderPage: View {
     let page: OnboardingPage
-    let currentPage: Int
-    let totalPages: Int
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -372,9 +400,6 @@ private struct OnboardingPlaceholderPage: View {
 }
 
 private struct OnboardingVoiceFirstPage: View {
-    let currentPage: Int
-    let totalPages: Int
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 12) {
@@ -614,9 +639,6 @@ private struct BubbleTail: Shape {
 }
 
 private struct OnboardingAIProcessingPage: View {
-    let currentPage: Int
-    let totalPages: Int
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 14) {
@@ -648,9 +670,6 @@ private struct OnboardingAIProcessingPage: View {
 }
 
 private struct OnboardingSkillsWorkflowPage: View {
-    let currentPage: Int
-    let totalPages: Int
-
     private var isCompactHeight: Bool {
         UIScreen.main.bounds.height <= 700
     }
@@ -700,9 +719,6 @@ private struct OnboardingSkillsWorkflowPage: View {
 }
 
 private struct OnboardingCustomSkillsPage: View {
-    let currentPage: Int
-    let totalPages: Int
-
     private var isCompactHeight: Bool {
         UIScreen.main.bounds.height <= 700
     }
@@ -894,9 +910,6 @@ private enum CustomSkillPreviewIcon {
 }
 
 private struct OnboardingAskNotesPage: View {
-    let currentPage: Int
-    let totalPages: Int
-
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             VStack(alignment: .leading, spacing: 14) {
@@ -1360,6 +1373,297 @@ private extension Font {
         default:
             return .system(size: size, weight: .regular, design: .default)
         }
+    }
+}
+
+// MARK: - Capture Modes Page
+
+private struct OnboardingCaptureModesPage: View {
+    private var isCompactHeight: Bool {
+        UIScreen.main.bounds.height <= 700
+    }
+
+    private let items: [CaptureModeItem] = [
+        .init(emoji: "🎙", titleKey: "onboarding.capture.voice.title", detailKey: "onboarding.capture.voice.detail"),
+        .init(emoji: "🔗", titleKey: "onboarding.capture.links.title", detailKey: "onboarding.capture.links.detail"),
+        .init(emoji: "📷", titleKey: "onboarding.capture.photos.title", detailKey: "onboarding.capture.photos.detail"),
+        .init(emoji: "🎬", titleKey: "onboarding.capture.media.title", detailKey: "onboarding.capture.media.detail")
+    ]
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 14) {
+                Text(L10n.text("onboarding.capture.title"))
+                    .font(.system(size: 32, weight: .bold, design: .default))
+                    .foregroundStyle(Color.textMain)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(L10n.text("onboarding.capture.subtitle"))
+                    .font(.system(size: 20, weight: .semibold, design: .default))
+                    .foregroundStyle(Color.accentPrimary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, isCompactHeight ? 14 : 38)
+
+            Spacer(minLength: isCompactHeight ? 16 : 28)
+
+            VStack(spacing: 0) {
+                ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                    CaptureModeRow(item: item, isCompactHeight: isCompactHeight)
+                    if index < items.count - 1 {
+                        Rectangle()
+                            .fill(Color.black.opacity(0.06))
+                            .frame(height: 1)
+                            .padding(.leading, 56)
+                    }
+                }
+            }
+            .padding(.vertical, isCompactHeight ? 10 : 14)
+            .background(
+                RoundedRectangle(cornerRadius: 26, style: .continuous)
+                    .fill(Color.white.opacity(0.94))
+                    .shadow(color: Color.shadowColor.opacity(0.75), radius: 20, x: 0, y: 10)
+            )
+
+            Spacer(minLength: isCompactHeight ? 16 : 28)
+            Spacer(minLength: 28)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 4)
+        .accessibilityIdentifier("onboarding.page.capture")
+    }
+}
+
+private struct CaptureModeRow: View {
+    let item: CaptureModeItem
+    let isCompactHeight: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 14) {
+            Text(verbatim: item.emoji)
+                .font(.system(size: isCompactHeight ? 24 : 28))
+                .frame(width: 32, height: 32)
+                .padding(.top, 2)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(L10n.text(item.titleKey))
+                    .font(.system(size: 19, weight: .semibold, design: .default))
+                    .foregroundStyle(Color.textMain)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(L10n.text(item.detailKey))
+                    .font(.system(size: 15, weight: .regular, design: .default))
+                    .foregroundStyle(Color.textSub)
+                    .lineSpacing(5)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+
+            Spacer(minLength: 0)
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, isCompactHeight ? 16 : 20)
+    }
+}
+
+private struct CaptureModeItem {
+    let emoji: String
+    let titleKey: String
+    let detailKey: String
+}
+
+// MARK: - Survey Pages
+
+private struct OnboardingSurveyContentTypePage: View {
+    @Binding var selectedType: OnboardingPreferences.ContentCreatorType?
+    let onSelect: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Text(L10n.text("onboarding.survey.content_type.question"))
+                .font(.system(size: 32, weight: .bold, design: .default))
+                .foregroundStyle(Color.textMain)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, 38)
+
+            Spacer(minLength: 32)
+
+            VStack(spacing: 12) {
+                ForEach(OnboardingPreferences.ContentCreatorType.allCases, id: \.rawValue) { type in
+                    SurveyOptionRow(
+                        emoji: type.emoji,
+                        title: L10n.text(type.titleKey),
+                        detail: L10n.text(type.detailKey),
+                        isSelected: selectedType == type
+                    ) {
+                        selectedType = type
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
+                            onSelect()
+                        }
+                    }
+                }
+            }
+
+            Spacer(minLength: 28)
+            Spacer(minLength: 28)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 4)
+        .accessibilityIdentifier("onboarding.page.survey1")
+    }
+}
+
+private struct OnboardingSurveyGoalsPage: View {
+    @Binding var selectedGoals: Set<OnboardingPreferences.CreatorGoal>
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L10n.text("onboarding.survey.goals.question"))
+                    .font(.system(size: 32, weight: .bold, design: .default))
+                    .foregroundStyle(Color.textMain)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(L10n.text("onboarding.survey.goals.subtitle"))
+                    .font(.system(size: 17, weight: .medium, design: .default))
+                    .foregroundStyle(Color.textSub)
+            }
+            .padding(.top, 38)
+
+            Spacer(minLength: 32)
+
+            VStack(spacing: 12) {
+                ForEach(OnboardingPreferences.CreatorGoal.allCases, id: \.rawValue) { goal in
+                    SurveyMultiSelectRow(
+                        emoji: goal.emoji,
+                        title: L10n.text(goal.titleKey),
+                        isSelected: selectedGoals.contains(goal)
+                    ) {
+                        if selectedGoals.contains(goal) {
+                            selectedGoals.remove(goal)
+                        } else {
+                            selectedGoals.insert(goal)
+                        }
+                    }
+                }
+            }
+
+            Spacer(minLength: 28)
+            Spacer(minLength: 28)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(.horizontal, 4)
+        .accessibilityIdentifier("onboarding.page.survey2")
+    }
+}
+
+private struct SurveyOptionRow: View {
+    let emoji: String
+    let title: String
+    let detail: String
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 14) {
+                Text(verbatim: emoji)
+                    .font(.system(size: 22))
+                    .frame(width: 32)
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(verbatim: title)
+                        .font(.system(size: 17, weight: .semibold, design: .default))
+                        .foregroundStyle(Color.textMain)
+                        .multilineTextAlignment(.leading)
+
+                    if !detail.isEmpty {
+                        Text(verbatim: detail)
+                            .font(.system(size: 14, weight: .regular, design: .default))
+                            .foregroundStyle(Color.textSub)
+                    }
+                }
+
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(isSelected ? Color.accentPrimary.opacity(0.08) : Color.white.opacity(0.92))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(
+                                isSelected ? Color.accentPrimary.opacity(0.45) : Color.black.opacity(0.07),
+                                lineWidth: isSelected ? 1.5 : 1
+                            )
+                    )
+                    .shadow(color: Color.shadowColor.opacity(isSelected ? 0 : 0.35), radius: 8, x: 0, y: 4)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+private struct SurveyMultiSelectRow: View {
+    let emoji: String
+    let title: String
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 14) {
+                Text(verbatim: emoji)
+                    .font(.system(size: 22))
+                    .frame(width: 32)
+
+                Text(verbatim: title)
+                    .font(.system(size: 17, weight: .semibold, design: .default))
+                    .foregroundStyle(Color.textMain)
+                    .multilineTextAlignment(.leading)
+
+                Spacer(minLength: 0)
+
+                ZStack {
+                    Circle()
+                        .fill(isSelected ? Color.accentPrimary : Color.clear)
+                        .frame(width: 24, height: 24)
+                        .overlay(
+                            Circle()
+                                .stroke(
+                                    isSelected ? Color.clear : Color.black.opacity(0.2),
+                                    lineWidth: 1.5
+                                )
+                        )
+
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
+                }
+            }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(isSelected ? Color.accentPrimary.opacity(0.08) : Color.white.opacity(0.92))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18, style: .continuous)
+                            .stroke(
+                                isSelected ? Color.accentPrimary.opacity(0.45) : Color.black.opacity(0.07),
+                                lineWidth: isSelected ? 1.5 : 1
+                            )
+                    )
+                    .shadow(color: Color.shadowColor.opacity(isSelected ? 0 : 0.35), radius: 8, x: 0, y: 4)
+            )
+        }
+        .buttonStyle(.plain)
     }
 }
 

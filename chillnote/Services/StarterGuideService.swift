@@ -1,10 +1,12 @@
 import Foundation
+import OSLog
 import SwiftData
 import Supabase
 
 @MainActor
 final class StarterGuideService {
     static let shared = StarterGuideService()
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "starter-guide")
     private let newAccountWindow: TimeInterval = 10 * 60
 
     private init() {}
@@ -13,13 +15,13 @@ final class StarterGuideService {
     func seedWelcomeContentIfNeeded(context: ModelContext, user: User) -> Bool {
         let userId = user.id.uuidString
         if WelcomeNoteFlagStore.hasSeenWelcome(for: userId) {
-            print("[StarterGuide] Skip: welcome already handled for user \(userId)")
+            Self.logger.debug("Skipping welcome content; already handled for user \(userId, privacy: .private)")
             return false
         }
 
         guard isFreshAccount(user) else {
             WelcomeNoteFlagStore.setHasSeenWelcome(true, for: userId)
-            print("[StarterGuide] Skip: user \(userId) is not a new account")
+            Self.logger.debug("Skipping welcome content; user is outside new account window \(userId, privacy: .private)")
             return false
         }
 
@@ -39,12 +41,12 @@ final class StarterGuideService {
         do {
             try context.save()
             WelcomeNoteFlagStore.setHasSeenWelcome(true, for: userId)
-            print("[StarterGuide] Seeded welcome note for new user \(userId)")
+            Self.logger.info("Seeded welcome content for new user \(userId, privacy: .private)")
             return true
         } catch {
             context.delete(welcomeNote)
             context.delete(welcomeTag)
-            print("⚠️ StarterGuideService seed failed: \(error.localizedDescription)")
+            Self.logger.error("Welcome content seed failed: \(error.localizedDescription, privacy: .public)")
             return false
         }
     }

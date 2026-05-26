@@ -4,6 +4,7 @@ import SwiftData
 enum SyncError: Error {
     case disabled
     case invalidURL
+    case localStoreUnavailable
     case remoteUnavailable
     case unauthorized
     case serverError
@@ -36,7 +37,7 @@ struct RemoteSyncService: SyncService {
     let config: SyncConfig
     
     func syncAll(context: ModelContext) async throws -> SyncResult {
-        let payload = makeSyncPayload(
+        let payload = try makeSyncPayload(
             context: context,
             since: config.since,
             userId: config.userId,
@@ -77,7 +78,7 @@ struct RemoteSyncService: SyncService {
             let decoder = JSONDecoder()
             return try decoder.decode(SyncResponse.self, from: data)
         }.value
-        applyRemotePayload(
+        try applyRemotePayload(
             context: context,
             response: remoteResponse,
             userId: config.userId,
@@ -105,9 +106,9 @@ private func makeSyncPayload(
     deviceId: String,
     hardDeletedNoteIds: [String],
     hardDeletedTagIds: [String]
-) -> SyncPayload {
+) throws -> SyncPayload {
     let engine = SyncEngine()
-    return engine.makePayload(
+    return try engine.makePayload(
         context: context,
         since: since,
         userId: userId,
@@ -118,7 +119,7 @@ private func makeSyncPayload(
     )
 }
 
-private func applyRemotePayload(context: ModelContext, response: SyncResponse, userId: String, localSyncAnchor: Date) {
+private func applyRemotePayload(context: ModelContext, response: SyncResponse, userId: String, localSyncAnchor: Date) throws {
     let engine = SyncEngine()
-    engine.apply(remote: response, context: context, userId: userId, localSyncAnchor: localSyncAnchor)
+    try engine.apply(remote: response, context: context, userId: userId, localSyncAnchor: localSyncAnchor)
 }

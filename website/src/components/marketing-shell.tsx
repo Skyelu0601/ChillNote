@@ -31,7 +31,7 @@ export function MarketingFooter() {
           <img src="/assets/chillnote-logo.png" alt="" />
           <span>{copy.productName}</span>
         </a>
-        <p>Creator swipe files, quick capture, and reusable AI-ready notes.</p>
+        <p>AI creator notes, quick capture, and reusable workflows.</p>
       </div>
       <nav>
         <a href="/pricing">Pricing</a>

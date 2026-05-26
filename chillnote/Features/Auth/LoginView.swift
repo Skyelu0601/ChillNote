@@ -67,10 +67,7 @@ struct LoginView: View {
         VStack(spacing: 16) {
             Button(action: {
                 Task {
-                    let success = await authService.signInWithGoogle()
-                    if !success {
-                        print("Google Sign In failed: \(authService.errorMessage ?? "Unknown error")")
-                    }
+                    await authService.signInWithGoogle()
                 }
             }) {
                 HStack(spacing: 10) {
@@ -98,35 +95,15 @@ struct LoginView: View {
                     authService.handleAppleRequest(request)
                 },
                 onCompletion: { result in
-                    print("🍎 [Apple Sign In] Completion callback triggered")
                     switch result {
                     case .success(let authorization):
-                        print("✅ [Apple Sign In] Authorization successful")
-                        print("   Credential type: \(type(of: authorization.credential))")
-                        
                         if let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential {
-                            print("   User ID: \(appleIDCredential.user)")
-                            print("   Has identity token: \(appleIDCredential.identityToken != nil)")
-                            print("   Has authorization code: \(appleIDCredential.authorizationCode != nil)")
-                            print("   Email: \(appleIDCredential.email ?? "nil")")
-                            print("   Full name: \(appleIDCredential.fullName?.givenName ?? "nil")")
-                            
                             Task {
-                                print("🚀 [Apple Sign In] Starting backend authentication...")
-                                let success = await authService.signInWithApple(appleIDCredential)
-                                print("🎯 [Apple Sign In] Backend result: \(success ? "✅ SUCCESS" : "❌ FAILED")")
-                                if !success {
-                                    print("⚠️ [Apple Sign In] Error message: \(authService.errorMessage ?? "Unknown error")")
-                                }
+                                await authService.signInWithApple(appleIDCredential)
                             }
-                        } else {
-                            print("❌ [Apple Sign In] Failed to cast credential to ASAuthorizationAppleIDCredential")
                         }
-                    case .failure(let error):
-                        print("❌ [Apple Sign In] Authorization failed")
-                        print("   Error: \(error.localizedDescription)")
-                        print("   Error code: \((error as NSError).code)")
-                        print("   Error domain: \((error as NSError).domain)")
+                    case .failure:
+                        break
                     }
                 }
             )

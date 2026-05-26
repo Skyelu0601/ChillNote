@@ -1,8 +1,10 @@
 import Foundation
+import OSLog
 import SwiftUI
 
 final class RecipeManager: ObservableObject {
     static let shared = RecipeManager()
+    private static let logger = Logger(subsystem: "com.chillnote.app", category: "recipe-manager")
     private static let retiredRecipeIds: Set<String> = [
         "draft_email",
         "devils_advocate",
@@ -102,17 +104,29 @@ final class RecipeManager: ObservableObject {
     }
 
     private func loadFromDisk() {
-        if let data = customRecipesJSON.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode([AgentRecipe].self, from: data) {
-            customRecipes = decoded
+        if let data = customRecipesJSON.data(using: .utf8) {
+            do {
+                customRecipes = try JSONDecoder().decode([AgentRecipe].self, from: data)
+            } catch {
+                Self.logger.error("Failed to decode custom recipes: \(error.localizedDescription, privacy: .public)")
+                customRecipes = []
+            }
         } else {
+            Self.logger.error("Failed to read custom recipes JSON as UTF-8")
             customRecipes = []
         }
 
-        if let data = savedRecipesJSON.data(using: .utf8),
-           let decoded = try? JSONDecoder().decode([AgentRecipe].self, from: data) {
-            savedRecipes = decoded.filter { !Self.retiredRecipeIds.contains($0.id) }
+        if let data = savedRecipesJSON.data(using: .utf8) {
+            do {
+                let decoded = try JSONDecoder().decode([AgentRecipe].self, from: data)
+                savedRecipes = decoded.filter { !Self.retiredRecipeIds.contains($0.id) }
+            } catch {
+                Self.logger.error("Failed to decode saved recipes: \(error.localizedDescription, privacy: .public)")
+                savedRecipes = []
+                savedRecipeIds = []
+            }
         } else {
+            Self.logger.error("Failed to read saved recipes JSON as UTF-8")
             savedRecipes = []
             savedRecipeIds = []
         }
@@ -120,18 +134,30 @@ final class RecipeManager: ObservableObject {
     }
 
     private func saveToDisk() {
-        if let encoded = try? JSONEncoder().encode(savedRecipes),
-           let jsonString = String(data: encoded, encoding: .utf8) {
+        do {
+            let encoded = try JSONEncoder().encode(savedRecipes)
+            guard let jsonString = String(data: encoded, encoding: .utf8) else {
+                Self.logger.error("Failed to encode saved recipes JSON as UTF-8")
+                return
+            }
             savedRecipesJSON = jsonString
             savedRecipeIds = Set(savedRecipes.map { $0.id })
+        } catch {
+            Self.logger.error("Failed to encode saved recipes: \(error.localizedDescription, privacy: .public)")
         }
     }
 
 
     private func saveCustomToDisk() {
-        if let encoded = try? JSONEncoder().encode(customRecipes),
-           let jsonString = String(data: encoded, encoding: .utf8) {
+        do {
+            let encoded = try JSONEncoder().encode(customRecipes)
+            guard let jsonString = String(data: encoded, encoding: .utf8) else {
+                Self.logger.error("Failed to encode custom recipes JSON as UTF-8")
+                return
+            }
             customRecipesJSON = jsonString
+        } catch {
+            Self.logger.error("Failed to encode custom recipes: \(error.localizedDescription, privacy: .public)")
         }
     }
 }
