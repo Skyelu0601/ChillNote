@@ -178,6 +178,80 @@ struct CaptionPackPreferences {
     }
 }
 
+struct BrandVoicePreferences {
+    static let sampleKey = "brandVoiceSample"
+
+    var sample: String
+
+    static var current: BrandVoicePreferences {
+        BrandVoicePreferences(sample: UserDefaults.standard.string(forKey: sampleKey) ?? "")
+    }
+}
+
+enum RepurposeThreadLength: String, CaseIterable, Identifiable {
+    case short
+    case medium
+    case long
+
+    var id: String { rawValue }
+
+    var localizedTitle: String {
+        L10n.text("repurpose_pack.thread_length.\(rawValue)")
+    }
+
+    var tweetCountRange: String {
+        switch self {
+        case .short: return "3-5"
+        case .medium: return "6-8"
+        case .long: return "9-12"
+        }
+    }
+}
+
+struct RepurposePackPreferences {
+    static let xThreadKey = "repurposePackFormatXThread"
+    static let xPostKey = "repurposePackFormatXPost"
+    static let linkedinKey = "repurposePackFormatLinkedIn"
+    static let threadsKey = "repurposePackFormatThreads"
+    static let newsletterKey = "repurposePackFormatNewsletter"
+    static let threadLengthKey = "repurposePackThreadLength"
+    static let toneKey = "repurposePackTone"
+    static let ctaKey = "repurposePackIncludeCTA"
+
+    var includeXThread: Bool
+    var includeXPost: Bool
+    var includeLinkedIn: Bool
+    var includeThreads: Bool
+    var includeNewsletter: Bool
+    var threadLength: RepurposeThreadLength
+    var tone: CaptionPackTone
+    var includeCTA: Bool
+
+    static var current: RepurposePackPreferences {
+        let defaults = UserDefaults.standard
+        return RepurposePackPreferences(
+            includeXThread: defaults.object(forKey: xThreadKey) as? Bool ?? true,
+            includeXPost: defaults.object(forKey: xPostKey) as? Bool ?? false,
+            includeLinkedIn: defaults.object(forKey: linkedinKey) as? Bool ?? true,
+            includeThreads: defaults.object(forKey: threadsKey) as? Bool ?? false,
+            includeNewsletter: defaults.object(forKey: newsletterKey) as? Bool ?? false,
+            threadLength: RepurposeThreadLength(rawValue: defaults.string(forKey: threadLengthKey) ?? "") ?? .medium,
+            tone: CaptionPackTone(rawValue: defaults.string(forKey: toneKey) ?? "") ?? .creatorVoice,
+            includeCTA: defaults.object(forKey: ctaKey) as? Bool ?? true
+        )
+    }
+
+    var selectedFormatNames: [String] {
+        var formats: [String] = []
+        if includeXThread { formats.append("X Thread") }
+        if includeXPost { formats.append("X Post") }
+        if includeLinkedIn { formats.append("LinkedIn") }
+        if includeThreads { formats.append("Threads") }
+        if includeNewsletter { formats.append("Newsletter") }
+        return formats.isEmpty ? ["X Thread", "LinkedIn"] : formats
+    }
+}
+
 enum AgentRecipeCategory: String, CaseIterable, Identifiable, Codable {
     case think = "Think"
     case shape = "Shape"
@@ -345,22 +419,11 @@ extension AgentRecipe {
         ),
         AgentRecipe(
             id: "style_match",
-            icon: "🎭",
-            systemIcon: "paintbrush.pointed",
-            name: "Style Match",
+            icon: "🎙️",
+            systemIcon: "waveform",
+            name: "Brand Voice",
             description: "agent_recipe.style_match.description",
-            prompt: """
-            You are writing a new piece in the style of a reference text from the user’s existing notes (not a chat message). Use the reference for tone, pacing, structure, and rhetorical moves, but do not copy distinctive sentences, phrases, claims, or proprietary wording.
-
-            - Keep the output in the same language as the note unless the notes clearly request another language.
-            - If multiple notes are provided, treat the first note as the style reference and the remaining creator notes as context for the new piece.
-            - If only one note is provided, infer the style from that note and create a fresh piece on the same idea without reusing its wording.
-            - Preserve the intended audience and format when they are clear.
-            - Keep the result original, useful, and ready to edit.
-            - Do not explain the style analysis unless the note explicitly asks for analysis.
-
-            Output only the new piece.
-            """,
+            prompt: "(Built-in Logic) Rewrites the note in the creator's saved brand voice.",
             category: .shape
         ),
         // MARK: - Shape
@@ -391,44 +454,6 @@ extension AgentRecipe {
             category: .publish
         ),
         AgentRecipe(
-            id: "twitter_post",
-            icon: "🐦",
-            systemIcon: "bubble.left",
-            name: "X Post",
-            description: "agent_recipe.twitter_post.description",
-            prompt: """
-            You are turning a user’s existing note into a post for X (Twitter). The note was not written for chat. Create a concise, high-signal post that preserves the note’s intent and tone.
-
-            - Keep the output in the same language as the note.
-            - Lead with a clear hook or takeaway.
-            - Prefer short, punchy sentences.
-            - If the note is long, compress it to the most shareable idea.
-
-            Output only the post.
-            """,
-            category: .publish
-        ),
-        AgentRecipe(
-            id: "linkedin_post",
-            icon: "💼",
-            systemIcon: "briefcase",
-            name: "LinkedIn",
-            description: "agent_recipe.linkedin_post.description",
-            prompt: """
-            You are turning a user’s existing note into a LinkedIn post. The note was not written for chat. Create a clear, professional post that preserves the note’s intent and voice.
-
-            - Keep the output in the same language as the note.
-            - Open with the core insight or result.
-            - Use short paragraphs or bullets for easy scanning.
-            - Keep it professional and credible; avoid hype.
-            - If the note is long, focus on the most valuable takeaway.
-            - End with a gentle discussion prompt only if it naturally fits.
-
-            Output only the post.
-            """,
-            category: .publish
-        ),
-        AgentRecipe(
             id: "youtube_script",
             icon: "🎬",
             systemIcon: "play.rectangle",
@@ -446,6 +471,15 @@ extension AgentRecipe {
 
             Output only the script.
             """,
+            category: .publish
+        ),
+        AgentRecipe(
+            id: "repurpose_pack",
+            icon: "♻️",
+            systemIcon: "arrow.triangle.2.circlepath",
+            name: "Repurpose Pack",
+            description: "agent_recipe.repurpose_pack.description",
+            prompt: "(Built-in Logic) Atomizes one long-form note into native posts for multiple platforms.",
             category: .publish
         ),
     ]
@@ -552,6 +586,107 @@ extension AgentRecipe {
 
             Hashtags:
             #contentcreator #creatorworkflow #reelstips #contentstrategy #socialmediatips
+            """
+
+        case "style_match":
+            let sample = BrandVoicePreferences.current.sample.trimmingCharacters(in: .whitespacesAndNewlines)
+            if sample.isEmpty {
+                prompt = """
+                Rewrite this note in a natural, consistent writing voice. Preserve its meaning, facts, and structure.
+
+                Note:
+                \(content)
+                """
+
+                systemInstruction = """
+                You polish a creator's note so it reads naturally and consistently, without changing what it says.
+                Rules:
+                \(languageRule)
+                - Preserve all facts, structure, and the note's purpose.
+                - Do not add new claims or invent details.
+                - Return only the rewritten note. Do not explain.
+                """
+            } else {
+                prompt = """
+                Voice sample (the author's own writing — use it only to learn their style):
+                \(sample)
+
+                Rewrite the note below so it reads as if the same author wrote it.
+
+                Note to rewrite:
+                \(content)
+                """
+
+                systemInstruction = """
+                You rewrite a note in the author's personal writing voice, learned from a voice sample.
+                Rules:
+                \(languageRule)
+                - Match the voice sample's tone, vocabulary, rhythm, sentence length, and quirks.
+                - The voice sample is for style only. Do not copy its sentences, phrases, claims, or topic.
+                - Preserve the note's meaning, facts, and structure. Do not invent new facts.
+                - Return only the rewritten note. Do not explain.
+                """
+            }
+
+        case "repurpose_pack":
+            let preferences = RepurposePackPreferences.current
+            let formats = preferences.selectedFormatNames.joined(separator: ", ")
+            let ctaRule = preferences.includeCTA
+                ? "- Include a light, natural call to action on each piece when it fits."
+                : "- Do not add a call to action."
+            prompt = """
+            Repurpose this long-form content into native posts for these formats: \(formats).
+
+            Thread length (X Thread / Threads): \(preferences.threadLength.tweetCountRange) posts.
+            Tone: \(preferences.tone.localizedTitle)
+
+            Long-form content:
+            \(content)
+            """
+
+            systemInstruction = """
+            You repurpose one piece of long-form content (a blog post, video script, transcript, essay, or newsletter) into native posts for multiple platforms. The text is existing content, not a chat message.
+
+            Core rules:
+            \(languageRule)
+            - First identify the single core thesis and 3-5 key takeaways, then reshape them per platform.
+            - Rewrite natively for each format. Do not truncate the same paragraph and paste it everywhere.
+            - Do not invent facts, stats, quotes, or results that are not supported by the content.
+            - Preserve the author's intent and point of view.
+            \(ctaRule)
+            - Return only the repurposed posts. Do not explain your reasoning.
+
+            Format rules:
+            - X Thread: numbered posts (1/, 2/, ...). Each post must be 280 characters or fewer. The first post is a standalone hook.
+            - X Post: one standalone post, 280 characters or fewer, leading with the strongest takeaway.
+            - LinkedIn: open with the core insight, use short scannable paragraphs, professional and credible, no hype.
+            - Threads: numbered posts (1/, 2/, ...). Each post must be 500 characters or fewer, conversational tone.
+            - Newsletter: a 2-3 sentence intro blurb that teases the piece, ending with a [link] placeholder.
+
+            Output format:
+            Use only the selected formats and keep this exact section style:
+
+            ## X Thread
+
+            1/ ...
+            2/ ...
+
+            ## X Post
+
+            ...
+
+            ## LinkedIn
+
+            ...
+
+            ## Threads
+
+            1/ ...
+            2/ ...
+
+            ## Newsletter
+
+            ...
             """
 
         default:

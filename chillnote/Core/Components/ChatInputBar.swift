@@ -467,8 +467,8 @@ struct ChatInputBar: View {
 
     private func handlePasteLink() {
         Task { @MainActor in
-            await storeService.ensureSubscriptionStatusReadyForFeatureGate()
-            guard canUseQuickCaptureMoreFeature else {
+            let hasCredits = await storeService.consumeCredits(feature: .import)
+            guard hasCredits else {
                 presentQuickCaptureUpgrade()
                 return
             }
@@ -485,8 +485,8 @@ struct ChatInputBar: View {
 
     private func handlePhotoOrImage() {
         Task { @MainActor in
-            await storeService.ensureSubscriptionStatusReadyForFeatureGate()
-            guard canUseQuickCaptureMoreFeature else {
+            let hasCredits = await storeService.consumeCredits(feature: .import)
+            guard hasCredits else {
                 presentQuickCaptureUpgrade()
                 return
             }
@@ -500,8 +500,8 @@ struct ChatInputBar: View {
 
     private func handleMediaFile() {
         Task { @MainActor in
-            await storeService.ensureSubscriptionStatusReadyForFeatureGate()
-            guard canUseQuickCaptureMoreFeature else {
+            let hasCredits = await storeService.consumeCredits(feature: .import)
+            guard hasCredits else {
                 presentQuickCaptureUpgrade()
                 return
             }
@@ -557,7 +557,7 @@ struct ChatInputBar: View {
 
             let rawTranscript = try await GeminiService.shared.transcribeAudio(
                 audioFileURL: transcriptionFileURL,
-                countUsage: true
+                countUsage: false
             )
             let noteText = try await QuickCaptureImportService.shared.makeMediaTranscriptNote(
                 fileName: url.lastPathComponent,
@@ -693,10 +693,6 @@ struct ChatInputBar: View {
 
     private var isProcessingQuickCaptureImport: Bool {
         quickCaptureProgressState != nil || isRecognizingImageText || isImportingMedia
-    }
-
-    private var canUseQuickCaptureMoreFeature: Bool {
-        storeService.currentTier == .pro
     }
 
     private func presentQuickCaptureUpgrade() {

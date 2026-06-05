@@ -5,12 +5,14 @@ import SwiftUI
 final class RecipeManager: ObservableObject {
     static let shared = RecipeManager()
     private static let logger = Logger(subsystem: "com.chillnote.app", category: "recipe-manager")
-    private static let retiredRecipeIds: Set<String> = [
+    static let retiredRecipeIds: Set<String> = [
         "draft_email",
         "devils_advocate",
         "fix_grammar",
         "release_notes",
-        "merge_notes"
+        "merge_notes",
+        "twitter_post",
+        "linkedin_post"
     ]
 
     @AppStorage("savedRecipesJSON") private var savedRecipesJSON: String = "[]"

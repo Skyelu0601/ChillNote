@@ -8,6 +8,8 @@ struct ChillRecipesView: View {
     @State private var showingCreateRecipe = false
     @State private var showingSubscription = false
     @State private var showingCaptionPackSettings = false
+    @State private var showingRepurposePackSettings = false
+    @State private var showingBrandVoiceSettings = false
     @State private var pendingDeleteRecipe: AgentRecipe?
 
     @State private var newRecipeName = ""
@@ -86,7 +88,7 @@ struct ChillRecipesView: View {
                                         isAdded: recipeManager.isAdded(recipe),
                                         isHighlighted: false,
                                         subtitleOverride: nil,
-                                        onConfigure: recipe.id == "caption_pack" ? { showingCaptionPackSettings = true } : nil
+                                        onConfigure: configureAction(for: recipe)
                                     ) {
                                         withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                                             recipeManager.toggleRecipe(recipe)
@@ -112,7 +114,7 @@ struct ChillRecipesView: View {
                                         MyRecipeCardRow(
                                             recipe: recipe,
                                             onRemove: { withAnimation { recipeManager.removeRecipe(recipe) } },
-                                            onConfigure: recipe.id == "caption_pack" ? { showingCaptionPackSettings = true } : nil,
+                                            onConfigure: configureAction(for: recipe),
                                             onDelete: recipe.isCustom ? { pendingDeleteRecipe = recipe } : nil
                                         )
                                     }
@@ -180,6 +182,12 @@ struct ChillRecipesView: View {
         .sheet(isPresented: $showingCaptionPackSettings) {
             CaptionPackSettingsSheet()
         }
+        .sheet(isPresented: $showingRepurposePackSettings) {
+            RepurposePackSettingsSheet()
+        }
+        .sheet(isPresented: $showingBrandVoiceSettings) {
+            BrandVoiceSettingsSheet()
+        }
         .alert(L10n.text("recipes.alert.delete_skill.title"), isPresented: Binding(
             get: { pendingDeleteRecipe != nil },
             set: { isPresented in if !isPresented { pendingDeleteRecipe = nil } }
@@ -196,8 +204,19 @@ struct ChillRecipesView: View {
         }
     }
 
+    private func configureAction(for recipe: AgentRecipe) -> (() -> Void)? {
+        switch recipe.id {
+        case "caption_pack": return { showingCaptionPackSettings = true }
+        case "repurpose_pack": return { showingRepurposePackSettings = true }
+        case "style_match": return { showingBrandVoiceSettings = true }
+        default: return nil
+        }
+    }
+
     private func recipes(for category: AgentRecipeCategory) -> [AgentRecipe] {
-        AgentRecipe.allRecipes.filter { $0.category == category }
+        AgentRecipe.allRecipes.filter {
+            $0.category == category && !RecipeManager.retiredRecipeIds.contains($0.id)
+        }
     }
 
     private func saveCustomRecipe() {
@@ -432,6 +451,117 @@ private struct CaptionPackSettingsSheet: View {
             get: { binding.wrappedValue },
             set: { newValue in
                 if !newValue && selectedPlatformCount <= 1 {
+                    return
+                }
+                binding.wrappedValue = newValue
+            }
+        )
+    }
+}
+
+private struct BrandVoiceSettingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(BrandVoicePreferences.sampleKey) private var sample = ""
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    TextEditor(text: $sample)
+                        .frame(minHeight: 200)
+                        .font(.body)
+                } header: {
+                    Text(L10n.text("brand_voice.settings.sample_label"))
+                } footer: {
+                    Text(L10n.text("brand_voice.settings.sample_help"))
+                }
+            }
+            .navigationTitle(L10n.text("brand_voice.settings.title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L10n.text("common.done")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
+private struct RepurposePackSettingsSheet: View {
+    @Environment(\.dismiss) private var dismiss
+    @AppStorage(RepurposePackPreferences.xThreadKey) private var includeXThread = true
+    @AppStorage(RepurposePackPreferences.xPostKey) private var includeXPost = false
+    @AppStorage(RepurposePackPreferences.linkedinKey) private var includeLinkedIn = true
+    @AppStorage(RepurposePackPreferences.threadsKey) private var includeThreads = false
+    @AppStorage(RepurposePackPreferences.newsletterKey) private var includeNewsletter = false
+    @AppStorage(RepurposePackPreferences.threadLengthKey) private var threadLengthRawValue = RepurposeThreadLength.medium.rawValue
+    @AppStorage(RepurposePackPreferences.toneKey) private var toneRawValue = CaptionPackTone.creatorVoice.rawValue
+    @AppStorage(RepurposePackPreferences.ctaKey) private var includeCTA = true
+
+    private var selectedFormatCount: Int {
+        [includeXThread, includeXPost, includeLinkedIn, includeThreads, includeNewsletter].filter { $0 }.count
+    }
+
+    private var showThreadLength: Bool {
+        includeXThread || includeThreads
+    }
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section(L10n.text("repurpose_pack.settings.formats")) {
+                    Toggle(L10n.text("repurpose_pack.format.x_thread"), isOn: bindingForFormat($includeXThread))
+                    Toggle(L10n.text("repurpose_pack.format.x_post"), isOn: bindingForFormat($includeXPost))
+                    Toggle(L10n.text("repurpose_pack.format.linkedin"), isOn: bindingForFormat($includeLinkedIn))
+                    Toggle(L10n.text("repurpose_pack.format.threads"), isOn: bindingForFormat($includeThreads))
+                    Toggle(L10n.text("repurpose_pack.format.newsletter"), isOn: bindingForFormat($includeNewsletter))
+                }
+
+                if showThreadLength {
+                    Section(L10n.text("repurpose_pack.settings.thread_length")) {
+                        Picker(L10n.text("repurpose_pack.settings.thread_length"), selection: $threadLengthRawValue) {
+                            ForEach(RepurposeThreadLength.allCases) { length in
+                                Text(length.localizedTitle).tag(length.rawValue)
+                            }
+                        }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                    }
+                }
+
+                Section(L10n.text("repurpose_pack.settings.tone")) {
+                    Picker(L10n.text("repurpose_pack.settings.tone"), selection: $toneRawValue) {
+                        ForEach(CaptionPackTone.allCases) { tone in
+                            Text(tone.localizedTitle).tag(tone.rawValue)
+                        }
+                    }
+                    .labelsHidden()
+                    .pickerStyle(.inline)
+                }
+
+                Section {
+                    Toggle(L10n.text("repurpose_pack.settings.cta"), isOn: $includeCTA)
+                }
+            }
+            .navigationTitle(L10n.text("repurpose_pack.settings.title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L10n.text("common.done")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+    }
+
+    private func bindingForFormat(_ binding: Binding<Bool>) -> Binding<Bool> {
+        Binding(
+            get: { binding.wrappedValue },
+            set: { newValue in
+                if !newValue && selectedFormatCount <= 1 {
                     return
                 }
                 binding.wrappedValue = newValue

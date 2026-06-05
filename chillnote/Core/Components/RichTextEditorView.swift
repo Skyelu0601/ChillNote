@@ -30,7 +30,13 @@ struct RichTextEditorView: UIViewRepresentable {
         textView.isEditable = isEditable
         textView.allowsEditingTextAttributes = true
         textView.setEditorScrollingEnabled(isScrollEnabled)
-        
+
+        // Remember the editor's configured base font/color so paste handling
+        // doesn't have to rely on UITextView.font (which can return nil or a
+        // small default once attributedText contains mixed fonts).
+        textView.editorBaseFont = font
+        textView.editorBaseTextColor = textColor
+
         // Set default font and text color - ensures cursor has correct height when empty
         textView.font = font
         textView.textColor = textColor
@@ -71,6 +77,8 @@ struct RichTextEditorView: UIViewRepresentable {
     func updateUIView(_ textView: InteractiveTextView, context: Context) {
         textView.isEditable = isEditable
         textView.setEditorScrollingEnabled(isScrollEnabled)
+        textView.editorBaseFont = font
+        textView.editorBaseTextColor = textColor
         
         // Update styling if needed (though usually controlled by attributes)
         // We only do a full re-render if the text actually changed from the outside
@@ -1006,6 +1014,8 @@ class EditorFormattingToolbar: UIView {
 
 class InteractiveTextView: UITextView {
     var onCheckboxTap: ((Int, NSRange) -> Void)?
+    var editorBaseFont: UIFont = .systemFont(ofSize: 17)
+    var editorBaseTextColor: UIColor = .label
     private let checkboxTapTargetWidth: CGFloat = 44
     private let checkboxTapVerticalPadding: CGFloat = 10
     private weak var checkboxTapGesture: UITapGestureRecognizer?
@@ -1058,8 +1068,10 @@ class InteractiveTextView: UITextView {
         if let pasteboardString = UIPasteboard.general.string {
             // Use the Converter to parse the pasted text as Markdown
             // This ensures if I paste "• Hello", it becomes an Orange bullet, not black text.
-            let fontToUse = self.font ?? .systemFont(ofSize: 17)
-            let colorToUse = self.textColor ?? .label
+            // Use the editor's configured base font/color instead of self.font,
+            // which returns nil (or a small default) when textStorage has mixed fonts.
+            let fontToUse = editorBaseFont
+            let colorToUse = editorBaseTextColor
             
             let formattedText = RichTextConverter.markdownToAttributedString(
                 pasteboardString, 

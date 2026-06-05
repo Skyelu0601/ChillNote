@@ -558,12 +558,95 @@ async function consumeDailyQuota(userId: string, feature: DailyQuotaFeature): Pr
   });
 }
 
+type CreditFeature = "voice" | "agent_recipe" | "chat" | "import";
+
+type CreditConsumeResult = {
+  allowed: boolean;
+  balance: number | null;
+  tier: UserTier;
+  cost: number;
+};
+
+const CREDIT_COSTS: Record<CreditFeature, number> = {
+  voice: 3,
+  agent_recipe: 2,
+  import: 2,
+  chat: 1
+};
+
+const INITIAL_CREDITS = Number(process.env.INITIAL_FREE_CREDITS ?? 30);
+
+const creditFeatureSchema = z.object({
+  feature: z.enum(["voice", "agent_recipe", "chat", "import"])
+});
+
+function isCreditFeature(value: unknown): value is CreditFeature {
+  return typeof value === "string" && value in CREDIT_COSTS;
+}
+
+async function getOrCreateCredits(userId: string): Promise<{ balance: number }> {
+  const existing = await prisma.userCredits.findUnique({ where: { userId } });
+  if (existing) return existing;
+  return prisma.userCredits.create({
+    data: { userId, balance: INITIAL_CREDITS }
+  });
+}
+
+async function consumeCreditsForUser(userId: string, feature: CreditFeature): Promise<CreditConsumeResult> {
+  const cost = CREDIT_COSTS[feature];
+  const tier = await resolveUserTier(userId);
+  if (tier === "pro") {
+    return { allowed: true, balance: null, tier, cost };
+  }
+
+  await upsertUser(userId);
+
+  const result = await prisma.$transaction(async (tx) => {
+    await tx.$executeRaw`
+      INSERT INTO "UserCredits" ("userId", "balance", "createdAt", "updatedAt")
+      VALUES (${userId}, ${INITIAL_CREDITS}, NOW(), NOW())
+      ON CONFLICT ("userId") DO NOTHING
+    `;
+
+    const rows = await tx.$queryRaw<Array<{ balance: number }>>`
+      SELECT "balance" FROM "UserCredits" WHERE "userId" = ${userId} LIMIT 1
+    `;
+    const balance = Number(rows[0]?.balance ?? 0);
+
+    if (balance < cost) {
+      return { allowed: false, balance };
+    }
+
+    const updated = await tx.$queryRaw<Array<{ balance: number }>>`
+      UPDATE "UserCredits"
+      SET "balance" = "balance" - ${cost}, "updatedAt" = NOW()
+      WHERE "userId" = ${userId} AND "balance" >= ${cost}
+      RETURNING "balance"
+    `;
+
+    if (!updated.length) {
+      const current = await tx.$queryRaw<Array<{ balance: number }>>`
+        SELECT "balance" FROM "UserCredits" WHERE "userId" = ${userId} LIMIT 1
+      `;
+      return { allowed: false, balance: Number(current[0]?.balance ?? 0) };
+    }
+
+    const newBalance = Number(updated[0].balance);
+    console.log(
+      `💳 Credit consumed: user=${userId} feature=${feature} cost=${cost} balance=${balance}->${newBalance}`
+    );
+    return { allowed: true, balance: newBalance };
+  });
+
+  return { ...result, tier, cost };
+}
+
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
 });
 
 app.get("/version", (_req, res) => {
-  res.json({ version: "1.0.3", updated: new Date().toISOString() });
+  res.json({ version: "1.1.4", updated: new Date().toISOString() });
 });
 
 app.post("/billing/creem/checkout", requireAuth, async (req, res) => {
@@ -1090,18 +1173,18 @@ app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async 
     const { audioBase64, mimeType, locale, spokenLanguageMode, spokenLanguageHint, countUsage } = parsed.data;
     const shouldCountUsage = countUsage !== false;
     if (shouldCountUsage) {
-      const quotaState = await consumeDailyQuota(req.userId as string, "voice");
-      if (!quotaState.allowed) {
+      const creditState = await consumeCreditsForUser(req.userId as string, "voice");
+      if (!creditState.allowed) {
         console.warn(
-          `🚫 VoiceNote Quota Denied: user=${req.userId}, tier=${quotaState.tier}, ` +
-          `used=${quotaState.used}, limit=${quotaState.limit}, remaining=${quotaState.remaining}`
+          `🚫 VoiceNote Credits Denied: user=${req.userId}, ` +
+          `tier=${creditState.tier}, balance=${creditState.balance}, cost=${creditState.cost}`
         );
-        res.status(429).json({
-          error: dailyQuotaErrorMessage("voice"),
+        res.status(402).json({
+          error: "Insufficient credits",
           feature: "voice",
-          tier: quotaState.tier,
-          remaining: quotaState.remaining,
-          limit: quotaState.limit
+          tier: creditState.tier,
+          balance: creditState.balance,
+          cost: creditState.cost
         });
         return;
       }
@@ -1251,16 +1334,16 @@ app.post("/ai/media-link-transcript", aiJsonParser, requireAuth, mediaLinkTransc
   }
 
   try {
-    const quotaState = await consumeDailyQuota(req.userId as string, "voice");
-    if (!quotaState.allowed) {
+    const creditState = await consumeCreditsForUser(req.userId as string, "import");
+    if (!creditState.allowed) {
       console.warn(
-        `🚫 Media Link Transcript Quota Denied: user=${req.userId}, tier=${quotaState.tier}, ` +
-        `used=${quotaState.used}, limit=${quotaState.limit}, remaining=${quotaState.remaining}`
+        `🚫 Media Link Transcript Credits Denied: user=${req.userId}, ` +
+        `tier=${creditState.tier}, balance=${creditState.balance}, cost=${creditState.cost}`
       );
       res.status(200).json({
         available: false,
         text: null,
-        reason: "rate_limited"
+        reason: "insufficient_credits"
       });
       return;
     }
@@ -1311,12 +1394,12 @@ app.post("/ai/tiktok-transcript", aiJsonParser, requireAuth, mediaLinkTranscript
   }
 
   try {
-    const quotaState = await consumeDailyQuota(req.userId as string, "voice");
-    if (!quotaState.allowed) {
+    const creditState = await consumeCreditsForUser(req.userId as string, "import");
+    if (!creditState.allowed) {
       res.status(200).json({
         available: false,
         text: null,
-        reason: "rate_limited"
+        reason: "insufficient_credits"
       });
       return;
     }
@@ -1549,16 +1632,15 @@ app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, r
   try {
     const { prompt, systemPrompt, audioBase64, imageBase64, mimeType, imageMimeType, jsonMode, usageType } = req.body;
 
-    if (typeof usageType === "string" && dailyQuotaFeatures.has(usageType as DailyQuotaFeature)) {
-      const feature = usageType as DailyQuotaFeature;
-      const quotaState = await consumeDailyQuota(req.userId as string, feature);
-      if (!quotaState.allowed) {
-        res.status(429).json({
-          error: dailyQuotaErrorMessage(feature),
-          feature,
-          tier: quotaState.tier,
-          remaining: quotaState.remaining,
-          limit: quotaState.limit
+    if (isCreditFeature(usageType)) {
+      const creditState = await consumeCreditsForUser(req.userId as string, usageType);
+      if (!creditState.allowed) {
+        res.status(402).json({
+          error: "Insufficient credits",
+          feature: usageType,
+          tier: creditState.tier,
+          balance: creditState.balance,
+          cost: creditState.cost
         });
         return;
       }
@@ -1617,6 +1699,53 @@ app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, r
     res.json({ content });
   } catch (error) {
     console.error("❌ Gemini Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/credits/balance", requireAuth, async (req, res) => {
+  try {
+    const userId = req.userId as string;
+    const tier = await resolveUserTier(userId);
+    if (tier === "pro") {
+      res.json({ balance: null, tier: "pro" });
+      return;
+    }
+
+    await upsertUser(userId);
+    const record = await getOrCreateCredits(userId);
+    res.json({ balance: record.balance });
+  } catch (error) {
+    console.error("❌ Credits Balance Error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/credits/consume", requireAuth, async (req, res) => {
+  try {
+    const parsed = creditFeatureSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid feature" });
+      return;
+    }
+
+    const userId = req.userId as string;
+    const { feature } = parsed.data;
+    const result = await consumeCreditsForUser(userId, feature);
+
+    if (!result.allowed) {
+      res.status(402).json({
+        error: "Insufficient credits",
+        balance: result.balance,
+        cost: result.cost,
+        feature
+      });
+      return;
+    }
+
+    res.json({ balance: result.balance, tier: result.tier });
+  } catch (error) {
+    console.error("❌ Credits Consume Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });

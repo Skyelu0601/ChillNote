@@ -13,3 +13,8 @@
 - 国际化相关修改必须遵守 [docs/i18n/I18N_RULES.md](/Users/luwenting/development/ChillNote/docs/i18n/I18N_RULES.md)。
 - 如果发现当前代码和规范冲突，优先把代码改到规范上，而不是沿用旧写法。
 - 新增或修改国际化后，优先运行项目已有检查；如果当前任务不方便运行，也要在最终回复里明确说明没有验证。
+
+## Verification
+
+- 只要任务修改了 iOS App 代码，收尾时优先调用 Xcode 对 iPhone 16 Pro Simulator 进行 build：
+  - `xcodebuild -project chillnote.xcodeproj -scheme chillnote -destination 'platform=iOS Simulator,name=iPhone 16 Pro' build`

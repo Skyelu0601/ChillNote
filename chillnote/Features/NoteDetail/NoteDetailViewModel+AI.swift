@@ -62,6 +62,7 @@ extension NoteDetailViewModel {
 
         do {
             let result = try await recipe.generateResult(from: inputContent, userInstruction: instruction)
+            await StoreService.shared.fetchCreditBalance()
             aiSkillPreview = NoteAISkillPreview(
                 recipe: recipe,
                 result: result,
@@ -73,7 +74,8 @@ extension NoteDetailViewModel {
         } catch {
             isProcessing = false
             let message = error.localizedDescription
-            if message.localizedCaseInsensitiveContains("daily free agent recipe limit reached") {
+            if message.localizedCaseInsensitiveContains("daily free agent recipe limit reached")
+                || message.localizedCaseInsensitiveContains("insufficient credits") {
                 showSubscription = true
             } else {
                 aiSkillErrorMessage = message
@@ -153,6 +155,7 @@ extension NoteDetailViewModel {
                     from: preview.inputContent,
                     userInstruction: preview.instruction
                 )
+                await StoreService.shared.fetchCreditBalance()
                 let nextPreview = NoteAISkillPreview(
                     recipe: preview.recipe,
                     result: result,

@@ -1,58 +1,42 @@
 import SwiftUI
 import UIKit
+import AVKit
+import AVFoundation
 
 struct OnboardingFlowView: View {
     let onFinish: () -> Void
 
     @State private var currentPage = 0
-    @State private var preferences = OnboardingPreferences()
     private let initialPage: Int
 
     private let pages: [OnboardingPage] = [
-        .positioning,
-        .captureModes,
-        .surveyContentType,
-        .surveyGoals,
-        .skillsWorkflow,
-        .customSkills,
-        .askNotes
+        .hero,
+        .captureShowcase,
+        .shareExtension,
+        .aiSkills
     ]
 
     private var isLastPage: Bool {
         currentPage == pages.count - 1
     }
 
-    private var currentOnboardingPage: OnboardingPage {
-        guard currentPage < pages.count else { return pages.last ?? .askNotes }
-        return pages[currentPage]
-    }
-
-    private var shouldShowActionBar: Bool {
-        currentOnboardingPage != .surveyContentType
-    }
-
-    private var isActionBarButtonDisabled: Bool {
-        currentOnboardingPage == .surveyGoals && preferences.goals.isEmpty
-    }
-
     init(initialPage: Int = 0, onFinish: @escaping () -> Void) {
         self.onFinish = onFinish
         self.initialPage = initialPage
-
         let clampedPage = max(0, min(initialPage, pages.count - 1))
         _currentPage = State(initialValue: clampedPage)
     }
 
     var body: some View {
         ZStack {
-            backgroundView
+            BrandBackground()
 
             TabView(selection: $currentPage) {
                 ForEach(Array(pages.enumerated()), id: \.element.id) { index, page in
-                    onboardingPageView(for: page)
-                        .padding(.horizontal, 24)
-                        .padding(.top, 24)
-                        .padding(.bottom, 16)
+                    pageView(for: page)
+                        .padding(.horizontal, BrandTokens.Space.s4)
+                        .padding(.top, BrandTokens.Space.s4)
+                        .padding(.bottom, BrandTokens.Space.s2)
                         .tag(index)
                 }
             }
@@ -60,1227 +44,972 @@ struct OnboardingFlowView: View {
             .animation(.spring(response: 0.35, dampingFraction: 0.82), value: currentPage)
         }
         .background(Color.bgPrimary.ignoresSafeArea())
-        .safeAreaInset(edge: .bottom) {
-            if shouldShowActionBar {
-                onboardingActionBar
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
-                    .padding(.bottom, 16)
-                    .background(
-                        LinearGradient(
-                            colors: [
-                                Color.bgPrimary.opacity(0.0),
-                                Color.bgPrimary.opacity(0.92),
-                                Color.bgPrimary
-                            ],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+        .overlay(alignment: .topTrailing) {
+            if !isLastPage {
+                Button {
+                    onFinish()
+                } label: {
+                    Text(L10n.text("common.skip"))
+                        .font(.brandLabel)
+                        .foregroundStyle(Color.textSub)
+                        .padding(.horizontal, BrandTokens.Space.s2)
+                        .padding(.vertical, BrandTokens.Space.s1)
+                }
+                .buttonStyle(OnboardingPressButtonStyle(scale: 0.94))
+                .padding(.trailing, BrandTokens.Space.s3)
+                .padding(.top, BrandTokens.Space.s1)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
+        }
+        .safeAreaInset(edge: .bottom) {
+            actionBar
+                .padding(.horizontal, BrandTokens.Space.s4)
+                .padding(.top, BrandTokens.Space.s2)
+                .padding(.bottom, BrandTokens.Space.s3)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            Color.bgPrimary.opacity(0.0),
+                            Color.bgPrimary.opacity(0.92),
+                            Color.bgPrimary
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
         }
     }
 
     @ViewBuilder
-    private func onboardingPageView(for page: OnboardingPage) -> some View {
-        if page == .positioning {
+    private func pageView(for page: OnboardingPage) -> some View {
+        switch page {
+        case .hero:
             OnboardingHeroPage()
-        } else if page == .captureModes {
-            OnboardingCaptureModesPage()
-        } else if page == .surveyContentType {
-            OnboardingSurveyContentTypePage(
-                selectedType: $preferences.contentType,
-                onSelect: {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                        currentPage += 1
-                    }
-                }
-            )
-        } else if page == .surveyGoals {
-            OnboardingSurveyGoalsPage(selectedGoals: $preferences.goals)
-        } else if page == .skillsWorkflow {
-            OnboardingSkillsWorkflowPage()
-        } else if page == .customSkills {
-            OnboardingCustomSkillsPage()
-        } else if page == .askNotes {
-            OnboardingAskNotesPage()
-        } else {
-            OnboardingPlaceholderPage(page: page)
+        case .captureShowcase:
+            OnboardingCaptureShowcasePage()
+        case .shareExtension:
+            OnboardingShareExtensionPage()
+        case .aiSkills:
+            OnboardingAISkillsPage()
         }
     }
 
-    private var backgroundView: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color.bgPrimary,
-                    Color.white.opacity(0.96),
-                    Color.brandBlueSoft.opacity(0.45)
-                ],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-            .ignoresSafeArea()
-
-            Circle()
-                .fill(Color.accentPrimary.opacity(0.08))
-                .frame(width: 240, height: 240)
-                .blur(radius: 14)
-                .offset(x: 138, y: -270)
-
-            Circle()
-                .fill(Color.accentPrimary.opacity(0.07))
-                .frame(width: 210, height: 210)
-                .blur(radius: 18)
-                .offset(x: -140, y: 320)
-        }
-    }
-
-    private var onboardingActionBar: some View {
-        HStack {
-            Spacer(minLength: 0)
-
-            Button {
-                handlePrimaryAction()
-            } label: {
-                HStack(spacing: 8) {
-                    Text(L10n.text(isLastPage ? "onboarding.flow.action.get_started" : "common.next"))
-                        .font(.system(size: 16, weight: .semibold, design: .default))
-
-                    if !isLastPage {
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 13, weight: .bold))
-                    }
+    private var actionBar: some View {
+        Button {
+            handlePrimaryAction()
+        } label: {
+            HStack(spacing: BrandTokens.Space.s1) {
+                Text(L10n.text(isLastPage ? "onboarding.flow.action.get_started" : "common.next"))
+                    .id(isLastPage)
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+                if !isLastPage {
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 13, weight: .bold))
+                        .transition(.opacity.combined(with: .scale(scale: 0.82)))
                 }
-                .foregroundStyle(.white)
-                .padding(.horizontal, isLastPage ? 22 : 20)
-                .padding(.vertical, 13)
-                .background(
-                    RoundedRectangle(cornerRadius: 999, style: .continuous)
-                        .fill(isActionBarButtonDisabled
-                              ? Color.accentPrimary.opacity(0.45)
-                              : Color.accentPrimary)
-                )
-                .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-                .shadow(color: Color.accentPrimary.opacity(isActionBarButtonDisabled ? 0 : 0.22), radius: 10, x: 0, y: 4)
             }
-            .disabled(isActionBarButtonDisabled)
+            .brandPrimaryCTAStyle()
         }
+        .buttonStyle(OnboardingPressButtonStyle(scale: 0.97))
+        .animation(.spring(response: 0.28, dampingFraction: 0.86), value: isLastPage)
     }
 
     private func handlePrimaryAction() {
         if isLastPage {
-            OnboardingStateStore.savePreferences(preferences)
             onFinish()
             return
         }
-
         withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
             currentPage += 1
         }
     }
-
 }
 
 private enum OnboardingPage: Int, CaseIterable {
-    case positioning
-    case captureModes
-    case surveyContentType
-    case surveyGoals
-    case skillsWorkflow
-    case customSkills
-    case askNotes
+    case hero
+    case captureShowcase
+    case shareExtension
+    case aiSkills
 
     var id: Int { rawValue }
+}
 
-    var titleKey: String {
-        switch self {
-        case .positioning:
-            return "onboarding.flow.page1.title"
-        case .captureModes:
-            return "onboarding.capture.title"
-        case .surveyContentType:
-            return "onboarding.survey.content_type.question"
-        case .surveyGoals:
-            return "onboarding.survey.goals.question"
-        case .skillsWorkflow:
-            return "onboarding.flow.page4.title"
-        case .customSkills:
-            return "onboarding.flow.page5.title"
-        case .askNotes:
-            return "onboarding.flow.page6.title"
-        }
-    }
+private struct OnboardingPressButtonStyle: ButtonStyle {
+    let scale: CGFloat
 
-    var subtitleKey: String {
-        switch self {
-        case .positioning:
-            return "onboarding.flow.page1.subtitle"
-        case .captureModes:
-            return "onboarding.capture.subtitle"
-        case .surveyContentType:
-            return ""
-        case .surveyGoals:
-            return "onboarding.survey.goals.subtitle"
-        case .skillsWorkflow:
-            return "onboarding.flow.page4.subtitle"
-        case .customSkills:
-            return "onboarding.flow.page5.subtitle"
-        case .askNotes:
-            return "onboarding.flow.page6.subtitle"
-        }
-    }
-
-    var placeholderIcon: String {
-        switch self {
-        case .positioning:
-            return "sparkles"
-        case .captureModes:
-            return "square.grid.2x2"
-        case .surveyContentType:
-            return "questionmark.circle"
-        case .surveyGoals:
-            return "checkmark.circle"
-        case .skillsWorkflow:
-            return "square.stack.3d.up"
-        case .customSkills:
-            return "slider.horizontal.3"
-        case .askNotes:
-            return "bubble.left.and.text.bubble.right"
-        }
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? scale : 1)
+            .animation(.spring(response: 0.22, dampingFraction: 0.72), value: configuration.isPressed)
     }
 }
 
+// MARK: - Hero Page
+
 private struct OnboardingHeroPage: View {
+    /// Radius of the icon orbit. Tuned to sit just outside the 246pt outer ring.
+    private let orbitRadius: CGFloat = 138
+
+    /// Order around the circle, starting from the top and going clockwise.
+    /// Each icon sits exactly 60° from its neighbors.
     private let heroIcons: [HeroRingIcon] = [
-        HeroRingIcon(
-            id: "mail",
-            icon: .system(name: "envelope.fill"),
-            tint: Color(red: 0.35, green: 0.68, blue: 0.98),
-            offset: CGSize(width: -114, height: -94)
-        ),
-        HeroRingIcon(
-            id: "idea",
-            icon: .system(name: "lightbulb.fill"),
-            tint: Color(red: 0.98, green: 0.73, blue: 0.17),
-            offset: CGSize(width: 0, height: -132)
-        ),
-        HeroRingIcon(
-            id: "x",
-            icon: .xBrand,
-            tint: Color.textMain,
-            offset: CGSize(width: 116, height: -88)
-        ),
-        HeroRingIcon(
-            id: "youtube",
-            icon: .youtube,
-            tint: Color(red: 1.0, green: 0.23, blue: 0.19),
-            offset: CGSize(width: 118, height: 82)
-        ),
-        HeroRingIcon(
-            id: "todo",
-            icon: .system(name: "checkmark.circle.fill"),
-            tint: Color(red: 0.20, green: 0.72, blue: 0.37),
-            offset: CGSize(width: 0, height: 138)
-        ),
-        HeroRingIcon(
-            id: "sparkles",
-            icon: .system(name: "sparkles"),
-            tint: Color(red: 0.53, green: 0.42, blue: 0.97),
-            offset: CGSize(width: -118, height: 82)
-        )
+        // 12 o'clock
+        HeroRingIcon(id: "idea",   icon: .system(name: "lightbulb.fill"),        tint: Color(red: 0.98, green: 0.73, blue: 0.17)),
+        // 2 o'clock
+        HeroRingIcon(id: "reels",  icon: .reels,                                 tint: .clear),
+        // 4 o'clock
+        HeroRingIcon(id: "yt",     icon: .youtube,                               tint: Color(red: 1.0, green: 0.23, blue: 0.19)),
+        // 6 o'clock
+        HeroRingIcon(id: "todo",   icon: .system(name: "checkmark.circle.fill"), tint: Color(red: 0.20, green: 0.72, blue: 0.37)),
+        // 8 o'clock
+        HeroRingIcon(id: "mic",    icon: .system(name: "mic.fill"),              tint: Color(red: 0.53, green: 0.42, blue: 0.97)),
+        // 10 o'clock
+        HeroRingIcon(id: "tiktok", icon: .tiktok,                                tint: .clear)
     ]
+
+    @State private var breathe = false
+    @State private var activeIconIndex = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             LaunchScreenWordmark()
-                .padding(.horizontal, 24)
 
             Text(L10n.text("onboarding.flow.page1.subtitle"))
-                .font(.system(size: 32, weight: .bold, design: .default))
-                .foregroundStyle(Color.textMain)
-                .padding(.horizontal, 24)
-                .padding(.top, 18)
+                .font(.brandTitle2)
+                .foregroundStyle(Color.textMain.opacity(0.72))
+                .padding(.top, BrandTokens.Space.s2)
                 .lineSpacing(3)
                 .fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 28)
 
             ZStack {
-                Circle()
-                    .stroke(Color.accentPrimary.opacity(0.06), lineWidth: 1)
-                    .frame(width: 246, height: 246)
+                Circle().stroke(Color.accentPrimary.opacity(0.06), lineWidth: 1).frame(width: 246, height: 246)
+                Circle().stroke(Color.accentPrimary.opacity(0.08), lineWidth: 1).frame(width: 194, height: 194)
+                Circle().fill(Color.accentPrimary.opacity(0.12)).frame(width: 132, height: 132).blur(radius: 18)
+                Circle().fill(Color.accentPrimary).frame(width: 104, height: 104).blur(radius: 0.4).opacity(0.18).offset(y: 10)
 
-                Circle()
-                    .stroke(Color.accentPrimary.opacity(0.08), lineWidth: 1)
-                    .frame(width: 194, height: 194)
-
-                Circle()
-                    .fill(Color.accentPrimary.opacity(0.12))
-                    .frame(width: 132, height: 132)
-                    .blur(radius: 18)
-
-                Circle()
-                    .fill(Color.accentPrimary)
-                    .frame(width: 104, height: 104)
-                    .blur(radius: 0.4)
-                    .opacity(0.18)
-                    .offset(y: 10)
-
-                Circle()
-                    .fill(Color.bgPrimary)
-                    .frame(width: 114, height: 114)
-                    .overlay(
+                NoteDetailLightningBallIcon(size: 114)
+                    .scaleEffect(breathe ? 1.06 : 1.0)
+                    .shadow(color: Color.accentPrimary.opacity(0.18), radius: 18, x: 0, y: 10)
+                    .overlay {
                         Circle()
-                            .stroke(Color.accentPrimary.opacity(0.7), lineWidth: 2)
-                    )
-                    .overlay(
-                        Image(systemName: "mic.fill")
-                            .font(.system(size: 34, weight: .semibold))
-                            .foregroundStyle(Color.textMain)
-                    )
-                    .shadow(color: Color.accentPrimary.opacity(0.16), radius: 18, x: 0, y: 10)
+                            .stroke(Color.accentPrimary.opacity(0.16), lineWidth: 1.5)
+                            .scaleEffect(breathe ? 1.28 : 1.02)
+                            .opacity(breathe ? 0 : 1)
+                    }
 
-                ForEach(heroIcons) { icon in
-                    FloatingIconCard(icon: icon.icon, tint: icon.tint)
-                        .offset(x: icon.offset.width, y: icon.offset.height)
+                ForEach(Array(heroIcons.enumerated()), id: \.element.id) { index, icon in
+                    // Angles measured clockwise from 12 o'clock: 0°, 60°, 120°, …
+                    // In screen coords (+y down), 12 o'clock corresponds to -π/2.
+                    let theta = -Double.pi / 2 + Double(index) * (Double.pi / 3)
+                    FloatingIconCard(icon: icon.icon, tint: icon.tint, isActive: activeIconIndex == index)
+                        .offset(x: orbitRadius * CGFloat(cos(theta)),
+                                y: orbitRadius * CGFloat(sin(theta)))
                 }
             }
             .frame(maxWidth: .infinity)
             .padding(.top, 8)
-
-            Spacer(minLength: 32)
-
-            Spacer(minLength: 28)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.top, 28)
-        .accessibilityIdentifier("onboarding.page.0")
-    }
-}
-
-private struct OnboardingPlaceholderPage: View {
-    let page: OnboardingPage
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Spacer()
-
-            VStack(alignment: .leading, spacing: 18) {
-                ZStack {
-                    Circle()
-                        .fill(Color.accentPrimary.opacity(0.1))
-                        .frame(width: 92, height: 92)
-
-                    Image(systemName: page.placeholderIcon)
-                        .font(.system(size: 34, weight: .semibold))
-                        .foregroundStyle(Color.accentPrimary)
-                }
-
-                Text(L10n.text(page.titleKey))
-                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                    .foregroundStyle(Color.textMain)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(L10n.text(page.subtitleKey))
-                    .font(.system(size: 18, weight: .medium, design: .rounded))
-                    .foregroundStyle(Color.textMain.opacity(0.64))
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.horizontal, 28)
-
-            Spacer()
-
-            Spacer(minLength: 28)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.top, 28)
-        .accessibilityIdentifier("onboarding.page.\(page.id)")
-    }
-}
-
-private struct OnboardingVoiceFirstPage: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(L10n.text("onboarding.flow.page2.title"))
-                    .font(.system(size: 32, weight: .bold, design: .default))
-                    .foregroundStyle(Color.textMain)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(L10n.text("onboarding.flow.page2.subtitle"))
-                    .font(.system(size: 20, weight: .semibold, design: .default))
-                    .foregroundStyle(Color.accentPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, 38)
-
-            Spacer(minLength: 34)
-
-            VoiceVsTypingCard()
-                .padding(.horizontal, 6)
-
-            Spacer(minLength: 28)
-
-            VoiceFirstCalloutBubble()
-                .frame(maxWidth: .infinity)
-
-            Spacer(minLength: 34)
-
-            Spacer(minLength: 28)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.horizontal, 4)
-        .accessibilityIdentifier("onboarding.page.1")
-    }
-}
-
-private struct VoiceVsTypingCard: View {
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 30, style: .continuous)
-                .fill(Color.white.opacity(0.92))
-                .shadow(color: Color.shadowColor.opacity(0.8), radius: 18, x: 0, y: 10)
-
-            HStack(spacing: 0) {
-                voicePanelBackground
-                typingPanelBackground
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 30, style: .continuous))
-
-            VStack(spacing: 18) {
-                HStack(alignment: .center, spacing: 0) {
-                    voiceIcon
-                    typingIcon
-                }
-
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    comparisonLabel("onboarding.flow.page2.comparison.voice")
-                    comparisonLabel("onboarding.flow.page2.comparison.typing")
-                }
-
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    comparisonMetric("4x", color: Color.accentPrimary)
-                    comparisonMetric("1x", color: Color.textSub.opacity(0.72))
-                }
-
-                HStack(alignment: .firstTextBaseline, spacing: 0) {
-                    comparisonCaption("onboarding.flow.page2.comparison.voice.caption")
-                    comparisonCaption("onboarding.flow.page2.comparison.typing.caption")
+            .onAppear {
+                withAnimation(.easeInOut(duration: 3.0).repeatForever(autoreverses: true)) {
+                    breathe = true
                 }
             }
-            .padding(.horizontal, 20)
-            .padding(.vertical, 24)
-
-            Text(L10n.text("onboarding.flow.page2.comparison.vs"))
-                .font(.system(size: 14, weight: .bold, design: .default))
-                .foregroundStyle(Color.textSub)
-                .padding(10)
-                .background(Circle().fill(Color.white.opacity(0.96)))
-                .overlay(
-                    Circle()
-                        .stroke(Color.black.opacity(0.04), lineWidth: 1)
-                )
-        }
-        .frame(height: 288)
-    }
-
-    private var voicePanelBackground: some View {
-        Rectangle()
-            .fill(
-                LinearGradient(
-                    colors: [
-                        Color.accentPrimary.opacity(0.10),
-                        Color(red: 0.47, green: 0.39, blue: 1.0).opacity(0.14)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var typingPanelBackground: some View {
-        Rectangle()
-            .fill(Color.black.opacity(0.02))
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    private var voiceIcon: some View {
-        ZStack {
-            Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.accentPrimary.opacity(0.98),
-                            Color(red: 0.42, green: 0.31, blue: 1.0)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 88, height: 88)
-                .shadow(color: Color.accentPrimary.opacity(0.28), radius: 18, x: 0, y: 10)
-
-            Image(systemName: "waveform")
-                .font(.system(size: 34, weight: .semibold))
-                .foregroundStyle(.white)
-
-            HStack(spacing: 18) {
-                ForEach([-1, 1], id: \.self) { direction in
-                    Image(systemName: "wave.3.right")
-                        .font(.system(size: 20, weight: .medium))
-                        .foregroundStyle(Color.accentPrimary.opacity(0.48))
-                        .scaleEffect(x: CGFloat(direction), y: 1)
-                        .offset(x: CGFloat(direction) * 52)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private var typingIcon: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.78))
-                .frame(width: 104, height: 72)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 18, style: .continuous)
-                        .stroke(Color.black.opacity(0.06), lineWidth: 1)
-                )
-
-            KeyboardGlyph()
-                .frame(width: 64, height: 40)
-        }
-        .frame(maxWidth: .infinity)
-    }
-
-    private func comparisonLabel(_ key: String) -> some View {
-        Text(L10n.text(key))
-            .font(.system(size: 20, weight: .semibold, design: .default))
-            .foregroundStyle(Color.textMain)
-            .frame(maxWidth: .infinity)
-    }
-
-    private func comparisonMetric(_ text: String, color: Color) -> some View {
-        Text(verbatim: text)
-            .font(.system(size: 44, weight: .bold, design: .default))
-            .foregroundStyle(color)
-            .frame(maxWidth: .infinity)
-    }
-
-    private func comparisonCaption(_ key: String) -> some View {
-        Text(L10n.text(key))
-            .font(.system(size: 18, weight: .medium, design: .default))
-            .foregroundStyle(Color.textSub)
-            .frame(maxWidth: .infinity)
-    }
-}
-
-private struct VoiceFirstCalloutBubble: View {
-    var body: some View {
-        Text(L10n.text("onboarding.flow.page2.callout"))
-            .font(.system(size: 17, weight: .medium, design: .default))
-            .foregroundStyle(Color.textMain)
-            .lineSpacing(4)
-            .multilineTextAlignment(.center)
-            .frame(width: 248, alignment: .center)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 18)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.accentPrimary.opacity(0.08))
-            )
-            .overlay(alignment: .bottomLeading) {
-                BubbleTail()
-                    .fill(Color.accentPrimary.opacity(0.08))
-                    .frame(width: 18, height: 14)
-                    .offset(x: 14, y: 10)
-            }
-    }
-}
-
-private struct KeyboardGlyph: View {
-    var body: some View {
-        VStack(spacing: 4) {
-            ForEach(0..<3, id: \.self) { _ in
-                HStack(spacing: 4) {
-                    ForEach(0..<7, id: \.self) { _ in
-                        RoundedRectangle(cornerRadius: 2, style: .continuous)
-                            .fill(Color.textSub.opacity(0.38))
-                            .frame(width: 6, height: 6)
+            .task {
+                while !Task.isCancelled {
+                    try? await Task.sleep(nanoseconds: 900_000_000)
+                    withAnimation(.spring(response: 0.38, dampingFraction: 0.78)) {
+                        activeIconIndex = (activeIconIndex + 1) % heroIcons.count
                     }
                 }
             }
-            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(Color.textSub.opacity(0.38))
-                .frame(width: 40, height: 6)
-                .padding(.top, 2)
+
+            Spacer(minLength: 32)
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.top, 28)
+        .accessibilityIdentifier("onboarding.page.hero")
     }
 }
 
-private struct BubbleTail: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY + rect.height * 0.25))
-        path.addQuadCurve(
-            to: CGPoint(x: rect.midX, y: rect.maxY),
-            control: CGPoint(x: rect.minX + rect.width * 0.08, y: rect.maxY)
-        )
-        path.addQuadCurve(
-            to: CGPoint(x: rect.maxX, y: rect.minY),
-            control: CGPoint(x: rect.maxX, y: rect.maxY * 0.55)
-        )
-        path.closeSubpath()
-        return path
-    }
-}
+// MARK: - Capture Showcase
 
-private struct OnboardingAIProcessingPage: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(L10n.text("onboarding.flow.page3.title"))
-                    .font(.system(size: 32, weight: .bold, design: .default))
-                    .foregroundStyle(Color.textMain)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(L10n.text("onboarding.flow.page3.subtitle"))
-                    .font(.system(size: 20, weight: .semibold, design: .default))
-                    .foregroundStyle(Color.accentPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, 38)
-
-            Spacer(minLength: 22)
-
-            AIProcessingCard()
-
-            Spacer(minLength: 50)
-
-            Spacer(minLength: 28)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.horizontal, 4)
-        .accessibilityIdentifier("onboarding.page.2")
-    }
-}
-
-private struct OnboardingSkillsWorkflowPage: View {
-    private var isCompactHeight: Bool {
-        UIScreen.main.bounds.height <= 700
-    }
+private struct OnboardingCaptureShowcasePage: View {
+    @State private var breathe = false
+    @State private var revealPhase = 0
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(L10n.text("onboarding.flow.page4.title"))
-                    .font(.system(size: 32, weight: .bold, design: .default))
-                    .foregroundStyle(Color.textMain)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
+            Text(highlightedTitle)
+                .font(.brandDisplay)
+                .foregroundStyle(Color.textMain)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, BrandTokens.Space.s5)
 
-                Text(L10n.text("onboarding.flow.page4.subtitle"))
-                    .font(.system(size: 20, weight: .semibold, design: .default))
-                    .foregroundStyle(Color.accentPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, isCompactHeight ? 14 : 38)
+            Spacer(minLength: 24)
 
-            Spacer(minLength: isCompactHeight ? 16 : 32)
+            CaptureNoteScreenshot(breathe: breathe, revealPhase: revealPhase)
 
-            SkillsWorkflowGrid(isCompactHeight: isCompactHeight)
-
-            Spacer(minLength: isCompactHeight ? 18 : 30)
-
-            VStack(spacing: 12) {
-                MoreSkillsBadgeStack()
-
-                Text(L10n.text("onboarding.flow.page4.hint"))
-                    .font(.system(size: 17, weight: .semibold, design: .default))
-                    .foregroundStyle(Color.textSub)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: 260, alignment: .center)
-            }
-            .frame(maxWidth: .infinity, alignment: .center)
-
-            Spacer(minLength: isCompactHeight ? 18 : 34)
-
-            Spacer(minLength: isCompactHeight ? 16 : 28)
+            Spacer(minLength: 18)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.horizontal, 4)
-        .accessibilityIdentifier("onboarding.page.3")
+        .accessibilityIdentifier("onboarding.page.capture")
+        .onAppear {
+            withAnimation(.easeInOut(duration: 2.4).repeatForever(autoreverses: true)) {
+                breathe = true
+            }
+        }
+        .task {
+            for phase in 1...4 {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.86)) {
+                    revealPhase = phase
+                }
+                try? await Task.sleep(nanoseconds: 520_000_000)
+            }
+        }
+    }
+
+    private var highlightedTitle: AttributedString {
+        var prefix = AttributedString(L10n.text("onboarding.flow.capture.title.prefix"))
+        prefix.foregroundColor = Color.textMain
+
+        var highlight = AttributedString(L10n.text("onboarding.flow.capture.title.highlight"))
+        highlight.foregroundColor = Color.accentPrimary
+
+        var suffix = AttributedString(L10n.text("onboarding.flow.capture.title.suffix"))
+        suffix.foregroundColor = Color.textMain
+
+        return prefix + highlight + suffix
     }
 }
 
-private struct OnboardingCustomSkillsPage: View {
-    private var isCompactHeight: Bool {
-        UIScreen.main.bounds.height <= 700
-    }
+private struct CaptureNoteScreenshot: View {
+    let breathe: Bool
+    let revealPhase: Int
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(L10n.text("onboarding.flow.page5.title"))
-                    .font(.system(size: 32, weight: .bold, design: .default))
-                    .foregroundStyle(Color.textMain)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 12) {
+            CaptureInputChipRow(revealPhase: revealPhase)
 
-                Text(L10n.text("onboarding.flow.page5.subtitle"))
-                    .font(.system(size: 20, weight: .semibold, design: .default))
-                    .foregroundStyle(Color.accentPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 12) {
+                CaptureSourceCard()
+                    .onboardingReveal(isVisible: revealPhase >= 1, yOffset: 8)
+
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(L10n.text("onboarding.flow.capture.note.title"))
+                        .font(.system(size: 21, weight: .bold))
+                        .foregroundStyle(Color.textMain)
+                        .lineLimit(2)
+                        .onboardingReveal(isVisible: revealPhase >= 1, yOffset: 6)
+
+                    CaptureNoteSection(
+                        label: L10n.text("quick_capture.media_link.description_heading"),
+                        text: L10n.text("onboarding.flow.capture.note.description")
+                    )
+                    .onboardingReveal(isVisible: revealPhase >= 2, yOffset: 6)
+
+                    CaptureAuthorRow()
+                        .onboardingReveal(isVisible: revealPhase >= 2, yOffset: 6)
+
+                    CaptureNoteSection(
+                        label: L10n.text("quick_capture.media_link.hook_heading"),
+                        text: L10n.text("onboarding.flow.capture.note.hook")
+                    )
+                    .onboardingReveal(isVisible: revealPhase >= 3, yOffset: 6)
+
+                    FadingTranscriptBlock()
+                        .onboardingReveal(isVisible: revealPhase >= 4, yOffset: 6)
+                }
+                .padding(16)
+                .background(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .fill(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                        )
+                )
             }
-            .padding(.top, isCompactHeight ? 14 : 38)
-
-            Spacer(minLength: isCompactHeight ? 14 : 26)
-
-            CustomSkillsPreviewCard(isCompactHeight: isCompactHeight)
-                .padding(.horizontal, 10)
-
-            Spacer(minLength: isCompactHeight ? 16 : 24)
-
-            CustomSkillsCalloutBubble()
-                .frame(maxWidth: .infinity)
-
-            Spacer(minLength: isCompactHeight ? 18 : 34)
-
-            Spacer(minLength: isCompactHeight ? 16 : 28)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.horizontal, 4)
-        .accessibilityIdentifier("onboarding.page.4")
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
+                .fill(Color.white.opacity(0.96))
+                .brandShadow(BrandTokens.Shadow.card)
+        )
+        .scaleEffect(breathe ? 1.01 : 1.0)
+        .frame(maxWidth: .infinity)
     }
 }
 
-private struct CustomSkillsPreviewCard: View {
-    let isCompactHeight: Bool
+private struct CaptureInputChipRow: View {
+    let revealPhase: Int
 
-    private let items: [CustomSkillPreviewItem] = [
-        .init(
-            icon: .system(name: "music.note.tv"),
-            iconTint: Color(red: 0.22, green: 0.56, blue: 0.99),
-            iconBackground: Color(red: 0.22, green: 0.56, blue: 0.99).opacity(0.12),
-            titleKey: "onboarding.flow.page5.skill.newsletter"
-        ),
-        .init(
-            icon: .system(name: "play.rectangle.fill"),
-            iconTint: Color(red: 0.22, green: 0.67, blue: 0.41),
-            iconBackground: Color(red: 0.22, green: 0.67, blue: 0.41).opacity(0.12),
-            titleKey: "onboarding.flow.page5.skill.sales_followup"
-        ),
-        .init(
-            icon: .system(name: "quote.bubble.fill"),
-            iconTint: Color(red: 0.97, green: 0.49, blue: 0.19),
-            iconBackground: Color(red: 0.97, green: 0.49, blue: 0.19).opacity(0.12),
-            titleKey: "onboarding.flow.page5.skill.case_brief"
-        )
+    private let chips: [CaptureInputChip] = [
+        CaptureInputChip(icon: "link", labelKey: "onboarding.flow.capture.chip.link", isSelected: true),
+        CaptureInputChip(icon: "mic.fill", labelKey: "onboarding.flow.capture.chip.voice", isSelected: false),
+        CaptureInputChip(icon: "photo.fill", labelKey: "onboarding.flow.capture.chip.photo", isSelected: false),
+        CaptureInputChip(icon: "music.note", labelKey: "onboarding.flow.capture.chip.media", isSelected: false)
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text(L10n.text("recipes.section.my_skills"))
-                .font(.system(size: 18, weight: .bold, design: .default))
-                .foregroundStyle(Color.textMain)
-
-            VStack(spacing: 10) {
-                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                    CustomSkillRow(item: item)
+        HStack(spacing: 7) {
+            ForEach(chips) { chip in
+                HStack(spacing: 5) {
+                    Image(systemName: chip.icon)
+                        .font(.system(size: 10, weight: .bold))
+                    Text(L10n.text(chip.labelKey))
+                        .font(.system(size: 11, weight: .bold))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.74)
                 }
-            }
-
-            HStack(spacing: 12) {
-                ZStack {
-                    Color.clear
-                        .frame(width: 28, height: 28)
-
-                    Image(systemName: "plus")
-                        .font(.system(size: 16, weight: .semibold))
-                }
-
-                Text(L10n.text("onboarding.flow.page5.create_action"))
-                    .font(.system(size: 17, weight: .semibold, design: .default))
-                    .lineLimit(2)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .foregroundStyle(Color.accentPrimary)
-            .padding(.horizontal, 14)
-            .padding(.vertical, 13)
-            .padding(.top, 2)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, isCompactHeight ? 14 : 18)
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color.white.opacity(0.95))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                .foregroundStyle(chip.isSelected ? Color.accentPrimary : Color.textSub)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 8)
+                .background(
+                    Capsule()
+                        .fill(chip.isSelected ? Color.accentPrimary.opacity(0.10) : Color.white.opacity(0.92))
+                        .overlay(
+                            Capsule()
+                                .stroke(chip.isSelected ? Color.accentPrimary.opacity(0.22) : Color.black.opacity(0.05), lineWidth: 1)
+                        )
                 )
-                .shadow(color: Color.shadowColor.opacity(0.55), radius: 16, x: 0, y: 8)
-        )
+                .scaleEffect(chip.isSelected && revealPhase == 0 ? 1.04 : 1)
+                .shadow(
+                    color: chip.isSelected && revealPhase == 0 ? Color.accentPrimary.opacity(0.16) : .clear,
+                    radius: 8,
+                    x: 0,
+                    y: 3
+                )
+            }
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
-private struct CustomSkillRow: View {
-    let item: CustomSkillPreviewItem
+private extension View {
+    func onboardingReveal(isVisible: Bool, yOffset: CGFloat) -> some View {
+        opacity(isVisible ? 1 : 0)
+            .offset(y: isVisible ? 0 : yOffset)
+    }
+}
 
+private struct CaptureInputChip: Identifiable {
+    let icon: String
+    let labelKey: String
+    let isSelected: Bool
+
+    var id: String { labelKey }
+}
+
+private struct CaptureSourceCard: View {
     var body: some View {
-        HStack(spacing: 12) {
+        HStack(spacing: 10) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(item.iconBackground)
-                    .frame(width: 28, height: 28)
-
-                switch item.icon {
-                case .system(let name):
-                    Image(systemName: name)
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(item.iconTint)
-                case .emoji(let value):
-                    Text(verbatim: value)
-                        .font(.system(size: 15))
-                }
+                Circle()
+                    .fill(Color.black)
+                    .frame(width: 34, height: 34)
+                Text(verbatim: "TT")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white)
             }
 
-            Text(L10n.text(item.titleKey))
-                .font(.system(size: 17, weight: .medium, design: .default))
-                .foregroundStyle(Color.textMain)
-                .lineLimit(2)
-                .layoutPriority(1)
-                .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(verbatim: "TikTok")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color.textSub)
+                Text(L10n.text("onboarding.flow.capture.source.title"))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color.textMain)
+                    .lineLimit(1)
+            }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
+
+            Image(systemName: "arrow.up.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(Color.textSub)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 13)
+        .padding(12)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white.opacity(0.98))
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color.bgSecondary)
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
                         .stroke(Color.black.opacity(0.05), lineWidth: 1)
                 )
         )
     }
 }
 
-private struct CustomSkillsCalloutBubble: View {
+private struct CaptureNoteSection: View {
+    let label: String
+    let text: String
+
     var body: some View {
-        Text(L10n.text("onboarding.flow.page5.callout"))
-            .font(.system(size: 17, weight: .medium, design: .default))
-            .foregroundStyle(Color.textMain)
-            .lineSpacing(4)
-            .multilineTextAlignment(.center)
-            .lineLimit(nil)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: 272, alignment: .center)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 18)
-            .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(Color.accentPrimary.opacity(0.08))
-            )
-            .overlay(alignment: .bottomLeading) {
-                BubbleTail()
-                    .fill(Color.accentPrimary.opacity(0.08))
-                    .frame(width: 18, height: 14)
-                    .offset(x: 14, y: 10)
-            }
-    }
-}
-
-private struct CustomSkillPreviewItem {
-    let icon: CustomSkillPreviewIcon
-    let iconTint: Color
-    let iconBackground: Color
-    let titleKey: String
-}
-
-private enum CustomSkillPreviewIcon {
-    case system(name: String)
-    case emoji(String)
-}
-
-private struct OnboardingAskNotesPage: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(L10n.text("onboarding.flow.page6.title"))
-                    .font(.system(size: 32, weight: .bold, design: .default))
-                    .foregroundStyle(Color.textMain)
-                    .lineSpacing(2)
-                    .frame(maxWidth: 276, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(L10n.text("onboarding.flow.page6.subtitle"))
-                    .font(.system(size: 20, weight: .semibold, design: .default))
-                    .foregroundStyle(Color.accentPrimary)
-                    .frame(maxWidth: 282, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, 46)
-
-            Spacer(minLength: 26)
-
-            AskNotesQuestionBubble()
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.trailing, 6)
-
-            Spacer(minLength: 14)
-
-            AskNotesAnswerCard()
-                .padding(.trailing, 20)
-
-            Spacer(minLength: 28)
-
-            Spacer(minLength: 24)
+        VStack(alignment: .leading, spacing: 4) {
+            Text(verbatim: label)
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color.textSub)
+                .tracking(0.5)
+                .textCase(.uppercase)
+            Text(verbatim: text)
+                .font(.system(size: 13, weight: .regular))
+                .foregroundStyle(Color.textMain)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.horizontal, 4)
-        .accessibilityIdentifier("onboarding.page.5")
     }
 }
 
-private struct AskNotesQuestionBubble: View {
+private struct CaptureAuthorRow: View {
     var body: some View {
-        Text(L10n.text("onboarding.flow.page6.question"))
-            .font(.system(size: 17, weight: .medium, design: .default))
-            .foregroundStyle(.white)
-            .lineSpacing(4)
-            .fixedSize(horizontal: false, vertical: true)
-            .frame(maxWidth: 260, alignment: .leading)
-            .padding(.horizontal, 18)
-            .padding(.vertical, 16)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L10n.text("quick_capture.media_link.author_label"))
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color.textSub)
+                .tracking(0.5)
+                .textCase(.uppercase)
+
+            HStack(spacing: 8) {
+                Circle()
                     .fill(
                         LinearGradient(
-                            colors: [
-                                Color(red: 0.34, green: 0.59, blue: 0.98),
-                                Color(red: 0.40, green: 0.58, blue: 0.94)
-                            ],
+                            colors: [Color(red: 1.0, green: 0.35, blue: 0.42), Color(red: 0.98, green: 0.68, blue: 0.20)],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-            )
-            .overlay(alignment: .bottomTrailing) {
-                BubbleTail()
-                    .fill(Color(red: 0.40, green: 0.58, blue: 0.94))
-                    .frame(width: 18, height: 14)
-                    .scaleEffect(x: -1, y: 1)
-                    .offset(x: -12, y: 9)
+                    .frame(width: 26, height: 26)
+                    .overlay(
+                        Text(verbatim: "CM")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.white)
+                    )
+                Text(L10n.text("onboarding.flow.capture.note.author"))
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(Color.textMain)
+                Spacer(minLength: 0)
             }
+        }
     }
 }
 
-private struct AskNotesAnswerCard: View {
-    private let bulletKeys = [
-        "onboarding.flow.page6.answer.bullet1",
-        "onboarding.flow.page6.answer.bullet2",
-        "onboarding.flow.page6.answer.bullet3",
-        "onboarding.flow.page6.answer.bullet4"
-    ]
+private struct FadingTranscriptBlock: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(L10n.text("quick_capture.media_link.transcript_heading"))
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(Color.textSub)
+                .tracking(0.5)
+                .textCase(.uppercase)
+
+            ZStack(alignment: .bottom) {
+                Text(L10n.text("onboarding.flow.capture.note.transcript"))
+                    .font(.system(size: 12.5, weight: .regular))
+                    .foregroundStyle(Color.textMain.opacity(0.82))
+                    .lineSpacing(2)
+                    .lineLimit(3)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0),
+                        Color.white
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 28)
+            }
+        }
+    }
+}
+
+// MARK: - AI Skills Page
+
+private struct OnboardingAISkillsPage: View {
+    private var isCompactHeight: Bool {
+        UIScreen.main.bounds.height <= 700
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(alignment: .top, spacing: 10) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color.accentPrimary)
-                    .padding(.top, 2)
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .top, spacing: 12) {
+                    Text(highlightedTitle)
+                        .font(.brandDisplay)
+                        .foregroundStyle(Color.textMain)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
 
-                Text(L10n.text("onboarding.flow.page6.answer.intro"))
-                    .font(.system(size: 17, weight: .medium, design: .default))
-                    .foregroundStyle(Color.textMain)
+                    Spacer(minLength: 8)
+
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 22, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(width: 42, height: 42)
+                        .background(Circle().fill(Color.accentPrimary))
+                        .shadow(color: Color.accentPrimary.opacity(0.22), radius: 10, x: 0, y: 5)
+                        .padding(.top, 4)
+                        .accessibilityHidden(true)
+                }
+
+                Text(L10n.text("onboarding.flow.ai_skills.creator_subtitle"))
+                    .font(.system(size: 17, weight: .semibold, design: .default))
+                    .foregroundStyle(Color.textSub)
                     .fixedSize(horizontal: false, vertical: true)
             }
+            .padding(.top, isCompactHeight ? 14 : BrandTokens.Space.s5)
 
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(bulletKeys, id: \.self) { key in
-                    HStack(alignment: .top, spacing: 8) {
-                        Text(verbatim: "•")
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundStyle(Color.textMain)
+            Spacer(minLength: isCompactHeight ? 16 : 32)
 
-                        Text(L10n.text(key))
-                            .font(.system(size: 17, weight: .regular, design: .default))
-                            .foregroundStyle(Color.textMain)
-                            .fixedSize(horizontal: false, vertical: true)
+            AISkillsDesignedDemoCard(isCompactHeight: isCompactHeight)
+
+            Spacer(minLength: isCompactHeight ? 18 : 28)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .accessibilityIdentifier("onboarding.page.ai_skills")
+    }
+
+    private var highlightedTitle: AttributedString {
+        var prefix = AttributedString(L10n.text("onboarding.flow.ai_skills.title.prefix"))
+        prefix.foregroundColor = Color.textMain
+
+        var content = AttributedString(L10n.text("onboarding.flow.ai_skills.title.highlight"))
+        content.foregroundColor = Color.accentPrimary
+
+        return prefix + content
+    }
+}
+
+private struct AISkillsDesignedDemoCard: View {
+    let isCompactHeight: Bool
+
+    @State private var selectedDemo: AISkillDemoSelection = .hooks
+    @State private var shouldAutoAdvance = true
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: isCompactHeight ? 12 : 14) {
+            HStack(spacing: 8) {
+                ForEach(AISkillDemoSelection.allCases) { tab in
+                    AISkillDemoTabPill(tab: tab, isSelected: selectedDemo == tab) {
+                        shouldAutoAdvance = false
+                        withAnimation(.spring(response: 0.28, dampingFraction: 0.82)) {
+                            selectedDemo = tab
+                        }
                     }
                 }
             }
-            .padding(.top, 18)
-            .padding(.leading, 31)
 
-            Divider()
-                .overlay(Color.black.opacity(0.06))
-                .padding(.top, 20)
-                .padding(.horizontal, 14)
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L10n.text("onboarding.flow.ai_skills.demo.output.label"))
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(Color.textSub)
+                    .tracking(0.5)
+                    .textCase(.uppercase)
 
-            Text(L10n.text("onboarding.flow.page6.answer.followup"))
-                .font(.system(size: 17, weight: .medium, design: .default))
-                .foregroundStyle(Color.accentPrimary)
-                .lineSpacing(4)
-                .padding(.top, 18)
-                .padding(.leading, 14)
-                .fixedSize(horizontal: false, vertical: true)
+                VStack(alignment: .leading, spacing: 9) {
+                    ForEach(selectedDemo.rows) { row in
+                        AISkillDemoOutputRow(labelKey: row.labelKey, textKey: row.textKey)
+                    }
+                }
+                .id(selectedDemo)
+                .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+            .padding(14)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.accentPrimary.opacity(0.06))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.accentPrimary.opacity(0.14), lineWidth: 1)
+                    )
+            )
+
+            AISkillsBuildYourOwnRow()
         }
-        .padding(.horizontal, 16)
-        .padding(.top, 18)
-        .padding(.bottom, 16)
+        .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.white.opacity(0.95))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
-                )
-                .shadow(color: Color.shadowColor.opacity(0.42), radius: 14, x: 0, y: 8)
+            RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
+                .fill(Color.white.opacity(0.96))
+                .brandShadow(BrandTokens.Shadow.card)
         )
-    }
-}
-
-private struct SkillsWorkflowGrid: View {
-    let isCompactHeight: Bool
-
-    private let columns = [
-        GridItem(.flexible(minimum: 0), spacing: 10),
-        GridItem(.flexible(minimum: 0), spacing: 10)
-    ]
-
-    private let items: [SkillsWorkflowItem] = [
-        .init(
-            icon: .emoji("🎣"),
-            titleKey: "agent_recipe.hook_generator.name",
-            detailKey: "onboarding.flow.page4.card.advocate.detail"
-        ),
-        .init(
-            icon: .emoji("📣"),
-            titleKey: "agent_recipe.caption_pack.name",
-            detailKey: "onboarding.flow.page4.card.brainstorm.detail"
-        ),
-        .init(
-            icon: .emoji("📈"),
-            titleKey: "agent_recipe.why_viral.name",
-            detailKey: "onboarding.flow.page4.card.translate.detail"
-        ),
-        .init(
-            icon: .emoji("✍️"),
-            titleKey: "agent_recipe.humanizer.name",
-            detailKey: "onboarding.flow.page4.card.publish.detail"
-        )
-    ]
-
-    var body: some View {
-        LazyVGrid(columns: columns, spacing: 10) {
-            ForEach(Array(items.enumerated()), id: \.offset) { _, item in
-                SkillsWorkflowCard(item: item, isCompactHeight: isCompactHeight)
+        .task {
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 1_800_000_000)
+                guard shouldAutoAdvance else { continue }
+                guard let nextDemo = selectedDemo.next else {
+                    shouldAutoAdvance = false
+                    continue
+                }
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.84)) {
+                    selectedDemo = nextDemo
+                }
             }
         }
     }
 }
 
-private struct SkillsWorkflowCard: View {
-    let item: SkillsWorkflowItem
-    let isCompactHeight: Bool
+private enum AISkillDemoSelection: String, CaseIterable, Identifiable {
+    case hooks
+    case captionPack
+    case humanizer
+    case repurpose
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: isCompactHeight ? 8 : 0) {
-            switch item.icon {
-            case .emoji(let value):
-                Text(verbatim: value)
-                    .font(.system(size: isCompactHeight ? 25 : 29))
-            case .system(let name):
-                Image(systemName: name)
-                    .font(.system(size: isCompactHeight ? 24 : 28, weight: .semibold))
-                    .foregroundStyle(Color(red: 0.26, green: 0.50, blue: 0.97))
-            }
+    var id: String { rawValue }
 
-            Spacer(minLength: isCompactHeight ? 6 : 18)
-
-            Text(L10n.text(item.titleKey))
-                .font(.system(size: 17, weight: .semibold, design: .default))
-                .foregroundStyle(Color.textMain)
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: isCompactHeight ? 2 : 8)
-
-            Text(L10n.text(item.detailKey))
-                .font(.system(size: 15, weight: .regular, design: .default))
-                .foregroundStyle(Color.textSub)
-                .lineSpacing(3)
-                .lineLimit(4)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Spacer(minLength: 0)
+    var icon: String {
+        switch self {
+        case .hooks: return "quote.opening"
+        case .captionPack: return "text.bubble.fill"
+        case .humanizer: return "pencil.and.scribble"
+        case .repurpose: return "arrow.triangle.2.circlepath"
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, isCompactHeight ? 12 : 16)
-        .frame(maxWidth: .infinity, minHeight: isCompactHeight ? 154 : 176, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .fill(Color.white.opacity(0.94))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 22, style: .continuous)
-                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
-                )
-                .shadow(color: Color.shadowColor.opacity(0.5), radius: 14, x: 0, y: 8)
-        )
+    }
+
+    var titleKey: String {
+        switch self {
+        case .hooks: return "agent_recipe.hook_generator.name"
+        case .captionPack: return "agent_recipe.caption_pack.name"
+        case .humanizer: return "agent_recipe.humanizer.name"
+        case .repurpose: return "onboarding.flow.ai_skills.demo.tab.repurpose"
+        }
+    }
+
+    var rows: [AISkillDemoOutputRowModel] {
+        switch self {
+        case .hooks:
+            return [
+                .init(labelKey: "onboarding.flow.ai_skills.demo.hooks.direct.label", textKey: "onboarding.flow.ai_skills.demo.hooks.direct.text"),
+                .init(labelKey: "onboarding.flow.ai_skills.demo.hooks.question.label", textKey: "onboarding.flow.ai_skills.demo.hooks.question.text"),
+                .init(labelKey: "onboarding.flow.ai_skills.demo.hooks.contrast.label", textKey: "onboarding.flow.ai_skills.demo.hooks.contrast.text")
+            ]
+        case .captionPack:
+            return [
+                .init(labelKey: "onboarding.flow.ai_skills.demo.caption.tiktok.label", textKey: "onboarding.flow.ai_skills.demo.caption.tiktok.text"),
+                .init(labelKey: "onboarding.flow.ai_skills.demo.caption.youtube.label", textKey: "onboarding.flow.ai_skills.demo.caption.youtube.text"),
+                .init(labelKey: "onboarding.flow.ai_skills.demo.caption.reels.label", textKey: "onboarding.flow.ai_skills.demo.caption.reels.text")
+            ]
+        case .humanizer:
+            return [
+                .init(labelKey: "onboarding.flow.ai_skills.demo.humanizer.before.label", textKey: "onboarding.flow.ai_skills.demo.humanizer.before.text"),
+                .init(labelKey: "onboarding.flow.ai_skills.demo.humanizer.after.label", textKey: "onboarding.flow.ai_skills.demo.humanizer.after.text")
+            ]
+        case .repurpose:
+            return [
+                .init(labelKey: "onboarding.flow.ai_skills.demo.repurpose.thread.label", textKey: "onboarding.flow.ai_skills.demo.repurpose.thread.text"),
+                .init(labelKey: "onboarding.flow.ai_skills.demo.repurpose.linkedin.label", textKey: "onboarding.flow.ai_skills.demo.repurpose.linkedin.text"),
+                .init(labelKey: "onboarding.flow.ai_skills.demo.repurpose.newsletter.label", textKey: "onboarding.flow.ai_skills.demo.repurpose.newsletter.text")
+            ]
+        }
+    }
+
+    var next: AISkillDemoSelection? {
+        switch self {
+        case .hooks: return .captionPack
+        case .captionPack: return .humanizer
+        case .humanizer: return .repurpose
+        case .repurpose: return nil
+        }
     }
 }
 
-private struct SkillsWorkflowItem {
-    let icon: SkillsWorkflowIcon
-    let titleKey: String
-    let detailKey: String
+private struct AISkillDemoOutputRowModel: Identifiable {
+    let labelKey: String
+    let textKey: String
+
+    var id: String { labelKey }
 }
 
-private enum SkillsWorkflowIcon {
-    case emoji(String)
-    case system(name: String)
-}
-
-private struct MoreSkillsBadgeStack: View {
-    private let extraSkillIcons = ["📝", "🧩", "✅", "🪄", "✉️"]
+private struct AISkillDemoTabPill: View {
+    let tab: AISkillDemoSelection
+    let isSelected: Bool
+    let onTap: () -> Void
 
     var body: some View {
-        HStack(spacing: -10) {
-            ForEach(Array(extraSkillIcons.enumerated()), id: \.offset) { _, icon in
+        Button(action: onTap) {
+            VStack(spacing: 7) {
                 ZStack {
                     Circle()
-                        .fill(Color.white.opacity(0.98))
-                        .frame(width: 44, height: 44)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.black.opacity(0.06), lineWidth: 1)
-                        )
-                        .shadow(color: Color.shadowColor.opacity(0.35), radius: 8, x: 0, y: 4)
+                        .fill(isSelected ? Color.accentPrimary : Color.black.opacity(0.045))
+                        .frame(width: 30, height: 30)
 
-                    Text(verbatim: icon)
-                        .font(.system(size: 21))
+                    Image(systemName: tab.icon)
+                        .font(.system(size: 13, weight: .bold))
+                        .foregroundStyle(isSelected ? .white : Color.textSub)
                 }
+
+                Text(L10n.text(tab.titleKey))
+                    .font(.system(size: 11.5, weight: isSelected ? .bold : .semibold))
+                    .foregroundStyle(isSelected ? Color.textMain : Color.textSub)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .minimumScaleFactor(0.82)
+                    .frame(height: 28, alignment: .top)
             }
         }
-        .padding(.leading, 10)
-    }
-}
-
-private struct AIProcessingCard: View {
-    private let items: [AIProcessingItem] = [
-        .init(
-            icon: .system(name: "checkmark.circle.fill"),
-            iconTint: Color(red: 0.23, green: 0.78, blue: 0.42),
-            iconBackground: Color(red: 0.23, green: 0.78, blue: 0.42).opacity(0.14),
-            titleKey: "onboarding.flow.page3.bullet.todos",
-            detailKey: "onboarding.flow.page3.detail.todos"
-        ),
-        .init(
-            icon: .system(name: "sparkles"),
-            iconTint: Color(red: 0.43, green: 0.31, blue: 0.99),
-            iconBackground: Color(red: 0.43, green: 0.31, blue: 0.99).opacity(0.12),
-            titleKey: "onboarding.flow.page3.bullet.filler",
-            detailKey: "onboarding.flow.page3.detail.filler"
-        ),
-        .init(
-            icon: .text("Aa"),
-            iconTint: Color.accentPrimary,
-            iconBackground: Color.accentPrimary.opacity(0.12),
-            titleKey: "onboarding.flow.page3.bullet.grammar",
-            detailKey: "onboarding.flow.page3.detail.grammar"
-        ),
-        .init(
-            icon: .system(name: "list.bullet"),
-            iconTint: Color(red: 1.0, green: 0.50, blue: 0.12),
-            iconBackground: Color(red: 1.0, green: 0.50, blue: 0.12).opacity(0.12),
-            titleKey: "onboarding.flow.page3.bullet.format",
-            detailKey: "onboarding.flow.page3.detail.format"
-        )
-    ]
-
-    var body: some View {
-        VStack(spacing: 0) {
-            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
-                AIProcessingRow(item: item)
-
-                if index < items.count - 1 {
-                    Rectangle()
-                        .fill(Color.black.opacity(0.06))
-                        .frame(height: 1)
-                        .padding(.leading, 56)
-                }
-            }
-        }
-        .padding(.vertical, 14)
+        .buttonStyle(.plain)
+        .frame(maxWidth: .infinity)
+        .padding(.horizontal, 5)
+        .padding(.vertical, 9)
         .background(
-            RoundedRectangle(cornerRadius: 26, style: .continuous)
-                .fill(Color.white.opacity(0.94))
-                .shadow(color: Color.shadowColor.opacity(0.75), radius: 20, x: 0, y: 10)
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .fill(isSelected ? Color.accentPrimary.opacity(0.08) : Color.white)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(isSelected ? Color.accentPrimary.opacity(0.18) : Color.black.opacity(0.05), lineWidth: 1)
+                )
         )
+        .accessibilityAddTraits(isSelected ? [.isSelected] : [])
     }
 }
 
-private struct AIProcessingRow: View {
-    let item: AIProcessingItem
+private struct AISkillDemoOutputRow: View {
+    let labelKey: String
+    let textKey: String
 
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            ZStack {
-                Circle()
-                    .fill(item.iconBackground)
-                    .frame(width: 32, height: 32)
+        HStack(alignment: .top, spacing: 9) {
+            Text(L10n.text(labelKey))
+                .font(.system(size: 10, weight: .bold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(Capsule().fill(Color.accentPrimary))
+                .padding(.top, 1)
 
-                switch item.icon {
-                case .system(let name):
-                    Image(systemName: name)
-                        .font(.system(size: 17, weight: .bold))
-                        .foregroundStyle(item.iconTint)
-                case .text(let value):
-                    Text(verbatim: value)
-                        .font(.system(size: 15, weight: .bold, design: .default))
-                        .foregroundStyle(item.iconTint)
-                case .xBrand, .youtube:
-                    EmptyView()
-                }
-            }
-            .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: 7) {
-                Text(L10n.text(item.titleKey))
-                    .font(.system(size: 19, weight: .semibold, design: .default))
-                    .foregroundStyle(Color.textMain)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(L10n.text(item.detailKey))
-                    .font(.system(size: 15, weight: .regular, design: .default))
-                    .foregroundStyle(Color.textSub)
-                    .lineSpacing(5)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text(L10n.text(textKey))
+                .font(.system(size: 13.5, weight: .regular))
+                .foregroundStyle(Color.textMain)
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
 
             Spacer(minLength: 0)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 22)
     }
 }
 
-private struct AIProcessingItem {
-    let icon: FloatingIcon
-    let iconTint: Color
-    let iconBackground: Color
-    let titleKey: String
-    let detailKey: String
+private struct AISkillsBuildYourOwnRow: View {
+    private let icons = [
+        "wand.and.stars",
+        "list.bullet.rectangle",
+        "envelope.fill",
+        "checkmark.circle.fill",
+        "sparkles"
+    ]
+
+    var body: some View {
+        HStack(spacing: 12) {
+            HStack(spacing: -8) {
+                ForEach(Array(icons.enumerated()), id: \.offset) { index, icon in
+                    Image(systemName: icon)
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(index == 0 ? .white : Color.accentPrimary)
+                        .frame(width: 28, height: 28)
+                        .background(
+                            Circle()
+                                .fill(index == 0 ? Color.accentPrimary : Color.white)
+                                .overlay(Circle().stroke(Color.black.opacity(0.06), lineWidth: 1))
+                        )
+                        .shadow(color: Color.shadowColor.opacity(0.25), radius: 5, x: 0, y: 3)
+                }
+
+                Text(verbatim: "+12")
+                    .font(.system(size: 10, weight: .black))
+                    .foregroundStyle(Color.accentPrimary)
+                    .frame(width: 30, height: 28)
+                    .background(
+                        Capsule()
+                            .fill(Color.accentPrimary.opacity(0.10))
+                            .overlay(Capsule().stroke(Color.accentPrimary.opacity(0.16), lineWidth: 1))
+                    )
+                    .padding(.leading, 2)
+            }
+
+            Text(L10n.text("onboarding.flow.ai_skills.demo.build_your_own"))
+                .font(.system(size: 14, weight: .bold))
+                .foregroundStyle(Color.textMain)
+
+            Spacer(minLength: 0)
+
+            Image(systemName: "sparkles")
+                .font(.system(size: 13, weight: .bold))
+                .foregroundStyle(Color.accentPrimary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 15, style: .continuous)
+                .fill(Color.white.opacity(0.90))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 15, style: .continuous)
+                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                )
+        )
+    }
 }
+
+// MARK: - Share Extension Page
+
+private struct OnboardingShareExtensionPage: View {
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(highlightedTitle)
+                    .font(.brandDisplay)
+                    .foregroundStyle(Color.textMain)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(L10n.text("onboarding.flow.share.subtitle"))
+                    .font(.brandBody)
+                    .foregroundStyle(Color.textSub)
+                    .lineSpacing(2)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.top, BrandTokens.Space.s4)
+
+            Spacer(minLength: 24)
+
+            ShareDemoVideoView()
+                .frame(maxWidth: .infinity, alignment: .center)
+
+            Spacer(minLength: 24)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .accessibilityIdentifier("onboarding.page.share")
+    }
+
+    private var highlightedTitle: AttributedString {
+        var prefix = AttributedString(L10n.text("onboarding.flow.share.title.prefix"))
+        prefix.foregroundColor = Color.textMain
+
+        var highlight = AttributedString(L10n.text("onboarding.flow.share.title.highlight"))
+        highlight.foregroundColor = Color.accentPrimary
+
+        var suffix = AttributedString(L10n.text("onboarding.flow.share.title.suffix"))
+        suffix.foregroundColor = Color.textMain
+
+        return prefix + highlight + suffix
+    }
+}
+
+private struct ShareDemoVideoView: View {
+    @StateObject private var loader = LoopingVideoLoader(resourceName: "share_extension_demo", ext: "mov")
+    @State private var hasAppeared = false
+
+    /// Cap the video at this height; width is derived from the natural aspect ratio.
+    private let maxHeight: CGFloat = 560
+
+    var body: some View {
+        Group {
+            if let player = loader.player, let aspect = loader.aspectRatio {
+                VideoPlayerLayerView(player: player)
+                    .aspectRatio(aspect, contentMode: .fit)
+                    .frame(maxHeight: maxHeight)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .shadow(color: Color.shadowColor.opacity(0.45), radius: 14, x: 0, y: 8)
+            } else {
+                ProgressView()
+                    .frame(height: 200)
+            }
+        }
+        .opacity(hasAppeared ? 1 : 0)
+        .offset(y: hasAppeared ? 0 : 8)
+        .onAppear {
+            loader.play()
+            withAnimation(.easeOut(duration: 0.38)) {
+                hasAppeared = true
+            }
+        }
+        .onDisappear { loader.pause() }
+    }
+}
+
+private struct VideoPlayerLayerView: UIViewRepresentable {
+    let player: AVPlayer
+
+    func makeUIView(context: Context) -> PlayerContainerView {
+        let view = PlayerContainerView()
+        view.playerLayer.player = player
+        view.playerLayer.videoGravity = .resizeAspect
+        view.backgroundColor = .black
+        return view
+    }
+
+    func updateUIView(_ uiView: PlayerContainerView, context: Context) {
+        uiView.playerLayer.player = player
+    }
+}
+
+private final class PlayerContainerView: UIView {
+    override static var layerClass: AnyClass { AVPlayerLayer.self }
+    var playerLayer: AVPlayerLayer { layer as! AVPlayerLayer }
+}
+
+@MainActor
+private final class LoopingVideoLoader: ObservableObject {
+    @Published private(set) var player: AVPlayer?
+    @Published private(set) var aspectRatio: CGFloat?
+    private var loopObserver: NSObjectProtocol?
+
+    init(resourceName: String, ext: String) {
+        guard let url = Bundle.main.url(forResource: resourceName, withExtension: ext) else { return }
+        let asset = AVURLAsset(url: url)
+        let item = AVPlayerItem(asset: asset)
+        let player = AVPlayer(playerItem: item)
+        player.isMuted = true
+        player.actionAtItemEnd = .none
+        self.player = player
+
+        loopObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: item,
+            queue: .main
+        ) { [weak player] _ in
+            player?.seek(to: .zero)
+            player?.play()
+        }
+
+        Task { [weak self] in
+            do {
+                let tracks = try await asset.loadTracks(withMediaType: .video)
+                guard let track = tracks.first else { return }
+                let size = try await track.load(.naturalSize)
+                let transform = try await track.load(.preferredTransform)
+                let applied = size.applying(transform)
+                let w = abs(applied.width)
+                let h = abs(applied.height)
+                guard w > 0, h > 0 else { return }
+                await MainActor.run {
+                    self?.aspectRatio = w / h
+                }
+            } catch {
+                // Leave aspectRatio nil; view falls back to a ProgressView.
+            }
+        }
+    }
+
+    func play() {
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        player?.seek(to: .zero)
+        player?.play()
+    }
+
+    func pause() {
+        player?.pause()
+    }
+
+    deinit {
+        if let loopObserver {
+            NotificationCenter.default.removeObserver(loopObserver)
+        }
+    }
+}
+
+// MARK: - Shared visual helpers (reused by Hero)
 
 private struct LaunchScreenWordmark: View {
     var body: some View {
@@ -1294,55 +1023,64 @@ private struct LaunchScreenWordmark: View {
                 .foregroundColor(Color(red: 0.365, green: 0.569, blue: 0.961))
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(L10n.text("auth.login.brand_title")))
+        .accessibilityLabel(Text(verbatim: "ChillNote"))
     }
 }
 
 private struct FloatingIconCard: View {
     let icon: FloatingIcon
     let tint: Color
+    let isActive: Bool
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .fill(Color.white.opacity(0.96))
-                .frame(width: 56, height: 56)
-                .shadow(color: Color.shadowColor.opacity(0.9), radius: 16, x: 0, y: 8)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(isActive ? Color.white : Color.white.opacity(0.96))
+                .frame(width: 52, height: 52)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .stroke(isActive ? Color.accentPrimary.opacity(0.26) : Color.clear, lineWidth: 1)
+                )
+                .shadow(
+                    color: isActive ? Color.accentPrimary.opacity(0.20) : Color.shadowColor.opacity(0.9),
+                    radius: isActive ? 16 : 14,
+                    x: 0,
+                    y: isActive ? 8 : 6
+                )
 
             switch icon {
             case .system(let name):
                 Image(systemName: name)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundStyle(tint)
-            case .text(let value):
-                Text(verbatim: value)
-                    .font(.system(size: 20, weight: .black, design: .rounded))
-                    .foregroundStyle(tint)
-            case .xBrand:
-                Text(verbatim: "X")
-                    .font(.sfProDisplay(size: 22, weight: .black))
+                    .font(.system(size: 21, weight: .semibold))
                     .foregroundStyle(tint)
             case .youtube:
                 YouTubeGlyph()
-                    .frame(width: 24, height: 18)
+                    .frame(width: 23, height: 17)
+            case .tiktok:
+                TikTokGlyph()
+                    .frame(width: 25, height: 27)
+            case .reels:
+                ReelsGlyph()
+                    .frame(width: 25, height: 25)
             }
         }
+        .scaleEffect(isActive ? 1.09 : 1)
         .accessibilityHidden(true)
+        .animation(.spring(response: 0.34, dampingFraction: 0.76), value: isActive)
     }
 }
 
 private enum FloatingIcon {
     case system(name: String)
-    case text(String)
-    case xBrand
     case youtube
+    case tiktok
+    case reels
 }
 
 private struct HeroRingIcon: Identifiable {
     let id: String
     let icon: FloatingIcon
     let tint: Color
-    let offset: CGSize
 }
 
 private struct YouTubeGlyph: View {
@@ -1350,7 +1088,6 @@ private struct YouTubeGlyph: View {
         ZStack {
             RoundedRectangle(cornerRadius: 5.5, style: .continuous)
                 .fill(Color(red: 1.0, green: 0.0, blue: 0.0))
-
             Image(systemName: "play.fill")
                 .font(.system(size: 8.5, weight: .bold))
                 .foregroundStyle(.white)
@@ -1359,311 +1096,57 @@ private struct YouTubeGlyph: View {
     }
 }
 
-private extension Font {
-    static func sfProDisplay(size: CGFloat, weight: UIFont.Weight) -> Font {
-        if let customFont = UIFont.systemFont(ofSize: size, weight: weight) as UIFont? {
-            return .custom(customFont.fontName, size: size)
-        }
-
-        switch weight {
-        case .bold, .heavy, .black:
-            return .system(size: size, weight: .bold, design: .default)
-        case .semibold, .medium:
-            return .system(size: size, weight: .semibold, design: .default)
-        default:
-            return .system(size: size, weight: .regular, design: .default)
-        }
-    }
-}
-
-// MARK: - Capture Modes Page
-
-private struct OnboardingCaptureModesPage: View {
-    private var isCompactHeight: Bool {
-        UIScreen.main.bounds.height <= 700
-    }
-
-    private let items: [CaptureModeItem] = [
-        .init(emoji: "🎙", titleKey: "onboarding.capture.voice.title", detailKey: "onboarding.capture.voice.detail"),
-        .init(emoji: "🔗", titleKey: "onboarding.capture.links.title", detailKey: "onboarding.capture.links.detail"),
-        .init(emoji: "📷", titleKey: "onboarding.capture.photos.title", detailKey: "onboarding.capture.photos.detail"),
-        .init(emoji: "🎬", titleKey: "onboarding.capture.media.title", detailKey: "onboarding.capture.media.detail")
-    ]
-
+/// TikTok wordmark stand-in: a music note with the signature cyan/magenta offset.
+private struct TikTokGlyph: View {
     var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 14) {
-                Text(L10n.text("onboarding.capture.title"))
-                    .font(.system(size: 32, weight: .bold, design: .default))
-                    .foregroundStyle(Color.textMain)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(L10n.text("onboarding.capture.subtitle"))
-                    .font(.system(size: 20, weight: .semibold, design: .default))
-                    .foregroundStyle(Color.accentPrimary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(.top, isCompactHeight ? 14 : 38)
-
-            Spacer(minLength: isCompactHeight ? 16 : 28)
-
-            VStack(spacing: 0) {
-                ForEach(Array(items.enumerated()), id: \.offset) { index, item in
-                    CaptureModeRow(item: item, isCompactHeight: isCompactHeight)
-                    if index < items.count - 1 {
-                        Rectangle()
-                            .fill(Color.black.opacity(0.06))
-                            .frame(height: 1)
-                            .padding(.leading, 56)
-                    }
-                }
-            }
-            .padding(.vertical, isCompactHeight ? 10 : 14)
-            .background(
-                RoundedRectangle(cornerRadius: 26, style: .continuous)
-                    .fill(Color.white.opacity(0.94))
-                    .shadow(color: Color.shadowColor.opacity(0.75), radius: 20, x: 0, y: 10)
-            )
-
-            Spacer(minLength: isCompactHeight ? 16 : 28)
-            Spacer(minLength: 28)
+        ZStack {
+            Image(systemName: "music.note")
+                .font(.system(size: 22, weight: .black))
+                .foregroundStyle(Color(red: 0.13, green: 0.93, blue: 0.95))
+                .offset(x: -2, y: 2)
+            Image(systemName: "music.note")
+                .font(.system(size: 22, weight: .black))
+                .foregroundStyle(Color(red: 1.0, green: 0.16, blue: 0.40))
+                .offset(x: 2, y: -2)
+            Image(systemName: "music.note")
+                .font(.system(size: 22, weight: .black))
+                .foregroundStyle(Color.black)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.horizontal, 4)
-        .accessibilityIdentifier("onboarding.page.capture")
     }
 }
 
-private struct CaptureModeRow: View {
-    let item: CaptureModeItem
-    let isCompactHeight: Bool
-
+/// Instagram Reels stand-in: gradient camera + play triangle.
+private struct ReelsGlyph: View {
     var body: some View {
-        HStack(alignment: .top, spacing: 14) {
-            Text(verbatim: item.emoji)
-                .font(.system(size: isCompactHeight ? 24 : 28))
-                .frame(width: 32, height: 32)
-                .padding(.top, 2)
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(L10n.text(item.titleKey))
-                    .font(.system(size: 19, weight: .semibold, design: .default))
-                    .foregroundStyle(Color.textMain)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(L10n.text(item.detailKey))
-                    .font(.system(size: 15, weight: .regular, design: .default))
-                    .foregroundStyle(Color.textSub)
-                    .lineSpacing(5)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-
-            Spacer(minLength: 0)
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, isCompactHeight ? 16 : 20)
-    }
-}
-
-private struct CaptureModeItem {
-    let emoji: String
-    let titleKey: String
-    let detailKey: String
-}
-
-// MARK: - Survey Pages
-
-private struct OnboardingSurveyContentTypePage: View {
-    @Binding var selectedType: OnboardingPreferences.ContentCreatorType?
-    let onSelect: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text(L10n.text("onboarding.survey.content_type.question"))
-                .font(.system(size: 32, weight: .bold, design: .default))
-                .foregroundStyle(Color.textMain)
-                .lineSpacing(2)
-                .fixedSize(horizontal: false, vertical: true)
-                .padding(.top, 38)
-
-            Spacer(minLength: 32)
-
-            VStack(spacing: 12) {
-                ForEach(OnboardingPreferences.ContentCreatorType.allCases, id: \.rawValue) { type in
-                    SurveyOptionRow(
-                        emoji: type.emoji,
-                        title: L10n.text(type.titleKey),
-                        detail: L10n.text(type.detailKey),
-                        isSelected: selectedType == type
-                    ) {
-                        selectedType = type
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) {
-                            onSelect()
-                        }
-                    }
-                }
-            }
-
-            Spacer(minLength: 28)
-            Spacer(minLength: 28)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.horizontal, 4)
-        .accessibilityIdentifier("onboarding.page.survey1")
-    }
-}
-
-private struct OnboardingSurveyGoalsPage: View {
-    @Binding var selectedGoals: Set<OnboardingPreferences.CreatorGoal>
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 10) {
-                Text(L10n.text("onboarding.survey.goals.question"))
-                    .font(.system(size: 32, weight: .bold, design: .default))
-                    .foregroundStyle(Color.textMain)
-                    .lineSpacing(2)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(L10n.text("onboarding.survey.goals.subtitle"))
-                    .font(.system(size: 17, weight: .medium, design: .default))
-                    .foregroundStyle(Color.textSub)
-            }
-            .padding(.top, 38)
-
-            Spacer(minLength: 32)
-
-            VStack(spacing: 12) {
-                ForEach(OnboardingPreferences.CreatorGoal.allCases, id: \.rawValue) { goal in
-                    SurveyMultiSelectRow(
-                        emoji: goal.emoji,
-                        title: L10n.text(goal.titleKey),
-                        isSelected: selectedGoals.contains(goal)
-                    ) {
-                        if selectedGoals.contains(goal) {
-                            selectedGoals.remove(goal)
-                        } else {
-                            selectedGoals.insert(goal)
-                        }
-                    }
-                }
-            }
-
-            Spacer(minLength: 28)
-            Spacer(minLength: 28)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(.horizontal, 4)
-        .accessibilityIdentifier("onboarding.page.survey2")
-    }
-}
-
-private struct SurveyOptionRow: View {
-    let emoji: String
-    let title: String
-    let detail: String
-    let isSelected: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 14) {
-                Text(verbatim: emoji)
-                    .font(.system(size: 22))
-                    .frame(width: 32)
-
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(verbatim: title)
-                        .font(.system(size: 17, weight: .semibold, design: .default))
-                        .foregroundStyle(Color.textMain)
-                        .multilineTextAlignment(.leading)
-
-                    if !detail.isEmpty {
-                        Text(verbatim: detail)
-                            .font(.system(size: 14, weight: .regular, design: .default))
-                            .foregroundStyle(Color.textSub)
-                    }
-                }
-
-                Spacer(minLength: 0)
-            }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 16)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(isSelected ? Color.accentPrimary.opacity(0.08) : Color.white.opacity(0.92))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(
-                                isSelected ? Color.accentPrimary.opacity(0.45) : Color.black.opacity(0.07),
-                                lineWidth: isSelected ? 1.5 : 1
-                            )
+        ZStack {
+            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color(red: 0.98, green: 0.69, blue: 0.21), // amber
+                            Color(red: 0.96, green: 0.27, blue: 0.45), // pink
+                            Color(red: 0.61, green: 0.27, blue: 0.91)  // purple
+                        ],
+                        startPoint: .bottomLeading,
+                        endPoint: .topTrailing
                     )
-                    .shadow(color: Color.shadowColor.opacity(isSelected ? 0 : 0.35), radius: 8, x: 0, y: 4)
-            )
+                )
+            Triangle()
+                .fill(.white)
+                .frame(width: 9, height: 11)
+                .offset(x: 1)
         }
-        .buttonStyle(.plain)
     }
 }
 
-private struct SurveyMultiSelectRow: View {
-    let emoji: String
-    let title: String
-    let isSelected: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 14) {
-                Text(verbatim: emoji)
-                    .font(.system(size: 22))
-                    .frame(width: 32)
-
-                Text(verbatim: title)
-                    .font(.system(size: 17, weight: .semibold, design: .default))
-                    .foregroundStyle(Color.textMain)
-                    .multilineTextAlignment(.leading)
-
-                Spacer(minLength: 0)
-
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? Color.accentPrimary : Color.clear)
-                        .frame(width: 24, height: 24)
-                        .overlay(
-                            Circle()
-                                .stroke(
-                                    isSelected ? Color.clear : Color.black.opacity(0.2),
-                                    lineWidth: 1.5
-                                )
-                        )
-
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-                }
-            }
-            .padding(.horizontal, 18)
-            .padding(.vertical, 18)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .fill(isSelected ? Color.accentPrimary.opacity(0.08) : Color.white.opacity(0.92))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 18, style: .continuous)
-                            .stroke(
-                                isSelected ? Color.accentPrimary.opacity(0.45) : Color.black.opacity(0.07),
-                                lineWidth: isSelected ? 1.5 : 1
-                            )
-                    )
-                    .shadow(color: Color.shadowColor.opacity(isSelected ? 0 : 0.35), radius: 8, x: 0, y: 4)
-            )
-        }
-        .buttonStyle(.plain)
+private struct Triangle: Shape {
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY))
+        path.closeSubpath()
+        return path
     }
 }
 

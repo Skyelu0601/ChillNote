@@ -5,7 +5,17 @@ struct OnboardingStateStore {
     private static let completedPerUserKey = "onboarding.completedByUserId"
     private static let paywallGlobalKey = "onboarding.hasShownIntroPaywall"
     private static let paywallPerUserKey = "onboarding.introPaywallShownByUserId"
-    private static let preferencesGlobalKey = "onboarding.creatorPreferences"
+    private static let introViewedDeviceKey = "onboarding.introViewedOnDevice"
+
+    /// Device-level: has the pre-login intro flow been viewed at least once on this device?
+    /// Used to decide whether a signed-out user sees onboarding or jumps straight to login.
+    static func hasViewedIntroOnDevice() -> Bool {
+        UserDefaults.standard.bool(forKey: introViewedDeviceKey)
+    }
+
+    static func setHasViewedIntroOnDevice(_ value: Bool) {
+        UserDefaults.standard.set(value, forKey: introViewedDeviceKey)
+    }
 
     static func hasCompleted(for userId: String?) -> Bool {
         value(for: userId, perUserKey: completedPerUserKey, globalKey: completedGlobalKey)
@@ -21,19 +31,6 @@ struct OnboardingStateStore {
 
     static func setHasShownIntroPaywall(_ value: Bool, for userId: String?) {
         setValue(value, for: userId, perUserKey: paywallPerUserKey, globalKey: paywallGlobalKey)
-    }
-
-    static func savePreferences(_ preferences: OnboardingPreferences) {
-        guard let data = try? JSONEncoder().encode(preferences) else { return }
-        UserDefaults.standard.set(data, forKey: preferencesGlobalKey)
-    }
-
-    static func loadPreferences() -> OnboardingPreferences {
-        guard
-            let data = UserDefaults.standard.data(forKey: preferencesGlobalKey),
-            let preferences = try? JSONDecoder().decode(OnboardingPreferences.self, from: data)
-        else { return OnboardingPreferences() }
-        return preferences
     }
 
     private static func value(for userId: String?, perUserKey: String, globalKey: String) -> Bool {

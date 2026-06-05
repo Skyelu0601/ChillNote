@@ -179,6 +179,10 @@ struct GeminiService {
             }
             
             if !(200...299).contains(httpResponse.statusCode) {
+                // Fast-path: credits exhausted (402) or rate-limited (429).
+                if httpResponse.statusCode == 402 || httpResponse.statusCode == 429 {
+                    throw GeminiError.apiError("Insufficient credits")
+                }
                 if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     if let message = errorJson["error"] as? String {
                         throw GeminiError.apiError(message)
@@ -193,7 +197,7 @@ struct GeminiService {
                 }
                 throw GeminiError.apiError("Status code: \(httpResponse.statusCode)")
             }
-            
+
             // Parse response from our backend (it returns { "content": "..." })
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let content = json["content"] as? String {
@@ -439,8 +443,8 @@ struct GeminiService {
                     
                     guard (200...299).contains(httpResponse.statusCode) else {
                         Self.logger.error("Streaming request failed with status \(httpResponse.statusCode, privacy: .public)")
-                        if httpResponse.statusCode == 429 {
-                            throw GeminiError.apiError("Daily free AI chat limit reached")
+                        if httpResponse.statusCode == 429 || httpResponse.statusCode == 402 {
+                            throw GeminiError.apiError("Insufficient credits")
                         }
                         throw GeminiError.apiError("Status code: \(httpResponse.statusCode)")
                     }

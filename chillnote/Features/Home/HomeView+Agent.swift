@@ -46,6 +46,7 @@ extension HomeView {
 
         do {
             _ = try await recipe.execute(on: notesToProcess, context: modelContext, userInstruction: instruction)
+            await StoreService.shared.fetchCreditBalance()
 
             await MainActor.run {
                 persistAndSync()
@@ -59,7 +60,8 @@ extension HomeView {
                 isExecutingAction = false
                 actionProgress = nil
                 let message = error.localizedDescription
-                if message.localizedCaseInsensitiveContains("daily free agent recipe limit reached") {
+                if message.localizedCaseInsensitiveContains("daily free agent recipe limit reached")
+                    || message.localizedCaseInsensitiveContains("insufficient credits") {
                     showSubscription = true
                 }
             }

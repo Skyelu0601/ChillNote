@@ -158,7 +158,7 @@ struct SettingsView: View {
     
     private var accountSection: some View {
         VStack(spacing: 0) {
-            if authService.isSignedIn {
+            if authService.shouldShowSignedInUI {
                 VStack(spacing: 16) {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
@@ -188,7 +188,7 @@ struct SettingsView: View {
                     }
                     
                     Divider()
-                    
+
                     Button {
                         showSubscription = true
                     } label: {
@@ -208,8 +208,8 @@ struct SettingsView: View {
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
                                 .background(
-                                    storeService.currentTier == .pro ? 
-                                    Color.gray.opacity(0.1) : 
+                                    storeService.currentTier == .pro ?
+                                    Color.gray.opacity(0.1) :
                                     Color.accentPrimary.opacity(0.1)
                                 )
                                 .cornerRadius(12)
@@ -332,7 +332,7 @@ struct SettingsView: View {
             
             if authService.isSignedIn {
                 Divider().padding(.leading, 56)
-                
+
                 Button {
                     showDeleteAlert = true
                 } label: {
@@ -972,12 +972,17 @@ private extension SettingsView {
     }
 
     func handleExportAllTap() {
-        guard authService.isSignedIn else {
-            bannerData = BannerData(message: L10n.text("export.error.sign_in_required"), style: .warning)
-            return
+        Task { @MainActor in
+            await authService.waitForSessionResolution()
+
+            guard authService.isSignedIn else {
+                bannerData = BannerData(message: L10n.text("export.error.sign_in_required"), style: .warning)
+                return
+            }
+
+            exportViewModel.resetEstimate()
+            showExportAllSheet = true
         }
-        exportViewModel.resetEstimate()
-        showExportAllSheet = true
     }
 
     func syncMediaLinkTranscriptPreferencesToShareExtension() {

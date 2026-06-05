@@ -145,7 +145,6 @@ struct HomeNotesListView: View {
         }
     }
 }
-
 private struct HomeNotesLoadingView: View {
     var body: some View {
         LazyVStack(spacing: 16) {

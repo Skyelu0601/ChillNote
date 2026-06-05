@@ -28,6 +28,7 @@ model User {
   sentInvites Invite[] @relation("InviteInviter")
   receivedInvite Invite? @relation("InviteInvitee")
   membershipGrants MembershipGrantLedger[]
+  credits          UserCredits?
 }
 
 model DailyUsage {
@@ -201,4 +202,13 @@ model MembershipGrantLedger {
 
   @@unique([inviteId, role])
   @@index([userId, createdAt])
+}
+
+model UserCredits {
+  userId    String   @id
+  balance   Int      @default(30)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

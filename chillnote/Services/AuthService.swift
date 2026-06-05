@@ -74,6 +74,14 @@ final class AuthService: ObservableObject {
         guard case .checking = state else { return false }
         return hasCachedSessionToken && lastAuthenticatedUserId != nil
     }
+
+    /// Whether to render signed-in UI surfaces (account section, sign-out button, etc.).
+    /// Returns true both when the session is confirmed (.signedIn) and when we are still
+    /// checking but have a cached token, so the Settings page doesn't flash "Sign in"
+    /// for users who are already logged in.
+    var shouldShowSignedInUI: Bool {
+        isSignedIn || canOptimisticallyEnterHome
+    }
     
     var currentUserId: String? {
         if case .signedIn(let userId) = state {

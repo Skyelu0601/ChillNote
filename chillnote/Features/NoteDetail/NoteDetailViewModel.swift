@@ -10,7 +10,7 @@ final class NoteDetailViewModel: ObservableObject {
     struct Dependencies {
         var now: () -> Date = Date.init
         var checkDailyQuota: (DailyQuotaFeature) async -> Bool = { feature in
-            await StoreService.shared.checkDailyQuotaOnServer(feature: feature)
+            await StoreService.shared.consumeCredits(feature: feature)
         }
         var authorizeVoiceRecordingStart: () async -> Bool = {
             await StoreService.shared.authorizeVoiceRecordingStart()

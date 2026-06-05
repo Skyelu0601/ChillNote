@@ -21,8 +21,9 @@ extension HomeView {
             return
         }
 
-        await StoreService.shared.ensureSubscriptionStatusReadyForFeatureGate()
-        guard StoreService.shared.currentTier == .pro else {
+        // consumeCredits internally calls ensureSubscriptionStatusReadyForFeatureGate.
+        let hasCredits = await StoreService.shared.consumeCredits(feature: .import)
+        guard hasCredits else {
             showSubscription = true
             return
         }

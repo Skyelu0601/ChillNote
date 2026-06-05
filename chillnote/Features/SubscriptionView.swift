@@ -62,8 +62,7 @@ struct SubscriptionView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // 1. Clean Premium Background
-                cleanBackground
+                BrandBackground()
                     .ignoresSafeArea()
                 
                 if storeService.currentTier == .pro {
@@ -157,8 +156,8 @@ struct SubscriptionView: View {
 
     private var onboardingTrialIntroPage: some View {
         VStack(spacing: 34) {
-            Text(L10n.text("subscription.onboarding.title"))
-                .font(.system(size: 32, weight: .bold, design: .default))
+            Text(onboardingTrialIntroTitle)
+                .font(.brandDisplay)
                 .foregroundColor(.textMain)
                 .multilineTextAlignment(.center)
                 .lineSpacing(3)
@@ -190,7 +189,7 @@ struct SubscriptionView: View {
 
                 VStack(spacing: 12) {
                     Text(onboardingTrialTitle(for: displayInfo))
-                        .font(.system(size: 38, weight: .bold, design: .default))
+                        .font(.brandTitle1)
                         .foregroundColor(.textMain)
                         .multilineTextAlignment(.center)
                         .lineLimit(2)
@@ -199,13 +198,13 @@ struct SubscriptionView: View {
                     VStack(spacing: 5) {
                         if let weeklyPrice = displayInfo.equivalentWeeklyText {
                             Text(L10n.text("subscription.onboarding.weekly_price_after_trial", weeklyPrice))
-                                .font(.system(size: 22, weight: .semibold, design: .default))
+                                .font(.brandTitle2)
                                 .foregroundColor(.textMain)
                         }
 
                         Text(L10n.text("subscription.onboarding.annual_billing_after_trial", product.displayPrice))
-                            .font(.system(size: 17, weight: .medium, design: .default))
-                            .foregroundColor(.textMain.opacity(0.82))
+                            .font(.brandBody)
+                            .foregroundColor(.textMain.opacity(0.78))
                             .multilineTextAlignment(.center)
                             .lineLimit(2)
                             .minimumScaleFactor(0.86)
@@ -222,30 +221,31 @@ struct SubscriptionView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         } else if storeService.isLoadingProducts {
             ProgressView(L10n.text("subscription.loading_prices"))
+                .font(.brandBodySmall)
                 .padding(.top, 16)
         } else if let error = storeService.productsErrorMessage {
             VStack(spacing: 12) {
                 Text(error)
-                    .font(.callout)
+                    .font(.brandBodySmall)
                     .foregroundColor(.red)
                     .multilineTextAlignment(.center)
                 Button(L10n.text("common.retry")) {
                     Task { await storeService.refreshProducts() }
                 }
-                .font(.callout.weight(.semibold))
+                .font(.brandLabel)
                 .foregroundColor(.accentPrimary)
             }
             .padding(.top, 16)
         } else {
             VStack(spacing: 12) {
                 Text(L10n.text("subscription.unavailable"))
-                    .font(.callout)
+                    .font(.brandBodySmall)
                     .foregroundColor(.textSub)
                     .multilineTextAlignment(.center)
                 Button(L10n.text("common.retry")) {
                     Task { await storeService.refreshProducts() }
                 }
-                .font(.callout.weight(.semibold))
+                .font(.brandLabel)
                 .foregroundColor(.accentPrimary)
             }
             .padding(.top, 16)
@@ -260,24 +260,15 @@ struct SubscriptionView: View {
                 Task { await storeService.purchase(product) }
             }
         } label: {
-            HStack(spacing: 8) {
+            HStack(spacing: BrandTokens.Space.s1) {
                 Text(onboardingTrialPage == 0 ? L10n.text("subscription.onboarding.cta.next") : L10n.text("subscription.onboarding.cta.start_free_week"))
-                    .font(.system(size: onboardingTrialPage == 0 ? 16 : 22, weight: .bold, design: .default))
-                    .foregroundColor(.white)
                     .lineLimit(1)
-                    .minimumScaleFactor(0.74)
+                    .minimumScaleFactor(0.78)
                 Image(systemName: "chevron.right")
-                    .font(.system(size: onboardingTrialPage == 0 ? 13 : 20, weight: .bold))
-                    .foregroundColor(.white)
+                    .font(.system(size: 13, weight: .bold))
             }
-            .padding(.horizontal, onboardingTrialPage == 0 ? 20 : 26)
-            .frame(maxWidth: onboardingTrialPage == 0 ? nil : .infinity)
-            .frame(height: onboardingTrialPage == 0 ? 48 : 68)
-            .background(Color.accentPrimary)
-            .clipShape(RoundedRectangle(cornerRadius: onboardingTrialPage == 0 ? 999 : 18, style: .continuous))
-            .shadow(color: .accentPrimary.opacity(0.22), radius: onboardingTrialPage == 0 ? 10 : 14, x: 0, y: onboardingTrialPage == 0 ? 4 : 7)
+            .brandPrimaryCTAStyle()
         }
-        .frame(maxWidth: .infinity, alignment: onboardingTrialPage == 0 ? .trailing : .center)
         .disabled((onboardingTrialPage == 1 && selectedProduct == nil) || storeService.isPurchasing)
     }
 
@@ -293,7 +284,7 @@ struct SubscriptionView: View {
 
             Link(L10n.text("subscription.privacy_policy"), destination: URL(string: "https://www.chillnoteai.com/privacy")!)
         }
-        .font(.system(size: 13, weight: .medium))
+        .font(.brandLabel)
         .foregroundColor(.textSub.opacity(0.72))
         .lineLimit(1)
         .minimumScaleFactor(0.72)
@@ -306,6 +297,17 @@ struct SubscriptionView: View {
         }
 
         return L10n.text("subscription.onboarding.trial_title_fallback")
+    }
+
+    private var onboardingTrialIntroTitle: AttributedString {
+        var title = AttributedString(L10n.text("subscription.onboarding.title"))
+        title.foregroundColor = Color.textMain
+
+        if let brandRange = title.range(of: "ChillNote") {
+            title[brandRange].foregroundColor = Color.accentPrimary
+        }
+
+        return title
     }
     
     private var upgradeView: some View {
@@ -346,16 +348,10 @@ struct SubscriptionView: View {
                         Task { await storeService.purchase(product) }
                     } label: {
                         Text(selectedProductDisplayInfo?.ctaText ?? (isAnnual ? L10n.text("subscription.cta.start_annual") : L10n.text("subscription.cta.start_monthly")))
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(Color.accentPrimary)
-                            .cornerRadius(16)
-                            .shadow(color: .accentPrimary.opacity(0.3), radius: 10, x: 0, y: 5)
+                            .brandPrimaryCTAStyle()
                     }
-                    .padding(.horizontal, 24)
-                    .padding(.bottom, 20)
+                    .padding(.horizontal, BrandTokens.Space.s4)
+                    .padding(.bottom, BrandTokens.Space.s4)
                     .disabled(storeService.isPurchasing)
                     .opacity(showContent ? 1 : 0)
                 }
@@ -367,7 +363,7 @@ struct SubscriptionView: View {
         VStack(spacing: 32) {
             // Header
             VStack(spacing: 16) {
-                ProBrandHeader()
+                BrandWordmark()
 
                 HStack(spacing: 6) {
                     Image(systemName: "crown.fill")
@@ -421,10 +417,12 @@ struct SubscriptionView: View {
                     }
                 }
             }
-            .padding(20)
-            .background(Color.white)
-            .cornerRadius(20)
-            .shadow(color: .black.opacity(0.05), radius: 15, x: 0, y: 5)
+            .padding(BrandTokens.Space.s4)
+            .background(
+                RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
+                    .fill(Color.cardBackground)
+                    .brandShadow(BrandTokens.Shadow.card)
+            )
             
             // Active Benefits
             VStack(alignment: .leading, spacing: 20) {
@@ -443,12 +441,14 @@ struct SubscriptionView: View {
                     openURL(url)
                 } label: {
                     Text(L10n.text("subscription.manage"))
-                        .font(.headline)
+                        .font(.brandButton)
                         .foregroundColor(.accentPrimary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.accentPrimary.opacity(0.1))
-                        .cornerRadius(16)
+                        .frame(height: BrandTokens.Size.primaryButtonHeight)
+                        .background(
+                            RoundedRectangle(cornerRadius: BrandTokens.Radius.button, style: .continuous)
+                                .fill(Color.accentPrimary.opacity(0.1))
+                        )
                 }
                 
                 Button {
@@ -464,39 +464,9 @@ struct SubscriptionView: View {
         }
     }
     
-    private var cleanBackground: some View {
-        ZStack {
-            // A very subtle, high-end gradient
-            LinearGradient(
-                colors: [
-                    Color.bgPrimary,
-                    Color.white
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            
-            // Subtle texture simulation
-            GeometryReader { proxy in
-                Path { path in
-                    let width = proxy.size.width
-                    let height = proxy.size.height
-                    path.move(to: CGPoint(x: 0, y: height * 0.2))
-                    path.addCurve(
-                        to: CGPoint(x: width, y: height * 0.4),
-                        control1: CGPoint(x: width * 0.5, y: height * 0.1),
-                        control2: CGPoint(x: width * 0.8, y: height * 0.5)
-                    )
-                }
-                .stroke(Color.accentPrimary.opacity(0.03), lineWidth: 80)
-                .blur(radius: 20)
-            }
-        }
-    }
-    
     private var heroSection: some View {
         VStack(spacing: 20) {
-            ProBrandHeader()
+            BrandWordmark()
             
             if storeService.currentTier == .pro {
                 HStack(spacing: 6) {
@@ -515,17 +485,19 @@ struct SubscriptionView: View {
     
     private var benefitsList: some View {
         VStack(spacing: 16) {
-            BenefitRow(icon: "waveform", iconColor: .orange, title: L10n.text("subscription.benefit.deep_dives.title"), subtitle: L10n.text("subscription.benefit.deep_dives.subtitle"))
+            BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: L10n.text("subscription.benefit.custom_skills.title"), subtitle: L10n.text("subscription.benefit.custom_skills.subtitle"))
             BenefitRow(icon: "plus.app.fill", iconColor: .green, title: L10n.text("subscription.benefit.flexible_capture.title"), subtitle: L10n.text("subscription.benefit.flexible_capture.subtitle"))
             BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: L10n.text("subscription.benefit.unlimited_chat.title"), subtitle: L10n.text("subscription.benefit.unlimited_chat.subtitle"))
-            BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: L10n.text("subscription.benefit.custom_skills.title"), subtitle: L10n.text("subscription.benefit.custom_skills.subtitle"))
+            BenefitRow(icon: "waveform", iconColor: .orange, title: L10n.text("subscription.benefit.deep_dives.title"), subtitle: L10n.text("subscription.benefit.deep_dives.subtitle"))
         }
-        .padding(24)
-        .background(Color.white)
-        .cornerRadius(24)
-        .shadow(color: .black.opacity(0.04), radius: 15, x: 0, y: 5)
+        .padding(BrandTokens.Space.s4)
+        .background(
+            RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
+                .fill(Color.cardBackground)
+                .brandShadow(BrandTokens.Shadow.card)
+        )
     }
-    
+
     private var pricingSection: some View {
         VStack(spacing: 24) {
             // Toggle
@@ -727,38 +699,16 @@ struct ProductHeroCard: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
+        .padding(.vertical, BrandTokens.Space.s4)
         .background(
-            RoundedRectangle(cornerRadius: 24)
-                .fill(Color.white)
+            RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
+                .fill(Color.cardBackground)
                 .shadow(color: displayInfo.isAnnual ? .accentPrimary.opacity(0.15) : .black.opacity(0.05), radius: 20, x: 0, y: 10)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 24)
+            RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
                 .stroke(displayInfo.isAnnual ? Color.accentPrimary : Color.clear, lineWidth: 2)
         )
-    }
-}
-
-private struct ProBrandHeader: View {
-    var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 10) {
-            LaunchStyleWordmark()
-
-            Text("Pro")
-                .font(.system(size: 31, weight: .semibold, design: .rounded))
-                .foregroundColor(Color(red: 0.184, green: 0.525, blue: 1.0))
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(L10n.text("subscription.brand.pro_title")))
-    }
-}
-
-private struct LaunchStyleWordmark: View {
-    var body: some View {
-        Text(L10n.text("auth.login.brand_title"))
-            .font(.system(size: 31, weight: .semibold, design: .serif))
-            .foregroundColor(.black)
     }
 }
 
@@ -766,13 +716,25 @@ private struct OnboardingTrialLogo: View {
     let size: CGFloat
 
     var body: some View {
-        Image("LoginBrandIcon")
-            .resizable()
-            .scaledToFit()
-            .frame(width: size, height: size)
-            .clipShape(RoundedRectangle(cornerRadius: size * 0.24, style: .continuous))
-            .shadow(color: Color.black.opacity(0.08), radius: 18, x: 0, y: 10)
-            .accessibilityHidden(true)
+        ZStack {
+            Circle()
+                .stroke(Color.accentPrimary.opacity(0.07), lineWidth: 1)
+                .frame(width: size * 1.28, height: size * 1.28)
+
+            Circle()
+                .stroke(Color.accentPrimary.opacity(0.10), lineWidth: 1)
+                .frame(width: size * 1.02, height: size * 1.02)
+
+            Circle()
+                .fill(Color.accentPrimary.opacity(0.12))
+                .frame(width: size * 0.74, height: size * 0.74)
+                .blur(radius: size * 0.10)
+
+            NoteDetailLightningBallIcon(size: size)
+                .shadow(color: Color.accentPrimary.opacity(0.18), radius: 18, x: 0, y: 10)
+        }
+        .frame(width: size * 1.32, height: size * 1.32)
+        .accessibilityHidden(true)
     }
 }
 
@@ -786,7 +748,7 @@ private struct OnboardingTrialNoPaymentView: View {
                 .foregroundColor(.green)
 
             Text(L10n.text(textKey))
-                .font(.system(size: 25, weight: .semibold, design: .default))
+                .font(.brandTitle2)
                 .foregroundColor(.textMain)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
@@ -812,7 +774,7 @@ private struct OnboardingTrialFeatureList: View {
                         .padding(.top, 1)
 
                     Text(L10n.text(key))
-                        .font(.system(size: 16, weight: .semibold, design: .default))
+                        .font(.brandBodySmall)
                         .foregroundColor(.textMain)
                         .fixedSize(horizontal: false, vertical: true)
                 }
@@ -821,9 +783,9 @@ private struct OnboardingTrialFeatureList: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(18)
         .background(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
+            RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
                 .fill(Color.white.opacity(0.92))
-                .shadow(color: Color.shadowColor.opacity(0.8), radius: 16, x: 0, y: 8)
+                .brandShadow(BrandTokens.Shadow.card)
         )
     }
 }

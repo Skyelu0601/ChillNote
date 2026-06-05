@@ -213,6 +213,7 @@ struct AIContextChatView: View {
             || lowered.contains("too many requests")
             || lowered.contains("quota")
             || lowered.contains("429")
+            || lowered.contains("insufficient credits")
     }
     
     var body: some View {
@@ -441,8 +442,12 @@ struct AIContextChatView: View {
     func sendMessage() {
         let trimmed = userInput.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        sendMessageImpl(trimmed: trimmed)
+    }
+
+    private func sendMessageImpl(trimmed: String) {
         let chatMode = ChatContentParser.parseChatMode(for: trimmed, recipes: recipeManager.savedRecipes)
-        
+
         // Add user message
         let userMessage = ChatMessage(role: .user, content: trimmed)
         messages.append(userMessage)
@@ -452,7 +457,7 @@ struct AIContextChatView: View {
         isLoading = true
         errorMessage = nil
         slashCommandMatch = nil
-        
+
         Task {
             do {
                 // Build context from notes
@@ -490,6 +495,7 @@ struct AIContextChatView: View {
                     }
                     isLoading = false
                 }
+                await StoreService.shared.fetchCreditBalance()
                 
             } catch {
                 await MainActor.run {

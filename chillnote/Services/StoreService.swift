@@ -11,6 +11,7 @@ enum DailyQuotaFeature: String {
     case voice
     case agentRecipe = "agent_recipe"
     case chat
+    case `import` = "import"
 }
 
 struct SubscriptionPeriodDescriptor: Equatable {
@@ -257,162 +258,98 @@ class StoreService: ObservableObject {
 
     static let freeRecordingTimeLimit: TimeInterval = 60
     static let proRecordingTimeLimit: TimeInterval = 600
-    static let freeDailyVoiceLimit = 5
-    static let freeDailyAgentRecipeLimit = 3
-    static let freeDailyAIChatLimit = 10
-    
+
     @Published var currentTier: SubscriptionTier = .free
     @Published var availableProducts: [Product] = []
     @Published var isPurchasing = false
     @Published var errorMessage: String?
     @Published var isLoadingProducts = false
     @Published var productsErrorMessage: String?
-    
+
     // Subscription Details
     @Published var subscriptionExpirationDate: Date?
     @Published var activeSubscriptionProductId: String?
-    
+
+    // MARK: - Credit System
+    /// Remaining AI credits for free users. Default 30 (new-user grant) — overwritten on first server sync.
+    @Published var creditBalance: Int = 30
+
+    private static let creditBalanceCacheKey = "cached_credit_balance"
+
     // Feature Limits
     var recordingTimeLimit: TimeInterval {
         currentTier == .pro ? Self.proRecordingTimeLimit : Self.freeRecordingTimeLimit
     }
 
-    var dailyVoiceLimit: Int {
-        currentTier == .pro ? Int.max : Self.freeDailyVoiceLimit
-    }
+    // MARK: - Credit API
 
-    var dailyAgentRecipeLimit: Int {
-        currentTier == .pro ? Int.max : Self.freeDailyAgentRecipeLimit
-    }
-
-    var dailyAIChatLimit: Int {
-        currentTier == .pro ? Int.max : Self.freeDailyAIChatLimit
-    }
-
-    // MARK: - Usage Tracking
-    private let voiceUsageKey = "daily_voice_ai_usage"
-    private let agentRecipeUsageKey = "daily_agent_recipe_ai_usage"
-    private let chatUsageKey = "daily_chat_ai_usage"
-    
-    var remainingFreeVoiceCount: Int {
-        if currentTier == .pro { return 999 }
-        return max(0, dailyVoiceLimit - currentDailyVoiceUsage)
-    }
-
-    private var currentDailyVoiceUsage: Int {
-        let defaults = UserDefaults.standard
-        let key = usageKeyForToday(baseKey: voiceUsageKey)
-        return defaults.integer(forKey: key)
-    }
-
-    private var currentDailyAgentRecipeUsage: Int {
-        let defaults = UserDefaults.standard
-        let key = usageKeyForToday(baseKey: agentRecipeUsageKey)
-        return defaults.integer(forKey: key)
-    }
-
-    private var currentDailyAIChatUsage: Int {
-        let defaults = UserDefaults.standard
-        let key = usageKeyForToday(baseKey: chatUsageKey)
-        return defaults.integer(forKey: key)
-    }
-    
-    private func usageKeyForToday(baseKey: String) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        let dateStr = formatter.string(from: Date())
-        return "\(baseKey)_\(dateStr)"
-    }
-    
-    func canUseVoiceAI() -> Bool {
-        if currentTier == .pro { return true }
-        return currentDailyVoiceUsage < dailyVoiceLimit
-    }
-
-    func canUseAgentRecipeAI() -> Bool {
-        if currentTier == .pro { return true }
-        return currentDailyAgentRecipeUsage < dailyAgentRecipeLimit
-    }
-
-    func canUseAIChat() -> Bool {
-        if currentTier == .pro { return true }
-        return currentDailyAIChatUsage < dailyAIChatLimit
-    }
-
-    func incrementAgentRecipeAIUsage() {
+    /// Fetch current credit balance from the backend and update `creditBalance`.
+    func fetchCreditBalance() async {
+        // Pro users have unlimited access — no balance needed.
         if currentTier == .pro { return }
-        let defaults = UserDefaults.standard
-        let key = usageKeyForToday(baseKey: agentRecipeUsageKey)
-        let current = defaults.integer(forKey: key)
-        defaults.set(current + 1, forKey: key)
+
+        guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else {
+            // Unauthenticated: restore from cache.
+            let cached = UserDefaults.standard.integer(forKey: Self.creditBalanceCacheKey)
+            creditBalance = cached
+            return
+        }
+
+        let url = URL(string: "\(AppConfig.backendBaseURL)/credits/balance")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else { return }
+
+            if http.statusCode == 401 {
+                creditBalance = 0
+                UserDefaults.standard.set(0, forKey: Self.creditBalanceCacheKey)
+                return
+            }
+            guard (200...299).contains(http.statusCode) else { return }
+
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let balance = json["balance"] as? Int {
+                creditBalance = balance
+                UserDefaults.standard.set(balance, forKey: Self.creditBalanceCacheKey)
+            }
+        } catch {
+            // Network failure: keep current (cached) value — fail open.
+            let cached = UserDefaults.standard.integer(forKey: Self.creditBalanceCacheKey)
+            creditBalance = cached
+        }
     }
 
-    func incrementAIChatUsage() {
-        if currentTier == .pro { return }
-        let defaults = UserDefaults.standard
-        let key = usageKeyForToday(baseKey: chatUsageKey)
-        let current = defaults.integer(forKey: key)
-        defaults.set(current + 1, forKey: key)
-    }
-
-    func incrementVoiceAIUsage() {
-        if currentTier == .pro { return }
-        let defaults = UserDefaults.standard
-        let key = usageKeyForToday(baseKey: voiceUsageKey)
-        let current = defaults.integer(forKey: key)
-        defaults.set(current + 1, forKey: key)
-    }
-
-    @discardableResult
-    func consumeAgentRecipeAIUsage() -> Bool {
-        guard canUseAgentRecipeAI() else { return false }
-        incrementAgentRecipeAIUsage()
-        return true
-    }
-
-    @discardableResult
-    func consumeAIChatUsage() -> Bool {
-        guard canUseAIChat() else { return false }
-        incrementAIChatUsage()
-        return true
-    }
-
-    @discardableResult
-    func consumeVoiceAIUsage() -> Bool {
-        guard canUseVoiceAI() else { return false }
-        incrementVoiceAIUsage()
-        return true
-    }
-
-    private func performDailyQuotaRequest(
-        feature: DailyQuotaFeature,
-        action: String
-    ) async -> Bool {
+    /// Consume credits for a feature. Returns `true` if the action is allowed, `false` if credits are exhausted.
+    /// Pro users always return `true`. Network failures fail open.
+    func consumeCredits(feature: DailyQuotaFeature) async -> Bool {
         await ensureSubscriptionStatusReadyForFeatureGate()
 
-        // Pro users have unlimited access — skip the server quota check entirely.
         if currentTier == .pro { return true }
 
         guard AuthService.shared.confirmedUserId != nil else { return true }
         guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else { return true }
 
-        let url = URL(string: "\(AppConfig.backendBaseURL)/quota/daily")!
+        let url = URL(string: "\(AppConfig.backendBaseURL)/credits/consume")!
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let payload: [String: Any] = [
-            "feature": feature.rawValue,
-            "action": action
-        ]
+        let payload: [String: Any] = ["feature": feature.rawValue]
         request.httpBody = try? JSONSerialization.data(withJSONObject: payload)
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse else { return true }
 
-            if http.statusCode == 429 {
+            if http.statusCode == 402 {
+                // Insufficient credits.
+                creditBalance = 0
+                UserDefaults.standard.set(0, forKey: Self.creditBalanceCacheKey)
                 if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                    let message = json["error"] as? String {
                     self.errorMessage = message
@@ -420,23 +357,22 @@ class StoreService: ObservableObject {
                 return false
             }
 
+            if (200...299).contains(http.statusCode),
+               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let newBalance = json["balance"] as? Int {
+                creditBalance = newBalance
+                UserDefaults.standard.set(newBalance, forKey: Self.creditBalanceCacheKey)
+            }
+
             return (200...299).contains(http.statusCode)
         } catch {
-            // Network failure fallback: don't hard-block user locally.
+            // Network failure: fail open.
             return true
         }
     }
 
-    func checkDailyQuotaOnServer(feature: DailyQuotaFeature) async -> Bool {
-        await performDailyQuotaRequest(feature: feature, action: "check")
-    }
-
-    func consumeDailyQuotaOnServer(feature: DailyQuotaFeature) async -> Bool {
-        await performDailyQuotaRequest(feature: feature, action: "consume")
-    }
-
     func authorizeVoiceRecordingStart() async -> Bool {
-        await consumeDailyQuotaOnServer(feature: .voice)
+        await consumeCredits(feature: .voice)
     }
     
     // Product Identifiers
@@ -466,12 +402,18 @@ class StoreService: ObservableObject {
     init() {
         hydrateCachedSubscriptionStatusForLastAuthenticatedUser()
 
+        // Hydrate credit balance from cache immediately so UI is correct before first server sync.
+        let cachedBalance = UserDefaults.standard.integer(forKey: Self.creditBalanceCacheKey)
+        // If key has never been written, integer(forKey:) returns 0 — treat as new user with full grant.
+        creditBalance = cachedBalance > 0 ? cachedBalance : 30
+
         // Start listening for transaction updates
         transactionListener = listenForTransactions()
-        
+
         Task {
             await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
             await fetchProducts()
+            await fetchCreditBalance()
         }
     }
     
@@ -575,7 +517,9 @@ class StoreService: ObservableObject {
         subscriptionExpirationDate = nil
         activeSubscriptionProductId = nil
         lastFreshSubscriptionStatusUserId = nil
+        creditBalance = 0
         UserDefaults.standard.removeObject(forKey: Self.legacyBackendTierCacheKey)
+        UserDefaults.standard.removeObject(forKey: Self.creditBalanceCacheKey)
     }
 
     func refreshProducts() async {
@@ -662,6 +606,8 @@ class StoreService: ObservableObject {
         }
         if backendStatus.isFreshFromBackend {
             lastFreshSubscriptionStatusUserId = userIdAtStart
+            // Refresh credit balance whenever we get a fresh subscription status from the backend.
+            await fetchCreditBalance()
         }
     }
 

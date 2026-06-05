@@ -283,10 +283,17 @@ struct SidebarView: View {
             showSubscription = true
         } label: {
             HStack(spacing: 12) {
-                Text(storeService.currentTier == .pro ? L10n.text("sidebar.membership.pro") : L10n.text("sidebar.membership.free_plan"))
-                    .font(.system(size: 14, weight: .bold, design: .serif))
-                    .foregroundColor(storeService.currentTier == .pro ? .white : .textMain.opacity(0.9))
-                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(storeService.currentTier == .pro ? L10n.text("sidebar.membership.pro") : L10n.text("sidebar.membership.free_plan"))
+                        .font(.system(size: 14, weight: .bold, design: .serif))
+                        .foregroundColor(storeService.currentTier == .pro ? .white : .textMain.opacity(0.9))
+
+                    // Credit balance display for free users.
+                    if storeService.currentTier == .free {
+                        sidebarCreditBalanceLabel
+                    }
+                }
+
                 if storeService.currentTier != .pro {
                     Text(L10n.text("sidebar.membership.upgrade"))
                         .font(.system(size: 10, weight: .bold))
@@ -306,6 +313,27 @@ struct SidebarView: View {
             )
         }
         .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var sidebarCreditBalanceLabel: some View {
+        HStack(spacing: 3) {
+            Image(systemName: storeService.creditBalance == 0 ? "lock.fill" : "bolt.fill")
+                .font(.system(size: 9, weight: .medium))
+                .foregroundColor(sidebarCreditBalanceColor)
+            Text(storeService.creditBalance == 0
+                ? L10n.text("sidebar.credits.locked")
+                : L10n.text("sidebar.credits.remaining", Int64(storeService.creditBalance)))
+                .font(.system(size: 11, weight: .medium))
+                .foregroundColor(sidebarCreditBalanceColor)
+        }
+    }
+
+    private var sidebarCreditBalanceColor: Color {
+        let balance = storeService.creditBalance
+        if balance == 0 { return .red }
+        if balance <= 10 { return .orange }
+        return .green
     }
 }
 

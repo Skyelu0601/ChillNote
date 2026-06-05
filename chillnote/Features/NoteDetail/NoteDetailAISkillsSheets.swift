@@ -114,6 +114,23 @@ struct NoteDetailAISkillPreviewSheet: View {
                             }
                         }
 
+                        if preview.recipe.id == "style_match",
+                           BrandVoicePreferences.current.sample.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            HStack(alignment: .top, spacing: 8) {
+                                Image(systemName: "waveform")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(.accentPrimary)
+                                Text(L10n.text("brand_voice.preview.no_sample_hint"))
+                                    .font(.caption)
+                                    .foregroundColor(.textSub)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(12)
+                            .background(Color.accentPrimary.opacity(0.08))
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        }
+
                         Text(preview.result)
                             .font(.body)
                             .foregroundColor(.textMain)
