@@ -13,10 +13,16 @@ struct HomeBodyView: View {
     let dispatch: (HomeScreenAction) -> Void
     @FocusState.Binding var isSearchFocused: Bool
     let searchBar: AnyView
-    
+
+    @State private var sectionSlideDirection: Edge = .trailing
+
     private let sidebarOpenEdgeWidth: CGFloat = 110
     private let sidebarOpenMinTranslation: CGFloat = 36
     private let sidebarOpenHorizontalBias: CGFloat = 12
+
+    private var oppositeSectionSlideDirection: Edge {
+        sectionSlideDirection == .trailing ? .leading : .trailing
+    }
 
     private var navigationPathBinding: Binding<NavigationPath> {
         Binding(
@@ -371,6 +377,18 @@ struct HomeBodyView: View {
         generator.impactOccurred()
     }
 
+    private var showsSearchBar: Bool {
+        !state.isSelectionMode && state.isSearchVisible
+    }
+
+    private var showsSectionPicker: Bool {
+        !state.isSelectionMode && !state.isTrashSelected && state.selectedTag == nil
+    }
+
+    private var hasPinnedChrome: Bool {
+        showsSearchBar || showsSectionPicker
+    }
+
     private var mainContent: some View {
         VStack(spacing: 0) {
             HomeHeaderView(
@@ -395,23 +413,14 @@ struct HomeBodyView: View {
                 onShowEmptyTrashConfirmation: { dispatch(.setShowEmptyTrashConfirmation(true)) }
             )
             .background(Color.bgPrimary)
-            .zIndex(1)
+            .zIndex(2)
+
+            pinnedChrome
+                .background(Color.bgPrimary)
+                .zIndex(1)
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
-                    if !state.isSelectionMode && state.isSearchVisible {
-                        searchBar
-                            .padding(.horizontal, 24)
-                    }
-
-                    if !state.isSelectionMode && !state.isTrashSelected && state.selectedTag == nil {
-                        HomeSectionPicker(
-                            selectedSection: state.selectedSection ?? .inbox,
-                            onSelect: { dispatch(.selectSection($0)) }
-                        )
-                        .padding(.horizontal, 24)
-                    }
-
                     HomeNotesListView(
                         cachedVisibleNotes: state.cachedVisibleNotes,
                         searchQuery: state.searchText,
@@ -436,8 +445,18 @@ struct HomeBodyView: View {
                 .onTapGesture {
                     dispatch(.hideKeyboard)
                 }
+                .id(state.selectedSection ?? .inbox)
+                .transition(.asymmetric(
+                    insertion: .move(edge: sectionSlideDirection).combined(with: .opacity),
+                    removal: .move(edge: oppositeSectionSlideDirection).combined(with: .opacity)
+                ))
+                .animation(
+                    .spring(response: 0.42, dampingFraction: 0.86),
+                    value: state.selectedSection
+                )
             }
             .background(Color.bgPrimary)
+            .clipped()
             .scrollDismissesKeyboard(.interactively)
             .navigationDestination(for: Note.self) { note in
                 NoteDetailView(note: note)
@@ -447,6 +466,35 @@ struct HomeBodyView: View {
                     }
             }
         }
+    }
+
+    @ViewBuilder
+    private var pinnedChrome: some View {
+        VStack(spacing: 12) {
+            if showsSearchBar {
+                searchBar
+                    .padding(.horizontal, 24)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+            }
+
+            if showsSectionPicker {
+                HomeSectionPicker(
+                    selectedSection: state.selectedSection ?? .inbox,
+                    sectionCounts: state.sectionCounts,
+                    onSelect: { newSection in
+                        let current = state.selectedSection ?? .inbox
+                        let oldIdx = NoteSection.allCases.firstIndex(of: current) ?? 0
+                        let newIdx = NoteSection.allCases.firstIndex(of: newSection) ?? 0
+                        sectionSlideDirection = newIdx >= oldIdx ? .trailing : .leading
+                        dispatch(.selectSection(newSection))
+                    }
+                )
+                .padding(.horizontal, 24)
+                .transition(.opacity)
+            }
+        }
+        .padding(.top, hasPinnedChrome ? 16 : 0)
+        .padding(.bottom, hasPinnedChrome ? 4 : 0)
     }
 
     private var deleteNotesButtonTitle: String {

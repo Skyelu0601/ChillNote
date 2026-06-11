@@ -71,6 +71,7 @@ import { supabase } from "@/lib/supabase";
 import { AuthPanel } from "./auth-panel";
 
 type FeedMode = "active" | "trash";
+type NoteSectionKey = "inbox" | "drafts" | "published";
 type MainPanel = "notes" | "skills" | "settings";
 type RecipeSection = "library" | "mySkills";
 type RecipeScope = "active" | "visible";
@@ -89,6 +90,16 @@ const WEB_CAPTION_GOAL_KEY = "chillnote.web.caption_pack.goal";
 const WEB_CAPTION_TONE_KEY = "chillnote.web.caption_pack.tone";
 const WEB_CAPTION_STYLE_KEY = "chillnote.web.caption_pack.output_style";
 const validAgentRecipeIds = new Set(agentRecipes.map((recipe) => recipe.id));
+const NOTE_SECTION_KEYS: NoteSectionKey[] = ["inbox", "drafts", "published"];
+const sectionLabels: Record<NoteSectionKey, string> = {
+  inbox: copy.app.sectionInbox,
+  drafts: copy.app.sectionDrafts,
+  published: copy.app.sectionPublished,
+};
+
+function noteSectionKey(note: { section?: string | null } | null | undefined): NoteSectionKey {
+  return note?.section === "drafts" || note?.section === "published" ? note.section : "inbox";
+}
 const captionGoalOptions = ["startDiscussion", "getSaves", "getShares", "driveFollows"] as const;
 const captionToneOptions = ["casualUseful", "educational", "bold", "storyDriven", "creatorVoice"] as const;
 const captionOutputStyleOptions = ["concise", "balanced", "detailed"] as const;
@@ -355,7 +366,7 @@ function formatDate(value?: string | null) {
   if (!value) return copy.app.neverSynced;
   const time = dateTimeOrNull(value);
   if (time == null) return copy.app.neverSynced;
-  return new Intl.DateTimeFormat("en", {
+  return new Intl.DateTimeFormat(undefined, {
     month: "short",
     day: "numeric",
     hour: "2-digit",
@@ -432,6 +443,7 @@ export function ChillNoteWebApp() {
   const [draft, setDraft] = useState("");
   const [query, setQuery] = useState("");
   const [feedMode, setFeedMode] = useState<FeedMode>("active");
+  const [selectedSection, setSelectedSection] = useState<NoteSectionKey>("inbox");
   const [selectedTagId, setSelectedTagId] = useState<string | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
   const [status, setStatus] = useState<string | null>(null);
@@ -514,20 +526,35 @@ export function ChillNoteWebApp() {
       .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name));
   }, [tags]);
 
-  const visibleNotes = useMemo(() => {
+  const matchesFilters = useMemo(() => {
     const cleanQuery = query.trim().toLowerCase();
-    const filtered = notes.filter((note) => {
-      if (feedMode === "active" && note.deletedAt) return false;
-      if (feedMode === "trash" && !note.deletedAt) return false;
+    return (note: NoteDTO) => {
       if (selectedTagId && !(note.tagIds ?? []).includes(selectedTagId)) return false;
-
       if (!cleanQuery) return true;
       const noteTags = activeTagsForNote(note, tags).map((tag) => tag.name.toLowerCase());
       return previewPlainText(note.content).toLowerCase().includes(cleanQuery)
         || noteTags.some((tagName) => tagName.includes(cleanQuery));
+    };
+  }, [query, selectedTagId, tags]);
+
+  const sectionCounts = useMemo(() => {
+    const counts: Record<NoteSectionKey, number> = { inbox: 0, drafts: 0, published: 0 };
+    for (const note of notes) {
+      if (note.deletedAt || !matchesFilters(note)) continue;
+      counts[noteSectionKey(note)] += 1;
+    }
+    return counts;
+  }, [matchesFilters, notes]);
+
+  const visibleNotes = useMemo(() => {
+    const filtered = notes.filter((note) => {
+      if (feedMode === "active" && note.deletedAt) return false;
+      if (feedMode === "trash" && !note.deletedAt) return false;
+      if (feedMode === "active" && noteSectionKey(note) !== selectedSection) return false;
+      return matchesFilters(note);
     });
     return sortNotesForFeed(filtered);
-  }, [feedMode, notes, query, selectedTagId, tags]);
+  }, [feedMode, matchesFilters, notes, selectedSection]);
 
   const libraryRecipes = useMemo(
     () => agentRecipes.filter((recipe) => recipe.category === selectedRecipeCategory),
@@ -571,6 +598,16 @@ export function ChillNoteWebApp() {
     setActiveId(visibleNotes[0]?.id ?? null);
   }, [activeId, visibleNotes]);
 
+  // Debounced auto-save: persist edits after the user pauses typing.
+  useEffect(() => {
+    if (!session || !activeNote || activeNote.deletedAt) return;
+    if (!draft.trim() || draft === activeNote.content) return;
+    const handle = window.setTimeout(() => {
+      void saveDraft(draft);
+    }, 1000);
+    return () => window.clearTimeout(handle);
+  }, [draft, activeNote, session]);
+
   async function refreshAll(nextCursor = cursor) {
     if (!session) return;
     setSyncing(true);
@@ -609,6 +646,7 @@ export function ChillNoteWebApp() {
     if (!session?.user.id) return;
     const note = makeEmptyNote(session.user.id);
     note.content = initialContent;
+    note.section = selectedSection;
     setFeedMode("active");
     setNotes((current) => [note, ...current]);
     setActiveId(note.id);
@@ -686,6 +724,12 @@ export function ChillNoteWebApp() {
     if (!activeNote) return;
     const pinnedAt = activeNote.pinnedAt ? null : new Date().toISOString();
     await saveDraft(draft, { pinnedAt });
+  }
+
+  async function moveActiveNoteToSection(section: NoteSectionKey) {
+    if (!activeNote || noteSectionKey(activeNote) === section) return;
+    setSelectedSection(section);
+    await saveDraft(draft.trim() ? draft : activeNote.content || " ", { section });
   }
 
   async function startRecording() {
@@ -1020,6 +1064,23 @@ export function ChillNoteWebApp() {
           </button>
         </div>
 
+        {feedMode === "active" ? (
+          <div className="section-tabs" role="tablist" aria-label={copy.app.sectionFilter}>
+            {NOTE_SECTION_KEYS.map((key) => (
+              <button
+                key={key}
+                className={selectedSection === key ? "active" : ""}
+                onClick={() => setSelectedSection(key)}
+                role="tab"
+                aria-selected={selectedSection === key}
+              >
+                <span>{sectionLabels[key]}</span>
+                {sectionCounts[key] > 0 ? <small>{sectionCounts[key]}</small> : null}
+              </button>
+            ))}
+          </div>
+        ) : null}
+
         <div className="search-box">
           <Search size={17} />
           <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.app.searchPlaceholder} />
@@ -1097,6 +1158,20 @@ export function ChillNoteWebApp() {
           {mainPanel === "notes" ? (
           activeNote ? (
             <>
+              {activeNote.deletedAt ? null : (
+                <div className="section-mover" role="group" aria-label={copy.app.moveSection}>
+                  {NOTE_SECTION_KEYS.map((key) => (
+                    <button
+                      key={key}
+                      className={noteSectionKey(activeNote) === key ? "active" : ""}
+                      onClick={() => void moveActiveNoteToSection(key)}
+                      disabled={saving}
+                    >
+                      {sectionLabels[key]}
+                    </button>
+                  ))}
+                </div>
+              )}
               <div className="metadata-bar">
                 <div className="tag-editor">
                   {activeTags.map((tag) => (
@@ -1203,6 +1278,13 @@ export function ChillNoteWebApp() {
               ) : null}
               <footer className="editor-footer">
                 <span>
+                  <span className="save-state">
+                    {saving ? (
+                      <><Loader2 className="spin" size={13} /> {copy.app.saving}</>
+                    ) : activeNote.deletedAt ? null : (
+                      <><Check size={13} /> {copy.app.saved}</>
+                    )}
+                  </span>
                   {copy.app.lastSynced}: {formatDate(status)}
                   {activeNote.deletedAt ? ` · ${daysRemainingInTrash(activeNote.deletedAt)} ${copy.app.daysRemaining}` : ""}
                 </span>

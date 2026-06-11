@@ -1,4 +1,5 @@
-"NSMicrophoneUsageDescription" = "ChillNote needs microphone access to record your thoughts.";
+"NSMicrophoneUsageDescription" = "ChillNote needs microphone access to record your thoughts and capture audio for teleprompter videos.";
 "NSSpeechRecognitionUsageDescription" = "ChillNote uses speech recognition to transcribe your voice to text.";
-"NSCameraUsageDescription" = "ChillNote uses the camera to capture text from whiteboards, pages, screenshots, and everyday ideas.";
+"NSCameraUsageDescription" = "ChillNote uses the camera to capture everyday ideas and record teleprompter videos.";
 "NSPhotoLibraryUsageDescription" = "ChillNote uses photo library access so you can import images and turn visible text into notes.";
+"NSPhotoLibraryAddUsageDescription" = "ChillNote saves exported teleprompter videos to your photo library when you choose to save them.";

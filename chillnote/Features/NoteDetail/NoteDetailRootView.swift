@@ -45,6 +45,7 @@ struct NoteDetailView: View {
                     onRestore: { viewModel.send(.restoreTapped) },
                     onStopRecording: { viewModel.send(.stopRecordingTapped) },
                     onAISkills: { viewModel.send(.aiSkillsTapped) },
+                    onTeleprompter: { viewModel.send(.teleprompterTapped) },
                     onExport: { viewModel.send(.exportTapped) },
                     onDelete: { viewModel.send(.deleteTapped) },
                     onDeletePermanently: { viewModel.send(.deletePermanentlyTapped) }
@@ -85,6 +86,9 @@ struct NoteDetailView: View {
             NoteDetailOverlaysView(viewModel: viewModel)
         }
         .navigationBarHidden(true)
+        .fullScreenCover(isPresented: $viewModel.showTeleprompterCamera) {
+            TeleprompterCameraView(initialScript: note.content)
+        }
         .noteDetailAlertsAndSheets(viewModel: viewModel)
         .onReceive(timer) { _ in
             viewModel.updateRecordingDurationIfNeeded()

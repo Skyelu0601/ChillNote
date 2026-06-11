@@ -1,0 +1,1090 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ChillNote — Studio Notebook for Creators</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,500;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter+Tight:wght@400;500;600&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#f1e6cf;
+  --paper-2:#ead9b8;
+  --paper-3:#e3cd9c;
+  --ink:#15120c;
+  --ink-2:#3a3326;
+  --persimmon:#e0481b;
+  --persimmon-dim:#b53811;
+  --forest:#1f4d3a;
+  --forest-dim:#143427;
+  --chalk:#fbf6ea;
+  --tape:rgba(224, 72, 27, .18);
+  --tape-2:rgba(31, 77, 58, .18);
+
+  --display:"Fraunces", "Times New Roman", serif;
+  --body:"Inter Tight", -apple-system, BlinkMacSystemFont, sans-serif;
+  --mono:"JetBrains Mono", "SFMono-Regular", monospace;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+
+html,body{background:var(--paper);color:var(--ink)}
+body{
+  font-family:var(--body);
+  font-size:16px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+  position:relative;
+  overflow-x:hidden;
+}
+
+/* Paper grain overlay */
+body::before{
+  content:"";
+  position:fixed;inset:0;
+  pointer-events:none;
+  z-index:100;
+  opacity:.55;
+  mix-blend-mode:multiply;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .08 0 0 0 0 .07 0 0 0 0 .05 0 0 0 .35 0'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+/* Subtle warm vignette */
+body::after{
+  content:"";
+  position:fixed;inset:0;
+  pointer-events:none;
+  z-index:99;
+  background:radial-gradient(ellipse at 50% 0%, transparent 30%, rgba(40,30,15,.18) 100%);
+}
+
+a{color:inherit;text-decoration:none}
+button{font:inherit;cursor:pointer;background:none;border:0;color:inherit}
+
+/* ---------- typography ---------- */
+.eyebrow{
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.22em;
+  text-transform:uppercase;
+  color:var(--persimmon);
+  font-weight:500;
+}
+.eyebrow.forest{color:var(--forest)}
+.eyebrow.ink{color:var(--ink-2)}
+
+h1,h2,h3{font-family:var(--display);font-weight:500;letter-spacing:-.02em;color:var(--ink)}
+h1{font-size:clamp(56px,9vw,128px);line-height:.92;letter-spacing:-.035em}
+h1 em{font-style:italic;font-weight:500;color:var(--persimmon)}
+h2{font-size:clamp(40px,5vw,72px);line-height:1;letter-spacing:-.03em}
+h2 em{font-style:italic;color:var(--forest)}
+h3{font-size:24px;line-height:1.15}
+
+p{max-width:54ch}
+
+/* ---------- container ---------- */
+.wrap{max-width:1280px;margin:0 auto;padding:0 40px;position:relative}
+
+/* ---------- nav ---------- */
+nav.top{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:28px 40px;
+  max-width:1280px;margin:0 auto;
+  position:relative;z-index:5;
+}
+.brand{
+  display:flex;align-items:center;gap:12px;
+  font-family:var(--display);
+  font-style:italic;
+  font-weight:700;
+  font-size:24px;
+  letter-spacing:-.02em;
+}
+.brand .stamp{
+  width:38px;height:38px;border-radius:50%;
+  background:var(--persimmon);color:var(--chalk);
+  display:grid;place-items:center;
+  font-family:var(--display);font-style:normal;font-weight:900;font-size:18px;
+  transform:rotate(-8deg);
+  box-shadow:2px 3px 0 var(--ink);
+}
+nav.top ul{
+  display:flex;gap:32px;list-style:none;
+  font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+}
+nav.top ul a{padding:8px 0;border-bottom:1px solid transparent;transition:.2s}
+nav.top ul a:hover{border-bottom-color:var(--ink)}
+.btn-cta{
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  background:var(--ink);color:var(--paper);
+  padding:12px 20px;border-radius:999px;
+  border:1px solid var(--ink);
+  transition:.2s;
+  display:inline-flex;align-items:center;gap:8px;
+}
+.btn-cta:hover{background:var(--persimmon);border-color:var(--persimmon);transform:translate(-1px,-1px);box-shadow:3px 3px 0 var(--ink)}
+.btn-ghost{
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  background:transparent;color:var(--ink);
+  padding:12px 20px;border-radius:999px;
+  border:1px solid var(--ink);
+}
+.btn-ghost:hover{background:var(--ink);color:var(--paper)}
+
+/* ---------- hero ---------- */
+.hero{
+  padding:80px 40px 140px;
+  max-width:1280px;margin:0 auto;
+  position:relative;
+}
+.hero .meta{
+  display:flex;gap:24px;align-items:center;
+  margin-bottom:32px;
+}
+.hero .meta .rule{flex:1;height:1px;background:var(--ink);opacity:.4}
+.hero .issue{font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+
+.hero h1{
+  margin-bottom:36px;
+  max-width:14ch;
+}
+.hero h1 .underline{
+  display:inline-block;
+  position:relative;
+}
+.hero h1 .underline::after{
+  content:"";
+  position:absolute;left:-4px;right:-4px;bottom:6px;height:18px;
+  background:var(--persimmon);
+  opacity:.35;
+  z-index:-1;
+  transform:skewX(-6deg);
+}
+
+.hero .lede{
+  font-family:var(--display);
+  font-style:italic;
+  font-size:22px;line-height:1.45;
+  max-width:42ch;
+  color:var(--ink-2);
+  margin-bottom:40px;
+}
+
+.hero-actions{display:flex;gap:14px;align-items:center;margin-bottom:80px}
+
+.hero-grid{
+  display:grid;
+  grid-template-columns:1.4fr 1fr;
+  gap:48px;
+  align-items:end;
+  position:relative;
+}
+
+/* Annotation arrow */
+.annotation{
+  position:absolute;
+  font-family:"Fraunces",serif;font-style:italic;
+  color:var(--persimmon);
+  font-size:18px;
+  transform:rotate(-6deg);
+}
+.annotation.a1{top:-30px;right:18%;width:200px}
+.annotation svg{display:block;margin-top:6px}
+
+/* Tag chips */
+.chips{display:flex;flex-wrap:wrap;gap:10px;max-width:480px}
+.chip{
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+  padding:8px 14px;
+  border:1px solid var(--ink);border-radius:999px;
+  background:var(--chalk);
+  position:relative;
+}
+.chip.solid{background:var(--ink);color:var(--paper)}
+.chip.fill{background:var(--persimmon);color:var(--chalk);border-color:var(--persimmon)}
+.chip.forest{background:var(--forest);color:var(--chalk);border-color:var(--forest)}
+
+/* Product card stack */
+.card-stack{position:relative;height:520px}
+.card{
+  position:absolute;
+  background:var(--chalk);
+  border:1.5px solid var(--ink);
+  border-radius:14px;
+  padding:20px;
+  box-shadow:8px 10px 0 var(--ink);
+  font-family:var(--body);
+}
+.card .ctitle{
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-2);margin-bottom:10px;
+  display:flex;justify-content:space-between;align-items:center;
+}
+.card .ctitle .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--persimmon)}
+
+.card.video{
+  width:260px;top:0;left:0;
+  transform:rotate(-3.5deg);
+  z-index:2;
+}
+.video .thumb{
+  aspect-ratio:9/12;
+  border-radius:8px;
+  background:
+    linear-gradient(135deg, rgba(31,77,58,.6), rgba(21,18,12,.85)),
+    repeating-linear-gradient(45deg, var(--persimmon) 0 6px, transparent 6px 12px);
+  display:flex;flex-direction:column;justify-content:space-between;
+  padding:12px;color:var(--chalk);
+  margin-bottom:10px;position:relative;overflow:hidden;
+}
+.video .thumb .tl{font-family:var(--mono);font-size:10px;letter-spacing:.15em}
+.video .thumb .play{
+  width:48px;height:48px;border-radius:50%;
+  background:var(--chalk);color:var(--ink);
+  display:grid;place-items:center;align-self:center;justify-self:center;
+  margin:auto;font-size:20px;
+  box-shadow:0 0 0 6px rgba(251,246,234,.25);
+}
+.video .thumb .br{font-family:var(--mono);font-size:10px;letter-spacing:.1em;align-self:end}
+.video .caption{font-family:var(--display);font-style:italic;font-size:14px;color:var(--ink-2)}
+
+.card.breakdown{
+  width:340px;top:90px;right:0;
+  transform:rotate(2.4deg);
+  z-index:3;
+}
+.breakdown ul{list-style:none;display:flex;flex-direction:column;gap:14px;margin-top:6px}
+.breakdown li{
+  display:grid;grid-template-columns:auto 1fr;gap:12px;
+  padding-bottom:14px;border-bottom:1px dashed rgba(21,18,12,.25);
+}
+.breakdown li:last-child{border:0;padding:0}
+.breakdown .num{
+  font-family:var(--display);font-style:italic;font-weight:700;font-size:32px;line-height:.9;
+  color:var(--persimmon);
+}
+.breakdown .lbl{
+  font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;
+  color:var(--ink-2);margin-bottom:2px;
+}
+.breakdown .txt{font-family:var(--display);font-size:15px;line-height:1.3}
+
+.card.skill{
+  width:240px;bottom:0;left:90px;
+  transform:rotate(-1.2deg);
+  z-index:4;
+  background:var(--ink);color:var(--paper);
+}
+.card.skill .ctitle{color:var(--paper-2)}
+.card.skill .ctitle .dot{background:var(--persimmon)}
+.skill .skill-name{
+  font-family:var(--display);font-size:22px;font-style:italic;font-weight:500;
+  margin:6px 0 10px;
+}
+.skill .run{
+  margin-top:14px;
+  display:inline-flex;gap:8px;align-items:center;
+  font-family:var(--mono);font-size:11px;letter-spacing:.15em;text-transform:uppercase;
+  background:var(--persimmon);color:var(--chalk);
+  padding:8px 14px;border-radius:999px;
+}
+
+/* Sticker */
+.sticker{
+  position:absolute;
+  width:96px;height:96px;border-radius:50%;
+  background:var(--forest);color:var(--chalk);
+  display:grid;place-items:center;text-align:center;
+  font-family:var(--display);font-style:italic;font-weight:700;font-size:14px;line-height:1.05;
+  padding:10px;
+  transform:rotate(-12deg);
+  box-shadow:3px 3px 0 var(--ink);
+  z-index:6;
+}
+.sticker.s1{top:-30px;right:-20px}
+
+/* ---------- features (collage) ---------- */
+.features{
+  background:var(--paper-2);
+  padding:120px 0 140px;
+  margin-top:40px;
+  border-top:1.5px solid var(--ink);
+  border-bottom:1.5px solid var(--ink);
+  position:relative;
+}
+.features .head{max-width:1280px;margin:0 auto;padding:0 40px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:end;margin-bottom:80px}
+.features .head p{font-family:var(--display);font-style:italic;font-size:20px;color:var(--ink-2)}
+
+.collage{
+  max-width:1280px;margin:0 auto;padding:0 40px;
+  display:grid;
+  grid-template-columns:repeat(12,1fr);
+  grid-auto-rows:80px;
+  gap:24px;
+}
+.feat{
+  background:var(--chalk);
+  border:1.5px solid var(--ink);
+  border-radius:12px;
+  padding:28px;
+  position:relative;
+  box-shadow:6px 6px 0 var(--ink);
+  display:flex;flex-direction:column;justify-content:space-between;
+  overflow:hidden;
+}
+.feat .idx{
+  font-family:var(--display);font-weight:900;font-size:84px;line-height:.85;
+  color:var(--persimmon);
+  letter-spacing:-.05em;
+}
+.feat h3{margin:8px 0 6px}
+.feat p{font-size:14px;color:var(--ink-2);line-height:1.45}
+.feat .lbl{
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-2);margin-bottom:auto;
+}
+
+.feat.f1{grid-column:span 5;grid-row:span 4;background:var(--persimmon);color:var(--chalk)}
+.feat.f1 .idx,.feat.f1 .lbl,.feat.f1 h3,.feat.f1 p{color:var(--chalk)}
+.feat.f1 h3{font-size:36px}
+.feat.f2{grid-column:span 4;grid-row:span 4}
+.feat.f3{grid-column:span 3;grid-row:span 4;background:var(--forest);color:var(--chalk)}
+.feat.f3 .idx{color:var(--paper-3)}
+.feat.f3 .lbl,.feat.f3 h3,.feat.f3 p{color:var(--chalk)}
+.feat.f4{grid-column:span 4;grid-row:span 3}
+.feat.f5{grid-column:span 5;grid-row:span 3;background:var(--ink);color:var(--paper)}
+.feat.f5 .idx{color:var(--persimmon)}
+.feat.f5 .lbl,.feat.f5 h3,.feat.f5 p{color:var(--paper)}
+.feat.f6{grid-column:span 3;grid-row:span 3}
+
+/* Tape */
+.tape{
+  position:absolute;top:-12px;left:50%;transform:translateX(-50%) rotate(-3deg);
+  width:90px;height:24px;
+  background:var(--tape);
+  border-left:1px dashed rgba(21,18,12,.3);
+  border-right:1px dashed rgba(21,18,12,.3);
+}
+
+/* ---------- workflow ---------- */
+.workflow{padding:140px 0;position:relative}
+.wf-head{max-width:1280px;margin:0 auto;padding:0 40px;text-align:center;margin-bottom:80px}
+.wf-head h2{max-width:18ch;margin:20px auto 0}
+
+.wf-track{
+  max-width:1280px;margin:0 auto;padding:0 40px;
+  display:grid;grid-template-columns:repeat(3,1fr);gap:32px;
+  position:relative;
+}
+.wf-track::before{
+  content:"";position:absolute;left:8%;right:8%;top:80px;height:2px;
+  background-image:linear-gradient(90deg, var(--ink) 50%, transparent 50%);
+  background-size:14px 2px;
+  z-index:0;
+}
+.wf-step{position:relative;z-index:1;text-align:center;padding:0 12px}
+.wf-step .circle{
+  width:160px;height:160px;border-radius:50%;
+  background:var(--paper);border:2px solid var(--ink);
+  display:grid;place-items:center;
+  margin:0 auto 28px;
+  font-family:var(--display);font-style:italic;font-weight:900;font-size:80px;
+  color:var(--ink);
+  box-shadow:6px 6px 0 var(--ink);
+  position:relative;
+}
+.wf-step:nth-child(1) .circle{background:var(--persimmon);color:var(--chalk)}
+.wf-step:nth-child(2) .circle{background:var(--chalk);color:var(--ink)}
+.wf-step:nth-child(3) .circle{background:var(--forest);color:var(--chalk)}
+.wf-step h3{font-family:var(--display);font-style:italic;font-size:28px;margin-bottom:10px}
+.wf-step p{font-size:15px;color:var(--ink-2);max-width:32ch;margin:0 auto}
+
+/* ---------- app preview ---------- */
+.app-section{
+  background:var(--ink);color:var(--paper);
+  padding:140px 0 160px;
+  border-top:1.5px solid var(--ink);
+  position:relative;
+}
+.app-section .head{max-width:1280px;margin:0 auto;padding:0 40px;display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:end;margin-bottom:60px}
+.app-section h2{color:var(--paper)}
+.app-section h2 em{color:var(--persimmon)}
+.app-section .head p{font-family:var(--display);font-style:italic;font-size:20px;color:var(--paper-2);max-width:42ch}
+
+.window{
+  max-width:1280px;margin:0 auto;
+  background:var(--paper);
+  color:var(--ink);
+  border-radius:18px;
+  overflow:hidden;
+  border:1.5px solid var(--ink);
+  box-shadow:0 40px 0 -20px rgba(0,0,0,.35), 14px 14px 0 var(--persimmon);
+  margin-left:max(40px, calc((100vw - 1280px) / 2));
+  margin-right:max(40px, calc((100vw - 1280px) / 2));
+}
+.window-bar{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;
+  background:var(--paper-2);
+  border-bottom:1.5px solid var(--ink);
+}
+.window-bar .lights{display:flex;gap:8px}
+.window-bar .lights span{width:12px;height:12px;border-radius:50%;border:1px solid var(--ink)}
+.window-bar .lights span:nth-child(1){background:#e0481b}
+.window-bar .lights span:nth-child(2){background:#e6b800}
+.window-bar .lights span:nth-child(3){background:#1f4d3a}
+.window-bar .url{
+  flex:1;text-align:center;
+  font-family:var(--mono);font-size:12px;color:var(--ink-2);letter-spacing:.05em;
+}
+
+/* App layout */
+.app-layout{
+  display:grid;
+  grid-template-columns:240px 320px 1fr;
+  min-height:640px;
+}
+
+.app-side{
+  background:var(--paper-2);
+  border-right:1.5px solid var(--ink);
+  padding:24px 18px;
+}
+.app-side .brand{font-size:20px;margin-bottom:28px}
+.app-side .brand .stamp{width:32px;height:32px;font-size:15px}
+.app-side .sec-label{
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-2);margin:18px 8px 8px;
+}
+.app-side nav a{
+  display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:8px;
+  font-family:var(--body);font-size:14px;
+  margin-bottom:2px;
+}
+.app-side nav a.active{background:var(--ink);color:var(--paper)}
+.app-side nav a .k{
+  margin-left:auto;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;
+  opacity:.6;
+}
+.app-side .tag{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:5px 10px;border-radius:999px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  background:var(--chalk);border:1px solid var(--ink);
+  margin:3px 4px 3px 0;
+}
+.app-side .tag .sw{width:6px;height:6px;border-radius:50%}
+.app-side .pro-card{
+  margin-top:20px;
+  padding:14px;border-radius:12px;
+  background:var(--persimmon);color:var(--chalk);
+  border:1.5px solid var(--ink);
+  box-shadow:3px 3px 0 var(--ink);
+}
+.app-side .pro-card .ttl{font-family:var(--display);font-style:italic;font-weight:700;font-size:18px}
+.app-side .pro-card p{font-size:12px;line-height:1.4;margin:4px 0 10px;opacity:.95}
+.app-side .pro-card button{
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  background:var(--ink);color:var(--chalk);padding:8px 12px;border-radius:999px;
+}
+
+.app-list{
+  border-right:1.5px solid var(--ink);
+  background:var(--paper);
+  display:flex;flex-direction:column;
+}
+.list-head{
+  padding:18px 20px;border-bottom:1.5px solid var(--ink);
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.list-head h4{font-family:var(--display);font-style:italic;font-size:24px}
+.list-head button{
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  border:1px solid var(--ink);border-radius:999px;
+  padding:6px 12px;background:var(--chalk);
+}
+.search{
+  padding:12px 16px;border-bottom:1.5px solid var(--ink);
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--mono);font-size:12px;color:var(--ink-2);
+}
+.search input{
+  flex:1;background:transparent;border:0;outline:none;
+  font:inherit;color:var(--ink);
+}
+.list-items{flex:1;overflow:auto}
+.note-item{
+  padding:16px 20px;border-bottom:1px dashed rgba(21,18,12,.2);
+  cursor:pointer;
+  position:relative;
+}
+.note-item.active{background:var(--paper-3)}
+.note-item .meta-row{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-2);
+}
+.note-item .pin{color:var(--persimmon)}
+.note-item h5{
+  font-family:var(--display);font-style:italic;font-weight:500;font-size:18px;
+  margin:4px 0 4px;line-height:1.2;color:var(--ink);
+}
+.note-item p{font-size:13px;color:var(--ink-2);line-height:1.4;max-width:none;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.note-item .row-tags{margin-top:8px;display:flex;gap:6px;flex-wrap:wrap}
+.row-tags span{
+  font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  padding:3px 8px;border-radius:999px;background:var(--chalk);border:1px solid rgba(21,18,12,.3);
+}
+.row-tags span.solid{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+
+.app-main{
+  background:var(--paper);
+  padding:36px 44px 44px;
+  display:flex;flex-direction:column;
+  position:relative;
+}
+.editor-head{display:flex;justify-content:space-between;align-items:flex-start;gap:18px;margin-bottom:18px}
+.editor-head .ttl{flex:1}
+.editor-head .crumb{
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--ink-2);margin-bottom:8px;display:flex;gap:10px;align-items:center;
+}
+.editor-head h2{
+  font-family:var(--display);font-style:italic;font-weight:500;
+  font-size:40px;line-height:1.05;letter-spacing:-.02em;
+}
+.editor-head .actions{display:flex;gap:8px}
+.editor-head .actions button{
+  font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;
+  border:1px solid var(--ink);border-radius:999px;padding:8px 14px;background:var(--chalk);
+}
+.editor-head .actions .primary{background:var(--ink);color:var(--paper)}
+
+.toolbar{
+  display:flex;gap:6px;align-items:center;
+  padding:8px;border:1px solid var(--ink);border-radius:999px;
+  background:var(--chalk);width:fit-content;margin-bottom:24px;
+  font-family:var(--mono);font-size:11px;
+}
+.toolbar button{padding:6px 10px;border-radius:999px;color:var(--ink-2)}
+.toolbar button:hover{background:var(--paper-3);color:var(--ink)}
+.toolbar .sep{width:1px;height:16px;background:rgba(21,18,12,.2);margin:0 4px}
+.toolbar .ai{background:var(--persimmon);color:var(--chalk);padding:6px 12px;display:inline-flex;gap:6px;align-items:center}
+
+/* Breakdown columns */
+.note-doc{display:grid;grid-template-columns:1.4fr 1fr;gap:32px;flex:1}
+.doc-body p{
+  font-family:var(--body);font-size:15px;line-height:1.65;color:var(--ink-2);
+  margin-bottom:14px;max-width:60ch;
+}
+.doc-body .heading{
+  font-family:var(--display);font-style:italic;font-weight:500;font-size:22px;
+  color:var(--ink);margin:20px 0 10px;
+}
+.doc-body .hl{background:rgba(224,72,27,.22);padding:0 3px}
+
+.breakdown-pane{
+  background:var(--paper-2);
+  border:1.5px solid var(--ink);
+  border-radius:14px;
+  padding:20px;
+  align-self:start;
+  box-shadow:5px 5px 0 var(--ink);
+  position:relative;
+}
+.breakdown-pane h6{
+  font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;
+  margin-bottom:14px;display:flex;align-items:center;gap:8px;
+}
+.breakdown-pane h6 .badge{
+  background:var(--ink);color:var(--paper);padding:3px 8px;border-radius:999px;font-size:9px;
+}
+.bk-row{padding:14px 0;border-bottom:1px dashed rgba(21,18,12,.25)}
+.bk-row:last-child{border:0}
+.bk-row .label{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px}
+.bk-row .label .name{
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--persimmon);font-weight:700;
+}
+.bk-row .label .num{
+  font-family:var(--display);font-style:italic;font-weight:700;font-size:14px;color:var(--ink-2);
+}
+.bk-row p{font-size:13px;color:var(--ink);line-height:1.5;max-width:none}
+.bk-row.forest .label .name{color:var(--forest)}
+
+.skill-runner{
+  margin-top:18px;
+  padding:14px;border-radius:12px;
+  background:var(--ink);color:var(--paper);
+}
+.skill-runner .lab{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--paper-2);margin-bottom:6px}
+.skill-runner .nm{font-family:var(--display);font-style:italic;font-weight:500;font-size:18px;margin-bottom:10px}
+.skill-runner .go{
+  font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;
+  background:var(--persimmon);color:var(--chalk);padding:8px 12px;border-radius:999px;
+  display:inline-flex;align-items:center;gap:6px;
+}
+
+/* App margin notes */
+.margin-note{
+  position:absolute;
+  font-family:"Fraunces",serif;font-style:italic;
+  color:var(--persimmon);font-size:16px;
+  transform:rotate(-4deg);
+  pointer-events:none;
+}
+.margin-note.m1{top:120px;right:-180px;width:160px}
+.margin-note.m1 svg{display:block;margin-top:6px;transform:rotate(-12deg)}
+
+/* ---------- footer ---------- */
+footer{
+  background:var(--paper);
+  padding:80px 0 40px;
+  border-top:1.5px solid var(--ink);
+}
+footer .wrap{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;align-items:start}
+footer .col h6{
+  font-family:var(--mono);font-size:11px;letter-spacing:.2em;text-transform:uppercase;
+  color:var(--ink-2);margin-bottom:14px;
+}
+footer .col a{display:block;padding:6px 0;font-family:var(--display);font-style:italic;font-size:18px}
+footer .col a:hover{color:var(--persimmon)}
+footer .mark{font-family:var(--display);font-weight:900;font-size:120px;line-height:.9;letter-spacing:-.04em;color:var(--ink)}
+footer .mark em{font-style:italic;color:var(--persimmon);font-weight:500}
+footer .legal{
+  max-width:1280px;margin:60px auto 0;padding:24px 40px 0;
+  border-top:1px solid var(--ink);
+  display:flex;justify-content:space-between;
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink-2);
+}
+
+/* responsive */
+@media (max-width:980px){
+  .hero-grid{grid-template-columns:1fr}
+  .card-stack{height:auto;display:grid;gap:24px;grid-template-columns:1fr}
+  .card{position:relative;transform:none!important;top:auto;left:auto;right:auto;bottom:auto;width:auto}
+  .features .head,.app-section .head{grid-template-columns:1fr}
+  .app-layout{grid-template-columns:1fr}
+  .app-side,.app-list{border-right:0;border-bottom:1.5px solid var(--ink)}
+  .note-doc{grid-template-columns:1fr}
+  .wf-track{grid-template-columns:1fr;gap:60px}
+  .wf-track::before{display:none}
+  .collage{grid-template-columns:repeat(6,1fr)}
+  .feat.f1,.feat.f2,.feat.f3,.feat.f4,.feat.f5,.feat.f6{grid-column:span 6;grid-row:auto}
+  footer .wrap{grid-template-columns:1fr 1fr}
+  .margin-note,.annotation,.sticker{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ============ NAV ============ -->
+<nav class="top">
+  <a href="#" class="brand">
+    <span class="stamp">C</span>
+    ChillNote
+  </a>
+  <ul>
+    <li><a href="#features">Studio</a></li>
+    <li><a href="#workflow">Method</a></li>
+    <li><a href="#app">Inside</a></li>
+    <li><a href="#pricing">Pricing</a></li>
+  </ul>
+  <div style="display:flex;gap:10px">
+    <a class="btn-ghost" href="#">Sign in</a>
+    <a class="btn-cta" href="#">Get the app →</a>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="meta">
+    <span class="issue">Vol. 01 — Studio Notebook</span>
+    <span class="rule"></span>
+    <span class="issue">For people who make things on the internet</span>
+  </div>
+
+  <h1>
+    A notebook<br>
+    for creators who<br>
+    <span class="underline">steal like</span> <em>artists.</em>
+  </h1>
+
+  <div class="hero-grid">
+    <div>
+      <p class="lede">
+        Save the video. Pull the hook apart. Keep the bits that work.
+        ChillNote turns every clip you screenshot at 1am into a reusable creator pattern — searchable, remixable, yours.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#" class="btn-cta">Start your notebook →</a>
+        <a href="#" class="btn-ghost">See it inside ↓</a>
+      </div>
+
+      <div class="chips">
+        <span class="chip fill">Video → Transcript</span>
+        <span class="chip">Hook breakdown</span>
+        <span class="chip forest">AI Skills</span>
+        <span class="chip">Quick capture</span>
+        <span class="chip solid">iOS + Web</span>
+      </div>
+    </div>
+
+    <div class="card-stack">
+      <div class="annotation a1">
+        the same clip, three<br>useful pieces.
+        <svg width="80" height="40" viewBox="0 0 80 40" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M2 6 C 30 2, 50 26, 76 34" stroke-linecap="round"/>
+          <path d="M70 28 L 76 34 L 68 36" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+        </svg>
+      </div>
+
+      <div class="sticker s1">Stop<br>losing<br>good ideas</div>
+
+      <article class="card video">
+        <div class="ctitle"><span>SAVED CLIP</span><span class="dot"></span></div>
+        <div class="thumb">
+          <div class="tl">@kalebcreates · 00:47</div>
+          <div class="play">▶</div>
+          <div class="br">REELS · 9:16</div>
+        </div>
+        <div class="caption">"my one-shot launch tweet template"</div>
+      </article>
+
+      <article class="card breakdown">
+        <div class="ctitle"><span>BROKEN DOWN</span><span class="dot"></span></div>
+        <ul>
+          <li>
+            <div class="num">1</div>
+            <div>
+              <div class="lbl">Hook</div>
+              <div class="txt">Open with the painful before-state, fast.</div>
+            </div>
+          </li>
+          <li>
+            <div class="num">2</div>
+            <div>
+              <div class="lbl">Description</div>
+              <div class="txt">Short proof. One clear outcome.</div>
+            </div>
+          </li>
+          <li>
+            <div class="num">3</div>
+            <div>
+              <div class="lbl">Transcript</div>
+              <div class="txt">Claim → demo → result → CTA.</div>
+            </div>
+          </li>
+        </ul>
+      </article>
+
+      <article class="card skill">
+        <div class="ctitle"><span>AI SKILL</span><span class="dot"></span></div>
+        <div class="skill-name">"Five new hooks from this pattern"</div>
+        <a class="run">Run skill →</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FEATURES COLLAGE ============ -->
+<section class="features" id="features">
+  <div class="head">
+    <div>
+      <p class="eyebrow">§ 01 — The studio</p>
+      <h2>Save the link.<br>Steal the <em>pattern.</em></h2>
+    </div>
+    <p>
+      Every creator's camera roll is full of "saved for later" that never gets watched again.
+      ChillNote turns that pile into a working library — the hooks, the structures, the phrases you already trust.
+    </p>
+  </div>
+
+  <div class="collage">
+    <article class="feat f1">
+      <div class="tape"></div>
+      <div class="lbl">№ 01 / Capture</div>
+      <div class="idx">01</div>
+      <div>
+        <h3>Video → readable notes in one tap</h3>
+        <p>Save a TikTok, Reel, or Short. ChillNote pulls a clean transcript and lays it out next to the clip so you can actually read what they said.</p>
+      </div>
+    </article>
+
+    <article class="feat f2">
+      <div class="lbl">№ 02 / Dissect</div>
+      <div class="idx">02</div>
+      <div>
+        <h3>Hook, body, transcript — split out for you</h3>
+        <p>Every clip becomes a teardown card: what hooked, what carried, what closed. See <em>why</em> a piece worked.</p>
+      </div>
+    </article>
+
+    <article class="feat f3">
+      <div class="lbl">№ 03 / Capture quick</div>
+      <div class="idx">03</div>
+      <div>
+        <h3>Voice-note the messy version</h3>
+        <p>Talk first. ChillNote transcribes, tags, and files it under the right project later.</p>
+      </div>
+    </article>
+
+    <article class="feat f4">
+      <div class="lbl">№ 04 / Remix</div>
+      <div class="idx">04</div>
+      <div>
+        <h3>Reusable AI Skills, not one-off prompts</h3>
+        <p>Save the prompt you keep retyping as a Skill. Run it across any note. Edit it once, it updates everywhere.</p>
+      </div>
+    </article>
+
+    <article class="feat f5">
+      <div class="lbl">№ 05 / Library</div>
+      <div class="idx">05</div>
+      <div>
+        <h3>A searchable library of patterns you actually use</h3>
+        <p>Tag by platform, format, tone, niche. Find the exact hook structure from three months ago in two seconds.</p>
+      </div>
+    </article>
+
+    <article class="feat f6">
+      <div class="lbl">№ 06 / Wherever</div>
+      <div class="idx">06</div>
+      <div>
+        <h3>iPhone capture, browser studio</h3>
+        <p>Grab on the go. Edit at the desk. Same notebook, both ends.</p>
+      </div>
+    </article>
+  </div>
+</section>
+
+<!-- ============ WORKFLOW ============ -->
+<section class="workflow" id="workflow">
+  <div class="wf-head">
+    <p class="eyebrow forest">§ 02 — The method</p>
+    <h2>From <em>"I should save that"</em> to your next draft.</h2>
+  </div>
+  <div class="wf-track">
+    <div class="wf-step">
+      <div class="circle">i</div>
+      <h3>Capture</h3>
+      <p>Drop a link, a clip, a voice note, or a half-formed sentence. ChillNote files it with a clean transcript.</p>
+    </div>
+    <div class="wf-step">
+      <div class="circle">ii</div>
+      <h3>Break it down</h3>
+      <p>Hook, description, transcript — separated automatically. Now you can see what's reusable.</p>
+    </div>
+    <div class="wf-step">
+      <div class="circle">iii</div>
+      <h3>Run a Skill</h3>
+      <p>Apply your saved AI Skill across the pattern. Out comes the draft of your next post.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ APP PREVIEW ============ -->
+<section class="app-section" id="app">
+  <div class="head">
+    <div>
+      <p class="eyebrow forest" style="color:var(--persimmon)">§ 03 — Inside the studio</p>
+      <h2>The web app, <em>warmer.</em></h2>
+    </div>
+    <p>
+      Less "AI dashboard," more "the desk you actually want to sit at."
+      A three-pane workspace: your library on the left, your notes in the middle, your breakdown and Skills on the right.
+    </p>
+  </div>
+
+  <div class="window">
+    <div class="window-bar">
+      <div class="lights"><span></span><span></span><span></span></div>
+      <div class="url">chillnote.app — TikTok launch teardown</div>
+      <div style="width:60px"></div>
+    </div>
+
+    <div class="app-layout">
+      <!-- side -->
+      <aside class="app-side">
+        <a href="#" class="brand">
+          <span class="stamp">C</span>
+          ChillNote
+        </a>
+
+        <div class="sec-label">Workspace</div>
+        <nav>
+          <a href="#" class="active">▤ Notes <span class="k">⌘ 1</span></a>
+          <a href="#">✦ AI Skills <span class="k">⌘ 2</span></a>
+          <a href="#">⚙ Settings <span class="k">⌘ ,</span></a>
+        </nav>
+
+        <div class="sec-label">Tags</div>
+        <div>
+          <span class="tag"><span class="sw" style="background:var(--persimmon)"></span>Hooks</span>
+          <span class="tag"><span class="sw" style="background:var(--forest)"></span>Launches</span>
+          <span class="tag"><span class="sw" style="background:#1d6ff0"></span>Reels</span>
+          <span class="tag"><span class="sw" style="background:#9b6bdf"></span>Captions</span>
+          <span class="tag"><span class="sw" style="background:#e6b800"></span>Stories</span>
+        </div>
+
+        <div class="pro-card">
+          <div class="ttl">Go Pro</div>
+          <p>Unlimited skills, 10-min recordings, your own custom AI workflows.</p>
+          <button>$12.99 / mo →</button>
+        </div>
+      </aside>
+
+      <!-- list -->
+      <div class="app-list">
+        <div class="list-head">
+          <h4>Notes <span style="font-family:var(--mono);font-style:normal;font-size:11px;letter-spacing:.15em;color:var(--ink-2);margin-left:6px">/ 47</span></h4>
+          <button>+ New</button>
+        </div>
+        <div class="search">
+          <span>⌕</span><input placeholder="Search hooks, transcripts, tags…" />
+        </div>
+        <div class="list-items">
+          <div class="note-item active">
+            <div class="meta-row"><span>Today · 14:22</span><span class="pin">★ pinned</span></div>
+            <h5>TikTok launch teardown — Kaleb's one-shot template</h5>
+            <p>Opens with a 1.2-second "before" cut, jumps to result, then payoff line. Caption is 14 words. Pinned audio used…</p>
+            <div class="row-tags"><span class="solid">Hooks</span><span>Launches</span><span>Reels</span></div>
+          </div>
+          <div class="note-item">
+            <div class="meta-row"><span>Yesterday</span><span></span></div>
+            <h5>3 caption styles that got 5× more saves</h5>
+            <p>Question opener → claim → asymmetric CTA. The one that worked uses contradiction in the first six words…</p>
+            <div class="row-tags"><span>Captions</span><span>Stories</span></div>
+          </div>
+          <div class="note-item">
+            <div class="meta-row"><span>Mon · 09:11</span><span></span></div>
+            <h5>Voice memo — shower idea about onboarding</h5>
+            <p>What if the first email is just a screenshot? Less polish = more trust. Try it on the next cohort…</p>
+            <div class="row-tags"><span>Hooks</span></div>
+          </div>
+          <div class="note-item">
+            <div class="meta-row"><span>Sun · 22:48</span><span></span></div>
+            <h5>Why those plain-text twitter threads keep popping off</h5>
+            <p>Cadence trick: short / short / long / short. Image only on the 4th tweet. Drop the link at the end…</p>
+            <div class="row-tags"><span>Captions</span></div>
+          </div>
+          <div class="note-item">
+            <div class="meta-row"><span>Fri · 18:02</span><span></span></div>
+            <h5>Reel: "the pricing page nobody finishes"</h5>
+            <p>Hook: stitch a competitor's pricing page. 0:00–0:03 = problem. 0:03–0:12 = teardown. End on price reveal…</p>
+            <div class="row-tags"><span>Reels</span><span>Hooks</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- main -->
+      <div class="app-main">
+        <div class="margin-note m1">
+          one click and<br>the breakdown<br>is ready →
+          <svg width="60" height="40" viewBox="0 0 60 40" fill="none" stroke="currentColor" stroke-width="1.6">
+            <path d="M2 30 C 18 28, 30 8, 56 6" stroke-linecap="round"/>
+            <path d="M50 2 L 56 6 L 52 12" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+
+        <div class="editor-head">
+          <div class="ttl">
+            <div class="crumb">
+              <span>Notes</span><span>/</span><span>Hooks</span><span>/</span><span style="color:var(--persimmon)">Pinned</span>
+            </div>
+            <h2>TikTok launch teardown — Kaleb's <em>one-shot</em> template.</h2>
+          </div>
+          <div class="actions">
+            <button>Sync</button>
+            <button class="primary">Save</button>
+          </div>
+        </div>
+
+        <div class="toolbar">
+          <button><b>B</b></button>
+          <button><i>I</i></button>
+          <button>H</button>
+          <button>☑</button>
+          <button>"</button>
+          <span class="sep"></span>
+          <button class="ai">✦ Run AI Skill</button>
+        </div>
+
+        <div class="note-doc">
+          <div class="doc-body">
+            <p>Watched this clip three times before bed. The thing that makes it land is the <span class="hl">first 1.2 seconds</span> — there's a hard cut from "before" to "the moment it worked." No talking yet. Just visual proof.</p>
+            <p>The caption is 14 words. Reads like a status, not a post. Important: <span class="hl">no emoji in the first line</span>. Pinned audio is doing a lot of the rhythmic work; without it the structure would feel slow.</p>
+            <div class="heading">What I'd steal</div>
+            <p>The 3-beat structure — <em>before / receipt / payoff</em> — generalizes well to launches in our niche. Worth trying on the next pricing-page teardown. Hook stays the same, swap the receipt frame.</p>
+            <p>Save the audio. Save the cadence. The exact words don't matter — the silence between them does.</p>
+          </div>
+
+          <aside class="breakdown-pane">
+            <h6>Auto-breakdown <span class="badge">AI</span></h6>
+
+            <div class="bk-row">
+              <div class="label"><span class="name">Hook</span><span class="num">0:00–0:03</span></div>
+              <p>Hard cut from "before" to "moment it worked." No voice — only visual proof.</p>
+            </div>
+            <div class="bk-row forest">
+              <div class="label"><span class="name">Description</span><span class="num">14 words</span></div>
+              <p>Reads as a status, not a pitch. Zero emoji in the first line. One outcome stated.</p>
+            </div>
+            <div class="bk-row">
+              <div class="label"><span class="name">Transcript</span><span class="num">0:03–0:47</span></div>
+              <p>Claim → demo → numerical result → CTA. Three beats, evenly paced.</p>
+            </div>
+
+            <div class="skill-runner">
+              <div class="lab">SUGGESTED SKILL</div>
+              <div class="nm">"5 new hooks from this pattern"</div>
+              <a class="go">Run →</a>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer>
+  <div class="wrap">
+    <div>
+      <div class="mark">Chill<em>Note</em>.</div>
+      <p style="font-family:var(--display);font-style:italic;font-size:18px;margin-top:18px;color:var(--ink-2)">
+        A studio notebook for the people who make the internet.
+      </p>
+    </div>
+    <div class="col">
+      <h6>Product</h6>
+      <a href="#">Notes</a>
+      <a href="#">AI Skills</a>
+      <a href="#">iOS app</a>
+      <a href="#">Pricing</a>
+    </div>
+    <div class="col">
+      <h6>Studio</h6>
+      <a href="#">Pattern library</a>
+      <a href="#">Changelog</a>
+      <a href="#">Roadmap</a>
+    </div>
+    <div class="col">
+      <h6>Talk to us</h6>
+      <a href="#">Email</a>
+      <a href="#">Twitter / X</a>
+      <a href="#">Discord</a>
+    </div>
+  </div>
+  <div class="legal">
+    <span>© 2026 ChillNote — Made for creators, by creators.</span>
+    <span>Privacy · Terms · Vol. 01</span>
+  </div>
+</footer>
+
+</body>
+</html>

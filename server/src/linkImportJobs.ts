@@ -13,6 +13,10 @@ type LinkImportJobRow = {
   url: string;
   status: LinkImportJobStatus;
   attempts: number;
+  showDescription: boolean;
+  showAuthor: boolean;
+  showHook: boolean;
+  showTranscript: boolean;
 };
 
 type LinkImportSource = {
@@ -21,6 +25,13 @@ type LinkImportSource = {
   platformID: string;
   platformName: string;
   host: string;
+};
+
+type MediaLinkSections = {
+  showDescription: boolean;
+  showAuthor: boolean;
+  showHook: boolean;
+  showTranscript: boolean;
 };
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite";
@@ -51,8 +62,10 @@ export async function enqueueLinkImportJob(params: {
   placeholderContent: string;
   source: LinkImportSource;
   section?: string | null;
+  mediaLinkSections?: MediaLinkSections;
 }): Promise<{ jobId: string; status: LinkImportJobStatus }> {
   const now = new Date();
+  const mediaLinkSections = normalizeMediaLinkSections(params.mediaLinkSections);
   const existingRows = await prisma.$queryRaw<Array<{ importJobId: string | null }>>`
     SELECT "importJobId"
     FROM "Note"
@@ -95,14 +108,27 @@ export async function enqueueLinkImportJob(params: {
   `;
 
   await prisma.$executeRaw`
-    INSERT INTO "LinkImportJob" ("id", "userId", "noteId", "url", "status", "createdAt", "updatedAt")
-    VALUES (${jobId}, ${params.userId}, ${params.noteId}, ${params.url}, 'queued', ${now}, ${now})
+    INSERT INTO "LinkImportJob" (
+      "id", "userId", "noteId", "url", "status",
+      "showDescription", "showAuthor", "showHook", "showTranscript",
+      "createdAt", "updatedAt"
+    )
+    VALUES (
+      ${jobId}, ${params.userId}, ${params.noteId}, ${params.url}, 'queued',
+      ${mediaLinkSections.showDescription}, ${mediaLinkSections.showAuthor},
+      ${mediaLinkSections.showHook}, ${mediaLinkSections.showTranscript},
+      ${now}, ${now}
+    )
     ON CONFLICT ("userId", "noteId") DO UPDATE SET
       "url" = EXCLUDED."url",
       "status" = CASE
         WHEN "LinkImportJob"."status" = 'completed' THEN "LinkImportJob"."status"
         ELSE 'queued'
       END,
+      "showDescription" = EXCLUDED."showDescription",
+      "showAuthor" = EXCLUDED."showAuthor",
+      "showHook" = EXCLUDED."showHook",
+      "showTranscript" = EXCLUDED."showTranscript",
       "errorCode" = NULL,
       "updatedAt" = EXCLUDED."updatedAt"
   `;
@@ -158,14 +184,29 @@ async function claimNextJob(): Promise<LinkImportJobRow | null> {
       ORDER BY "createdAt" ASC
       LIMIT 1
     )
-    RETURNING "id", "userId", "noteId", "url", "status", "attempts"
+    RETURNING
+      "id",
+      "userId",
+      "noteId",
+      "url",
+      "status",
+      "attempts",
+      "showDescription",
+      "showAuthor",
+      "showHook",
+      "showTranscript"
   `;
   return jobs[0] ?? null;
 }
 
 async function processJob(job: LinkImportJobRow): Promise<void> {
   try {
-    const result = await buildImportedNote(job.url);
+    const result = await buildImportedNote(job.url, {
+      showDescription: job.showDescription,
+      showAuthor: job.showAuthor,
+      showHook: job.showHook,
+      showTranscript: job.showTranscript
+    });
     await completeJob(job, result.content, result.source);
   } catch (error) {
     console.error("❌ Link import job failed:", {
@@ -261,7 +302,10 @@ async function failJob(job: LinkImportJobRow, errorCode: string): Promise<void> 
   }
 }
 
-async function buildImportedNote(rawURL: string): Promise<{ content: string; source: LinkImportSource }> {
+async function buildImportedNote(
+  rawURL: string,
+  mediaLinkSections: MediaLinkSections
+): Promise<{ content: string; source: LinkImportSource }> {
   const source = makeInitialLinkSource(rawURL);
 
   if (isSupportedMediaLinkURL(rawURL)) {
@@ -272,7 +316,8 @@ async function buildImportedNote(rawURL: string): Promise<{ content: string; sou
       const content = await makeCreatorMediaTranscriptNote({
         description: title,
         author: transcript.metadata?.authorName?.trim() || "Unknown author",
-        transcript: transcript.text
+        transcript: transcript.text,
+        mediaLinkSections
       });
       return { content, source: updatedSource };
     }
@@ -301,29 +346,83 @@ async function makeCreatorMediaTranscriptNote(params: {
   description: string;
   author: string;
   transcript: string;
+  mediaLinkSections: MediaLinkSections;
 }): Promise<string> {
   const cleanedTranscript = params.transcript.trim();
   const description = params.description.trim();
   const author = params.author.trim() || "Unknown author";
+  const mediaLinkSections = normalizeMediaLinkSections(params.mediaLinkSections);
 
   if (!cleanedTranscript) {
-    return [
-      markdownSection("Description", description),
-      markdownSection("Author", author)
-    ].join("\n\n");
+    const sections: string[] = [];
+
+    if (mediaLinkSections.showDescription) {
+      sections.push(markdownSection("Description", description));
+    }
+
+    if (mediaLinkSections.showAuthor) {
+      sections.push(markdownSection("Author", author));
+    }
+
+    if (sections.length === 0) {
+      sections.push(markdownSection("Description", description));
+    }
+
+    return sections.join("\n\n");
   }
 
-  const [hook, polishedTranscript] = await Promise.all([
-    extractCreatorMediaHook(description, cleanedTranscript),
-    polishCreatorMediaTranscript(cleanedTranscript)
-  ]);
+  const hookPromise = mediaLinkSections.showHook
+    ? extractCreatorMediaHook(description, cleanedTranscript)
+    : Promise.resolve(fallbackCreatorMediaHook(cleanedTranscript));
+  const transcriptPromise = mediaLinkSections.showTranscript
+    ? polishCreatorMediaTranscript(cleanedTranscript)
+    : Promise.resolve(cleanedTranscript);
 
-  return [
-    markdownSection("Description", description || "Imported media link"),
-    markdownSection("Author", author),
-    markdownSection("Hook", hook),
-    markdownSection("Transcript", polishedTranscript)
-  ].join("\n\n");
+  const [hook, polishedTranscript] = await Promise.all([hookPromise, transcriptPromise]);
+
+  const sections: string[] = [];
+
+  if (mediaLinkSections.showDescription) {
+    sections.push(markdownSection("Description", description || "Imported media link"));
+  }
+
+  if (mediaLinkSections.showAuthor) {
+    sections.push(markdownSection("Author", author));
+  }
+
+  if (mediaLinkSections.showHook) {
+    sections.push(markdownSection("Hook", hook));
+  }
+
+  if (mediaLinkSections.showTranscript) {
+    sections.push(markdownSection("Transcript", polishedTranscript));
+  }
+
+  if (sections.length === 0) {
+    sections.push(markdownSection("Transcript", cleanedTranscript));
+  }
+
+  return sections.join("\n\n");
+}
+
+function normalizeMediaLinkSections(input?: Partial<MediaLinkSections> | null): MediaLinkSections {
+  const normalized: MediaLinkSections = {
+    showDescription: input?.showDescription ?? true,
+    showAuthor: input?.showAuthor ?? true,
+    showHook: input?.showHook ?? true,
+    showTranscript: input?.showTranscript ?? true
+  };
+
+  if (!normalized.showDescription && !normalized.showAuthor && !normalized.showHook && !normalized.showTranscript) {
+    return {
+      showDescription: true,
+      showAuthor: true,
+      showHook: true,
+      showTranscript: true
+    };
+  }
+
+  return normalized;
 }
 
 async function extractCreatorMediaHook(description: string, transcript: string): Promise<string> {

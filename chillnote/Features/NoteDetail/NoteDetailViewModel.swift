@@ -54,6 +54,7 @@ final class NoteDetailViewModel: ObservableObject {
         case deletePermanentlyTapped
         case exportTapped
         case aiSkillsTapped
+        case teleprompterTapped
         case aiUndoTapped
         case aiSaveTapped
         case aiRetryTapped
@@ -94,6 +95,7 @@ final class NoteDetailViewModel: ObservableObject {
     @Published var exportErrorMessage = ""
 
     @Published var showSubscription = false
+    @Published var showTeleprompterCamera = false
 
     @Published var recordingDuration: TimeInterval = 0
     @Published var awaitingVoiceEditResult = false
@@ -224,6 +226,8 @@ final class NoteDetailViewModel: ObservableObject {
             exportMarkdown()
         case .aiSkillsTapped:
             showAISkillsSheet = true
+        case .teleprompterTapped:
+            showTeleprompterCamera = true
         case .aiUndoTapped:
             undoAIContent()
         case .aiSaveTapped:

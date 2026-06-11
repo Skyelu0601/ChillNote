@@ -636,7 +636,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = chillnote/Info.plist;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillNote needs microphone access to record your thoughts.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillNote needs microphone access to record your thoughts and capture audio for teleprompter videos.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "ChillNote uses speech recognition to transcribe your voice to text.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -670,7 +670,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = chillnote/Info.plist;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillNote needs microphone access to record your thoughts.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillNote needs microphone access to record your thoughts and capture audio for teleprompter videos.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "ChillNote uses speech recognition to transcribe your voice to text.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;

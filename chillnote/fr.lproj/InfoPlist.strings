@@ -1,4 +1,5 @@
-"NSMicrophoneUsageDescription" = "ChillNote a besoin de l'accès au micro pour enregistrer vos idées.";
+"NSMicrophoneUsageDescription" = "ChillNote a besoin de l'accès au micro pour enregistrer vos idées et l'audio des vidéos avec prompteur.";
 "NSSpeechRecognitionUsageDescription" = "ChillNote utilise la reconnaissance vocale pour transcrire votre voix en texte.";
-"NSCameraUsageDescription" = "ChillNote utilise l'appareil photo pour capturer du texte depuis des tableaux, pages, captures d'écran et idées du quotidien.";
+"NSCameraUsageDescription" = "ChillNote utilise l'appareil photo pour capturer des idées du quotidien et enregistrer des vidéos avec prompteur.";
 "NSPhotoLibraryUsageDescription" = "ChillNote utilise l'accès à vos photos pour importer des images et transformer le texte visible en notes.";
+"NSPhotoLibraryAddUsageDescription" = "ChillNote enregistre les vidéos de prompteur exportées dans votre photothèque lorsque vous choisissez de les enregistrer.";

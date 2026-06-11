@@ -8,6 +8,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var hasLoadedAtLeastOnce: Bool = false
     @Published private(set) var hasMore: Bool = true
     @Published private(set) var totalCount: Int = 0
+    @Published private(set) var sectionCounts: [NoteSection: Int] = [:]
 
     @Published var query: String = ""
     @Published var mode: NotesFeedMode = .active(section: .inbox)
@@ -30,13 +31,14 @@ final class HomeViewModel: ObservableObject {
 
         if shouldReset {
             resetPagination()
+            sectionCounts = [:]
         }
     }
 
-    func switchMode(_ mode: NotesFeedMode) async {
+    func switchMode(_ mode: NotesFeedMode, keepItemsWhileLoading: Bool = false) async {
         guard self.mode != mode else { return }
         self.mode = mode
-        await reload()
+        await reload(keepItemsWhileLoading: keepItemsWhileLoading)
     }
 
     func switchTag(_ tagId: UUID?) async {
@@ -109,6 +111,8 @@ final class HomeViewModel: ObservableObject {
             totalCount = 0
             hasLoadedAtLeastOnce = true
         }
+
+        await refreshSectionCounts()
     }
 
     func loadMoreIfNeeded(currentItem: Note) {
@@ -165,6 +169,7 @@ final class HomeViewModel: ObservableObject {
         items.removeAll { $0.id == id }
         let removedCount = beforeCount - items.count
         totalCount = max(0, totalCount - removedCount)
+        Task { await refreshSectionCounts() }
     }
 
     func removeNotesLocally(ids: [UUID]) {
@@ -174,6 +179,22 @@ final class HomeViewModel: ObservableObject {
         items.removeAll { idSet.contains($0.id) }
         let removedCount = beforeCount - items.count
         totalCount = max(0, totalCount - removedCount)
+        Task { await refreshSectionCounts() }
+    }
+
+    private func refreshSectionCounts() async {
+        guard let repository, let userId else { return }
+        var counts: [NoteSection: Int] = [:]
+        for section in NoteSection.allCases {
+            let value = (try? await repository.count(
+                userId: userId,
+                mode: .active(section: section),
+                tagId: nil,
+                query: nil
+            )) ?? 0
+            counts[section] = value
+        }
+        sectionCounts = counts
     }
 
     private func resetPagination(keepItems: Bool = false) {

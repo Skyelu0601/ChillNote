@@ -44,6 +44,7 @@ struct HomeScreenState {
     let isVoiceMode: Bool
 
     let cachedVisibleNotes: [Note]
+    let sectionCounts: [NoteSection: Int]
     let isLoadingNotes: Bool
     let isSyncingNotes: Bool
     let hasLoadedNotesAtLeastOnce: Bool

@@ -9,6 +9,7 @@ struct NoteDetailHeaderView: View {
     let onRestore: () -> Void
     let onStopRecording: () -> Void
     let onAISkills: () -> Void
+    let onTeleprompter: () -> Void
     let onExport: () -> Void
     let onDelete: () -> Void
     let onDeletePermanently: () -> Void
@@ -66,6 +67,10 @@ struct NoteDetailHeaderView: View {
                     )
 
                     Menu {
+                        Button(action: onTeleprompter) {
+                            Label(L10n.text("note_detail.header.action.teleprompter"), systemImage: "text.bubble")
+                        }
+
                         Button(action: onExport) {
                             Label(L10n.text("note_detail.header.action.export_markdown"), systemImage: "square.and.arrow.up")
                         }

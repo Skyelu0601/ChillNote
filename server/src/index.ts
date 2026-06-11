@@ -181,7 +181,13 @@ const linkImportJobSchema = z.object({
     platformName: z.string().min(1),
     host: z.string()
   }).optional(),
-  section: z.enum(["inbox", "drafts", "published"]).nullish()
+  section: z.enum(["inbox", "drafts", "published"]).nullish(),
+  mediaLinkSections: z.object({
+    showDescription: z.boolean(),
+    showAuthor: z.boolean(),
+    showHook: z.boolean(),
+    showTranscript: z.boolean()
+  }).optional()
 });
 
 // Middleware to validate Supabase Auth Header
@@ -969,7 +975,8 @@ app.post("/link-import-jobs", requireAuth, async (req, res) => {
       url: parsed.data.url,
       placeholderContent: parsed.data.placeholderContent,
       source,
-      section: parsed.data.section
+      section: parsed.data.section,
+      mediaLinkSections: parsed.data.mediaLinkSections
     });
     res.status(202).json(job);
   } catch (error) {

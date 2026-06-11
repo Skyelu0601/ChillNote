@@ -127,6 +127,7 @@ struct HomeView: View {
             selectedNotes: selectedNotes,
             isVoiceMode: isVoiceMode,
             cachedVisibleNotes: homeViewModel.items,
+            sectionCounts: homeViewModel.sectionCounts,
             isLoadingNotes: homeViewModel.isLoading,
             isSyncingNotes: syncManager.isSyncing,
             hasLoadedNotesAtLeastOnce: homeViewModel.hasLoadedAtLeastOnce,
@@ -237,7 +238,10 @@ struct HomeView: View {
         .onChange(of: selectedSection) { _, newValue in
             exitSelectionMode()
             Task {
-                await homeViewModel.switchMode(isTrashSelected ? .trash : .active(section: newValue))
+                await homeViewModel.switchMode(
+                    isTrashSelected ? .trash : .active(section: newValue),
+                    keepItemsWhileLoading: true
+                )
                 clampSelectionToCurrentFilter()
             }
         }

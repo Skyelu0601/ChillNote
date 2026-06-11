@@ -310,6 +310,8 @@ struct QuickCaptureImportService {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.timeoutInterval = 30
 
+        let preferences = MediaLinkTranscriptSectionPreferences.load()
+
         guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else {
             throw GeminiError.apiError(AppErrorCode.geminiSignInRequired.message)
         }
@@ -326,6 +328,12 @@ struct QuickCaptureImportService {
                 "platformID": source.platformID,
                 "platformName": source.platformName,
                 "host": source.host
+            ],
+            "mediaLinkSections": [
+                "showDescription": preferences.showDescription,
+                "showAuthor": preferences.showAuthor,
+                "showHook": preferences.showHook,
+                "showTranscript": preferences.showTranscript
             ]
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
