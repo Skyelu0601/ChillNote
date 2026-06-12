@@ -1017,8 +1017,12 @@ button {
   background: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
-  display: grid;
+  /* Flex column (not grid): -webkit-line-clamp on a grid item fails to
+     clamp height in Safari, letting the preview overlap the timestamp. */
+  display: flex;
+  flex-direction: column;
   gap: 6px;
+  justify-content: flex-start;
   min-height: 86px;
   padding: 12px 11px;
   text-align: left;
@@ -1038,6 +1042,9 @@ button {
   display: -webkit-box;
   font-weight: 400;
   line-height: 1.35;
+  /* Hard cap = 3 lines, so the preview can never overlap the timestamp
+     even if -webkit-line-clamp fails to constrain height. */
+  max-height: calc(1.35em * 3);
   overflow: hidden;
 }
 
