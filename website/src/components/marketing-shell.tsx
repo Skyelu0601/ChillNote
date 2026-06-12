@@ -1,12 +1,13 @@
 import { ArrowRight } from "lucide-react";
 import { copy } from "@/lib/copy";
+import { Wordmark } from "./wordmark";
 
 export function MarketingHeader() {
   return (
     <header className="marketing-header">
       <a className="brand-lockup" href="/">
         <img src="/assets/chillnote-logo.png" alt="" />
-        <span>{copy.productName}</span>
+        <Wordmark />
       </a>
       <nav>
         <a href="/pricing">{copy.nav.pricing}</a>

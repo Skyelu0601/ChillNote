@@ -6,6 +6,7 @@ import {
   Bot,
   Bold,
   Check,
+  ChevronLeft,
   CreditCard,
   ExternalLink,
   FileText,
@@ -16,7 +17,6 @@ import {
   Pin,
   PinOff,
   Plus,
-  RefreshCw,
   RotateCcw,
   Search,
   Settings as SettingsIcon,
@@ -69,6 +69,7 @@ import {
 } from "@/lib/agent-recipes";
 import { supabase } from "@/lib/supabase";
 import { AuthPanel } from "./auth-panel";
+import { Wordmark } from "./wordmark";
 
 type FeedMode = "active" | "trash";
 type NoteSectionKey = "inbox" | "drafts" | "published";
@@ -89,6 +90,7 @@ const WEB_CAPTION_INSTAGRAM_KEY = "chillnote.web.caption_pack.instagram_reels";
 const WEB_CAPTION_GOAL_KEY = "chillnote.web.caption_pack.goal";
 const WEB_CAPTION_TONE_KEY = "chillnote.web.caption_pack.tone";
 const WEB_CAPTION_STYLE_KEY = "chillnote.web.caption_pack.output_style";
+const AUTO_SYNC_INTERVAL_MS = 30_000;
 const validAgentRecipeIds = new Set(agentRecipes.map((recipe) => recipe.id));
 const NOTE_SECTION_KEYS: NoteSectionKey[] = ["inbox", "drafts", "published"];
 const sectionLabels: Record<NoteSectionKey, string> = {
@@ -237,7 +239,10 @@ function MarkdownRichEditor({
   onChange,
   placeholder,
   disabled,
+  onPin,
   onAISkills,
+  pinDisabled,
+  pinned,
   aiSkillsDisabled,
   aiSkillsRunning,
 }: {
@@ -245,7 +250,10 @@ function MarkdownRichEditor({
   onChange: (value: string) => void;
   placeholder: string;
   disabled: boolean;
+  onPin: () => void;
   onAISkills: () => void;
+  pinDisabled: boolean;
+  pinned: boolean;
   aiSkillsDisabled: boolean;
   aiSkillsRunning: boolean;
 }) {
@@ -336,6 +344,15 @@ function MarkdownRichEditor({
           <Undo2 size={16} />
         </button>
         <span className="editor-tools-separator" />
+        <button
+          className="editor-tool-button"
+          disabled={pinDisabled}
+          onMouseDown={(event) => handleToolMouseDown(event, onPin)}
+          title={pinned ? copy.app.unpin : copy.app.pin}
+          aria-label={pinned ? copy.app.unpin : copy.app.pin}
+        >
+          {pinned ? <PinOff size={16} /> : <Pin size={16} />}
+        </button>
         <button
           className="editor-tool-button ai"
           disabled={aiSkillsDisabled}
@@ -448,7 +465,6 @@ export function ChillNoteWebApp() {
   const [subscription, setSubscription] = useState<SubscriptionStatus | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [recording, setRecording] = useState(false);
   const [transcribing, setTranscribing] = useState(false);
@@ -456,6 +472,10 @@ export function ChillNoteWebApp() {
   const [newTagName, setNewTagName] = useState("");
   const [sourceURLDraft, setSourceURLDraft] = useState("");
   const [mainPanel, setMainPanel] = useState<MainPanel>("notes");
+  const [mobileEditorOpen, setMobileEditorOpen] = useState(false);
+  const [linkCaptureOpen, setLinkCaptureOpen] = useState(false);
+  const [captureLinkValue, setCaptureLinkValue] = useState("");
+  const [tagsExpanded, setTagsExpanded] = useState(false);
   const [recipeSection, setRecipeSection] = useState<RecipeSection>("library");
   const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>(defaultSavedRecipeIds);
   const [selectedRecipeId, setSelectedRecipeId] = useState(defaultSavedRecipeIds[0]);
@@ -479,6 +499,7 @@ export function ChillNoteWebApp() {
   const deviceIdRef = useRef<string | null>(null);
   const recordingTimeoutRef = useRef<number | null>(null);
   const stoppingRecordingRef = useRef(false);
+  const syncInFlightRef = useRef(false);
 
   useEffect(() => {
     deviceIdRef.current = getOrCreateDeviceId();
@@ -537,6 +558,11 @@ export function ChillNoteWebApp() {
     };
   }, [query, selectedTagId, tags]);
 
+  const trashCount = useMemo(
+    () => notes.filter((note) => note.deletedAt && matchesFilters(note)).length,
+    [matchesFilters, notes]
+  );
+
   const sectionCounts = useMemo(() => {
     const counts: Record<NoteSectionKey, number> = { inbox: 0, drafts: 0, published: 0 };
     for (const note of notes) {
@@ -545,6 +571,9 @@ export function ChillNoteWebApp() {
     }
     return counts;
   }, [matchesFilters, notes]);
+
+  const TAG_COLLAPSE_LIMIT = 6;
+  const displayedTags = tagsExpanded ? visibleTags : visibleTags.slice(0, TAG_COLLAPSE_LIMIT);
 
   const visibleNotes = useMemo(() => {
     const filtered = notes.filter((note) => {
@@ -569,7 +598,6 @@ export function ChillNoteWebApp() {
   const selectedRecipe = agentRecipes.find((recipe) => recipe.id === selectedRecipeId)
     ?? savedRecipes[0]
     ?? agentRecipes[0];
-  const selectedSavedRecipe = savedRecipes.find((recipe) => recipe.id === selectedRecipeId) ?? savedRecipes[0] ?? null;
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -587,6 +615,26 @@ export function ChillNoteWebApp() {
     if (!session) return;
     void refreshAll(null);
   }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
+
+    const syncWhenVisible = () => {
+      if (document.visibilityState === "visible") {
+        void refreshAll();
+      }
+    };
+
+    const interval = window.setInterval(syncWhenVisible, AUTO_SYNC_INTERVAL_MS);
+    window.addEventListener("focus", syncWhenVisible);
+    document.addEventListener("visibilitychange", syncWhenVisible);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", syncWhenVisible);
+      document.removeEventListener("visibilitychange", syncWhenVisible);
+    };
+  }, [session, cursor]);
 
   useEffect(() => {
     setDraft(activeNote?.content ?? "");
@@ -609,8 +657,8 @@ export function ChillNoteWebApp() {
   }, [draft, activeNote, session]);
 
   async function refreshAll(nextCursor = cursor) {
-    if (!session) return;
-    setSyncing(true);
+    if (!session || syncInFlightRef.current) return;
+    syncInFlightRef.current = true;
     setError(null);
     try {
       const [syncResponse, subResponse] = await Promise.all([
@@ -638,8 +686,18 @@ export function ChillNoteWebApp() {
     } catch (error) {
       setError(error instanceof Error ? error.message : copy.errors.generic);
     } finally {
-      setSyncing(false);
+      syncInFlightRef.current = false;
     }
+  }
+
+  function selectPanel(panel: MainPanel) {
+    setMainPanel(panel);
+    setMobileEditorOpen(false);
+  }
+
+  function openNote(id: string) {
+    setActiveId(id);
+    setMobileEditorOpen(true);
   }
 
   function createNote(initialContent = "") {
@@ -651,6 +709,44 @@ export function ChillNoteWebApp() {
     setNotes((current) => [note, ...current]);
     setActiveId(note.id);
     setDraft(initialContent);
+    setMobileEditorOpen(true);
+  }
+
+  async function createNoteFromLink() {
+    if (!session?.user.id) return;
+    const metadata = metadataFromURL(captureLinkValue.trim());
+    if (!metadata) {
+      setError(copy.errors.invalidSourceURL);
+      return;
+    }
+    const note = prepareNoteForSave({
+      ...makeEmptyNote(session.user.id),
+      section: selectedSection,
+      content: metadata.title?.trim() ? metadata.title : metadata.url,
+      sourceURL: metadata.url,
+      sourceTitle: metadata.title,
+      sourcePlatformID: metadata.platformID,
+      sourcePlatformName: metadata.platformName,
+      sourceHost: metadata.host,
+      sourceCapturedAt: new Date().toISOString(),
+    });
+    setFeedMode("active");
+    setMainPanel("notes");
+    setNotes((current) => [note, ...current]);
+    setActiveId(note.id);
+    setDraft(note.content);
+    setCaptureLinkValue("");
+    setLinkCaptureOpen(false);
+    setMobileEditorOpen(true);
+    setSaving(true);
+    setError(null);
+    try {
+      await pushChanges({ notes: [note] });
+    } catch (error) {
+      setError(error instanceof Error ? error.message : copy.errors.generic);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function pushChanges(payload: { notes?: NoteDTO[]; tags?: TagDTO[]; hardDeletedNoteIds?: string[]; hardDeletedTagIds?: string[] }) {
@@ -724,12 +820,6 @@ export function ChillNoteWebApp() {
     if (!activeNote) return;
     const pinnedAt = activeNote.pinnedAt ? null : new Date().toISOString();
     await saveDraft(draft, { pinnedAt });
-  }
-
-  async function moveActiveNoteToSection(section: NoteSectionKey) {
-    if (!activeNote || noteSectionKey(activeNote) === section) return;
-    setSelectedSection(section);
-    await saveDraft(draft.trim() ? draft : activeNote.content || " ", { section });
   }
 
   async function startRecording() {
@@ -913,9 +1003,31 @@ export function ChillNoteWebApp() {
     setter(nextValue);
   }
 
+  function agentRecipeOptions() {
+    const platforms = [
+      captionTikTok ? copy.captionPack.platformTikTok : null,
+      captionYoutubeShorts ? copy.captionPack.platformYoutubeShorts : null,
+      captionInstagramReels ? copy.captionPack.platformInstagramReels : null,
+    ].filter((platform): platform is string => Boolean(platform));
+    const outputStyle = {
+      concise: "Concise",
+      balanced: "Balanced",
+      detailed: "Detailed",
+    }[captionOutputStyle] as "Concise" | "Balanced" | "Detailed";
+
+    return {
+      captionPack: {
+        platforms,
+        goal: copy.captionPack.goals[captionGoal],
+        tone: copy.captionPack.tones[captionTone],
+        outputStyle,
+      },
+    };
+  }
+
   function openNoteAISkills() {
-    if (savedRecipes.length > 0 && !savedRecipes.some((recipe) => recipe.id === selectedRecipeId)) {
-      setSelectedRecipeId(savedRecipes[0].id);
+    if (!agentRecipes.some((recipe) => recipe.id === selectedRecipeId)) {
+      setSelectedRecipeId(savedRecipes[0]?.id ?? agentRecipes[0].id);
     }
     setNoteAISkillsOpen(true);
   }
@@ -934,7 +1046,7 @@ export function ChillNoteWebApp() {
       const notesForRecipe = sourceNotes.map((note) => (
         note.id === activeNote?.id ? { ...note, content: draft } : note
       ));
-      const request = buildAgentRecipeRequest(selectedRecipe, notesForRecipe, recipeInstruction);
+      const request = buildAgentRecipeRequest(selectedRecipe, notesForRecipe, recipeInstruction, agentRecipeOptions());
       const result = await runAgentRecipe(session.access_token, request.prompt, request.systemPrompt);
       const note = prepareNoteForSave({ ...makeEmptyNote(session.user.id), content: result });
       setNotes((current) => [note, ...current]);
@@ -942,6 +1054,7 @@ export function ChillNoteWebApp() {
       setMainPanel("notes");
       setActiveId(note.id);
       setDraft(result);
+      setMobileEditorOpen(true);
       await pushChanges({ notes: [note] });
     } catch (error) {
       setError(error instanceof Error ? error.message : copy.errors.generic);
@@ -951,7 +1064,7 @@ export function ChillNoteWebApp() {
   }
 
   async function applySelectedRecipeToActiveNote() {
-    if (!session || !activeNote || !selectedSavedRecipe) return;
+    if (!session || !activeNote || !selectedRecipe) return;
     if (!draft.trim()) {
       setError(copy.errors.emptyNote);
       return;
@@ -961,9 +1074,10 @@ export function ChillNoteWebApp() {
     setError(null);
     try {
       const request = buildAgentRecipeRequest(
-        selectedSavedRecipe,
+        selectedRecipe,
         [{ ...activeNote, content: draft }],
-        noteSkillInstruction
+        noteSkillInstruction,
+        agentRecipeOptions()
       );
       const result = await runAgentRecipe(session.access_token, request.prompt, request.systemPrompt);
       setDraft(result);
@@ -1015,142 +1129,206 @@ export function ChillNoteWebApp() {
   const panelTitle = copy.app.panels[mainPanel].title;
 
   return (
-    <main className="web-app-shell">
-      <aside className="sidebar">
-        <div className="sidebar-top">
-          <a className="brand-lockup" href="/">
-            <img src="/assets/chillnote-logo.png" alt="" />
-            <span>{copy.productName}</span>
-          </a>
-          <button className="icon-button" onClick={signOut} aria-label={copy.auth.signOut} title={copy.auth.signOut}>
-            <LogOut size={18} />
+    <main
+      className={`web-app-shell ${mainPanel === "notes" ? "has-list" : "no-list"} ${mobileEditorOpen ? "mobile-editor" : ""}`}
+      data-panel={mainPanel}
+    >
+      <nav className="nav-rail" aria-label={copy.app.sections}>
+        <a className="rail-brand" href="/" aria-label={copy.productName}>
+          <img src="/assets/chillnote-logo.png" alt="" />
+        </a>
+
+        <div className="rail-nav">
+          <button
+            className={mainPanel === "notes" ? "active" : ""}
+            onClick={() => selectPanel("notes")}
+            aria-label={copy.app.panels.notes.nav}
+            title={copy.app.panels.notes.nav}
+          >
+            <FileText size={20} />
+            <span>{copy.app.panels.notes.nav}</span>
+          </button>
+          <button
+            className={mainPanel === "skills" ? "active" : ""}
+            onClick={() => selectPanel("skills")}
+            aria-label={copy.app.panels.skills.nav}
+            title={copy.app.panels.skills.nav}
+          >
+            <Bot size={20} />
+            <span>{copy.app.panels.skills.nav}</span>
+          </button>
+          <button
+            className={mainPanel === "settings" ? "active" : ""}
+            onClick={() => selectPanel("settings")}
+            aria-label={copy.app.panels.settings.nav}
+            title={copy.app.panels.settings.nav}
+          >
+            <SettingsIcon size={20} />
+            <span>{copy.app.panels.settings.nav}</span>
           </button>
         </div>
 
-        <div className="subscription-strip">
-          <div>
-            <span>{copy.app.subscription}</span>
-            <strong>{isPro ? copy.app.pro : copy.app.free}</strong>
-          </div>
+        <div className="rail-foot">
           {isPro ? null : (
-            <button className="mini-button" onClick={startCheckout} disabled={checkoutLoading}>
-              {checkoutLoading ? <Loader2 className="spin" size={15} /> : <CreditCard size={15} />}
-              {checkoutLoading ? copy.app.checkoutLoading : copy.app.upgrade}
+            <button
+              className="rail-upgrade"
+              onClick={startCheckout}
+              disabled={checkoutLoading}
+              aria-label={copy.app.upgrade}
+              title={copy.app.upgrade}
+            >
+              {checkoutLoading ? <Loader2 className="spin" size={20} /> : <CreditCard size={20} />}
             </button>
           )}
-        </div>
-
-        <nav className="app-nav" aria-label={copy.app.sections}>
-          <button className={mainPanel === "notes" ? "active" : ""} onClick={() => setMainPanel("notes")}>
-            <FileText size={16} />
-            {copy.app.panels.notes.nav}
-          </button>
-          <button className={mainPanel === "skills" ? "active" : ""} onClick={() => setMainPanel("skills")}>
-            <Bot size={16} />
-            {copy.app.panels.skills.nav}
-          </button>
-          <button className={mainPanel === "settings" ? "active" : ""} onClick={() => setMainPanel("settings")}>
-            <SettingsIcon size={16} />
-            {copy.app.panels.settings.nav}
-          </button>
-        </nav>
-
-        <div className="feed-tabs" role="tablist" aria-label={copy.app.feedMode}>
-          <button className={feedMode === "active" ? "active" : ""} onClick={() => setFeedMode("active")}>
-            {copy.app.activeNotes}
-          </button>
-          <button className={feedMode === "trash" ? "active" : ""} onClick={() => setFeedMode("trash")}>
-            {copy.app.trash}
+          <button onClick={signOut} aria-label={copy.auth.signOut} title={copy.auth.signOut}>
+            <LogOut size={20} />
           </button>
         </div>
+      </nav>
 
-        {feedMode === "active" ? (
-          <div className="section-tabs" role="tablist" aria-label={copy.app.sectionFilter}>
-            {NOTE_SECTION_KEYS.map((key) => (
-              <button
-                key={key}
-                className={selectedSection === key ? "active" : ""}
-                onClick={() => setSelectedSection(key)}
-                role="tab"
-                aria-selected={selectedSection === key}
-              >
-                <span>{sectionLabels[key]}</span>
-                {sectionCounts[key] > 0 ? <small>{sectionCounts[key]}</small> : null}
-              </button>
-            ))}
+      {mainPanel === "notes" ? (
+        <aside className="list-col">
+          <div className="list-head">
+            <a className="brand-lockup" href="/">
+              <Wordmark />
+            </a>
           </div>
-        ) : null}
 
-        <div className="search-box">
-          <Search size={17} />
-          <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.app.searchPlaceholder} />
-        </div>
+          {feedMode === "active" ? (
+            <>
+              <div className="capture-zone" aria-label={copy.app.captureHeading}>
+                <button className="capture-action primary" onClick={() => createNote()}>
+                  <Plus size={18} />
+                  <span>{copy.app.captureWrite}</span>
+                </button>
+                <button
+                  className={`capture-action ${recording ? "recording" : ""}`}
+                  onClick={recording ? stopAndTranscribe : startRecording}
+                  disabled={transcribing}
+                >
+                  {recording ? <Square size={18} /> : transcribing ? <Loader2 className="spin" size={18} /> : <Mic size={18} />}
+                  <span>{recording ? copy.app.captureRecording : transcribing ? copy.app.captureTranscribing : copy.app.captureRecord}</span>
+                </button>
+                <button
+                  className={`capture-action ${linkCaptureOpen ? "active" : ""}`}
+                  onClick={() => setLinkCaptureOpen((open) => !open)}
+                >
+                  <Link2 size={18} />
+                  <span>{copy.app.capturePasteLink}</span>
+                </button>
+              </div>
 
-        <button className="new-note-button" onClick={() => createNote()}>
-          <Plus size={18} />
-          {copy.app.newNote}
-        </button>
+              {linkCaptureOpen ? (
+                <div className="capture-link-row">
+                  <input
+                    autoFocus
+                    value={captureLinkValue}
+                    onChange={(event) => setCaptureLinkValue(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        void createNoteFromLink();
+                      } else if (event.key === "Escape") {
+                        setLinkCaptureOpen(false);
+                      }
+                    }}
+                    placeholder={copy.app.captureLinkPlaceholder}
+                  />
+                  <button className="primary-button compact" onClick={() => void createNoteFromLink()} disabled={!captureLinkValue.trim()}>
+                    {copy.app.captureLinkAdd}
+                  </button>
+                </div>
+              ) : null}
 
-        <div className="tag-filter-list" aria-label={copy.app.tags}>
-          <button className={selectedTagId === null ? "active" : ""} onClick={() => setSelectedTagId(null)}>
-            <Tag size={14} />
-            {copy.app.allTags}
-          </button>
-          {visibleTags.map((tag) => (
-            <button
-              key={tag.id}
-              className={selectedTagId === tag.id ? "active" : ""}
-              onClick={() => setSelectedTagId(tag.id)}
-            >
-              <span className="tag-dot" style={{ background: normalizeTagColorHex(tag.colorHex) }} />
-              {tag.name}
-            </button>
-          ))}
-        </div>
+              <div className="section-tabs" role="tablist" aria-label={copy.app.sectionFilter}>
+                {NOTE_SECTION_KEYS.map((key) => (
+                  <button
+                    key={key}
+                    className={selectedSection === key ? "active" : ""}
+                    onClick={() => setSelectedSection(key)}
+                    role="tab"
+                    aria-selected={selectedSection === key}
+                  >
+                    <span>{sectionLabels[key]}</span>
+                    {sectionCounts[key] > 0 ? <small>{sectionCounts[key]}</small> : null}
+                  </button>
+                ))}
+              </div>
 
-        <div className="notes-list" aria-label={copy.app.noteCount}>
-          {visibleNotes.map((note) => {
-            const notePreview = previewPlainText(note.content).trim();
-            return (
-              <button
-                key={note.id}
-                className={`note-row ${note.id === activeId ? "active" : ""}`}
-                onClick={() => setActiveId(note.id)}
-              >
-                <span>{notePreview.split("\n")[0] || copy.app.emptyTitle}</span>
-                <small>{note.pinnedAt ? `${copy.app.pinned} · ` : ""}{formatDate(note.createdAt)}</small>
+            </>
+          ) : (
+            <div className="trash-banner">
+              <span><Trash2 size={15} /> {copy.app.trash}</span>
+              <button className="link-button" onClick={() => setFeedMode("active")}>
+                <ChevronLeft size={15} />
+                {copy.app.activeNotes}
               </button>
-            );
-          })}
-        </div>
-      </aside>
+            </div>
+          )}
+
+          <div className="search-box">
+            <Search size={17} />
+            <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder={copy.app.searchPlaceholder} />
+          </div>
+
+          {visibleTags.length > 0 ? (
+            <div className="tag-filter-list" aria-label={copy.app.tags}>
+              <button className={selectedTagId === null ? "active" : ""} onClick={() => setSelectedTagId(null)}>
+                <Tag size={14} />
+                {copy.app.allTags}
+              </button>
+              {displayedTags.map((tag) => (
+                <button
+                  key={tag.id}
+                  className={selectedTagId === tag.id ? "active" : ""}
+                  onClick={() => setSelectedTagId(tag.id)}
+                >
+                  <span className="tag-dot" style={{ background: normalizeTagColorHex(tag.colorHex) }} />
+                  {tag.name}
+                </button>
+              ))}
+              {visibleTags.length > TAG_COLLAPSE_LIMIT ? (
+                <button className="tag-more" onClick={() => setTagsExpanded((expanded) => !expanded)}>
+                  {tagsExpanded ? copy.app.showFewerTags : `+${visibleTags.length - TAG_COLLAPSE_LIMIT} ${copy.app.showMoreTags}`}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
+
+          <div className="notes-list" aria-label={copy.app.noteCount}>
+            {visibleNotes.map((note) => {
+              const notePreview = previewPlainText(note.content).trim();
+              return (
+                <button
+                  key={note.id}
+                  className={`note-row ${note.id === activeId ? "active" : ""}`}
+                  onClick={() => openNote(note.id)}
+                >
+                  <span>{notePreview || copy.app.emptyTitle}</span>
+                  <small>{note.pinnedAt ? `${copy.app.pinned} · ` : ""}{formatDate(note.createdAt)}</small>
+                </button>
+              );
+            })}
+          </div>
+
+          {feedMode === "active" ? (
+            <button className="trash-toggle" onClick={() => setFeedMode("trash")}>
+              <Trash2 size={15} />
+              {copy.app.trash}
+              {trashCount > 0 ? <small>{trashCount}</small> : null}
+            </button>
+          ) : null}
+        </aside>
+      ) : null}
 
       <section className="workspace">
-        <header className="workspace-header">
-          <div>
-            <h1>{panelTitle}</h1>
-          </div>
-          {mainPanel === "notes" ? (
-          <div className="toolbar">
-            <button className="ghost-button" onClick={() => void refreshAll()} disabled={syncing}>
-              {syncing ? <Loader2 className="spin" size={17} /> : <RefreshCw size={17} />}
-              {syncing ? copy.app.syncing : copy.app.sync}
-            </button>
-            <button className="ghost-button" onClick={togglePin} disabled={!activeNote || saving}>
-              {activeNote?.pinnedAt ? <PinOff size={17} /> : <Pin size={17} />}
-              {activeNote?.pinnedAt ? copy.app.unpin : copy.app.pin}
-            </button>
-            <button className="ghost-button" onClick={recording ? stopAndTranscribe : startRecording} disabled={transcribing}>
-              {recording ? <Square size={17} /> : <Mic size={17} />}
-              {recording ? copy.app.stopRecording : transcribing ? copy.app.transcribing : copy.app.startRecording}
-            </button>
-            <button className="primary-button compact" onClick={() => void saveDraft()} disabled={saving || !activeNote || Boolean(activeNote.deletedAt)}>
-              {saving ? <Loader2 className="spin" size={17} /> : <Check size={17} />}
-              {saving ? copy.app.saving : copy.app.save}
-            </button>
-          </div>
-          ) : null}
-        </header>
+        {mainPanel === "notes" ? null : (
+          <header className="workspace-header">
+            <div className="workspace-title">
+              <h1>{panelTitle}</h1>
+            </div>
+          </header>
+        )}
 
         {error ? <div className="error-banner">{error}</div> : null}
 
@@ -1158,79 +1336,73 @@ export function ChillNoteWebApp() {
           {mainPanel === "notes" ? (
           activeNote ? (
             <>
-              {activeNote.deletedAt ? null : (
-                <div className="section-mover" role="group" aria-label={copy.app.moveSection}>
-                  {NOTE_SECTION_KEYS.map((key) => (
-                    <button
-                      key={key}
-                      className={noteSectionKey(activeNote) === key ? "active" : ""}
-                      onClick={() => void moveActiveNoteToSection(key)}
-                      disabled={saving}
-                    >
-                      {sectionLabels[key]}
-                    </button>
-                  ))}
-                </div>
-              )}
               <div className="metadata-bar">
-                <div className="tag-editor">
-                  {activeTags.map((tag) => (
-                    <button key={tag.id} className="tag-chip" onClick={() => void removeTagFromActiveNote(tag.id)}>
-                      <span className="tag-dot" style={{ background: normalizeTagColorHex(tag.colorHex) }} />
-                      {tag.name}
-                      <X size={13} />
-                    </button>
-                  ))}
-                  <input
-                    value={newTagName}
-                    onChange={(event) => setNewTagName(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        void addTagToActiveNote();
-                      }
-                    }}
-                    placeholder={copy.app.addTagPlaceholder}
-                  />
+                <div className="metadata-block">
+                  <span className="metadata-label">{copy.app.tags}</span>
+                  <div className="tag-editor">
+                    {activeTags.map((tag) => (
+                      <button key={tag.id} className="tag-chip" onClick={() => void removeTagFromActiveNote(tag.id)}>
+                        <span className="tag-dot" style={{ background: normalizeTagColorHex(tag.colorHex) }} />
+                        {tag.name}
+                        <X size={13} />
+                      </button>
+                    ))}
+                    <input
+                      value={newTagName}
+                      onChange={(event) => setNewTagName(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void addTagToActiveNote();
+                        }
+                      }}
+                      placeholder={copy.app.addTagPlaceholder}
+                    />
+                  </div>
                 </div>
-                <div className="source-editor">
-                  <Link2 size={16} />
-                  <input
-                    value={sourceURLDraft}
-                    onChange={(event) => setSourceURLDraft(event.target.value)}
-                    onBlur={() => {
-                      if (sourceURLDraft && sourceURLDraft !== activeNote.sourceURL) void applySourceURL();
-                    }}
-                    placeholder={copy.app.sourcePlaceholder}
-                  />
-                  {sourceMetadata ? (
-                    <a href={sourceMetadata.url} target="_blank" rel="noreferrer" title={sourceMetadata.title}>
-                      <ExternalLink size={16} />
-                    </a>
-                  ) : null}
-                  {activeNote.sourceURL ? (
-                    <button className="icon-button small" onClick={clearSourceURL} aria-label={copy.app.clearSource}>
-                      <X size={14} />
-                    </button>
-                  ) : null}
+                <div className="metadata-block">
+                  <span className="metadata-label">{copy.app.source}</span>
+                  <div className="source-editor">
+                    {sourceMetadata ? (
+                      <>
+                        <span className="source-platform">{sourceMetadata.platformName}</span>
+                        <a className="source-title-link" href={sourceMetadata.url} target="_blank" rel="noreferrer" title={sourceMetadata.title}>
+                          <span>{sourceMetadata.title}</span>
+                          <ExternalLink size={15} />
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        <Link2 size={16} />
+                        <input
+                          value={sourceURLDraft}
+                          onChange={(event) => setSourceURLDraft(event.target.value)}
+                          onBlur={() => {
+                            if (sourceURLDraft && sourceURLDraft !== activeNote.sourceURL) void applySourceURL();
+                          }}
+                          placeholder={copy.app.sourcePlaceholder}
+                        />
+                      </>
+                    )}
+                    {activeNote.sourceURL ? (
+                      <button className="icon-button small" onClick={clearSourceURL} aria-label={copy.app.clearSource}>
+                        <X size={14} />
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
               </div>
-
-              {sourceMetadata ? (
-                <div className="source-card">
-                  <strong>{sourceMetadata.platformName}</strong>
-                  <span>{sourceMetadata.title}</span>
-                  <small>{sourceMetadata.host}</small>
-                </div>
-              ) : null}
 
               <MarkdownRichEditor
                 value={draft}
                 onChange={setDraft}
                 placeholder={copy.app.editorPlaceholder}
                 disabled={Boolean(activeNote.deletedAt)}
+                onPin={() => void togglePin()}
                 onAISkills={openNoteAISkills}
-                aiSkillsDisabled={Boolean(activeNote.deletedAt) || runningRecipe || savedRecipes.length === 0}
+                pinDisabled={Boolean(activeNote.deletedAt) || saving}
+                pinned={Boolean(activeNote.pinnedAt)}
+                aiSkillsDisabled={Boolean(activeNote.deletedAt) || runningRecipe}
                 aiSkillsRunning={runningRecipe && noteAISkillsOpen}
               />
               {noteAISkillsOpen ? (
@@ -1243,67 +1415,68 @@ export function ChillNoteWebApp() {
                       </button>
                     </header>
 
-                    {savedRecipes.length === 0 ? (
-                      <div className="empty-state compact">
-                        <h2>{copy.skills.emptyTitle}</h2>
-                        <p>{copy.skills.emptyBody}</p>
-                      </div>
-                    ) : (
-                      <>
-                        <label className="field-label">
-                          {copy.editor.chooseSkill}
-                          <select value={selectedSavedRecipe?.id ?? ""} onChange={(event) => setSelectedRecipeId(event.target.value)}>
-                            {savedRecipes.map((recipe) => (
-                              <option key={recipe.id} value={recipe.id}>{recipe.name}</option>
-                            ))}
-                          </select>
-                        </label>
+                    <label className="field-label">
+                      {copy.editor.chooseSkill}
+                      <select value={selectedRecipe.id} onChange={(event) => setSelectedRecipeId(event.target.value)}>
+                        {(Object.keys(recipeCategoryLabels) as AgentRecipeCategory[]).map((category) => (
+                          <optgroup key={category} label={recipeCategoryLabels[category]}>
+                            {agentRecipes
+                              .filter((recipe) => recipe.category === category)
+                              .map((recipe) => (
+                                <option key={recipe.id} value={recipe.id}>
+                                  {recipe.icon} {recipe.name}{savedRecipeIds.includes(recipe.id) ? " ★" : ""}
+                                </option>
+                              ))}
+                          </optgroup>
+                        ))}
+                      </select>
+                    </label>
 
-                        {selectedSavedRecipe?.requiresInstruction ? (
-                          <label className="field-label">
-                            {copy.skills.targetLanguage}
-                            <input value={noteSkillInstruction} onChange={(event) => setNoteSkillInstruction(event.target.value)} />
-                          </label>
-                        ) : null}
+                    <p className="muted-copy skill-description">{selectedRecipe.description}</p>
 
-                        <p className="muted-copy">{copy.editor.aiSkillsHint}</p>
-                        <button className="primary-button compact" onClick={() => void applySelectedRecipeToActiveNote()} disabled={runningRecipe || !selectedSavedRecipe}>
-                          {runningRecipe ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
-                          {runningRecipe ? copy.skills.running : copy.editor.applySkill}
-                        </button>
-                      </>
-                    )}
+                    <button className="link-button star-toggle" onClick={() => toggleSavedRecipe(selectedRecipe.id)}>
+                      {savedRecipeIds.includes(selectedRecipe.id) ? <Check size={15} /> : <Plus size={15} />}
+                      {savedRecipeIds.includes(selectedRecipe.id) ? copy.editor.unstarSkill : copy.editor.starSkill}
+                    </button>
+
+                    {selectedRecipe.requiresInstruction ? (
+                      <label className="field-label">
+                        {copy.skills.targetLanguage}
+                        <input value={noteSkillInstruction} onChange={(event) => setNoteSkillInstruction(event.target.value)} />
+                      </label>
+                    ) : null}
+
+                    <p className="muted-copy">{copy.editor.aiSkillsHint}</p>
+                    <button className="primary-button compact" onClick={() => void applySelectedRecipeToActiveNote()} disabled={runningRecipe}>
+                      {runningRecipe ? <Loader2 className="spin" size={17} /> : <Sparkles size={17} />}
+                      {runningRecipe ? copy.skills.running : copy.editor.applySkill}
+                    </button>
                   </section>
                 </div>
               ) : null}
               <footer className="editor-footer">
-                <span>
-                  <span className="save-state">
-                    {saving ? (
-                      <><Loader2 className="spin" size={13} /> {copy.app.saving}</>
-                    ) : activeNote.deletedAt ? null : (
-                      <><Check size={13} /> {copy.app.saved}</>
-                    )}
-                  </span>
-                  {copy.app.lastSynced}: {formatDate(status)}
-                  {activeNote.deletedAt ? ` · ${daysRemainingInTrash(activeNote.deletedAt)} ${copy.app.daysRemaining}` : ""}
-                </span>
                 {activeNote.deletedAt ? (
-                  <div className="footer-actions">
-                    <button className="ghost-button" onClick={restoreActiveNote} disabled={saving}>
-                      <RotateCcw size={16} />
-                      {copy.app.restore}
-                    </button>
-                    <button className="danger-button" onClick={hardDeleteActiveNote} disabled={saving}>
-                      <Trash2 size={16} />
-                      {copy.app.deleteForever}
-                    </button>
-                  </div>
+                  <>
+                    <span>{daysRemainingInTrash(activeNote.deletedAt)} {copy.app.daysRemaining}</span>
+                    <div className="footer-actions">
+                      <button className="ghost-button" onClick={restoreActiveNote} disabled={saving}>
+                        <RotateCcw size={16} />
+                        {copy.app.restore}
+                      </button>
+                      <button className="danger-button" onClick={hardDeleteActiveNote} disabled={saving}>
+                        <Trash2 size={16} />
+                        {copy.app.deleteForever}
+                      </button>
+                    </div>
+                  </>
                 ) : (
-                  <button className="danger-button" onClick={softDeleteActiveNote} disabled={saving}>
-                    <Trash2 size={16} />
-                    {copy.app.delete}
-                  </button>
+                  <>
+                    <span />
+                    <button className="danger-button" onClick={softDeleteActiveNote} disabled={saving}>
+                      <Trash2 size={16} />
+                      {copy.app.delete}
+                    </button>
+                  </>
                 )}
               </footer>
             </>
@@ -1492,10 +1665,6 @@ export function ChillNoteWebApp() {
                   <span>{copy.settings.syncStatus}</span>
                   <strong>{formatDate(status)}</strong>
                 </div>
-                <button className="ghost-button" onClick={() => void refreshAll()} disabled={syncing}>
-                  {syncing ? <Loader2 className="spin" size={17} /> : <RefreshCw size={17} />}
-                  {copy.app.sync}
-                </button>
               </section>
 
               <section className="settings-section">

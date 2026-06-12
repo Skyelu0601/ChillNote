@@ -1,9 +1,12 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { ArrowLeft, CheckCircle2, Loader2, Mail } from "lucide-react";
+import { ArrowLeft, ArrowRight, Loader2 } from "lucide-react";
+import { AnimatePresence, motion } from "framer-motion";
 import { copy } from "@/lib/copy";
 import { supabase } from "@/lib/supabase";
+import { Wordmark } from "./wordmark";
+import { OtpInput } from "./otp-input";
 
 type AuthPanelProps = {
   onAuthenticated: () => void;
@@ -11,12 +14,19 @@ type AuthPanelProps = {
 
 type BusyState = "send" | "verify" | "apple" | "google" | null;
 type OAuthProvider = "apple" | "google";
+type View = "form" | "code";
+
+const fade = {
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  exit: { opacity: 0, y: -10 },
+  transition: { duration: 0.26, ease: [0.16, 1, 0.3, 1] as const },
+};
 
 export function AuthPanel({ onAuthenticated }: AuthPanelProps) {
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
-  const [sent, setSent] = useState(false);
-  const [showEmailLogin, setShowEmailLogin] = useState(false);
+  const [view, setView] = useState<View>("form");
   const [busy, setBusy] = useState<BusyState>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -37,8 +47,8 @@ export function AuthPanel({ onAuthenticated }: AuthPanelProps) {
     }
   }
 
-  async function sendCode(event: FormEvent) {
-    event.preventDefault();
+  async function sendCode(event?: FormEvent) {
+    event?.preventDefault();
     setError(null);
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
@@ -55,14 +65,14 @@ export function AuthPanel({ onAuthenticated }: AuthPanelProps) {
       setError(error.message);
       return;
     }
-    setSent(true);
+    setCode("");
+    setView("code");
   }
 
-  async function verifyCode(event: FormEvent) {
-    event.preventDefault();
+  async function verifyCode(submittedCode?: string) {
     setError(null);
     const normalizedEmail = email.trim().toLowerCase();
-    const normalizedCode = code.trim();
+    const normalizedCode = (submittedCode ?? code).trim();
     if (!normalizedEmail) {
       setError(copy.errors.emptyEmail);
       return;
@@ -85,91 +95,35 @@ export function AuthPanel({ onAuthenticated }: AuthPanelProps) {
     onAuthenticated();
   }
 
+  function backToForm() {
+    setView("form");
+    setCode("");
+    setError(null);
+  }
+
   return (
-    <section className="auth-shell" aria-label={copy.auth.title}>
-      <div className="auth-stage">
-        <div className="auth-brand-panel" aria-hidden="true">
-          <div className="auth-preview-card auth-preview-card-primary">
-            <span>{copy.auth.previewLabel}</span>
-            <strong>{copy.auth.previewTitle}</strong>
-            <p>{copy.auth.previewBody}</p>
-          </div>
-          <div className="auth-preview-card auth-preview-card-secondary">
-            <CheckCircle2 size={18} />
-            <span>{copy.auth.previewSync}</span>
-          </div>
-        </div>
+    <section className="lp-auth" aria-label={copy.auth.title}>
+      <a className="lp-auth-home" href="/">
+        <ArrowLeft size={15} />
+        {copy.auth.backToHome}
+      </a>
 
-        <div className="auth-panel">
-          <header className="auth-header">
-            <img className="auth-logo" src="/assets/chillnote-logo.png" alt="" />
-            <div className="auth-wordmark" aria-label={copy.auth.brandTitle}>
-              <span>Chill</span>
-              <strong>Note</strong>
-            </div>
-          </header>
+      <motion.div
+        className="lp-auth-card"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+      >
+        <header className="lp-auth-card-head">
+          <Wordmark className="lp-auth-wordmark" />
+          <p className="lp-auth-subtitle">{copy.auth.subtitle}</p>
+        </header>
 
-          {showEmailLogin ? (
-            <form className="auth-form" onSubmit={sent ? verifyCode : sendCode}>
-              {!sent ? (
-                <label>
-                  <span>{copy.auth.emailLabel}</span>
-                  <div className="input-with-icon">
-                    <Mail size={17} />
-                    <input
-                      value={email}
-                      onChange={(event) => setEmail(event.target.value)}
-                      placeholder={copy.auth.emailPlaceholder}
-                      type="email"
-                      autoComplete="email"
-                    />
-                  </div>
-                </label>
-              ) : (
-                <label>
-                  <span>{copy.auth.codeSentTo.replace("{email}", email.trim())}</span>
-                  <input
-                    className="auth-code-input"
-                    value={code}
-                    onChange={(event) => setCode(event.target.value)}
-                    placeholder={copy.auth.codePlaceholder}
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                  />
-                </label>
-              )}
-
-              {error ? <p className="form-error">{error}</p> : null}
-
-              <button className="auth-primary-button" type="submit" disabled={busy !== null}>
-                {busy === "send" || busy === "verify" ? <Loader2 className="spin" size={18} /> : null}
-                {sent
-                  ? busy === "verify"
-                    ? copy.auth.verifying
-                    : copy.auth.verifyCode
-                  : busy === "send"
-                    ? copy.auth.sending
-                    : copy.auth.sendCode}
-              </button>
-
+        <AnimatePresence mode="wait" initial={false}>
+          {view === "form" ? (
+            <motion.div key="form" className="lp-auth-body" {...fade}>
               <button
-                className="auth-back-button"
-                type="button"
-                onClick={() => {
-                  setShowEmailLogin(false);
-                  setSent(false);
-                  setCode("");
-                  setError(null);
-                }}
-              >
-                <ArrowLeft size={15} />
-                {copy.auth.backToOptions}
-              </button>
-            </form>
-          ) : (
-            <div className="auth-options">
-              <button
-                className="auth-provider-button"
+                className="lp-auth-provider"
                 type="button"
                 onClick={() => void signInWithProvider("google")}
                 disabled={busy !== null}
@@ -183,7 +137,7 @@ export function AuthPanel({ onAuthenticated }: AuthPanelProps) {
               </button>
 
               <button
-                className="auth-provider-button auth-provider-button-dark"
+                className="lp-auth-provider"
                 type="button"
                 onClick={() => void signInWithProvider("apple")}
                 disabled={busy !== null}
@@ -192,17 +146,72 @@ export function AuthPanel({ onAuthenticated }: AuthPanelProps) {
                 {copy.auth.appleButton}
               </button>
 
-              <button className="auth-email-link" type="button" onClick={() => setShowEmailLogin(true)}>
-                {copy.auth.emailButton}
-              </button>
+              <div className="lp-auth-divider">
+                <span>{copy.auth.dividerLabel}</span>
+              </div>
+
+              <form className="lp-auth-email" onSubmit={sendCode}>
+                <label className="lp-auth-label" htmlFor="auth-email">
+                  {copy.auth.emailLabel}
+                </label>
+                <input
+                  id="auth-email"
+                  className="lp-auth-input"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder={copy.auth.emailPlaceholder}
+                  type="email"
+                  autoComplete="email"
+                />
+
+                {error ? <p className="form-error">{error}</p> : null}
+
+                <button className="lp-auth-submit" type="submit" disabled={busy !== null}>
+                  {busy === "send" ? <Loader2 className="spin" size={18} /> : null}
+                  {busy === "send" ? copy.auth.sending : copy.auth.sendCode}
+                  {busy !== "send" ? <ArrowRight size={17} /> : null}
+                </button>
+              </form>
+            </motion.div>
+          ) : (
+            <motion.form
+              key="code"
+              className="lp-auth-body"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void verifyCode();
+              }}
+              {...fade}
+            >
+              <p className="lp-auth-code-hint">
+                {copy.auth.codeSentTo.replace("{email}", email.trim())}
+              </p>
+
+              <OtpInput
+                value={code}
+                onChange={setCode}
+                disabled={busy !== null}
+                autoFocus
+                onComplete={(full) => void verifyCode(full)}
+              />
 
               {error ? <p className="form-error">{error}</p> : null}
-            </div>
-          )}
 
-          <p className="auth-legal">{copy.auth.legal}</p>
-        </div>
-      </div>
+              <button className="lp-auth-submit" type="submit" disabled={busy !== null}>
+                {busy === "verify" ? <Loader2 className="spin" size={18} /> : null}
+                {busy === "verify" ? copy.auth.verifying : copy.auth.verifyCode}
+              </button>
+
+              <button className="lp-auth-back" type="button" onClick={backToForm}>
+                <ArrowLeft size={15} />
+                {copy.auth.backToOptions}
+              </button>
+            </motion.form>
+          )}
+        </AnimatePresence>
+
+        <p className="lp-auth-legal">{copy.auth.legal}</p>
+      </motion.div>
     </section>
   );
 }
