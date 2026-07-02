@@ -6,18 +6,38 @@ import UIKit
 final class AppRatingService: ObservableObject {
     static let shared = AppRatingService()
 
-    private let successfulVoiceNoteCountKey = "app_rating.successful_voice_note_count"
+    private let successfulEventCountKey = "app_rating.successful_event_count"
+    private let legacySuccessfulVoiceNoteCountKey = "app_rating.successful_voice_note_count"
+    private let didMigrateLegacyVoiceNoteCountKey = "app_rating.did_migrate_legacy_voice_note_count"
     private let hasTriggeredPromptKey = "app_rating.has_triggered_prompt"
-    private let voiceNotePromptThreshold = 3
+    private let countedLinkImportNoteIDsKey = "app_rating.counted_link_import_note_ids"
+    private let promptThreshold = 3
 
     private init() {}
 
     func registerSuccessfulVoiceNoteSave() -> Bool {
+        registerSuccessfulEvent()
+    }
+
+    func registerSuccessfulLinkImportCompletion(noteID: UUID) -> Bool {
         guard !hasTriggeredPrompt else { return false }
 
-        successfulVoiceNoteCount += 1
+        var countedNoteIDs = countedLinkImportNoteIDs
+        let noteIDString = noteID.uuidString
+        guard !countedNoteIDs.contains(noteIDString) else { return false }
 
-        guard successfulVoiceNoteCount >= voiceNotePromptThreshold else {
+        countedNoteIDs.insert(noteIDString)
+        countedLinkImportNoteIDs = countedNoteIDs
+
+        return registerSuccessfulEvent()
+    }
+
+    private func registerSuccessfulEvent() -> Bool {
+        guard !hasTriggeredPrompt else { return false }
+
+        successfulEventCount += 1
+
+        guard successfulEventCount >= promptThreshold else {
             return false
         }
 
@@ -45,13 +65,36 @@ final class AppRatingService: ObservableObject {
 }
 
 private extension AppRatingService {
-    var successfulVoiceNoteCount: Int {
-        get { UserDefaults.standard.integer(forKey: successfulVoiceNoteCountKey) }
-        set { UserDefaults.standard.set(newValue, forKey: successfulVoiceNoteCountKey) }
+    var successfulEventCount: Int {
+        get {
+            migrateLegacyVoiceNoteCountIfNeeded()
+            return UserDefaults.standard.integer(forKey: successfulEventCountKey)
+        }
+        set { UserDefaults.standard.set(newValue, forKey: successfulEventCountKey) }
     }
 
     var hasTriggeredPrompt: Bool {
         get { UserDefaults.standard.bool(forKey: hasTriggeredPromptKey) }
         set { UserDefaults.standard.set(newValue, forKey: hasTriggeredPromptKey) }
+    }
+
+    var countedLinkImportNoteIDs: Set<String> {
+        get {
+            let ids = UserDefaults.standard.stringArray(forKey: countedLinkImportNoteIDsKey) ?? []
+            return Set(ids)
+        }
+        set {
+            UserDefaults.standard.set(Array(newValue), forKey: countedLinkImportNoteIDsKey)
+        }
+    }
+
+    func migrateLegacyVoiceNoteCountIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: didMigrateLegacyVoiceNoteCountKey) else { return }
+
+        let legacyCount = UserDefaults.standard.integer(forKey: legacySuccessfulVoiceNoteCountKey)
+        if legacyCount > UserDefaults.standard.integer(forKey: successfulEventCountKey) {
+            UserDefaults.standard.set(legacyCount, forKey: successfulEventCountKey)
+        }
+        UserDefaults.standard.set(true, forKey: didMigrateLegacyVoiceNoteCountKey)
     }
 }

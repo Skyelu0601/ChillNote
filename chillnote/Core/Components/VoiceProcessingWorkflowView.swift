@@ -39,6 +39,15 @@ enum VoiceProcessingStage: String, CaseIterable, Equatable {
             return 1
         }
     }
+
+    var tint: Color {
+        switch self {
+        case .transcribing:
+            return .accentPrimary
+        case .refining:
+            return .accentSecondary
+        }
+    }
 }
 
 struct VoiceProcessingWorkflowView: View {
@@ -68,12 +77,12 @@ struct VoiceProcessingWorkflowView: View {
         HStack(spacing: 8) {
             ZStack {
                 Circle()
-                    .fill(Color.accentPrimary.opacity(0.15))
+                    .fill(currentStage.tint.opacity(0.15))
                     .frame(width: 24, height: 24)
                 
                 Image(systemName: currentStage.systemImage)
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(currentStage.tint)
                     .symbolEffect(.pulse, isActive: true)
             }
 
@@ -174,9 +183,9 @@ private struct TimelineRow: View {
                         .foregroundStyle(.white)
                 } else if isActive {
                     Circle()
-                        .fill(Color.accentPrimary)
+                        .fill(stage.tint)
                         .frame(width: 24, height: 24)
-                        .shadow(color: .accentPrimary.opacity(0.4), radius: 6)
+                        .shadow(color: stage.tint.opacity(0.4), radius: 6)
                     Image(systemName: stage.systemImage)
                         .font(.system(size: 10, weight: .bold))
                         .foregroundStyle(.white)

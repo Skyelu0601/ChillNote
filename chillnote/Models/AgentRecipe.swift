@@ -142,9 +142,140 @@ enum CaptionPackTone: String, CaseIterable, Identifiable {
     }
 }
 
+enum CaptionPackPlatform: CaseIterable, Equatable {
+    case tiktok
+    case instagramReels
+    case youtubeShorts
+    case youtubeLongVideo
+
+    var displayName: String {
+        switch self {
+        case .tiktok: return "TikTok"
+        case .instagramReels: return "Instagram Reels"
+        case .youtubeShorts: return "YouTube Shorts"
+        case .youtubeLongVideo: return "YouTube Long Video"
+        }
+    }
+
+    var platformRule: String {
+        switch self {
+        case .tiktok:
+            return "- TikTok: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer."
+        case .instagramReels:
+            return "- Instagram Reels: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer."
+        case .youtubeShorts:
+            return "- YouTube Shorts: Output Title, Description, and Hashtags. Title must be under 100 characters. Description should be compact and mobile-friendly. Hashtags must be 3 or fewer."
+        case .youtubeLongVideo:
+            return "- YouTube Long Video: Output SEO Title, Description, Tags, and Pinned Comment. Make the description fuller than Shorts copy, with a clear summary, search-friendly keywords, and a natural CTA. Tags must be comma-separated."
+        }
+    }
+
+    func styleInstruction(for style: CaptionPackOutputStyle) -> String {
+        switch (self, style) {
+        case (.tiktok, .concise):
+            return "- TikTok caption target: 120-220 characters."
+        case (.tiktok, .balanced):
+            return "- TikTok caption target: 300-600 characters."
+        case (.tiktok, .detailed):
+            return "- TikTok caption target: 700-1,200 characters."
+        case (.instagramReels, .concise):
+            return "- Instagram Reels caption target: 100-180 characters."
+        case (.instagramReels, .balanced):
+            return "- Instagram Reels caption target: 250-500 characters."
+        case (.instagramReels, .detailed):
+            return "- Instagram Reels caption target: 600-1,000 characters."
+        case (.youtubeShorts, .concise):
+            return """
+            - YouTube Shorts title target: 35-50 characters.
+            - YouTube Shorts description target: 80-150 characters.
+            """
+        case (.youtubeShorts, .balanced):
+            return """
+            - YouTube Shorts title target: 50-70 characters.
+            - YouTube Shorts description target: 150-300 characters.
+            """
+        case (.youtubeShorts, .detailed):
+            return """
+            - YouTube Shorts title target: 70-90 characters.
+            - YouTube Shorts description target: 300-600 characters.
+            """
+        case (.youtubeLongVideo, .concise):
+            return """
+            - YouTube Long Video SEO title target: 55-75 characters.
+            - YouTube Long Video description target: 500-900 characters.
+            """
+        case (.youtubeLongVideo, .balanced):
+            return """
+            - YouTube Long Video SEO title target: 60-85 characters.
+            - YouTube Long Video description target: 900-1,500 characters.
+            """
+        case (.youtubeLongVideo, .detailed):
+            return """
+            - YouTube Long Video SEO title target: 70-95 characters.
+            - YouTube Long Video description target: 1,500-2,500 characters.
+            """
+        }
+    }
+
+    var outputTemplate: String {
+        switch self {
+        case .tiktok:
+            return """
+            ## TikTok
+
+            Caption:
+            ...
+
+            Hashtags:
+            #creatorworkflow #contentstrategy #shortformvideo #tiktoktips #contentideas
+            """
+        case .instagramReels:
+            return """
+            ## Instagram Reels
+
+            Caption:
+            ...
+
+            Hashtags:
+            #contentcreator #creatorworkflow #reelstips #contentstrategy #socialmediatips
+            """
+        case .youtubeShorts:
+            return """
+            ## YouTube Shorts
+
+            Title:
+            ...
+
+            Description:
+            ...
+
+            Hashtags:
+            #Shorts #ContentStrategy #CreatorTips
+            """
+        case .youtubeLongVideo:
+            return """
+            ## YouTube Long Video
+
+            SEO Title:
+            ...
+
+            Description:
+            ...
+
+            Tags:
+            creator workflow, content strategy, AI tools
+
+            Pinned Comment:
+            ...
+            """
+        }
+    }
+}
+
 struct CaptionPackPreferences {
     static let tiktokKey = "captionPackPlatformTikTok"
     static let youtubeShortsKey = "captionPackPlatformYouTubeShorts"
+    static let youtubeLongVideoKey = "captionPackPlatformYouTubeLongVideo"
     static let instagramReelsKey = "captionPackPlatformInstagramReels"
     static let goalKey = "captionPackGoal"
     static let toneKey = "captionPackTone"
@@ -152,6 +283,7 @@ struct CaptionPackPreferences {
 
     var includeTikTok: Bool
     var includeYouTubeShorts: Bool
+    var includeYouTubeLongVideo: Bool
     var includeInstagramReels: Bool
     var goal: CaptionPackGoal
     var tone: CaptionPackTone
@@ -162,6 +294,7 @@ struct CaptionPackPreferences {
         return CaptionPackPreferences(
             includeTikTok: defaults.object(forKey: tiktokKey) as? Bool ?? true,
             includeYouTubeShorts: defaults.object(forKey: youtubeShortsKey) as? Bool ?? true,
+            includeYouTubeLongVideo: defaults.object(forKey: youtubeLongVideoKey) as? Bool ?? true,
             includeInstagramReels: defaults.object(forKey: instagramReelsKey) as? Bool ?? true,
             goal: CaptionPackGoal(rawValue: defaults.string(forKey: goalKey) ?? "") ?? .startDiscussion,
             tone: CaptionPackTone(rawValue: defaults.string(forKey: toneKey) ?? "") ?? .casualUseful,
@@ -169,22 +302,143 @@ struct CaptionPackPreferences {
         )
     }
 
+    var selectedPlatforms: [CaptionPackPlatform] {
+        var platforms: [CaptionPackPlatform] = []
+        if includeTikTok { platforms.append(.tiktok) }
+        if includeInstagramReels { platforms.append(.instagramReels) }
+        if includeYouTubeShorts { platforms.append(.youtubeShorts) }
+        if includeYouTubeLongVideo { platforms.append(.youtubeLongVideo) }
+        return platforms.isEmpty ? [.tiktok, .instagramReels, .youtubeShorts, .youtubeLongVideo] : platforms
+    }
+
     var selectedPlatformNames: [String] {
-        var platforms: [String] = []
-        if includeTikTok { platforms.append("TikTok") }
-        if includeYouTubeShorts { platforms.append("YouTube Shorts") }
-        if includeInstagramReels { platforms.append("Instagram Reels") }
-        return platforms.isEmpty ? ["TikTok", "YouTube Shorts", "Instagram Reels"] : platforms
+        selectedPlatforms.map(\.displayName)
+    }
+
+    var selectedPlatformRules: String {
+        selectedPlatforms.map(\.platformRule).joined(separator: "\n")
+    }
+
+    var selectedStyleInstruction: String {
+        selectedPlatforms
+            .map { $0.styleInstruction(for: outputStyle) }
+            .joined(separator: "\n")
+    }
+
+    var selectedOutputTemplate: String {
+        selectedPlatforms.map(\.outputTemplate).joined(separator: "\n\n")
+    }
+
+    var platformSpecificCTAInstruction: String {
+        selectedPlatforms.contains(.tiktok) || selectedPlatforms.contains(.instagramReels)
+            ? "- For TikTok and Instagram Reels, naturally fold any question or soft call to action into the caption when it fits. Do not create a separate CTA section."
+            : ""
     }
 }
 
 struct BrandVoicePreferences {
     static let sampleKey = "brandVoiceSample"
+    static let toneKey = "brandVoiceTone"
+    static let audienceKey = "brandVoiceAudience"
+    static let ctaKey = "brandVoiceCTA"
+    static let avoidKey = "brandVoiceAvoid"
 
     var sample: String
+    var tone: String
+    var audience: String
+    var cta: String
+    var avoid: String
 
     static var current: BrandVoicePreferences {
-        BrandVoicePreferences(sample: UserDefaults.standard.string(forKey: sampleKey) ?? "")
+        let defaults = UserDefaults.standard
+        return BrandVoicePreferences(
+            sample: defaults.string(forKey: sampleKey) ?? "",
+            tone: defaults.string(forKey: toneKey) ?? "",
+            audience: defaults.string(forKey: audienceKey) ?? "",
+            cta: defaults.string(forKey: ctaKey) ?? "",
+            avoid: defaults.string(forKey: avoidKey) ?? ""
+        )
+    }
+
+    var isConfigured: Bool {
+        ![sample, tone, audience, cta, avoid]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .allSatisfy(\.isEmpty)
+    }
+
+    var promptProfile: String {
+        var sections: [String] = []
+
+        let trimmedTone = tone.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedTone.isEmpty {
+            sections.append("Tone / voice style:\n\(trimmedTone)")
+        }
+
+        let trimmedAudience = audience.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedAudience.isEmpty {
+            sections.append("Audience:\n\(trimmedAudience)")
+        }
+
+        let trimmedCTA = cta.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedCTA.isEmpty {
+            sections.append("Preferred CTA:\n\(trimmedCTA)")
+        }
+
+        let trimmedAvoid = avoid.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedAvoid.isEmpty {
+            sections.append("Avoid:\n\(trimmedAvoid)")
+        }
+
+        let trimmedSample = sample.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedSample.isEmpty {
+            sections.append("Example posts / writing samples:\n\(trimmedSample)")
+        }
+
+        return sections.joined(separator: "\n\n")
+    }
+}
+
+enum TimedScriptDuration: String, CaseIterable, Identifiable {
+    case seconds30
+    case seconds45
+    case seconds60
+
+    var id: String { rawValue }
+
+    var seconds: Int {
+        switch self {
+        case .seconds30: return 30
+        case .seconds45: return 45
+        case .seconds60: return 60
+        }
+    }
+
+    var wordCountRange: String {
+        switch self {
+        case .seconds30: return "70-90"
+        case .seconds45: return "105-130"
+        case .seconds60: return "140-170"
+        }
+    }
+
+    var localizedTitle: String {
+        switch self {
+        case .seconds30: return L10n.text("timed_script.duration.30")
+        case .seconds45: return L10n.text("timed_script.duration.45")
+        case .seconds60: return L10n.text("timed_script.duration.60")
+        }
+    }
+}
+
+struct TimedScriptPreferences {
+    static let durationKey = "timedScriptDuration"
+
+    var duration: TimedScriptDuration
+
+    static var current: TimedScriptPreferences {
+        TimedScriptPreferences(
+            duration: TimedScriptDuration(rawValue: UserDefaults.standard.string(forKey: durationKey) ?? "") ?? .seconds45
+        )
     }
 }
 
@@ -208,21 +462,134 @@ enum RepurposeThreadLength: String, CaseIterable, Identifiable {
     }
 }
 
+enum RepurposeFormat: CaseIterable, Equatable {
+    case xPost
+    case linkedin
+    case threads
+    case facebookPage
+    case newsletter
+    case instagramCarousel
+    case pinterestPin
+    case youtubeCommunity
+
+    var displayName: String {
+        switch self {
+        case .xPost: return "X Post"
+        case .linkedin: return "LinkedIn"
+        case .threads: return "Threads"
+        case .facebookPage: return "Facebook Page"
+        case .newsletter: return "Newsletter"
+        case .instagramCarousel: return "Instagram Carousel Outline"
+        case .pinterestPin: return "Pinterest Pin"
+        case .youtubeCommunity: return "YouTube Community Post"
+        }
+    }
+
+    var formatRule: String {
+        switch self {
+        case .xPost:
+            return "- X Post: one standalone post, 280 characters or fewer, leading with the strongest takeaway."
+        case .linkedin:
+            return "- LinkedIn: open with the core insight, use short scannable paragraphs, professional and credible, no hype."
+        case .threads:
+            return "- Threads: numbered posts (1/, 2/, ...). Each post must be 500 characters or fewer, conversational tone."
+        case .facebookPage:
+            return "- Facebook Page: clear, approachable page post for a broader audience. Make it easy to understand and share."
+        case .newsletter:
+            return "- Newsletter: a 2-3 sentence intro blurb that teases the piece, ending with a [link] placeholder."
+        case .instagramCarousel:
+            return "- Instagram Carousel Outline: 6-8 slide outline with one short headline and one supporting line per slide."
+        case .pinterestPin:
+            return "- Pinterest Pin: SEO-friendly Title, Description, and Keywords. Make it searchable and evergreen."
+        case .youtubeCommunity:
+            return "- YouTube Community Post: a short community update, question, or teaser that invites comments without sounding spammy."
+        }
+    }
+
+    var outputTemplate: String {
+        switch self {
+        case .xPost:
+            return """
+            ## X Post
+
+            ...
+            """
+        case .linkedin:
+            return """
+            ## LinkedIn
+
+            ...
+            """
+        case .threads:
+            return """
+            ## Threads
+
+            1/ ...
+            2/ ...
+            """
+        case .facebookPage:
+            return """
+            ## Facebook Page
+
+            ...
+            """
+        case .newsletter:
+            return """
+            ## Newsletter
+
+            ...
+            """
+        case .instagramCarousel:
+            return """
+            ## Instagram Carousel Outline
+
+            Slide 1: ...
+            Slide 2: ...
+            """
+        case .pinterestPin:
+            return """
+            ## Pinterest Pin
+
+            Title:
+            ...
+
+            Description:
+            ...
+
+            Keywords:
+            ...
+            """
+        case .youtubeCommunity:
+            return """
+            ## YouTube Community Post
+
+            ...
+            """
+        }
+    }
+}
+
 struct RepurposePackPreferences {
-    static let xThreadKey = "repurposePackFormatXThread"
     static let xPostKey = "repurposePackFormatXPost"
     static let linkedinKey = "repurposePackFormatLinkedIn"
     static let threadsKey = "repurposePackFormatThreads"
+    static let facebookPageKey = "repurposePackFormatFacebookPage"
     static let newsletterKey = "repurposePackFormatNewsletter"
+    static let instagramCarouselKey = "repurposePackFormatInstagramCarousel"
+    static let pinterestPinKey = "repurposePackFormatPinterestPin"
+    static let youtubeCommunityKey = "repurposePackFormatYouTubeCommunity"
     static let threadLengthKey = "repurposePackThreadLength"
     static let toneKey = "repurposePackTone"
     static let ctaKey = "repurposePackIncludeCTA"
 
-    var includeXThread: Bool
     var includeXPost: Bool
     var includeLinkedIn: Bool
     var includeThreads: Bool
+    var includeFacebookPage: Bool
     var includeNewsletter: Bool
+    var includeInstagramCarousel: Bool
+    var includePinterestPin: Bool
+    var includeYouTubeCommunity: Bool
     var threadLength: RepurposeThreadLength
     var tone: CaptionPackTone
     var includeCTA: Bool
@@ -230,25 +597,49 @@ struct RepurposePackPreferences {
     static var current: RepurposePackPreferences {
         let defaults = UserDefaults.standard
         return RepurposePackPreferences(
-            includeXThread: defaults.object(forKey: xThreadKey) as? Bool ?? true,
-            includeXPost: defaults.object(forKey: xPostKey) as? Bool ?? false,
+            includeXPost: defaults.object(forKey: xPostKey) as? Bool ?? true,
             includeLinkedIn: defaults.object(forKey: linkedinKey) as? Bool ?? true,
             includeThreads: defaults.object(forKey: threadsKey) as? Bool ?? false,
+            includeFacebookPage: defaults.object(forKey: facebookPageKey) as? Bool ?? false,
             includeNewsletter: defaults.object(forKey: newsletterKey) as? Bool ?? false,
+            includeInstagramCarousel: defaults.object(forKey: instagramCarouselKey) as? Bool ?? true,
+            includePinterestPin: defaults.object(forKey: pinterestPinKey) as? Bool ?? false,
+            includeYouTubeCommunity: defaults.object(forKey: youtubeCommunityKey) as? Bool ?? false,
             threadLength: RepurposeThreadLength(rawValue: defaults.string(forKey: threadLengthKey) ?? "") ?? .medium,
             tone: CaptionPackTone(rawValue: defaults.string(forKey: toneKey) ?? "") ?? .creatorVoice,
             includeCTA: defaults.object(forKey: ctaKey) as? Bool ?? true
         )
     }
 
+    var selectedFormats: [RepurposeFormat] {
+        var formats: [RepurposeFormat] = []
+        if includeXPost { formats.append(.xPost) }
+        if includeLinkedIn { formats.append(.linkedin) }
+        if includeThreads { formats.append(.threads) }
+        if includeFacebookPage { formats.append(.facebookPage) }
+        if includeNewsletter { formats.append(.newsletter) }
+        if includeInstagramCarousel { formats.append(.instagramCarousel) }
+        if includePinterestPin { formats.append(.pinterestPin) }
+        if includeYouTubeCommunity { formats.append(.youtubeCommunity) }
+        return formats.isEmpty ? [.xPost, .linkedin, .instagramCarousel] : formats
+    }
+
     var selectedFormatNames: [String] {
-        var formats: [String] = []
-        if includeXThread { formats.append("X Thread") }
-        if includeXPost { formats.append("X Post") }
-        if includeLinkedIn { formats.append("LinkedIn") }
-        if includeThreads { formats.append("Threads") }
-        if includeNewsletter { formats.append("Newsletter") }
-        return formats.isEmpty ? ["X Thread", "LinkedIn"] : formats
+        selectedFormats.map(\.displayName)
+    }
+
+    var selectedFormatRules: String {
+        selectedFormats.map(\.formatRule).joined(separator: "\n")
+    }
+
+    var selectedOutputTemplate: String {
+        selectedFormats.map(\.outputTemplate).joined(separator: "\n\n")
+    }
+
+    var threadLengthInstruction: String {
+        selectedFormats.contains(.threads)
+            ? "Thread length (Threads): \(threadLength.tweetCountRange) posts."
+            : ""
     }
 }
 
@@ -279,23 +670,6 @@ enum AgentRecipeCategory: String, CaseIterable, Identifiable, Codable {
 extension AgentRecipe {
     static let allRecipes: [AgentRecipe] = [
         // MARK: - Think
-        AgentRecipe(
-            id: "brainstorm",
-            icon: "💡",
-            systemIcon: "lightbulb",
-            name: "Brainstorm",
-            description: "agent_recipe.brainstorm.description",
-            prompt: """
-            You are brainstorming based on a user’s existing note (not a chat message). Generate 5 distinct, creative angles or ideas to expand upon their initial thought.
-
-            - Keep the output in the same language as the note.
-            - Encourage divergent thinking while keeping suggestions practical.
-            - Use short, clear bullet points.
-            
-            Output only the 5 ideas.
-            """,
-            category: .think
-        ),
         AgentRecipe(
             id: "why_viral",
             icon: "📈",
@@ -402,18 +776,25 @@ extension AgentRecipe {
             category: .shape
         ),
         AgentRecipe(
-            id: "expand",
-            icon: "🪄",
-            systemIcon: "sparkles",
-            name: "Expand",
-            description: "agent_recipe.expand.description",
+            id: "rewrite",
+            icon: "",
+            systemIcon: "pencil.and.scribble",
+            name: "Rewrite",
+            description: "agent_recipe.rewrite.description",
             prompt: """
-            You are expanding a user’s existing note (not a chat message). Elaborate only what the note already suggests, keeping the original intent and tone.
+            You are rewriting a user’s existing note (not a chat message) into an original, natural version they can reuse.
+
+            The note may include a pasted transcript, copied reference, rough draft, or creator inspiration. Your job is to preserve the useful idea while changing the expression enough that it does not feel copied.
 
             - Keep the output in the same language as the note.
-            - Do not invent new facts; add detail by clarifying, giving plausible examples, or drawing out implications already present.
-            - If the note is very short, provide a conservative expansion without adding new facts.
-            - Preserve formatting if the note has structure.
+            - Preserve the core meaning, facts, intent, and useful structure.
+            - Do not add unsupported facts, stats, quotes, personal experiences, or claims.
+            - Rewrite distinctive wording, sentence structure, transitions, and examples instead of lightly paraphrasing.
+            - Make the result clear, natural, and ready to edit or publish.
+            - If the note is a messy transcript, remove filler and repetition while keeping the speaker’s point.
+            - Preserve formatting when it helps readability.
+
+            Output only the rewritten text.
             """,
             category: .shape
         ),
@@ -429,55 +810,48 @@ extension AgentRecipe {
         // MARK: - Shape
         AgentRecipe(
             id: "hook_generator",
-            icon: "🎣",
+            icon: "",
             systemIcon: "link",
-            name: "Hooks",
+            name: "Hook",
             description: "agent_recipe.hook_generator.description",
             prompt: """
-            You are an expert copywriter looking at a user’s raw note (not a chat message). Generate 5 punchy, compelling hooks or tweet openers based on the content.
+            You are an expert short-form copywriter looking at a user’s raw note (not a chat message). Generate a mixed Hook Pack with 8 distinct opening lines based on the content.
 
             - Keep the output in the same language as the note.
-            - Do not use clickbait or hype. Focus on curiosity and value.
-            - Provide a mix of direct and question-based hooks.
-            
-            Output only the 5 hooks.
+            - Make every hook usable as the first line of a TikTok, Reel, Short, X post, or creator caption.
+            - Give a variety of hook types: pain point, contrarian, curiosity gap, how-to, mistake, story, result-first, and direct statement.
+            - Label each hook by type so the user can quickly compare options.
+            - Do not use clickbait, fake urgency, hype, or unsupported claims.
+            - Do not copy distinctive wording from pasted reference text; use the note for the idea and angle.
+            - Keep each hook concise, specific, and easy to say out loud.
+
+            Output only the Hook Pack.
             """,
             category: .shape
         ),
         AgentRecipe(
             id: "caption_pack",
-            icon: "📣",
+            icon: "",
             systemIcon: "megaphone",
-            name: "Caption Pack",
+            name: "Caption",
             description: "agent_recipe.caption_pack.description",
             prompt: "(Built-in Logic) Generates platform-ready captions from creator inspiration notes.",
             category: .publish
         ),
         AgentRecipe(
-            id: "youtube_script",
-            icon: "🎬",
-            systemIcon: "play.rectangle",
-            name: "YouTube Script",
-            description: "agent_recipe.youtube_script.description",
-            prompt: """
-            You are turning a user’s existing note into a YouTube video script. The note was not written for chat. Produce a clean, recordable script that stays faithful to the note’s intent and tone.
-
-            - Keep the script in the same language as the note.
-            - Structure it as: Hook → Main Points → Summary → CTA.
-            - Use short, spoken-friendly sentences.
-            - If the note is long, compress to the most useful points.
-            - Do not add new facts; expand only what the note supports.
-            - Keep it concise enough to record comfortably.
-
-            Output only the script.
-            """,
+            id: "timed_script",
+            icon: "⏱️",
+            systemIcon: "timer",
+            name: "Timed Script",
+            description: "agent_recipe.timed_script.description",
+            prompt: "(Built-in Logic) Generates a 30, 45, or 60 second short video script.",
             category: .publish
         ),
         AgentRecipe(
             id: "repurpose_pack",
-            icon: "♻️",
+            icon: "",
             systemIcon: "arrow.triangle.2.circlepath",
-            name: "Repurpose Pack",
+            name: "Repurpose",
             description: "agent_recipe.repurpose_pack.description",
             prompt: "(Built-in Logic) Atomizes one long-form note into native posts for multiple platforms.",
             category: .publish
@@ -517,10 +891,39 @@ extension AgentRecipe {
             - Return only the translated content.
             """
 
+        case "timed_script":
+            let preferences = TimedScriptPreferences.current
+            prompt = """
+            Create a \(preferences.duration.seconds)-second short video script from these notes.
+
+            Target length: \(preferences.duration.seconds) seconds.
+            Target spoken word count: \(preferences.duration.wordCountRange) words.
+
+            Notes:
+            \(content)
+            """
+
+            systemInstruction = """
+            You write short-form video scripts for TikTok, Instagram Reels, and YouTube Shorts. The input is an existing note, transcript, rough idea, or creator inspiration, not a chat message.
+
+            Core rules:
+            \(languageRule)
+            - Produce a script that can be spoken in about \(preferences.duration.seconds) seconds.
+            - Aim for \(preferences.duration.wordCountRange) spoken words. If the script is over the range, rewrite it shorter before returning.
+            - Use the notes to understand the idea, audience, angle, and useful details, but do not copy distinctive wording from third-party reference text.
+            - Do not invent facts, stats, quotes, personal experiences, product promises, or results that are not supported by the notes.
+            - Make it recordable as a spoken script with short, natural sentences.
+            - Include a strong opening line, a clear middle, a payoff, and a light CTA only when it fits.
+            - Return only the script. Do not include timestamps, labels, notes, word count, or explanations.
+            """
+
         case "caption_pack":
             let preferences = CaptionPackPreferences.current
-            let styleInstruction = Self.captionPackStyleInstruction(for: preferences.outputStyle)
             let platforms = preferences.selectedPlatformNames.joined(separator: ", ")
+            let styleInstruction = preferences.selectedStyleInstruction
+            let platformRules = preferences.selectedPlatformRules
+            let platformCTAInstruction = preferences.platformSpecificCTAInstruction
+            let outputTemplate = preferences.selectedOutputTemplate
             prompt = """
             Create a Caption Pack for these selected platforms: \(platforms).
 
@@ -552,45 +955,19 @@ extension AgentRecipe {
             - If a draft exceeds any platform limit, rewrite it shorter before returning.
 
             Platform rules:
-            - TikTok: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer.
-            - YouTube Shorts: Output Title, Description, and Hashtags. Title must be under 100 characters. Description must be under 5,000 characters. Hashtags must be 3 or fewer.
-            - Instagram Reels: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer.
-            - For TikTok and Instagram Reels, naturally fold any question or soft call to action into the caption when it fits. Do not create a separate CTA section.
+            \(platformRules)
+            \(platformCTAInstruction)
 
             Output format:
             Use only the selected platforms and keep this exact section style:
 
-            ## TikTok
-
-            Caption:
-            ...
-
-            Hashtags:
-            #creatorworkflow #contentstrategy #shortformvideo #tiktoktips #contentideas
-
-            ## YouTube Shorts
-
-            Title:
-            ...
-
-            Description:
-            ...
-
-            Hashtags:
-            #Shorts #ContentStrategy #CreatorTips
-
-            ## Instagram Reels
-
-            Caption:
-            ...
-
-            Hashtags:
-            #contentcreator #creatorworkflow #reelstips #contentstrategy #socialmediatips
+            \(outputTemplate)
             """
 
         case "style_match":
-            let sample = BrandVoicePreferences.current.sample.trimmingCharacters(in: .whitespacesAndNewlines)
-            if sample.isEmpty {
+            let preferences = BrandVoicePreferences.current
+            let profile = preferences.promptProfile
+            if !preferences.isConfigured {
                 prompt = """
                 Rewrite this note in a natural, consistent writing voice. Preserve its meaning, facts, and structure.
 
@@ -608,21 +985,23 @@ extension AgentRecipe {
                 """
             } else {
                 prompt = """
-                Voice sample (the author's own writing — use it only to learn their style):
-                \(sample)
+                Brand Voice profile:
+                \(profile)
 
-                Rewrite the note below so it reads as if the same author wrote it.
+                Rewrite the note below so it follows this Brand Voice profile.
 
                 Note to rewrite:
                 \(content)
                 """
 
                 systemInstruction = """
-                You rewrite a note in the author's personal writing voice, learned from a voice sample.
+                You rewrite a creator's note using their saved Brand Voice profile.
                 Rules:
                 \(languageRule)
-                - Match the voice sample's tone, vocabulary, rhythm, sentence length, and quirks.
-                - The voice sample is for style only. Do not copy its sentences, phrases, claims, or topic.
+                - Apply the saved tone, audience, preferred CTA, avoided wording, and example-post style when provided.
+                - Treat example posts as style references only. Do not copy their sentences, phrases, claims, or topics.
+                - Use the preferred CTA only if it fits the rewritten note naturally.
+                - Respect the avoided wording and style notes.
                 - Preserve the note's meaning, facts, and structure. Do not invent new facts.
                 - Return only the rewritten note. Do not explain.
                 """
@@ -631,13 +1010,16 @@ extension AgentRecipe {
         case "repurpose_pack":
             let preferences = RepurposePackPreferences.current
             let formats = preferences.selectedFormatNames.joined(separator: ", ")
+            let formatRules = preferences.selectedFormatRules
+            let outputTemplate = preferences.selectedOutputTemplate
+            let threadLengthInstruction = preferences.threadLengthInstruction
             let ctaRule = preferences.includeCTA
                 ? "- Include a light, natural call to action on each piece when it fits."
                 : "- Do not add a call to action."
             prompt = """
             Repurpose this long-form content into native posts for these formats: \(formats).
 
-            Thread length (X Thread / Threads): \(preferences.threadLength.tweetCountRange) posts.
+            \(threadLengthInstruction)
             Tone: \(preferences.tone.localizedTitle)
 
             Long-form content:
@@ -657,36 +1039,12 @@ extension AgentRecipe {
             - Return only the repurposed posts. Do not explain your reasoning.
 
             Format rules:
-            - X Thread: numbered posts (1/, 2/, ...). Each post must be 280 characters or fewer. The first post is a standalone hook.
-            - X Post: one standalone post, 280 characters or fewer, leading with the strongest takeaway.
-            - LinkedIn: open with the core insight, use short scannable paragraphs, professional and credible, no hype.
-            - Threads: numbered posts (1/, 2/, ...). Each post must be 500 characters or fewer, conversational tone.
-            - Newsletter: a 2-3 sentence intro blurb that teases the piece, ending with a [link] placeholder.
+            \(formatRules)
 
             Output format:
             Use only the selected formats and keep this exact section style:
 
-            ## X Thread
-
-            1/ ...
-            2/ ...
-
-            ## X Post
-
-            ...
-
-            ## LinkedIn
-
-            ...
-
-            ## Threads
-
-            1/ ...
-            2/ ...
-
-            ## Newsletter
-
-            ...
+            \(outputTemplate)
             """
 
         default:
@@ -712,32 +1070,6 @@ extension AgentRecipe {
             systemInstruction: systemInstruction,
             usageType: .agentRecipe
         )
-    }
-
-    private static func captionPackStyleInstruction(for style: CaptionPackOutputStyle) -> String {
-        switch style {
-        case .concise:
-            return """
-            - TikTok caption target: 120-220 characters.
-            - YouTube Shorts title target: 35-50 characters.
-            - YouTube Shorts description target: 80-150 characters.
-            - Instagram Reels caption target: 100-180 characters.
-            """
-        case .balanced:
-            return """
-            - TikTok caption target: 300-600 characters.
-            - YouTube Shorts title target: 50-70 characters.
-            - YouTube Shorts description target: 150-300 characters.
-            - Instagram Reels caption target: 250-500 characters.
-            """
-        case .detailed:
-            return """
-            - TikTok caption target: 700-1,200 characters.
-            - YouTube Shorts title target: 70-90 characters.
-            - YouTube Shorts description target: 300-600 characters.
-            - Instagram Reels caption target: 600-1,000 characters.
-            """
-        }
     }
 
     /// Execute the recipe on given notes

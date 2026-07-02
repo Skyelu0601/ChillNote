@@ -74,7 +74,7 @@ const resolverResponseSchema = z.object({
   durationSec: z.number().nonnegative().optional()
 });
 
-type MediaLinkTranscriptReason =
+export type MediaLinkTranscriptReason =
   | "invalid_tiktok_url"
   | "resolver_not_configured"
   | "short_link_resolve_failed"
@@ -82,6 +82,7 @@ type MediaLinkTranscriptReason =
   | "media_fetch_failed"
   | "media_too_large"
   | "transcription_timeout"
+  | "transcription_empty"
   | "transcription_failed"
   | "private_or_unavailable_video"
   | "rate_limited"
@@ -117,26 +118,37 @@ type YtDlpInfo = {
   automatic_captions?: Record<string, YtDlpCaptionFormat[]>;
 };
 
+export type MediaLinkTranscriptMetadata = {
+  resolvedURL: string;
+  videoID?: string;
+  title?: string;
+  authorName?: string;
+  durationSec?: number;
+  mimeType?: string;
+};
+
 export type MediaLinkTranscriptResponse = {
   available: boolean;
   text: string | null;
   reason: MediaLinkTranscriptReason | null;
-  metadata?: {
-    resolvedURL: string;
-    videoID?: string;
-    title?: string;
-    authorName?: string;
-    durationSec?: number;
-    mimeType?: string;
-  };
+  metadata?: MediaLinkTranscriptMetadata;
 };
 
-class MediaLinkTranscriptError extends Error {
+export class MediaLinkTranscriptError extends Error {
   reason: MediaLinkTranscriptReason;
+  metadata?: MediaLinkTranscriptMetadata;
 
-  constructor(reason: MediaLinkTranscriptReason, message?: string) {
+  constructor(reason: MediaLinkTranscriptReason, message?: string, metadata?: MediaLinkTranscriptMetadata) {
     super(message ?? reason);
     this.reason = reason;
+    this.metadata = metadata;
+  }
+
+  withMetadata(metadata: MediaLinkTranscriptMetadata): MediaLinkTranscriptError {
+    if (!this.metadata) {
+      this.metadata = metadata;
+    }
+    return this;
   }
 }
 
@@ -152,47 +164,48 @@ export async function transcribeMediaLinkURL(rawURL: string): Promise<MediaLinkT
 
   const resolvedURL = await resolveMediaLinkURL(rawURL, platform);
   const metadata = await fetchMediaLinkMetadata(resolvedURL, platform);
-
-  const caption = await fetchMediaCaptionTranscript(resolvedURL);
-  if (caption) {
-    return {
-      available: true,
-      text: caption.text,
-      reason: null,
-      metadata: {
-        resolvedURL,
-        videoID: metadata.videoID,
-        title: metadata.title,
-        authorName: metadata.authorName,
-        mimeType: caption.mimeType
-      }
-    };
-  }
-
-  const media = await prepareMediaLinkMedia(resolvedURL, metadata);
+  const responseMetadata = makeTranscriptResponseMetadata(resolvedURL, metadata);
 
   try {
-    const text = await transcribeMedia(media.bytes, media.mimeType, metadata);
-    const trimmed = text.trim();
-    if (!trimmed) {
-      throw new MediaLinkTranscriptError("transcription_failed", "Transcript is empty");
+    const caption = await fetchMediaCaptionTranscript(resolvedURL);
+    if (caption) {
+      return {
+        available: true,
+        text: caption.text,
+        reason: null,
+        metadata: {
+          ...responseMetadata,
+          mimeType: caption.mimeType
+        }
+      };
     }
 
-    return {
-      available: true,
-      text: trimmed,
-      reason: null,
-      metadata: {
-        resolvedURL,
-        videoID: metadata.videoID,
-        title: metadata.title,
-        authorName: metadata.authorName,
-        durationSec: media.durationSec,
-        mimeType: media.mimeType
+    const media = await prepareMediaLinkMedia(resolvedURL, metadata);
+    try {
+      const text = await transcribeMedia(media.bytes, media.mimeType, metadata);
+      const trimmed = text.trim();
+      if (!trimmed) {
+        throw new MediaLinkTranscriptError("transcription_empty", "Transcript is empty");
       }
-    };
-  } finally {
-    await cleanupTemporaryFiles(media.cleanupPaths);
+
+      return {
+        available: true,
+        text: trimmed,
+        reason: null,
+        metadata: {
+          ...responseMetadata,
+          durationSec: media.durationSec,
+          mimeType: media.mimeType
+        }
+      };
+    } finally {
+      await cleanupTemporaryFiles(media.cleanupPaths);
+    }
+  } catch (error) {
+    if (error instanceof MediaLinkTranscriptError) {
+      throw error.withMetadata(responseMetadata);
+    }
+    throw error;
   }
 }
 
@@ -241,6 +254,18 @@ function detectMediaLinkPlatform(rawURL: string): MediaLinkPlatform | null {
 
 export function isHandledTikTokTranscriptError(error: unknown): error is MediaLinkTranscriptError {
   return error instanceof MediaLinkTranscriptError;
+}
+
+function makeTranscriptResponseMetadata(
+  resolvedURL: string,
+  metadata: MediaLinkMetadata
+): MediaLinkTranscriptMetadata {
+  return {
+    resolvedURL,
+    videoID: metadata.videoID,
+    title: metadata.title,
+    authorName: metadata.authorName
+  };
 }
 
 function buildGeminiGenerateContentURL(model: string): string {

@@ -1,5 +1,4 @@
 import Foundation
-import Supabase
 
 enum ShareImportError: LocalizedError {
     case missingLink
@@ -140,86 +139,80 @@ private struct ShareOEmbedResponse: Decodable {
     }
 }
 
-private struct ShareAuthTokenProvider {
-    let supabase = SupabaseClient(
-        supabaseURL: ShareConstants.supabaseURL,
-        supabaseKey: ShareConstants.supabaseAnonKey,
-        options: SupabaseClientOptions(
-            auth: SupabaseClientOptions.AuthOptions(
-                storage: KeychainLocalStorage(
-                    service: ShareConstants.keychainService,
-                    accessGroup: ShareConstants.keychainAccessGroup
-                ),
-                autoRefreshToken: true
-            )
-        )
-    )
-
-    func sessionToken() async -> String? {
-        do {
-            let session = try await supabase.auth.session
-            cache(session: session)
-            return session.accessToken
-        } catch {
-            return cachedSessionToken()
-        }
-    }
-
-    private func cache(session: Session) {
-        let defaults = UserDefaults(suiteName: ShareConstants.appGroupIdentifier)
-        defaults?.set(session.accessToken, forKey: ShareConstants.authTokenKey)
-        defaults?.set(session.user.id.uuidString, forKey: ShareConstants.lastAuthenticatedUserIdKey)
-    }
-
-    private func cachedSessionToken() -> String? {
-        UserDefaults(suiteName: ShareConstants.appGroupIdentifier)?
-            .string(forKey: ShareConstants.authTokenKey)
-    }
+private struct ShareAsyncLinkImportJob: Decodable {
+    let jobId: String
+    let status: String
 }
 
 struct ShareImportService {
-    let backendBaseURL = "https://api.chillnoteai.com"
-    private let authTokenProvider = ShareAuthTokenProvider()
-
     func importSharedURL(
         _ url: URL,
         progress: @escaping @MainActor (ShareImportStage) -> Void
     ) async throws -> SharePendingImport {
         await progress(.readingContent)
-        guard let token = await authToken(), !token.isEmpty else {
-            throw ShareImportError.missingAuthToken
-        }
-
-        try? await Task.sleep(for: .milliseconds(1_400))
-        await progress(.extractingTranscript)
-        let transcript = try await transcribeMediaLink(url, token: token)
-        let trimmedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTranscript.isEmpty else {
-            throw ShareImportError.emptyTranscript
-        }
-
         await progress(.saving)
-        let pendingImport = await makePendingImport(url: url, transcript: trimmedTranscript)
+        let pendingImport = makePendingLinkImport(url: url)
         try save(pendingImport)
+        if let remoteImport = try? await startRemoteLinkImport(pendingImport) {
+            try? save(remoteImport)
+        }
         await progress(.completed)
         return pendingImport
     }
 
-    private func authToken() async -> String? {
-        await authTokenProvider.sessionToken()
+    private func makePendingLinkImport(url: URL) -> SharePendingImport {
+        let platform = SharePlatformResolver.platform(for: url)
+        let host = SharePlatformResolver.normalizedHost(from: url)
+        let title = platform.displayName.isEmpty ? host : platform.displayName
+
+        return SharePendingImport(
+            id: UUID(),
+            kind: .linkImport,
+            noteText: nil,
+            source: SharePendingImport.Source(
+                url: url.absoluteString,
+                title: title,
+                platformID: platform.id,
+                platformName: platform.displayName,
+                host: host
+            ),
+            importJobId: nil,
+            importStatus: nil,
+            createdAt: Date()
+        )
     }
 
-    private func transcribeMediaLink(_ url: URL, token: String) async throws -> String {
-        guard let endpoint = URL(string: backendBaseURL + "/ai/media-link-transcript") else {
+    private func startRemoteLinkImport(_ pendingImport: SharePendingImport) async throws -> SharePendingImport {
+        guard let token = UserDefaults(suiteName: ShareConstants.appGroupIdentifier)?
+            .string(forKey: ShareConstants.authTokenKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines),
+              !token.isEmpty else {
+            throw ShareImportError.missingAuthToken
+        }
+        guard let endpoint = URL(string: ShareConstants.backendBaseURL + "/link-import-jobs"),
+              let url = URL(string: pendingImport.source.url) else {
             throw ShareImportError.invalidBackendURL
         }
 
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
-        request.timeoutInterval = 300
+        request.timeoutInterval = 12
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        request.httpBody = try JSONSerialization.data(withJSONObject: ["url": url.absoluteString])
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "noteId": pendingImport.id.uuidString,
+            "url": pendingImport.source.url,
+            "placeholderContent": placeholderNoteText(for: url, source: pendingImport.source),
+            "section": "inbox",
+            "source": [
+                "url": pendingImport.source.url,
+                "title": pendingImport.source.title,
+                "platformID": pendingImport.source.platformID,
+                "platformName": pendingImport.source.platformName,
+                "host": pendingImport.source.host
+            ],
+            "mediaLinkSections": mediaLinkSectionsPayload()
+        ])
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -229,37 +222,34 @@ struct ShareImportService {
             throw ShareImportError.backendError("Status code: \(httpResponse.statusCode)")
         }
 
-        let result = try JSONDecoder().decode(ShareMediaTranscriptResult.self, from: data)
-        guard result.available else {
-            throw ShareImportError.backendError(result.reason ?? "")
-        }
-
-        return result.text ?? ""
+        let job = try JSONDecoder().decode(ShareAsyncLinkImportJob.self, from: data)
+        return SharePendingImport(
+            id: pendingImport.id,
+            kind: pendingImport.kind,
+            noteText: pendingImport.noteText,
+            source: pendingImport.source,
+            importJobId: job.jobId,
+            importStatus: job.status,
+            createdAt: pendingImport.createdAt
+        )
     }
 
-    private func makePendingImport(url: URL, transcript: String) async -> SharePendingImport {
-        let platform = SharePlatformResolver.platform(for: url)
-        let host = SharePlatformResolver.normalizedHost(from: url)
-        let metadata = await creatorMediaMetadata(for: url, platform: platform, host: host)
-        let title = metadata.title.isEmpty ? (platform.displayName.isEmpty ? host : platform.displayName) : metadata.title
-        let noteText = makeCreatorMediaTranscriptNote(
-            metadata: metadata,
-            transcript: transcript,
-            preferences: .load()
-        )
+    private func placeholderNoteText(for url: URL, source: SharePendingImport.Source) -> String {
+        """
+        # \(ShareL10n.text("quick_capture.link_import.placeholder.title"))
 
-        return SharePendingImport(
-            id: UUID(),
-            noteText: noteText,
-            source: SharePendingImport.Source(
-                url: url.absoluteString,
-                title: title,
-                platformID: platform.id,
-                platformName: platform.displayName,
-                host: host
-            ),
-            createdAt: Date()
-        )
+        \(ShareL10n.text("quick_capture.link_import.placeholder.body", source.host.isEmpty ? url.absoluteString : source.host))
+        """
+    }
+
+    private func mediaLinkSectionsPayload() -> [String: Bool] {
+        let preferences = ShareMediaLinkTranscriptSectionPreferences.load()
+        return [
+            "showDescription": preferences.showDescription,
+            "showAuthor": preferences.showAuthor,
+            "showHook": preferences.showHook,
+            "showTranscript": preferences.showTranscript
+        ]
     }
 
     private func creatorMediaMetadata(for url: URL, platform: SharePlatform, host: String) async -> ShareCreatorMediaMetadata {
@@ -393,7 +383,6 @@ struct ShareImportService {
     private func markdownSection(heading: String, body: String) -> String {
         """
         ## \(heading)
-
         \(body)
         """
     }

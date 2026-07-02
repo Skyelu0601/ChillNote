@@ -21,9 +21,23 @@ export type CaptionPackBuildOptions = {
   outputStyle: "Concise" | "Balanced" | "Detailed";
 };
 
+export type TimedScriptBuildOptions = {
+  durationSeconds: 30 | 45 | 60;
+};
+
+export type BrandVoiceBuildOptions = {
+  tone?: string;
+  audience?: string;
+  cta?: string;
+  avoid?: string;
+  sample?: string;
+};
+
 export type BuildAgentRecipeOptions = {
   captionPack?: CaptionPackBuildOptions;
+  brandVoice?: BrandVoiceBuildOptions;
   brandVoiceSample?: string;
+  timedScript?: TimedScriptBuildOptions;
 };
 
 export const recipeCategoryLabels: Record<AgentRecipeCategory, string> = {
@@ -32,23 +46,9 @@ export const recipeCategoryLabels: Record<AgentRecipeCategory, string> = {
   publish: "Act",
 };
 
-export const defaultSavedRecipeIds = ["hook_generator", "caption_pack", "humanizer"];
+export const defaultSavedRecipeIds = ["rewrite", "hook_generator", "timed_script", "caption_pack", "humanizer"];
 
 export const agentRecipes: AgentRecipe[] = [
-  {
-    id: "brainstorm",
-    icon: "💡",
-    name: "Brainstorm",
-    description: "Generate diverse angles to expand a thought.",
-    category: "think",
-    prompt: `You are brainstorming based on a user's existing note (not a chat message). Generate 5 distinct, creative angles or ideas to expand upon their initial thought.
-
-- Keep the output in the same language as the note.
-- Encourage divergent thinking while keeping suggestions practical.
-- Use short, clear bullet points.
-
-Output only the 5 ideas.`,
-  },
   {
     id: "why_viral",
     icon: "📈",
@@ -148,17 +148,24 @@ Check and remove these 29 AI-writing patterns:
 Output only the humanized text.`,
   },
   {
-    id: "expand",
-    icon: "🪄",
-    name: "Expand",
-    description: "Stretch a brief idea into richer detail.",
+    id: "rewrite",
+    icon: "✏️",
+    name: "Rewrite",
+    description: "Rewrite notes.",
     category: "shape",
-    prompt: `You are expanding a user's existing note (not a chat message). Elaborate only what the note already suggests, keeping the original intent and tone.
+    prompt: `You are rewriting a user's existing note (not a chat message) into an original, natural version they can reuse.
+
+The note may include a pasted transcript, copied reference, rough draft, or creator inspiration. Your job is to preserve the useful idea while changing the expression enough that it does not feel copied.
 
 - Keep the output in the same language as the note.
-- Do not invent new facts; add detail by clarifying, giving plausible examples, or drawing out implications already present.
-- If the note is very short, provide a conservative expansion without adding new facts.
-- Preserve formatting if the note has structure.`,
+- Preserve the core meaning, facts, intent, and useful structure.
+- Do not add unsupported facts, stats, quotes, personal experiences, or claims.
+- Rewrite distinctive wording, sentence structure, transitions, and examples instead of lightly paraphrasing.
+- Make the result clear, natural, and ready to edit or publish.
+- If the note is a messy transcript, remove filler and repetition while keeping the speaker's point.
+- Preserve formatting when it helps readability.
+
+Output only the rewritten text.`,
   },
   {
     id: "style_match",
@@ -172,48 +179,44 @@ Output only the humanized text.`,
   {
     id: "hook_generator",
     icon: "🎣",
-    name: "Hooks",
-    description: "Turn a raw idea into catchy hooks or titles.",
+    name: "Hook Pack",
+    description: "Generate a mixed set of hooks for one idea.",
     category: "shape",
-    prompt: `You are an expert copywriter looking at a user's raw note (not a chat message). Generate 5 punchy, compelling hooks or tweet openers based on the content.
+    prompt: `You are an expert short-form copywriter looking at a user's raw note (not a chat message). Generate a mixed Hook Pack with 8 distinct opening lines based on the content.
 
 - Keep the output in the same language as the note.
-- Do not use clickbait or hype. Focus on curiosity and value.
-- Provide a mix of direct and question-based hooks.
+- Make every hook usable as the first line of a TikTok, Reel, Short, X post, or creator caption.
+- Give a variety of hook types: pain point, contrarian, curiosity gap, how-to, mistake, story, result-first, and direct statement.
+- Label each hook by type so the user can quickly compare options.
+- Do not use clickbait, fake urgency, hype, or unsupported claims.
+- Do not copy distinctive wording from pasted reference text; use the note for the idea and angle.
+- Keep each hook concise, specific, and easy to say out loud.
 
-Output only the 5 hooks.`,
+Output only the Hook Pack.`,
   },
   {
     id: "caption_pack",
     icon: "📣",
     name: "Caption Pack",
-    description: "Create ready-to-post captions for TikTok, Shorts, and Reels.",
+    description: "Create ready-to-post captions for TikTok, Reels, and YouTube videos.",
     category: "publish",
     prompt: "(Built-in Logic) Generates platform-ready captions from creator inspiration notes.",
     isBuiltInLogic: true,
   },
   {
-    id: "youtube_script",
-    icon: "🎬",
-    name: "YouTube Script",
-    description: "Turn a note into a YouTube video script.",
+    id: "timed_script",
+    icon: "⏱️",
+    name: "Timed Script",
+    description: "Generate a 30, 45, or 60 second short video script.",
     category: "publish",
-    prompt: `You are turning a user's existing note into a YouTube video script. The note was not written for chat. Produce a clean, recordable script that stays faithful to the note's intent and tone.
-
-- Keep the script in the same language as the note.
-- Structure it as: Hook -> Main Points -> Summary -> CTA.
-- Use short, spoken-friendly sentences.
-- If the note is long, compress to the most useful points.
-- Do not add new facts; expand only what the note supports.
-- Keep it concise enough to record comfortably.
-
-Output only the script.`,
+    prompt: "(Built-in Logic) Generates a 30, 45, or 60 second short video script.",
+    isBuiltInLogic: true,
   },
   {
     id: "repurpose_pack",
     icon: "♻️",
     name: "Repurpose Pack",
-    description: "Turn one long post into native versions for X, LinkedIn, and more",
+    description: "Turn one piece of content into native posts for multiple platforms.",
     category: "publish",
     prompt: "(Built-in Logic) Atomizes one long-form note into native posts for multiple platforms.",
     isBuiltInLogic: true,
@@ -224,24 +227,128 @@ export function notesContentForRecipe(notes: NoteDTO[]) {
   return notes.map((note) => note.content).join("\n\n---\n\n");
 }
 
-function captionPackStyleInstruction(style: CaptionPackBuildOptions["outputStyle"]) {
-  switch (style) {
-    case "Concise":
-      return `- TikTok caption target: 120-220 characters.
-- YouTube Shorts title target: 35-50 characters.
-- YouTube Shorts description target: 80-150 characters.
-- Instagram Reels caption target: 100-180 characters.`;
-    case "Detailed":
-      return `- TikTok caption target: 700-1,200 characters.
-- YouTube Shorts title target: 70-90 characters.
-- YouTube Shorts description target: 300-600 characters.
-- Instagram Reels caption target: 600-1,000 characters.`;
-    case "Balanced":
+type CaptionPackPlatform = "TikTok" | "Instagram Reels" | "YouTube Shorts" | "YouTube Long Video";
+
+const defaultCaptionPackPlatforms: CaptionPackPlatform[] = [
+  "TikTok",
+  "Instagram Reels",
+  "YouTube Shorts",
+  "YouTube Long Video",
+];
+
+function normalizedCaptionPackPlatforms(platforms: string[]): CaptionPackPlatform[] {
+  const selected = platforms.filter((platform): platform is CaptionPackPlatform =>
+    defaultCaptionPackPlatforms.includes(platform as CaptionPackPlatform)
+  );
+  return selected.length > 0 ? selected : defaultCaptionPackPlatforms;
+}
+
+function captionPackPlatformRule(platform: CaptionPackPlatform) {
+  switch (platform) {
+    case "TikTok":
+      return "- TikTok: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer.";
+    case "Instagram Reels":
+      return "- Instagram Reels: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer.";
+    case "YouTube Shorts":
+      return "- YouTube Shorts: Output Title, Description, and Hashtags. Title must be under 100 characters. Description should be compact and mobile-friendly. Hashtags must be 3 or fewer.";
+    case "YouTube Long Video":
+      return "- YouTube Long Video: Output SEO Title, Description, Tags, and Pinned Comment. Make the description fuller than Shorts copy, with a clear summary, search-friendly keywords, and a natural CTA. Tags must be comma-separated.";
+  }
+}
+
+function captionPackStyleInstruction(platform: CaptionPackPlatform, style: CaptionPackBuildOptions["outputStyle"]) {
+  if (platform === "TikTok") {
+    if (style === "Concise") return "- TikTok caption target: 120-220 characters.";
+    if (style === "Detailed") return "- TikTok caption target: 700-1,200 characters.";
+    return "- TikTok caption target: 300-600 characters.";
+  }
+
+  if (platform === "Instagram Reels") {
+    if (style === "Concise") return "- Instagram Reels caption target: 100-180 characters.";
+    if (style === "Detailed") return "- Instagram Reels caption target: 600-1,000 characters.";
+    return "- Instagram Reels caption target: 250-500 characters.";
+  }
+
+  if (platform === "YouTube Shorts") {
+    if (style === "Concise") {
+      return `- YouTube Shorts title target: 35-50 characters.
+- YouTube Shorts description target: 80-150 characters.`;
+    }
+    if (style === "Detailed") {
+      return `- YouTube Shorts title target: 70-90 characters.
+- YouTube Shorts description target: 300-600 characters.`;
+    }
+    return `- YouTube Shorts title target: 50-70 characters.
+- YouTube Shorts description target: 150-300 characters.`;
+  }
+
+  if (style === "Concise") {
+    return `- YouTube Long Video SEO title target: 55-75 characters.
+- YouTube Long Video description target: 500-900 characters.`;
+  }
+  if (style === "Detailed") {
+    return `- YouTube Long Video SEO title target: 70-95 characters.
+- YouTube Long Video description target: 1,500-2,500 characters.`;
+  }
+  return `- YouTube Long Video SEO title target: 60-85 characters.
+- YouTube Long Video description target: 900-1,500 characters.`;
+}
+
+function captionPackOutputTemplate(platform: CaptionPackPlatform) {
+  switch (platform) {
+    case "TikTok":
+      return `## TikTok
+
+Caption:
+...
+
+Hashtags:
+#creatorworkflow #contentstrategy #shortformvideo #tiktoktips #contentideas`;
+    case "Instagram Reels":
+      return `## Instagram Reels
+
+Caption:
+...
+
+Hashtags:
+#contentcreator #creatorworkflow #reelstips #contentstrategy #socialmediatips`;
+    case "YouTube Shorts":
+      return `## YouTube Shorts
+
+Title:
+...
+
+Description:
+...
+
+Hashtags:
+#Shorts #ContentStrategy #CreatorTips`;
+    case "YouTube Long Video":
+      return `## YouTube Long Video
+
+SEO Title:
+...
+
+Description:
+...
+
+Tags:
+creator workflow, content strategy, AI tools
+
+Pinned Comment:
+...`;
+  }
+}
+
+function timedScriptWordCountRange(durationSeconds: TimedScriptBuildOptions["durationSeconds"]) {
+  switch (durationSeconds) {
+    case 30:
+      return "70-90";
+    case 60:
+      return "140-170";
+    case 45:
     default:
-      return `- TikTok caption target: 300-600 characters.
-- YouTube Shorts title target: 50-70 characters.
-- YouTube Shorts description target: 150-300 characters.
-- Instagram Reels caption target: 250-500 characters.`;
+      return "105-130";
   }
 }
 
@@ -275,14 +382,21 @@ Rules:
 
   if (recipe.id === "caption_pack") {
     const captionPack = options.captionPack ?? {
-      platforms: ["TikTok", "YouTube Shorts", "Instagram Reels"],
+      platforms: defaultCaptionPackPlatforms,
       goal: "Start discussion",
       tone: "Casual + useful",
       outputStyle: "Balanced" as const,
     };
-    const platforms = captionPack.platforms.length > 0
-      ? captionPack.platforms.join(", ")
-      : "TikTok, YouTube Shorts, Instagram Reels";
+    const selectedPlatforms = normalizedCaptionPackPlatforms(captionPack.platforms);
+    const platforms = selectedPlatforms.join(", ");
+    const styleInstruction = selectedPlatforms
+      .map((platform) => captionPackStyleInstruction(platform, captionPack.outputStyle))
+      .join("\n");
+    const platformRules = selectedPlatforms.map(captionPackPlatformRule).join("\n");
+    const platformCTAInstruction = selectedPlatforms.includes("TikTok") || selectedPlatforms.includes("Instagram Reels")
+      ? "- For TikTok and Instagram Reels, naturally fold any question or soft call to action into the caption when it fits. Do not create a separate CTA section."
+      : "";
+    const outputTemplate = selectedPlatforms.map(captionPackOutputTemplate).join("\n\n");
 
     return {
       prompt: `Create a Caption Pack for these selected platforms: ${platforms}.
@@ -307,51 +421,60 @@ ${languageRule}
 - Return only the Caption Pack. Do not explain your reasoning.
 
 Length and style:
-${captionPackStyleInstruction(captionPack.outputStyle)}
+${styleInstruction}
 - Character counts must include the generated field text, not the label.
 - If a draft exceeds any platform limit, rewrite it shorter before returning.
 
 Platform rules:
-- TikTok: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer.
-- YouTube Shorts: Output Title, Description, and Hashtags. Title must be under 100 characters. Description must be under 5,000 characters. Hashtags must be 3 or fewer.
-- Instagram Reels: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer.
-- For TikTok and Instagram Reels, naturally fold any question or soft call to action into the caption when it fits. Do not create a separate CTA section.
+${platformRules}
+${platformCTAInstruction}
 
 Output format:
 Use only the selected platforms and keep this exact section style:
 
-## TikTok
+${outputTemplate}`,
+    };
+  }
 
-Caption:
-...
+  if (recipe.id === "timed_script") {
+    const durationSeconds = options.timedScript?.durationSeconds ?? 45;
+    const wordCountRange = timedScriptWordCountRange(durationSeconds);
 
-Hashtags:
-#creatorworkflow #contentstrategy #shortformvideo #tiktoktips #contentideas
+    return {
+      prompt: `Create a ${durationSeconds}-second short video script from these notes.
 
-## YouTube Shorts
+Target length: ${durationSeconds} seconds.
+Target spoken word count: ${wordCountRange} words.
 
-Title:
-...
+Notes:
+${combinedContent}`,
+      systemPrompt: `You write short-form video scripts for TikTok, Instagram Reels, and YouTube Shorts. The input is an existing note, transcript, rough idea, or creator inspiration, not a chat message.
 
-Description:
-...
-
-Hashtags:
-#Shorts #ContentStrategy #CreatorTips
-
-## Instagram Reels
-
-Caption:
-...
-
-Hashtags:
-#contentcreator #creatorworkflow #reelstips #contentstrategy #socialmediatips`,
+Core rules:
+${languageRule}
+- Produce a script that can be spoken in about ${durationSeconds} seconds.
+- Aim for ${wordCountRange} spoken words. If the script is over the range, rewrite it shorter before returning.
+- Use the notes to understand the idea, audience, angle, and useful details, but do not copy distinctive wording from third-party reference text.
+- Do not invent facts, stats, quotes, personal experiences, product promises, or results that are not supported by the notes.
+- Make it recordable as a spoken script with short, natural sentences.
+- Include a strong opening line, a clear middle, a payoff, and a light CTA only when it fits.
+- Return only the script. Do not include timestamps, labels, notes, word count, or explanations.`,
     };
   }
 
   if (recipe.id === "style_match") {
-    const sample = options.brandVoiceSample?.trim() ?? "";
-    if (!sample) {
+    const brandVoice = options.brandVoice;
+    const sample = brandVoice?.sample?.trim() || options.brandVoiceSample?.trim() || "";
+    const profileSections = [
+      brandVoice?.tone?.trim() ? `Tone / voice style:\n${brandVoice.tone.trim()}` : "",
+      brandVoice?.audience?.trim() ? `Audience:\n${brandVoice.audience.trim()}` : "",
+      brandVoice?.cta?.trim() ? `Preferred CTA:\n${brandVoice.cta.trim()}` : "",
+      brandVoice?.avoid?.trim() ? `Avoid:\n${brandVoice.avoid.trim()}` : "",
+      sample ? `Example posts / writing samples:\n${sample}` : "",
+    ].filter(Boolean);
+    const profile = profileSections.join("\n\n");
+
+    if (!profile) {
       return {
         prompt: `Rewrite this note in a natural, consistent writing voice. Preserve its meaning, facts, and structure.
 
@@ -367,18 +490,20 @@ ${languageRule}
     }
 
     return {
-      prompt: `Voice sample (the author's own writing - use it only to learn their style):
-${sample}
+      prompt: `Brand Voice profile:
+${profile}
 
-Rewrite the note below so it reads as if the same author wrote it.
+Rewrite the note below so it follows this Brand Voice profile.
 
 Note to rewrite:
 ${combinedContent}`,
-      systemPrompt: `You rewrite a note in the author's personal writing voice, learned from a voice sample.
+      systemPrompt: `You rewrite a creator's note using their saved Brand Voice profile.
 Rules:
 ${languageRule}
-- Match the voice sample's tone, vocabulary, rhythm, sentence length, and quirks.
-- The voice sample is for style only. Do not copy its sentences, phrases, claims, or topic.
+- Apply the saved tone, audience, preferred CTA, avoided wording, and example-post style when provided.
+- Treat example posts as style references only. Do not copy their sentences, phrases, claims, or topics.
+- Use the preferred CTA only if it fits the rewritten note naturally.
+- Respect the avoided wording and style notes.
 - Preserve the note's meaning, facts, and structure. Do not invent new facts.
 - Return only the rewritten note. Do not explain.`,
     };
@@ -386,9 +511,8 @@ ${languageRule}
 
   if (recipe.id === "repurpose_pack") {
     return {
-      prompt: `Repurpose this long-form content into native posts for these formats: X Thread, LinkedIn.
+      prompt: `Repurpose this long-form content into native posts for these formats: X Post, LinkedIn, Instagram Carousel Outline.
 
-Thread length (X Thread / Threads): 6-8 posts.
 Tone: Creator voice
 
 Long-form content:
@@ -405,19 +529,12 @@ ${languageRule}
 - Return only the repurposed posts. Do not explain your reasoning.
 
 Format rules:
-- X Thread: numbered posts (1/, 2/, ...). Each post must be 280 characters or fewer. The first post is a standalone hook.
 - X Post: one standalone post, 280 characters or fewer, leading with the strongest takeaway.
 - LinkedIn: open with the core insight, use short scannable paragraphs, professional and credible, no hype.
-- Threads: numbered posts (1/, 2/, ...). Each post must be 500 characters or fewer, conversational tone.
-- Newsletter: a 2-3 sentence intro blurb that teases the piece, ending with a [link] placeholder.
+- Instagram Carousel Outline: 6-8 slide outline with one short headline and one supporting line per slide.
 
 Output format:
 Use only the selected formats and keep this exact section style:
-
-## X Thread
-
-1/ ...
-2/ ...
 
 ## X Post
 
@@ -427,14 +544,10 @@ Use only the selected formats and keep this exact section style:
 
 ...
 
-## Threads
+## Instagram Carousel Outline
 
-1/ ...
-2/ ...
-
-## Newsletter
-
-...`,
+Slide 1: ...
+Slide 2: ...`,
     };
   }
 

@@ -146,7 +146,7 @@ struct NoteSourceCard: View {
         case "spotify":
             return Color(red: 0.12, green: 0.73, blue: 0.33)
         default:
-            return .accentPrimary
+            return .accentSecondary
         }
     }
 }

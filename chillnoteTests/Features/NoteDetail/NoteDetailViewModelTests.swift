@@ -163,6 +163,25 @@ final class NoteDetailViewModelTests: XCTestCase {
         XCTAssertEqual(note.tags.filter { $0.id == existingTag.id }.count, 1)
     }
 
+    func testConfirmTagDoesNotReuseSameNameTagFromAnotherUser() throws {
+        let note = Note(content: "content", userId: "u1")
+        let otherUserTag = Tag(name: "Work", userId: "u2")
+        context.insert(note)
+        context.insert(otherUserTag)
+
+        let viewModel = NoteDetailViewModel(note: note)
+        viewModel.configureForTesting(modelContext: context)
+
+        viewModel.confirmTag("Work")
+
+        let tags = try context.fetch(FetchDescriptor<Tag>())
+        let currentUserTags = tags.filter { $0.userId == "u1" }
+        XCTAssertEqual(currentUserTags.count, 1)
+        XCTAssertEqual(currentUserTags.first?.name, "Work")
+        XCTAssertEqual(note.tags.map(\.id), currentUserTags.map(\.id))
+        XCTAssertFalse(note.tags.contains { $0.id == otherUserTag.id })
+    }
+
     func testMakeExportFilenameSanitizesAndLimitsLength() {
         let note = Note(content: "content", userId: "u1")
         let viewModel = NoteDetailViewModel(note: note)

@@ -110,6 +110,7 @@ enum HomeScreenAction {
     case toggleNoteSelection(Note)
 
     case handleAgentRecipeRequest(AgentRecipe)
+    case prepareHomeRecipe(AgentRecipe)
     case startAIChat
     case cancelVoice
     case confirmVoice

@@ -19,7 +19,7 @@ struct NoteDetailAISkillsSheet: View {
                     VStack(alignment: .leading, spacing: 14) {
                         Image(systemName: "sparkles")
                             .font(.system(size: 36, weight: .semibold))
-                            .foregroundColor(.accentPrimary)
+                            .foregroundColor(.accentSecondary)
 
                         Text(L10n.text("note_detail.ai_skills.empty.title"))
                             .font(.title3.bold())
@@ -115,11 +115,11 @@ struct NoteDetailAISkillPreviewSheet: View {
                         }
 
                         if preview.recipe.id == "style_match",
-                           BrandVoicePreferences.current.sample.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                           !BrandVoicePreferences.current.isConfigured {
                             HStack(alignment: .top, spacing: 8) {
                                 Image(systemName: "waveform")
                                     .font(.system(size: 14, weight: .semibold))
-                                    .foregroundColor(.accentPrimary)
+                                    .foregroundColor(.accentSecondary)
                                 Text(L10n.text("brand_voice.preview.no_sample_hint"))
                                     .font(.caption)
                                     .foregroundColor(.textSub)
@@ -127,7 +127,7 @@ struct NoteDetailAISkillPreviewSheet: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(12)
-                            .background(Color.accentPrimary.opacity(0.08))
+                            .background(Color.secondaryHighlight.opacity(0.75))
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         }
 
@@ -190,13 +190,13 @@ private struct NoteDetailSkillIcon: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.accentPrimary.opacity(0.1))
+                .fill(Color.secondaryHighlight.opacity(0.9))
                 .frame(width: 40, height: 40)
 
             if recipe.icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Image(systemName: recipe.systemIcon)
                     .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(.accentSecondary)
             } else {
                 Text(recipe.icon)
                     .font(.system(size: 22))

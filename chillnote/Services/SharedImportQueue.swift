@@ -7,6 +7,11 @@ enum SharedImportQueue {
     private static let logger = Logger(subsystem: "com.chillnote.app", category: "shared-imports")
 
     struct PendingImport: Codable, Sendable {
+        enum Kind: String, Codable, Sendable {
+            case note
+            case linkImport
+        }
+
         struct Source: Codable, Sendable {
             let url: String
             let title: String
@@ -16,9 +21,16 @@ enum SharedImportQueue {
         }
 
         let id: UUID
-        let noteText: String
+        let kind: Kind?
+        let noteText: String?
         let source: Source
+        let importJobId: String?
+        let importStatus: String?
         let createdAt: Date
+
+        var importKind: Kind {
+            kind ?? .note
+        }
 
         var noteSourceMetadata: NoteSourceMetadata {
             NoteSourceMetadata(

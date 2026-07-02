@@ -45,6 +45,7 @@ extension HomeView {
             await syncManager.syncIfNeeded(context: modelContext)
         }
 
+        registerCompletedLinkImportsForRating()
         await checkForPendingRecordingsAsync()
     }
 

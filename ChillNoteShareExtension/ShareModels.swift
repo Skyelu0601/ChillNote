@@ -3,15 +3,16 @@ import Foundation
 enum ShareConstants {
     static let appGroupIdentifier = "group.com.sponteoai.chillnote"
     static let authTokenKey = "syncAuthToken"
-    static let lastAuthenticatedUserIdKey = "auth.lastAuthenticatedUserId"
+    static let backendBaseURL = "https://api.chillnoteai.com"
     static let pendingImportsDirectoryName = "PendingShareImports"
-    static let keychainAccessGroup = "Y6A6D9322M.com.sponteoai.chillnote.auth"
-    static let keychainService = "supabase.gotrue.swift"
-    static let supabaseURL = URL(string: "https://qsyhkpaeyzhjojdvbntq.supabase.co")!
-    static let supabaseAnonKey = "sb_publishable_smWWadjejdbKYvmg3fidsg_41XPu70e"
 }
 
 struct SharePendingImport: Codable, Sendable {
+    enum Kind: String, Codable, Sendable {
+        case note
+        case linkImport
+    }
+
     struct Source: Codable, Sendable {
         let url: String
         let title: String
@@ -21,9 +22,16 @@ struct SharePendingImport: Codable, Sendable {
     }
 
     let id: UUID
-    let noteText: String
+    let kind: Kind?
+    let noteText: String?
     let source: Source
+    let importJobId: String?
+    let importStatus: String?
     let createdAt: Date
+
+    var importKind: Kind {
+        kind ?? .note
+    }
 }
 
 struct SharePlatform: Equatable, Sendable {

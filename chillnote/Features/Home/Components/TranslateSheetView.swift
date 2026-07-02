@@ -15,7 +15,7 @@ struct TranslateSheetView: View {
                         VStack(spacing: 8) {
                             Image(systemName: "globe")
                                 .font(.system(size: 48))
-                                .foregroundStyle(LinearGradient(colors: [.accentPrimary, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
+                                .foregroundStyle(LinearGradient(colors: [.accentPrimary, .accentSecondary], startPoint: .topLeading, endPoint: .bottomTrailing))
                                 .padding(.bottom, 8)
 
                             Text(L10n.text("translate_sheet.title"))

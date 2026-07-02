@@ -2,7 +2,12 @@ import fetch from "node-fetch";
 import { randomUUID } from "node:crypto";
 import { prisma } from "./db.js";
 import { logSyncChange } from "./store.js";
-import { isSupportedMediaLinkURL, transcribeMediaLinkURL } from "./tiktokTranscript.js";
+import {
+  isHandledTikTokTranscriptError,
+  isSupportedMediaLinkURL,
+  transcribeMediaLinkURL,
+  type MediaLinkTranscriptMetadata
+} from "./tiktokTranscript.js";
 
 type LinkImportJobStatus = "queued" | "processing" | "completed" | "failed";
 
@@ -32,6 +37,12 @@ type MediaLinkSections = {
   showAuthor: boolean;
   showHook: boolean;
   showTranscript: boolean;
+};
+
+type LinkImportFailureDetails = {
+  errorCode: string;
+  content?: string;
+  source?: LinkImportSource;
 };
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite";
@@ -209,13 +220,18 @@ async function processJob(job: LinkImportJobRow): Promise<void> {
     });
     await completeJob(job, result.content, result.source);
   } catch (error) {
+    const failure = await failureDetailsForError(job, error);
     console.error("❌ Link import job failed:", {
       jobId: job.id,
       noteId: job.noteId,
       userId: job.userId,
+      errorCode: failure.errorCode,
       error
     });
-    await failJob(job, "import_failed");
+    await failJob(job, failure.errorCode, {
+      content: failure.content,
+      source: failure.source
+    });
   }
 }
 
@@ -264,7 +280,11 @@ async function completeJob(job: LinkImportJobRow, content: string, source: LinkI
   }
 }
 
-async function failJob(job: LinkImportJobRow, errorCode: string): Promise<void> {
+async function failJob(
+  job: LinkImportJobRow,
+  errorCode: string,
+  fallback?: { content?: string; source?: LinkImportSource }
+): Promise<void> {
   const now = new Date();
   await prisma.$executeRaw`
     UPDATE "LinkImportJob"
@@ -277,9 +297,16 @@ async function failJob(job: LinkImportJobRow, errorCode: string): Promise<void> 
 
   const rows = await prisma.$queryRaw<Array<{ version: number; serverUpdatedAt: Date }>>`
     UPDATE "Note"
-    SET "updatedAt" = ${now},
+    SET "content" = COALESCE(${fallback?.content ?? null}, "content"),
+        "updatedAt" = ${now},
         "serverUpdatedAt" = ${now},
         "version" = "version" + 1,
+        "sourceURL" = COALESCE(${fallback?.source?.url ?? null}, "sourceURL"),
+        "sourceTitle" = COALESCE(${fallback?.source?.title ?? null}, "sourceTitle"),
+        "sourcePlatformID" = COALESCE(${fallback?.source?.platformID ?? null}, "sourcePlatformID"),
+        "sourcePlatformName" = COALESCE(${fallback?.source?.platformName ?? null}, "sourcePlatformName"),
+        "sourceHost" = COALESCE(${fallback?.source?.host ?? null}, "sourceHost"),
+        "sourceCapturedAt" = COALESCE("sourceCapturedAt", ${now}),
         "importStatus" = 'failed',
         "importJobId" = ${job.id},
         "importErrorCode" = ${errorCode},
@@ -302,6 +329,36 @@ async function failJob(job: LinkImportJobRow, errorCode: string): Promise<void> 
   }
 }
 
+async function failureDetailsForError(
+  job: LinkImportJobRow,
+  error: unknown
+): Promise<LinkImportFailureDetails> {
+  if (!isHandledTikTokTranscriptError(error)) {
+    return { errorCode: "import_failed" };
+  }
+
+  const source = sourceFromTranscriptMetadata(job.url, error.metadata);
+  const title = source.title.trim() || source.platformName;
+  const author = error.metadata?.authorName?.trim() || "Unknown author";
+  const content = await makeCreatorMediaTranscriptNote({
+    description: title,
+    author,
+    transcript: "",
+    mediaLinkSections: {
+      showDescription: job.showDescription,
+      showAuthor: job.showAuthor,
+      showHook: job.showHook,
+      showTranscript: job.showTranscript
+    }
+  });
+
+  return {
+    errorCode: error.reason,
+    content,
+    source
+  };
+}
+
 async function buildImportedNote(
   rawURL: string,
   mediaLinkSections: MediaLinkSections
@@ -312,9 +369,9 @@ async function buildImportedNote(
     const transcript = await transcribeMediaLinkURL(rawURL);
     if (transcript.available && transcript.text?.trim()) {
       const title = transcript.metadata?.title?.trim() || source.title;
-      const updatedSource = { ...source, title };
+      const updatedSource = sourceFromTranscriptMetadata(rawURL, transcript.metadata);
       const content = await makeCreatorMediaTranscriptNote({
-        description: title,
+        description: updatedSource.title || title,
         author: transcript.metadata?.authorName?.trim() || "Unknown author",
         transcript: transcript.text,
         mediaLinkSections
@@ -340,6 +397,19 @@ async function buildImportedNote(
     kind: "web page"
   });
   return { content, source: updatedSource };
+}
+
+function sourceFromTranscriptMetadata(
+  rawURL: string,
+  metadata?: MediaLinkTranscriptMetadata
+): LinkImportSource {
+  const source = makeInitialLinkSource(rawURL);
+  const title = metadata?.title?.trim();
+
+  return {
+    ...source,
+    title: title || source.title
+  };
 }
 
 async function makeCreatorMediaTranscriptNote(params: {

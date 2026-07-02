@@ -12,13 +12,19 @@ final class RecipeManager: ObservableObject {
         "release_notes",
         "merge_notes",
         "twitter_post",
-        "linkedin_post"
+        "linkedin_post",
+        "brainstorm",
+        "expand",
+        "youtube_script"
     ]
 
     @AppStorage("savedRecipesJSON") private var savedRecipesJSON: String = "[]"
     @AppStorage("customRecipesJSON") private var customRecipesJSON: String = "[]"
     @AppStorage("defaultRecipesInstalled") private var defaultRecipesInstalled = false
+    @AppStorage("hookRecipeInstalled") private var hookRecipeInstalled = false
     @AppStorage("captionPackRecipeInstalled") private var captionPackRecipeInstalled = false
+    @AppStorage("rewriteRecipeInstalled") private var rewriteRecipeInstalled = false
+    @AppStorage("repurposePackRecipeInstalled") private var repurposePackRecipeInstalled = false
 
     @Published var savedRecipes: [AgentRecipe] = [] {
         didSet { saveToDisk() }
@@ -32,7 +38,10 @@ final class RecipeManager: ObservableObject {
     private init() {
         loadFromDisk()
         installDefaultRecipesIfNeeded()
+        installHookRecipeIfNeeded()
         installCaptionPackRecipeIfNeeded()
+        installRewriteRecipeIfNeeded()
+        installRepurposePackRecipeIfNeeded()
     }
 
     func toggleRecipe(_ recipe: AgentRecipe) {
@@ -86,7 +95,7 @@ final class RecipeManager: ObservableObject {
             return
         }
 
-        let defaultIDs = ["hook_generator", "caption_pack", "humanizer"]
+        let defaultIDs = ["hook_generator", "caption_pack", "rewrite", "repurpose_pack"]
         let defaults = AgentRecipe.allRecipes.filter { defaultIDs.contains($0.id) }
         guard !defaults.isEmpty else { return }
 
@@ -103,6 +112,36 @@ final class RecipeManager: ObservableObject {
             addRecipe(recipe)
         }
         captionPackRecipeInstalled = true
+    }
+
+    func installHookRecipeIfNeeded() {
+        guard !hookRecipeInstalled else { return }
+        guard let recipe = AgentRecipe.allRecipes.first(where: { $0.id == "hook_generator" }) else { return }
+
+        if !savedRecipeIds.contains(recipe.id) {
+            addRecipe(recipe)
+        }
+        hookRecipeInstalled = true
+    }
+
+    func installRewriteRecipeIfNeeded() {
+        guard !rewriteRecipeInstalled else { return }
+        guard let recipe = AgentRecipe.allRecipes.first(where: { $0.id == "rewrite" }) else { return }
+
+        if !savedRecipeIds.contains(recipe.id) {
+            addRecipe(recipe)
+        }
+        rewriteRecipeInstalled = true
+    }
+
+    func installRepurposePackRecipeIfNeeded() {
+        guard !repurposePackRecipeInstalled else { return }
+        guard let recipe = AgentRecipe.allRecipes.first(where: { $0.id == "repurpose_pack" }) else { return }
+
+        if !savedRecipeIds.contains(recipe.id) {
+            addRecipe(recipe)
+        }
+        repurposePackRecipeInstalled = true
     }
 
     private func loadFromDisk() {

@@ -9,6 +9,8 @@ extension Color {
     // - iOS-like blue, slightly lighter than systemBlue (#007AFF)
     static let brandBlue = Color(hex: "2F86FF") // light iOS-like blue
     static let brandBlueSoft = Color(hex: "EAF2FF") // selection / subtle highlight
+    static let brandTeal = Color(hex: "10A7A1") // fresh secondary accent
+    static let brandTealSoft = Color(hex: "E8F8F7") // subtle AI / source highlight
 
     // MARK: - Semantic Colors
     static let bgPrimary = Color(hex: "F7F7F8") // neutral near-white
@@ -21,7 +23,9 @@ extension Color {
 
     // Actions & Highlights
     static let accentPrimary = brandBlue
+    static let accentSecondary = brandTeal
     static let selectionHighlight = brandBlueSoft
+    static let secondaryHighlight = brandTealSoft
 
     // Text Colors
     static let textMain = Color(hex: "111114") // near-black

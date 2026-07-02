@@ -65,7 +65,7 @@ final class SyncEngineTests: XCTestCase {
             serverTime: iso(remoteUpdateAt)
         )
 
-        engine.apply(remote: response, context: context, userId: userId)
+        try engine.apply(remote: response, context: context, userId: userId)
 
         XCTAssertNotNil(note.deletedAt, "本地未同步删除不应被同版本远端数据覆盖")
         XCTAssertEqual(note.content, "local")
@@ -117,7 +117,7 @@ final class SyncEngineTests: XCTestCase {
             serverTime: iso(remoteUpdateAt)
         )
 
-        engine.apply(remote: response, context: context, userId: userId)
+        try engine.apply(remote: response, context: context, userId: userId)
 
         XCTAssertNil(note.deletedAt)
         XCTAssertEqual(note.content, "remote-newer")
@@ -171,7 +171,7 @@ final class SyncEngineTests: XCTestCase {
             serverTime: iso(remoteUpdateAt)
         )
 
-        engine.apply(remote: response, context: context, userId: userId)
+        try engine.apply(remote: response, context: context, userId: userId)
 
         XCTAssertNotNil(tag.deletedAt)
         XCTAssertEqual(tag.name, "local-tag")
@@ -191,7 +191,7 @@ final class SyncEngineTests: XCTestCase {
         context.insert(tag)
         try context.save()
 
-        let payload = engine.makePayload(
+        let payload = try engine.makePayload(
             context: context,
             since: boundary,
             userId: userId,
@@ -239,7 +239,7 @@ final class SyncEngineTests: XCTestCase {
             serverTime: iso(remoteUpdateAt)
         )
 
-        engine.apply(remote: response, context: context, userId: userId, localSyncAnchor: anchor)
+        try engine.apply(remote: response, context: context, userId: userId, localSyncAnchor: anchor)
 
         let fetched = try context.fetch(FetchDescriptor<Note>())
         XCTAssertEqual(fetched.count, 1)
@@ -273,7 +273,7 @@ final class SyncEngineTests: XCTestCase {
             serverTime: iso(base)
         )
 
-        engine.apply(remote: response, context: context, userId: userId)
+        try engine.apply(remote: response, context: context, userId: userId)
 
         let fetched = try context.fetch(FetchDescriptor<Note>())
         XCTAssertTrue(fetched.isEmpty, "同步层不应再为冲突创建副本笔记")

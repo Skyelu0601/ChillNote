@@ -17,7 +17,10 @@ extension NoteDetailViewModel {
     func confirmTag(_ tagName: String, preferredColorHex: String? = nil) {
         guard let modelContext else { return }
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
+            let noteUserId = note.userId
+            let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate {
+                $0.userId == noteUserId && $0.deletedAt == nil
+            })
             let allTags: [Tag]
             do {
                 allTags = try modelContext.fetch(fetchDescriptor)
@@ -33,10 +36,9 @@ extension NoteDetailViewModel {
                     touchTag(existing, note: note)
                 }
             } else {
-                guard let userId = AuthService.shared.currentUserId else { return }
                 let colorHex = preferredColorHex.map(TagColorService.normalizedHex)
                     ?? TagColorService.autoColorHex(for: tagName, existingTags: allTags)
-                let newTag = Tag(name: tagName, userId: userId, colorHex: colorHex)
+                let newTag = Tag(name: tagName, userId: noteUserId, colorHex: colorHex)
                 modelContext.insert(newTag)
                 note.tags.append(newTag)
                 note.updatedAt = dependencies.now()

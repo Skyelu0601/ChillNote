@@ -42,9 +42,30 @@ struct HomeHeaderView: View {
                 .buttonStyle(.bouncy)
                 .padding(.leading, -10)
 
-                Text(headerTitle)
-                    .font(.system(size: 24, weight: .semibold, design: .serif))
-                    .foregroundColor(.black)
+                if isTrashSelected {
+                    Text(headerTitle)
+                        .font(.system(size: 24, weight: .semibold, design: .serif))
+                        .foregroundColor(.black)
+                } else {
+                    Menu {
+                        Button(action: onEnterSelectionMode) {
+                            Label(L10n.text("home.header.title_menu.select_notes"), systemImage: "checkmark.circle")
+                        }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Text(headerTitle)
+                                .font(.system(size: 24, weight: .semibold, design: .serif))
+                                .foregroundColor(.black)
+
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 11, weight: .bold))
+                                .foregroundColor(.textSub.opacity(0.78))
+                                .offset(y: 1)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.text("home.header.accessibility.title_menu"))
+                }
 
                 Spacer()
 
@@ -59,15 +80,6 @@ struct HomeHeaderView: View {
                     .buttonStyle(.bouncy)
                     .disabled(isRecording)
                     .accessibilityLabel(L10n.text("home.header.accessibility.search"))
-
-                    if !isTrashSelected {
-                        Button(action: onEnterSelectionMode) {
-                            NoteDetailLightningBallIcon(size: 36)
-                        }
-                        .buttonStyle(.bouncy)
-                        .disabled(isRecording)
-                        .accessibilityLabel(L10n.text("home.header.accessibility.enter_ai_context_mode"))
-                    }
 
                     if isTrashSelected {
                         Button(action: onShowEmptyTrashConfirmation) {

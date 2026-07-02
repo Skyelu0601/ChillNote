@@ -338,16 +338,8 @@ struct NoteCard: View {
                 }
 
                 if item.importStatus == .queued || item.importStatus == .processing {
-                    HStack(spacing: 8) {
-                        ProgressView()
-                            .controlSize(.small)
-                        Text(L10n.text("quick_capture.link_import.status.processing"))
-                            .font(.chillCaption)
-                            .foregroundColor(.textSub)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .padding(.top, 2)
+                    LinkImportPreparingView()
+                        .padding(.top, 2)
                 } else if item.importStatus == .failed {
                     HStack(spacing: 8) {
                         Image(systemName: "exclamationmark.triangle.fill")
@@ -430,6 +422,101 @@ struct NoteCard: View {
         .background(Color.cardBackground)
         .cornerRadius(16)
         .shadow(color: Color.shadowColor, radius: 8, y: 4)
+    }
+}
+
+private struct LinkImportPreparingView: View {
+    @State private var isBreathing = false
+    @State private var shimmerOffset: CGFloat = -0.7
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 12) {
+            ZStack {
+                Circle()
+                    .fill(Color.accentPrimary.opacity(isBreathing ? 0.18 : 0.10))
+                    .frame(width: 36, height: 36)
+                    .scaleEffect(isBreathing ? 1.08 : 0.96)
+
+                Circle()
+                    .stroke(Color.accentPrimary.opacity(isBreathing ? 0.18 : 0.08), lineWidth: 1)
+                    .frame(width: 42, height: 42)
+                    .scaleEffect(isBreathing ? 1.04 : 0.92)
+
+                Image(systemName: "sparkles")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundColor(.accentPrimary)
+                    .symbolEffect(.pulse, isActive: true)
+            }
+            .frame(width: 44, height: 44)
+            .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 7) {
+                Text(L10n.text("quick_capture.link_import.card.title"))
+                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                    .foregroundColor(.textMain)
+                    .lineLimit(2)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(L10n.text("quick_capture.link_import.card.body"))
+                    .font(.chillCaption)
+                    .foregroundColor(.textSub)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                LinkImportShimmerLine(offset: shimmerOffset)
+                    .frame(height: 4)
+                    .padding(.top, 1)
+            }
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.accentPrimary.opacity(0.055))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(Color.accentPrimary.opacity(0.10), lineWidth: 1)
+        )
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
+                isBreathing = true
+            }
+            withAnimation(.linear(duration: 1.8).repeatForever(autoreverses: false)) {
+                shimmerOffset = 0.7
+            }
+        }
+    }
+}
+
+private struct LinkImportShimmerLine: View {
+    let offset: CGFloat
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.accentPrimary.opacity(0.12))
+
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.accentPrimary.opacity(0.02),
+                                Color.accentPrimary.opacity(0.45),
+                                Color.accentPrimary.opacity(0.02)
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: max(proxy.size.width * 0.36, 48))
+                    .offset(x: proxy.size.width * offset)
+            }
+            .clipShape(Capsule())
+        }
+        .accessibilityHidden(true)
     }
 }
 

@@ -50,7 +50,7 @@ struct AIPreviewCard: View {
                         Text(L10n.text("common.save"))
                             .font(.system(size: 10))
                     }
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(.accentSecondary)
                     .frame(width: 60, height: 50)
                 }
             }
@@ -65,8 +65,8 @@ struct AIPreviewCard: View {
                 // Gradient accent on left
                 LinearGradient(
                     colors: [
-                        Color.selectionHighlight.opacity(0.15),
-                        Color.accentPrimary.opacity(0.1),
+                        Color.secondaryHighlight.opacity(0.45),
+                        Color.accentSecondary.opacity(0.08),
                         Color.clear
                     ],
                     startPoint: .leading,

@@ -134,7 +134,12 @@ extension HomeView {
     }
 
     func startAIChat() {
-        guard !selectedNotes.isEmpty else { return }
+        if selectedNotes.isEmpty {
+            cachedContextNotes = Array(homeViewModel.items.prefix(askSoftLimit))
+            showAIChat = true
+            return
+        }
+
         let selectedCount = selectedNotes.count
         if selectedCount > askHardLimit {
             showAskHardLimitAlert = true

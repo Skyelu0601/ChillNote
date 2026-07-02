@@ -68,7 +68,7 @@ export const copy = {
       previewLabel: "Skill Preview",
       buildYourOwn: "Build your own AI Skills",
       tabs: {
-        hooks: "Hooks",
+        hooks: "Hook Pack",
         caption: "Caption Pack",
         humanizer: "Humanizer",
         repurpose: "Repurpose",
@@ -89,9 +89,9 @@ export const copy = {
           { label: "After", text: "It is not just for taking notes. It helps you keep ideas moving when you are making content." },
         ],
         repurpose: [
-          { label: "X Thread", text: "1/ The best ideas are already in your notes. Turn one long draft into a thread people can scan." },
-          { label: "LinkedIn", text: "A long note becomes a clean professional post with the core insight up front." },
-          { label: "Newsletter", text: "This week: how to turn saved inspiration into a repeatable publishing flow." },
+          { label: "X Post", text: "The best ideas are already in your notes. Turn one saved draft into a post people can use." },
+          { label: "Carousel", text: "Turn one saved idea into a slide-by-slide outline for Instagram." },
+          { label: "Pinterest", text: "Make the same idea searchable with a clear title, description, and keywords." },
         ],
       },
     },
@@ -254,6 +254,7 @@ export const copy = {
     done: "Done",
     platformTikTok: "TikTok",
     platformYoutubeShorts: "YouTube Shorts",
+    platformYoutubeLongVideo: "YouTube Long Video",
     platformInstagramReels: "Instagram Reels",
     goals: {
       startDiscussion: "Start discussion",

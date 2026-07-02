@@ -84,12 +84,7 @@ extension HomeView {
                         guard didFinishProcessing else { return }
                         VoiceNotePaywallService.shared.registerSuccessfulVoiceNoteSave()
                         if AppRatingService.shared.registerSuccessfulVoiceNoteSave() {
-                            Task {
-                                try? await Task.sleep(nanoseconds: 3_000_000_000)
-                                await MainActor.run {
-                                    showAppRatingPrompt = true
-                                }
-                            }
+                            scheduleAppRatingPrompt()
                         }
                     }
                 }
@@ -134,26 +129,48 @@ extension HomeView {
         _ = saveNote(text: result.noteText, source: result.source, shouldNavigate: true)
     }
 
-    func createLinkImportNote(_ url: URL) {
-        guard let userId = currentUserId else { return }
+    @discardableResult
+    func createLinkImportNote(
+        _ url: URL,
+        noteID: UUID? = nil,
+        source sharedSource: NoteSourceMetadata? = nil,
+        existingJobId: String? = nil,
+        existingJobStatus: String? = nil,
+        shouldNavigate: Bool = false
+    ) -> Note? {
+        guard let userId = currentUserId else { return nil }
 
         let service = QuickCaptureImportService.shared
-        let source = service.initialSourceMetadata(for: url)
-        guard !shouldSkipDuplicateLinkImport(sourceURL: source.url, userId: userId) else { return }
+        let source = sharedSource ?? service.initialSourceMetadata(for: url)
+        guard !shouldSkipDuplicateLinkImport(sourceURL: source.url, userId: userId) else { return nil }
         rememberRecentLinkImport(sourceURL: source.url)
 
         let placeholder = service.placeholderNoteText(for: url)
         let note = Note(content: placeholder, userId: userId)
+        if let noteID {
+            note.id = noteID
+        }
         note.applySourceMetadata(source)
-        note.importStatus = .queued
+        note.importStatus = importStatus(from: existingJobStatus) ?? .queued
+        note.importJobId = existingJobId
         note.importStartedAt = Date()
         applyCurrentTagContext(to: note)
 
         withAnimation {
             modelContext.insert(note)
         }
-        guard saveHomeVoiceContext(reason: "creating link import note") else { return }
+        guard saveHomeVoiceContext(reason: "creating link import note") else { return nil }
+        if shouldNavigate {
+            navigationPath.append(note)
+        }
         requestReload(delayNanoseconds: 60_000_000, keepItemsWhileLoading: true)
+
+        if existingJobId != nil {
+            Task {
+                await syncLinkImportProgress()
+            }
+            return note
+        }
 
         Task {
             do {
@@ -185,6 +202,16 @@ extension HomeView {
                 }
             }
         }
+
+        return note
+    }
+
+    private func importStatus(from rawValue: String?) -> NoteImportStatus? {
+        guard let rawValue else { return nil }
+        if rawValue == "processing" {
+            return .processing
+        }
+        return NoteImportStatus(rawValue: rawValue)
     }
 
     func shouldSkipDuplicateLinkImport(sourceURL: String, userId: String) -> Bool {
@@ -221,8 +248,11 @@ extension HomeView {
         for delay in [3_000_000_000, 10_000_000_000, 25_000_000_000] as [UInt64] {
             try? await Task.sleep(nanoseconds: delay)
             guard !Task.isCancelled else { return }
-            await syncManager.syncNow(context: modelContext)
+            let didSync = await syncManager.syncNow(context: modelContext)
             await MainActor.run {
+                if didSync {
+                    registerCompletedLinkImportsForRating()
+                }
                 requestReload(delayNanoseconds: 80_000_000, keepItemsWhileLoading: true)
             }
         }

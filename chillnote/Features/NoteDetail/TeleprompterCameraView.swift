@@ -21,7 +21,6 @@ struct TeleprompterCameraView: View {
     @State private var showCameraSettings = false
     @State private var showScriptEditor = false
     @State private var countdownSelection: TeleprompterCountdown = .three
-    @State private var aspectRatio: TeleprompterAspectRatio = .vertical
     @State private var resolution: TeleprompterResolution = .hd1080
     @State private var draggedClip: TeleprompterClip?
     @State private var resetScriptScrollToken = UUID()
@@ -36,8 +35,18 @@ struct TeleprompterCameraView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            CameraPreviewView(session: camera.session)
-                .ignoresSafeArea()
+            GeometryReader { proxy in
+                let frameSize = captureFrameSize(in: proxy.size)
+                CameraPreviewView(session: camera.session)
+                    .frame(width: frameSize.width, height: frameSize.height)
+                    .clipped()
+                    .overlay(
+                        Rectangle()
+                            .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                    )
+                    .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
+            }
+            .ignoresSafeArea()
 
             VStack(spacing: 0) {
                 topBar
@@ -60,7 +69,7 @@ struct TeleprompterCameraView: View {
                     fontSize: fontSize,
                     textColor: textColor.color,
                     panelSize: teleprompterPanelSize(in: proxy.size),
-                    isScrolling: camera.isRecording || showPromptSettings,
+                    isAutoScrolling: camera.isRecording,
                     resetToken: resetScriptScrollToken,
                     onEdit: { showScriptEditor = true },
                     onSettings: {
@@ -257,12 +266,6 @@ struct TeleprompterCameraView: View {
                 )
 
                 segmentedSetting(
-                    title: L10n.text("teleprompter.camera.aspect_ratio"),
-                    values: TeleprompterAspectRatio.allCases,
-                    selection: $aspectRatio
-                )
-
-                segmentedSetting(
                     title: L10n.text("teleprompter.camera.resolution"),
                     values: camera.supportedResolutions.isEmpty ? TeleprompterResolution.allCases : camera.supportedResolutions,
                     selection: $resolution
@@ -375,7 +378,6 @@ struct TeleprompterCameraView: View {
                     } else if camera.isRecording {
                         camera.stopRecording()
                     } else {
-                        resetScriptScrollToken = UUID()
                         await camera.startRecording(countdown: countdownSelection)
                     }
                 }
@@ -397,13 +399,13 @@ struct TeleprompterCameraView: View {
                     Button {
                         previewClips()
                     } label: {
-                        Label(L10n.text("teleprompter.action.preview"), systemImage: "play.rectangle")
-                            .font(.system(size: 15, weight: .bold))
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 21, weight: .bold))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 16)
-                            .frame(height: 48)
-                            .background(RoundedRectangle(cornerRadius: 8).fill(Color.accentPrimary))
+                            .frame(width: 52, height: 52)
+                            .background(Circle().fill(Color.accentPrimary))
                     }
+                    .accessibilityLabel(L10n.text("teleprompter.action.preview"))
                     .disabled(camera.isRecording || camera.isCountingDown || camera.isExporting)
                 }
             }
@@ -415,7 +417,7 @@ struct TeleprompterCameraView: View {
         guard camera.isRecording == false, camera.isCountingDown == false, camera.isExporting == false else { return }
         guard !camera.clips.isEmpty else { return }
         Task {
-            await camera.exportMergedVideo(aspectRatio: aspectRatio)
+            await camera.exportFinalVideo()
         }
     }
 
@@ -439,6 +441,19 @@ struct TeleprompterCameraView: View {
         )
     }
 
+    private func captureFrameSize(in container: CGSize) -> CGSize {
+        guard container.width > 0, container.height > 0 else { return container }
+        let targetRatio = TeleprompterVideoComposer.verticalRenderAspectRatio
+        let containerRatio = container.width / container.height
+        if containerRatio > targetRatio {
+            let height = container.height
+            return CGSize(width: height * targetRatio, height: height)
+        } else {
+            let width = container.width
+            return CGSize(width: width, height: width / targetRatio)
+        }
+    }
+
     private func teleprompterPanelSize(in container: CGSize) -> CGSize {
         CGSize(
             width: container.width - 32,
@@ -452,18 +467,12 @@ struct TeleprompterCameraView: View {
     }
 
     private var exportingOverlay: some View {
-        VStack(spacing: 14) {
-            ProgressView(value: camera.exportProgress)
-                .tint(.white)
-            Text(L10n.text("teleprompter.export.processing"))
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundColor(.white)
-            Text("\(Int((camera.exportProgress * 100).rounded()))%")
-                .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                .foregroundColor(.white.opacity(0.72))
-        }
+        ProgressView()
+            .tint(.white)
+            .controlSize(.large)
+            .frame(width: 72, height: 72)
         .padding(22)
-        .background(RoundedRectangle(cornerRadius: 12).fill(Color.black.opacity(0.72)))
+        .background(Circle().fill(Color.black.opacity(0.72)))
     }
 
     private func sliderRow(
@@ -545,7 +554,6 @@ private final class TeleprompterCameraManager: NSObject, ObservableObject {
     @Published var countdownValue: Int?
     @Published var errorMessage: String?
     @Published var isExporting = false
-    @Published var exportProgress: Double = 0
     @Published var exportedVideoURL: TeleprompterExportRoute?
     @Published var supportedResolutions: [TeleprompterResolution] = TeleprompterResolution.allCases
     @Published var permissionDenied = false
@@ -564,6 +572,7 @@ private final class TeleprompterCameraManager: NSObject, ObservableObject {
     private var notificationObservers: [NSObjectProtocol] = []
     private var isCleaningUp = false
     private let maxClipCount = 24
+    private let maxClipDuration = CMTime(seconds: 180, preferredTimescale: 600)
     private let minimumFreeDiskBytes: Int64 = 250 * 1024 * 1024
     private let sessionQueue = DispatchQueue(label: "com.chillnote.teleprompter.session", qos: .userInitiated)
 
@@ -699,24 +708,18 @@ private final class TeleprompterCameraManager: NSObject, ObservableObject {
         clips.removeAll()
     }
 
-    func exportMergedVideo(aspectRatio: TeleprompterAspectRatio) async {
+    func exportFinalVideo() async {
         guard !clips.isEmpty else { return }
         isExporting = true
-        exportProgress = 0
         defer { isExporting = false }
 
         do {
-            let url = try await TeleprompterVideoComposer.merge(clips: clips, aspectRatio: aspectRatio) { [weak self] progress in
-                Task { @MainActor in
-                    self?.exportProgress = progress
-                }
-            }
+            let url = try await TeleprompterVideoComposer.exportVerticalVideo(clips: clips)
             if let exportedTempURL {
                 try? FileManager.default.removeItem(at: exportedTempURL)
             }
             exportedTempURL = url
             exportedVideoURL = TeleprompterExportRoute(url: url)
-            exportProgress = 1
         } catch {
             errorMessage = L10n.text("teleprompter.error.export_failed")
         }
@@ -852,7 +855,7 @@ private final class TeleprompterCameraManager: NSObject, ObservableObject {
         if session.canAddOutput(movieOutput) {
             session.addOutput(movieOutput)
         }
-        movieOutput.maxRecordedDuration = CMTime.invalid
+        movieOutput.maxRecordedDuration = maxClipDuration
 
         session.commitConfiguration()
         let supported = TeleprompterResolution.allCases.filter { session.canSetSessionPreset($0.sessionPreset) }
@@ -1009,7 +1012,8 @@ extension TeleprompterCameraManager: AVCaptureFileOutputRecordingDelegate {
             self.stopElapsedTimer()
             self.pendingClipURL = nil
 
-            if error != nil {
+            let didFinishSuccessfully = (error as NSError?)?.userInfo[AVErrorRecordingSuccessfullyFinishedKey] as? Bool
+            if error != nil, didFinishSuccessfully != true {
                 self.errorMessage = L10n.text("teleprompter.error.record_failed")
                 try? FileManager.default.removeItem(at: outputFileURL)
                 return
@@ -1023,6 +1027,9 @@ extension TeleprompterCameraManager: AVCaptureFileOutputRecordingDelegate {
 }
 
 private enum TeleprompterVideoComposer {
+    static let verticalRenderAspectRatio: CGFloat = verticalRenderSize.width / verticalRenderSize.height
+    private static let verticalRenderSize = CGSize(width: 1080, height: 1920)
+
     static func duration(for url: URL) async -> TimeInterval {
         let asset = AVURLAsset(url: url)
         guard let duration = try? await asset.load(.duration) else {
@@ -1041,11 +1048,7 @@ private enum TeleprompterVideoComposer {
         return UIImage(cgImage: image)
     }
 
-    static func merge(
-        clips: [TeleprompterClip],
-        aspectRatio: TeleprompterAspectRatio,
-        onProgress: @escaping (Double) -> Void
-    ) async throws -> URL {
+    static func exportVerticalVideo(clips: [TeleprompterClip]) async throws -> URL {
         let composition = AVMutableComposition()
         guard let videoTrack = composition.addMutableTrack(
             withMediaType: .video,
@@ -1095,7 +1098,7 @@ private enum TeleprompterVideoComposer {
             cursor = cursor + duration
         }
 
-        let renderSize = aspectRatio.renderSize
+        let renderSize = verticalRenderSize
         let videoComposition = AVMutableVideoComposition()
         videoComposition.renderSize = renderSize
         videoComposition.frameDuration = frameDuration
@@ -1139,24 +1142,14 @@ private enum TeleprompterVideoComposer {
         exportSession.shouldOptimizeForNetworkUse = true
         exportSession.videoComposition = videoComposition
 
-        let progressTask = Task {
-            while !Task.isCancelled {
-                onProgress(Double(exportSession.progress))
-                try? await Task.sleep(nanoseconds: 120_000_000)
-            }
-        }
-
         do {
             if #available(iOS 18.0, *) {
                 try await exportSession.export(to: outputURL, as: .mp4)
             } else {
                 try await exportLegacy(exportSession)
             }
-            progressTask.cancel()
-            onProgress(1)
             return outputURL
         } catch {
-            progressTask.cancel()
             try? FileManager.default.removeItem(at: outputURL)
             throw error
         }
@@ -1216,35 +1209,6 @@ private enum TeleprompterCountdown: String, CaseIterable, TeleprompterSettingOpt
         case .off: return L10n.text("teleprompter.countdown.off")
         case .three: return L10n.text("teleprompter.countdown.three")
         case .five: return L10n.text("teleprompter.countdown.five")
-        }
-    }
-}
-
-private enum TeleprompterAspectRatio: String, CaseIterable, TeleprompterSettingOption {
-    case vertical
-    case square
-    case horizontal
-
-    var id: String { rawValue }
-    var title: String {
-        switch self {
-        case .vertical: return "9:16"
-        case .square: return "1:1"
-        case .horizontal: return "16:9"
-        }
-    }
-    var value: CGFloat {
-        switch self {
-        case .vertical: return 9.0 / 16.0
-        case .square: return 1
-        case .horizontal: return 16.0 / 9.0
-        }
-    }
-    var renderSize: CGSize {
-        switch self {
-        case .vertical: return CGSize(width: 1080, height: 1920)
-        case .square: return CGSize(width: 1080, height: 1080)
-        case .horizontal: return CGSize(width: 1920, height: 1080)
         }
     }
 }

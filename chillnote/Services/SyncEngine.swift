@@ -88,6 +88,7 @@ struct SyncEngine {
         func shouldApply(remoteVersion: Int?, remoteUpdatedAt: Date?, localVersion: Int, localUpdatedAt: Date?) -> Bool {
             if let remoteVersion, remoteVersion > localVersion { return true }
             if let remoteVersion, remoteVersion < localVersion { return false }
+            if remoteVersion != nil { return false }
             guard let remoteUpdatedAt else { return false }
             guard let localUpdatedAt else { return true }
             return remoteUpdatedAt > localUpdatedAt

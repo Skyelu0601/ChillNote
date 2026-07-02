@@ -1225,7 +1225,6 @@ extension QuickCaptureImportService {
     func markdownSection(heading: String, body: String) -> String {
         """
         ## \(heading)
-
         \(body)
         """
     }

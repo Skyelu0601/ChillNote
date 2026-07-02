@@ -5,23 +5,20 @@ struct HomeSectionPicker: View {
     let sectionCounts: [NoteSection: Int]
     let onSelect: (NoteSection) -> Void
 
-    @Namespace private var pillNamespace
+    @Namespace private var indicatorNamespace
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 0) {
             ForEach(NoteSection.allCases) { section in
                 sectionButton(for: section)
             }
         }
-        .padding(4)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.textMain.opacity(0.045))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .strokeBorder(Color.textMain.opacity(0.04), lineWidth: 0.5)
-        )
+        .frame(height: 52)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.separator.opacity(0.72))
+                .frame(height: 1)
+        }
     }
 
     private func sectionButton(for section: NoteSection) -> some View {
@@ -34,40 +31,60 @@ struct HomeSectionPicker: View {
                 onSelect(section)
             }
         } label: {
-            HStack(spacing: 6) {
-                Image(systemName: section.systemImage)
-                    .font(.system(size: 12, weight: isSelected ? .semibold : .medium))
+            VStack(spacing: 0) {
+                Spacer(minLength: 0)
 
-                Text(verbatim: section.title)
-                    .font(.system(size: 13, weight: isSelected ? .semibold : .medium, design: .serif))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.72)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 7) {
+                        Text(verbatim: section.title)
+                            .font(.system(size: 16, weight: isSelected ? .semibold : .medium))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.78)
 
-                if count > 0 {
-                    Text("\(count)")
-                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
-                        .foregroundColor(isSelected ? .white.opacity(0.9) : .textMain.opacity(0.4))
-                        .contentTransition(.numericText())
-                        .animation(.spring(response: 0.3, dampingFraction: 0.82), value: count)
-                }
-            }
-            .foregroundColor(isSelected ? .white : .textMain.opacity(0.68))
-            .frame(maxWidth: .infinity)
-            .frame(height: 34)
-            .background(
-                Group {
-                    if isSelected {
-                        RoundedRectangle(cornerRadius: 9, style: .continuous)
-                            .fill(Color.accentPrimary)
-                            .matchedGeometryEffect(id: "section-pill", in: pillNamespace)
-                            .shadow(color: Color.accentPrimary.opacity(0.22), radius: 6, x: 0, y: 2)
+                        Text("\(count)")
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundColor(isSelected ? .accentPrimary : .textMain.opacity(0.48))
+                            .frame(minWidth: 22, minHeight: 22)
+                            .padding(.horizontal, count > 9 ? 4 : 0)
+                            .background(
+                                Capsule(style: .continuous)
+                                    .fill(isSelected ? Color.accentPrimary.opacity(0.10) : Color.textMain.opacity(0.055))
+                            )
+                            .contentTransition(.numericText())
+                            .animation(.spring(response: 0.3, dampingFraction: 0.82), value: count)
                     }
+                    .foregroundColor(isSelected ? .accentPrimary : .textMain.opacity(0.62))
+
+                    ZStack {
+                        if isSelected {
+                            Capsule(style: .continuous)
+                                .fill(Color.accentPrimary)
+                                .matchedGeometryEffect(id: "section-indicator", in: indicatorNamespace)
+                        }
+                    }
+                    .frame(width: indicatorWidth(for: section))
+                    .frame(height: 3)
                 }
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 9, style: .continuous))
+
+                Spacer(minLength: 0)
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 52)
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
         .accessibilityLabel(section.title)
-        .accessibilityValue(count > 0 ? "\(count)" : "")
+        .accessibilityValue("\(count)")
+    }
+
+    private func indicatorWidth(for section: NoteSection) -> CGFloat {
+        switch section {
+        case .inbox:
+            return 64
+        case .drafts:
+            return 68
+        case .published:
+            return 96
+        }
     }
 }

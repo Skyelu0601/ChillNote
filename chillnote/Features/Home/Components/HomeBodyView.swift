@@ -389,6 +389,17 @@ struct HomeBodyView: View {
         showsSearchBar || showsSectionPicker
     }
 
+    private var showsCreatorSkillsRail: Bool {
+        !state.isSelectionMode
+            && !state.isTrashSelected
+            && state.selectedTag == nil
+            && !state.recipeManager.savedRecipes.isEmpty
+    }
+
+    private var scrollContentTopPadding: CGFloat {
+        showsCreatorSkillsRail ? 8 : 16
+    }
+
     private var mainContent: some View {
         VStack(spacing: 0) {
             HomeHeaderView(
@@ -420,7 +431,17 @@ struct HomeBodyView: View {
                 .zIndex(1)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 10) {
+                    if showsCreatorSkillsRail {
+                        HomeCreatorSkillsRailView(
+                            recipes: state.recipeManager.savedRecipes,
+                            onRecipeTap: { dispatch(.prepareHomeRecipe($0)) },
+                            onAddMoreTap: { dispatch(.openChillRecipes) }
+                        )
+                        .padding(.horizontal, 24)
+                        .padding(.top, 2)
+                    }
+
                     HomeNotesListView(
                         cachedVisibleNotes: state.cachedVisibleNotes,
                         searchQuery: state.searchText,
@@ -440,7 +461,7 @@ struct HomeBodyView: View {
                         onDeleteNote: { dispatch(.deleteNote($0)) }
                     )
                 }
-                .padding(.top, 16)
+                .padding(.top, scrollContentTopPadding)
                 .contentShape(Rectangle())
                 .onTapGesture {
                     dispatch(.hideKeyboard)
@@ -543,18 +564,8 @@ struct HomeBodyView: View {
     private var selectionModeOverlay: some View {
         HomeSelectionOverlayView(
             isSelectionMode: state.isSelectionMode,
-            isAgentMenuOpen: state.isAgentMenuOpen,
-            recipeManager: state.recipeManager,
             selectedNotesCount: state.selectedNotes.count,
-            onStartAIChat: { dispatch(.startAIChat) },
-            onToggleAgentMenu: {
-                dispatch(.setAgentMenuOpen(!state.isAgentMenuOpen))
-            },
-            onCloseMenu: {
-                dispatch(.setAgentMenuOpen(false))
-            },
-            onOpenChillRecipes: { dispatch(.openChillRecipes) },
-            onHandleAgentActionRequest: { dispatch(.handleAgentRecipeRequest($0)) }
+            onStartAIChat: { dispatch(.startAIChat) }
         )
     }
 

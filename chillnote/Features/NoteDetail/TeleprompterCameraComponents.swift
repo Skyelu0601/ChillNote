@@ -10,7 +10,7 @@ struct TeleprompterFloatingPanel: View {
     let fontSize: Double
     let textColor: Color
     let panelSize: CGSize
-    let isScrolling: Bool
+    let isAutoScrolling: Bool
     let resetToken: UUID
     let onEdit: () -> Void
     let onSettings: () -> Void
@@ -45,6 +45,7 @@ struct TeleprompterFloatingPanel: View {
                                         .onAppear { contentHeight = textProxy.size.height }
                                         .onChange(of: textProxy.size.height) { _, height in
                                             contentHeight = height
+                                            clampScrollPosition()
                                         }
                                 }
                             )
@@ -53,6 +54,7 @@ struct TeleprompterFloatingPanel: View {
                     .onAppear { visibleTextHeight = textAreaProxy.size.height }
                     .onChange(of: textAreaProxy.size.height) { _, value in
                         visibleTextHeight = value
+                        clampScrollPosition()
                     }
                 }
                 .padding(.horizontal, 22)
@@ -108,9 +110,12 @@ struct TeleprompterFloatingPanel: View {
                 scrollOffset = 0
                 storedScrollOffset = 0
             }
+            .onChange(of: fontSize) { _, _ in
+                clampScrollPosition()
+            }
             .modifier(
                 TeleprompterAutoScrollModifier(
-                    isScrolling: isScrolling,
+                    isAutoScrolling: isAutoScrolling,
                     isUserDragging: isUserDraggingText,
                     scrollSpeed: scrollSpeed,
                     contentHeight: contentHeight,
@@ -128,6 +133,12 @@ struct TeleprompterFloatingPanel: View {
         return min(max(value, 0), maxOffset)
     }
 
+    private func clampScrollPosition() {
+        let bounded = clampOffset(scrollOffset)
+        scrollOffset = bounded
+        storedScrollOffset = bounded
+    }
+
     private func updateSpeedAfterManualDrag(_ value: DragGesture.Value) {
         let predictedExtraDistance = value.predictedEndTranslation.height - value.translation.height
         guard predictedExtraDistance < -24 else { return }
@@ -137,7 +148,7 @@ struct TeleprompterFloatingPanel: View {
 }
 
 private struct TeleprompterAutoScrollModifier: ViewModifier {
-    let isScrolling: Bool
+    let isAutoScrolling: Bool
     let isUserDragging: Bool
     let scrollSpeed: Double
     let contentHeight: CGFloat
@@ -146,8 +157,14 @@ private struct TeleprompterAutoScrollModifier: ViewModifier {
     @Binding var storedScrollOffset: CGFloat
 
     func body(content: Content) -> some View {
-        content.task(id: TeleprompterAutoScrollState(isScrolling: isScrolling, scrollSpeed: scrollSpeed)) {
-            guard isScrolling else { return }
+        content.task(id: TeleprompterAutoScrollState(
+            isAutoScrolling: isAutoScrolling,
+            isUserDragging: isUserDragging,
+            scrollSpeed: scrollSpeed,
+            contentHeight: contentHeight,
+            visibleHeight: visibleHeight
+        )) {
+            guard isAutoScrolling else { return }
             var last = Date()
             while !Task.isCancelled {
                 do {
@@ -170,8 +187,11 @@ private struct TeleprompterAutoScrollModifier: ViewModifier {
 }
 
 private struct TeleprompterAutoScrollState: Equatable {
-    let isScrolling: Bool
+    let isAutoScrolling: Bool
+    let isUserDragging: Bool
     let scrollSpeed: Double
+    let contentHeight: CGFloat
+    let visibleHeight: CGFloat
 }
 
 

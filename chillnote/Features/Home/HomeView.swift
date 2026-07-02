@@ -37,6 +37,9 @@ struct HomeView: View {
     @Query(filter: #Predicate<Tag> { $0.deletedAt == nil }, sort: \Tag.name) var availableTags: [Tag]
 
     @State var pendingAgentAction: AgentRecipe?
+    @State var pendingHomeRecipe: AgentRecipe?
+    @State var homeAISkillPreview: HomeAISkillPreview?
+    @State var homeRecipeSelectedNoteIDs: Set<UUID> = []
     @State var isCustomActionInputPresented = false
     @State var customActionPrompt = ""
     @State var isTranslateInputPresented = false
@@ -353,6 +356,26 @@ struct HomeView: View {
         } message: {
             Text(clipboardLinkImportErrorMessage)
         }
+        .sheet(item: $pendingHomeRecipe) { recipe in
+            HomeRecipeNotePickerSheet(
+                recipe: recipe,
+                notes: homeViewModel.items,
+                selectedNoteIDs: $homeRecipeSelectedNoteIDs,
+                onRun: {
+                    runHomeRecipe(recipe)
+                },
+                onCancel: {
+                    pendingHomeRecipe = nil
+                    homeRecipeSelectedNoteIDs.removeAll()
+                }
+            )
+        }
+        .sheet(item: $homeAISkillPreview) { preview in
+            HomeAISkillPreviewSheet(
+                preview: preview,
+                onApply: { applyHomeAISkillPreview(preview, mode: $0) }
+            )
+        }
     }
 
     func dispatch(_ action: HomeScreenAction) {
@@ -444,6 +467,8 @@ struct HomeView: View {
 
         case .handleAgentRecipeRequest(let recipe):
             handleAgentActionRequest(recipe)
+        case .prepareHomeRecipe(let recipe):
+            prepareHomeRecipe(recipe)
         case .startAIChat:
             startAIChat()
         case .cancelVoice:
@@ -511,6 +536,22 @@ struct HomeView: View {
             }
             requestReload(keepItemsWhileLoading: true)
         }
+    }
+
+    func prepareHomeRecipe(_ recipe: AgentRecipe) {
+        pendingHomeRecipe = recipe
+        if let firstNote = homeViewModel.items.first {
+            homeRecipeSelectedNoteIDs = [firstNote.id]
+        } else {
+            homeRecipeSelectedNoteIDs.removeAll()
+        }
+    }
+
+    func runHomeRecipe(_ recipe: AgentRecipe) {
+        selectedNotes = homeRecipeSelectedNoteIDs
+        pendingHomeRecipe = nil
+        homeRecipeSelectedNoteIDs.removeAll()
+        handleAgentActionRequest(recipe)
     }
 
     var searchBar: some View {

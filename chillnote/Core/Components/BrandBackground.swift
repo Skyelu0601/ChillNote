@@ -23,7 +23,7 @@ struct BrandBackground: View {
                 .offset(x: 138, y: -270)
 
             Circle()
-                .fill(Color.accentPrimary.opacity(0.07))
+                .fill(Color.accentSecondary.opacity(0.07))
                 .frame(width: 210, height: 210)
                 .blur(radius: 18)
                 .offset(x: -140, y: 320)

@@ -64,8 +64,6 @@ import {
   agentRecipes,
   buildAgentRecipeRequest,
   defaultSavedRecipeIds,
-  recipeCategoryLabels,
-  type AgentRecipeCategory,
 } from "@/lib/agent-recipes";
 import { supabase } from "@/lib/supabase";
 import { AuthPanel } from "./auth-panel";
@@ -86,6 +84,7 @@ const WEB_VOICE_LANGUAGE_MODE_KEY = "chillnote.web.voice_language_mode";
 const WEB_VOICE_LANGUAGE_HINT_KEY = "chillnote.web.voice_language_hint";
 const WEB_CAPTION_TIKTOK_KEY = "chillnote.web.caption_pack.tiktok";
 const WEB_CAPTION_YOUTUBE_KEY = "chillnote.web.caption_pack.youtube_shorts";
+const WEB_CAPTION_YOUTUBE_LONG_VIDEO_KEY = "chillnote.web.caption_pack.youtube_long_video";
 const WEB_CAPTION_INSTAGRAM_KEY = "chillnote.web.caption_pack.instagram_reels";
 const WEB_CAPTION_GOAL_KEY = "chillnote.web.caption_pack.goal";
 const WEB_CAPTION_TONE_KEY = "chillnote.web.caption_pack.tone";
@@ -236,6 +235,7 @@ function editorHtmlToMarkdown(root: HTMLElement) {
 
 function MarkdownRichEditor({
   value,
+  noteId,
   onChange,
   placeholder,
   disabled,
@@ -247,6 +247,7 @@ function MarkdownRichEditor({
   aiSkillsRunning,
 }: {
   value: string;
+  noteId: string;
   onChange: (value: string) => void;
   placeholder: string;
   disabled: boolean;
@@ -267,6 +268,22 @@ function MarkdownRichEditor({
     editor.innerHTML = markdownToEditorHtml(value);
     lastMarkdownRef.current = value;
   }, [value]);
+
+  // When the active note changes, move focus into the editor with the caret
+  // at the end so the user can start typing without clicking in first.
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor || disabled) return;
+    editor.focus({ preventScroll: true });
+    const selection = window.getSelection();
+    if (!selection) return;
+    const range = document.createRange();
+    range.selectNodeContents(editor);
+    range.collapse(false);
+    selection.removeAllRanges();
+    selection.addRange(range);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [noteId]);
 
   function handleInput() {
     const editor = editorRef.current;
@@ -479,7 +496,6 @@ export function ChillNoteWebApp() {
   const [recipeSection, setRecipeSection] = useState<RecipeSection>("library");
   const [savedRecipeIds, setSavedRecipeIds] = useState<string[]>(defaultSavedRecipeIds);
   const [selectedRecipeId, setSelectedRecipeId] = useState(defaultSavedRecipeIds[0]);
-  const [selectedRecipeCategory, setSelectedRecipeCategory] = useState<AgentRecipeCategory>("think");
   const [recipeScope, setRecipeScope] = useState<RecipeScope>("active");
   const [recipeInstruction, setRecipeInstruction] = useState("English");
   const [runningRecipe, setRunningRecipe] = useState(false);
@@ -488,6 +504,7 @@ export function ChillNoteWebApp() {
   const [captionSettingsOpen, setCaptionSettingsOpen] = useState(false);
   const [captionTikTok, setCaptionTikTok] = useState(true);
   const [captionYoutubeShorts, setCaptionYoutubeShorts] = useState(true);
+  const [captionYoutubeLongVideo, setCaptionYoutubeLongVideo] = useState(true);
   const [captionInstagramReels, setCaptionInstagramReels] = useState(true);
   const [captionGoal, setCaptionGoal] = useState<CaptionPackGoal>("startDiscussion");
   const [captionTone, setCaptionTone] = useState<CaptionPackTone>("casualUseful");
@@ -509,6 +526,7 @@ export function ChillNoteWebApp() {
     setVoiceLanguageHint(window.localStorage.getItem(WEB_VOICE_LANGUAGE_HINT_KEY) ?? "");
     setCaptionTikTok(loadBoolean(WEB_CAPTION_TIKTOK_KEY, true));
     setCaptionYoutubeShorts(loadBoolean(WEB_CAPTION_YOUTUBE_KEY, true));
+    setCaptionYoutubeLongVideo(loadBoolean(WEB_CAPTION_YOUTUBE_LONG_VIDEO_KEY, true));
     setCaptionInstagramReels(loadBoolean(WEB_CAPTION_INSTAGRAM_KEY, true));
     setCaptionGoal(loadOption(WEB_CAPTION_GOAL_KEY, captionGoalOptions, "startDiscussion"));
     setCaptionTone(loadOption(WEB_CAPTION_TONE_KEY, captionToneOptions, "casualUseful"));
@@ -529,11 +547,12 @@ export function ChillNoteWebApp() {
     if (typeof window === "undefined") return;
     window.localStorage.setItem(WEB_CAPTION_TIKTOK_KEY, String(captionTikTok));
     window.localStorage.setItem(WEB_CAPTION_YOUTUBE_KEY, String(captionYoutubeShorts));
+    window.localStorage.setItem(WEB_CAPTION_YOUTUBE_LONG_VIDEO_KEY, String(captionYoutubeLongVideo));
     window.localStorage.setItem(WEB_CAPTION_INSTAGRAM_KEY, String(captionInstagramReels));
     window.localStorage.setItem(WEB_CAPTION_GOAL_KEY, captionGoal);
     window.localStorage.setItem(WEB_CAPTION_TONE_KEY, captionTone);
     window.localStorage.setItem(WEB_CAPTION_STYLE_KEY, captionOutputStyle);
-  }, [captionGoal, captionInstagramReels, captionOutputStyle, captionTikTok, captionTone, captionYoutubeShorts]);
+  }, [captionGoal, captionInstagramReels, captionOutputStyle, captionTikTok, captionTone, captionYoutubeLongVideo, captionYoutubeShorts]);
 
   const activeNote = notes.find((note) => note.id === activeId) ?? null;
   const activeTags = activeTagsForNote(activeNote, tags);
@@ -586,8 +605,8 @@ export function ChillNoteWebApp() {
   }, [feedMode, matchesFilters, notes, selectedSection]);
 
   const libraryRecipes = useMemo(
-    () => agentRecipes.filter((recipe) => recipe.category === selectedRecipeCategory),
-    [selectedRecipeCategory]
+    () => agentRecipes,
+    []
   );
   const savedRecipes = useMemo(
     () => savedRecipeIds
@@ -998,7 +1017,7 @@ export function ChillNoteWebApp() {
   }
 
   function setCaptionPlatform(setter: (value: boolean) => void, nextValue: boolean) {
-    const selectedCount = [captionTikTok, captionYoutubeShorts, captionInstagramReels].filter(Boolean).length;
+    const selectedCount = [captionTikTok, captionInstagramReels, captionYoutubeShorts, captionYoutubeLongVideo].filter(Boolean).length;
     if (!nextValue && selectedCount <= 1) return;
     setter(nextValue);
   }
@@ -1006,8 +1025,9 @@ export function ChillNoteWebApp() {
   function agentRecipeOptions() {
     const platforms = [
       captionTikTok ? copy.captionPack.platformTikTok : null,
-      captionYoutubeShorts ? copy.captionPack.platformYoutubeShorts : null,
       captionInstagramReels ? copy.captionPack.platformInstagramReels : null,
+      captionYoutubeShorts ? copy.captionPack.platformYoutubeShorts : null,
+      captionYoutubeLongVideo ? copy.captionPack.platformYoutubeLongVideo : null,
     ].filter((platform): platform is string => Boolean(platform));
     const outputStyle = {
       concise: "Concise",
@@ -1395,6 +1415,7 @@ export function ChillNoteWebApp() {
 
               <MarkdownRichEditor
                 value={draft}
+                noteId={activeNote.id}
                 onChange={setDraft}
                 placeholder={copy.app.editorPlaceholder}
                 disabled={Boolean(activeNote.deletedAt)}
@@ -1418,16 +1439,10 @@ export function ChillNoteWebApp() {
                     <label className="field-label">
                       {copy.editor.chooseSkill}
                       <select value={selectedRecipe.id} onChange={(event) => setSelectedRecipeId(event.target.value)}>
-                        {(Object.keys(recipeCategoryLabels) as AgentRecipeCategory[]).map((category) => (
-                          <optgroup key={category} label={recipeCategoryLabels[category]}>
-                            {agentRecipes
-                              .filter((recipe) => recipe.category === category)
-                              .map((recipe) => (
-                                <option key={recipe.id} value={recipe.id}>
-                                  {recipe.icon} {recipe.name}{savedRecipeIds.includes(recipe.id) ? " ★" : ""}
-                                </option>
-                              ))}
-                          </optgroup>
+                        {agentRecipes.map((recipe) => (
+                          <option key={recipe.id} value={recipe.id}>
+                            {recipe.icon} {recipe.name}{savedRecipeIds.includes(recipe.id) ? " ★" : ""}
+                          </option>
                         ))}
                       </select>
                     </label>
@@ -1503,18 +1518,6 @@ export function ChillNoteWebApp() {
 
               {recipeSection === "library" ? (
                 <>
-                  <div className="recipe-tabs">
-                    {(Object.keys(recipeCategoryLabels) as AgentRecipeCategory[]).map((category) => (
-                      <button
-                        key={category}
-                        className={selectedRecipeCategory === category ? "active" : ""}
-                        onClick={() => setSelectedRecipeCategory(category)}
-                      >
-                        {recipeCategoryLabels[category]}
-                      </button>
-                    ))}
-                  </div>
-
                   <div className="recipe-grid">
                     {libraryRecipes.map((recipe) => {
                       const isSaved = savedRecipeIds.includes(recipe.id);
@@ -1590,12 +1593,16 @@ export function ChillNoteWebApp() {
                         <input type="checkbox" checked={captionTikTok} onChange={(event) => setCaptionPlatform(setCaptionTikTok, event.target.checked)} />
                       </label>
                       <label className="toggle-row">
+                        <span>{copy.captionPack.platformInstagramReels}</span>
+                        <input type="checkbox" checked={captionInstagramReels} onChange={(event) => setCaptionPlatform(setCaptionInstagramReels, event.target.checked)} />
+                      </label>
+                      <label className="toggle-row">
                         <span>{copy.captionPack.platformYoutubeShorts}</span>
                         <input type="checkbox" checked={captionYoutubeShorts} onChange={(event) => setCaptionPlatform(setCaptionYoutubeShorts, event.target.checked)} />
                       </label>
                       <label className="toggle-row">
-                        <span>{copy.captionPack.platformInstagramReels}</span>
-                        <input type="checkbox" checked={captionInstagramReels} onChange={(event) => setCaptionPlatform(setCaptionInstagramReels, event.target.checked)} />
+                        <span>{copy.captionPack.platformYoutubeLongVideo}</span>
+                        <input type="checkbox" checked={captionYoutubeLongVideo} onChange={(event) => setCaptionPlatform(setCaptionYoutubeLongVideo, event.target.checked)} />
                       </label>
                     </div>
 
