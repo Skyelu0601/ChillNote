@@ -210,7 +210,7 @@ model MembershipGrantLedger {
 
 model UserCredits {
   userId    String   @id
-  balance   Int      @default(30)
+  balance   Int      @default(50)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { MarketingShell } from "@/components/marketing-shell";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy | ChillNote",
+  title: "Privacy Policy | ChillScript",
   description:
-    "Read how ChillNote handles account data, notes, audio processing, AI requests, retention, and security.",
+    "Read how ChillScript handles account data, notes, audio processing, AI requests, retention, and security.",
 };
 
 export default function PrivacyPage() {
@@ -17,7 +17,7 @@ export default function PrivacyPage() {
 
         <p>
           <strong>Sponteoai</strong> respects your privacy and is committed to protecting it. This policy describes the
-          information we may collect when you use <strong>ChillNote</strong>, including the mobile app, web app, and
+          information we may collect when you use <strong>ChillScript</strong>, including the mobile app, web app, and
           related services.
         </p>
 
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
 
         <h2>4. Third-Party Processors</h2>
         <p>
-          ChillNote may send the minimum data needed for an active request to secure AI processors, including Google
+          ChillScript may send the minimum data needed for an active request to secure AI processors, including Google
           Gemini via Google Cloud, for transcription, summarization, note improvement, translation, and related AI tasks.
         </p>
 
@@ -78,7 +78,7 @@ export default function PrivacyPage() {
         <p>You may edit or delete note content at any time. You can request permanent account deletion in the app settings.</p>
 
         <h2>7. Children's Privacy</h2>
-        <p>ChillNote is not intended for children under 13, and we do not knowingly collect personal information from children under 13.</p>
+        <p>ChillScript is not intended for children under 13, and we do not knowingly collect personal information from children under 13.</p>
 
         <h2>8. Contact</h2>
         <p>Questions about this policy? Contact us at <strong>support@chillnoteai.com</strong>.</p>

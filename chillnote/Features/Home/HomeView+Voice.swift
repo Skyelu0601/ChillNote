@@ -258,10 +258,6 @@ extension HomeView {
         }
     }
 
-    func saveImportedImageText(_ text: String) {
-        _ = saveNote(text: text, shouldNavigate: true)
-    }
-
     @discardableResult
     func saveHomeVoiceContext(reason: String) -> Bool {
         do {

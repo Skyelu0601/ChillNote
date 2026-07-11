@@ -3,7 +3,6 @@ import SwiftUI
 
 struct AgentRecipe: Identifiable, Hashable, Codable {
     let id: String
-    let icon: String // Emoji for display
     let systemIcon: String // SF Symbol for buttons
     let name: String
     let description: String
@@ -29,7 +28,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
 
     init(
         id: String,
-        icon: String,
         systemIcon: String,
         name: String,
         description: String,
@@ -38,7 +36,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
         isCustom: Bool = false
     ) {
         self.id = id
-        self.icon = icon
         self.systemIcon = systemIcon
         self.name = name
         self.description = description
@@ -49,7 +46,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
 
     enum CodingKeys: String, CodingKey {
         case id
-        case icon
         case systemIcon
         case name
         case description
@@ -61,7 +57,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
-        icon = try container.decode(String.self, forKey: .icon)
         systemIcon = try container.decode(String.self, forKey: .systemIcon)
         name = try container.decode(String.self, forKey: .name)
         description = try container.decode(String.self, forKey: .description)
@@ -73,7 +68,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(id, forKey: .id)
-        try container.encode(icon, forKey: .icon)
         try container.encode(systemIcon, forKey: .systemIcon)
         try container.encode(name, forKey: .name)
         try container.encode(description, forKey: .description)
@@ -672,7 +666,6 @@ extension AgentRecipe {
         // MARK: - Think
         AgentRecipe(
             id: "why_viral",
-            icon: "📈",
             systemIcon: "chart.line.uptrend.xyaxis",
             name: "Why Viral",
             description: "agent_recipe.why_viral.description",
@@ -695,7 +688,6 @@ extension AgentRecipe {
         ),
         AgentRecipe(
             id: "summarize",
-            icon: "📝",
             systemIcon: "doc.text",
             name: "Summarize",
             description: "agent_recipe.summarize.description",
@@ -712,7 +704,6 @@ extension AgentRecipe {
         ),
         AgentRecipe(
             id: "translate",
-            icon: "🌍",
             systemIcon: "globe",
             name: "Translate",
             description: "agent_recipe.translate.description",
@@ -721,7 +712,6 @@ extension AgentRecipe {
         ),
         AgentRecipe(
             id: "humanizer",
-            icon: "✍️",
             systemIcon: "person.text.rectangle",
             name: "Humanizer",
             description: "agent_recipe.humanizer.description",
@@ -777,7 +767,6 @@ extension AgentRecipe {
         ),
         AgentRecipe(
             id: "rewrite",
-            icon: "",
             systemIcon: "pencil.and.scribble",
             name: "Rewrite",
             description: "agent_recipe.rewrite.description",
@@ -800,7 +789,6 @@ extension AgentRecipe {
         ),
         AgentRecipe(
             id: "style_match",
-            icon: "🎙️",
             systemIcon: "waveform",
             name: "Brand Voice",
             description: "agent_recipe.style_match.description",
@@ -810,7 +798,6 @@ extension AgentRecipe {
         // MARK: - Shape
         AgentRecipe(
             id: "hook_generator",
-            icon: "",
             systemIcon: "link",
             name: "Hook",
             description: "agent_recipe.hook_generator.description",
@@ -831,7 +818,6 @@ extension AgentRecipe {
         ),
         AgentRecipe(
             id: "caption_pack",
-            icon: "",
             systemIcon: "megaphone",
             name: "Caption",
             description: "agent_recipe.caption_pack.description",
@@ -840,7 +826,6 @@ extension AgentRecipe {
         ),
         AgentRecipe(
             id: "timed_script",
-            icon: "⏱️",
             systemIcon: "timer",
             name: "Timed Script",
             description: "agent_recipe.timed_script.description",
@@ -849,7 +834,6 @@ extension AgentRecipe {
         ),
         AgentRecipe(
             id: "repurpose_pack",
-            icon: "",
             systemIcon: "arrow.triangle.2.circlepath",
             name: "Repurpose",
             description: "agent_recipe.repurpose_pack.description",

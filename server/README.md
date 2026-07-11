@@ -1,4 +1,4 @@
-# ChillNote Backend
+# ChillScript Backend
 
 ## Setup
 

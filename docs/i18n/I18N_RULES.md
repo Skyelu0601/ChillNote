@@ -1,4 +1,4 @@
-# ChillNote Internationalization Rules
+# ChillScript Internationalization Rules
 
 这份文档是给人和 AI 一起看的国际化约定。
 
@@ -185,4 +185,4 @@ xcodebuild -project chillnote.xcodeproj -scheme chillnote -destination 'platform
 
 ## 一句话版本
 
-ChillNote 的国际化，从现在开始以“语义化 key + `L10n.text(...)` + `Localizable.xcstrings`”为默认标准，不再接受“英文原文直接当 key”的新增写法。
+ChillScript 的国际化，从现在开始以“语义化 key + `L10n.text(...)` + `Localizable.xcstrings`”为默认标准，不再接受“英文原文直接当 key”的新增写法。

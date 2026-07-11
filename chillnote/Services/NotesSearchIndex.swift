@@ -270,7 +270,7 @@ actor SQLiteFTSNotesSearchIndex {
 
         do {
             let root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            let directory = root.appendingPathComponent("ChillNote", isDirectory: true)
+            let directory = root.appendingPathComponent("ChillScript", isDirectory: true)
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
             let url = directory.appendingPathComponent("note_search.sqlite", isDirectory: false)
             dbURL = url

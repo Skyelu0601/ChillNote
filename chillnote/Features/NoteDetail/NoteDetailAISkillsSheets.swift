@@ -42,7 +42,7 @@ struct NoteDetailAISkillsSheet: View {
                                     onSelect(recipe)
                                 } label: {
                                     VStack(alignment: .leading, spacing: 10) {
-                                        NoteDetailSkillIcon(recipe: recipe)
+                                        CreatorSkillIcon(recipe: recipe, size: 18, container: 40)
 
                                         Text(recipe.localizedName)
                                             .font(.system(size: 15, weight: .semibold))
@@ -101,7 +101,7 @@ struct NoteDetailAISkillPreviewSheet: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         HStack(spacing: 10) {
-                            NoteDetailSkillIcon(recipe: preview.recipe)
+                            CreatorSkillIcon(recipe: preview.recipe, size: 18, container: 40)
 
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(preview.recipe.localizedName)
@@ -181,26 +181,5 @@ struct NoteDetailAISkillPreviewSheet: View {
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)
-    }
-}
-
-private struct NoteDetailSkillIcon: View {
-    let recipe: AgentRecipe
-
-    var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.secondaryHighlight.opacity(0.9))
-                .frame(width: 40, height: 40)
-
-            if recipe.icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Image(systemName: recipe.systemIcon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.accentSecondary)
-            } else {
-                Text(recipe.icon)
-                    .font(.system(size: 22))
-            }
-        }
     }
 }

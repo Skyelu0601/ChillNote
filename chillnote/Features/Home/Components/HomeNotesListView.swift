@@ -340,78 +340,68 @@ struct NoteCard: View {
                 if item.importStatus == .queued || item.importStatus == .processing {
                     LinkImportPreparingView()
                         .padding(.top, 2)
-                } else if item.importStatus == .failed {
-                    HStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.orange)
-                        Text(L10n.text("quick_capture.link_import.status.failed"))
-                            .font(.chillCaption)
-                            .foregroundColor(.textSub)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .padding(.top, 2)
-                } else if let stage = processingStage {
-                    VoiceProcessingWorkflowView(currentStage: stage, style: .compact)
-                        .padding(.top, 2)
-                } else if let failure = processingFailureMessage {
-                    HStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundColor(.orange)
-                        Text(failure)
-                            .font(.chillCaption)
-                            .foregroundColor(.textSub)
-                            .lineLimit(2)
-                            .multilineTextAlignment(.leading)
-                    }
-                    .padding(.top, 2)
                 } else {
-                    if let firstImageURL = item.firstImageURL {
-                        NoteCardImagePreview(url: firstImageURL)
-                    }
+                    if let stage = processingStage {
+                        VoiceProcessingWorkflowView(currentStage: stage, style: .compact)
+                            .padding(.top, 2)
+                    } else if let failure = processingFailureMessage {
+                        HStack(spacing: 8) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundColor(.orange)
+                            Text(failure)
+                                .font(.chillCaption)
+                                .foregroundColor(.textSub)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.leading)
+                        }
+                        .padding(.top, 2)
+                    } else {
+                        if let firstImageURL = item.firstImageURL {
+                            NoteCardImagePreview(url: firstImageURL)
+                        }
 
-                    if !item.previewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        || !item.markdownPreviewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                        Group {
-                            if item.usePlainPreview {
-                                Text(item.highlightedPreviewText)
-                                    .font(.bodyMedium)
-                                    .lineLimit(5)
-                                    .multilineTextAlignment(.leading)
-                            } else {
-                                RichTextPreview(
-                                    content: item.markdownPreviewText,
-                                    lineLimit: 5,
-                                    font: .bodyMedium,
-                                    textColor: .textMain
-                                )
+                        if !item.previewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                            || !item.markdownPreviewText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            Group {
+                                if item.usePlainPreview {
+                                    Text(item.highlightedPreviewText)
+                                        .font(.bodyMedium)
+                                        .lineLimit(5)
+                                        .multilineTextAlignment(.leading)
+                                } else {
+                                    RichTextPreview(
+                                        content: item.markdownPreviewText,
+                                        lineLimit: 5,
+                                        font: .bodyMedium,
+                                        textColor: .textMain
+                                    )
+                                }
                             }
                         }
-                    }
 
-                    if !item.tags.isEmpty {
-                        HStack(spacing: 6) {
-                            ForEach(item.tags) { tag in
-                                Text(tag.highlightedName)
-                                    .font(.chillCaption)
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(tag.backgroundColor)
-                                    .clipShape(Capsule())
-                            }
-                            if item.hiddenTagCount > 0 {
-                                Text("+\(item.hiddenTagCount)")
-                                    .font(.chillCaption)
-                                    .foregroundColor(.textSub)
+                        if !item.tags.isEmpty {
+                            HStack(spacing: 6) {
+                                ForEach(item.tags) { tag in
+                                    Text(tag.highlightedName)
+                                        .font(.chillCaption)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(tag.backgroundColor)
+                                        .clipShape(Capsule())
+                                }
+                                if item.hiddenTagCount > 0 {
+                                    Text("+\(item.hiddenTagCount)")
+                                        .font(.chillCaption)
+                                        .foregroundColor(.textSub)
+                                }
                             }
                         }
-                    }
 
-                    if let source = item.source {
-                        NoteSourceCard(source: source, compact: true)
-                            .padding(.top, item.tags.isEmpty ? 2 : 4)
+                        if let source = item.source {
+                            NoteSourceCard(source: source, compact: true)
+                                .padding(.top, item.tags.isEmpty ? 2 : 4)
+                        }
                     }
                 }
             }

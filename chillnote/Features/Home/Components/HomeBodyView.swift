@@ -547,9 +547,6 @@ struct HomeBodyView: View {
                     onPasteLink: {
                         dispatch(.pasteLink($0))
                     },
-                    onImportImageText: {
-                        dispatch(.importImageText($0))
-                    },
                     onCreateBlankNote: {
                         dispatch(.createBlankNote)
                     },

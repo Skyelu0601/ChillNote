@@ -7,6 +7,7 @@ struct HomeView: View {
     @EnvironmentObject var syncManager: SyncManager
     @Environment(\.scenePhase) var scenePhase
     @StateObject var homeViewModel = HomeViewModel()
+    @StateObject private var storeService = StoreService.shared
 
     var currentUserId: String? {
         authService.currentUserId
@@ -58,6 +59,10 @@ struct HomeView: View {
     @State var pendingRecipeForConfirmation: AgentRecipe?
 
     @State var showSubscription = false
+    @State private var showCreditGiftPrompt = false
+
+    private let initialFreeCreditGiftAmount = 50
+    private let creditGiftPromptSeenKeyPrefix = "home_credit_gift_prompt_seen."
 
     let translateLanguages: [TranslateLanguage] = TranslateLanguage.defaultLanguages
 
@@ -98,7 +103,7 @@ struct HomeView: View {
         if isTrashSelected {
             return L10n.text("sidebar.nav.recycle_bin")
         }
-        return selectedTag?.name ?? "ChillNote"
+        return selectedTag?.name ?? "ChillScript"
     }
 
     var hasPendingRecordings: Bool {
@@ -376,6 +381,55 @@ struct HomeView: View {
                 onApply: { applyHomeAISkillPreview(preview, mode: $0) }
             )
         }
+        .overlay {
+            if showCreditGiftPrompt {
+                HomeCreditGiftPromptOverlay {
+                    dismissCreditGiftPrompt()
+                }
+                .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                .zIndex(20)
+            }
+        }
+        .onChange(of: storeService.hasFetchedCreditBalanceFromBackend) { _, _ in
+            evaluateCreditGiftPrompt()
+        }
+        .onChange(of: storeService.creditBalance) { _, _ in
+            evaluateCreditGiftPrompt()
+        }
+        .onChange(of: storeService.currentTier) { _, _ in
+            evaluateCreditGiftPrompt()
+        }
+        .onChange(of: authService.currentUserId) { _, _ in
+            evaluateCreditGiftPrompt()
+        }
+        .onAppear {
+            evaluateCreditGiftPrompt()
+        }
+    }
+
+    private func evaluateCreditGiftPrompt() {
+        guard let userId = currentUserId else { return }
+        guard storeService.currentTier == .free else { return }
+        guard storeService.hasFetchedCreditBalanceFromBackend else { return }
+        guard storeService.creditBalance == initialFreeCreditGiftAmount else { return }
+        guard !UserDefaults.standard.bool(forKey: creditGiftPromptSeenKey(for: userId)) else { return }
+
+        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
+            showCreditGiftPrompt = true
+        }
+    }
+
+    private func dismissCreditGiftPrompt() {
+        if let userId = currentUserId {
+            UserDefaults.standard.set(true, forKey: creditGiftPromptSeenKey(for: userId))
+        }
+        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
+            showCreditGiftPrompt = false
+        }
+    }
+
+    private func creditGiftPromptSeenKey(for userId: String) -> String {
+        "\(creditGiftPromptSeenKeyPrefix)\(userId)"
     }
 
     func dispatch(_ action: HomeScreenAction) {
@@ -477,8 +531,6 @@ struct HomeView: View {
             handleVoiceConfirmation()
         case .pasteLink(let url):
             createLinkImportNote(url)
-        case .importImageText(let text):
-            saveImportedImageText(text)
         case .createBlankNote:
             createAndOpenBlankNote()
 
@@ -626,6 +678,8 @@ struct HomeView: View {
         await homeViewModel.updateSearchQuery(searchText)
         await homeViewModel.reload()
         clampSelectionToCurrentFilter()
+        await storeService.fetchCreditBalance()
+        evaluateCreditGiftPrompt()
 
         if source == .authChanged {
             scheduleMaintenance(reason: .userChanged)

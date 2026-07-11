@@ -4,9 +4,9 @@ import { MarketingShell } from "@/components/marketing-shell";
 import { copy } from "@/lib/copy";
 
 export const metadata: Metadata = {
-  title: "Pricing | ChillNote",
+  title: "Pricing | ChillScript",
   description:
-    "Compare ChillNote Free and Pro pricing for AI creator notes, transcription, AI Skills, and longer recordings.",
+    "Compare ChillScript Free and Pro pricing for AI creator notes, transcription, AI Skills, and longer recordings.",
 };
 
 type PricingPlan = {

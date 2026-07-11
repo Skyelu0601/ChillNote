@@ -10,10 +10,13 @@ import {
   CreditCard,
   ExternalLink,
   FileText,
+  Languages,
   Link2,
   Loader2,
   LogOut,
+  Megaphone,
   Mic,
+  PenLine,
   Pin,
   PinOff,
   Plus,
@@ -23,6 +26,8 @@ import {
   Sparkles,
   Square,
   Tag,
+  Timer,
+  TrendingUp,
   Trash2,
   ListTodo,
   Undo2,
@@ -68,6 +73,35 @@ import {
 import { supabase } from "@/lib/supabase";
 import { AuthPanel } from "./auth-panel";
 import { Wordmark } from "./wordmark";
+
+function RecipeIcon({ id }: { id: string }) {
+  const size = 18;
+
+  switch (id) {
+    case "why_viral":
+      return <TrendingUp size={size} />;
+    case "summarize":
+      return <FileText size={size} />;
+    case "translate":
+      return <Languages size={size} />;
+    case "humanizer":
+      return <Bot size={size} />;
+    case "rewrite":
+      return <PenLine size={size} />;
+    case "style_match":
+      return <Mic size={size} />;
+    case "hook_generator":
+      return <Link2 size={size} />;
+    case "caption_pack":
+      return <Megaphone size={size} />;
+    case "timed_script":
+      return <Timer size={size} />;
+    case "repurpose_pack":
+      return <RotateCcw size={size} />;
+    default:
+      return <Sparkles size={size} />;
+  }
+}
 
 type FeedMode = "active" | "trash";
 type NoteSectionKey = "inbox" | "drafts" | "published";
@@ -467,7 +501,7 @@ function mergeTags(current: TagDTO[], incoming: TagDTO[], hardDeletedIds: string
   return Array.from(byId.values());
 }
 
-export function ChillNoteWebApp() {
+export function ChillScriptWebApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [notes, setNotes] = useState<NoteDTO[]>([]);
@@ -1441,7 +1475,7 @@ export function ChillNoteWebApp() {
                       <select value={selectedRecipe.id} onChange={(event) => setSelectedRecipeId(event.target.value)}>
                         {agentRecipes.map((recipe) => (
                           <option key={recipe.id} value={recipe.id}>
-                            {recipe.icon} {recipe.name}{savedRecipeIds.includes(recipe.id) ? " ★" : ""}
+                            {recipe.name}{savedRecipeIds.includes(recipe.id) ? " ★" : ""}
                           </option>
                         ))}
                       </select>
@@ -1524,7 +1558,9 @@ export function ChillNoteWebApp() {
                       return (
                         <article className={`recipe-card ${isSaved ? "added" : ""}`} key={recipe.id}>
                           <div className="recipe-main">
-                            <span className="recipe-icon">{recipe.icon}</span>
+                            <span className="recipe-icon">
+                              <RecipeIcon id={recipe.id} />
+                            </span>
                             <strong>{recipe.name}</strong>
                             <small>{recipe.description}</small>
                           </div>
@@ -1556,7 +1592,9 @@ export function ChillNoteWebApp() {
                 <div className="my-recipes-list">
                   {savedRecipes.map((recipe) => (
                     <article className="my-recipe-row" key={recipe.id}>
-                      <span className="recipe-icon">{recipe.icon}</span>
+                      <span className="recipe-icon">
+                        <RecipeIcon id={recipe.id} />
+                      </span>
                       <div>
                         <strong>{recipe.name}</strong>
                         <small>{recipe.description}</small>

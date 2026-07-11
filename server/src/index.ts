@@ -575,12 +575,12 @@ type CreditConsumeResult = {
 
 const CREDIT_COSTS: Record<CreditFeature, number> = {
   voice: 3,
-  agent_recipe: 2,
+  agent_recipe: 1,
   import: 2,
   chat: 1
 };
 
-const INITIAL_CREDITS = Number(process.env.INITIAL_FREE_CREDITS ?? 30);
+const INITIAL_CREDITS = Number(process.env.INITIAL_FREE_CREDITS ?? 50);
 
 const creditFeatureSchema = z.object({
   feature: z.enum(["voice", "agent_recipe", "chat", "import"])
@@ -1371,7 +1371,8 @@ app.post("/ai/media-link-transcript", aiJsonParser, requireAuth, mediaLinkTransc
       res.status(200).json({
         available: false,
         text: null,
-        reason: error.reason
+        reason: error.reason,
+        metadata: error.metadata
       });
       return;
     }
@@ -1758,7 +1759,7 @@ app.post("/credits/consume", requireAuth, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`ChillNote backend listening on :${PORT}`);
+  console.log(`ChillScript backend listening on :${PORT}`);
   scheduleLinkImportWorker();
 });
 

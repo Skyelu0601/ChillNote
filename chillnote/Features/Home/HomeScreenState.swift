@@ -115,7 +115,6 @@ enum HomeScreenAction {
     case cancelVoice
     case confirmVoice
     case pasteLink(URL)
-    case importImageText(String)
     case createBlankNote
 
     case deleteSelectedNotes

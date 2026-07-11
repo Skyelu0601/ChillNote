@@ -412,105 +412,6 @@ struct QuickCaptureImportService {
         }
     }
 
-    func makeImageTextNote(_ text: String) async -> String {
-        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let fallback = """
-        # Image Capture
-
-        ## Extracted Text
-
-        \(trimmed)
-        """
-
-        guard !trimmed.isEmpty else { return fallback }
-
-        do {
-            let prompt = """
-            Turn this OCR result into a clean, useful quick-capture note.
-
-            Rules:
-            - Preserve the original meaning.
-            - Do not invent facts.
-            - Fix obvious OCR line-break noise only when safe.
-            - Use concise Markdown.
-            - Include a short title if one is obvious.
-            - Keep the extracted text available.
-
-            OCR text:
-            \(trimmed.prefix(12_000))
-            """
-
-            let systemInstruction = """
-            You organize captured image text for an AI creator notes app.
-            Return only Markdown. Do not explain your work.
-            """
-
-            let organized = try await GeminiService.shared.generateContent(
-                prompt: prompt,
-                systemInstruction: systemInstruction,
-                countUsage: false
-            )
-            let result = organized.trimmingCharacters(in: .whitespacesAndNewlines)
-            return result.isEmpty ? fallback : result
-        } catch {
-            return fallback
-        }
-    }
-
-    func makeMediaTranscriptNote(fileName: String, transcript: String) async throws -> String {
-        let trimmed = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            throw QuickCaptureImportError.emptyContent
-        }
-
-        let safeFileName = fileName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let fallbackTitle = safeFileName.isEmpty ? "Imported Media" : safeFileName
-        let fallback = """
-        # \(fallbackTitle)
-
-        ## Transcript
-
-        \(trimmed)
-        """
-
-        do {
-            let prompt = """
-            Turn this imported audio/video transcript into a useful ChillNote note.
-
-            Source file:
-            \(fallbackTitle)
-
-            Transcript:
-            \(trimmed.prefix(30_000))
-            """
-
-            let systemInstruction = """
-            You organize imported audio/video transcripts for an AI creator notes app.
-            Return only Markdown.
-
-            Rules:
-            - Preserve the transcript's original language. Do not translate unless the transcript asks for translation.
-            - Start with a concise title.
-            - Add a short summary when the transcript has enough substance.
-            - Capture key points and action items when present.
-            - Do not invent facts, dates, names, decisions, or tasks.
-            - Include a "Transcript" section with a polished transcript, not the raw transcript.
-            - In the polished transcript, remove filler words, false starts, repeated fragments, and obvious speech-to-text noise.
-            - Keep the speaker's meaning, order, names, numbers, and concrete details intact.
-            - If the transcript is very short, keep the note simple.
-            """
-
-            let organized = try await GeminiService.shared.generateContent(
-                prompt: prompt,
-                systemInstruction: systemInstruction,
-                countUsage: false
-            )
-            let result = organized.trimmingCharacters(in: .whitespacesAndNewlines)
-            return result.isEmpty ? fallback : result
-        } catch {
-            return fallback
-        }
-    }
 }
 
 extension QuickCaptureImportService {
@@ -997,12 +898,15 @@ extension QuickCaptureImportService {
     ) -> String {
         let authorLine = creatorMediaAuthorDisplayName(metadata: metadata)
         let description = metadata.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let descriptionBody = description.isEmpty
+            ? L10n.text("quick_capture.media_link.unavailable")
+            : description
         var sections: [String] = []
 
         if preferences.showDescription {
             sections.append(markdownSection(
                 heading: L10n.text("quick_capture.media_link.description_heading"),
-                body: description
+                body: descriptionBody
             ))
         }
 
@@ -1013,10 +917,24 @@ extension QuickCaptureImportService {
             ))
         }
 
+        if preferences.showHook {
+            sections.append(markdownSection(
+                heading: L10n.text("quick_capture.media_link.hook_heading"),
+                body: L10n.text("quick_capture.media_link.unavailable")
+            ))
+        }
+
+        if preferences.showTranscript {
+            sections.append(markdownSection(
+                heading: L10n.text("quick_capture.media_link.transcript_heading"),
+                body: L10n.text("quick_capture.media_link.unavailable")
+            ))
+        }
+
         if sections.isEmpty {
             sections.append(markdownSection(
                 heading: L10n.text("quick_capture.media_link.description_heading"),
-                body: description
+                body: descriptionBody
             ))
         }
 
@@ -1052,7 +970,6 @@ extension QuickCaptureImportService {
         metadata: CreatorMediaMetadata,
         transcript: String,
         polishTranscript: Bool = true,
-        extractHook: Bool = true,
         preferences: MediaLinkTranscriptSectionPreferences = .load()
     ) async -> String {
         let cleanedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1062,9 +979,7 @@ extension QuickCaptureImportService {
             return makeCreatorMediaLinkNote(metadata: metadata, preferences: effectivePreferences)
         }
 
-        let hook = effectivePreferences.showHook && extractHook
-            ? await extractedCreatorMediaHook(metadata: metadata, transcript: cleanedTranscript)
-            : fallbackCreatorMediaHook(transcript: cleanedTranscript)
+        let hook = fallbackCreatorMediaHook(transcript: cleanedTranscript)
 
         let finalTranscript: String
         if effectivePreferences.showTranscript && polishTranscript {
@@ -1101,45 +1016,6 @@ extension QuickCaptureImportService {
         }
 
         return sections.joined(separator: "\n\n")
-    }
-
-    func extractedCreatorMediaHook(metadata: CreatorMediaMetadata, transcript: String) async -> String {
-        let fallback = fallbackCreatorMediaHook(transcript: transcript)
-        let title = metadata.title.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedTranscript.isEmpty else { return fallback }
-
-        let prompt = """
-        Video description:
-        \(title)
-
-        Transcript:
-        \(trimmedTranscript.prefix(20_000))
-        """
-
-        let systemInstruction = """
-        You identify the hook in short-form videos for an AI creator notes app.
-
-        Return only the opening hook that is used to grab attention.
-        Use the same language as the transcript when possible.
-        Prefer the creator's exact opening wording if it is present in the transcript.
-        If the hook is implied instead of spoken directly, write one concise sentence that captures it.
-        Do not add a heading, bullet, quote, or explanation.
-        Do not invent facts that are not supported by the description or transcript.
-        """
-
-        do {
-            let extracted = try await GeminiService.shared.generateContent(
-                prompt: prompt,
-                systemInstruction: systemInstruction,
-                countUsage: false
-            )
-            let result = collapseWhitespace(extracted)
-                .trimmingCharacters(in: .whitespacesAndNewlines)
-            return result.isEmpty ? fallback : result
-        } catch {
-            return fallback
-        }
     }
 
     func fallbackCreatorMediaHook(transcript: String) -> String {
@@ -1205,7 +1081,6 @@ extension QuickCaptureImportService {
         metadata: TikTokOEmbedResponse,
         transcript: String,
         polishTranscript: Bool = true,
-        extractHook: Bool = true,
         preferences: MediaLinkTranscriptSectionPreferences = .load()
     ) async -> String {
         await makeCreatorMediaTranscriptNote(
@@ -1217,7 +1092,6 @@ extension QuickCaptureImportService {
             ),
             transcript: transcript,
             polishTranscript: polishTranscript,
-            extractHook: extractHook,
             preferences: preferences
         )
     }

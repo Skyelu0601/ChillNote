@@ -3,7 +3,7 @@ import SwiftData
 import GoogleSignIn
 
 @main
-struct ChillNoteApp: App {
+struct ChillScriptApp: App {
     @StateObject private var authService = AuthService.shared
     @StateObject private var syncManager = SyncManager()
     @StateObject private var dataService = DataService.shared

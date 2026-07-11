@@ -80,6 +80,9 @@ export type MediaLinkTranscriptReason =
   | "short_link_resolve_failed"
   | "metadata_fetch_failed"
   | "media_fetch_failed"
+  | "media_fetch_forbidden"
+  | "media_fetch_login_required"
+  | "media_fetch_rate_limited"
   | "media_too_large"
   | "transcription_timeout"
   | "transcription_empty"
@@ -167,7 +170,7 @@ export async function transcribeMediaLinkURL(rawURL: string): Promise<MediaLinkT
   const responseMetadata = makeTranscriptResponseMetadata(resolvedURL, metadata);
 
   try {
-    const caption = await fetchMediaCaptionTranscript(resolvedURL);
+    const caption = await fetchMediaCaptionTranscript(resolvedURL, metadata);
     if (caption) {
       return {
         available: true,
@@ -282,7 +285,7 @@ async function resolveMediaLinkURL(rawURL: string, platform: MediaLinkPlatform):
   ) || normalizedHost === "youtu.be";
 
   if (!needsRedirectResolution) {
-    return url.toString();
+    return normalizeMediaLinkURL(url.toString(), platform);
   }
 
   try {
@@ -291,9 +294,51 @@ async function resolveMediaLinkURL(rawURL: string, platform: MediaLinkPlatform):
       headers: makeBrowserHeaders(),
       timeout: 15_000
     });
-    return response.url || url.toString();
+    return normalizeMediaLinkURL(response.url || url.toString(), platform);
   } catch (error) {
     throw new MediaLinkTranscriptError("short_link_resolve_failed", String(error));
+  }
+}
+
+function normalizeMediaLinkURL(rawURL: string, platform: MediaLinkPlatform): string {
+  if (platform !== "youtube") {
+    return rawURL;
+  }
+
+  try {
+    const url = new URL(rawURL);
+    const host = url.hostname.toLowerCase().replace(/^www\./, "");
+    if (
+      host !== "youtube.com"
+      && !host.endsWith(".youtube.com")
+      && host !== "youtu.be"
+      && host !== "youtube-nocookie.com"
+      && !host.endsWith(".youtube-nocookie.com")
+    ) {
+      return rawURL;
+    }
+
+    if (host === "youtu.be") {
+      const videoID = url.pathname.split("/").filter(Boolean)[0];
+      if (videoID) {
+        return `https://www.youtube.com/watch?v=${encodeURIComponent(videoID)}`;
+      }
+      return rawURL;
+    }
+
+    const shortsMatch = url.pathname.match(/^\/shorts\/([^/?#]+)/);
+    if (shortsMatch?.[1]) {
+      return `https://www.youtube.com/shorts/${encodeURIComponent(shortsMatch[1])}`;
+    }
+
+    const watchID = url.searchParams.get("v");
+    if (url.pathname === "/watch" && watchID) {
+      return `https://www.youtube.com/watch?v=${encodeURIComponent(watchID)}`;
+    }
+
+    return rawURL;
+  } catch {
+    return rawURL;
   }
 }
 
@@ -303,6 +348,9 @@ async function fetchMediaLinkMetadata(url: string, platform: MediaLinkPlatform):
   }
   if (platform === "youtube") {
     return await fetchYouTubeMetadata(url);
+  }
+  if (platform === "instagram") {
+    return await fetchInstagramMetadata(url);
   }
 
   return {
@@ -440,7 +488,8 @@ async function prepareMediaWithResolver(
 
     throw new Error("Resolver response did not include media");
   } catch (error) {
-    throw new MediaLinkTranscriptError("media_fetch_failed", String(error));
+    const message = String(error);
+    throw new MediaLinkTranscriptError(classifyMediaFetchFailure(message), message);
   }
 }
 
@@ -498,19 +547,22 @@ async function prepareMediaWithYtDlp(url: string, platform: MediaLinkPlatform): 
       return await maybeExtractAudio(videoPrepared, downloadedVideo.filePath, platform);
     } catch (videoError) {
       const message = [String(audioError), String(videoError)].join(" | ");
-      throw new MediaLinkTranscriptError("media_fetch_failed", message);
+      throw new MediaLinkTranscriptError(classifyMediaFetchFailure(message), message);
     }
   }
 }
 
-async function fetchMediaCaptionTranscript(url: string): Promise<{ text: string; mimeType: string } | null> {
+async function fetchMediaCaptionTranscript(
+  url: string,
+  metadata: MediaLinkMetadata
+): Promise<{ text: string; mimeType: string } | null> {
   if (MEDIA_LINK_USE_YTDLP === "false") {
     return null;
   }
 
   try {
     const info = await dumpYtDlpInfo(url);
-    const caption = selectBestCaption(info);
+    const caption = selectBestCaption(info, metadata);
     if (!caption?.url) {
       return null;
     }
@@ -543,12 +595,12 @@ async function dumpYtDlpInfo(url: string): Promise<YtDlpInfo> {
   return JSON.parse(stdout) as YtDlpInfo;
 }
 
-function selectBestCaption(info: YtDlpInfo): YtDlpCaptionFormat | null {
+function selectBestCaption(info: YtDlpInfo, metadata: MediaLinkMetadata): YtDlpCaptionFormat | null {
   const captionGroups = [
     info.subtitles ?? {},
     info.automatic_captions ?? {}
   ];
-  const preferredLanguages = ["en", "en-US", "en-GB", "zh-Hans", "zh-Hant", "zh", "ja", "ko", "es", "fr", "de"];
+  const preferredLanguages = preferredCaptionLanguages(metadata);
 
   for (const captions of captionGroups) {
     const exactLanguage = preferredLanguages
@@ -567,6 +619,48 @@ function selectBestCaption(info: YtDlpInfo): YtDlpCaptionFormat | null {
 
   return null;
 }
+
+function preferredCaptionLanguages(metadata: MediaLinkMetadata): string[] {
+  const text = [
+    metadata.title,
+    metadata.authorName,
+    metadata.authorUniqueID
+  ].filter(Boolean).join(" ");
+
+  if (/[\u3040-\u30FF]/u.test(text)) {
+    return ["ja", "ja-JP", ...DEFAULT_CAPTION_LANGUAGE_PREFERENCES];
+  }
+  if (/[\uAC00-\uD7AF]/u.test(text)) {
+    return ["ko", "ko-KR", ...DEFAULT_CAPTION_LANGUAGE_PREFERENCES];
+  }
+  if (/[\u4E00-\u9FFF]/u.test(text)) {
+    return [
+      "zh",
+      "zh-Hans",
+      "zh-Hant",
+      "zh-CN",
+      "zh-TW",
+      "zh-HK",
+      ...DEFAULT_CAPTION_LANGUAGE_PREFERENCES
+    ];
+  }
+
+  return DEFAULT_CAPTION_LANGUAGE_PREFERENCES;
+}
+
+const DEFAULT_CAPTION_LANGUAGE_PREFERENCES = [
+  "en",
+  "en-US",
+  "en-GB",
+  "zh-Hans",
+  "zh-Hant",
+  "zh",
+  "ja",
+  "ko",
+  "es",
+  "fr",
+  "de"
+];
 
 function selectBestCaptionFormat(formats: YtDlpCaptionFormat[]): YtDlpCaptionFormat | null {
   const preferredFormats = ["json3", "vtt", "ttml", "srv3", "srv2", "srv1"];
@@ -753,8 +847,39 @@ async function downloadWithYtDlp(url: string, args: string[]): Promise<{ filePat
       fileName: filePath.split("/").pop() || "media-link"
     };
   } catch (error) {
-    throw new MediaLinkTranscriptError("media_fetch_failed", String(error));
+    const message = String(error);
+    throw new MediaLinkTranscriptError(classifyMediaFetchFailure(message), message);
   }
+}
+
+function classifyMediaFetchFailure(message: string): MediaLinkTranscriptReason {
+  const normalized = message.toLowerCase();
+  if (
+    normalized.includes("rate-limit")
+    || normalized.includes("rate limit")
+    || normalized.includes("too many requests")
+    || normalized.includes("http error 429")
+    || normalized.includes("http 429")
+  ) {
+    return "media_fetch_rate_limited";
+  }
+  if (
+    normalized.includes("http error 403")
+    || normalized.includes("403: forbidden")
+    || normalized.includes("http 403")
+    || normalized.includes("forbidden")
+  ) {
+    return "media_fetch_forbidden";
+  }
+  if (
+    normalized.includes("login required")
+    || normalized.includes("use --cookies")
+    || normalized.includes("not available")
+    || normalized.includes("private video")
+  ) {
+    return "media_fetch_login_required";
+  }
+  return "media_fetch_failed";
 }
 
 async function downloadMediaFromURL(mediaURL: string, mimeType?: string, fileName?: string): Promise<PreparedMedia> {
@@ -1085,4 +1210,189 @@ function parseTranscriptModelOutput(raw: string): { text: string; parsed: boolea
   if (loose != null) return { text: loose.trim(), parsed: true };
 
   return { text: trimmed, parsed: false };
+}
+
+// ---------------------------------------------------------------------------
+// Instagram metadata
+// ---------------------------------------------------------------------------
+
+/**
+ * Fetch Instagram Reels metadata by scraping the page HTML for Open Graph
+ * and Twitter Card meta tags — no API token required.
+ *
+ * The function always resolves (never rejects): on any network or parse
+ * error it falls back gracefully to a minimal object containing only the
+ * videoID extracted from the URL.
+ */
+async function fetchInstagramMetadata(url: string): Promise<MediaLinkMetadata> {
+  const videoID = extractVideoIDFromURL(url, "instagram");
+  const base: MediaLinkMetadata = { platform: "instagram", videoID };
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        ...makeBrowserHeaders(),
+        // Ask for a full HTML page, not a redirect to the app.
+        Accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9"
+      },
+      redirect: "follow",
+      timeout: 15_000
+    });
+
+    if (!response.ok) {
+      return base;
+    }
+
+    // Read only the <head> portion to keep memory low — Instagram pages are large.
+    const html = await readHTMLHead(response);
+
+    // Prefer og:title then twitter:title, then the raw <title> element.
+    const rawTitle =
+      extractOGMetaContent(html, "og:title") ??
+      extractOGMetaContent(html, "twitter:title") ??
+      extractTitleTag(html);
+
+    if (!rawTitle) {
+      return base;
+    }
+
+    const decoded = decodeHTMLEntities(rawTitle);
+    const { title, authorName } = parseInstagramTitleComponents(decoded);
+
+    return {
+      ...base,
+      title: title || undefined,
+      authorName: authorName || undefined
+    };
+  } catch {
+    // Best-effort: always return at least the videoID.
+    return base;
+  }
+}
+
+/**
+ * Read only the first 64 KB of a response as text — enough to cover the
+ * <head> of any Instagram page without buffering the full JS bundle.
+ */
+async function readHTMLHead(response: Awaited<ReturnType<typeof fetch>>): Promise<string> {
+  const MAX_BYTES = 64 * 1024;
+  const reader = (response.body as any)?.getReader?.() as
+    | { read(): Promise<{ done: boolean; value: Uint8Array }>; cancel?(): void }
+    | undefined;
+
+  if (!reader) {
+    // Fallback: node-fetch doesn't expose a WHATWG body stream, read all.
+    return await response.text();
+  }
+
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  while (totalBytes < MAX_BYTES) {
+    const { done, value } = await reader.read();
+    if (done || !value) break;
+    chunks.push(value);
+    totalBytes += value.byteLength;
+    // Stop once we've seen </head> to avoid reading the whole body.
+    const partial = Buffer.concat(chunks).toString("utf8");
+    if (partial.includes("</head>")) break;
+  }
+
+  try { reader.cancel?.(); } catch { /* ignore */ }
+  return Buffer.concat(chunks).toString("utf8");
+}
+
+/**
+ * Extract the `content` attribute of a meta tag matching the given
+ * Open Graph / Twitter property or name, e.g. "og:title".
+ *
+ * Handles both attribute orderings:
+ *   <meta property="og:title" content="...">  ← standard
+ *   <meta content="..." property="og:title">  ← seen in some Instagram pages
+ */
+function extractOGMetaContent(html: string, property: string): string | null {
+  const escaped = property.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const patterns = [
+    // property/name first, then content
+    new RegExp(
+      `<meta[^>]+(?:property|name)=["']${escaped}["'][^>]+content=["']([^"']*)["'][^>]*>`,
+      "i"
+    ),
+    // content first, then property/name
+    new RegExp(
+      `<meta[^>]+content=["']([^"']*)["'][^>]+(?:property|name)=["']${escaped}["'][^>]*>`,
+      "i"
+    )
+  ];
+
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    if (match?.[1] != null) {
+      const value = match[1].trim();
+      if (value) return value;
+    }
+  }
+  return null;
+}
+
+/** Extract the text content of the first <title> element. */
+function extractTitleTag(html: string): string | null {
+  const match = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const value = match?.[1]?.trim();
+  return value || null;
+}
+
+/** Decode common HTML entities in a string. */
+function decodeHTMLEntities(text: string): string {
+  return text
+    .replace(/&#x([0-9a-f]+);/gi, (_, hex: string) => String.fromCodePoint(parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(parseInt(dec, 10)))
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'");
+}
+
+/**
+ * Parse Instagram's characteristic title formats into a (title, authorName)
+ * pair.  Instagram typically formats titles as:
+ *
+ *   "Jane Doe on Instagram: \"Some caption text\""
+ *   "Instagram 用户 Jane Doe: \"Some caption text\""
+ *
+ * If none of the patterns match, the full (cleaned) title is returned as-is
+ * with no authorName.
+ */
+function parseInstagramTitleComponents(
+  rawTitle: string
+): { title: string | null; authorName: string | null } {
+  const title = rawTitle.trim();
+  if (!title) return { title: null, authorName: null };
+
+  const patterns = [
+    // Chinese locale: "Instagram 用户 AuthorName: \"Caption\""
+    /^Instagram\s+用户\s+(.+?)\s*:\s*["\u201C](.+)["\u201D]\s*$/isu,
+    // English locale: "AuthorName on Instagram: \"Caption\""
+    /^(.+?)\s+on\s+Instagram\s*:\s*["\u201C](.+)["\u201D]\s*$/isu,
+    // Fallback without surrounding quotes
+    /^(.+?)\s+on\s+Instagram:\s*(.+)$/isu
+  ];
+
+  for (const pattern of patterns) {
+    const match = title.match(pattern);
+    if (match) {
+      const authorName = match[1].trim() || null;
+      const caption = match[2].trim().replace(/^["\u201C]|["\u201D]$/gu, "").trim();
+      return {
+        title: caption || null,
+        authorName
+      };
+    }
+  }
+
+  // No pattern matched — return the whole title, no author.
+  return { title, authorName: null };
 }

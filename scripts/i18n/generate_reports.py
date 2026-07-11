@@ -96,10 +96,10 @@ def generate_missing_report(strings: dict):
 def generate_glossary():
     glossary_path = OUTPUT_DIR / 'glossary_v1.md'
     glossary_path.write_text(
-        """# ChillNote Glossary v1
+        """# ChillScript Glossary v1
 
 ## Brand Terms
-- ChillNote: 品牌名，不翻译
+- ChillScript: 品牌名，不翻译
 - Chill AI: 功能品牌名，不翻译
 - PRO: 订阅等级标签，可保留大写
 

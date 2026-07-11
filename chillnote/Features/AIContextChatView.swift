@@ -1015,20 +1015,7 @@ private struct SlashSkillIcon: View {
     let recipe: AgentRecipe
 
     var body: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.bgSecondary)
-                .frame(width: 36, height: 36)
-
-            if recipe.icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                Image(systemName: recipe.systemIcon)
-                    .font(.system(size: 18))
-                    .foregroundColor(.accentPrimary)
-            } else {
-                Text(recipe.icon)
-                    .font(.system(size: 18))
-            }
-        }
+        CreatorSkillIcon(recipe: recipe, size: 18, container: 36)
     }
 }
 

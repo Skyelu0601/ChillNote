@@ -271,8 +271,9 @@ class StoreService: ObservableObject {
     @Published var activeSubscriptionProductId: String?
 
     // MARK: - Credit System
-    /// Remaining AI credits for free users. Default 30 (new-user grant) — overwritten on first server sync.
-    @Published var creditBalance: Int = 30
+    /// Remaining AI credits for free users. Default 50 (new-user grant) — overwritten on first server sync.
+    @Published var creditBalance: Int = 50
+    @Published var hasFetchedCreditBalanceFromBackend = false
 
     private static let creditBalanceCacheKey = "cached_credit_balance"
 
@@ -292,6 +293,7 @@ class StoreService: ObservableObject {
             // Unauthenticated: restore from cache.
             let cached = UserDefaults.standard.integer(forKey: Self.creditBalanceCacheKey)
             creditBalance = cached
+            hasFetchedCreditBalanceFromBackend = false
             return
         }
 
@@ -306,6 +308,7 @@ class StoreService: ObservableObject {
 
             if http.statusCode == 401 {
                 creditBalance = 0
+                hasFetchedCreditBalanceFromBackend = false
                 UserDefaults.standard.set(0, forKey: Self.creditBalanceCacheKey)
                 return
             }
@@ -314,12 +317,14 @@ class StoreService: ObservableObject {
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let balance = json["balance"] as? Int {
                 creditBalance = balance
+                hasFetchedCreditBalanceFromBackend = true
                 UserDefaults.standard.set(balance, forKey: Self.creditBalanceCacheKey)
             }
         } catch {
             // Network failure: keep current (cached) value — fail open.
             let cached = UserDefaults.standard.integer(forKey: Self.creditBalanceCacheKey)
             creditBalance = cached
+            hasFetchedCreditBalanceFromBackend = false
         }
     }
 
@@ -405,7 +410,7 @@ class StoreService: ObservableObject {
         // Hydrate credit balance from cache immediately so UI is correct before first server sync.
         let cachedBalance = UserDefaults.standard.integer(forKey: Self.creditBalanceCacheKey)
         // If key has never been written, integer(forKey:) returns 0 — treat as new user with full grant.
-        creditBalance = cachedBalance > 0 ? cachedBalance : 30
+        creditBalance = cachedBalance > 0 ? cachedBalance : 50
 
         // Start listening for transaction updates
         transactionListener = listenForTransactions()
@@ -430,7 +435,7 @@ class StoreService: ObservableObject {
                     let transaction = try self.checkVerified(result)
                     
                     // Keep the local UI in sync, but avoid rebinding subscriptions
-                    // to whichever ChillNote account is currently signed in.
+                    // to whichever ChillScript account is currently signed in.
                     await self.updateSubscriptionStatus(syncActiveTransactionToBackend: false)
                     
                     // Always finish a transaction
@@ -518,6 +523,7 @@ class StoreService: ObservableObject {
         activeSubscriptionProductId = nil
         lastFreshSubscriptionStatusUserId = nil
         creditBalance = 0
+        hasFetchedCreditBalanceFromBackend = false
         UserDefaults.standard.removeObject(forKey: Self.legacyBackendTierCacheKey)
         UserDefaults.standard.removeObject(forKey: Self.creditBalanceCacheKey)
     }

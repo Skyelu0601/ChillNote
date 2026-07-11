@@ -1,4 +1,4 @@
-# ChillNote Home Aesthetic Audit
+# ChillScript Home Aesthetic Audit
 
 Date: 2026-06-26
 Device: iPhone 17 simulator, iOS 26.2
@@ -73,4 +73,3 @@ The expanded "More Ways" sheet has clearer product value than the default home s
 - From screenshots alone, the visible touch targets look mostly large enough.
 - The expanded sheet truncates long subtitles, which may reduce clarity for larger text settings.
 - Any quick-capture row should keep labels visible, not icon-only, because the actions are not all obvious at first glance.
-

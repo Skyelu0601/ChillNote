@@ -4,7 +4,6 @@ export type AgentRecipeCategory = "think" | "shape" | "publish";
 
 export type AgentRecipe = {
   id: string;
-  icon: string;
   name: string;
   description: string;
   prompt: string;
@@ -51,7 +50,6 @@ export const defaultSavedRecipeIds = ["rewrite", "hook_generator", "timed_script
 export const agentRecipes: AgentRecipe[] = [
   {
     id: "why_viral",
-    icon: "📈",
     name: "Why Viral",
     description: "Analyze why an idea might spread.",
     category: "think",
@@ -71,7 +69,6 @@ Output as:
   },
   {
     id: "summarize",
-    icon: "📝",
     name: "Summarize",
     description: "Condense long text into a short summary.",
     category: "think",
@@ -85,7 +82,6 @@ Output as:
   },
   {
     id: "translate",
-    icon: "🌍",
     name: "Translate",
     description: "Translate notes into another language.",
     category: "shape",
@@ -96,7 +92,6 @@ Output as:
   },
   {
     id: "humanizer",
-    icon: "✍️",
     name: "Humanizer",
     description: "Make text sound more natural and less AI-written.",
     category: "shape",
@@ -149,7 +144,6 @@ Output only the humanized text.`,
   },
   {
     id: "rewrite",
-    icon: "✏️",
     name: "Rewrite",
     description: "Rewrite notes.",
     category: "shape",
@@ -169,7 +163,6 @@ Output only the rewritten text.`,
   },
   {
     id: "style_match",
-    icon: "🎙️",
     name: "Brand Voice",
     description: "Rewrite a note in your saved writing voice.",
     category: "shape",
@@ -178,7 +171,6 @@ Output only the rewritten text.`,
   },
   {
     id: "hook_generator",
-    icon: "🎣",
     name: "Hook Pack",
     description: "Generate a mixed set of hooks for one idea.",
     category: "shape",
@@ -196,7 +188,6 @@ Output only the Hook Pack.`,
   },
   {
     id: "caption_pack",
-    icon: "📣",
     name: "Caption Pack",
     description: "Create ready-to-post captions for TikTok, Reels, and YouTube videos.",
     category: "publish",
@@ -205,7 +196,6 @@ Output only the Hook Pack.`,
   },
   {
     id: "timed_script",
-    icon: "⏱️",
     name: "Timed Script",
     description: "Generate a 30, 45, or 60 second short video script.",
     category: "publish",
@@ -214,7 +204,6 @@ Output only the Hook Pack.`,
   },
   {
     id: "repurpose_pack",
-    icon: "♻️",
     name: "Repurpose Pack",
     description: "Turn one piece of content into native posts for multiple platforms.",
     category: "publish",

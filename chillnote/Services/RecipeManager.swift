@@ -70,7 +70,6 @@ final class RecipeManager: ObservableObject {
     func addCustomRecipe(name: String, systemIcon: String, prompt: String) -> AgentRecipe {
         let recipe = AgentRecipe(
             id: "custom_\(UUID().uuidString)",
-            icon: "",
             systemIcon: systemIcon,
             name: name,
             description: L10n.text("recipes.custom_skill"),

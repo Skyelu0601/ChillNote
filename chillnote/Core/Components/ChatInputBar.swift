@@ -1,7 +1,5 @@
-import AVFoundation
 import SwiftUI
 import UIKit
-import UniformTypeIdentifiers
 
 struct ChatInputBar: View {
     enum RecordTriggerMode {
@@ -11,17 +9,11 @@ struct ChatInputBar: View {
 
     private enum QuickCaptureProgressState: Equatable {
         case link(QuickCaptureImportService.LinkImportPhase)
-        case image
-        case media
 
         var titleKey: String {
             switch self {
             case .link:
                 return "quick_capture.import.link.title"
-            case .image:
-                return "quick_capture.import.image.title"
-            case .media:
-                return "quick_capture.import.media.title"
             }
         }
 
@@ -37,10 +29,6 @@ struct ChatInputBar: View {
                 return "quick_capture.import.link.phase.organizing"
             case .link(.finalizing):
                 return "quick_capture.import.link.phase.finalizing"
-            case .image:
-                return "quick_capture.import.image.subtitle"
-            case .media:
-                return "quick_capture.import.media.subtitle"
             }
         }
 
@@ -48,10 +36,6 @@ struct ChatInputBar: View {
             switch self {
             case .link:
                 return "link.badge.plus"
-            case .image:
-                return "text.viewfinder"
-            case .media:
-                return "waveform.badge.magnifyingglass"
             }
         }
     }
@@ -63,20 +47,15 @@ struct ChatInputBar: View {
     var onCancelVoice: () -> Void
     var onConfirmVoice: () -> Void
     var onPasteLink: (URL) -> Void = { _ in }
-    var onImportImageText: (String) -> Void = { _ in }
     var onCreateBlankNote: () -> Void = { }
     var enforceVoiceQuota: Bool = true
     var recordTriggerMode: RecordTriggerMode = .tapToRecord
     var highlightIdleMic: Bool = false
 
-    @State private var showMoreSheet = false
-    @State private var showImageSourceDialog = false
-    @State private var showMediaFileImporter = false
-    @State private var imagePickerRoute: QuickCaptureImagePickerRoute?
     @State private var captureErrorMessage: String?
-    @State private var isRecognizingImageText = false
-    @State private var isImportingMedia = false
     @State private var quickCaptureProgressState: QuickCaptureProgressState?
+    @State private var showMissingLinkHint = false
+    @State private var missingLinkHintTask: Task<Void, Never>?
     @State private var isPressed = false
     @State private var waveformHeights: [CGFloat] = Array(repeating: 6, count: 5)
 
@@ -127,45 +106,6 @@ struct ChatInputBar: View {
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
         }
-        .sheet(isPresented: $showMoreSheet) {
-            QuickCaptureMoreSheet(
-                onPasteLink: handlePasteLink,
-                onPhotoOrImage: handlePhotoOrImage,
-                onMediaFile: handleMediaFile
-            )
-            .presentationDetents([.height(390)])
-        }
-        .confirmationDialog(
-            L10n.text("quick_capture.image_source.title"),
-            isPresented: $showImageSourceDialog,
-            titleVisibility: .visible
-        ) {
-            if UIImagePickerController.isSourceTypeAvailable(.camera) {
-                Button(L10n.text("quick_capture.image_source.camera")) {
-                    imagePickerRoute = QuickCaptureImagePickerRoute(sourceType: .camera)
-                }
-            }
-
-            Button(L10n.text("quick_capture.image_source.photo_library")) {
-                imagePickerRoute = QuickCaptureImagePickerRoute(sourceType: .photoLibrary)
-            }
-
-            Button(L10n.text("common.cancel"), role: .cancel) { }
-        }
-        .sheet(item: $imagePickerRoute) { route in
-            QuickCaptureImagePicker(sourceType: route.sourceType) { image in
-                Task {
-                    await handleSelectedImage(image)
-                }
-            }
-        }
-        .fileImporter(
-            isPresented: $showMediaFileImporter,
-            allowedContentTypes: Self.importableMediaTypes,
-            allowsMultipleSelection: false
-        ) { result in
-            handleSelectedMediaFile(result)
-        }
         .alert(L10n.text("quick_capture.error.title"), isPresented: captureErrorBinding) {
             Button(L10n.text("common.ok"), role: .cancel) { }
         } message: {
@@ -178,6 +118,9 @@ struct ChatInputBar: View {
             if speechRecognizer.isRecording {
                 ghostPromptView
                     .transition(.move(edge: .top).combined(with: .opacity))
+            } else if showMissingLinkHint {
+                missingLinkHintView
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
             }
 
             ZStack {
@@ -193,6 +136,7 @@ struct ChatInputBar: View {
         .frame(maxWidth: .infinity)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: speechRecognizer.recordingState)
         .animation(.easeInOut(duration: 0.25), value: shouldShowFreeTierUpgradePrompt)
+        .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showMissingLinkHint)
     }
 
     private var captureErrorBinding: Binding<Bool> {
@@ -236,17 +180,51 @@ struct ChatInputBar: View {
         .allowsHitTesting(shouldShowFreeTierUpgradePrompt)
     }
 
+    private var missingLinkHintView: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "link.badge.plus")
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundColor(.accentPrimary)
+                .frame(width: 28, height: 28)
+                .background(
+                    Circle()
+                        .fill(Color.accentPrimary.opacity(0.12))
+                )
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(L10n.text("quick_capture.missing_link.title"))
+                    .font(.bodySmall)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.textMain)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Text(L10n.text("quick_capture.missing_link.subtitle"))
+                    .font(.caption)
+                    .foregroundColor(.textSub)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 11)
+        .frame(maxWidth: 340, alignment: .leading)
+        .background(
+            Capsule(style: .continuous)
+                .fill(Color.white.opacity(0.92))
+                .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+        )
+        .overlay(
+            Capsule(style: .continuous)
+                .stroke(Color.black.opacity(0.04), lineWidth: 1)
+        )
+        .shadow(color: Color.black.opacity(0.08), radius: 12, x: 0, y: 5)
+        .accessibilityElement(children: .combine)
+    }
+
     private var idleQuickCaptureDock: some View {
         HStack(spacing: 12) {
-            quickCaptureIconButton(
-                systemName: "plus",
-                accessibilityKey: "quick_capture.accessibility.more",
-                action: {
-                    showMoreSheet = true
-                }
-            )
-
             recordButton
+
+            pasteLinkButton
 
             quickCaptureIconButton(
                 systemName: "square.and.pencil",
@@ -315,22 +293,12 @@ struct ChatInputBar: View {
     }
 
     private var recordButton: some View {
-        ZStack {
-            Capsule(style: .continuous)
-                .fill(Color.borderSubtle)
-                .frame(width: 74, height: 50)
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(highlightIdleMic ? Color.accentPrimary : Color.clear, lineWidth: 2)
-                )
-                .overlay(
-                    Image(systemName: "mic.fill")
-                        .font(.system(size: 23, weight: .semibold))
-                        .foregroundColor(.textMain)
-                )
-                .scaleEffect(isPressed ? 0.94 : 1)
-        }
-        .contentShape(Rectangle())
+        Image(systemName: "mic.fill")
+            .font(.system(size: 22, weight: .semibold))
+            .foregroundColor(.textMain)
+            .frame(width: 50, height: 50)
+            .contentShape(Circle())
+            .scaleEffect(isPressed ? 0.94 : 1)
         .modifier(RecordGestureModifier(
             recordTriggerMode: recordTriggerMode,
             onTapRecord: handleTapRecord,
@@ -338,6 +306,27 @@ struct ChatInputBar: View {
             onEnded: handlePressEnded
         ))
         .accessibilityLabel(L10n.text("quick_capture.accessibility.record"))
+    }
+
+    private var pasteLinkButton: some View {
+        Button(action: handlePasteLink) {
+            ZStack {
+                Capsule(style: .continuous)
+                    .fill(Color.borderSubtle)
+                    .frame(width: 74, height: 50)
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(highlightIdleMic ? Color.accentPrimary : Color.clear, lineWidth: 2)
+                    )
+
+                Image(systemName: "link")
+                    .font(.system(size: 23, weight: .semibold))
+                    .foregroundColor(.accentPrimary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(L10n.text("quick_capture.more.paste_link.title"))
     }
 
     private func quickCaptureIconButton(
@@ -467,188 +456,37 @@ struct ChatInputBar: View {
 
     private func handlePasteLink() {
         Task { @MainActor in
+            let pastedText = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            guard let url = QuickCaptureLinkParser.extractCreatorMediaURL(from: pastedText) else {
+                showMissingLinkGuidance()
+                return
+            }
+
             let hasCredits = await storeService.consumeCredits(feature: .import)
             guard hasCredits else {
                 presentQuickCaptureUpgrade()
                 return
             }
 
-            let pastedText = UIPasteboard.general.string?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            guard let url = QuickCaptureLinkParser.extractCreatorMediaURL(from: pastedText) else {
-                return
-            }
-
-            showMoreSheet = false
             onPasteLink(url)
         }
     }
 
-    private func handlePhotoOrImage() {
-        Task { @MainActor in
-            let hasCredits = await storeService.consumeCredits(feature: .import)
-            guard hasCredits else {
-                presentQuickCaptureUpgrade()
-                return
+    @MainActor
+    private func showMissingLinkGuidance() {
+        missingLinkHintTask?.cancel()
+        UINotificationFeedbackGenerator().notificationOccurred(.warning)
+
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+            showMissingLinkHint = true
+        }
+
+        missingLinkHintTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 3_000_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+                showMissingLinkHint = false
             }
-
-            showMoreSheet = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                showImageSourceDialog = true
-            }
-        }
-    }
-
-    private func handleMediaFile() {
-        Task { @MainActor in
-            let hasCredits = await storeService.consumeCredits(feature: .import)
-            guard hasCredits else {
-                presentQuickCaptureUpgrade()
-                return
-            }
-
-            showMoreSheet = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                showMediaFileImporter = true
-            }
-        }
-    }
-
-    private func handleSelectedMediaFile(_ result: Result<[URL], Error>) {
-        switch result {
-        case .success(let urls):
-            guard let url = urls.first else { return }
-            Task {
-                await importMediaFile(from: url)
-            }
-        case .failure:
-            captureErrorMessage = L10n.text("quick_capture.error.media_import_failed")
-        }
-    }
-
-    private func importMediaFile(from url: URL) async {
-        isImportingMedia = true
-        quickCaptureProgressState = .media
-        defer { isImportingMedia = false }
-        defer { quickCaptureProgressState = nil }
-
-        let didAccessSecurityScope = url.startAccessingSecurityScopedResource()
-        defer {
-            if didAccessSecurityScope {
-                url.stopAccessingSecurityScopedResource()
-            }
-        }
-
-        if let fileSizeInBytes = try? url.resourceValues(forKeys: [.fileSizeKey]).fileSize,
-           fileSizeInBytes > Self.maxImportableMediaBytes {
-            captureErrorMessage = L10n.text(
-                "quick_capture.error.media_file_too_large",
-                Self.maxImportableMediaMB
-            )
-            return
-        }
-
-        do {
-            let transcriptionFileURL = await preparedMediaFileURLForTranscription(from: url)
-            defer {
-                if transcriptionFileURL != url {
-                    try? FileManager.default.removeItem(at: transcriptionFileURL)
-                }
-            }
-
-            let rawTranscript = try await GeminiService.shared.transcribeAudio(
-                audioFileURL: transcriptionFileURL,
-                countUsage: false
-            )
-            let noteText = try await QuickCaptureImportService.shared.makeMediaTranscriptNote(
-                fileName: url.lastPathComponent,
-                transcript: rawTranscript
-            )
-            onImportImageText(noteText)
-        } catch {
-            captureErrorMessage = L10n.text("quick_capture.error.media_import_failed")
-        }
-    }
-
-    private func preparedMediaFileURLForTranscription(from url: URL) async -> URL {
-        guard Self.shouldExtractAudioBeforeTranscription(from: url) else {
-            return url
-        }
-
-        do {
-            return try await Self.extractAudioTrackForTranscription(from: url)
-        } catch {
-            return url
-        }
-    }
-
-    private static func shouldExtractAudioBeforeTranscription(from url: URL) -> Bool {
-        guard let type = UTType(filenameExtension: url.pathExtension) else {
-            return false
-        }
-        return type.conforms(to: .movie) || type.conforms(to: .video)
-    }
-
-    private static func extractAudioTrackForTranscription(from url: URL) async throws -> URL {
-        let asset = AVURLAsset(url: url)
-        guard let exportSession = AVAssetExportSession(asset: asset, presetName: AVAssetExportPresetAppleM4A) else {
-            throw QuickCaptureImportError.emptyContent
-        }
-
-        let outputURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("chillnote-video-audio-\(UUID().uuidString)")
-            .appendingPathExtension("m4a")
-
-        exportSession.outputURL = outputURL
-        exportSession.outputFileType = .m4a
-        exportSession.shouldOptimizeForNetworkUse = true
-        let exportBox = QuickCaptureMediaExportSessionBox(exportSession)
-
-        return try await withCheckedThrowingContinuation { continuation in
-            exportBox.session.exportAsynchronously {
-                let session = exportBox.session
-                switch session.status {
-                case .completed:
-                    continuation.resume(returning: outputURL)
-                case .failed, .cancelled:
-                    try? FileManager.default.removeItem(at: outputURL)
-                    continuation.resume(throwing: session.error ?? QuickCaptureImportError.emptyContent)
-                default:
-                    try? FileManager.default.removeItem(at: outputURL)
-                    continuation.resume(throwing: QuickCaptureImportError.emptyContent)
-                }
-            }
-        }
-    }
-
-    private func handleSelectedImage(_ image: UIImage) async {
-        isRecognizingImageText = true
-        quickCaptureProgressState = .image
-        defer { isRecognizingImageText = false }
-        defer { quickCaptureProgressState = nil }
-        showMoreSheet = false
-
-        do {
-            let imageURL = try NoteImageStorage.saveImportedImage(image)
-            let imageMarkdown = NoteImageStorage.markdownImageLine(for: imageURL)
-
-            let recognizedText: String
-            do {
-                recognizedText = try await GeminiService.shared.extractTextFromImage(imageFileURL: imageURL)
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-            } catch {
-                onImportImageText(imageMarkdown)
-                return
-            }
-
-            guard !recognizedText.isEmpty else {
-                onImportImageText(imageMarkdown)
-                return
-            }
-
-            let noteText = await QuickCaptureImportService.shared.makeImageTextNote(recognizedText)
-            onImportImageText("\(imageMarkdown)\n\n\(noteText)")
-        } catch {
-            captureErrorMessage = L10n.text("quick_capture.error.image_load_failed")
         }
     }
 
@@ -692,213 +530,13 @@ struct ChatInputBar: View {
     }
 
     private var isProcessingQuickCaptureImport: Bool {
-        quickCaptureProgressState != nil || isRecognizingImageText || isImportingMedia
+        quickCaptureProgressState != nil
     }
 
     private func presentQuickCaptureUpgrade() {
-        showMoreSheet = false
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             showSubscription = true
         }
-    }
-
-    private static let importableMediaTypes: [UTType] = [
-        .audio,
-        .movie,
-        .video,
-        .mp3,
-        .wav,
-        .mpeg4Audio,
-        .mpeg4Movie,
-        .quickTimeMovie
-    ]
-    private static let maxImportableMediaMB = 100
-    private static let maxImportableMediaBytes = maxImportableMediaMB * 1024 * 1024
-
-}
-
-private final class QuickCaptureMediaExportSessionBox: @unchecked Sendable {
-    let session: AVAssetExportSession
-
-    init(_ session: AVAssetExportSession) {
-        self.session = session
-    }
-}
-
-private struct QuickCaptureImagePickerRoute: Identifiable {
-    let id = UUID()
-    let sourceType: UIImagePickerController.SourceType
-}
-
-private struct QuickCaptureImagePicker: UIViewControllerRepresentable {
-    let sourceType: UIImagePickerController.SourceType
-    let onImagePicked: (UIImage) -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    func makeUIViewController(context: Context) -> UIImagePickerController {
-        let picker = UIImagePickerController()
-        picker.sourceType = sourceType
-        picker.delegate = context.coordinator
-        return picker
-    }
-
-    func updateUIViewController(_: UIImagePickerController, context _: Context) {}
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onImagePicked: onImagePicked, dismiss: dismiss)
-    }
-
-    final class Coordinator: NSObject, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
-        let onImagePicked: (UIImage) -> Void
-        let dismiss: DismissAction
-
-        init(onImagePicked: @escaping (UIImage) -> Void, dismiss: DismissAction) {
-            self.onImagePicked = onImagePicked
-            self.dismiss = dismiss
-        }
-
-        func imagePickerController(
-            _ picker: UIImagePickerController,
-            didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]
-        ) {
-            if let image = info[.originalImage] as? UIImage {
-                onImagePicked(image)
-            }
-            dismiss()
-        }
-
-        func imagePickerControllerDidCancel(_: UIImagePickerController) {
-            dismiss()
-        }
-    }
-}
-
-private struct QuickCaptureMoreSheet: View {
-    let onPasteLink: () -> Void
-    let onPhotoOrImage: () -> Void
-    let onMediaFile: () -> Void
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack {
-                Text(L10n.text("quick_capture.more.title"))
-                    .font(.title3)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.textMain)
-
-                Spacer()
-
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 15, weight: .bold))
-                        .foregroundColor(.textSub)
-                        .frame(width: 40, height: 40)
-                        .background(Color.white)
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(L10n.text("common.close"))
-            }
-
-            VStack(spacing: 0) {
-                QuickCaptureMoreRow(
-                    iconName: "link",
-                    titleKey: "quick_capture.more.paste_link.title",
-                    subtitleKey: "quick_capture.more.paste_link.subtitle",
-                    action: onPasteLink
-                )
-
-                Divider()
-                    .padding(.leading, 76)
-
-                Button(action: onPhotoOrImage) {
-                    QuickCaptureMoreRowContent(
-                        iconName: "photo",
-                        titleKey: "quick_capture.more.photo.title",
-                        subtitleKey: "quick_capture.more.photo.subtitle"
-                    )
-                }
-                .buttonStyle(.plain)
-
-                Divider()
-                    .padding(.leading, 76)
-
-                Button(action: onMediaFile) {
-                    QuickCaptureMoreRowContent(
-                        iconName: "waveform.badge.magnifyingglass",
-                        titleKey: "quick_capture.more.media.title",
-                        subtitleKey: "quick_capture.more.media.subtitle"
-                    )
-                }
-                .buttonStyle(.plain)
-            }
-            .background(Color.white)
-            .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 24)
-        .padding(.bottom, 18)
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .background(Color.bgSecondary.ignoresSafeArea())
-    }
-}
-
-private struct QuickCaptureMoreRow: View {
-    let iconName: String
-    let titleKey: String
-    let subtitleKey: String
-    let action: () -> Void
-
-    var body: some View {
-        Button(action: action) {
-            QuickCaptureMoreRowContent(
-                iconName: iconName,
-                titleKey: titleKey,
-                subtitleKey: subtitleKey
-            )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-private struct QuickCaptureMoreRowContent: View {
-    let iconName: String
-    let titleKey: String
-    let subtitleKey: String
-
-    var body: some View {
-        HStack(spacing: 14) {
-            Image(systemName: iconName)
-                .font(.system(size: 22, weight: .medium))
-                .foregroundColor(.textMain)
-                .frame(width: 48, height: 48)
-                .background(Color.bgSecondary)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(L10n.text(titleKey))
-                    .font(.bodyLarge)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.textMain)
-
-                Text(L10n.text(subtitleKey))
-                    .font(.bodySmall)
-                    .foregroundColor(.textSub)
-                    .lineLimit(2)
-            }
-
-            Spacer()
-
-            Image(systemName: "chevron.right")
-                .font(.system(size: 15, weight: .semibold))
-                .foregroundColor(.textSub.opacity(0.7))
-        }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 16)
-        .contentShape(Rectangle())
     }
 }
 

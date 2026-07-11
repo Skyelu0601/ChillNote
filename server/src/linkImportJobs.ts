@@ -49,6 +49,7 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite"
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() || "";
 const MAX_WEB_TEXT_CHARS = Number(process.env.LINK_IMPORT_MAX_WEB_TEXT_CHARS ?? 18_000);
 const JOB_MAX_ATTEMPTS = Number(process.env.LINK_IMPORT_MAX_ATTEMPTS ?? 2);
+const UNAVAILABLE_TEXT = "Unavailable";
 
 let isWorkerRunning = false;
 let workerScheduled = false;
@@ -338,18 +339,9 @@ async function failureDetailsForError(
   }
 
   const source = sourceFromTranscriptMetadata(job.url, error.metadata);
-  const title = source.title.trim() || source.platformName;
-  const author = error.metadata?.authorName?.trim() || "Unknown author";
-  const content = await makeCreatorMediaTranscriptNote({
-    description: title,
-    author,
-    transcript: "",
-    mediaLinkSections: {
-      showDescription: job.showDescription,
-      showAuthor: job.showAuthor,
-      showHook: job.showHook,
-      showTranscript: job.showTranscript
-    }
+  const content = makeCreatorMediaUnavailableNote({
+    description: source.title.trim() || source.platformName,
+    author: error.metadata?.authorName?.trim() || "Unknown author"
   });
 
   return {
@@ -379,9 +371,13 @@ async function buildImportedNote(
       return { content, source: updatedSource };
     }
 
+    const updatedSource = sourceFromTranscriptMetadata(rawURL, transcript.metadata);
     return {
-      content: `# ${source.title}\n\n## Summary\n\nTranscript is not available for this link yet.`,
-      source
+      content: makeCreatorMediaUnavailableNote({
+        description: updatedSource.title,
+        author: transcript.metadata?.authorName?.trim() || "Unknown author"
+      }),
+      source: updatedSource
     };
   }
 
@@ -397,6 +393,18 @@ async function buildImportedNote(
     kind: "web page"
   });
   return { content, source: updatedSource };
+}
+
+function makeCreatorMediaUnavailableNote(params: {
+  description: string;
+  author: string;
+}): string {
+  return [
+    markdownSection("Description", params.description.trim() || UNAVAILABLE_TEXT),
+    markdownSection("Author", params.author.trim() || "Unknown author"),
+    markdownSection("Hook", UNAVAILABLE_TEXT),
+    markdownSection("Transcript", UNAVAILABLE_TEXT)
+  ].join("\n\n");
 }
 
 function sourceFromTranscriptMetadata(
@@ -427,28 +435,34 @@ async function makeCreatorMediaTranscriptNote(params: {
     const sections: string[] = [];
 
     if (mediaLinkSections.showDescription) {
-      sections.push(markdownSection("Description", description));
+      sections.push(markdownSection("Description", description || UNAVAILABLE_TEXT));
     }
 
     if (mediaLinkSections.showAuthor) {
       sections.push(markdownSection("Author", author));
     }
 
+    if (mediaLinkSections.showHook) {
+      sections.push(markdownSection("Hook", UNAVAILABLE_TEXT));
+    }
+
+    if (mediaLinkSections.showTranscript) {
+      sections.push(markdownSection("Transcript", UNAVAILABLE_TEXT));
+    }
+
     if (sections.length === 0) {
-      sections.push(markdownSection("Description", description));
+      sections.push(markdownSection("Description", description || UNAVAILABLE_TEXT));
     }
 
     return sections.join("\n\n");
   }
 
-  const hookPromise = mediaLinkSections.showHook
-    ? extractCreatorMediaHook(description, cleanedTranscript)
-    : Promise.resolve(fallbackCreatorMediaHook(cleanedTranscript));
   const transcriptPromise = mediaLinkSections.showTranscript
     ? polishCreatorMediaTranscript(cleanedTranscript)
     : Promise.resolve(cleanedTranscript);
 
-  const [hook, polishedTranscript] = await Promise.all([hookPromise, transcriptPromise]);
+  const polishedTranscript = await transcriptPromise;
+  const hook = fallbackCreatorMediaHook(cleanedTranscript);
 
   const sections: string[] = [];
 
@@ -493,39 +507,6 @@ function normalizeMediaLinkSections(input?: Partial<MediaLinkSections> | null): 
   }
 
   return normalized;
-}
-
-async function extractCreatorMediaHook(description: string, transcript: string): Promise<string> {
-  const fallback = fallbackCreatorMediaHook(transcript);
-  if (!GEMINI_API_KEY || !transcript.trim()) {
-    return fallback;
-  }
-
-  const prompt = `
-Video description:
-${description}
-
-Transcript:
-${transcript.slice(0, 20_000)}
-`.trim();
-
-  const systemInstruction = `
-You identify the hook in short-form videos for a personal notes app.
-
-Return only the opening hook that is used to grab attention.
-Use the same language as the transcript when possible.
-Prefer the creator's exact opening wording if it is present in the transcript.
-If the hook is implied instead of spoken directly, write one concise sentence that captures it.
-Do not add a heading, bullet, quote, or explanation.
-Do not invent facts that are not supported by the description or transcript.
-`.trim();
-
-  try {
-    const result = await generateGeminiText(prompt, systemInstruction, 45_000);
-    return collapseWhitespace(result).trim() || fallback;
-  } catch {
-    return fallback;
-  }
 }
 
 function fallbackCreatorMediaHook(transcript: string): string {
@@ -657,7 +638,7 @@ async function organizeContent(params: {
   }
 
   const prompt = `
-Turn this ${params.kind} into a useful ChillNote note.
+Turn this ${params.kind} into a useful ChillScript note.
 
 Source URL:
 ${params.url}
