@@ -144,7 +144,7 @@ actor NotesExportService: NotesExporting {
             try Task.checkCancellation()
 
             let sessionId = UUID().uuidString
-            let containerName = "ChillScript-Export-\(fileDateFormatter.string(from: Date()))"
+            let containerName = "ChillNote-Export-\(fileDateFormatter.string(from: Date()))"
             let tempRoot = fileManager.temporaryDirectory
                 .appendingPathComponent("export-\(sessionId)", isDirectory: true)
             let exportRoot = tempRoot.appendingPathComponent(containerName, isDirectory: true)
@@ -394,7 +394,7 @@ enum NotesExportFormatter {
         timestampFormatter: DateFormatter
     ) -> String {
         let title = firstTitleLine(from: content)
-        let sanitizedTitle = sanitizeFileComponent(title.isEmpty ? "ChillScript" : title)
+        let sanitizedTitle = sanitizeFileComponent(title.isEmpty ? "ChillNote" : title)
         let timestamp = timestampFormatter.string(from: createdAt)
         let idSuffix = noteId.uuidString.prefix(6)
 
@@ -459,7 +459,7 @@ enum NotesExportFormatter {
             options: .regularExpression
         ).trimmingCharacters(in: .whitespacesAndNewlines)
 
-        let fallback = squashed.isEmpty ? "ChillScript" : squashed
+        let fallback = squashed.isEmpty ? "ChillNote" : squashed
         return String(fallback.prefix(60))
     }
 

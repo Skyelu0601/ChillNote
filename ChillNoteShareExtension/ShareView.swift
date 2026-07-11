@@ -72,7 +72,7 @@ private struct ShareHeaderView: View {
 
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
-            ChillScriptWordmark(size: 26)
+            ChillNoteWordmark(size: 26)
 
             Spacer(minLength: 10)
 
@@ -81,7 +81,7 @@ private struct ShareHeaderView: View {
     }
 }
 
-private struct ChillScriptWordmark: View {
+private struct ChillNoteWordmark: View {
     let size: CGFloat
 
     private let chillColor = Color(red: 0.184, green: 0.525, blue: 1.0)
@@ -93,7 +93,7 @@ private struct ChillScriptWordmark: View {
                 .font(.custom("AvenirNext-DemiBold", size: size))
                 .foregroundStyle(chillColor)
 
-            Text("Script")
+            Text("Note")
                 .font(.custom("AvenirNext-HeavyItalic", size: size * 46 / 44))
                 .foregroundStyle(noteColor)
         }

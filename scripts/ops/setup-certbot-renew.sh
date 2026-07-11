@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# 安装 ChillScript API 的 Certbot 自动续签计划任务。
+# 安装 ChillNote API 的 Certbot 自动续签计划任务。
 # 用法：
 #   sudo bash scripts/ops/setup-certbot-renew.sh
 # 可选环境变量：

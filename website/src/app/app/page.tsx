@@ -1,5 +1,5 @@
-import { ChillScriptWebApp } from "@/components/chillnote-web-app";
+import { ChillNoteWebApp } from "@/components/chillnote-web-app";
 
 export default function AppPage() {
-  return <ChillScriptWebApp />;
+  return <ChillNoteWebApp />;
 }

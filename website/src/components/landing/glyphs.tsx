@@ -52,7 +52,7 @@ export function ReelsGlyph({ size = 22 }: { size?: number }) {
   );
 }
 
-/** Central ChillScript bolt mark used in the hero orbit. */
+/** Central ChillNote bolt mark used in the hero orbit. */
 export function BoltMark({ size = 104 }: { size?: number }) {
   const id = "bolt-grad";
   return (

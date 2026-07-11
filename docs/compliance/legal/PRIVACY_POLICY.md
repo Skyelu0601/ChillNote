@@ -2,21 +2,21 @@
 
 **Last Updated:** March 20, 2026
 
-**Sponteoai** ("we," "our," or "us") respects your privacy and is committed to protecting it through our compliance with this policy. This Privacy Policy describes the types of information we may collect from you or that you may provide when you use the **ChillScript** mobile application (the "App") and our practices for collecting, using, maintaining, protecting, and disclosing that information.
+**Sponteoai** ("we," "our," or "us") respects your privacy and is committed to protecting it through our compliance with this policy. This Privacy Policy describes the types of information we may collect from you or that you may provide when you use the **ChillNote** mobile application (the "App") and our practices for collecting, using, maintaining, protecting, and disclosing that information.
 
 This policy applies specifically to users located in the United States and is designed to comply with applicable US federal and state laws.
 
 ## 1. Information We Collect
 
-We collect limited information to provide the core functionality of ChillScript.
+We collect limited information to provide the core functionality of ChillNote.
 
 ### A. Account Information
 *   **Sign-in Data:** When you sign in using Apple or Google, we collect your unique user ID and email address (if provided) to authenticate you and sync your data across devices.
 
 ### B. Notes and Text Content
 *   **Notes You Save:** The notes you create are stored securely on our servers to enable synchronization between your devices.
-*   **Text You Intentionally Submit to AI:** When you ask ChillScript to tidy, rewrite, summarize, translate, or otherwise process text with AI, the text you choose to submit may be sent for that request.
-*   **Links You Import:** When you choose to import a web link, ChillScript may read publicly available page metadata and text from that link and may send the extracted text to AI only to generate the note you requested.
+*   **Text You Intentionally Submit to AI:** When you ask ChillNote to tidy, rewrite, summarize, translate, or otherwise process text with AI, the text you choose to submit may be sent for that request.
+*   **Links You Import:** When you choose to import a web link, ChillNote may read publicly available page metadata and text from that link and may send the extracted text to AI only to generate the note you requested.
 
 ### C. Audio Data
 *   **Voice Notes:** We process audio data **only when you actively record a voice note** or choose to transcribe a pending recording.
@@ -42,12 +42,12 @@ AI processing happens only when you intentionally use an AI feature in the app a
 
 *   **Voice transcription:** May send raw audio and necessary technical parameters such as file type or language hints.
 *   **Text AI features:** May send the note text, prompt text, or selected content you intentionally submit for AI processing.
-*   **Link note generation:** May send publicly available text extracted from a link you import so ChillScript can create a concise note from that page.
+*   **Link note generation:** May send publicly available text extracted from a link you import so ChillNote can create a concise note from that page.
 *   **Processing purpose:** The data is used only to complete the specific AI request you made.
 
 ## 4. Third-Party Data Sharing & AI Processors
 
-To provide AI functionality, ChillScript may send data to ChillScript's secure server, which then forwards only the data needed for the active request to our AI processor.
+To provide AI functionality, ChillNote may send data to ChillNote's secure server, which then forwards only the data needed for the active request to our AI processor.
 
 *   **Recipient:** Google Gemini via Google Cloud.
 *   **Data types:** Audio, text prompts, note text, and link-derived text intentionally submitted to AI.

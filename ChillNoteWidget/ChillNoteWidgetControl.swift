@@ -3,7 +3,7 @@ import SwiftUI
 import WidgetKit
 
 @available(iOSApplicationExtension 18.0, *)
-struct ChillScriptWidgetControl: ControlWidget {
+struct ChillNoteWidgetControl: ControlWidget {
     private static let brainDumpControlURL = URL(string: "chillnote://record?source=control_widget")!
 
     var body: some ControlWidgetConfiguration {

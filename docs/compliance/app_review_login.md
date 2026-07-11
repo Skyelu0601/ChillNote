@@ -1,4 +1,4 @@
-# App Store Review Login (ChillScript)
+# App Store Review Login (ChillNote)
 
 ## Reviewer Login Credentials
 
@@ -29,6 +29,6 @@
 Use the following points in App Store Connect review notes for builds that include AI features:
 
 - On first use of any AI feature, the app shows an in-app consent sheet before data is sent for AI processing.
-- Voice notes and text intentionally submitted to AI are sent to ChillScript's secure server and then to Google Gemini via Google Cloud only to complete the user's request.
+- Voice notes and text intentionally submitted to AI are sent to ChillNote's secure server and then to Google Gemini via Google Cloud only to complete the user's request.
 - Raw audio is processed ephemerally and is not retained on our servers after processing.
-- ChillScript and its third-party AI partners do not use user notes or recordings to train models.
+- ChillNote and its third-party AI partners do not use user notes or recordings to train models.

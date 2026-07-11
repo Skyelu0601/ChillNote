@@ -1615,12 +1615,12 @@ private struct LaunchScreenWordmark: View {
                 .font(.custom("AvenirNext-DemiBold", size: 60))
                 .foregroundColor(Color(red: 0.184, green: 0.525, blue: 1.0))
 
-            Text(verbatim: "Script")
+            Text(verbatim: "Note")
                 .font(.custom("AvenirNext-HeavyItalic", size: 62))
                 .foregroundColor(Color(red: 0.365, green: 0.569, blue: 0.961))
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(Text(verbatim: "ChillScript"))
+        .accessibilityLabel(Text(verbatim: "ChillNote"))
     }
 }
 

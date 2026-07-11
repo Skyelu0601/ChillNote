@@ -638,7 +638,7 @@ async function organizeContent(params: {
   }
 
   const prompt = `
-Turn this ${params.kind} into a useful ChillScript note.
+Turn this ${params.kind} into a useful ChillNote note.
 
 Source URL:
 ${params.url}

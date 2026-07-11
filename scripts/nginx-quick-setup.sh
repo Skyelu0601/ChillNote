@@ -1,11 +1,11 @@
 #!/bin/bash
 # Nginx 配置快速脚本
-# 用途：自动配置 Nginx 以支持 ChillScript 大文件上传
+# 用途：自动配置 Nginx 以支持 ChillNote 大文件上传
 # 使用方法：在服务器上执行 bash nginx-quick-setup.sh
 
 set -e
 
-echo "🚀 ChillScript Nginx 配置脚本"
+echo "🚀 ChillNote Nginx 配置脚本"
 echo "================================"
 echo ""
 
@@ -100,7 +100,7 @@ else
     
     # 在 server 块中添加配置
     # 这里使用简单的方法：在第一个 server { 后面添加
-    sed -i.tmp '/server {/a\    # Upload limits for ChillScript voice recordings\n    client_max_body_size 150m;\n    client_body_buffer_size 128k;\n    client_body_timeout 300s;\n' "$CONFIG_FILE"
+    sed -i.tmp '/server {/a\    # Upload limits for ChillNote voice recordings\n    client_max_body_size 150m;\n    client_body_buffer_size 128k;\n    client_body_timeout 300s;\n' "$CONFIG_FILE"
     
     echo -e "${GREEN}✅ 已添加 client_max_body_size 150m${NC}"
 fi

@@ -11,9 +11,9 @@ const brandFont = Mulish({
 });
 
 export const metadata: Metadata = {
-  title: "ChillScript | AI Creator Notes",
+  title: "ChillNote | AI Creator Notes",
   description:
-    "ChillScript helps creators capture ideas, transcribe videos, break down hooks, descriptions, and transcripts, then reuse their AI creator notes with AI Skills.",
+    "ChillNote helps creators capture ideas, transcribe videos, break down hooks, descriptions, and transcripts, then reuse their AI creator notes with AI Skills.",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

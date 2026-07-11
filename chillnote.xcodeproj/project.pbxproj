@@ -549,7 +549,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteShareExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ChillScript;
+				INFOPLIST_KEY_CFBundleDisplayName = ChillNote;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -581,7 +581,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ChillScript;
+				INFOPLIST_KEY_CFBundleDisplayName = ChillNote;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -608,7 +608,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteWidget/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ChillScript;
+				INFOPLIST_KEY_CFBundleDisplayName = ChillNote;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -636,8 +636,8 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = chillnote/Info.plist;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillScript needs microphone access to record your thoughts and capture audio for teleprompter videos.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "ChillScript uses speech recognition to transcribe your voice to text.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillNote needs microphone access to record your thoughts and capture audio for teleprompter videos.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "ChillNote uses speech recognition to transcribe your voice to text.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -670,8 +670,8 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = chillnote/Info.plist;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillScript needs microphone access to record your thoughts and capture audio for teleprompter videos.";
-				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "ChillScript uses speech recognition to transcribe your voice to text.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillNote needs microphone access to record your thoughts and capture audio for teleprompter videos.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "ChillNote uses speech recognition to transcribe your voice to text.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -897,7 +897,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteShareExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = ChillScript;
+				INFOPLIST_KEY_CFBundleDisplayName = ChillNote;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

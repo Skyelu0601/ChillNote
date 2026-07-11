@@ -1,4 +1,4 @@
-# ChillScript Docs Index
+# ChillNote Docs Index
 
 当前文档按用途分为三类：
 

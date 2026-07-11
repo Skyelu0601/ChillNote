@@ -1,4 +1,4 @@
-# ChillScript Home Aesthetic Audit
+# ChillNote Home Aesthetic Audit
 
 Date: 2026-06-26
 Device: iPhone 17 simulator, iOS 26.2

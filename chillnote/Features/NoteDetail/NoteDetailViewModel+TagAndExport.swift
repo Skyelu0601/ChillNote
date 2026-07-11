@@ -69,13 +69,13 @@ extension NoteDetailViewModel {
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .first { !$0.isEmpty } ?? ""
 
-        var base = rawTitle.isEmpty ? "ChillScript" : rawTitle
+        var base = rawTitle.isEmpty ? "ChillNote" : rawTitle
         base = base.replacingOccurrences(of: #"[\\/:*?\"<>|]"#, with: "-", options: .regularExpression)
         base = base.replacingOccurrences(of: #"\s+"#, with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         if base.isEmpty {
-            base = "ChillScript"
+            base = "ChillNote"
         }
 
         if base.count > 60 {

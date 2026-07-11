@@ -375,7 +375,7 @@ def draw_process_cue(draw, text, y):
             + draw.textbbox((0, 0), "Note", font=wordmark_italic)[2]
         )
         label_widths = [
-            wordmark_width if label == "ChillScript" else draw.textbbox((0, 0), label, font=f)[2]
+            wordmark_width if label == "ChillNote" else draw.textbbox((0, 0), label, font=f)[2]
             for label in labels
         ]
         arrow_width = draw.textbbox((0, 0), "→", font=arrow_f)[2]
@@ -386,7 +386,7 @@ def draw_process_cue(draw, text, y):
         cue_size -= 2
     x = (W - total_width) // 2
     for index, (label, width) in enumerate(zip(labels, label_widths)):
-        if label == "ChillScript":
+        if label == "ChillNote":
             draw.text((x, y), "Chill", font=wordmark_regular, fill=BLUE)
             chill_width = draw.textbbox((0, 0), "Chill", font=wordmark_regular)[2]
             draw.text((x + chill_width, y), "Note", font=wordmark_italic, fill=BLUE)
@@ -403,7 +403,7 @@ def make_multi_share_slide(
     output_dir,
     title="Save Videos\nFrom Anywhere",
     highlight="Anywhere",
-    process_text="Share → ChillScript → Saved",
+    process_text="Share → ChillNote → Saved",
 ):
     canvas = Image.new("RGBA", (W, H), BG + (255,))
     draw = ImageDraw.Draw(canvas)
@@ -613,14 +613,14 @@ localized_titles = {
 }
 
 localized_share_steps = {
-    "en": "Share → ChillScript → Saved",
-    "zh-Hans": "分享 → ChillScript → 已保存",
-    "zh-Hant": "分享 → ChillScript → 已儲存",
-    "ja": "共有 → ChillScript → 保存完了",
-    "fr": "Partager → ChillScript → Enregistré",
-    "es": "Compartir → ChillScript → Guardado",
-    "de": "Teilen → ChillScript → Gespeichert",
-    "ko": "공유 → ChillScript → 저장 완료",
+    "en": "Share → ChillNote → Saved",
+    "zh-Hans": "分享 → ChillNote → 已保存",
+    "zh-Hant": "分享 → ChillNote → 已儲存",
+    "ja": "共有 → ChillNote → 保存完了",
+    "fr": "Partager → ChillNote → Enregistré",
+    "es": "Compartir → ChillNote → Guardado",
+    "de": "Teilen → ChillNote → Gespeichert",
+    "ko": "공유 → ChillNote → 저장 완료",
 }
 
 prepare_output_dir(OUT_DIR)

@@ -103,7 +103,7 @@ struct HomeView: View {
         if isTrashSelected {
             return L10n.text("sidebar.nav.recycle_bin")
         }
-        return selectedTag?.name ?? "ChillScript"
+        return selectedTag?.name ?? "ChillNote"
     }
 
     var hasPendingRecordings: Bool {

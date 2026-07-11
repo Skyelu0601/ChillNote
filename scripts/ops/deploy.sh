@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# ChillScript 后端精简部署脚本
+# ChillNote 后端精简部署脚本
 # 用法:
 #   ./deploy.sh
 #   PUSH_ENV=1 ./deploy.sh              # 同步本地 server/.env 到服务器
@@ -17,7 +17,7 @@ LOCAL_ENV_FILE="${LOCAL_ENV_FILE:-$LOCAL_SERVER_DIR/.env}"
 PUSH_ENV="${PUSH_ENV:-0}"
 RESOLVE_ROLLED_BACK="${RESOLVE_ROLLED_BACK:-}"
 
-echo "🚀 开始部署 ChillScript 后端..."
+echo "🚀 开始部署 ChillNote 后端..."
 
 # 1. 本地准备
 if [ ! -d "$LOCAL_SERVER_DIR" ]; then

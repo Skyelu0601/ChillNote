@@ -303,7 +303,7 @@ struct SubscriptionView: View {
         var title = AttributedString(L10n.text("subscription.onboarding.title"))
         title.foregroundColor = Color.textMain
 
-        if let brandRange = title.range(of: "ChillScript") {
+        if let brandRange = title.range(of: "ChillNote") {
             title[brandRange].foregroundColor = Color.accentPrimary
         }
 

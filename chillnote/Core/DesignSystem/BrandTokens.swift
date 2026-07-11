@@ -75,7 +75,7 @@ enum BrandTokens {
 struct BrandWordmark: View {
     var chillSize: CGFloat = 36
 
-    private var scriptSize: CGFloat {
+    private var noteSize: CGFloat {
         chillSize + 2
     }
 
@@ -85,8 +85,8 @@ struct BrandWordmark: View {
                 .font(.custom("AvenirNext-DemiBold", size: chillSize))
                 .foregroundColor(Color(red: 0.184, green: 0.525, blue: 1.0))
 
-            Text(verbatim: "Script")
-                .font(.custom("AvenirNext-HeavyItalic", size: scriptSize))
+            Text(verbatim: "Note")
+                .font(.custom("AvenirNext-HeavyItalic", size: noteSize))
                 .foregroundColor(Color(red: 0.365, green: 0.569, blue: 0.961))
         }
         .accessibilityElement(children: .ignore)

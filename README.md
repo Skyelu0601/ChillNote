@@ -1,6 +1,6 @@
-# ChillScript Monorepo
+# ChillNote Monorepo
 
-ChillScript 仓库包含 3 个主要子系统：
+ChillNote 仓库包含 3 个主要子系统：
 
 - iOS 客户端: `chillnote/`、`chillnoteTests/`、`chillnoteUITests/`、`ChillNoteWidget/`
 - 后端服务: `server/`
