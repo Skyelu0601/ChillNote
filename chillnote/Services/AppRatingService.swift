@@ -56,7 +56,7 @@ final class AppRatingService: ObservableObject {
     }
 
     func openFeedbackEmail() {
-        guard let url = URL(string: "mailto:support@chillnoteai.com?subject=ChillNote%20Feedback") else {
+        guard let url = URL(string: "mailto:support@chillnoteai.com?subject=ChillScript%20Feedback") else {
             return
         }
 

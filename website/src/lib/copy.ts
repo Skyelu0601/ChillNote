@@ -1,5 +1,5 @@
 export const copy = {
-  productName: "ChillNote",
+  productName: "ChillScript",
   nav: {
     app: "Sign in",
     pricing: "Pricing",
@@ -23,7 +23,7 @@ export const copy = {
       titleHighlight: "Inspiration",
       titleSuffix: ", Your Way.",
       body:
-        "Drop in a link, a voice memo, a photo, or a half-formed thought. ChillNote turns it into a clean, structured note — source, hook, transcript, and all.",
+        "Drop in a link, a voice memo, a photo, or a half-formed thought. ChillScript turns it into a clean, structured note — source, hook, transcript, and all.",
       chips: {
         link: "Link",
         voice: "Voice",
@@ -52,11 +52,11 @@ export const copy = {
       titleHighlight: "Anywhere",
       titleSuffix: ".",
       body:
-        "Save TikToks, Reels & YouTube clips straight into ChillNote — without leaving the app you're in. Tap Share, pick ChillNote, done.",
+        "Save TikToks, Reels & YouTube clips straight into ChillScript — without leaving the app you're in. Tap Share, pick ChillScript, done.",
       steps: [
         "Find something worth saving",
         "Tap the system Share button",
-        "Send it straight to ChillNote",
+        "Send it straight to ChillScript",
       ],
     },
     skills: {
@@ -106,7 +106,7 @@ export const copy = {
     },
   },
   auth: {
-    brandTitle: "ChillNote",
+    brandTitle: "ChillScript",
     title: "Welcome back",
     subtitle: "Sign in to continue",
     brandHeadline: "Capture on iPhone.\nContinue on the web.",
@@ -131,16 +131,16 @@ export const copy = {
     emailPlaceholder: "you@example.com",
     codePlaceholder: "123456",
     codeSentTo: "Code sent to {email}",
-    legal: "By continuing, you agree to ChillNote's Terms and Privacy Policy.",
-    previewLabel: "ChillNote",
+    legal: "By continuing, you agree to ChillScript's Terms and Privacy Policy.",
+    previewLabel: "ChillScript",
     previewTitle: "Your iOS notes, ready on the big screen",
     previewBody: "Capture on iPhone. Organize, search, and reuse your notes from the browser.",
-    previewSync: "Syncs with the same ChillNote account",
+    previewSync: "Syncs with the same ChillScript account",
     callbackLoading: "Completing sign in...",
     callbackError: "Sign-in could not be completed. Please try again.",
   },
   app: {
-    title: "ChillNote",
+    title: "ChillScript",
     panels: {
       notes: {
         nav: "Notes",
@@ -294,7 +294,7 @@ export const copy = {
     eyebrow: "Simple pricing",
     title: "Start free. Upgrade when your creator workflow needs more AI.",
     subtitle:
-      "Use ChillNote for quick capture and AI creator notes first. Pro gives you longer recordings, more AI runs, and custom reusable skills.",
+      "Use ChillScript for quick capture and AI creator notes first. Pro gives you longer recordings, more AI runs, and custom reusable skills.",
     free: {
       name: "Free",
       price: "$0",

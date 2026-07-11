@@ -26,12 +26,12 @@ struct SimpleEntry: TimelineEntry {
 
 // MARK: - Widget Configuration
 
-struct ChillNoteWidget: Widget {
-    let kind: String = "ChillNoteWidget"
+struct ChillScriptWidget: Widget {
+    let kind: String = "ChillScriptWidget"
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: Provider()) { entry in
-            ChillNoteWidgetEntryView(entry: entry)
+            ChillScriptWidgetEntryView(entry: entry)
         }
         .configurationDisplayName(String(localized: "widget.brain_dump.display_name"))
         .description(String(localized: "widget.brain_dump.description"))
@@ -41,7 +41,7 @@ struct ChillNoteWidget: Widget {
 
 // MARK: - Entry View
 
-struct ChillNoteWidgetEntryView: View {
+struct ChillScriptWidgetEntryView: View {
     var entry: Provider.Entry
     @Environment(\.widgetFamily) private var family
 
@@ -101,7 +101,7 @@ private enum WidgetPalette {
 // MARK: - Previews
 
 #Preview(as: .accessoryCircular) {
-    ChillNoteWidget()
+    ChillScriptWidget()
 } timeline: {
     SimpleEntry(date: .now)
 }

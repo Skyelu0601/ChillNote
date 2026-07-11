@@ -2,9 +2,9 @@
 
 **Last Updated:** [Date]
 
-Welcome to **ChillNote**!
+Welcome to **ChillScript**!
 
-These Terms of Service ("Terms") govern your use of the ChillNote mobile application (the "App") and any related services provided by **Sponteoai** ("we," "us," or "our"). By accessing or using our App, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use the App.
+These Terms of Service ("Terms") govern your use of the ChillScript mobile application (the "App") and any related services provided by **Sponteoai** ("we," "us," or "our"). By accessing or using our App, you agree to be bound by these Terms. If you do not agree to these Terms, please do not use the App.
 
 ## 1. Use of the App
 
@@ -26,7 +26,7 @@ You retain ownership of all notes, audio recordings, and other content ("User Co
 ### 2.2 Responsibility
 You are solely responsible for your User Content. You agree not to create or store content that is offensive, infringing, or otherwise unlawful.
 
-When you submit, upload, paste, or import content from third-party sources, including web links, you represent that you have the rights, permissions, or lawful basis needed to process, store, summarize, or otherwise use that content in ChillNote.
+When you submit, upload, paste, or import content from third-party sources, including web links, you represent that you have the rights, permissions, or lawful basis needed to process, store, summarize, or otherwise use that content in ChillScript.
 
 ## 3. Privacy
 

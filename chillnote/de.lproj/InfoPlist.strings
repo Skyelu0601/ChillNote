@@ -1,4 +1,4 @@
-"NSMicrophoneUsageDescription" = "ChillNote benötigt Mikrofonzugriff, um deine Gedanken und den Ton für Teleprompter-Videos aufzuzeichnen.";
-"NSSpeechRecognitionUsageDescription" = "ChillNote verwendet Spracherkennung, um deine Stimme in Text umzuwandeln.";
-"NSCameraUsageDescription" = "ChillNote verwendet die Kamera zum Aufnehmen von Teleprompter-Videos.";
-"NSPhotoLibraryAddUsageDescription" = "ChillNote speichert exportierte Teleprompter-Videos in deiner Fotomediathek, wenn du sie speicherst.";
+"NSMicrophoneUsageDescription" = "ChillScript benötigt Mikrofonzugriff, um deine Gedanken und den Ton für Teleprompter-Videos aufzuzeichnen.";
+"NSSpeechRecognitionUsageDescription" = "ChillScript verwendet Spracherkennung, um deine Stimme in Text umzuwandeln.";
+"NSCameraUsageDescription" = "ChillScript verwendet die Kamera zum Aufnehmen von Teleprompter-Videos.";
+"NSPhotoLibraryAddUsageDescription" = "ChillScript speichert exportierte Teleprompter-Videos in deiner Fotomediathek, wenn du sie speicherst.";

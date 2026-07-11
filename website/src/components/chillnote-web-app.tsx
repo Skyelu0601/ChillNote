@@ -501,7 +501,7 @@ function mergeTags(current: TagDTO[], incoming: TagDTO[], hardDeletedIds: string
   return Array.from(byId.values());
 }
 
-export function ChillNoteWebApp() {
+export function ChillScriptWebApp() {
   const [session, setSession] = useState<Session | null>(null);
   const [authReady, setAuthReady] = useState(false);
   const [notes, setNotes] = useState<NoteDTO[]>([]);

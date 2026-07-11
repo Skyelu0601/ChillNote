@@ -1759,7 +1759,7 @@ app.post("/credits/consume", requireAuth, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`ChillNote backend listening on :${PORT}`);
+  console.log(`ChillScript backend listening on :${PORT}`);
   scheduleLinkImportWorker();
 });
 

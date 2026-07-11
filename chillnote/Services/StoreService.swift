@@ -435,7 +435,7 @@ class StoreService: ObservableObject {
                     let transaction = try self.checkVerified(result)
                     
                     // Keep the local UI in sync, but avoid rebinding subscriptions
-                    // to whichever ChillNote account is currently signed in.
+                    // to whichever ChillScript account is currently signed in.
                     await self.updateSubscriptionStatus(syncActiveTransactionToBackend: false)
                     
                     // Always finish a transaction

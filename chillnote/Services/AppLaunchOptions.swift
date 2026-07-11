@@ -9,7 +9,7 @@ enum AppLaunchOptions {
     }
 
     static var onboardingScreenshotPage: Int {
-        guard let rawValue = environment["CHILLNOTE_SCREENSHOT_PAGE"],
+        guard let rawValue = environment["CHILLSCRIPT_SCREENSHOT_PAGE"],
               let page = Int(rawValue) else {
             return 0
         }

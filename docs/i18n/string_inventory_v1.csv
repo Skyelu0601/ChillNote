@@ -1,16 +1,16 @@
 key,file,line,context,is_dynamic,in_catalog,risk
-Couldn't Start ChillNote,chillnote/ChillNoteApp.swift,61,Text,False,True,low
-"Local data initialization failed. Please try again. If it still fails, restart the app or free up device storage and try again.",chillnote/ChillNoteApp.swift,64,Text,False,True,medium
-Retry Initialization,chillnote/ChillNoteApp.swift,75,Button,False,True,low
-ChillNote,chillnote/Features/AboutView.swift,18,Text,False,True,low
+Couldn't Start ChillScript,chillnote/ChillScriptApp.swift,61,Text,False,True,low
+"Local data initialization failed. Please try again. If it still fails, restart the app or free up device storage and try again.",chillnote/ChillScriptApp.swift,64,Text,False,True,medium
+Retry Initialization,chillnote/ChillScriptApp.swift,75,Button,False,True,low
+ChillScript,chillnote/Features/AboutView.swift,18,Text,False,True,low
 Design Philosophy & Vision,chillnote/Features/AboutView.swift,22,Text,False,True,low
 """Capturing the speed of thought,
 one voice at a time.""",chillnote/Features/AboutView.swift,27,Text,False,True,medium
-"ChillNote is not just another note-taking app. It is a tool designed to realign the way we capture, process, and structure our thoughts. By prioritizing voice input and AI-driven organization, ChillNote addresses the friction between the human mind's speed and the limitations of traditional input methods.",chillnote/Features/AboutView.swift,39,Text,False,True,medium
-What ChillNote is NOT,chillnote/Features/AboutView.swift,110,Text,False,True,low
+"ChillScript is not just another note-taking app. It is a tool designed to realign the way we capture, process, and structure our thoughts. By prioritizing voice input and AI-driven organization, ChillScript addresses the friction between the human mind's speed and the limitations of traditional input methods.",chillnote/Features/AboutView.swift,39,Text,False,True,medium
+What ChillScript is NOT,chillnote/Features/AboutView.swift,110,Text,False,True,low
 """Defining the boundaries to preserve the 'Chill'.""",chillnote/Features/AboutView.swift,115,Text,False,True,medium
 Our Vision,chillnote/Features/AboutView.swift,144,Text,False,True,low
-"ChillNote is an attempt to use technology to return us to a more natural, healthy, and efficient state of being.
+"ChillScript is an attempt to use technology to return us to a more natural, healthy, and efficient state of being.
 
 It is for the dreamers who talk fast, the creators who hurt from typing, and anyone who believes their ideas deserve to be heard, not just written.",chillnote/Features/AboutView.swift,149,Text,False,True,medium
 Pending Recordings,chillnote/Features/PendingRecordingsView.swift,155,modifier,False,True,low
@@ -38,7 +38,7 @@ Retry,chillnote/Features/SettingsView.swift,143,Button,False,True,low
 My Account,chillnote/Features/SettingsView.swift,162,Text,False,True,low
 PRO,chillnote/Features/SettingsView.swift,166,Text,False,True,low
 Subscription Plan,chillnote/Features/SettingsView.swift,193,Text,False,True,low
-Sign In to ChillNote,chillnote/Features/SettingsView.swift,232,Text,False,True,low
+Sign In to ChillScript,chillnote/Features/SettingsView.swift,232,Text,False,True,low
 Auto Detect,chillnote/Features/SettingsView.swift,539,Text,False,True,low
 Preferred Language,chillnote/Features/SettingsView.swift,540,Text,False,True,low
 Language will be inferred from audio. Mixed-language speech is preserved.,chillnote/Features/SettingsView.swift,546,Text,False,True,medium
@@ -81,20 +81,20 @@ Icon,chillnote/Features/ChillRecipesView.swift,494,Text,False,True,low
 Create Recipe,chillnote/Features/ChillRecipesView.swift,508,modifier,False,True,low
 Cancel,chillnote/Features/ChillRecipesView.swift,512,Button,False,True,low
 Save,chillnote/Features/ChillRecipesView.swift,515,Button,False,True,low
-ChillNote,chillnote/Features/SidebarView.swift,52,Text,False,True,low
+ChillScript,chillnote/Features/SidebarView.swift,52,Text,False,True,low
 Open Settings,chillnote/Features/SidebarView.swift,71,modifier,False,True,low
 Start organizing with tags,chillnote/Features/SidebarView.swift,122,Text,False,True,low
 TAGS,chillnote/Features/SidebarView.swift,358,Text,False,True,low
 Release to unnest,chillnote/Features/SidebarView.swift,366,Text,False,True,low
 \(badgeCount),chillnote/Features/SidebarView.swift,494,Text,True,False,high
-ChillNote Pro,chillnote/Features/SubscriptionView.swift,151,Text,False,True,low
+ChillScript Pro,chillnote/Features/SubscriptionView.swift,151,Text,False,True,low
 Active,chillnote/Features/SubscriptionView.swift,170,Text,False,True,low
 Renews on,chillnote/Features/SubscriptionView.swift,187,Text,False,True,low
 Your Active Privileges,chillnote/Features/SubscriptionView.swift,204,Text,False,True,low
 Manage Subscription,chillnote/Features/SubscriptionView.swift,218,Text,False,True,low
 Restore Purchases,chillnote/Features/SubscriptionView.swift,230,Text,False,True,low
 Upgrade to Pro,chillnote/Features/SubscriptionView.swift,279,Text,False,True,low
-Unlock the full power of ChillNote,chillnote/Features/SubscriptionView.swift,283,Text,False,True,low
+Unlock the full power of ChillScript,chillnote/Features/SubscriptionView.swift,283,Text,False,True,low
 Current Plan,chillnote/Features/SubscriptionView.swift,292,Text,False,True,low
 Retry,chillnote/Features/SubscriptionView.swift,345,Button,False,True,low
 No subscription product is currently available.,chillnote/Features/SubscriptionView.swift,353,Text,False,True,low
@@ -111,7 +111,7 @@ Close,chillnote/Features/AIContextChatView.swift,130,Button,False,True,low
 Ask Chillo...,chillnote/Features/AIContextChatView.swift,182,TextField,False,True,low
 \(notes.count) Context Notes,chillnote/Features/AIContextChatView.swift,545,Text,True,False,high
 Skip,chillnote/Features/OnboardingView.swift,379,Button,False,True,low
-Welcome to ChillNote,chillnote/Features/OnboardingView.swift,436,Text,False,True,low
+Welcome to ChillScript,chillnote/Features/OnboardingView.swift,436,Text,False,True,low
 For minds that refuse to be boxed in.,chillnote/Features/OnboardingView.swift,440,Text,False,True,low
 "Say it.
 Save it.",chillnote/Features/OnboardingView.swift,478,Text,False,True,low
@@ -138,7 +138,7 @@ Search notes...,chillnote/Features/OnboardingView.swift,1009,TextField,False,Tru
 Chill Recipes,chillnote/Features/OnboardingView.swift,1058,Text,False,True,low
 Chill Recipes,chillnote/Features/OnboardingView.swift,1101,Text,False,True,low
 Search notes...,chillnote/Features/Home/HomeView.swift,451,TextField,False,True,low
-ChillNote,chillnote/Features/Auth/LoginView.swift,31,Text,False,True,low
+ChillScript,chillnote/Features/Auth/LoginView.swift,31,Text,False,True,low
 Brain dump your ideas here,chillnote/Features/Auth/LoginView.swift,38,Text,False,True,low
 Sign in with Google,chillnote/Features/Auth/LoginView.swift,104,Text,False,True,low
 Continue with Email,chillnote/Features/Auth/LoginView.swift,123,Text,False,True,low
@@ -237,7 +237,7 @@ Body Medium,chillnote/Core/DesignSystem/Font+Chill.swift,24,Text,False,True,low
 Body Small,chillnote/Core/DesignSystem/Font+Chill.swift,25,Text,False,True,low
 Caption,chillnote/Core/DesignSystem/Font+Chill.swift,26,Text,False,True,low
 Processing Note,chillnote/Core/Components/VoiceProcessingWorkflowView.swift,103,Text,False,True,low
-You can keep using ChillNote while we work.,chillnote/Core/Components/VoiceProcessingWorkflowView.swift,142,Text,False,True,low
+You can keep using ChillScript while we work.,chillnote/Core/Components/VoiceProcessingWorkflowView.swift,142,Text,False,True,low
 \(progress.processed)/\(progress.total) • \(percentageText),chillnote/Core/Components/ExportProgressView.swift,27,Text,True,False,high
 Cancel Export,chillnote/Core/Components/ExportProgressView.swift,43,Text,False,True,low
 Type a note...,chillnote/Core/Components/ChatInputBar.swift,56,TextField,False,True,low

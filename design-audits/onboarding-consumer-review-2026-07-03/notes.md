@@ -1,4 +1,4 @@
-# ChillNote Onboarding Consumer Review
+# ChillScript Onboarding Consumer Review
 
 Date: 2026-07-03
 Scope: First-run onboarding screenshots captured with `-OnboardingScreenshotMode` on iPhone 17 simulator.
@@ -23,7 +23,7 @@ Scope: First-run onboarding screenshots captured with `-OnboardingScreenshotMode
 4. AI Skills
    - Screenshot: `04-ai-skills.jpg`
    - Health: Strong product positioning, incomplete proof.
-   - Note: The skills list communicates that ChillNote is not just storage or chat. It would be more persuasive if one skill showed a visible before/after output or a concrete generated caption/hook result.
+   - Note: The skills list communicates that ChillScript is not just storage or chat. It would be more persuasive if one skill showed a visible before/after output or a concrete generated caption/hook result.
 
 ## Consumer Verdict
 
