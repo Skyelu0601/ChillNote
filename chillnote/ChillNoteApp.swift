@@ -1,6 +1,7 @@
 import SwiftUI
 import SwiftData
 import GoogleSignIn
+import GoMarketMe
 
 @main
 struct ChillScriptApp: App {
@@ -11,6 +12,7 @@ struct ChillScriptApp: App {
 
     
     init() {
+        GoMarketMe.shared.initialize(apiKey: AppConfig.goMarketMeAPIKey)
         MediaLinkTranscriptSectionPreferences.syncToShareExtension()
 
         // Ensure data is seeded on launch

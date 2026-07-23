@@ -1,6 +1,7 @@
 import Foundation
 import OSLog
 import StoreKit
+import GoMarketMe
 
 enum SubscriptionTier: String, CaseIterable {
     case free
@@ -437,7 +438,10 @@ class StoreService: ObservableObject {
                     // Keep the local UI in sync, but avoid rebinding subscriptions
                     // to whichever ChillScript account is currently signed in.
                     await self.updateSubscriptionStatus(syncActiveTransactionToBackend: false)
-                    
+
+                    // GoMarketMe must receive the verified StoreKit history before completion.
+                    _ = await GoMarketMe.shared.syncAllTransactions()
+
                     // Always finish a transaction
                     await transaction.finish()
                 } catch {
@@ -461,6 +465,7 @@ class StoreService: ObservableObject {
                 let transaction = try checkVerified(verification)
                 await syncSubscriptionWithBackendIfNeeded(transaction)
                 await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
+                _ = await GoMarketMe.shared.syncAllTransactions()
                 await transaction.finish()
                 
             case .userCancelled:
@@ -489,6 +494,7 @@ class StoreService: ObservableObject {
         do {
             try await AppStore.sync()
             await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
+            _ = await GoMarketMe.shared.syncAllTransactions()
         } catch {
             errorMessage = String(
                 format: L10n.text("store.error.restore_failed"),

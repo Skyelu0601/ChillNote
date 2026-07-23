@@ -40,6 +40,9 @@ struct AppConfig {
     // Supabase Configuration
     static let supabaseURL = URL(string: "https://qsyhkpaeyzhjojdvbntq.supabase.co")!
     static let supabaseAnonKey = "sb_publishable_smWWadjejdbKYvmg3fidsg_41XPu70e" 
+
+    // GoMarketMe's iOS SDK uses this client key inside the distributed app.
+    static let goMarketMeAPIKey = "WuTvqO8AYT5IlT6eOv4G68DKiwMJWgmZ40F8KWyA"
     
     static var isAIEnabled: Bool {
         return !backendBaseURL.isEmpty

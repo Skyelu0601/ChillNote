@@ -1,5 +1,5 @@
 {
-  "originHash" : "e9ae1cf14b4a89a9396fee2eb2cc20d50a5ed75cbe0c68460513522117c0140a",
+  "originHash" : "771ecec02a4ad86abf5281bb663da8317a5c849369f4798697157ad9e06de9a6",
   "pins" : [
     {
       "identity" : "app-check",
@@ -17,6 +17,15 @@
       "state" : {
         "revision" : "145104f5ea9d58ae21b60add007c33c1cc0c948e",
         "version" : "2.0.0"
+      }
+    },
+    {
+      "identity" : "gomarketme-swift",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/GoMarketMe/gomarketme-swift.git",
+      "state" : {
+        "revision" : "59c38965c5d26643c53877adff77af447d175efc",
+        "version" : "5.0.4"
       }
     },
     {
