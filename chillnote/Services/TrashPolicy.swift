@@ -39,10 +39,16 @@ struct TrashPolicy {
     static func purgeExpiredTags(context: ModelContext, userId: String) {
         let cutoff = cutoffDate()
         let descriptor = FetchDescriptor<Tag>(predicate: #Predicate { tag in
-            tag.userId == userId && tag.deletedAt != nil && tag.deletedAt! < cutoff
+            tag.userId == userId
         })
         do {
-            let tags = try context.fetch(descriptor)
+            // SwiftData can fail to match optional dates reliably when a
+            // predicate combines a nil check, force unwrap, and comparison.
+            // Keep the persistent query simple and evaluate expiry in Swift.
+            let tags = try context.fetch(descriptor).filter { tag in
+                guard let deletedAt = tag.deletedAt else { return false }
+                return deletedAt < cutoff
+            }
             guard !tags.isEmpty else { return }
             let ids = tags.map(\.id)
             for tag in tags {

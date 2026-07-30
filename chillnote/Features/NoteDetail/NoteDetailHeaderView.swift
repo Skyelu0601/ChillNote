@@ -22,6 +22,7 @@ struct NoteDetailHeaderView: View {
                     .foregroundColor(.textMain)
                     .padding(8)
             }
+            .buttonStyle(.bouncy)
             .accessibilityLabel(L10n.text("note_detail.header.accessibility.back"))
 
             Spacer()
@@ -36,6 +37,7 @@ struct NoteDetailHeaderView: View {
                         .background(Color.accentPrimary.opacity(0.1))
                         .clipShape(Capsule())
                 }
+                .buttonStyle(.tactile)
                 .accessibilityLabel(L10n.text("note_detail.header.accessibility.restore_note"))
             } else if isRecording {
                 HStack(spacing: 8) {
@@ -52,6 +54,7 @@ struct NoteDetailHeaderView: View {
                             .background(Color.accentPrimary)
                             .clipShape(Circle())
                     }
+                    .buttonStyle(.bouncy)
                 }
                 .padding(.leading, 12)
                 .padding(.trailing, 4)
@@ -59,18 +62,33 @@ struct NoteDetailHeaderView: View {
                 .background(Capsule().fill(Color.bgSecondary))
                 .transition(.scale(scale: 0.9).combined(with: .opacity))
             } else {
-                HStack(spacing: 6) {
-                    NoteDetailLightningBallButton(
-                        action: onAISkills,
-                        isEnabled: isAISkillsEnabled,
-                        size: 36
-                    )
+                HStack(spacing: 4) {
+                    Button(action: onAISkills) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 16, weight: .bold))
+                            .foregroundColor(.brandBlue)
+                            .rotationEffect(.degrees(4))
+                            .frame(width: 36, height: 36)
+                            .background(Color.brandBlueSoft)
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.bouncy)
+                    .disabled(!isAISkillsEnabled)
+                    .opacity(isAISkillsEnabled ? 1 : 0.55)
+                    .accessibilityLabel(L10n.text("note_detail.header.accessibility.ai_skills"))
+
+                    Button(action: onTeleprompter) {
+                        Image(systemName: "video.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.white)
+                            .frame(width: 36, height: 36)
+                            .background(Color.brandBlue)
+                            .clipShape(Circle())
+                    }
+                    .buttonStyle(.bouncy)
+                    .accessibilityLabel(L10n.text("note_detail.header.action.teleprompter"))
 
                     Menu {
-                        Button(action: onTeleprompter) {
-                            Label(L10n.text("note_detail.header.action.teleprompter"), systemImage: "text.bubble")
-                        }
-
                         Button(action: onExport) {
                             Label(L10n.text("note_detail.header.action.export_markdown"), systemImage: "square.and.arrow.up")
                         }
@@ -87,16 +105,15 @@ struct NoteDetailHeaderView: View {
                             .font(.system(size: 16))
                             .foregroundColor(.textSub)
                             .frame(width: 36, height: 36)
-                            .background(Color.bgSecondary)
+                            .background(Color.textSub.opacity(0.08))
                             .clipShape(Circle())
-                            .overlay(
-                                Circle()
-                                    .strokeBorder(Color.borderSubtle, lineWidth: 1)
-                            )
-                            .shadow(color: Color.shadowColor, radius: 5, x: 0, y: 2)
                     }
                     .accessibilityLabel(L10n.text("note_detail.header.accessibility.more_actions"))
                 }
+                .padding(4)
+                .background(Color.bgSecondary)
+                .clipShape(Capsule())
+                .shadow(color: Color.shadowColor, radius: 8, x: 0, y: 3)
             }
         }
     }

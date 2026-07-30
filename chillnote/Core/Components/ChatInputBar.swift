@@ -234,15 +234,7 @@ struct ChatInputBar: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 8)
-        .background(
-            Capsule(style: .continuous)
-                .fill(Color.white.opacity(0.82))
-                .background(.ultraThinMaterial, in: Capsule(style: .continuous))
-        )
-        .overlay(
-            Capsule(style: .continuous)
-                .stroke(Color.black.opacity(0.035), lineWidth: 1)
-        )
+        .modifier(QuickCaptureDockSurface())
         .overlay {
             if isProcessingQuickCaptureImport {
                 Capsule(style: .continuous)
@@ -253,7 +245,6 @@ struct ChatInputBar: View {
                     }
             }
         }
-        .shadow(color: Color.black.opacity(0.07), radius: 14, x: 0, y: 6)
         .opacity(isProcessingQuickCaptureImport ? 0.55 : 1)
         .allowsHitTesting(!isProcessingQuickCaptureImport)
     }
@@ -325,7 +316,7 @@ struct ChatInputBar: View {
             }
             .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.bouncy)
         .accessibilityLabel(L10n.text("quick_capture.more.paste_link.title"))
     }
 
@@ -341,7 +332,7 @@ struct ChatInputBar: View {
                 .frame(width: 50, height: 50)
                 .contentShape(Circle())
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.bouncy)
         .accessibilityLabel(L10n.text(accessibilityKey))
     }
 
@@ -434,15 +425,13 @@ struct ChatInputBar: View {
 
     private func handlePressEnded(_: DragGesture.Value) {
         resetPressState()
-        let lightImpact = UIImpactFeedbackGenerator(style: .light)
-        lightImpact.impactOccurred()
+        AppInteractionFeedback.impact(.light, intensity: 0.72)
         tryStartRecordingWithQuotaCheck()
     }
 
     private func handleTapRecord() {
         guard !speechRecognizer.isRecording else { return }
-        let lightImpact = UIImpactFeedbackGenerator(style: .light)
-        lightImpact.impactOccurred()
+        AppInteractionFeedback.impact(.light, intensity: 0.72)
         withAnimation(.spring(response: 0.25, dampingFraction: 0.75)) {
             isPressed = true
         }
@@ -536,6 +525,28 @@ struct ChatInputBar: View {
     private func presentQuickCaptureUpgrade() {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
             showSubscription = true
+        }
+    }
+}
+
+private struct QuickCaptureDockSurface: ViewModifier {
+    @ViewBuilder
+    func body(content: Content) -> some View {
+        if #available(iOS 26.0, *) {
+            content
+                .glassEffect(.regular, in: .capsule)
+        } else {
+            content
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(0.82))
+                        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
+                )
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(Color.black.opacity(0.035), lineWidth: 1)
+                )
+                .shadow(color: Color.black.opacity(0.07), radius: 14, x: 0, y: 6)
         }
     }
 }

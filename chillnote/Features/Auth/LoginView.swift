@@ -56,7 +56,13 @@ struct LoginView: View {
         }
         .onChange(of: authService.isSignedIn) { oldValue, newValue in
             if newValue {
+                AppInteractionFeedback.success()
                 dismiss()
+            }
+        }
+        .onChange(of: authService.errorMessage) { _, message in
+            if let message, !message.isEmpty {
+                AppInteractionFeedback.error()
             }
         }
     }
@@ -75,6 +81,7 @@ struct LoginView: View {
                 }
                 .brandNeutralButtonStyle()
             }
+            .buttonStyle(.tactile)
 
             Button {
                 withAnimation(.easeInOut(duration: 0.2)) {
@@ -88,6 +95,7 @@ struct LoginView: View {
                 }
                 .brandNeutralButtonStyle()
             }
+            .buttonStyle(.tactile)
 
             Button {
                 appleSignInCoordinator.start(
@@ -111,6 +119,7 @@ struct LoginView: View {
                 }
                 .brandNeutralButtonStyle()
             }
+            .buttonStyle(.tactile)
         }
         .padding(.horizontal, 24)
     }
@@ -154,6 +163,7 @@ struct LoginView: View {
                     }
                     .brandPrimaryCTAStyle()
                 }
+                .buttonStyle(.bouncy)
                 .disabled(isSendingCode || email.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
             } else {
@@ -221,6 +231,7 @@ struct LoginView: View {
                     }
                     .brandPrimaryCTAStyle()
                 }
+                .buttonStyle(.bouncy)
                 .disabled(isVerifyingCode || otpCode.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
             }
@@ -235,6 +246,7 @@ struct LoginView: View {
             }
             .font(.footnote)
             .foregroundColor(.textSub)
+            .buttonStyle(.tactile)
         }
         .padding(.horizontal, 24)
         .transition(.move(edge: .trailing))

@@ -87,6 +87,7 @@ struct NoteDetailAISkillsSheet: View {
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)
     }
+
 }
 
 struct NoteDetailAISkillPreviewSheet: View {
@@ -94,6 +95,8 @@ struct NoteDetailAISkillPreviewSheet: View {
     let onApply: (NoteAISkillApplyMode) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @State private var showsCopyToast = false
+    @State private var copyToastTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -131,14 +134,11 @@ struct NoteDetailAISkillPreviewSheet: View {
                             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                         }
 
-                        Text(preview.result)
-                            .font(.body)
-                            .foregroundColor(.textMain)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(14)
-                            .background(Color.bgSecondary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        ActionableSkillResultView(
+                            recipe: preview.recipe,
+                            result: preview.result,
+                            onBlockCopied: showCopyToast
+                        )
                     }
                     .padding(16)
                 }
@@ -177,9 +177,36 @@ struct NoteDetailAISkillPreviewSheet: View {
                     }
                 }
             }
+            .overlay(alignment: .bottom) {
+                if showsCopyToast {
+                    SkillResultCopyToast(onDismiss: hideCopyToast)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 82)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)
+        .onDisappear { copyToastTask?.cancel() }
+    }
+
+    private func showCopyToast() {
+        copyToastTask?.cancel()
+        withAnimation(.easeOut(duration: 0.2)) {
+            showsCopyToast = true
+        }
+        copyToastTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            hideCopyToast()
+        }
+    }
+
+    private func hideCopyToast() {
+        withAnimation(.easeIn(duration: 0.2)) {
+            showsCopyToast = false
+        }
     }
 }

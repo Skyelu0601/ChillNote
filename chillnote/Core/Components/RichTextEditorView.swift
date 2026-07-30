@@ -36,6 +36,7 @@ struct RichTextEditorView: UIViewRepresentable {
         // small default once attributedText contains mixed fonts).
         textView.editorBaseFont = font
         textView.editorBaseTextColor = textColor
+        textView.editorSession = context.coordinator.editorSession
 
         // Set default font and text color - ensures cursor has correct height when empty
         textView.font = font
@@ -79,13 +80,18 @@ struct RichTextEditorView: UIViewRepresentable {
         textView.setEditorScrollingEnabled(isScrollEnabled)
         textView.editorBaseFont = font
         textView.editorBaseTextColor = textColor
+        context.coordinator.editorSession.updateTheme(baseFont: font, textColor: textColor)
         
         // Update styling if needed (though usually controlled by attributes)
         // We only do a full re-render if the text actually changed from the outside
         // to avoid clobbering the user's cursor while typing.
         if text != context.coordinator.lastKnownMarkdown {
-            let attributedText = RichTextConverter.markdownToAttributedString(text, baseFont: font, textColor: textColor)
-            textView.attributedText = attributedText
+            guard textView.markedTextRange == nil else { return }
+            context.coordinator.editorSession.applyExternalMarkdown(
+                text,
+                to: textView,
+                markdownSelection: selection?.wrappedValue
+            )
             context.coordinator.lastKnownMarkdown = text
             context.coordinator.publishSelection(from: textView)
         }
@@ -97,6 +103,7 @@ struct RichTextEditorView: UIViewRepresentable {
     
     class Coordinator: NSObject, UITextViewDelegate {
         var parent: RichTextEditorView
+        let editorSession: MarkdownEditorSession
         // Cache to prevent circular updates
         var lastKnownMarkdown: String = ""
         private var pendingInputStyle: PendingInputStyle?
@@ -118,6 +125,7 @@ struct RichTextEditorView: UIViewRepresentable {
         
         init(_ parent: RichTextEditorView) {
             self.parent = parent
+            self.editorSession = MarkdownEditorSession(baseFont: parent.font, textColor: parent.textColor)
         }
 
         func textViewDidBeginEditing(_ textView: UITextView) {
@@ -126,10 +134,11 @@ struct RichTextEditorView: UIViewRepresentable {
         
         func textViewDidChange(_ textView: UITextView) {
             applyPendingInputStyleIfNeeded(in: textView)
-            let markdown = RichTextConverter.attributedStringToMarkdown(textView.attributedText)
-            lastKnownMarkdown = markdown
-            parent.text = markdown
-            publishSelection(from: textView)
+            guard textView.markedTextRange == nil else { return }
+            let snapshot = RichTextConverter.serializationSnapshot(from: textView.attributedText)
+            lastKnownMarkdown = snapshot.markdown
+            parent.text = snapshot.markdown
+            publishSelection(from: textView, snapshot: snapshot)
             if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
                 updateToolbarState(in: textView, toolbar: toolbar)
             }
@@ -137,33 +146,22 @@ struct RichTextEditorView: UIViewRepresentable {
 
         func textViewDidChangeSelection(_ textView: UITextView) {
             normalizeTypingAttributesForListPrefixIfNeeded(in: textView)
+            guard textView.markedTextRange == nil else { return }
             publishSelection(from: textView)
             if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
                 updateToolbarState(in: textView, toolbar: toolbar)
             }
         }
 
-        func publishSelection(from textView: UITextView) {
+        func publishSelection(
+            from textView: UITextView,
+            snapshot: RichTextSerializationSnapshot? = nil
+        ) {
             guard let selection = parent.selection else { return }
             let selectedRange = textView.selectedRange
-            let fullAttributedText = textView.attributedText ?? NSAttributedString()
-            let boundedLocation = max(0, min(selectedRange.location, fullAttributedText.length))
-            let boundedLength = max(0, min(selectedRange.length, fullAttributedText.length - boundedLocation))
-
-            let prefix = fullAttributedText.attributedSubstring(
-                from: NSRange(location: 0, length: boundedLocation)
-            )
-            let selected = fullAttributedText.attributedSubstring(
-                from: NSRange(location: boundedLocation, length: boundedLength)
-            )
-
-            let markdownPrefix = RichTextConverter.attributedStringToMarkdown(prefix)
-            let markdownSelected = RichTextConverter.attributedStringToMarkdown(selected)
-            let nextSelection = RichTextEditorSelection(
-                location: markdownPrefix.count,
-                length: markdownSelected.count,
-                selectedText: markdownSelected
-            )
+            let currentSnapshot = snapshot
+                ?? RichTextConverter.serializationSnapshot(from: textView.attributedText ?? NSAttributedString())
+            let nextSelection = currentSnapshot.markdownSelection(for: selectedRange)
 
             guard selection.wrappedValue != nextSelection else { return }
             DispatchQueue.main.async {
@@ -1016,6 +1014,7 @@ class InteractiveTextView: UITextView {
     var onCheckboxTap: ((Int, NSRange) -> Void)?
     var editorBaseFont: UIFont = .systemFont(ofSize: 17)
     var editorBaseTextColor: UIColor = .label
+    weak var editorSession: MarkdownEditorSession?
     private let checkboxTapTargetWidth: CGFloat = 44
     private let checkboxTapVerticalPadding: CGFloat = 10
     private weak var checkboxTapGesture: UITapGestureRecognizer?
@@ -1064,39 +1063,12 @@ class InteractiveTextView: UITextView {
     // MARK: - Paste Handling
     
     override func paste(_ sender: Any?) {
-        // Intercept paste to normalize text AND apply markdown formatting immediately
-        if let pasteboardString = UIPasteboard.general.string {
-            // Use the Converter to parse the pasted text as Markdown
-            // This ensures if I paste "• Hello", it becomes an Orange bullet, not black text.
-            // Use the editor's configured base font/color instead of self.font,
-            // which returns nil (or a small default) when textStorage has mixed fonts.
-            let fontToUse = editorBaseFont
-            let colorToUse = editorBaseTextColor
-            
-            let formattedText = RichTextConverter.markdownToAttributedString(
-                pasteboardString, 
-                baseFont: fontToUse, 
-                textColor: colorToUse
-            )
-            
-            let len = formattedText.length
-            
-            // Insert at current selection
-            let selectedRange = self.selectedRange
-            textStorage.beginEditing()
-            if selectedRange.length > 0 {
-                textStorage.replaceCharacters(in: selectedRange, with: formattedText)
-            } else {
-                textStorage.insert(formattedText, at: selectedRange.location)
-            }
-            textStorage.endEditing()
-            
-            // Move cursor to end of pasted text
-            self.selectedRange = NSRange(location: selectedRange.location + len, length: 0)
-            
-            // Notify Changes
-            delegate?.textViewDidChange?(self)
-            NotificationCenter.default.post(name: UITextView.textDidChangeNotification, object: self)
+        // Pasted text is intentionally matched to the ChillNote editor theme.
+        // Source-app fonts and accidental Markdown-looking prefixes must not
+        // change the surrounding document style.
+        if let pasteboardString = UIPasteboard.general.string,
+           let editorSession {
+            editorSession.pastePlainText(pasteboardString, into: self)
         } else {
             super.paste(sender)
         }

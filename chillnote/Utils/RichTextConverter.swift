@@ -1,6 +1,66 @@
 import SwiftUI
 import UIKit
 
+struct RichTextSerializationSnapshot {
+    let markdown: String
+    let visualBoundaryToMarkdownCharacterOffset: [Int]
+    let visualBoundaryToMarkdownSelectionEndOffset: [Int]
+
+    func markdownSelection(for visualRange: NSRange) -> RichTextEditorSelection {
+        let startVisual = min(max(visualRange.location, 0), visualBoundaryToMarkdownCharacterOffset.count - 1)
+        let endVisual = min(
+            max(visualRange.location + visualRange.length, startVisual),
+            visualBoundaryToMarkdownCharacterOffset.count - 1
+        )
+        let start = visualBoundaryToMarkdownCharacterOffset[startVisual]
+        let end = max(start, visualBoundaryToMarkdownSelectionEndOffset[endVisual])
+        let selectedText = substring(characterLocation: start, length: end - start)
+        return RichTextEditorSelection(location: start, length: end - start, selectedText: selectedText)
+    }
+
+    func visualRange(forMarkdownLocation location: Int, length: Int) -> NSRange {
+        let boundedStart = min(max(location, 0), markdown.count)
+        let boundedEnd = min(max(location + length, boundedStart), markdown.count)
+        let start = nearestVisualBoundary(toMarkdownOffset: boundedStart)
+        let end = nearestVisualBoundary(
+            toMarkdownOffset: boundedEnd,
+            mapping: visualBoundaryToMarkdownSelectionEndOffset
+        )
+        return NSRange(location: start, length: max(0, end - start))
+    }
+
+    private func nearestVisualBoundary(
+        toMarkdownOffset target: Int,
+        mapping: [Int]? = nil
+    ) -> Int {
+        let offsets = mapping ?? visualBoundaryToMarkdownCharacterOffset
+        guard !offsets.isEmpty else { return 0 }
+        var bestIndex = 0
+        var bestDistance = Int.max
+        for (index, offset) in offsets.enumerated() {
+            let distance = abs(offset - target)
+            let bestOffset = offsets[bestIndex]
+            let isBetterTie = distance == bestDistance
+                && bestOffset > target
+                && offset <= target
+            if distance < bestDistance || isBetterTie {
+                bestIndex = index
+                bestDistance = distance
+            }
+        }
+        return bestIndex
+    }
+
+    private func substring(characterLocation: Int, length: Int) -> String {
+        guard length > 0,
+              let start = markdown.index(markdown.startIndex, offsetBy: characterLocation, limitedBy: markdown.endIndex),
+              let end = markdown.index(start, offsetBy: length, limitedBy: markdown.endIndex) else {
+            return ""
+        }
+        return String(markdown[start..<end])
+    }
+}
+
 /// Utility for converting between Markdown and NSAttributedString
 /// Supports bidirectional conversion for a WYSIWYG editing experience.
 struct RichTextConverter {
@@ -66,26 +126,36 @@ struct RichTextConverter {
         static let blockquote = NSAttributedString.Key("richTextBlockquote") // Bool
         static let divider = NSAttributedString.Key("richTextDivider") // Bool
         static let imageURL = NSAttributedString.Key("richTextImageURL") // String
+        static let inlineCode = NSAttributedString.Key("richTextInlineCode") // Bool
     }
     
     // MARK: - Markdown -> AttributedString
     
     static func markdownToAttributedString(_ markdown: String, baseFont: UIFont = .systemFont(ofSize: Config.baseFontSize), textColor: UIColor = .label) -> NSAttributedString {
         let result = NSMutableAttributedString()
-        let lines = markdown.components(separatedBy: "\n")
+        let normalizedLineEndings = markdown
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+            .replacingOccurrences(of: "\u{2028}", with: "\n")
+            .replacingOccurrences(of: "\u{2029}", with: "\n")
+        let lines = normalizedLineEndings.components(separatedBy: "\n")
         
         for (index, line) in lines.enumerated() {
             let parsedLine = parseLine(line, baseFont: baseFont, textColor: textColor)
             result.append(parsedLine)
             
             if index < lines.count - 1 {
-                result.append(NSAttributedString(string: "\n"))
+                result.append(NSAttributedString(string: "\n", attributes: [
+                    .font: baseFont,
+                    .foregroundColor: textColor,
+                    .paragraphStyle: Config.baseStyle()
+                ]))
             }
         }
         
         return result
     }
-    
+
     private static func parseLine(_ line: String, baseFont: UIFont, textColor: UIColor) -> NSAttributedString {
         let trimmed = line.trimmingCharacters(in: .whitespaces)
         let paragraphStyle = Config.baseStyle()
@@ -340,10 +410,20 @@ struct RichTextConverter {
         
         while currentIndex < text.endIndex {
             let remaining = text[currentIndex...]
+
+            // Escaped Markdown punctuation is literal text. This is especially
+            // important for paste-and-match-style, where copied "# text" must
+            // stay regular text after reopening the note.
+            if remaining.hasPrefix("\\"), text.index(after: currentIndex) < text.endIndex {
+                let escapedIndex = text.index(after: currentIndex)
+                result.append(NSAttributedString(string: String(text[escapedIndex]), attributes: baseAttrs))
+                currentIndex = text.index(after: escapedIndex)
+                continue
+            }
             
             // Bold **
             if remaining.hasPrefix("**"), let end = text.range(of: "**", range: text.index(currentIndex, offsetBy: 2)..<text.endIndex)?.lowerBound {
-                let content = String(text[text.index(currentIndex, offsetBy: 2)..<end])
+                let content = unescapeInlineText(String(text[text.index(currentIndex, offsetBy: 2)..<end]))
                 let boldFont = applyTrait(.traitBold, to: baseFont)
                 var attrs = baseAttrs
                 attrs[.font] = boldFont
@@ -354,7 +434,7 @@ struct RichTextConverter {
             
             // Legacy italic markdown *text* -> plain text (italic feature removed)
             if remaining.hasPrefix("*"), !remaining.hasPrefix("**"), let end = text.range(of: "*", range: text.index(currentIndex, offsetBy: 1)..<text.endIndex)?.lowerBound {
-                let content = String(text[text.index(currentIndex, offsetBy: 1)..<end])
+                let content = unescapeInlineText(String(text[text.index(currentIndex, offsetBy: 1)..<end]))
                 result.append(NSAttributedString(string: content, attributes: baseAttrs))
                 currentIndex = text.index(end, offsetBy: 1)
                 continue
@@ -362,15 +442,16 @@ struct RichTextConverter {
             
             // Code `
             if remaining.hasPrefix("`"), let end = text.range(of: "`", range: text.index(currentIndex, offsetBy: 1)..<text.endIndex)?.lowerBound {
-                let content = String(text[text.index(currentIndex, offsetBy: 1)..<end])
+                let content = unescapeInlineText(String(text[text.index(currentIndex, offsetBy: 1)..<end]))
                 let codeFont = UIFont.monospacedSystemFont(ofSize: baseFont.pointSize - 1, weight: .regular)
                 let attrs: [NSAttributedString.Key: Any] = [
                     .font: codeFont,
                     .foregroundColor: Config.codeColor,
                     .backgroundColor: Config.codeBgColor,
-                    .paragraphStyle: paragraphStyle
+                    .paragraphStyle: paragraphStyle,
+                    Key.inlineCode: true
                 ]
-                result.append(NSAttributedString(string: " \(content) ", attributes: attrs))
+                result.append(NSAttributedString(string: content, attributes: attrs))
                 currentIndex = text.index(end, offsetBy: 1)
                 continue
             }
@@ -386,161 +467,313 @@ struct RichTextConverter {
     // MARK: - AttributedString -> Markdown
     
     static func attributedStringToMarkdown(_ attr: NSAttributedString) -> String {
-        var lines: [String] = []
-        let string = attr.string
-        
-        // Split by newline AND enumerate attributes line by line
-        // We use enumerateSubstrings to handle line splitting safely
-        string.enumerateSubstrings(in: string.startIndex..<string.endIndex, options: .byLines) { (substring, subRange, enclosingRange, stop) in
-            guard let lineText = substring else { return }
-            
-            // Convert String position to NSRange
-            let lineNSRange = NSRange(subRange, in: string)
-            
-            // We look at the attributes of the first effective character of the line to determine block type
-            // (Use safe check in case line is empty)
-            if lineNSRange.length > 0 {
-                let firstCharAttrs = attr.attributes(at: lineNSRange.location, effectiveRange: nil)
-                let markdownLine = processLineToMarkdown(lineText, attributes: firstCharAttrs, fullAttributedLine: attr.attributedSubstring(from: lineNSRange))
-                lines.append(markdownLine)
-            } else {
-                lines.append("") // Empty line
-            }
-        }
-        
-        return lines.joined(separator: "\n")
+        serializationSnapshot(from: attr).markdown
     }
-    
-    private static func processLineToMarkdown(_ text: String, attributes: [NSAttributedString.Key: Any], fullAttributedLine: NSAttributedString) -> String {
-        if let imageURL = attributes[Key.imageURL] as? String {
-            return "![](\(imageURL))"
-        }
 
-        // 1. Header
-        if let level = attributes[Key.headerLevel] as? Int {
-            let prefix = String(repeating: "#", count: level)
-            let content = inlineToMarkdown(fullAttributedLine, ignoreBold: true) // Headers are bold by default, so don't add **
-            return "\(prefix) \(content)"
-        }
-        
-        // 2. Checkbox
-        if let isChecked = attributes[Key.checkbox] as? Bool {
-            let prefix = isChecked ? "- [x] " : "- [ ] "
-            // The text usually contains the visual checkbox symbol at start, we should strip it
-            let contentStr = stripPrefixTokens(
-                text,
-                tokens: [Config.checkboxAttachmentPrefix, "\(Config.checkboxCheckedSymbol) ", "\(Config.checkboxUncheckedSymbol) "]
+    static func serializationSnapshot(from attr: NSAttributedString) -> RichTextSerializationSnapshot {
+        let source = attr.string as NSString
+        var markdown = ""
+        var mapping = Array(repeating: 0, count: attr.length + 1)
+        var selectionEndMapping = Array(repeating: 0, count: attr.length + 1)
+        var lineStart = 0
+
+        while lineStart < source.length {
+            let fullLineRange = source.lineRange(for: NSRange(location: lineStart, length: 0))
+            let hasNewline = fullLineRange.length > 0
+                && source.substring(with: NSRange(location: fullLineRange.upperBound - 1, length: 1)) == "\n"
+            let contentRange = NSRange(
+                location: fullLineRange.location,
+                length: fullLineRange.length - (hasNewline ? 1 : 0)
             )
-            let contentAttr = stripPrefixTokenLen(fullAttributedLine, length: text.count - contentStr.count)
-            return "\(prefix)\(inlineToMarkdown(contentAttr))"
-        }
-        
-        // 3. Bullet
-        if attributes[Key.bullet] != nil {
-            let contentStr = stripPrefixTokens(text, tokens: ["• "])
-            let contentAttr = stripPrefixTokenLen(fullAttributedLine, length: text.count - contentStr.count)
-            return "- \(inlineToMarkdown(contentAttr))"
-        }
-        
-        // 4. Numbered List
-        if let prefix = attributes[Key.orderedList] as? String {
-             // prefix is like "1. "
-             // We need to strip it from the text logic
-            let contentStr = stripPrefixTokens(text, tokens: [prefix])
-            let contentAttr = stripPrefixTokenLen(fullAttributedLine, length: text.count - contentStr.count)
-            return "\(prefix)\(inlineToMarkdown(contentAttr))"
-        }
-        
-        // 5. Blockquote
-        if attributes[Key.blockquote] != nil {
-            let contentStr = stripPrefixTokens(text, tokens: ["│ "])
-            let contentAttr = stripPrefixTokenLen(fullAttributedLine, length: text.count - contentStr.count)
-            return "> \(inlineToMarkdown(contentAttr))"
-        }
-        
-        // 6. Divider
-        if attributes[Key.divider] != nil {
-            return "---"
-        }
-        
-        // 7. Regular Text
-        return inlineToMarkdown(fullAttributedLine)
-    }
-    
-    private static func inlineToMarkdown(_ attrStr: NSAttributedString, ignoreBold: Bool = false) -> String {
-        var result = ""
-        
-        attrStr.enumerateAttributes(in: NSRange(location: 0, length: attrStr.length), options: []) { (attrs, range, stop) in
-            let rawText = (attrStr.string as NSString).substring(with: range)
+            appendLine(
+                from: attr,
+                range: contentRange,
+                markdown: &markdown,
+                mapping: &mapping,
+                selectionEndMapping: &selectionEndMapping
+            )
 
-            // Check for Code (Purple background/color)
-            if let bgColor = attrs[.backgroundColor] as? UIColor, 
-               bgColor == Config.codeBgColor { // Basic check
-                let codeContent = trimSinglePaddingSpace(rawText)
-                result += "`\(codeContent)`"
-                return
+            if hasNewline {
+                mapping[contentRange.upperBound] = markdown.count
+                markdown.append("\n")
+                mapping[fullLineRange.upperBound] = markdown.count
+                selectionEndMapping[fullLineRange.upperBound] = markdown.count
             }
-            
-            // Detect Code based on font?
-            if let font = attrs[.font] as? UIFont, font.fontName.contains("Mono") {
-                 // It's likely code.
-                 // The parser added spaces around it: " content "
-                 // We trim one space from ends?
-                 let codeContent = trimSinglePaddingSpace(rawText)
-                 result += "`\(codeContent)`"
-                 return
+            lineStart = fullLineRange.upperBound
+        }
+
+        if attr.length == 0 {
+            mapping[0] = 0
+            selectionEndMapping[0] = 0
+        } else if lineStart == attr.length {
+            mapping[attr.length] = markdown.count
+        }
+
+        return RichTextSerializationSnapshot(
+            markdown: markdown,
+            visualBoundaryToMarkdownCharacterOffset: mapping,
+            visualBoundaryToMarkdownSelectionEndOffset: selectionEndMapping
+        )
+    }
+
+    private enum InlineStyle: Equatable {
+        case plain
+        case bold
+        case code
+    }
+
+    private static func appendLine(
+        from attr: NSAttributedString,
+        range: NSRange,
+        markdown: inout String,
+        mapping: inout [Int],
+        selectionEndMapping: inout [Int]
+    ) {
+        guard range.length > 0 else {
+            mapping[range.location] = markdown.count
+            selectionEndMapping[range.location] = markdown.count
+            return
+        }
+
+        let attributes = attr.attributes(at: range.location, effectiveRange: nil)
+        if let imageURL = attributes[Key.imageURL] as? String {
+            mapping[range.location] = markdown.count
+            selectionEndMapping[range.location] = markdown.count
+            markdown += "![](\(imageURL))"
+            mapping[range.upperBound] = markdown.count
+            selectionEndMapping[range.upperBound] = markdown.count
+            return
+        }
+
+        if attributes[Key.divider] != nil {
+            let start = markdown.count
+            markdown += "---"
+            for boundary in range.location...range.upperBound {
+                mapping[boundary] = boundary == range.upperBound ? markdown.count : start
+                selectionEndMapping[boundary] = mapping[boundary]
             }
-            
-            var chunk = rawText
-            
-            if let font = attrs[.font] as? UIFont {
-                let isBold = font.fontDescriptor.symbolicTraits.contains(.traitBold)
-                
-                if isBold && !ignoreBold {
-                     chunk = "**\(chunk)**"
+            return
+        }
+
+        var contentRange = range
+        var ignoreBold = false
+        var escapeBlockPrefix = false
+
+        if let level = attributes[Key.headerLevel] as? Int {
+            markdown += String(repeating: "#", count: level) + " "
+            mapping[range.location] = markdown.count
+            selectionEndMapping[range.location] = markdown.count
+            ignoreBold = true
+        } else if let checked = attributes[Key.checkbox] as? Bool {
+            let prefix = checked ? "- [x] " : "- [ ] "
+            appendVisualPrefix(
+                sourcePrefix: prefix,
+                visualLength: min(2, contentRange.length),
+                lineRange: &contentRange,
+                markdown: &markdown,
+                mapping: &mapping,
+                selectionEndMapping: &selectionEndMapping
+            )
+        } else if attributes[Key.bullet] != nil {
+            appendVisualPrefix(
+                sourcePrefix: "- ",
+                visualLength: min(2, contentRange.length),
+                lineRange: &contentRange,
+                markdown: &markdown,
+                mapping: &mapping,
+                selectionEndMapping: &selectionEndMapping
+            )
+        } else if let prefix = attributes[Key.orderedList] as? String {
+            appendVisualPrefix(
+                sourcePrefix: prefix,
+                visualLength: min((prefix as NSString).length, contentRange.length),
+                lineRange: &contentRange,
+                markdown: &markdown,
+                mapping: &mapping,
+                selectionEndMapping: &selectionEndMapping
+            )
+        } else if attributes[Key.blockquote] != nil {
+            appendVisualPrefix(
+                sourcePrefix: "> ",
+                visualLength: min(2, contentRange.length),
+                lineRange: &contentRange,
+                markdown: &markdown,
+                mapping: &mapping,
+                selectionEndMapping: &selectionEndMapping
+            )
+        } else {
+            escapeBlockPrefix = needsEscapedBlockPrefix(
+                (attr.string as NSString).substring(with: contentRange)
+            )
+        }
+
+        appendInline(
+            from: attr,
+            range: contentRange,
+            ignoreBold: ignoreBold,
+            escapeBlockPrefix: escapeBlockPrefix,
+            markdown: &markdown,
+            mapping: &mapping,
+            selectionEndMapping: &selectionEndMapping
+        )
+    }
+
+    private static func appendVisualPrefix(
+        sourcePrefix: String,
+        visualLength: Int,
+        lineRange: inout NSRange,
+        markdown: inout String,
+        mapping: inout [Int],
+        selectionEndMapping: inout [Int]
+    ) {
+        let start = lineRange.location
+        mapping[start] = markdown.count
+        selectionEndMapping[start] = markdown.count
+        markdown += sourcePrefix
+        let visualEnd = start + visualLength
+        if visualLength > 0 {
+            for boundary in (start + 1)...visualEnd {
+                mapping[boundary] = markdown.count
+                selectionEndMapping[boundary] = markdown.count
+            }
+        }
+        lineRange = NSRange(location: visualEnd, length: lineRange.length - visualLength)
+    }
+
+    private static func appendInline(
+        from attr: NSAttributedString,
+        range: NSRange,
+        ignoreBold: Bool,
+        escapeBlockPrefix: Bool,
+        markdown: inout String,
+        mapping: inout [Int],
+        selectionEndMapping: inout [Int]
+    ) {
+        guard range.length > 0 else {
+            mapping[range.location] = markdown.count
+            selectionEndMapping[range.location] = markdown.count
+            return
+        }
+
+        let nsText = attr.string as NSString
+        var cursor = range.location
+        var activeStyle: InlineStyle?
+        var isFirstCharacter = true
+
+        while cursor < range.upperBound {
+            let characterRange = NSIntersectionRange(
+                nsText.rangeOfComposedCharacterSequence(at: cursor),
+                range
+            )
+            let attributes = attr.attributes(at: cursor, effectiveRange: nil)
+            let style = inlineStyle(attributes: attributes, ignoreBold: ignoreBold)
+
+            // A visual boundary at the end of styled text has two valid
+            // Markdown positions: selections end before the closing marker,
+            // while a caret starts after it. Keep both affinities explicitly.
+            selectionEndMapping[characterRange.location] = markdown.count
+            if style != activeStyle {
+                if let activeStyle {
+                    markdown += closingMarker(for: activeStyle)
+                }
+                activeStyle = style
+                markdown += openingMarker(for: style)
+            }
+
+            if isFirstCharacter && escapeBlockPrefix {
+                markdown.append("\\")
+            }
+            mapping[characterRange.location] = markdown.count
+
+            let rawCharacter = nsText.substring(with: characterRange)
+            markdown += escapedInlineText(rawCharacter, style: style)
+            if characterRange.length > 1 {
+                for boundary in (characterRange.location + 1)..<characterRange.upperBound {
+                    mapping[boundary] = mapping[characterRange.location]
+                    selectionEndMapping[boundary] = selectionEndMapping[characterRange.location]
                 }
             }
-            
-            result += chunk
+            mapping[characterRange.upperBound] = markdown.count
+            selectionEndMapping[characterRange.upperBound] = markdown.count
+            cursor = characterRange.upperBound
+            isFirstCharacter = false
+        }
+
+        if let activeStyle {
+            markdown += closingMarker(for: activeStyle)
+            mapping[range.upperBound] = markdown.count
+        }
+    }
+
+    private static func inlineStyle(
+        attributes: [NSAttributedString.Key: Any],
+        ignoreBold: Bool
+    ) -> InlineStyle {
+        if attributes[Key.inlineCode] != nil {
+            return .code
+        }
+        if !ignoreBold,
+           (attributes[.font] as? UIFont)?.fontDescriptor.symbolicTraits.contains(.traitBold) == true {
+            return .bold
+        }
+        return .plain
+    }
+
+    private static func openingMarker(for style: InlineStyle) -> String {
+        switch style {
+        case .plain: ""
+        case .bold: "**"
+        case .code: "`"
+        }
+    }
+
+    private static func closingMarker(for style: InlineStyle) -> String {
+        openingMarker(for: style)
+    }
+
+    private static func escapedInlineText(_ text: String, style: InlineStyle) -> String {
+        var result = text.replacingOccurrences(of: "\\", with: "\\\\")
+        switch style {
+        case .plain, .bold:
+            result = result
+                .replacingOccurrences(of: "*", with: "\\*")
+                .replacingOccurrences(of: "`", with: "\\`")
+        case .code:
+            result = result.replacingOccurrences(of: "`", with: "\\`")
         }
         return result
     }
-    
+
+    private static func needsEscapedBlockPrefix(_ text: String) -> Bool {
+        text.range(of: #"^(#{1,3}\s|[-*>]\s|\d+\.\s|-\s\[[ xX]\]\s|!\[\]\(|---$|\*\*\*$|___$)"#, options: .regularExpression) != nil
+    }
+
+    private static func unescapeInlineText(_ text: String) -> String {
+        var result = ""
+        var isEscaping = false
+        for character in text {
+            if isEscaping {
+                result.append(character)
+                isEscaping = false
+            } else if character == "\\" {
+                isEscaping = true
+            } else {
+                result.append(character)
+            }
+        }
+        if isEscaping {
+            result.append("\\")
+        }
+        return result
+    }
+
     // --- Helpers ---
-    
+
     private static func applyTrait(_ trait: UIFontDescriptor.SymbolicTraits, to font: UIFont) -> UIFont {
         if let descriptor = font.fontDescriptor.withSymbolicTraits(trait) {
             return UIFont(descriptor: descriptor, size: font.pointSize)
         }
         return font
-    }
-    
-    private static func stripPrefixTokens(_ text: String, tokens: [String]) -> String {
-        for token in tokens {
-            if text.hasPrefix(token) {
-                return String(text.dropFirst(token.count))
-            }
-        }
-        return text
-    }
-    
-    private static func stripPrefixTokenLen(_ attr: NSAttributedString, length: Int) -> NSAttributedString {
-        if length <= 0 { return attr }
-        if length >= attr.length { return NSAttributedString() }
-        return attr.attributedSubstring(from: NSRange(location: length, length: attr.length - length))
-    }
-
-    
-
-    private static func trimSinglePaddingSpace(_ text: String) -> String {
-        var result = text
-        if result.hasPrefix(" ") {
-            result.removeFirst()
-        }
-        if result.hasSuffix(" ") {
-            result.removeLast()
-        }
-        return result
     }
 
     static func makeCheckedCheckboxPrefix(baseFont: UIFont, paragraphStyle: NSParagraphStyle) -> NSAttributedString {

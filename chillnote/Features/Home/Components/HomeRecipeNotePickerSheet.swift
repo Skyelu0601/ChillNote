@@ -86,7 +86,7 @@ private struct HomeRecipeNotePickerRow: View {
     let isSelected: Bool
 
     private var previewText: String {
-        let trimmed = note.content.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = note.displayText.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty {
             return L10n.text("home.recipe_picker.untitled_note")
         }

@@ -43,6 +43,7 @@ struct SettingsView: View {
                                 .font(.system(size: 24))
                                 .foregroundColor(.textMain)
                         }
+                        .buttonStyle(.bouncy)
                         Spacer()
                         Text(L10n.text("settings.title"))
                         .font(.bodyLarge)
@@ -216,7 +217,7 @@ struct SettingsView: View {
                         }
                         .padding(.top, 4)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.tactile)
                 }
                 .padding(20)
             } else {
@@ -244,7 +245,7 @@ struct SettingsView: View {
                     }
                     .padding(20)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.tactile)
             }
         }
         .background(Color.white)
@@ -261,7 +262,7 @@ struct SettingsView: View {
                     label: "settings.data.export_all_notes"
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.tactile)
 
             Divider().padding(.leading, 56)
 
@@ -273,7 +274,7 @@ struct SettingsView: View {
                     value: voiceTranscriptionLanguageSummary
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.tactile)
 
             Divider().padding(.leading, 56)
 
@@ -285,7 +286,7 @@ struct SettingsView: View {
                     value: mediaLinkTranscriptSectionsSummary
                 )
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.tactile)
 
             Divider().padding(.leading, 56)
 
@@ -294,7 +295,7 @@ struct SettingsView: View {
             Button(action: openAppSettings) {
                 SettingItem(icon: "shield", iconColor: settingsIconColor, label: "settings.data.permissions")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.tactile)
         }
         .background(Color.white)
         .cornerRadius(16)
@@ -306,7 +307,7 @@ struct SettingsView: View {
             Button(action: sendFeedback) {
                 SettingItem(icon: "envelope", iconColor: settingsIconColor, label: "settings.support.send_feedback")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.tactile)
             
             Divider().padding(.leading, 56)
 
@@ -314,21 +315,21 @@ struct SettingsView: View {
             Button(action: openPrivacyPolicy) {
                 SettingItem(icon: "hand.raised", iconColor: settingsIconColor, label: "settings.support.privacy_policy")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.tactile)
             
             Divider().padding(.leading, 56)
             
             Button(action: openUserAgreement) {
                 SettingItem(icon: "doc.text", iconColor: settingsIconColor, label: "settings.support.user_agreement")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.tactile)
             
             Divider().padding(.leading, 56)
             
             Button(action: { showAbout = true }) {
                 SettingItem(icon: "info.circle", iconColor: settingsIconColor, label: "settings.support.about")
             }
-            .buttonStyle(.plain)
+            .buttonStyle(.tactile)
             
             if authService.isSignedIn {
                 Divider().padding(.leading, 56)
@@ -338,7 +339,7 @@ struct SettingsView: View {
                 } label: {
                     SettingItem(icon: "trash", iconColor: settingsIconColor, label: "settings.account.delete_account", showChevron: true)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.tactile)
             }
         }
         .background(Color.white)
@@ -355,7 +356,7 @@ struct SettingsView: View {
                     } label: {
                         SettingItem(icon: "rectangle.portrait.and.arrow.right", iconColor: .red, label: "settings.account.sign_out", labelColor: .red, showChevron: false)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.tactile)
                 }
                 .background(Color.white)
                 .cornerRadius(16)
@@ -564,7 +565,7 @@ struct VoiceLanguagePreferenceSheet: View {
                             }
                             .contentShape(Rectangle())
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.tactile)
                     }
                     .listStyle(.plain)
                 }

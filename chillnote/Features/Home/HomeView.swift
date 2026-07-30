@@ -81,12 +81,12 @@ struct HomeView: View {
     @State var autoOpenPendingRecordings = false
     @State var latestTranscriptionFailureMessage = ""
     @State var showTranscriptionFailureAlert = false
-    @State var showAppRatingPrompt = false
     @State var lastClipboardLinkPasteboardChangeCount: Int?
     @State var isImportingClipboardLink = false
     @State var recentLinkImportURLs: [String: Date] = [:]
     @State var clipboardLinkImportErrorMessage = ""
     @State var showClipboardLinkImportErrorAlert = false
+    @State var showImportNotificationPermissionPrompt = false
 
     @State var hasScheduledInitialMaintenance = false
     @State var lastMaintenanceAt: Date?
@@ -98,6 +98,13 @@ struct HomeView: View {
     @State var bootstrappingUserId: String?
     @State var lastBootstrappedUserId: String?
     @State var shouldReloadAfterSync = false
+
+    var pendingLinkImportIDs: [UUID] {
+        homeViewModel.items
+            .filter(\.isLinkImportInProgress)
+            .map(\.id)
+            .sorted { $0.uuidString < $1.uuidString }
+    }
 
     var headerTitle: String {
         if isTrashSelected {
@@ -259,8 +266,10 @@ struct HomeView: View {
         .onChange(of: authService.currentUserId) { _, newUserId in
             guard let userId = newUserId else { return }
             Task {
+                await PushNotificationManager.shared.refreshRegistration()
                 await bootstrapHome(for: userId, source: .authChanged)
                 await checkForClipboardLinkImport()
+                await evaluateImportNotificationPermissionPrompt()
             }
         }
         )
@@ -314,21 +323,32 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .sharedImportsRequested)) { _ in
             importPendingSharedNotes(navigateToLatest: true)
         }
+        .onReceive(NotificationCenter.default.publisher(for: .pushNotificationDestinationRequested)) { _ in
+            handlePendingPushNotificationDestination()
+        }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             importPendingSharedNotes(navigateToLatest: false)
             scheduleMaintenance(reason: .foreground)
             Task {
+                await PushNotificationManager.shared.refreshRegistration()
                 await checkForClipboardLinkImport()
             }
         }
         .task {
             await checkForPendingRecordingsAsync()
             guard let userId = currentUserId else { return }
+            await PushNotificationManager.shared.refreshRegistration()
             await bootstrapHome(for: userId, source: .initialTask)
             importPendingSharedNotes(navigateToLatest: false)
             scheduleInitialMaintenance()
             await checkForClipboardLinkImport()
+            await evaluateImportNotificationPermissionPrompt()
+            handlePendingPushNotificationDestination()
+        }
+        .task(id: pendingLinkImportIDs) {
+            guard !pendingLinkImportIDs.isEmpty else { return }
+            await monitorLinkImportProgress()
         }
         )
     }
@@ -346,20 +366,26 @@ struct HomeView: View {
         } message: {
             Text(latestTranscriptionFailureMessage)
         }
-        .alert(L10n.text("home.rating_prompt.title"), isPresented: $showAppRatingPrompt) {
-            Button(L10n.text("home.rating_prompt.action.dislike")) {
-                AppRatingService.shared.openFeedbackEmail()
-            }
-            Button(L10n.text("home.rating_prompt.action.like")) {
-                AppRatingService.shared.requestInAppReview()
-            }
-        } message: {
-            Text(L10n.text("home.rating_prompt.message"))
-        }
         .alert(L10n.text("quick_capture.error.title"), isPresented: $showClipboardLinkImportErrorAlert) {
             Button(L10n.text("common.ok"), role: .cancel) { }
         } message: {
             Text(clipboardLinkImportErrorMessage)
+        }
+        .alert(
+            L10n.text("notification.permission.import.title"),
+            isPresented: $showImportNotificationPermissionPrompt
+        ) {
+            Button(L10n.text("notification.permission.import.enable")) {
+                markImportNotificationPermissionPromptSeen()
+                Task {
+                    await PushNotificationManager.shared.requestImportCompletionAlerts()
+                }
+            }
+            Button(L10n.text("notification.permission.import.not_now"), role: .cancel) {
+                markImportNotificationPermissionPromptSeen()
+            }
+        } message: {
+            Text(L10n.text("notification.permission.import.message"))
         }
         .sheet(item: $pendingHomeRecipe) { recipe in
             HomeRecipeNotePickerSheet(
@@ -409,7 +435,10 @@ struct HomeView: View {
 
     private func evaluateCreditGiftPrompt() {
         guard let userId = currentUserId else { return }
-        guard storeService.currentTier == .free else { return }
+        guard storeService.currentTier == .free else {
+            showCreditGiftPrompt = false
+            return
+        }
         guard storeService.hasFetchedCreditBalanceFromBackend else { return }
         guard storeService.creditBalance == initialFreeCreditGiftAmount else { return }
         guard !UserDefaults.standard.bool(forKey: creditGiftPromptSeenKey(for: userId)) else { return }

@@ -5,6 +5,7 @@ import GoMarketMe
 
 @main
 struct ChillScriptApp: App {
+    @UIApplicationDelegateAdaptor(ChillScriptAppDelegate.self) private var appDelegate
     @StateObject private var authService = AuthService.shared
     @StateObject private var syncManager = SyncManager()
     @StateObject private var dataService = DataService.shared

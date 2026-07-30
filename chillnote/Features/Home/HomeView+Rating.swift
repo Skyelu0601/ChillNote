@@ -2,13 +2,8 @@ import SwiftData
 import SwiftUI
 
 extension HomeView {
-    func scheduleAppRatingPrompt() {
-        Task {
-            try? await Task.sleep(nanoseconds: 3_000_000_000)
-            await MainActor.run {
-                showAppRatingPrompt = true
-            }
-        }
+    func requestAppRating() {
+        AppRatingService.shared.requestInAppReview()
     }
 
     func registerCompletedLinkImportsForRating() {
@@ -28,7 +23,7 @@ extension HomeView {
 
         for note in notes where isRateableCompletedLinkImport(note) {
             if AppRatingService.shared.registerSuccessfulLinkImportCompletion(noteID: note.id) {
-                scheduleAppRatingPrompt()
+                requestAppRating()
                 break
             }
         }

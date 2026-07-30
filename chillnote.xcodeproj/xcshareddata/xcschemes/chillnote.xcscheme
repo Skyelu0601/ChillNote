@@ -98,5 +98,23 @@
    <ArchiveAction
       buildConfiguration = "Release"
       revealArchiveInOrganizer = "YES">
+      <PostActions>
+         <ExecutionAction
+            ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
+            <ActionContent
+               title = "Add GoMarketMe dSYM"
+               scriptText = "&quot;${SRCROOT}/scripts/fix-gomarketme-dsym.sh&quot; &quot;${ARCHIVE_PATH}&quot;">
+               <EnvironmentBuildable>
+                  <BuildableReference
+                     BuildableIdentifier = "primary"
+                     BlueprintIdentifier = "499583C52F0BD2740053760D"
+                     BuildableName = "chillnote.app"
+                     BlueprintName = "chillnote"
+                     ReferencedContainer = "container:chillnote.xcodeproj">
+                  </BuildableReference>
+               </EnvironmentBuildable>
+            </ActionContent>
+         </ExecutionAction>
+      </PostActions>
    </ArchiveAction>
 </Scheme>

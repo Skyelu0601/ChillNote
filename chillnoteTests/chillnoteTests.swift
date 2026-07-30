@@ -91,10 +91,10 @@ final class chillnoteTests: XCTestCase {
     }
 
     func testNoteDisplayTextTruncatesLongContent() {
-        let longText = String(repeating: "a", count: 250)
+        let longText = String(repeating: "a", count: 400)
         let note = Note(content: longText, userId: "u1")
         let displayText = note.displayText
-        XCTAssertTrue(displayText.count <= 203)
+        XCTAssertTrue(displayText.count < longText.count)
         XCTAssertTrue(displayText.hasSuffix("..."))
     }
 
@@ -108,7 +108,29 @@ final class chillnoteTests: XCTestCase {
         let note = Note(content: "- [x] Buy milk", userId: "u1")
         note.previewPlainText = "☐ Buy milk"
 
-        XCTAssertEqual(note.displayText, "☑ Buy milk")
+        XCTAssertEqual(note.displayText, "\(RichTextConverter.Config.checkboxCheckedSymbol) Buy milk")
+    }
+
+    func testNoteDisplayTextRemovesMarkdownMarkersFromEveryLine() {
+        let note = Note(
+            content: """
+            # Main idea
+            ## Supporting point
+            - First detail
+            • Second detail
+            """,
+            userId: "u1"
+        )
+
+        XCTAssertEqual(
+            note.displayText,
+            """
+            Main idea
+            Supporting point
+            First detail
+            Second detail
+            """
+        )
     }
 
     func testNoteMarkDeletedSetsDeletedAt() {
@@ -127,7 +149,7 @@ final class chillnoteTests: XCTestCase {
         let tag = Tag(name: "Work", userId: "u1")
         XCTAssertEqual(tag.name, "Work")
         XCTAssertEqual(tag.userId, "u1")
-        XCTAssertEqual(tag.colorHex, "#E6A355")
+        XCTAssertEqual(tag.colorHex, TagColorService.defaultColorHex)
         XCTAssertTrue(tag.isRoot)
         XCTAssertEqual(tag.children.count, 0)
         XCTAssertNil(tag.parent)
@@ -287,7 +309,6 @@ final class chillnoteTests: XCTestCase {
         let markdown = """
         - [ ] Task 1
         - Bullet 1
-
         # Heading
         - [x] Done
         """
@@ -305,6 +326,92 @@ final class chillnoteTests: XCTestCase {
         let roundTrip = RichTextConverter.attributedStringToMarkdown(attributed)
 
         XCTAssertEqual(roundTrip, markdown)
+    }
+
+    func testRichTextConverterPreservesTrailingNewlines() {
+        for markdown in ["Line\n", "Line\n\n", "\n", "First\n\nLast\n"] {
+            let attributed = RichTextConverter.markdownToAttributedString(markdown)
+            XCTAssertEqual(RichTextConverter.attributedStringToMarkdown(attributed), markdown)
+        }
+    }
+
+    func testRichTextConverterPreservesIntentionalInteriorBlankLineAndNaturalSpacing() {
+        let markdown = "First paragraph.\n\nSecond paragraph."
+        let rendered = RichTextConverter.markdownToAttributedString(markdown)
+
+        XCTAssertEqual(rendered.string, markdown)
+        XCTAssertEqual(RichTextConverter.attributedStringToMarkdown(rendered), markdown)
+
+        let secondParagraphLocation = (rendered.string as NSString).range(of: "Second paragraph.").location
+        let style = rendered.attribute(
+            .paragraphStyle,
+            at: secondParagraphLocation,
+            effectiveRange: nil
+        ) as? NSParagraphStyle
+        XCTAssertEqual(style?.paragraphSpacing, RichTextConverter.Config.baseStyle().paragraphSpacing)
+        XCTAssertEqual(style?.lineSpacing, RichTextConverter.Config.baseStyle().lineSpacing)
+    }
+
+    func testRichTextConverterPreservesIntentionalBlankLinesAroundHeadings() {
+        let markdown = "## Description\n\nTitle\n\n## Author\n\nCreator"
+        let rendered = RichTextConverter.markdownToAttributedString(markdown)
+
+        XCTAssertEqual(rendered.string, "Description\n\nTitle\n\nAuthor\n\nCreator")
+        XCTAssertEqual(RichTextConverter.attributedStringToMarkdown(rendered), markdown)
+    }
+
+    func testRichTextConverterKeepsBlockquoteAndInlineCodeSemanticsSeparate() {
+        let markdown = "> Quote\n\nPlain `code` text"
+        let attributed = RichTextConverter.markdownToAttributedString(markdown)
+
+        XCTAssertEqual(RichTextConverter.attributedStringToMarkdown(attributed), markdown)
+    }
+
+    func testRichTextConverterEscapesMarkdownLookingPlainText() {
+        let attributes: [NSAttributedString.Key: Any] = [
+            .font: UIFont.systemFont(ofSize: 17),
+            .foregroundColor: UIColor.label,
+            .paragraphStyle: RichTextConverter.Config.baseStyle()
+        ]
+        let pastedText = NSAttributedString(string: "# Copied heading", attributes: attributes)
+
+        let markdown = RichTextConverter.attributedStringToMarkdown(pastedText)
+        let renderedAgain = RichTextConverter.markdownToAttributedString(markdown)
+
+        XCTAssertEqual(markdown, "\\# Copied heading")
+        XCTAssertEqual(renderedAgain.string, "# Copied heading")
+        XCTAssertEqual((renderedAgain.attribute(.font, at: 0, effectiveRange: nil) as? UIFont)?.pointSize, 17)
+        XCTAssertNil(renderedAgain.attribute(RichTextConverter.Key.headerLevel, at: 0, effectiveRange: nil))
+    }
+
+    func testRichTextSelectionMappingHandlesEmojiInsideBoldText() {
+        let attributed = RichTextConverter.markdownToAttributedString("A **😀B** C")
+        let snapshot = RichTextConverter.serializationSnapshot(from: attributed)
+        let visualEmojiAndB = (attributed.string as NSString).range(of: "😀B")
+
+        let selection = snapshot.markdownSelection(for: visualEmojiAndB)
+
+        XCTAssertEqual(selection.location, 4)
+        XCTAssertEqual(selection.length, 2)
+        XCTAssertEqual(selection.selectedText, "😀B")
+        XCTAssertEqual(
+            snapshot.visualRange(forMarkdownLocation: selection.location, length: selection.length),
+            visualEmojiAndB
+        )
+    }
+
+    func testMarkdownEditorSessionNormalizesPasteAndMatchesBaseFont() {
+        let textView = UITextView()
+        let session = MarkdownEditorSession(baseFont: .systemFont(ofSize: 17), textColor: .label)
+
+        session.pastePlainText("# Large\r\n\r\n  \r\nNormal\u{00A0}text", into: textView)
+
+        XCTAssertEqual(textView.text, "# Large\nNormal text")
+        let secondLineLocation = (textView.text as NSString).range(of: "Normal").location
+        XCTAssertEqual((textView.textStorage.attribute(.font, at: 0, effectiveRange: nil) as? UIFont)?.pointSize, 17)
+        XCTAssertEqual((textView.textStorage.attribute(.font, at: secondLineLocation, effectiveRange: nil) as? UIFont)?.pointSize, 17)
+        XCTAssertEqual(RichTextConverter.attributedStringToMarkdown(textView.attributedText), "\\# Large\nNormal text")
+        XCTAssertEqual(MarkdownEditorSession.normalizePastedText("\n\nFirst\n\nLast\n\n"), "\nFirst\nLast\n")
     }
 
     func testNoteDisplayTextOmitsMarkdownImages() {

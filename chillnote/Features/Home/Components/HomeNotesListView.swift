@@ -60,24 +60,36 @@ struct HomeNotesListView: View {
                     )
                     Group {
                         if isTrashSelected {
-                            NavigationLink(value: note) {
-                                VStack(alignment: .leading, spacing: 8) {
-                                    NoteCard(item: item)
-                                    TrashNoteFooterView(note: note)
+                            ZStack(alignment: .topTrailing) {
+                                NavigationLink(value: note) {
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        NoteCard(item: item)
+                                        TrashNoteFooterView(note: note)
+                                    }
                                 }
-                            }
-                            .buttonStyle(.plain)
-                            .contextMenu {
-                                Button {
-                                    onRestoreNote(note)
-                                } label: {
-                                    Label(L10n.text("home.notes.action.restore"), systemImage: "arrow.uturn.left")
+                                .buttonStyle(.tactile)
+
+                                NoteOverflowMenu {
+                                    Button {
+                                        onRestoreNote(note)
+                                    } label: {
+                                        Label(
+                                            L10n.text("home.notes.action.restore"),
+                                            systemImage: "arrow.uturn.left"
+                                        )
+                                    }
+
+                                    Button(role: .destructive) {
+                                        onDeleteNotePermanently(note)
+                                    } label: {
+                                        Label(
+                                            L10n.text("home.notes.action.delete_permanently"),
+                                            systemImage: "trash.slash"
+                                        )
+                                    }
                                 }
-                                Button(role: .destructive) {
-                                    onDeleteNotePermanently(note)
-                                } label: {
-                                    Label(L10n.text("home.notes.action.delete_permanently"), systemImage: "trash.slash")
-                                }
+                                .padding(.top, 10)
+                                .padding(.trailing, 10)
                             }
                         } else if isSelectionMode {
                             NoteCard(
@@ -93,33 +105,42 @@ struct HomeNotesListView: View {
                                 onToggleNoteSelection(note)
                             }
                         } else {
-                            NavigationLink(value: note) {
-                                NoteCard(item: item)
-                            }
-                            .buttonStyle(.plain)
-                            .contextMenu {
-                                Button {
-                                    onTogglePin(note)
-                                } label: {
-                                    Label(
-                                        note.pinnedAt == nil ? L10n.text("home.notes.action.pin") : L10n.text("home.notes.action.unpin"),
-                                        systemImage: note.pinnedAt == nil ? "pin" : "pin.slash"
-                                    )
+                            ZStack(alignment: .topTrailing) {
+                                NavigationLink(value: note) {
+                                    NoteCard(item: item)
                                 }
-                                ForEach(NoteSection.allCases) { section in
-                                    if note.section != section {
-                                        Button {
-                                            onMoveNote(note, section)
-                                        } label: {
-                                            Label(section.moveActionTitle, systemImage: section.systemImage)
+                                .buttonStyle(.tactile)
+
+                                NoteOverflowMenu {
+                                    Button {
+                                        onTogglePin(note)
+                                    } label: {
+                                        Label(
+                                            note.pinnedAt == nil
+                                            ? L10n.text("home.notes.action.pin")
+                                            : L10n.text("home.notes.action.unpin"),
+                                            systemImage: note.pinnedAt == nil ? "pin" : "pin.slash"
+                                        )
+                                    }
+
+                                    ForEach(NoteSection.allCases) { section in
+                                        if note.section != section {
+                                            Button {
+                                                onMoveNote(note, section)
+                                            } label: {
+                                                Label(section.moveActionTitle, systemImage: section.systemImage)
+                                            }
                                         }
                                     }
+
+                                    Button(role: .destructive) {
+                                        onDeleteNote(note)
+                                    } label: {
+                                        Label(L10n.text("common.delete"), systemImage: "trash")
+                                    }
                                 }
-                                Button(role: .destructive) {
-                                    onDeleteNote(note)
-                                } label: {
-                                    Label(L10n.text("common.delete"), systemImage: "trash")
-                                }
+                                .padding(.top, 10)
+                                .padding(.trailing, 10)
                             }
                         }
                     }
@@ -145,6 +166,33 @@ struct HomeNotesListView: View {
         }
     }
 }
+
+private struct NoteOverflowMenu<Actions: View>: View {
+    @ViewBuilder let actions: () -> Actions
+
+    var body: some View {
+        actionsMenu
+            .buttonStyle(.plain)
+            .accessibilityLabel(L10n.text("note_detail.header.accessibility.more_actions"))
+    }
+
+    private var actionsMenu: some View {
+        Menu(content: actions) {
+            NoteOverflowMenuLabel()
+        }
+    }
+}
+
+private struct NoteOverflowMenuLabel: View {
+    var body: some View {
+        Image(systemName: "ellipsis")
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundStyle(Color.textSub)
+            .frame(width: 36, height: 36)
+            .contentShape(Circle())
+    }
+}
+
 private struct HomeNotesLoadingView: View {
     var body: some View {
         LazyVStack(spacing: 16) {
@@ -318,8 +366,10 @@ struct NoteCard: View {
                     Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(isSelected ? .accentPrimary : .textSub)
+                        .contentTransition(.symbolEffect(.replace))
+                        .symbolEffect(.bounce, value: isSelected)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bouncy)
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -416,33 +466,40 @@ struct NoteCard: View {
 }
 
 private struct LinkImportPreparingView: View {
-    @State private var isBreathing = false
-    @State private var shimmerOffset: CGFloat = -0.7
+    @State private var isAnimating = false
 
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             ZStack {
                 Circle()
-                    .fill(Color.accentPrimary.opacity(isBreathing ? 0.18 : 0.10))
-                    .frame(width: 36, height: 36)
-                    .scaleEffect(isBreathing ? 1.08 : 0.96)
+                    .stroke(Color.accentPrimary.opacity(0.12), lineWidth: 2.5)
 
                 Circle()
-                    .stroke(Color.accentPrimary.opacity(isBreathing ? 0.18 : 0.08), lineWidth: 1)
-                    .frame(width: 42, height: 42)
-                    .scaleEffect(isBreathing ? 1.04 : 0.92)
-
-                Image(systemName: "sparkles")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundColor(.accentPrimary)
-                    .symbolEffect(.pulse, isActive: true)
+                    .trim(from: 0.08, to: 0.82)
+                    .stroke(
+                        AngularGradient(
+                            colors: [
+                                Color.accentPrimary.opacity(0.32),
+                                Color.accentPrimary,
+                                Color.accentPrimary
+                            ],
+                            center: .center
+                        ),
+                        style: StrokeStyle(lineWidth: 2.5, lineCap: .round)
+                    )
+                    .rotationEffect(.degrees(isAnimating ? 360 : 0))
+                    .animation(
+                        .linear(duration: 0.9).repeatForever(autoreverses: false),
+                        value: isAnimating
+                    )
             }
-            .frame(width: 44, height: 44)
-            .accessibilityHidden(true)
+                .frame(width: 20, height: 20)
+                .padding(.top, 1)
+                .accessibilityHidden(true)
 
-            VStack(alignment: .leading, spacing: 7) {
+            VStack(alignment: .leading, spacing: 6) {
                 Text(L10n.text("quick_capture.link_import.card.title"))
-                    .font(.system(.subheadline, design: .rounded).weight(.semibold))
+                    .font(.bodyMedium.weight(.semibold))
                     .foregroundColor(.textMain)
                     .lineLimit(2)
                     .fixedSize(horizontal: false, vertical: true)
@@ -454,59 +511,28 @@ private struct LinkImportPreparingView: View {
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
 
-                LinkImportShimmerLine(offset: shimmerOffset)
-                    .frame(height: 4)
-                    .padding(.top, 1)
+                HStack(spacing: 5) {
+                    ForEach(0..<3, id: \.self) { index in
+                        Circle()
+                            .fill(Color.accentPrimary)
+                            .frame(width: 5, height: 5)
+                            .scaleEffect(isAnimating ? 1 : 0.72)
+                            .opacity(isAnimating ? 0.32 : 0.9)
+                            .animation(
+                                .easeInOut(duration: 0.8)
+                                    .repeatForever(autoreverses: true)
+                                    .delay(Double(index) * 0.16),
+                                value: isAnimating
+                            )
+                    }
+                }
+                .padding(.top, 1)
             }
         }
-        .padding(12)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.accentPrimary.opacity(0.055))
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.accentPrimary.opacity(0.10), lineWidth: 1)
-        )
         .onAppear {
-            withAnimation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true)) {
-                isBreathing = true
-            }
-            withAnimation(.linear(duration: 1.8).repeatForever(autoreverses: false)) {
-                shimmerOffset = 0.7
-            }
+            isAnimating = true
         }
-    }
-}
-
-private struct LinkImportShimmerLine: View {
-    let offset: CGFloat
-
-    var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.accentPrimary.opacity(0.12))
-
-                Capsule()
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color.accentPrimary.opacity(0.02),
-                                Color.accentPrimary.opacity(0.45),
-                                Color.accentPrimary.opacity(0.02)
-                            ],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
-                    .frame(width: max(proxy.size.width * 0.36, 48))
-                    .offset(x: proxy.size.width * offset)
-            }
-            .clipShape(Capsule())
-        }
-        .accessibilityHidden(true)
     }
 }
 

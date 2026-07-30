@@ -29,11 +29,10 @@ final class QuickCaptureImportServiceTests: XCTestCase {
             metadata: metadata,
             transcript: "第一句转写",
             polishTranscript: false,
-            extractHook: false,
             preferences: .all
         )
 
-        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\n\n示例标题\n\n## \(authorHeading)\n\nCreator\n\n## \(hookHeading)\n\n第一句转写\n\n## \(transcriptHeading)"))
+        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\n示例标题\n## \(authorHeading)\nCreator\n## \(hookHeading)\n第一句转写\n## \(transcriptHeading)"))
         XCTAssertFalse(note.hasPrefix("# "))
         XCTAssertFalse(note.contains("**示例标题**"))
         XCTAssertFalse(note.contains("#tag"))
@@ -60,13 +59,12 @@ final class QuickCaptureImportServiceTests: XCTestCase {
 
         let note = await service.makeCreatorMediaTranscriptNote(
             metadata: metadata,
-            transcript: "Only the transcript",
+            transcript: "First paragraph.\n\nSecond paragraph.",
             polishTranscript: false,
-            extractHook: false,
             preferences: preferences
         )
 
-        XCTAssertEqual(note, "## \(transcriptHeading)\n\nOnly the transcript")
+        XCTAssertEqual(note, "## \(transcriptHeading)\nFirst paragraph.\nSecond paragraph.")
         XCTAssertFalse(note.contains(descriptionHeading))
         XCTAssertFalse(note.contains(authorHeading))
         XCTAssertFalse(note.contains(hookHeading))
@@ -83,7 +81,7 @@ final class QuickCaptureImportServiceTests: XCTestCase {
 
         let note = service.makeCreatorMediaLinkNote(metadata: metadata)
 
-        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\n\nVideo Title\n\n## \(authorHeading)\n\nCreator Name"))
+        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\nVideo Title\n## \(authorHeading)\nCreator Name"))
         XCTAssertTrue(note.contains("Creator Name"))
         XCTAssertFalse(note.contains(L10n.text("quick_capture.media_link.topic_heading")))
         XCTAssertFalse(note.contains("https://youtube.com/@creator"))
@@ -129,7 +127,7 @@ final class QuickCaptureImportServiceTests: XCTestCase {
             )
         )
 
-        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\n\nLast year I introduced a food program for CampTO\n\n## \(authorHeading)"))
+        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\nLast year I introduced a food program for CampTO\n## \(authorHeading)"))
         XCTAssertTrue(note.contains("Mayor Olivia Chow 🇨🇦"))
         XCTAssertFalse(note.contains("未知作者"))
     }
@@ -145,7 +143,7 @@ final class QuickCaptureImportServiceTests: XCTestCase {
 
         let note = service.makeCreatorMediaLinkNote(metadata: metadata)
 
-        XCTAssertTrue(note.contains("## \(authorHeading)\n\ncreator"))
+        XCTAssertTrue(note.contains("## \(authorHeading)\ncreator"))
         XCTAssertFalse(note.contains("@creator"))
     }
 }

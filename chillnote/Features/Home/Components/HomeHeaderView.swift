@@ -23,77 +23,8 @@ struct HomeHeaderView: View {
     let onShowEmptyTrashConfirmation: () -> Void
 
     var body: some View {
-        HStack {
-            if !isSelectionMode {
-                Button(action: onToggleSidebar) {
-                    Image(systemName: "line.3.horizontal")
-                        .font(.system(size: 24, weight: .medium))
-                        .foregroundColor(.textMain)
-                        .frame(width: 44, height: 44)
-                        .overlay(alignment: .topTrailing) {
-                            if hasPendingRecordings {
-                                Circle()
-                                    .fill(Color.red)
-                                    .frame(width: 8, height: 8)
-                                    .offset(x: -8, y: 8)
-                            }
-                        }
-                }
-                .buttonStyle(.bouncy)
-                .padding(.leading, -10)
-
-                if isTrashSelected {
-                    Text(headerTitle)
-                        .font(.system(size: 24, weight: .semibold, design: .serif))
-                        .foregroundColor(.black)
-                } else {
-                    Menu {
-                        Button(action: onEnterSelectionMode) {
-                            Label(L10n.text("home.header.title_menu.select_notes"), systemImage: "checkmark.circle")
-                        }
-                    } label: {
-                        HStack(spacing: 5) {
-                            Text(headerTitle)
-                                .font(.system(size: 24, weight: .semibold, design: .serif))
-                                .foregroundColor(.black)
-
-                            Image(systemName: "chevron.down")
-                                .font(.system(size: 11, weight: .bold))
-                                .foregroundColor(.textSub.opacity(0.78))
-                                .offset(y: 1)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(L10n.text("home.header.accessibility.title_menu"))
-                }
-
-                Spacer()
-
-                HStack(spacing: 6) {
-                    Button(action: onToggleSearch) {
-                        HomeHeaderToolIcon(
-                            systemImage: "magnifyingglass",
-                            tint: isSearchVisible ? .brandBlue : .textSub,
-                            isHighlighted: isSearchVisible
-                        )
-                    }
-                    .buttonStyle(.bouncy)
-                    .disabled(isRecording)
-                    .accessibilityLabel(L10n.text("home.header.accessibility.search"))
-
-                    if isTrashSelected {
-                        Button(action: onShowEmptyTrashConfirmation) {
-                            HomeHeaderToolIcon(
-                                systemImage: "trash.slash",
-                                tint: .red.opacity(0.85)
-                            )
-                        }
-                        .buttonStyle(.bouncy)
-                        .accessibilityLabel(L10n.text("home.header.accessibility.empty_recycle_bin"))
-                    }
-                }
-                .opacity(isRecording ? 0.3 : 1.0)
-            } else {
+        Group {
+            if isSelectionMode {
                 HStack {
                     Button(L10n.text("common.cancel")) {
                         onExitSelectionMode()
@@ -136,10 +67,109 @@ struct HomeHeaderView: View {
                     }
                 }
                 .padding(.vertical, 8)
+            } else {
+                ZStack {
+                    HStack {
+                        sidebarButton
+
+                        Spacer()
+
+                        trailingTools
+                    }
+
+                    headerTitleView
+                }
             }
         }
         .padding(.horizontal, 24)
         .padding(.top, 20)
+    }
+
+    private var sidebarButton: some View {
+        Button(action: onToggleSidebar) {
+            Image(systemName: "line.3.horizontal")
+                .font(.system(size: 24, weight: .medium))
+                .foregroundColor(.textMain)
+                .frame(width: 44, height: 44)
+                .overlay(alignment: .topTrailing) {
+                    if hasPendingRecordings {
+                        Circle()
+                            .fill(Color.red)
+                            .frame(width: 8, height: 8)
+                            .offset(x: -8, y: 8)
+                    }
+                }
+        }
+        .buttonStyle(.bouncy)
+        .padding(.leading, -10)
+    }
+
+    @ViewBuilder
+    private var headerTitleView: some View {
+        if isTrashSelected {
+            titleText
+        } else {
+            Menu {
+                Button(action: onEnterSelectionMode) {
+                    Label(L10n.text("home.header.title_menu.select_notes"), systemImage: "checkmark.circle")
+                }
+            } label: {
+                HStack(spacing: 5) {
+                    titleText
+
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.textSub.opacity(0.78))
+                        .offset(y: 1)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(L10n.text("home.header.accessibility.title_menu"))
+        }
+    }
+
+    @ViewBuilder
+    private var titleText: some View {
+        if headerTitle == "ChillScript" {
+            (
+                Text(verbatim: "Chill")
+                    .foregroundColor(.black)
+                + Text(verbatim: "Script")
+                    .foregroundColor(.brandBlue)
+            )
+            .font(.system(size: 24, weight: .semibold, design: .serif))
+        } else {
+            Text(headerTitle)
+                .font(.system(size: 24, weight: .semibold, design: .serif))
+                .foregroundColor(.black)
+                .lineLimit(1)
+        }
+    }
+
+    private var trailingTools: some View {
+        HStack(spacing: 6) {
+            Button(action: onToggleSearch) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundColor(isSearchVisible ? .brandBlue : .textMain)
+                    .frame(width: 44, height: 44)
+            }
+            .buttonStyle(.bouncy)
+            .disabled(isRecording)
+            .accessibilityLabel(L10n.text("home.header.accessibility.search"))
+
+            if isTrashSelected {
+                Button(action: onShowEmptyTrashConfirmation) {
+                    HomeHeaderToolIcon(
+                        systemImage: "trash.slash",
+                        tint: .red.opacity(0.85)
+                    )
+                }
+                .buttonStyle(.bouncy)
+                .accessibilityLabel(L10n.text("home.header.accessibility.empty_recycle_bin"))
+            }
+        }
+        .opacity(isRecording ? 0.3 : 1.0)
     }
 }
 

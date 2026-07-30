@@ -501,7 +501,6 @@ struct HomeBodyView: View {
             if showsSectionPicker {
                 HomeSectionPicker(
                     selectedSection: state.selectedSection ?? .inbox,
-                    sectionCounts: state.sectionCounts,
                     onSelect: { newSection in
                         let current = state.selectedSection ?? .inbox
                         let oldIdx = NoteSection.allCases.firstIndex(of: current) ?? 0
@@ -569,25 +568,80 @@ struct HomeBodyView: View {
     private var agentProgressOverlay: some View {
         Group {
             if state.isExecutingAction, let progress = state.actionProgress {
-                ZStack {
-                    Color.black.opacity(0.4)
-                        .ignoresSafeArea()
-
-                    VStack(spacing: 16) {
-                        ProgressView()
-                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
-                            .scaleEffect(1.5)
-
-                        Text(progress)
-                            .font(.bodyMedium)
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(32)
-                    .background(Color.black.opacity(0.8))
-                    .cornerRadius(20)
-                }
+                AgentProgressOverlayView(progress: progress)
             }
+        }
+    }
+}
+
+private struct AgentProgressOverlayView: View {
+    let progress: String
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var isAnimating = false
+
+    var body: some View {
+        ZStack {
+            Color.accentPrimary.opacity(0.08)
+                .ignoresSafeArea()
+
+            HStack(spacing: 14) {
+                ZStack {
+                    Circle()
+                        .stroke(Color.accentPrimary.opacity(0.12), lineWidth: 3)
+
+                    Circle()
+                        .trim(from: 0.08, to: 0.82)
+                        .stroke(
+                            AngularGradient(
+                                colors: [
+                                    Color.accentPrimary.opacity(0.32),
+                                    Color.accentPrimary,
+                                    Color.accentPrimary
+                                ],
+                                center: .center
+                            ),
+                            style: StrokeStyle(lineWidth: 3, lineCap: .round)
+                        )
+                        .rotationEffect(.degrees(isAnimating ? 360 : 0))
+                        .animation(
+                            reduceMotion
+                                ? nil
+                                : .linear(duration: 0.9).repeatForever(autoreverses: false),
+                            value: isAnimating
+                        )
+                }
+                .frame(width: 28, height: 28)
+                .accessibilityHidden(true)
+
+                Text(progress)
+                    .font(.bodyMedium.weight(.semibold))
+                    .foregroundColor(.textMain)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .padding(.horizontal, 22)
+            .padding(.vertical, 20)
+            .frame(maxWidth: 320)
+            .background(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .fill(Color.cardBackground)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(Color.accentPrimary.opacity(0.10), lineWidth: 1)
+            )
+            .shadow(color: Color.shadowColor, radius: 16, y: 8)
+            .padding(.horizontal, 28)
+        }
+        .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(progress)
+        .onAppear {
+            isAnimating = !reduceMotion
+        }
+        .onChange(of: reduceMotion) { _, shouldReduceMotion in
+            isAnimating = !shouldReduceMotion
         }
     }
 }

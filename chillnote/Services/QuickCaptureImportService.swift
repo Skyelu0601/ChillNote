@@ -938,7 +938,7 @@ extension QuickCaptureImportService {
             ))
         }
 
-        return sections.joined(separator: "\n\n")
+        return sections.joined(separator: "\n")
     }
 
     func creatorMediaAuthorDisplayName(metadata: CreatorMediaMetadata) -> String {
@@ -991,7 +991,13 @@ extension QuickCaptureImportService {
         var sections: [String] = []
 
         if effectivePreferences.showDescription || effectivePreferences.showAuthor {
-            sections.append(makeCreatorMediaLinkNote(metadata: metadata, preferences: effectivePreferences))
+            let metadataPreferences = MediaLinkTranscriptSectionPreferences(
+                showDescription: effectivePreferences.showDescription,
+                showAuthor: effectivePreferences.showAuthor,
+                showHook: false,
+                showTranscript: false
+            )
+            sections.append(makeCreatorMediaLinkNote(metadata: metadata, preferences: metadataPreferences))
         }
 
         if effectivePreferences.showHook {
@@ -1015,7 +1021,7 @@ extension QuickCaptureImportService {
             ))
         }
 
-        return sections.joined(separator: "\n\n")
+        return sections.joined(separator: "\n")
     }
 
     func fallbackCreatorMediaHook(transcript: String) -> String {
@@ -1060,6 +1066,7 @@ extension QuickCaptureImportService {
         Return only the cleaned transcript text.
         Keep the speaker's original language, meaning, order, and wording.
         Add helpful punctuation and paragraph breaks.
+        Separate paragraphs with single line breaks. Never insert blank lines.
         Clean obvious transcription noise when needed.
         """
 
@@ -1097,9 +1104,15 @@ extension QuickCaptureImportService {
     }
 
     func markdownSection(heading: String, body: String) -> String {
-        """
+        let compactBody = body
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+            .components(separatedBy: "\n")
+            .filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+            .joined(separator: "\n")
+        return """
         ## \(heading)
-        \(body)
+        \(compactBody)
         """
     }
 

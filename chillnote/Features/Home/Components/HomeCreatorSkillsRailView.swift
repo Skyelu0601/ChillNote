@@ -21,7 +21,7 @@ struct HomeCreatorSkillsRailView: View {
                     } label: {
                         HomeCreatorSkillChip(recipe: recipe)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(.tactile)
                 }
 
                 Button(action: onAddMoreTap) {
@@ -38,7 +38,7 @@ struct HomeCreatorSkillsRailView: View {
                                 .stroke(Color.borderSubtle, lineWidth: 1)
                         )
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bouncy)
                 .accessibilityLabel(L10n.text("home.creator_skills.add_more"))
             }
             .padding(.horizontal, 1)

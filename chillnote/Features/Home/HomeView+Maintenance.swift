@@ -42,7 +42,11 @@ extension HomeView {
         case .initial, .userChanged:
             await syncAndSeedStarterGuideIfNeeded()
         case .foreground:
-            await syncManager.syncIfNeeded(context: modelContext)
+            if pendingLinkImportIDs.isEmpty {
+                await syncManager.syncIfNeeded(context: modelContext)
+            } else {
+                _ = await syncManager.syncNow(context: modelContext)
+            }
         }
 
         registerCompletedLinkImportsForRating()

@@ -84,7 +84,7 @@ extension HomeView {
                         guard didFinishProcessing else { return }
                         VoiceNotePaywallService.shared.registerSuccessfulVoiceNoteSave()
                         if AppRatingService.shared.registerSuccessfulVoiceNoteSave() {
-                            scheduleAppRatingPrompt()
+                            requestAppRating()
                         }
                     }
                 }
@@ -166,9 +166,6 @@ extension HomeView {
         requestReload(delayNanoseconds: 60_000_000, keepItemsWhileLoading: true)
 
         if existingJobId != nil {
-            Task {
-                await syncLinkImportProgress()
-            }
             return note
         }
 
@@ -188,7 +185,6 @@ extension HomeView {
                     return saveHomeVoiceContext(reason: "saving link import job")
                 }
                 guard didSaveJob else { return }
-                await syncLinkImportProgress()
             } catch {
                 await MainActor.run {
                     note.importStatus = .failed
@@ -244,17 +240,29 @@ extension HomeView {
         recentLinkImportURLs[sourceURL] = Date()
     }
 
-    func syncLinkImportProgress() async {
-        for delay in [3_000_000_000, 10_000_000_000, 25_000_000_000] as [UInt64] {
-            try? await Task.sleep(nanoseconds: delay)
-            guard !Task.isCancelled else { return }
-            let didSync = await syncManager.syncNow(context: modelContext)
-            await MainActor.run {
-                if didSync {
-                    registerCompletedLinkImportsForRating()
-                }
-                requestReload(delayNanoseconds: 80_000_000, keepItemsWhileLoading: true)
+    func monitorLinkImportProgress() async {
+        var delayNanoseconds: UInt64 = 3_000_000_000
+
+        while !Task.isCancelled {
+            do {
+                try await Task.sleep(nanoseconds: delayNanoseconds)
+            } catch {
+                return
             }
+            guard scenePhase == .active else {
+                delayNanoseconds = 10_000_000_000
+                continue
+            }
+
+            let didSync = await syncManager.syncNow(context: modelContext)
+            guard !Task.isCancelled else { return }
+            if didSync {
+                registerCompletedLinkImportsForRating()
+            }
+            await homeViewModel.reload(keepItemsWhileLoading: true)
+            clampSelectionToCurrentFilter()
+
+            delayNanoseconds = min(delayNanoseconds * 2, 30_000_000_000)
         }
     }
 

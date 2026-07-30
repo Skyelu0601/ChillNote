@@ -73,6 +73,7 @@ struct SidebarView: View {
                         
                         // Settings Button
                         Button(action: {
+                            AppInteractionFeedback.selectionChanged()
                             isPresented = false // Close sidebar
                             onSettingsTap?()
                         }) {
@@ -83,6 +84,7 @@ struct SidebarView: View {
                                 .background(Color.textMain.opacity(0.05))
                                 .clipShape(Circle())
                         }
+                        .buttonStyle(.bouncy)
                         .accessibilityLabel(L10n.text("sidebar.accessibility.open_settings"))
                     }
                     .padding(.top, 60)
@@ -805,6 +807,6 @@ struct SidebarItem: View {
                     .fill(isSelected ? Color.accentPrimary.opacity(0.08) : Color.clear)
             )
         }
-        .buttonStyle(.plain)
+        .buttonStyle(.tactile)
     }
 }

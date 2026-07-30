@@ -1,6 +1,136 @@
 {
   "sourceLanguage": "en",
   "strings": {
+    "notification.first_creation.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dein Material ist bereit. Verwandle es jetzt mit Hook Generator in eine neue Idee." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Your material is ready. Turn it into a new idea with Hook Generator." } },
+        "es": { "stringUnit": { "state": "translated", "value": "Tu material está listo. Conviértelo en una idea nueva con Hook Generator." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Votre contenu est prêt. Transformez-le en nouvelle idée avec Hook Generator." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "素材の準備ができました。Hook Generatorで新しいアイデアに変えてみましょう。" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "소재가 준비됐어요. Hook Generator로 새로운 아이디어를 만들어 보세요." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "素材已经准备好，用 Hook Generator 把它变成一个新点子吧。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "素材已經準備好，用 Hook Generator 把它變成一個新點子吧。" } }
+      }
+    },
+    "notification.first_creation.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Mach aus einer Idee deinen ersten Entwurf" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Turn one idea into your first draft" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Convierte una idea en tu primer borrador" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Transformez une idée en premier brouillon" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "アイデアを最初の下書きにしよう" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "아이디어 하나로 첫 초안을 만들어 보세요" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "把一个灵感变成你的第一份草稿" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "把一個靈感變成你的第一份草稿" } }
+      }
+    },
+    "notification.import_ready.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dein Video wurde gespeichert. Tippe, um Transkript und Ideen anzusehen." } },
+        "en": { "stringUnit": { "state": "translated", "value": "Your video is saved. Tap to view the transcript and ideas." } },
+        "es": { "stringUnit": { "state": "translated", "value": "Tu video se ha guardado. Toca para ver la transcripción y las ideas." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Votre vidéo est enregistrée. Touchez pour voir la transcription et les idées." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "動画を保存しました。タップして文字起こしとアイデアを確認できます。" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "동영상이 저장됐어요. 탭하여 스크립트와 아이디어를 확인하세요." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "视频已保存，点按即可查看文字稿和灵感。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "影片已儲存，點按即可查看逐字稿和靈感。" } }
+      }
+    },
+    "notification.import_ready.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Dein Import ist bereit" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Your import is ready" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Tu importación está lista" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Votre importation est prête" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "インポートが完了しました" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "가져오기가 완료됐어요" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "你的导入已完成" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "你的匯入已完成" } }
+      }
+    },
+    "notification.permission.import.enable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Benachrichtigungen aktivieren" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Enable notifications" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Activar notificaciones" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Activer les notifications" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "通知を有効にする" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "알림 켜기" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "开启通知" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "開啟通知" } }
+      }
+    },
+    "notification.permission.import.message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Wenn du ein Video aus einer anderen App teilst, informiert dich ChillScript, sobald Transkript und Ideen bereit sind." } },
+        "en": { "stringUnit": { "state": "translated", "value": "When you share a video from another app, ChillScript can let you know as soon as the transcript and ideas are ready." } },
+        "es": { "stringUnit": { "state": "translated", "value": "Cuando compartas un video desde otra app, ChillScript podrá avisarte en cuanto la transcripción y las ideas estén listas." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Lorsque vous partagez une vidéo depuis une autre app, ChillScript peut vous prévenir dès que la transcription et les idées sont prêtes." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "ほかのアプリから動画を共有したとき、文字起こしとアイデアの準備ができ次第ChillScriptがお知らせします。" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "다른 앱에서 동영상을 공유하면 스크립트와 아이디어가 준비되는 즉시 ChillScript가 알려드릴 수 있어요." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "从其他 App 分享视频后，文字稿和灵感一准备好，ChillScript 就可以通知你。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "從其他 App 分享影片後，逐字稿和靈感一準備好，ChillScript 就可以通知你。" } }
+      }
+    },
+    "notification.permission.import.not_now": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Nicht jetzt" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Not now" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Ahora no" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Pas maintenant" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "今はしない" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "나중에" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "暂不开启" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "暫不開啟" } }
+      }
+    },
+    "notification.permission.import.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Fertig, sobald dein Import bereit ist" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Know when your import is ready" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Sabrás cuándo esté lista tu importación" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Sachez quand votre importation est prête" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "インポート完了をお知らせ" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "가져오기가 완료되면 알려드릴게요" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "导入完成时通知你" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "匯入完成時通知你" } }
+      }
+    },
+    "notification.weekly_summary.body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Du hast diese Woche %@ neue Materialien gespeichert. Wähle eines für deine nächste Idee." } },
+        "en": { "stringUnit": { "state": "translated", "value": "You saved %@ new materials this week. Pick one for your next idea." } },
+        "es": { "stringUnit": { "state": "translated", "value": "Guardaste %@ materiales nuevos esta semana. Elige uno para tu próxima idea." } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Vous avez enregistré %@ nouveaux contenus cette semaine. Choisissez-en un pour votre prochaine idée." } },
+        "ja": { "stringUnit": { "state": "translated", "value": "今週は新しい素材を%@件保存しました。次のアイデアに使う素材を選びましょう。" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "이번 주에 새 소재 %@개를 저장했어요. 다음 아이디어에 사용할 소재를 골라 보세요." } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "你本周保存了 %@ 条新素材，选一条开始下一个创作吧。" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "你本週儲存了 %@ 條新素材，選一條開始下一個創作吧。" } }
+      }
+    },
+    "notification.weekly_summary.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": { "stringUnit": { "state": "translated", "value": "Deine Ideenbibliothek der Woche" } },
+        "en": { "stringUnit": { "state": "translated", "value": "Your weekly idea library" } },
+        "es": { "stringUnit": { "state": "translated", "value": "Tu biblioteca de ideas semanal" } },
+        "fr": { "stringUnit": { "state": "translated", "value": "Votre bibliothèque d’idées de la semaine" } },
+        "ja": { "stringUnit": { "state": "translated", "value": "今週のアイデアライブラリ" } },
+        "ko": { "stringUnit": { "state": "translated", "value": "이번 주 아이디어 보관함" } },
+        "zh-Hans": { "stringUnit": { "state": "translated", "value": "你的本周灵感库" } },
+        "zh-Hant": { "stringUnit": { "state": "translated", "value": "你的本週靈感庫" } }
+      }
+    },
     "123456": {
       "extractionState": "manual",
       "localizations": {
@@ -5771,6 +5901,112 @@
           "stringUnit": {
             "state": "translated",
             "value": "格式整理"
+          }
+        }
+      }
+    },
+    "ai_skills.result.action.copy_block": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Diesen Block kopieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copy this block"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiar este bloque"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copier ce bloc"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "このブロックをコピー"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "이 블록 복사"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "复制这个区块"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "複製此區塊"
+          }
+        }
+      }
+    },
+    "ai_skills.result.copy_success": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kopiert"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copied"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copiado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Copié"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コピーしました"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "복사됨"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已复制"
+          }
+        },
+        "zh-Hant": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已複製"
           }
         }
       }
@@ -25925,49 +26161,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "# Hier starten\n\nSpeichere zuerst etwas Nützliches: einen Link, eine Sprachidee oder eine kurze Textnotiz. Du musst es noch nicht sortieren.\n\nÖffne später eine Notiz und tippe auf den Blitzbutton. ChillScript zeigt dir zuerst eine AI-Vorschau, bevor etwas eingefügt oder ersetzt wird.\n\nWenn du ein paar Notizen gesammelt hast, kannst du sie auf dem Home-Bildschirm auswählen und **Create from Notes** nutzen, um daraus eine Idee, einen Post oder ein Skript zu machen.\n\nHalte es einfach: erst sammeln, dann erstellen."
+            "value": "# Hier starten\nSpeichere zuerst etwas Nützliches: einen Link, eine Sprachidee oder eine kurze Textnotiz. Du musst es noch nicht sortieren.\nÖffne später eine Notiz und tippe auf den Blitzbutton. ChillScript zeigt dir zuerst eine AI-Vorschau, bevor etwas eingefügt oder ersetzt wird.\nWenn du ein paar Notizen gesammelt hast, kannst du sie auf dem Home-Bildschirm auswählen und **Create from Notes** nutzen, um daraus eine Idee, einen Post oder ein Skript zu machen.\nHalte es einfach: erst sammeln, dann erstellen."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "# Start here\n\nSave something useful first: a link, a voice thought, or a quick text note. You do not need to organize it yet.\n\nLater, open a note and tap the lightning button. ChillScript shows an AI preview before anything gets inserted or replaced.\n\nOnce you have a few notes, select them on the home screen and use **Create from Notes** to shape them into an idea, post, or script.\n\nKeep it simple: capture first, create when you are ready."
+            "value": "# Start here\nSave something useful first: a link, a voice thought, or a quick text note. You do not need to organize it yet.\nLater, open a note and tap the lightning button. ChillScript shows an AI preview before anything gets inserted or replaced.\nOnce you have a few notes, select them on the home screen and use **Create from Notes** to shape them into an idea, post, or script.\nKeep it simple: capture first, create when you are ready."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "# Empieza aquí\n\nGuarda primero algo útil: un enlace, una idea de voz o una nota rápida. No necesitas organizarlo todavía.\n\nDespués, abre una nota y toca el botón de rayo. ChillScript te muestra una vista previa con AI antes de insertar o reemplazar nada.\n\nCuando tengas varias notas, selecciónalas en la pantalla principal y usa **Create from Notes** para convertirlas en una idea, post o guion.\n\nManténlo simple: captura primero y crea cuando estés listo."
+            "value": "# Empieza aquí\nGuarda primero algo útil: un enlace, una idea de voz o una nota rápida. No necesitas organizarlo todavía.\nDespués, abre una nota y toca el botón de rayo. ChillScript te muestra una vista previa con AI antes de insertar o reemplazar nada.\nCuando tengas varias notas, selecciónalas en la pantalla principal y usa **Create from Notes** para convertirlas en una idea, post o guion.\nManténlo simple: captura primero y crea cuando estés listo."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "# Commencez ici\n\nEnregistrez d'abord quelque chose d'utile : un lien, une idée vocale ou une courte note. Vous n'avez pas besoin de l'organiser tout de suite.\n\nPlus tard, ouvrez une note et touchez le bouton éclair. ChillScript affiche un aperçu AI avant d'insérer ou de remplacer quoi que ce soit.\n\nQuand vous avez quelques notes, sélectionnez-les sur l'écran d'accueil et utilisez **Create from Notes** pour en faire une idée, un post ou un script.\n\nRestez simple : capturez d'abord, créez quand vous êtes prêt."
+            "value": "# Commencez ici\nEnregistrez d'abord quelque chose d'utile : un lien, une idée vocale ou une courte note. Vous n'avez pas besoin de l'organiser tout de suite.\nPlus tard, ouvrez une note et touchez le bouton éclair. ChillScript affiche un aperçu AI avant d'insérer ou de remplacer quoi que ce soit.\nQuand vous avez quelques notes, sélectionnez-les sur l'écran d'accueil et utilisez **Create from Notes** pour en faire une idée, un post ou un script.\nRestez simple : capturez d'abord, créez quand vous êtes prêt."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "# ここから始める\n\nまず役に立ちそうなものを保存します。リンク、音声のアイデア、短いテキストメモなどで大丈夫です。まだ整理しなくてもかまいません。\n\nあとでノートを開き、稲妻ボタンをタップします。ChillScriptは、挿入や置き換えの前にAIプレビューを表示します。\n\nノートがいくつかたまったら、ホーム画面で選択して **Create from Notes** を使うと、アイデア、投稿、台本にまとめられます。\n\nシンプルに進めましょう。まず保存して、作りたいときに作るだけです。"
+            "value": "# ここから始める\nまず役に立ちそうなものを保存します。リンク、音声のアイデア、短いテキストメモなどで大丈夫です。まだ整理しなくてもかまいません。\nあとでノートを開き、稲妻ボタンをタップします。ChillScriptは、挿入や置き換えの前にAIプレビューを表示します。\nノートがいくつかたまったら、ホーム画面で選択して **Create from Notes** を使うと、アイデア、投稿、台本にまとめられます。\nシンプルに進めましょう。まず保存して、作りたいときに作るだけです。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 여기서 시작하세요\n\n먼저 유용한 것을 저장하세요. 링크, 음성 아이디어, 짧은 텍스트 노트면 충분합니다. 아직 정리하지 않아도 됩니다.\n\n나중에 노트를 열고 번개 버튼을 누르세요. ChillScript는 삽입하거나 바꾸기 전에 AI 미리보기를 먼저 보여줍니다.\n\n노트가 몇 개 쌓이면 홈 화면에서 선택하고 **Create from Notes** 를 사용해 아이디어, 게시물, 스크립트로 만들어 보세요.\n\n간단하게 시작하세요. 먼저 저장하고, 준비되면 만들면 됩니다."
+            "value": "# 여기서 시작하세요\n먼저 유용한 것을 저장하세요. 링크, 음성 아이디어, 짧은 텍스트 노트면 충분합니다. 아직 정리하지 않아도 됩니다.\n나중에 노트를 열고 번개 버튼을 누르세요. ChillScript는 삽입하거나 바꾸기 전에 AI 미리보기를 먼저 보여줍니다.\n노트가 몇 개 쌓이면 홈 화면에서 선택하고 **Create from Notes** 를 사용해 아이디어, 게시물, 스크립트로 만들어 보세요.\n간단하게 시작하세요. 먼저 저장하고, 준비되면 만들면 됩니다."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 从这里开始\n\n先保存一点有用的东西：一个链接、一段语音想法，或一条简单文字笔记。现在不用急着整理。\n\n之后打开任意笔记，点右上角的闪电按钮。ChillScript 会先给你 AI 预览，再由你决定要不要插入或替换内容。\n\n等攒了几条笔记，可以在首页选中它们，用 **从笔记创作** 把它们整理成一个想法、一篇内容或一段脚本。\n\n就这么简单：先收集，准备好了再创作。"
+            "value": "# 从这里开始\n先保存一点有用的东西：一个链接、一段语音想法，或一条简单文字笔记。现在不用急着整理。\n之后打开任意笔记，点右上角的闪电按钮。ChillScript 会先给你 AI 预览，再由你决定要不要插入或替换内容。\n等攒了几条笔记，可以在首页选中它们，用 **从笔记创作** 把它们整理成一个想法、一篇内容或一段脚本。\n就这么简单：先收集，准备好了再创作。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "# 從這裡開始\n\n先保存一點有用的東西：一個連結、一段語音想法，或一條簡單文字筆記。現在不用急著整理。\n\n之後打開任意筆記，點右上角的閃電按鈕。ChillScript 會先給你 AI 預覽，再由你決定要不要插入或替換內容。\n\n等存了幾條筆記，可以在首頁選取它們，用 **從筆記創作** 把它們整理成一個想法、一篇內容或一段腳本。\n\n就這麼簡單：先收集，準備好了再創作。"
+            "value": "# 從這裡開始\n先保存一點有用的東西：一個連結、一段語音想法，或一條簡單文字筆記。現在不用急著整理。\n之後打開任意筆記，點右上角的閃電按鈕。ChillScript 會先給你 AI 預覽，再由你決定要不要插入或替換內容。\n等存了幾條筆記，可以在首頁選取它們，用 **從筆記創作** 把它們整理成一個想法、一篇內容或一段腳本。\n就這麼簡單：先收集，準備好了再創作。"
           }
         }
       }
@@ -28946,49 +29182,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Wir holen die nützlichen Teile heraus. Du kannst weitermachen."
+            "value": "Du kannst weiterstöbern – wir stellen sie hier fertig."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "We’re pulling out the useful parts. You can keep going."
+            "value": "You can keep browsing—we’ll finish it here."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Estamos sacando las partes útiles. Puedes seguir."
+            "value": "Puedes seguir navegando; la terminaremos aquí."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Nous récupérons les éléments utiles. Vous pouvez continuer."
+            "value": "Vous pouvez continuer à parcourir l’app — nous la terminerons ici."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "役立つ部分を抜き出しています。そのまま続けられます。"
+            "value": "そのまま閲覧できます。ここで仕上げておきます。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "유용한 부분을 정리하고 있어요. 계속 사용해도 됩니다."
+            "value": "계속 둘러보세요. 여기서 마무리할게요."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "我们正在提取有用内容，你可以继续使用。"
+            "value": "你可以继续浏览，我们会在这里完成。"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "我們正在提取有用內容，你可以繼續使用。"
+            "value": "你可以繼續瀏覽，我們會在這裡完成。"
           }
         }
       }
@@ -28999,49 +29235,49 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aus diesem Link wird eine Notiz"
+            "value": "Deine Notiz wird erstellt …"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Turning this link into a note"
+            "value": "Creating your note…"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Convirtiendo este enlace en una nota"
+            "value": "Creando tu nota…"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Transformation du lien en note"
+            "value": "Création de votre note…"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このリンクをノートにしています"
+            "value": "ノートを作成中…"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "이 링크를 노트로 만드는 중"
+            "value": "노트를 만들고 있어요…"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "正在把链接变成笔记"
+            "value": "正在创建你的笔记…"
           }
         },
         "zh-Hant": {
           "stringUnit": {
             "state": "translated",
-            "value": "正在把連結變成筆記"
+            "value": "正在建立你的筆記…"
           }
         }
       }

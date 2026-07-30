@@ -71,6 +71,20 @@ struct ContentView: View {
     @ViewBuilder
     private var rootView: some View {
         Group {
+            #if DEBUG
+            if AppLaunchOptions.isSkillResultScreenshotMode {
+                SkillResultScreenshotHost()
+            } else if AppLaunchOptions.isOnboardingScreenshotMode {
+                OnboardingFlowView(
+                    initialPage: AppLaunchOptions.onboardingScreenshotPage,
+                    onFinish: {}
+                )
+                .statusBarHidden()
+                .persistentSystemOverlays(.hidden)
+            } else {
+                authenticatedRootView
+            }
+            #else
             if AppLaunchOptions.isOnboardingScreenshotMode {
                 OnboardingFlowView(
                     initialPage: AppLaunchOptions.onboardingScreenshotPage,
@@ -79,28 +93,34 @@ struct ContentView: View {
                 .statusBarHidden()
                 .persistentSystemOverlays(.hidden)
             } else {
-            switch authService.state {
-            case .checking:
-                if authService.canOptimisticallyEnterHome, hasCompletedOnboarding {
-                    signedInView
-                } else {
-                    ProgressView(L10n.text("auth.session.checking"))
-                }
-            case .signedIn:
+                authenticatedRootView
+            }
+            #endif
+        }
+    }
+
+    @ViewBuilder
+    private var authenticatedRootView: some View {
+        switch authService.state {
+        case .checking:
+            if authService.canOptimisticallyEnterHome, hasCompletedOnboarding {
                 signedInView
-            case .signedOut:
-                if hasViewedIntroOnDevice {
-                    LoginView()
-                } else {
-                    OnboardingFlowView {
-                        OnboardingStateStore.setHasViewedIntroOnDevice(true)
-                        hasViewedIntroOnDevice = true
-                    }
-                }
-            case .signingIn:
+            } else {
+                ProgressView(L10n.text("auth.session.checking"))
+            }
+        case .signedIn:
+            signedInView
+        case .signedOut:
+            if hasViewedIntroOnDevice {
                 LoginView()
+            } else {
+                OnboardingFlowView {
+                    OnboardingStateStore.setHasViewedIntroOnDevice(true)
+                    hasViewedIntroOnDevice = true
+                }
             }
-            }
+        case .signingIn:
+            LoginView()
         }
     }
 

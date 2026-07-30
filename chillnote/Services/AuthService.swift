@@ -278,6 +278,7 @@ final class AuthService: ObservableObject {
     
     func signOut() {
         Task {
+            await PushNotificationManager.shared.deactivateCurrentDevice()
             do {
                 try await supabase.auth.signOut()
             } catch {

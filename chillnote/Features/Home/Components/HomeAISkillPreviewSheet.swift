@@ -57,6 +57,8 @@ struct HomeAISkillPreviewSheet: View {
     let onApply: (HomeAISkillApplyMode) -> Void
 
     @Environment(\.dismiss) private var dismiss
+    @State private var showsCopyToast = false
+    @State private var copyToastTask: Task<Void, Never>?
 
     var body: some View {
         NavigationStack {
@@ -78,39 +80,16 @@ struct HomeAISkillPreviewSheet: View {
                             }
                         }
 
-                        Text(preview.result)
-                            .font(.body)
-                            .foregroundColor(.textMain)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(14)
-                            .background(Color.bgSecondary)
-                            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                        ActionableSkillResultView(
+                            recipe: preview.recipe,
+                            result: preview.result,
+                            onBlockCopied: showCopyToast
+                        )
                     }
                     .padding(16)
                 }
 
-                VStack(spacing: 10) {
-                    ForEach(preview.availableApplyModes) { mode in
-                        Button {
-                            dismiss()
-                            onApply(mode)
-                        } label: {
-                            Label(mode.title, systemImage: mode.systemImage)
-                                .font(.system(size: 15, weight: .semibold))
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 13)
-                                .background(Color.white)
-                                .foregroundColor(.textMain)
-                                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                        .stroke(Color.black.opacity(0.05), lineWidth: 1)
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
+                applyActions
                 .padding(16)
                 .background(Color.bgPrimary)
             }
@@ -124,10 +103,19 @@ struct HomeAISkillPreviewSheet: View {
                     }
                 }
             }
+            .overlay(alignment: .bottom) {
+                if showsCopyToast {
+                    SkillResultCopyToast(onDismiss: hideCopyToast)
+                        .padding(.horizontal, 16)
+                        .padding(.bottom, 82)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)
+        .onDisappear { copyToastTask?.cancel() }
     }
 
     private var contextText: String {
@@ -136,4 +124,114 @@ struct HomeAISkillPreviewSheet: View {
         }
         return L10n.text("home.ai_skills.preview.multiple_context", preview.sourceNoteIDs.count)
     }
+
+    @ViewBuilder
+    private var applyActions: some View {
+        if preview.availableApplyModes.count == 2 {
+            HStack(spacing: 0) {
+                ForEach(Array(preview.availableApplyModes.enumerated()), id: \.element.id) { index, mode in
+                    applyButton(for: mode, usesSharedContainer: true)
+
+                    if index == 0 {
+                        Divider()
+                            .frame(height: 28)
+                    }
+                }
+            }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .stroke(Color.black.opacity(0.05), lineWidth: 1)
+            )
+        } else {
+            VStack(spacing: 10) {
+                ForEach(preview.availableApplyModes) { mode in
+                    applyButton(for: mode, usesSharedContainer: false)
+                }
+            }
+        }
+    }
+
+    private func applyButton(
+        for mode: HomeAISkillApplyMode,
+        usesSharedContainer: Bool
+    ) -> some View {
+        Button {
+            dismiss()
+            onApply(mode)
+        } label: {
+            Label(mode.title, systemImage: mode.systemImage)
+                .font(.system(size: 15, weight: .semibold))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 13)
+                .background(usesSharedContainer ? Color.clear : Color.white)
+                .foregroundColor(.textMain)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay {
+                    if !usesSharedContainer {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.black.opacity(0.05), lineWidth: 1)
+                    }
+                }
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func showCopyToast() {
+        copyToastTask?.cancel()
+        withAnimation(.easeOut(duration: 0.2)) {
+            showsCopyToast = true
+        }
+        copyToastTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(5))
+            guard !Task.isCancelled else { return }
+            hideCopyToast()
+        }
+    }
+
+    private func hideCopyToast() {
+        withAnimation(.easeIn(duration: 0.2)) {
+            showsCopyToast = false
+        }
+    }
 }
+
+#if DEBUG
+struct SkillResultScreenshotHost: View {
+    @State private var isPresented = false
+
+    var body: some View {
+        Color.bgPrimary
+            .ignoresSafeArea()
+            .onAppear { isPresented = true }
+            .sheet(isPresented: $isPresented) {
+                HomeAISkillPreviewSheet(preview: Self.preview) { _ in }
+            }
+    }
+
+    private static let preview: HomeAISkillPreview = {
+        let recipe = AgentRecipe.allRecipes.first { $0.id == "hook_generator" }
+            ?? AgentRecipe.allRecipes[0]
+        return HomeAISkillPreview(
+            recipe: recipe,
+            result: """
+            **Pain point:** Tired of spending hours on work AI could finish in seconds?
+
+            **Contrarian:** Stop doing everything yourself. These five tools changed my workflow.
+
+            **Curiosity gap:** I tested five AI tools, and the last one changed how I create.
+
+            **How-to:** Build a lean creator workflow with these five AI tools.
+
+            **Mistake:** You are still wasting time on tasks these tools can handle.
+
+            **Story:** I rebuilt my entire creator workflow around five simple AI tools.
+            """,
+            sourceNoteIDs: [UUID(), UUID()],
+            sourceTitle: "Creator workflow",
+            instruction: nil
+        )
+    }()
+}
+#endif

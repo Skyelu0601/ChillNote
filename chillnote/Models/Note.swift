@@ -68,7 +68,11 @@ final class Note {
     private func stripMarkdownFormatting(_ text: String) -> String {
         var result = text
         // Remove headers
-        result = result.replacingOccurrences(of: #"^#{1,6}\s+"#, with: "", options: .regularExpression)
+        result = result.replacingOccurrences(
+            of: #"(?m)^#{1,6}\s+"#,
+            with: "",
+            options: .regularExpression
+        )
         // Remove bold
         result = result.replacingOccurrences(of: "**", with: "")
         // Remove italic
@@ -82,7 +86,11 @@ final class Note {
         result = result.replacingOccurrences(of: "- [x] ", with: "\(RichTextConverter.Config.checkboxCheckedSymbol) ")
         result = result.replacingOccurrences(of: "- [X] ", with: "\(RichTextConverter.Config.checkboxCheckedSymbol) ")
         // Remove bullet markers
-        result = result.replacingOccurrences(of: #"^[\-\•]\s+"#, with: "", options: .regularExpression)
+        result = result.replacingOccurrences(
+            of: #"(?m)^[\-\•]\s+"#,
+            with: "",
+            options: .regularExpression
+        )
         return result
     }
 

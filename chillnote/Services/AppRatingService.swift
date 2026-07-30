@@ -11,7 +11,7 @@ final class AppRatingService: ObservableObject {
     private let didMigrateLegacyVoiceNoteCountKey = "app_rating.did_migrate_legacy_voice_note_count"
     private let hasTriggeredPromptKey = "app_rating.has_triggered_prompt"
     private let countedLinkImportNoteIDsKey = "app_rating.counted_link_import_note_ids"
-    private let promptThreshold = 3
+    private let promptThreshold = 1
 
     private init() {}
 
