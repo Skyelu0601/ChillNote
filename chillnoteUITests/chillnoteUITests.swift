@@ -23,12 +23,25 @@ final class chillnoteUITests: XCTestCase {
     }
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
+    func testWeeklyTopicsExpandInPlace() throws {
         let app = XCUIApplication()
+        app.launchArguments = [
+            "-weekly-topics-design-preview",
+            "-AppleLanguages", "(zh-Hans)",
+            "-AppleLocale", "zh_CN"
+        ]
         app.launch()
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+        let firstTopic = app.buttons["weekly-topic-row-topic-1"]
+        XCTAssertTrue(firstTopic.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.staticTexts["YouTube"].exists)
+
+        let secondTopic = app.buttons["weekly-topic-row-topic-2"]
+        XCTAssertTrue(secondTopic.waitForExistence(timeout: 2))
+        secondTopic.tap()
+
+        XCTAssertTrue(app.staticTexts["TikTok"].waitForExistence(timeout: 2))
+        XCTAssertTrue(app.staticTexts["YouTube"].exists)
     }
 
     @MainActor

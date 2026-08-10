@@ -32,6 +32,11 @@ extension HomeView {
             case .home:
                 navigationPath = NavigationPath()
 
+            case .weeklyTopics:
+                navigationPath = NavigationPath()
+                await weeklyTopicsStore.reload()
+                navigationPath.append(WeeklyTopicsRoute.dashboard)
+
             case .note(let noteID):
                 _ = await syncManager.syncNow(context: modelContext)
                 await homeViewModel.reload(keepItemsWhileLoading: true)

@@ -421,17 +421,6 @@ struct TeleprompterCameraView: View {
         }
     }
 
-    private func resetTeleprompterPosition() {
-        camera.resetTeleprompterElapsed()
-        resetScriptScrollToken = UUID()
-        withAnimation(.spring(response: 0.28, dampingFraction: 0.86)) {
-            teleprompterOffset = .zero
-            storedTeleprompterOffset = .zero
-            teleprompterScale = 1
-            storedTeleprompterScale = 1
-        }
-    }
-
     private func clampedTeleprompterOffset(_ proposed: CGSize, in container: CGSize) -> CGSize {
         let horizontalLimit = max(container.width * 0.38, 80)
         let verticalLimit = max(container.height * 0.3, 120)
@@ -667,11 +656,6 @@ private final class TeleprompterCameraManager: NSObject, ObservableObject {
         isCountingDown = false
     }
 
-    func resetTeleprompterElapsed() {
-        elapsed = 0
-        recordingStartDate = Date()
-    }
-
     func switchCamera() {
         guard !isRecording, !isCountingDown else { return }
         currentCameraPosition = currentCameraPosition == .front ? .back : .front
@@ -688,12 +672,6 @@ private final class TeleprompterCameraManager: NSObject, ObservableObject {
         session.beginConfiguration()
         session.sessionPreset = next.sessionPreset
         session.commitConfiguration()
-    }
-
-    func updateFlashMode(_ next: TeleprompterFlashMode) {
-        guard !isRecording, !isCountingDown else { return }
-        flashMode = next
-        applyTorchMode()
     }
 
     func removeClip(_ clip: TeleprompterClip) {

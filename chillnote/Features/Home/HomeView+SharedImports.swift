@@ -28,18 +28,22 @@ extension HomeView {
 
             case .linkImport:
                 guard let url = URL(string: pendingFile.importItem.source.url),
-                      createLinkImportNote(
+                      let importedNote = createLinkImportNote(
                         url,
                         noteID: pendingFile.importItem.id,
                         source: pendingFile.importItem.noteSourceMetadata,
                         existingJobId: pendingFile.importItem.importJobId,
                         existingJobStatus: pendingFile.importItem.importStatus,
-                        shouldNavigate: shouldNavigate
-                      ) != nil else {
+                        shouldNavigate: shouldNavigate && !firstActionGuide.isWaitingForSharedVideo
+                      ) else {
                     SharedImportQueue.remove(pendingFile)
                     continue
                 }
 
+                firstActionGuide.registerSharedVideoImport(noteID: importedNote.id)
+                Task {
+                    await StoreService.shared.fetchCreditBalance()
+                }
                 didImport = true
                 SharedImportQueue.remove(pendingFile)
             }
@@ -47,5 +51,6 @@ extension HomeView {
 
         guard didImport else { return }
         requestReload(keepItemsWhileLoading: true)
+        reconcileFirstActionGuideImport()
     }
 }

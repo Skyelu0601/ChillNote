@@ -72,12 +72,6 @@ enum ShareImportStage {
     }
 }
 
-struct ShareMediaTranscriptResult: Decodable {
-    let available: Bool
-    let text: String?
-    let reason: String?
-}
-
 private struct ShareMediaLinkTranscriptSectionPreferences {
     static let descriptionStorageKey = "media_link_transcript_show_description"
     static let authorStorageKey = "media_link_transcript_show_author"
@@ -93,31 +87,17 @@ private struct ShareMediaLinkTranscriptSectionPreferences {
         [showDescription, showAuthor, showHook, showTranscript].filter { $0 }.count
     }
 
-    static var all: ShareMediaLinkTranscriptSectionPreferences {
+    static var transcriptOnly: ShareMediaLinkTranscriptSectionPreferences {
         ShareMediaLinkTranscriptSectionPreferences(
-            showDescription: true,
-            showAuthor: true,
-            showHook: true,
+            showDescription: false,
+            showAuthor: false,
+            showHook: false,
             showTranscript: true
         )
     }
 
     static func load() -> ShareMediaLinkTranscriptSectionPreferences {
-        let userDefaults = UserDefaults(suiteName: ShareConstants.appGroupIdentifier)
-        let preferences = ShareMediaLinkTranscriptSectionPreferences(
-            showDescription: userDefaults?.mediaLinkTranscriptSectionBool(forKey: descriptionStorageKey) ?? true,
-            showAuthor: userDefaults?.mediaLinkTranscriptSectionBool(forKey: authorStorageKey) ?? true,
-            showHook: userDefaults?.mediaLinkTranscriptSectionBool(forKey: hookStorageKey) ?? true,
-            showTranscript: userDefaults?.mediaLinkTranscriptSectionBool(forKey: transcriptStorageKey) ?? true
-        )
-
-        return preferences.selectedCount == 0 ? .all : preferences
-    }
-}
-
-private extension UserDefaults {
-    func mediaLinkTranscriptSectionBool(forKey key: String) -> Bool {
-        object(forKey: key) == nil ? true : bool(forKey: key)
+        .transcriptOnly
     }
 }
 
@@ -150,8 +130,8 @@ struct ShareImportService {
         progress: @escaping @MainActor (ShareImportStage) -> Void
     ) async throws -> SharePendingImport {
         await progress(.readingContent)
+        let pendingImport = await makePendingLinkImport(url: url)
         await progress(.saving)
-        let pendingImport = makePendingLinkImport(url: url)
         try save(pendingImport)
         if let remoteImport = try? await startRemoteLinkImport(pendingImport) {
             try? save(remoteImport)
@@ -160,10 +140,11 @@ struct ShareImportService {
         return pendingImport
     }
 
-    private func makePendingLinkImport(url: URL) -> SharePendingImport {
+    private func makePendingLinkImport(url: URL) async -> SharePendingImport {
         let platform = SharePlatformResolver.platform(for: url)
         let host = SharePlatformResolver.normalizedHost(from: url)
-        let title = platform.displayName.isEmpty ? host : platform.displayName
+        let metadata = await creatorMediaMetadata(for: url, platform: platform, host: host)
+        let title = metadata.title.trimmingCharacters(in: .whitespacesAndNewlines)
 
         return SharePendingImport(
             id: UUID(),
@@ -171,10 +152,12 @@ struct ShareImportService {
             noteText: nil,
             source: SharePendingImport.Source(
                 url: url.absoluteString,
-                title: title,
+                title: title.isEmpty ? (platform.displayName.isEmpty ? host : platform.displayName) : title,
                 platformID: platform.id,
                 platformName: platform.displayName,
-                host: host
+                host: host,
+                authorName: metadata.authorName,
+                authorHandle: metadata.authorHandle
             ),
             importJobId: nil,
             importStatus: nil,
@@ -199,18 +182,26 @@ struct ShareImportService {
         request.timeoutInterval = 12
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        var sourcePayload: [String: Any] = [
+            "url": pendingImport.source.url,
+            "title": pendingImport.source.title,
+            "platformID": pendingImport.source.platformID,
+            "platformName": pendingImport.source.platformName,
+            "host": pendingImport.source.host
+        ]
+        if let authorName = pendingImport.source.authorName {
+            sourcePayload["authorName"] = authorName
+        }
+        if let authorHandle = pendingImport.source.authorHandle {
+            sourcePayload["authorHandle"] = authorHandle
+        }
+
         request.httpBody = try JSONSerialization.data(withJSONObject: [
             "noteId": pendingImport.id.uuidString,
             "url": pendingImport.source.url,
             "placeholderContent": placeholderNoteText(for: url, source: pendingImport.source),
             "section": "inbox",
-            "source": [
-                "url": pendingImport.source.url,
-                "title": pendingImport.source.title,
-                "platformID": pendingImport.source.platformID,
-                "platformName": pendingImport.source.platformName,
-                "host": pendingImport.source.host
-            ],
+            "source": sourcePayload,
             "mediaLinkSections": mediaLinkSectionsPayload()
         ])
 
@@ -300,7 +291,7 @@ struct ShareImportService {
         preferences: ShareMediaLinkTranscriptSectionPreferences
     ) -> String {
         let cleanedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        let effectivePreferences = preferences.selectedCount == 0 ? .all : preferences
+        let effectivePreferences = preferences.selectedCount == 0 ? .transcriptOnly : preferences
         var sections: [String] = []
 
         if effectivePreferences.showDescription {
@@ -433,7 +424,7 @@ struct ShareImportService {
         return ShareCreatorMediaMetadata(
             title: components.title,
             authorName: components.authorName,
-            authorHandle: instagramAuthorHandle(from: url)
+            authorHandle: nil
         )
     }
 
@@ -501,14 +492,6 @@ struct ShareImportService {
 
         let cleaned = sanitizedCreatorMediaTitle(title)
         return (cleaned.isEmpty ? fallback : cleaned, nil)
-    }
-
-    private func instagramAuthorHandle(from url: URL) -> String? {
-        let pathComponents = url.pathComponents.filter { $0 != "/" }
-        guard pathComponents.first?.lowercased() == "reel", pathComponents.count > 2 else {
-            return nil
-        }
-        return pathComponents[1]
     }
 
     private func firstMetaContent(in html: String, names: [String]) -> String? {
@@ -590,13 +573,5 @@ extension JSONEncoder {
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         return encoder
-    }
-}
-
-extension JSONDecoder {
-    static var shareImportDecoder: JSONDecoder {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
     }
 }

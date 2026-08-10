@@ -18,6 +18,8 @@ enum SharedImportQueue {
             let platformID: String
             let platformName: String
             let host: String
+            let authorName: String?
+            let authorHandle: String?
         }
 
         let id: UUID
@@ -38,7 +40,9 @@ enum SharedImportQueue {
                 title: source.title,
                 platformID: source.platformID,
                 platformName: source.platformName,
-                host: source.host
+                host: source.host,
+                authorName: source.authorName,
+                authorHandle: source.authorHandle
             )
         }
     }

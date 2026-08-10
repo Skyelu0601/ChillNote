@@ -2,17 +2,13 @@ import SwiftUI
 
 struct NoteDetailHeaderView: View {
     let isDeleted: Bool
-    let isRecording: Bool
-    let recordingTimeString: String
     let isAISkillsEnabled: Bool
     let onBack: () -> Void
     let onRestore: () -> Void
-    let onStopRecording: () -> Void
     let onAISkills: () -> Void
     let onTeleprompter: () -> Void
     let onExport: () -> Void
     let onDelete: () -> Void
-    let onDeletePermanently: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
@@ -39,28 +35,6 @@ struct NoteDetailHeaderView: View {
                 }
                 .buttonStyle(.tactile)
                 .accessibilityLabel(L10n.text("note_detail.header.accessibility.restore_note"))
-            } else if isRecording {
-                HStack(spacing: 8) {
-                    Text(recordingTimeString)
-                        .font(.system(size: 14, design: .monospaced))
-                        .fontWeight(.bold)
-                        .foregroundColor(.accentPrimary)
-
-                    Button(action: onStopRecording) {
-                        Image(systemName: "stop.fill")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundColor(.white)
-                            .frame(width: 24, height: 24)
-                            .background(Color.accentPrimary)
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.bouncy)
-                }
-                .padding(.leading, 12)
-                .padding(.trailing, 4)
-                .padding(.vertical, 4)
-                .background(Capsule().fill(Color.bgSecondary))
-                .transition(.scale(scale: 0.9).combined(with: .opacity))
             } else {
                 HStack(spacing: 4) {
                     Button(action: onAISkills) {
@@ -76,6 +50,7 @@ struct NoteDetailHeaderView: View {
                     .disabled(!isAISkillsEnabled)
                     .opacity(isAISkillsEnabled ? 1 : 0.55)
                     .accessibilityLabel(L10n.text("note_detail.header.accessibility.ai_skills"))
+                    .firstActionGuideTarget(.aiSkills)
 
                     Button(action: onTeleprompter) {
                         Image(systemName: "video.fill")
@@ -87,6 +62,7 @@ struct NoteDetailHeaderView: View {
                     }
                     .buttonStyle(.bouncy)
                     .accessibilityLabel(L10n.text("note_detail.header.action.teleprompter"))
+                    .firstActionGuideTarget(.teleprompter)
 
                     Menu {
                         Button(action: onExport) {
@@ -95,10 +71,6 @@ struct NoteDetailHeaderView: View {
 
                         Button(role: .destructive, action: onDelete) {
                             Label(L10n.text("note_detail.header.action.delete_note"), systemImage: "trash")
-                        }
-
-                        Button(role: .destructive, action: onDeletePermanently) {
-                            Label(L10n.text("home.notes.action.delete_permanently"), systemImage: "trash.slash")
                         }
                     } label: {
                         Image(systemName: "ellipsis")

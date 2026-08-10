@@ -38,7 +38,7 @@ struct HomeSectionPicker: View {
                         .font(.system(size: 16, weight: isSelected ? .semibold : .medium))
                         .lineLimit(1)
                         .minimumScaleFactor(0.78)
-                        .foregroundColor(isSelected ? .accentPrimary : .textMain.opacity(0.62))
+                        .foregroundColor(isSelected ? .textMain : .textMain.opacity(0.62))
 
                     ZStack {
                         if isSelected {

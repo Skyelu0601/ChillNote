@@ -47,11 +47,20 @@ if (typeof globalThis.Headers === 'undefined') {
 
 import "dotenv/config";
 import express from "express";
+import compression from "compression";
 import cors from "cors";
 import { z } from "zod";
-import { createHmac, randomUUID, timingSafeEqual } from "crypto";
+import { createHash, createHmac, randomUUID, timingSafeEqual } from "crypto";
+import { importPKCS8, SignJWT } from "jose";
 import { applySync } from "./sync.js";
-import { getChangesSinceCursor, upsertUser, deleteUser, updateCreemSubscriptionStatus, updateSubscriptionStatus } from "./store.js";
+import {
+  getChangesSinceCursor,
+  hasActiveProSubscription,
+  upsertUser,
+  deleteUser,
+  updateCreemSubscriptionStatus,
+  updateSubscriptionStatus
+} from "./store.js";
 import { prisma } from "./db.js"; // Import prisma for direct queries in index.ts if needed, though best to abstract
 import type { SyncPayload } from "./types.js";
 import { supabaseAdmin } from "./supabase.js";
@@ -65,12 +74,29 @@ import {
 } from "./tiktokTranscript.js";
 import {
   enqueueLinkImportJob,
+  LinkImportInsufficientCreditsError,
   makeInitialLinkSource,
   scheduleLinkImportWorker
 } from "./linkImportJobs.js";
+import {
+  deactivatePushDevice,
+  registerPushDevice,
+  scheduleNotificationWorker
+} from "./pushNotifications.js";
+import {
+  getWeeklyTopicDashboard,
+  getWeeklyTopicReport,
+  listWeeklyTopicReports,
+  markWeeklyTopicReportRead,
+  regenerateWeeklyTopicReport,
+  scheduleWeeklyTopicWorker,
+  updateWeeklyTopicSettings,
+  weeklyTopicSettingsInputSchema
+} from "./weeklyTopics.js";
 import fetch from "node-fetch";
 
 const app = express();
+app.use(compression());
 app.use(cors());
 
 const defaultJsonParser = express.json({ limit: process.env.DEFAULT_JSON_LIMIT ?? "1mb" });
@@ -106,6 +132,54 @@ const CREEM_API_BASE_URL = process.env.CREEM_API_BASE_URL?.trim()
 const CREEM_MONTHLY_PRODUCT_ID = process.env.CREEM_MONTHLY_PRODUCT_ID?.trim() || "";
 const CREEM_YEARLY_PRODUCT_ID = process.env.CREEM_YEARLY_PRODUCT_ID?.trim() || "";
 const WEB_APP_BASE_URL = process.env.WEB_APP_BASE_URL?.trim() || "https://www.chillnoteai.com";
+const GOOGLE_PLAY_PACKAGE_NAME = process.env.GOOGLE_PLAY_PACKAGE_NAME?.trim() || "com.sponteoai.chillscript";
+const GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL?.trim() || "";
+const GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY = (process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY ?? "").replace(/\\n/g, "\n");
+const GOOGLE_PLAY_PRODUCT_IDS = new Set(["com.chillnote.pro.monthly", "com.chillnote.pro.yearly"]);
+
+let googlePlayAccessTokenCache: { token: string; expiresAt: number } | null = null;
+
+async function googlePlayAccessToken(): Promise<string> {
+  const now = Date.now();
+  if (googlePlayAccessTokenCache && googlePlayAccessTokenCache.expiresAt > now + 60_000) {
+    return googlePlayAccessTokenCache.token;
+  }
+  if (!GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY) {
+    throw new Error("Google Play service account is not configured");
+  }
+  const privateKey = await importPKCS8(GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY, "RS256");
+  const issuedAt = Math.floor(now / 1000);
+  const assertion = await new SignJWT({
+    scope: "https://www.googleapis.com/auth/androidpublisher"
+  })
+    .setProtectedHeader({ alg: "RS256", typ: "JWT" })
+    .setIssuer(GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL)
+    .setAudience("https://oauth2.googleapis.com/token")
+    .setIssuedAt(issuedAt)
+    .setExpirationTime(issuedAt + 3600)
+    .sign(privateKey);
+  const response = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion
+    }).toString()
+  });
+  const body = await response.json() as { access_token?: string; expires_in?: number; error?: string };
+  if (!response.ok || !body.access_token) {
+    throw new Error(`Google OAuth token failed: ${body.error ?? response.status}`);
+  }
+  googlePlayAccessTokenCache = {
+    token: body.access_token,
+    expiresAt: now + (body.expires_in ?? 3600) * 1000
+  };
+  return body.access_token;
+}
+
+function googlePlayAccountId(userId: string): string {
+  return createHash("sha256").update(userId).digest("hex");
+}
 
 function buildGeminiGenerateContentURL(model: string): string {
   const encodedModel = encodeURIComponent(model);
@@ -135,6 +209,8 @@ const noteSchema = z.object({
   sourcePlatformID: z.string().nullish(),
   sourcePlatformName: z.string().nullish(),
   sourceHost: z.string().nullish(),
+  sourceAuthorName: z.string().nullish(),
+  sourceAuthorHandle: z.string().nullish(),
   sourceCapturedAt: isoDateString.nullish(),
   section: z.enum(["inbox", "drafts", "published"]).nullish(),
   importStatus: z.enum(["queued", "processing", "completed", "failed"]).nullish(),
@@ -179,7 +255,9 @@ const linkImportJobSchema = z.object({
     title: z.string().min(1),
     platformID: z.string().min(1),
     platformName: z.string().min(1),
-    host: z.string()
+    host: z.string(),
+    authorName: z.string().nullish(),
+    authorHandle: z.string().nullish()
   }).optional(),
   section: z.enum(["inbox", "drafts", "published"]).nullish(),
   mediaLinkSections: z.object({
@@ -188,6 +266,18 @@ const linkImportJobSchema = z.object({
     showHook: z.boolean(),
     showTranscript: z.boolean()
   }).optional()
+});
+
+const pushDeviceSchema = z.object({
+  token: z.string().regex(/^[a-fA-F0-9]{64,256}$/),
+  environment: z.enum(["sandbox", "production"]),
+  locale: z.string().min(1).max(35),
+  timeZone: z.string().min(1).max(100),
+  authorizationStatus: z.string().min(1).max(40).optional()
+});
+
+const pushDeviceDeleteSchema = z.object({
+  token: z.string().regex(/^[a-fA-F0-9]{64,256}$/)
 });
 
 // Middleware to validate Supabase Auth Header
@@ -218,44 +308,7 @@ async function requireAuth(req: express.Request, res: express.Response, next: ex
   }
 }
 
-type RateLimitConfig = {
-  windowMs: number;
-  max: number;
-  key: (req: express.Request) => string;
-};
-
-function createRateLimit(config: RateLimitConfig) {
-  const buckets = new Map<string, { count: number; resetAt: number }>();
-  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const now = Date.now();
-    const key = config.key(req);
-    const current = buckets.get(key);
-
-    if (!current || current.resetAt <= now) {
-      buckets.set(key, { count: 1, resetAt: now + config.windowMs });
-      next();
-      return;
-    }
-
-    if (current.count >= config.max) {
-      const retryAfter = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
-      res.setHeader("Retry-After", String(retryAfter));
-      res.status(429).json({ error: "Too many requests" });
-      return;
-    }
-
-    current.count += 1;
-    next();
-  };
-}
-
 type UserTier = "free" | "pro";
-type TierRateLimitConfig = {
-  windowMs: number;
-  freeMax: number;
-  proMax: number;
-  key: (req: express.Request) => string;
-};
 
 const userTierCache = new Map<string, { tier: UserTier; expiresAt: number }>();
 const USER_TIER_CACHE_TTL_MS = Number(process.env.AI_TIER_CACHE_TTL_MS ?? 60 * 1000);
@@ -296,94 +349,6 @@ async function resolveUserTier(userId?: string): Promise<UserTier> {
 function invalidateUserTierCache(userId: string): void {
   userTierCache.delete(userId);
 }
-
-function createTierRateLimit(config: TierRateLimitConfig) {
-  const buckets = new Map<string, { count: number; resetAt: number }>();
-
-  return async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    try {
-      const tier = await resolveUserTier(req.userId);
-      const max = tier === "pro" ? config.proMax : config.freeMax;
-      const now = Date.now();
-      const key = `${config.key(req)}:${tier}`;
-      const current = buckets.get(key);
-
-      if (!current || current.resetAt <= now) {
-        buckets.set(key, { count: 1, resetAt: now + config.windowMs });
-        next();
-        return;
-      }
-
-      if (current.count >= max) {
-        const retryAfter = Math.max(1, Math.ceil((current.resetAt - now) / 1000));
-        res.setHeader("Retry-After", String(retryAfter));
-        res.status(429).json({ error: "Too many requests" });
-        return;
-      }
-
-      current.count += 1;
-      next();
-    } catch (error) {
-      console.error("Rate limit tier resolution failed:", error);
-      res.status(500).json({ error: "Internal Server Error" });
-    }
-  };
-}
-
-const voiceNoteRateLimit = createTierRateLimit({
-  windowMs: Number(process.env.AI_VOICE_RATE_LIMIT_WINDOW_MS ?? 10 * 60 * 1000),
-  freeMax: Number(process.env.AI_VOICE_RATE_LIMIT_FREE_MAX ?? 6),
-  proMax: Number(process.env.AI_VOICE_RATE_LIMIT_PRO_MAX ?? process.env.AI_VOICE_RATE_LIMIT_MAX ?? 120),
-  key: (req) => `${req.userId ?? "anon"}:voice-note`
-});
-
-const geminiRateLimit = createTierRateLimit({
-  windowMs: Number(process.env.AI_GEMINI_RATE_LIMIT_WINDOW_MS ?? 10 * 60 * 1000),
-  freeMax: Number(process.env.AI_GEMINI_RATE_LIMIT_FREE_MAX ?? 20),
-  proMax: Number(process.env.AI_GEMINI_RATE_LIMIT_PRO_MAX ?? process.env.AI_GEMINI_RATE_LIMIT_MAX ?? 600),
-  key: (req) => `${req.userId ?? "anon"}:gemini`
-});
-
-const mediaLinkTranscriptRateLimit = createTierRateLimit({
-  windowMs: Number(
-    process.env.AI_MEDIA_LINK_TRANSCRIPT_RATE_LIMIT_WINDOW_MS
-    ?? process.env.AI_TIKTOK_TRANSCRIPT_RATE_LIMIT_WINDOW_MS
-    ?? 10 * 60 * 1000
-  ),
-  freeMax: Number(
-    process.env.AI_MEDIA_LINK_TRANSCRIPT_RATE_LIMIT_FREE_MAX
-    ?? process.env.AI_TIKTOK_TRANSCRIPT_RATE_LIMIT_FREE_MAX
-    ?? 20
-  ),
-  proMax: Number(
-    process.env.AI_MEDIA_LINK_TRANSCRIPT_RATE_LIMIT_PRO_MAX
-    ?? process.env.AI_TIKTOK_TRANSCRIPT_RATE_LIMIT_PRO_MAX
-    ?? 300
-  ),
-  key: (req) => `${req.userId ?? "anon"}:media-link-transcript`
-});
-
-type DailyQuotaFeature = "voice" | "agent_recipe" | "chat";
-type DailyQuotaState = {
-  feature: DailyQuotaFeature;
-  tier: UserTier;
-  allowed: boolean;
-  used: number;
-  remaining: number | null;
-  limit: number | null;
-};
-
-const dailyQuotaFeatures = new Set<DailyQuotaFeature>(["voice", "agent_recipe", "chat"]);
-const freeDailyLimits: Record<DailyQuotaFeature, number> = {
-  voice: Number(process.env.DAILY_VOICE_LIMIT_FREE ?? 5),
-  agent_recipe: Number(process.env.DAILY_AGENT_RECIPE_LIMIT_FREE ?? 3),
-  chat: Number(process.env.DAILY_CHAT_LIMIT_FREE ?? 10)
-};
-
-const quotaRequestSchema = z.object({
-  feature: z.enum(["voice", "agent_recipe", "chat"]),
-  action: z.enum(["check", "consume"]).default("check")
-});
 
 const bindInviteSchema = z.object({
   code: z.string().trim().min(4).max(32)
@@ -436,132 +401,6 @@ function creemCustomerId(object: any): string | null {
 
 function creemSubscriptionId(object: any): string | null {
   return object?.subscription?.id ?? object?.subscription_id ?? object?.id ?? null;
-}
-
-function currentUtcDateKey(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function dailyQuotaErrorMessage(feature: DailyQuotaFeature): string {
-  switch (feature) {
-    case "voice":
-      return "Daily free voice limit reached";
-    case "agent_recipe":
-      return "Daily free agent recipe limit reached";
-    case "chat":
-      return "Daily free AI chat limit reached";
-  }
-}
-
-async function ensureDailyUsageRow(userId: string, feature: DailyQuotaFeature, dateKey: string): Promise<void> {
-  await prisma.$executeRaw`
-    INSERT INTO "DailyUsage" ("userId", "dateKey", "feature", "count", "createdAt", "updatedAt")
-    VALUES (${userId}, ${dateKey}, ${feature}, 0, NOW(), NOW())
-    ON CONFLICT ("userId", "dateKey", "feature") DO NOTHING
-  `;
-}
-
-async function readDailyUsageCount(userId: string, feature: DailyQuotaFeature, dateKey: string): Promise<number> {
-  const rows = await prisma.$queryRaw<Array<{ count: number }>>`
-    SELECT "count"
-    FROM "DailyUsage"
-    WHERE "userId" = ${userId} AND "dateKey" = ${dateKey} AND "feature" = ${feature}
-    LIMIT 1
-  `;
-  return Number(rows[0]?.count ?? 0);
-}
-
-async function getDailyQuotaState(userId: string, feature: DailyQuotaFeature): Promise<DailyQuotaState> {
-  await upsertUser(userId);
-  const tier = await resolveUserTier(userId);
-
-  if (tier === "pro") {
-    return {
-      feature,
-      tier,
-      allowed: true,
-      used: 0,
-      remaining: null,
-      limit: null
-    };
-  }
-
-  const dateKey = currentUtcDateKey();
-  await ensureDailyUsageRow(userId, feature, dateKey);
-  const used = await readDailyUsageCount(userId, feature, dateKey);
-  const limit = Math.max(0, freeDailyLimits[feature]);
-  const remaining = Math.max(0, limit - used);
-
-  return {
-    feature,
-    tier,
-    allowed: used < limit,
-    used,
-    remaining,
-    limit
-  };
-}
-
-async function consumeDailyQuota(userId: string, feature: DailyQuotaFeature): Promise<DailyQuotaState> {
-  await upsertUser(userId);
-  const tier = await resolveUserTier(userId);
-
-  if (tier === "pro") {
-    return {
-      feature,
-      tier,
-      allowed: true,
-      used: 0,
-      remaining: null,
-      limit: null
-    };
-  }
-
-  const limit = Math.max(0, freeDailyLimits[feature]);
-  const dateKey = currentUtcDateKey();
-
-  return await prisma.$transaction(async (tx) => {
-    await tx.$executeRaw`
-      INSERT INTO "DailyUsage" ("userId", "dateKey", "feature", "count", "createdAt", "updatedAt")
-      VALUES (${userId}, ${dateKey}, ${feature}, 0, NOW(), NOW())
-      ON CONFLICT ("userId", "dateKey", "feature") DO NOTHING
-    `;
-
-    const rows = await tx.$queryRaw<Array<{ count: number }>>`
-      SELECT "count"
-      FROM "DailyUsage"
-      WHERE "userId" = ${userId} AND "dateKey" = ${dateKey} AND "feature" = ${feature}
-      LIMIT 1
-    `;
-
-    const used = Number(rows[0]?.count ?? 0);
-    if (used >= limit) {
-      return {
-        feature,
-        tier,
-        allowed: false,
-        used,
-        remaining: 0,
-        limit
-      };
-    }
-
-    await tx.$executeRaw`
-      UPDATE "DailyUsage"
-      SET "count" = "count" + 1, "updatedAt" = NOW()
-      WHERE "userId" = ${userId} AND "dateKey" = ${dateKey} AND "feature" = ${feature}
-    `;
-
-    const nextUsed = used + 1;
-    return {
-      feature,
-      tier,
-      allowed: true,
-      used: nextUsed,
-      remaining: Math.max(0, limit - nextUsed),
-      limit
-    };
-  });
 }
 
 type CreditFeature = "voice" | "agent_recipe" | "chat" | "import";
@@ -645,6 +484,23 @@ async function consumeCreditsForUser(userId: string, feature: CreditFeature): Pr
   });
 
   return { ...result, tier, cost };
+}
+
+async function checkCreditsForUser(userId: string, feature: CreditFeature): Promise<CreditConsumeResult> {
+  const cost = CREDIT_COSTS[feature];
+  const tier = await resolveUserTier(userId);
+  if (tier === "pro") {
+    return { allowed: true, balance: null, tier, cost };
+  }
+
+  await upsertUser(userId);
+  const record = await getOrCreateCredits(userId);
+  return {
+    allowed: record.balance >= cost,
+    balance: record.balance,
+    tier,
+    cost
+  };
 }
 
 app.get("/health", (_req, res) => {
@@ -969,6 +825,7 @@ app.post("/link-import-jobs", requireAuth, async (req, res) => {
 
   try {
     const source = parsed.data.source ?? makeInitialLinkSource(parsed.data.url);
+    const tier = await resolveUserTier(userId);
     const job = await enqueueLinkImportJob({
       userId,
       noteId: parsed.data.noteId,
@@ -976,51 +833,149 @@ app.post("/link-import-jobs", requireAuth, async (req, res) => {
       placeholderContent: parsed.data.placeholderContent,
       source,
       section: parsed.data.section,
-      mediaLinkSections: parsed.data.mediaLinkSections
+      mediaLinkSections: parsed.data.mediaLinkSections,
+      creditAuthorization: {
+        tier,
+        cost: CREDIT_COSTS.import,
+        initialCredits: INITIAL_CREDITS
+      }
     });
     res.status(202).json(job);
   } catch (error) {
+    if (error instanceof LinkImportInsufficientCreditsError) {
+      res.status(402).json({
+        error: "Insufficient credits",
+        balance: error.balance,
+        cost: error.cost,
+        feature: "import"
+      });
+      return;
+    }
     console.error("❌ Link Import Job Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
 
-app.post("/quota/daily", requireAuth, async (req, res) => {
-  const parsed = quotaRequestSchema.safeParse(req.body);
+app.post("/push-devices", requireAuth, async (req, res) => {
+  const parsed = pushDeviceSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid payload" });
     return;
   }
 
   const userId = req.userId as string;
-  const { feature, action } = parsed.data;
+  await upsertUser(userId);
+  try {
+    await registerPushDevice({ userId, ...parsed.data });
+    res.status(204).send();
+  } catch (error) {
+    console.error("Push device registration failed:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.delete("/push-devices", requireAuth, async (req, res) => {
+  const parsed = pushDeviceDeleteSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid payload" });
+    return;
+  }
 
   try {
-    const state = action === "consume"
-      ? await consumeDailyQuota(userId, feature)
-      : await getDailyQuotaState(userId, feature);
+    await deactivatePushDevice(req.userId as string, parsed.data.token);
+    res.status(204).send();
+  } catch (error) {
+    console.error("Push device deactivation failed:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
 
-    if (!state.allowed) {
-      res.status(429).json({
-        error: dailyQuotaErrorMessage(feature),
-        feature,
-        tier: state.tier,
-        remaining: state.remaining,
-        limit: state.limit
-      });
+app.get("/weekly-topics/dashboard", requireAuth, async (req, res) => {
+  try {
+    res.json(await getWeeklyTopicDashboard(req.userId as string));
+  } catch (error) {
+    console.error("Weekly topics dashboard failed:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.put("/weekly-topics/settings", requireAuth, async (req, res) => {
+  const parsed = weeklyTopicSettingsInputSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid payload" });
+    return;
+  }
+  try {
+    const userId = req.userId as string;
+    await upsertUser(userId);
+    if (parsed.data.enabled && !(await hasActiveProSubscription(userId))) {
+      res.status(403).json({ error: "Pro subscription required" });
       return;
     }
-
-    res.json({
-      success: true,
-      feature,
-      tier: state.tier,
-      allowed: state.allowed,
-      remaining: state.remaining,
-      limit: state.limit
-    });
+    res.json(await updateWeeklyTopicSettings(userId, parsed.data));
   } catch (error) {
-    console.error("❌ Daily Quota Error:", error);
+    console.error("Weekly topics settings update failed:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/weekly-topics/reports", requireAuth, async (req, res) => {
+  const rawLimit = Number(req.query.limit ?? 30);
+  const limit = Number.isFinite(rawLimit) ? rawLimit : 30;
+  try {
+    res.json({ reports: await listWeeklyTopicReports(req.userId as string, limit) });
+  } catch (error) {
+    console.error("Weekly topics history failed:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.get("/weekly-topics/reports/:reportId", requireAuth, async (req, res) => {
+  try {
+    const report = await getWeeklyTopicReport(req.userId as string, req.params.reportId);
+    if (!report) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.json(report);
+  } catch (error) {
+    console.error("Weekly topics report failed:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/weekly-topics/reports/:reportId/read", requireAuth, async (req, res) => {
+  try {
+    await markWeeklyTopicReportRead(req.userId as string, req.params.reportId);
+    res.status(204).send();
+  } catch (error) {
+    console.error("Weekly topics read receipt failed:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/weekly-topics/reports/:reportId/regenerate", requireAuth, async (req, res) => {
+  try {
+    const result = await regenerateWeeklyTopicReport(req.userId as string, req.params.reportId);
+    if (result.kind === "not_found") {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    if (result.kind === "limit_reached") {
+      res.status(409).json({ error: "Regeneration limit reached" });
+      return;
+    }
+    if (result.kind === "not_enough_sources") {
+      res.status(409).json({ error: "Not enough source notes" });
+      return;
+    }
+    if (result.kind === "forbidden") {
+      res.status(403).json({ error: "Pro subscription required" });
+      return;
+    }
+    res.json(result.report);
+  } catch (error) {
+    console.error("Weekly topics regeneration failed:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
@@ -1163,7 +1118,7 @@ async function verifyReceiptWithApple(receiptData: string, sharedSecret: string)
 }
 
 // Voice Note Endpoint: Audio -> Raw transcript only (no intent rewrite)
-app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async (req, res) => {
+app.post("/ai/voice-note", aiJsonParser, requireAuth, async (req, res) => {
   if (!GEMINI_API_KEY) {
     console.error("❌ GEMINI_API_KEY is not configured");
     res.status(500).json({ error: "GEMINI_API_KEY is not configured on server" });
@@ -1321,7 +1276,7 @@ app.post("/ai/voice-note", aiJsonParser, requireAuth, voiceNoteRateLimit, async 
   }
 });
 
-app.post("/ai/media-link-transcript", aiJsonParser, requireAuth, mediaLinkTranscriptRateLimit, async (req, res) => {
+app.post("/ai/media-link-transcript", aiJsonParser, requireAuth, async (req, res) => {
   if (!GEMINI_API_KEY) {
     console.error("❌ GEMINI_API_KEY is not configured");
     res.status(500).json({ error: "GEMINI_API_KEY is not configured on server" });
@@ -1382,7 +1337,7 @@ app.post("/ai/media-link-transcript", aiJsonParser, requireAuth, mediaLinkTransc
   }
 });
 
-app.post("/ai/tiktok-transcript", aiJsonParser, requireAuth, mediaLinkTranscriptRateLimit, async (req, res) => {
+app.post("/ai/tiktok-transcript", aiJsonParser, requireAuth, async (req, res) => {
   if (!GEMINI_API_KEY) {
     console.error("❌ GEMINI_API_KEY is not configured");
     res.status(500).json({ error: "GEMINI_API_KEY is not configured on server" });
@@ -1426,6 +1381,94 @@ app.post("/ai/tiktok-transcript", aiJsonParser, requireAuth, mediaLinkTranscript
 
     console.error("❌ TikTok Transcript Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+const googlePlayVerifySchema = z.object({
+  productId: z.string().min(1),
+  purchaseToken: z.string().min(20)
+});
+
+app.post("/subscription/google/verify", requireAuth, async (req, res) => {
+  const parsed = googlePlayVerifySchema.safeParse(req.body);
+  if (!parsed.success || !GOOGLE_PLAY_PRODUCT_IDS.has(parsed.data.productId)) {
+    res.status(400).json({ error: "Invalid Google Play purchase payload" });
+    return;
+  }
+  const userId = req.userId as string;
+  const { productId, purchaseToken } = parsed.data;
+  try {
+    await upsertUser(userId);
+    const accessToken = await googlePlayAccessToken();
+    const purchaseURL =
+      `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(GOOGLE_PLAY_PACKAGE_NAME)}` +
+      `/purchases/subscriptionsv2/tokens/${encodeURIComponent(purchaseToken)}`;
+    const purchaseResponse = await fetch(purchaseURL, {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }
+    });
+    const purchase = await purchaseResponse.json() as any;
+    if (!purchaseResponse.ok) {
+      console.error("❌ Google Play purchase verification failed:", purchaseResponse.status, purchase);
+      res.status(400).json({ error: "Invalid Google Play purchase" });
+      return;
+    }
+    const lineItems = Array.isArray(purchase.lineItems) ? purchase.lineItems : [];
+    const matchingLine = lineItems.find((line: any) => line.productId === productId);
+    if (!matchingLine) {
+      res.status(400).json({ error: "Purchase does not contain product" });
+      return;
+    }
+    const boundAccountId = purchase.externalAccountIdentifiers?.obfuscatedExternalAccountId;
+    if (boundAccountId && boundAccountId !== googlePlayAccountId(userId)) {
+      res.status(409).json({ error: "Subscription is linked to another account" });
+      return;
+    }
+    const expiresAt = matchingLine.expiryTime ? new Date(matchingLine.expiryTime) : null;
+    const entitledStates = new Set([
+      "SUBSCRIPTION_STATE_ACTIVE",
+      "SUBSCRIPTION_STATE_IN_GRACE_PERIOD",
+      "SUBSCRIPTION_STATE_CANCELED"
+    ]);
+    const isEntitled =
+      entitledStates.has(purchase.subscriptionState) &&
+      expiresAt != null && !Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() > Date.now();
+    if (!isEntitled) {
+      res.status(409).json({
+        error: "Subscription is not active",
+        tier: "free",
+        subscriptionState: purchase.subscriptionState ?? null,
+        expiresAt: expiresAt?.toISOString() ?? null
+      });
+      return;
+    }
+    await updateSubscriptionStatus(
+      userId,
+      "pro",
+      expiresAt,
+      purchase.latestOrderId ?? purchaseToken,
+      "google_play"
+    );
+    invalidateUserTierCache(userId);
+
+    if (purchase.acknowledgementState === "ACKNOWLEDGEMENT_STATE_PENDING") {
+      const acknowledgeURL =
+        `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(GOOGLE_PLAY_PACKAGE_NAME)}` +
+        `/purchases/subscriptions/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}:acknowledge`;
+      const acknowledgeResponse = await fetch(acknowledgeURL, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+        body: "{}"
+      });
+      if (!acknowledgeResponse.ok) {
+        console.error("⚠️ Google Play acknowledgement failed:", acknowledgeResponse.status, await acknowledgeResponse.text());
+      }
+    }
+
+    console.log(`✅ Google Play subscription verified: user=${userId}, product=${productId}`);
+    res.json({ success: true, tier: "pro", expiresAt: expiresAt.toISOString() });
+  } catch (error) {
+    console.error("❌ Google Play subscription verification error:", error);
+    res.status(500).json({ error: "Google Play verification unavailable" });
   }
 });
 
@@ -1631,7 +1674,7 @@ app.get("/subscription/status", requireAuth, async (req, res) => {
 });
 
 // Gemini Endpoint: Supports Multimodal (Audio/Image + Text)
-app.post("/ai/gemini", aiJsonParser, requireAuth, geminiRateLimit, async (req, res) => {
+app.post("/ai/gemini", aiJsonParser, requireAuth, async (req, res) => {
   if (!GEMINI_API_KEY) {
     res.status(500).json({ error: "GEMINI_API_KEY is not configured on server" });
     return;
@@ -1739,7 +1782,12 @@ app.post("/credits/consume", requireAuth, async (req, res) => {
 
     const userId = req.userId as string;
     const { feature } = parsed.data;
-    const result = await consumeCreditsForUser(userId, feature);
+    // Older app versions preflight link imports through this endpoint before
+    // creating a job. The job endpoint is now the single place that actually
+    // deducts import credits, which prevents old clients from being double charged.
+    const result = feature === "import"
+      ? await checkCreditsForUser(userId, feature)
+      : await consumeCreditsForUser(userId, feature);
 
     if (!result.allowed) {
       res.status(402).json({
@@ -1761,6 +1809,8 @@ app.post("/credits/consume", requireAuth, async (req, res) => {
 app.listen(PORT, () => {
   console.log(`ChillScript backend listening on :${PORT}`);
   scheduleLinkImportWorker();
+  scheduleNotificationWorker();
+  scheduleWeeklyTopicWorker();
 });
 
 declare global {

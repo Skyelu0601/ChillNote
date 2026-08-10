@@ -81,21 +81,4 @@ struct ChecklistMarkdown {
         return parts.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    static func serializePlainText(notes: String, items: [ChecklistItem]) -> String {
-        var parts: [String] = []
-        let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedNotes.isEmpty {
-            parts.append(trimmedNotes)
-            parts.append("")
-        }
-
-        for item in items.sorted(by: { $0.sortOrder < $1.sortOrder }) {
-            // User requested no prefixes when converting back to text
-            let text = item.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !text.isEmpty else { continue }
-            parts.append(text)
-        }
-
-        return parts.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-    }
 }

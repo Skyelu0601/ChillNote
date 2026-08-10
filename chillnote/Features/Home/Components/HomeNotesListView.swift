@@ -6,49 +6,83 @@ struct HomeNotesListView: View {
     let cachedVisibleNotes: [Note]
     let searchQuery: String
     let isLoading: Bool
-    let isSyncing: Bool
+    let isInitialSyncing: Bool
     let hasLoadedAtLeastOnce: Bool
     let isTrashSelected: Bool
+    let selectedSection: NoteSection
     let isSelectionMode: Bool
     let selectedNotes: Set<UUID>
     let showDefaultEmptyStateMessage: Bool
     let onReachBottom: (Note) -> Void
     let onToggleNoteSelection: (Note) -> Void
+    let onEnterSelectionMode: () -> Void
     let onRestoreNote: (Note) -> Void
     let onDeleteNotePermanently: (Note) -> Void
     let onTogglePin: (Note) -> Void
+    let onManageTags: (Note) -> Void
     let onMoveNote: (Note, NoteSection) -> Void
     let onDeleteNote: (Note) -> Void
+    var guideTargetNoteID: UUID? = nil
+    var onGuideTargetNoteOpened: (UUID) -> Void = { _ in }
 
-    private var shouldShowBlockingLoadingState: Bool {
+    private var shouldShowInitialLoadingState: Bool {
         cachedVisibleNotes.isEmpty && (isLoading || !hasLoadedAtLeastOnce)
+    }
+
+    private var shouldShowSyncingState: Bool {
+        cachedVisibleNotes.isEmpty
+            && isInitialSyncing
+            && hasLoadedAtLeastOnce
+            && !isLoading
     }
 
     private var usePlainPreviewForCurrentList: Bool {
         !searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    private var emptyStateLocalizationKeys: (title: String, message: String) {
+        if isTrashSelected {
+            return (
+                title: "home.notes.empty.trash.title",
+                message: "home.notes.empty.trash.message"
+            )
+        }
+
+        switch selectedSection {
+        case .inbox:
+            return (
+                title: "home.notes.empty.inbox.title",
+                message: "home.notes.empty.inbox.message"
+            )
+        case .drafts:
+            return (
+                title: "home.notes.empty.drafts.title",
+                message: "home.notes.empty.drafts.message"
+            )
+        case .published:
+            return (
+                title: "home.notes.empty.published.title",
+                message: "home.notes.empty.published.message"
+            )
+        }
+    }
+
     var body: some View {
         if cachedVisibleNotes.isEmpty {
-            if shouldShowBlockingLoadingState {
+            if shouldShowInitialLoadingState {
                 HomeNotesLoadingView()
-            } else if isTrashSelected {
-                Text(L10n.text("home.notes.empty.trash"))
-                    .font(.bodyMedium)
-                    .foregroundColor(.textSub)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            } else if !showDefaultEmptyStateMessage {
+            } else if shouldShowSyncingState {
+                HomeNotesSyncingView()
+            } else if !isTrashSelected && !showDefaultEmptyStateMessage {
                 Color.clear
                     .frame(height: 1)
             } else {
-                Text(L10n.text("home.notes.empty.default"))
-                    .font(.bodyMedium)
-                    .foregroundColor(.textSub)
-                    .padding(.horizontal, 24)
-                    .padding(.top, 12)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                HomeNotesEmptyStateView(
+                    selectedSection: selectedSection,
+                    isTrashSelected: isTrashSelected,
+                    titleKey: emptyStateLocalizationKeys.title,
+                    messageKey: emptyStateLocalizationKeys.message
+                )
             }
         } else {
             LazyVStack(spacing: 16) {
@@ -108,10 +142,37 @@ struct HomeNotesListView: View {
                             ZStack(alignment: .topTrailing) {
                                 NavigationLink(value: note) {
                                     NoteCard(item: item)
+                                        .firstActionGuideTarget(
+                                            guideTargetNoteID == note.id
+                                                ? .importedNote(note.id)
+                                                : nil
+                                        )
                                 }
                                 .buttonStyle(.tactile)
+                                .simultaneousGesture(
+                                    TapGesture().onEnded {
+                                        guard guideTargetNoteID == note.id else { return }
+                                        onGuideTargetNoteOpened(note.id)
+                                    }
+                                )
 
                                 NoteOverflowMenu {
+                                    Button(action: onEnterSelectionMode) {
+                                        Label(
+                                            L10n.text("home.header.title_menu.select_notes"),
+                                            systemImage: "checkmark.circle"
+                                        )
+                                    }
+
+                                    Button {
+                                        onManageTags(note)
+                                    } label: {
+                                        Label(
+                                            L10n.text("home.note_tag.title"),
+                                            systemImage: "tag"
+                                        )
+                                    }
+
                                     Button {
                                         onTogglePin(note)
                                     } label: {
@@ -166,6 +227,187 @@ struct HomeNotesListView: View {
         }
     }
 }
+
+private struct HomeNotesEmptyStateView: View {
+    let selectedSection: NoteSection
+    let isTrashSelected: Bool
+    let titleKey: String
+    let messageKey: String
+
+    private var emptyStateSystemImage: String {
+        if isTrashSelected {
+            return "trash"
+        }
+
+        return selectedSection == .published ? "paperplane.fill" : selectedSection.systemImage
+    }
+
+    private var emptyStateTint: Color {
+        if isTrashSelected {
+            return .textTertiary
+        }
+
+        switch selectedSection {
+        case .inbox:
+            return Color(hex: "6E7F91")
+        case .drafts:
+            return Color(hex: "8A766D")
+        case .published:
+            return Color(hex: "6F8778")
+        }
+    }
+
+    var body: some View {
+        VStack(spacing: BrandTokens.Space.s4) {
+            emptyStateSymbol
+
+            VStack(spacing: BrandTokens.Space.s2) {
+                Text(L10n.text(titleKey))
+                    .font(.displaySmall)
+                    .foregroundStyle(Color.textMain)
+
+                Text(L10n.text(messageKey))
+                    .font(.bodyMedium)
+                    .foregroundStyle(Color.textSub)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .frame(maxWidth: 290)
+            }
+        }
+        .padding(.horizontal, BrandTokens.Space.s4)
+        .frame(maxWidth: .infinity)
+        .padding(.top, 92)
+        .padding(.bottom, 180)
+    }
+
+    private var emptyStateSymbol: some View {
+        Image(systemName: emptyStateSystemImage)
+            .font(.system(size: 44, weight: .semibold))
+            .foregroundStyle(emptyStateTint)
+            .frame(width: 112, height: 112)
+            .background(
+                Circle()
+                    .fill(
+                        isTrashSelected
+                        ? Color.cardBackground
+                        : emptyStateTint.opacity(0.07)
+                    )
+            )
+            .overlay(
+                Circle()
+                    .stroke(
+                        isTrashSelected
+                            ? Color.borderSubtle
+                            : emptyStateTint.opacity(0.12),
+                        lineWidth: 1
+                    )
+            )
+            .shadow(
+                color: Color.shadowColor.opacity(isTrashSelected ? 0 : 0.50),
+                radius: 18
+            )
+            .accessibilityHidden(true)
+    }
+}
+
+#if DEBUG
+struct HomeEmptyStateDesignPreview: View {
+    var showsFirstActionPrompt = false
+    @State private var selectedSection: NoteSection = .inbox
+    @State private var isVoiceMode = false
+    @State private var isFirstActionPromptDismissed = false
+    @StateObject private var speechRecognizer = SpeechRecognizer()
+
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            VStack(spacing: 0) {
+                HomeHeaderView(
+                    isSelectionMode: false,
+                    isTrashSelected: false,
+                    isSearchVisible: false,
+                    isRecording: false,
+                    headerTitle: "ChillScript",
+                    selectedNotesCount: 0,
+                    visibleNotesCount: 0,
+                    hasPendingRecordings: false,
+                    highlightSelectionEntry: false,
+                    onToggleSidebar: {},
+                    onCreateBlankNote: {},
+                    onToggleSearch: {},
+                    onExitSelectionMode: {},
+                    onSelectAll: {},
+                    onDeselectAll: {},
+                    onShowDeleteConfirmation: {},
+                    onShowEmptyTrashConfirmation: {}
+                )
+
+                HomeSectionPicker(
+                    selectedSection: selectedSection,
+                    onSelect: { selectedSection = $0 }
+                )
+                .padding(.horizontal, BrandTokens.Space.s4)
+                .padding(.top, BrandTokens.Space.s3)
+
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 10) {
+                        HomeQuickActionsView(
+                            showsUnreadIndicator: false,
+                            onPostIdeasTap: {},
+                            onCreatorSkillsTap: {}
+                        )
+                        .padding(.horizontal, BrandTokens.Space.s4)
+                        .padding(.top, 10)
+
+                        HomeNotesListView(
+                            cachedVisibleNotes: [],
+                            searchQuery: "",
+                            isLoading: false,
+                            isInitialSyncing: false,
+                            hasLoadedAtLeastOnce: true,
+                            isTrashSelected: false,
+                            selectedSection: selectedSection,
+                            isSelectionMode: false,
+                            selectedNotes: [],
+                            showDefaultEmptyStateMessage: !showsFirstActionPrompt
+                                || isFirstActionPromptDismissed,
+                            onReachBottom: { _ in },
+                            onToggleNoteSelection: { _ in },
+                            onEnterSelectionMode: {},
+                            onRestoreNote: { _ in },
+                            onDeleteNotePermanently: { _ in },
+                            onTogglePin: { _ in },
+                            onManageTags: { _ in },
+                            onMoveNote: { _, _ in },
+                            onDeleteNote: { _ in }
+                        )
+                    }
+                }
+            }
+
+            ChatInputBar(
+                isVoiceMode: $isVoiceMode,
+                speechRecognizer: speechRecognizer,
+                onCancelVoice: {},
+                onConfirmVoice: {},
+                onPasteLink: { _ in },
+                onCreateBlankNote: {},
+                enforceVoiceQuota: false
+            )
+        }
+        .background(Color.bgPrimary.ignoresSafeArea())
+        .overlay(alignment: .bottom) {
+            if showsFirstActionPrompt && !isFirstActionPromptDismissed {
+                FirstActionSharePromptView(
+                    onStart: { isFirstActionPromptDismissed = true },
+                    onSkip: { isFirstActionPromptDismissed = true }
+                )
+                    .padding(.horizontal, BrandTokens.Space.s3)
+                    .padding(.bottom, 104)
+            }
+        }
+    }
+}
+#endif
 
 private struct NoteOverflowMenu<Actions: View>: View {
     @ViewBuilder let actions: () -> Actions
@@ -223,6 +465,24 @@ private struct HomeNotesLoadingView: View {
         }
         .padding(.horizontal, 24)
         .padding(.bottom, 100)
+    }
+}
+
+private struct HomeNotesSyncingView: View {
+    var body: some View {
+        VStack(spacing: BrandTokens.Space.s2) {
+            ProgressView()
+                .controlSize(.regular)
+                .tint(Color.accentPrimary)
+
+            Text(L10n.text("home.notes.syncing"))
+                .font(.bodyMedium)
+                .foregroundStyle(Color.textSub)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, 92)
+        .padding(.bottom, 180)
+        .accessibilityElement(children: .combine)
     }
 }
 

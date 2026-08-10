@@ -36,7 +36,7 @@ struct HomeScreenState {
     let translateTargetLanguage: String
     let showDeleteConfirmation: Bool
     let showEmptyTrashConfirmation: Bool
-    let showBatchTagSheet: Bool
+    let taggingNote: Note?
     let isSidebarPresented: Bool
     let selectedTag: Tag?
     let selectedSection: NoteSection?
@@ -46,11 +46,12 @@ struct HomeScreenState {
     let cachedVisibleNotes: [Note]
     let sectionCounts: [NoteSection: Int]
     let isLoadingNotes: Bool
-    let isSyncingNotes: Bool
+    let isInitialNotesSync: Bool
     let hasLoadedNotesAtLeastOnce: Bool
     let availableTags: [Tag]
     let translateLanguages: [TranslateLanguage]
     let recipeManager: RecipeManager
+    let weeklyTopicsStore: WeeklyTopicsStore
     let speechRecognizer: SpeechRecognizer
     let syncManager: SyncManager
     let headerTitle: String
@@ -84,7 +85,7 @@ enum HomeScreenAction {
     case setTranslateInputPresented(Bool)
     case setShowDeleteConfirmation(Bool)
     case setShowEmptyTrashConfirmation(Bool)
-    case setShowBatchTagSheet(Bool)
+    case setTaggingNote(Note?)
     case setSidebarPresented(Bool)
     case setAgentMenuOpen(Bool)
     case setShowChillRecipes(Bool)
@@ -119,7 +120,7 @@ enum HomeScreenAction {
 
     case deleteSelectedNotes
     case emptyTrash
-    case applyTagToSelected(Tag)
+    case toggleTag(Note, Tag)
     case hideKeyboard
 
     case executePendingAgentAction(String)
@@ -130,6 +131,8 @@ enum HomeScreenAction {
     case aiChatDisappear
     case openChillRecipes
     case closeChillRecipes
+    case openWeeklyTopics
+    case openWeeklyTopicSource(UUID)
 
     case confirmAskSoftLimit
     case confirmRecipeSoftLimit

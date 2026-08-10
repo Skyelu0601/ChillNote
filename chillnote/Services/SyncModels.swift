@@ -17,6 +17,8 @@ struct NoteDTO: Codable {
     let sourcePlatformID: String?
     let sourcePlatformName: String?
     let sourceHost: String?
+    let sourceAuthorName: String?
+    let sourceAuthorHandle: String?
     let sourceCapturedAt: String?
     let section: String?
     let importStatus: String?
@@ -42,6 +44,8 @@ struct NoteDTO: Codable {
         sourcePlatformID: String? = nil,
         sourcePlatformName: String? = nil,
         sourceHost: String? = nil,
+        sourceAuthorName: String? = nil,
+        sourceAuthorHandle: String? = nil,
         sourceCapturedAt: String? = nil,
         section: String? = nil,
         importStatus: String? = nil,
@@ -66,6 +70,8 @@ struct NoteDTO: Codable {
         self.sourcePlatformID = sourcePlatformID
         self.sourcePlatformName = sourcePlatformName
         self.sourceHost = sourceHost
+        self.sourceAuthorName = sourceAuthorName
+        self.sourceAuthorHandle = sourceAuthorHandle
         self.sourceCapturedAt = sourceCapturedAt
         self.section = section
         self.importStatus = importStatus

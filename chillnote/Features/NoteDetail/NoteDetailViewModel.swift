@@ -9,38 +9,6 @@ final class NoteDetailViewModel: ObservableObject {
 
     struct Dependencies {
         var now: () -> Date = Date.init
-        var checkDailyQuota: (DailyQuotaFeature) async -> Bool = { feature in
-            await StoreService.shared.consumeCredits(feature: feature)
-        }
-        var authorizeVoiceRecordingStart: () async -> Bool = {
-            await StoreService.shared.authorizeVoiceRecordingStart()
-        }
-        var generateAIEdit: (_ noteContent: String, _ userInput: String) async throws -> String = { content, userInput in
-            let languageRule = LanguageDetection.languagePreservationRule(for: userInput + "\n" + content)
-            let systemInstruction = """
-            You are a professional writing assistant helping the user edit a note.
-            Rules:
-            \(languageRule)
-            - Respond and update the note using the language derived from the user's request and context.
-            - Preserve the original structure and formatting (including markdown, code blocks, and line breaks) unless the user explicitly requests changes.
-            - Return only the updated note content, without any explanations or meta-commentary.
-            """
-
-            let prompt = """
-            The user is editing a note with the following content:
-
-            \(content)
-
-            The user wants to: \(userInput)
-
-            Please update the note based on the user's request.
-            """
-
-            return try await GeminiService.shared.generateContent(
-                prompt: prompt,
-                systemInstruction: systemInstruction
-            )
-        }
         var writeFile: (_ content: String, _ url: URL) throws -> Void = { content, url in
             try content.write(to: url, atomically: true, encoding: .utf8)
         }
@@ -48,10 +16,8 @@ final class NoteDetailViewModel: ObservableObject {
 
     enum NoteDetailAction {
         case backTapped
-        case stopRecordingTapped
         case restoreTapped
         case deleteTapped
-        case deletePermanentlyTapped
         case exportTapped
         case aiSkillsTapped
         case teleprompterTapped
@@ -60,15 +26,10 @@ final class NoteDetailViewModel: ObservableObject {
         case aiRetryTapped
         case removeTagTapped(Tag)
         case confirmTagTapped(String)
-        case retryTranscriptionTapped
-        case dismissRecordingErrorTapped
         case dismissVoiceProcessingErrorTapped
     }
 
     @Published var showDeleteConfirmation = false
-    @Published var showPermanentDeleteConfirmation = false
-    @Published var inputText = ""
-    @Published var isVoiceMode = false
     @Published var isProcessing = false
 
     @Published var showAIToolbar = false
@@ -97,15 +58,10 @@ final class NoteDetailViewModel: ObservableObject {
     @Published var showSubscription = false
     @Published var showTeleprompterCamera = false
 
-    @Published var recordingDuration: TimeInterval = 0
-    @Published var awaitingVoiceEditResult = false
-    @Published private(set) var noteInitiatedRecording = false
-
     let note: Note
 
     private(set) var modelContext: ModelContext?
     private(set) var syncManager: SyncManager?
-    private(set) var speechRecognizer: SpeechRecognizer?
     private(set) var voiceService: VoiceProcessingService = .shared
 
     private var dismissAction: (() -> Void)?
@@ -120,7 +76,6 @@ final class NoteDetailViewModel: ObservableObject {
     func configure(
         modelContext: ModelContext,
         syncManager: SyncManager,
-        speechRecognizer: SpeechRecognizer,
         voiceService: VoiceProcessingService? = nil,
         dismissAction: @escaping () -> Void
     ) {
@@ -131,7 +86,6 @@ final class NoteDetailViewModel: ObservableObject {
 
         self.modelContext = modelContext
         self.syncManager = syncManager
-        self.speechRecognizer = speechRecognizer
         self.voiceService = voiceService ?? .shared
         self.dismissAction = dismissAction
     }
@@ -184,15 +138,6 @@ final class NoteDetailViewModel: ObservableObject {
         return message
     }
 
-    var recordingErrorMessage: String? {
-        // Only show recording errors if this note initiated the recording
-        guard noteInitiatedRecording else { return nil }
-        guard case let .error(message) = speechRecognizer?.recordingState else {
-            return nil
-        }
-        return message
-    }
-
     var trashCountdownText: String? {
         guard let deletedAt = note.deletedAt else { return nil }
         let daysRemaining = TrashPolicy.daysRemaining(from: deletedAt)
@@ -214,14 +159,10 @@ final class NoteDetailViewModel: ObservableObject {
         switch action {
         case .backTapped:
             updateTimestampAndDismiss()
-        case .stopRecordingTapped:
-            stopRecording()
         case .restoreTapped:
             restoreNote()
         case .deleteTapped:
             showDeleteConfirmation = true
-        case .deletePermanentlyTapped:
-            showPermanentDeleteConfirmation = true
         case .exportTapped:
             exportMarkdown()
         case .aiSkillsTapped:
@@ -238,81 +179,9 @@ final class NoteDetailViewModel: ObservableObject {
             removeTag(tag)
         case .confirmTagTapped(let tagName):
             confirmTag(tagName)
-        case .retryTranscriptionTapped:
-            awaitingVoiceEditResult = true
-            speechRecognizer?.retryTranscription()
-        case .dismissRecordingErrorTapped:
-            noteInitiatedRecording = false
-            speechRecognizer?.dismissError()
         case .dismissVoiceProcessingErrorTapped:
             voiceService.processingStates.removeValue(forKey: note.id)
         }
-    }
-
-    func onRecordingStateChange(_ newState: SpeechRecognizer.RecordingState) {
-        switch newState {
-        case .processing:
-            if awaitingVoiceEditResult {
-                isProcessing = true
-            }
-        case .idle:
-            noteInitiatedRecording = false
-            guard awaitingVoiceEditResult else { return }
-            isVoiceMode = false
-            if let transcript = speechRecognizer?.transcript, !transcript.isEmpty {
-                Task { await handleAIInput(voiceInput: transcript) }
-            } else {
-                isProcessing = false
-            }
-            awaitingVoiceEditResult = false
-        case .error:
-            if awaitingVoiceEditResult {
-                isVoiceMode = false
-                isProcessing = false
-                awaitingVoiceEditResult = false
-            }
-        case .recording:
-            isProcessing = false
-        }
-    }
-
-    func updateRecordingDurationIfNeeded() {
-        guard let speechRecognizer, speechRecognizer.isRecording, let startTime = speechRecognizer.recordingStartTime else {
-            return
-        }
-        recordingDuration = Date().timeIntervalSince(startTime)
-    }
-
-    func startRecording() {
-        Task {
-            let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
-            guard hasConsent else { return }
-
-            let authorized = await dependencies.authorizeVoiceRecordingStart()
-            guard authorized else {
-                showSubscription = true
-                return
-            }
-
-            guard let speechRecognizer else { return }
-            noteInitiatedRecording = true
-            isVoiceMode = true
-            recordingDuration = 0
-            awaitingVoiceEditResult = false
-            speechRecognizer.transcript = ""
-            speechRecognizer.startRecording(countsTowardQuota: false)
-        }
-    }
-
-    func stopRecording() {
-        awaitingVoiceEditResult = true
-        speechRecognizer?.stopRecording()
-    }
-
-    func timeString(from interval: TimeInterval) -> String {
-        let minutes = Int(interval) / 60
-        let seconds = Int(interval) % 60
-        return String(format: "%02d:%02d", minutes, seconds)
     }
 
     func resetNewTagInput() {
@@ -372,10 +241,6 @@ final class NoteDetailViewModel: ObservableObject {
 
     func confirmDeleteNote() {
         deleteNote()
-    }
-
-    func confirmDeleteNotePermanently() {
-        deleteNotePermanently()
     }
 
     func persistAndSync() {

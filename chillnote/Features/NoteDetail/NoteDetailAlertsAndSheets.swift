@@ -36,14 +36,6 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
             } message: {
                 Text(L10n.text("note_detail.alert.delete.message"))
             }
-            .alert(L10n.text("note_detail.alert.permanent_delete.title"), isPresented: $viewModel.showPermanentDeleteConfirmation) {
-                Button(L10n.text("common.cancel"), role: .cancel) { }
-                Button(L10n.text("note_detail.alert.permanent_delete.action"), role: .destructive) {
-                    viewModel.confirmDeleteNotePermanently()
-                }
-            } message: {
-                Text(L10n.text("note_detail.alert.permanent_delete.message"))
-            }
             .alert(L10n.text("note_detail.alert.export_failed.title"), isPresented: $viewModel.showExportError) {
                 Button(L10n.text("common.ok"), role: .cancel) { }
             } message: {

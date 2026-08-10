@@ -22,7 +22,6 @@ struct SidebarView: View {
     var hasPendingRecordings: Bool = false
     var pendingRecordingsCount: Int = 0
     var onSettingsTap: (() -> Void)?
-    var onChillRecipesTap: (() -> Void)?
     var onPendingRecordingsTap: (() -> Void)?
     
     private let sidebarCloseMinTranslation: CGFloat = 30
@@ -39,13 +38,13 @@ struct SidebarView: View {
         allTags.filter { $0.isRoot }.sorted { $0.sortOrder < $1.sortOrder }
     }
 
-    private var sectionStats: [SidebarSectionStat] {
-        NoteSection.allCases.map { section in
-            SidebarSectionStat(
-                section: section,
-                count: activeNotesCount(for: section)
-            )
-        }
+    private var sidebarStats: SidebarStatsSnapshot {
+        SidebarStatsSnapshot.make(
+            notes: activeNotes,
+            userId: authService.currentUserId,
+            now: Date(),
+            calendar: .autoupdatingCurrent
+        )
     }
     
     var body: some View {
@@ -90,7 +89,7 @@ struct SidebarView: View {
                     .padding(.top, 60)
                     .padding(.horizontal, 20)
 
-                    SidebarStatsView(stats: sectionStats)
+                    SidebarStatsView(stats: sidebarStats)
                         .padding(.horizontal, 16)
                     
                     // Main Navigation
@@ -123,11 +122,6 @@ struct SidebarView: View {
                                 isPresented = false
                                 onPendingRecordingsTap?()
                             }
-                        }
-
-                        SidebarItem(icon: "book.closed", title: L10n.text("sidebar.nav.chill_skills"), isSelected: false) {
-                            isPresented = false
-                            onChillRecipesTap?()
                         }
                     }
                     .padding(.horizontal, 16)
@@ -228,13 +222,6 @@ struct SidebarView: View {
         generator.impactOccurred()
     }
 
-    private func activeNotesCount(for section: NoteSection) -> Int {
-        guard let userId = authService.currentUserId else { return 0 }
-        return activeNotes.filter { note in
-            note.userId == userId && note.section == section
-        }.count
-    }
-    
     private func handleRootDrop(items: [String]) -> Bool {
         guard let droppedIdString = items.first,
               let droppedId = UUID(uuidString: droppedIdString) else {
@@ -341,64 +328,341 @@ struct SidebarView: View {
 
 // MARK: - Sidebar Stats
 
-private struct SidebarSectionStat: Identifiable {
-    let section: NoteSection
+private struct SidebarDailyActivity: Identifiable {
+    let date: Date
     let count: Int
 
-    var id: NoteSection { section }
+    var id: Date { date }
 }
 
-private struct SidebarStatsView: View {
-    let stats: [SidebarSectionStat]
+private enum SidebarWeekComparison {
+    case up(Int)
+    case down(Int)
+    case same
+    case newStart
+}
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                ForEach(stats) { stat in
-                    SidebarStatTile(stat: stat)
-                }
+private struct SidebarStatsSnapshot {
+    let streakDays: Int
+    let weekCount: Int
+    let comparison: SidebarWeekComparison
+    let dailyActivity: [SidebarDailyActivity]
+
+    static func make(
+        notes: [Note],
+        userId: String?,
+        now: Date,
+        calendar: Calendar
+    ) -> SidebarStatsSnapshot {
+        guard let userId else {
+            return empty(now: now, calendar: calendar)
+        }
+
+        let userNotes = notes.filter { $0.userId == userId }
+        let today = calendar.startOfDay(for: now)
+        let noteDays = Set(userNotes.map { calendar.startOfDay(for: $0.createdAt) })
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)
+        let streakAnchor = noteDays.contains(today)
+            ? today
+            : yesterday.flatMap { noteDays.contains($0) ? $0 : nil }
+
+        var streakDays = 0
+        var streakDate = streakAnchor
+        while let date = streakDate, noteDays.contains(date) {
+            streakDays += 1
+            streakDate = calendar.date(byAdding: .day, value: -1, to: date)
+        }
+
+        let dailyActivity = (-6...0).compactMap { offset -> SidebarDailyActivity? in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: today),
+                  let nextDate = calendar.date(byAdding: .day, value: 1, to: date) else {
+                return nil
+            }
+            let count = userNotes.lazy.filter { note in
+                note.createdAt >= date && note.createdAt < nextDate
+            }.count
+            return SidebarDailyActivity(date: date, count: count)
+        }
+
+        guard let currentWeek = calendar.dateInterval(of: .weekOfYear, for: now),
+              let previousWeekStart = calendar.date(
+                byAdding: .weekOfYear,
+                value: -1,
+                to: currentWeek.start
+              ) else {
+            return SidebarStatsSnapshot(
+                streakDays: streakDays,
+                weekCount: 0,
+                comparison: .same,
+                dailyActivity: dailyActivity
+            )
+        }
+
+        let weekCount = userNotes.lazy.filter { note in
+            note.createdAt >= currentWeek.start && note.createdAt < currentWeek.end
+        }.count
+        let previousWeekCount = userNotes.lazy.filter { note in
+            note.createdAt >= previousWeekStart && note.createdAt < currentWeek.start
+        }.count
+
+        let comparison: SidebarWeekComparison
+        if previousWeekCount == 0 {
+            comparison = weekCount > 0 ? .newStart : .same
+        } else if weekCount == previousWeekCount {
+            comparison = .same
+        } else {
+            let percent = Int(
+                (Double(abs(weekCount - previousWeekCount)) / Double(previousWeekCount) * 100)
+                    .rounded()
+            )
+            comparison = weekCount > previousWeekCount ? .up(percent) : .down(percent)
+        }
+
+        return SidebarStatsSnapshot(
+            streakDays: streakDays,
+            weekCount: weekCount,
+            comparison: comparison,
+            dailyActivity: dailyActivity
+        )
+    }
+
+    private static func empty(now: Date, calendar: Calendar) -> SidebarStatsSnapshot {
+        let today = calendar.startOfDay(for: now)
+        let dailyActivity = (-6...0).compactMap { offset in
+            calendar.date(byAdding: .day, value: offset, to: today).map {
+                SidebarDailyActivity(date: $0, count: 0)
             }
         }
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color.textMain.opacity(0.035))
+        return SidebarStatsSnapshot(
+            streakDays: 0,
+            weekCount: 0,
+            comparison: .same,
+            dailyActivity: dailyActivity
         )
-        .accessibilityElement(children: .contain)
     }
 }
 
-private struct SidebarStatTile: View {
-    let stat: SidebarSectionStat
+private struct SidebarStatsView: View {
+    let stats: SidebarStatsSnapshot
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Image(systemName: stat.section.systemImage)
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.accentPrimary)
-                .frame(width: 18, height: 18, alignment: .leading)
-
-            Text("\(stat.count)")
-                .font(.system(size: 20, weight: .bold, design: .serif))
-                .foregroundColor(.textMain)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-
-            Text(verbatim: stat.section.title)
-                .font(.system(size: 11, weight: .semibold, design: .serif))
-                .foregroundColor(.textSub.opacity(0.75))
+        VStack(alignment: .leading, spacing: 10) {
+            Text(streakTitle)
                 .lineLimit(1)
                 .minimumScaleFactor(0.72)
+
+            Text(weekSummaryText)
+                .lineLimit(2)
+                .fixedSize(horizontal: false, vertical: true)
+
+            SidebarActivityChart(days: stats.dailyActivity)
         }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 10)
+        .padding(.horizontal, 14)
+        .padding(.top, 14)
+        .padding(.bottom, 12)
         .background(
-            RoundedRectangle(cornerRadius: 10)
-                .fill(Color.bgSecondary.opacity(0.72))
+            RoundedRectangle(cornerRadius: 12)
+                .fill(
+                    LinearGradient(
+                        colors: [Color.accentPrimary.opacity(0.11), Color.bgSecondary.opacity(0.96)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.accentPrimary.opacity(0.08), lineWidth: 1)
+                )
         )
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(L10n.text("sidebar.stats.accessibility.item", stat.section.title, stat.count))
+        .accessibilityLabel(
+            L10n.text(
+                "sidebar.stats.accessibility.summary",
+                L10n.text("sidebar.stats.streak", stats.streakDays),
+                weekSummary
+            )
+        )
+    }
+
+    private var streakTitle: AttributedString {
+        var title = AttributedString(L10n.text("sidebar.stats.streak", stats.streakDays))
+        title.font = .system(size: 21, weight: .bold, design: .serif)
+        title.foregroundColor = .textMain
+
+        if let countRange = title.range(of: String(stats.streakDays)) {
+            title[countRange].font = .system(size: 36, weight: .bold, design: .serif)
+            title[countRange].foregroundColor = .accentPrimary
+        }
+        return title
+    }
+
+    private var weekSummary: String {
+        switch stats.comparison {
+        case .up(let percent):
+            return L10n.text("sidebar.stats.week.up", stats.weekCount, percent)
+        case .down(let percent):
+            return L10n.text("sidebar.stats.week.down", stats.weekCount, percent)
+        case .same:
+            return L10n.text("sidebar.stats.week.same", stats.weekCount)
+        case .newStart:
+            return L10n.text("sidebar.stats.week.new_start", stats.weekCount)
+        }
+    }
+
+    private var weekSummaryText: AttributedString {
+        var summary = AttributedString(weekSummary)
+        summary.font = .system(size: 13, weight: .medium)
+        summary.foregroundColor = .textSub
+
+        if let countRange = summary.range(of: String(stats.weekCount)) {
+            summary[countRange].font = .system(size: 14, weight: .bold)
+            summary[countRange].foregroundColor = .accentPrimary
+        }
+
+        switch stats.comparison {
+        case .up(let percent):
+            let trendRange = ["+\(percent)%", "+\(percent) %", "+\(percent)\u{00A0}%"]
+                .compactMap { summary.range(of: $0) }
+                .first
+            if let trendRange {
+                summary[trendRange].font = .system(size: 14, weight: .bold)
+                summary[trendRange].foregroundColor = .accentSecondary
+            }
+        case .down(let percent):
+            let trendRange = ["\(percent)%", "\(percent) %", "\(percent)\u{00A0}%"]
+                .compactMap { summary.range(of: $0) }
+                .first
+            if let trendRange {
+                summary[trendRange].font = .system(size: 14, weight: .bold)
+                summary[trendRange].foregroundColor = .orange
+            }
+        case .same, .newStart:
+            break
+        }
+
+        return summary
+    }
+}
+
+private struct SidebarActivityChart: View {
+    let days: [SidebarDailyActivity]
+
+    var body: some View {
+        GeometryReader { proxy in
+            let chartHeight = max(proxy.size.height - 24, 1)
+            let points = chartPoints(in: proxy.size, chartHeight: chartHeight)
+
+            ZStack(alignment: .topLeading) {
+                SidebarActivityAreaShape(points: points, baseline: chartHeight)
+                    .fill(
+                        LinearGradient(
+                            colors: [Color.accentPrimary.opacity(0.28), Color.accentPrimary.opacity(0.02)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+
+                SidebarActivityLineShape(points: points)
+                    .stroke(
+                        Color.accentPrimary,
+                        style: StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round)
+                    )
+
+                ForEach(Array(points.enumerated()), id: \.offset) { index, point in
+                    Circle()
+                        .fill(index == points.count - 1 ? Color.accentPrimary : Color.bgSecondary)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.accentPrimary, lineWidth: index == points.count - 1 ? 3 : 2)
+                        )
+                        .frame(width: index == points.count - 1 ? 13 : 9, height: index == points.count - 1 ? 13 : 9)
+                        .position(point)
+                }
+
+                HStack(spacing: 0) {
+                    ForEach(Array(days.enumerated()), id: \.element.id) { index, day in
+                        Text(index == days.count - 1 ? L10n.text("sidebar.stats.today") : weekdayLabel(for: day.date))
+                            .font(.system(size: 10, weight: index == days.count - 1 ? .bold : .medium))
+                            .foregroundColor(index == days.count - 1 ? .accentPrimary : .textSub)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .offset(y: chartHeight + 8)
+            }
+        }
+        .frame(height: 110)
+        .accessibilityHidden(true)
+    }
+
+    private func chartPoints(in size: CGSize, chartHeight: CGFloat) -> [CGPoint] {
+        guard !days.isEmpty else { return [] }
+        let horizontalInset: CGFloat = 7
+        let maxCount = max(days.map(\.count).max() ?? 0, 1)
+        let step = days.count > 1
+            ? (size.width - horizontalInset * 2) / CGFloat(days.count - 1)
+            : 0
+        let usableHeight = max(chartHeight - 16, 1)
+
+        return days.enumerated().map { index, day in
+            let normalizedCount = CGFloat(day.count) / CGFloat(maxCount)
+            return CGPoint(
+                x: horizontalInset + CGFloat(index) * step,
+                y: chartHeight - 5 - normalizedCount * usableHeight
+            )
+        }
+    }
+
+    private func weekdayLabel(for date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = .autoupdatingCurrent
+        formatter.setLocalizedDateFormatFromTemplate("EEEEE")
+        return formatter.string(from: date)
+    }
+}
+
+private struct SidebarActivityLineShape: Shape {
+    let points: [CGPoint]
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        guard let firstPoint = points.first else { return path }
+        path.move(to: firstPoint)
+        for index in points.indices.dropFirst() {
+            let previousPoint = points[index - 1]
+            let point = points[index]
+            let midpointX = (previousPoint.x + point.x) / 2
+            path.addCurve(
+                to: point,
+                control1: CGPoint(x: midpointX, y: previousPoint.y),
+                control2: CGPoint(x: midpointX, y: point.y)
+            )
+        }
+        return path
+    }
+}
+
+private struct SidebarActivityAreaShape: Shape {
+    let points: [CGPoint]
+    let baseline: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        guard let firstPoint = points.first, let lastPoint = points.last else { return path }
+        path.move(to: CGPoint(x: firstPoint.x, y: baseline))
+        path.addLine(to: firstPoint)
+        for index in points.indices.dropFirst() {
+            let previousPoint = points[index - 1]
+            let point = points[index]
+            let midpointX = (previousPoint.x + point.x) / 2
+            path.addCurve(
+                to: point,
+                control1: CGPoint(x: midpointX, y: previousPoint.y),
+                control2: CGPoint(x: midpointX, y: point.y)
+            )
+        }
+        path.addLine(to: CGPoint(x: lastPoint.x, y: baseline))
+        path.closeSubpath()
+        return path
     }
 }
 
@@ -535,32 +799,6 @@ struct TagTreeItemView: View {
         }
     }
     
-    private func moveToRoot() {
-        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-            if let parent = tag.parent {
-                let now = Date()
-                parent.children.removeAll { $0.id == tag.id }
-                parent.updatedAt = now
-                tag.parent = nil
-                tag.updatedAt = now
-            }
-        }
-        _ = saveTagRowChangesAndSync(reason: "moving tag row to root")
-    }
-    
-    private func deleteTag() {
-        withAnimation {
-            // Remove the tag from any associated notes to avoid syncing stale relations
-            for note in tag.notes {
-                note.tags.removeAll { $0.id == tag.id }
-                note.updatedAt = Date()
-            }
-            tag.deletedAt = Date()
-            tag.updatedAt = tag.deletedAt ?? Date()
-        }
-        _ = saveTagRowChangesAndSync(reason: "deleting tag row")
-    }
-
     private func handleDrop(droppedTagId: UUID, onto targetTag: Tag) -> Bool {
         let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.id == droppedTagId })
         let droppedTag: Tag

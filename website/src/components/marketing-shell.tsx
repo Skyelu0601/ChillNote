@@ -37,6 +37,7 @@ export function MarketingFooter() {
       <nav>
         <a href="/pricing">Pricing</a>
         <a href="/privacy">Privacy</a>
+        <a href="/delete-account">Delete account</a>
         <a href="/terms">Terms</a>
         <a href="/app">
           Sign in

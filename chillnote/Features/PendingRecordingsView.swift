@@ -94,9 +94,6 @@ struct PendingRecordingsView: View {
     @State private var processingPaths: Set<String> = []
     /// Per-row save display state (separate from processingPaths so animation can linger)
     @State private var rowSaveStates: [String: RowSaveState] = [:]
-    /// IDs of rows playing the "saved" animation before removal
-    @State private var savedRows: Set<String> = []
-
     @State private var alertMessage: String?
     @State private var showAlert = false
 
@@ -393,7 +390,7 @@ struct PendingRecordingsView: View {
                        let existingNote = fetchNote(id: existingID) {
                         // Restore from trash if needed and update content
                         existingNote.deletedAt = nil
-                        existingNote.content = trimmed
+                        existingNote.updateContent(trimmed)
                         existingNote.updatedAt = Date()
                         note = existingNote
                     } else {
@@ -420,9 +417,6 @@ struct PendingRecordingsView: View {
                             rawTranscript: trimmed,
                             context: modelContext
                         )
-                        await MainActor.run {
-                            VoiceNotePaywallService.shared.registerSuccessfulVoiceNoteSave()
-                        }
                     }
 
                     RecordingFileManager.shared.completeRecording(fileURL: recording.fileURL)

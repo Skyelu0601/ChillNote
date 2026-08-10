@@ -3,16 +3,11 @@ import SwiftData
 import UIKit
 
 struct HomeBodyView: View {
-    private enum TagApplyState {
-        case none
-        case partial
-        case all
-    }
-
     let state: HomeScreenState
     let dispatch: (HomeScreenAction) -> Void
     @FocusState.Binding var isSearchFocused: Bool
     let searchBar: AnyView
+    @ObservedObject var firstActionGuide: FirstActionGuideService
 
     @State private var sectionSlideDirection: Edge = .trailing
 
@@ -94,10 +89,10 @@ struct HomeBodyView: View {
         )
     }
 
-    private var showBatchTagSheetBinding: Binding<Bool> {
+    private var taggingNoteBinding: Binding<Note?> {
         Binding(
-            get: { state.showBatchTagSheet },
-            set: { dispatch(.setShowBatchTagSheet($0)) }
+            get: { state.taggingNote },
+            set: { dispatch(.setTaggingNote($0)) }
         )
     }
 
@@ -136,23 +131,17 @@ struct HomeBodyView: View {
         )
     }
 
-    private var selectedVisibleNotes: [Note] {
-        state.cachedVisibleNotes.filter { state.selectedNotes.contains($0.id) }
-    }
-
-    private func applyState(for tag: Tag) -> TagApplyState {
-        guard !selectedVisibleNotes.isEmpty else { return .none }
-        let matchedCount = selectedVisibleNotes.filter { note in
-            note.tags.contains(where: { $0.id == tag.id })
-        }.count
-
-        if matchedCount == 0 {
-            return .none
+    private var firstActionSpotlight: FirstActionGuideSpotlightConfiguration? {
+        guard firstActionGuide.stage == .openImportedNote,
+              let noteID = firstActionGuide.targetNoteID else {
+            return nil
         }
-        if matchedCount == selectedVisibleNotes.count {
-            return .all
-        }
-        return .partial
+
+        return FirstActionGuideSpotlightConfiguration(
+            target: .importedNote(noteID),
+            message: L10n.text("onboarding.first_action.open_note"),
+            step: 2
+        )
     }
 
     var body: some View {
@@ -180,11 +169,26 @@ struct HomeBodyView: View {
                 hasPendingRecordings: state.hasPendingRecordings,
                 pendingRecordingsCount: state.pendingRecordingsCount,
                 onSettingsTap: { dispatch(.showSettings) },
-                onChillRecipesTap: { dispatch(.openChillRecipes) },
                 onPendingRecordingsTap: { dispatch(.setShowPendingRecordings(true)) }
             )
         }
         .navigationBarHidden(true)
+        .firstActionGuideSpotlight(
+            configuration: firstActionSpotlight,
+            onSkip: { firstActionGuide.dismiss() }
+        )
+        .overlay(alignment: .bottom) {
+            if firstActionGuide.stage == .sharePrompt {
+                FirstActionSharePromptView(
+                    onStart: { firstActionGuide.acknowledgeSharePrompt() },
+                    onSkip: { firstActionGuide.dismiss() }
+                )
+                .padding(.horizontal, BrandTokens.Space.s3)
+                .padding(.bottom, 104)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(response: 0.38, dampingFraction: 0.86), value: firstActionGuide.stage)
         .fullScreenCover(isPresented: showingSettingsBinding, onDismiss: {
             dispatch(.setAutoOpenPendingRecordings(false))
         }) {
@@ -296,54 +300,12 @@ struct HomeBodyView: View {
         } message: {
             Text(L10n.text("home.alert.empty_recycle_bin.message"))
         }
-        .sheet(isPresented: showBatchTagSheetBinding) {
-            NavigationStack {
-                List {
-                    if state.availableTags.isEmpty {
-                        Text(L10n.text("home.batch_tag.empty"))
-                            .foregroundColor(.textSub)
-                    } else {
-                        ForEach(state.availableTags) { tag in
-                            let tagApplyState = applyState(for: tag)
-                            Button {
-                                if tagApplyState != .all {
-                                    dispatch(.applyTagToSelected(tag))
-                                }
-                                dispatch(.setShowBatchTagSheet(false))
-                            } label: {
-                                HStack {
-                                    Image(systemName: tagApplyState == .all ? "checkmark.circle.fill" : (tagApplyState == .partial ? "minus.circle.fill" : "tag.fill"))
-                                        .foregroundColor(tagApplyState == .all ? .green : .accentPrimary)
-                                    Text(tag.name)
-                                        .font(.bodyMedium)
-                                        .foregroundColor(.textMain)
-                                    Spacer()
-                                    if tagApplyState == .all {
-                                        Text(L10n.text("home.batch_tag.added"))
-                                            .font(.caption)
-                                            .foregroundColor(.textSub)
-                                    } else if tagApplyState == .partial {
-                                        Text(L10n.text("home.batch_tag.partial"))
-                                            .font(.caption)
-                                            .foregroundColor(.textSub)
-                                    }
-                                }
-                                .padding(.vertical, 4)
-                            }
-                        }
-                    }
-                }
-                .navigationTitle(L10n.text("home.batch_tag.title"))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(L10n.text("common.cancel")) {
-                            dispatch(.setShowBatchTagSheet(false))
-                        }
-                    }
-                }
-            }
-            .presentationDetents([.medium, .large])
+        .sheet(item: taggingNoteBinding) { note in
+            NoteTagSheet(
+                note: note,
+                availableTags: state.availableTags,
+                onToggleTag: { dispatch(.toggleTag(note, $0)) }
+            )
         }
     }
 
@@ -389,15 +351,14 @@ struct HomeBodyView: View {
         showsSearchBar || showsSectionPicker
     }
 
-    private var showsCreatorSkillsRail: Bool {
+    private var showsQuickActions: Bool {
         !state.isSelectionMode
             && !state.isTrashSelected
             && state.selectedTag == nil
-            && !state.recipeManager.savedRecipes.isEmpty
     }
 
     private var scrollContentTopPadding: CGFloat {
-        showsCreatorSkillsRail ? 8 : 16
+        showsQuickActions ? 8 : 16
     }
 
     private var mainContent: some View {
@@ -414,12 +375,10 @@ struct HomeBodyView: View {
                 highlightSelectionEntry: false,
                 onToggleSidebar: { dispatch(.toggleSidebar) },
                 onCreateBlankNote: { dispatch(.createBlankNote) },
-                onEnterSelectionMode: { dispatch(.enterSelectionMode) },
                 onToggleSearch: { dispatch(.toggleSearch) },
                 onExitSelectionMode: { dispatch(.exitSelectionMode) },
                 onSelectAll: { dispatch(.selectAll) },
                 onDeselectAll: { dispatch(.deselectAll) },
-                onShowBatchTagSheet: { dispatch(.setShowBatchTagSheet(true)) },
                 onShowDeleteConfirmation: { dispatch(.setShowDeleteConfirmation(true)) },
                 onShowEmptyTrashConfirmation: { dispatch(.setShowEmptyTrashConfirmation(true)) }
             )
@@ -432,11 +391,11 @@ struct HomeBodyView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
-                    if showsCreatorSkillsRail {
-                        HomeCreatorSkillsRailView(
-                            recipes: state.recipeManager.savedRecipes,
-                            onRecipeTap: { dispatch(.prepareHomeRecipe($0)) },
-                            onAddMoreTap: { dispatch(.openChillRecipes) }
+                    if showsQuickActions {
+                        HomeQuickActionsView(
+                            showsUnreadIndicator: state.weeklyTopicsStore.hasUnreadReport,
+                            onPostIdeasTap: { dispatch(.openWeeklyTopics) },
+                            onCreatorSkillsTap: { dispatch(.openChillRecipes) }
                         )
                         .padding(.horizontal, 24)
                         .padding(.top, 2)
@@ -446,19 +405,26 @@ struct HomeBodyView: View {
                         cachedVisibleNotes: state.cachedVisibleNotes,
                         searchQuery: state.searchText,
                         isLoading: state.isLoadingNotes,
-                        isSyncing: state.isSyncingNotes,
+                        isInitialSyncing: state.isInitialNotesSync,
                         hasLoadedAtLeastOnce: state.hasLoadedNotesAtLeastOnce,
                         isTrashSelected: state.isTrashSelected,
+                        selectedSection: state.selectedSection ?? .inbox,
                         isSelectionMode: state.isSelectionMode,
                         selectedNotes: state.selectedNotes,
-                        showDefaultEmptyStateMessage: true,
+                        showDefaultEmptyStateMessage: firstActionGuide.stage != .sharePrompt,
                         onReachBottom: { dispatch(.loadMoreIfNeeded($0)) },
                         onToggleNoteSelection: { dispatch(.toggleNoteSelection($0)) },
+                        onEnterSelectionMode: { dispatch(.enterSelectionMode) },
                         onRestoreNote: { dispatch(.restoreNote($0)) },
                         onDeleteNotePermanently: { dispatch(.deleteNotePermanently($0)) },
                         onTogglePin: { dispatch(.togglePin($0)) },
+                        onManageTags: { dispatch(.setTaggingNote($0)) },
                         onMoveNote: { dispatch(.moveNote($0, $1)) },
-                        onDeleteNote: { dispatch(.deleteNote($0)) }
+                        onDeleteNote: { dispatch(.deleteNote($0)) },
+                        guideTargetNoteID: firstActionGuide.stage == .openImportedNote
+                            ? firstActionGuide.targetNoteID
+                            : nil,
+                        onGuideTargetNoteOpened: { firstActionGuide.markImportedNoteOpened($0) }
                     )
                 }
                 .padding(.top, scrollContentTopPadding)
@@ -486,6 +452,15 @@ struct HomeBodyView: View {
                         dispatch(.noteDetailDisappear(note))
                     }
             }
+            .navigationDestination(for: WeeklyTopicsRoute.self) { route in
+                switch route {
+                case .dashboard:
+                    WeeklyTopicsView(
+                        store: state.weeklyTopicsStore,
+                        onOpenSource: { dispatch(.openWeeklyTopicSource($0)) }
+                    )
+                }
+            }
         }
     }
 
@@ -512,6 +487,7 @@ struct HomeBodyView: View {
                 .padding(.horizontal, 24)
                 .transition(.opacity)
             }
+
         }
         .padding(.top, hasPinnedChrome ? 16 : 0)
         .padding(.bottom, hasPinnedChrome ? 4 : 0)
@@ -571,6 +547,57 @@ struct HomeBodyView: View {
                 AgentProgressOverlayView(progress: progress)
             }
         }
+    }
+}
+
+private struct NoteTagSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    let note: Note
+    let availableTags: [Tag]
+    let onToggleTag: (Tag) -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if availableTags.isEmpty {
+                    Text(L10n.text("home.note_tag.empty"))
+                        .foregroundColor(.textSub)
+                } else {
+                    ForEach(availableTags) { tag in
+                        Button {
+                            onToggleTag(tag)
+                        } label: {
+                            HStack(spacing: 12) {
+                                Image(systemName: isAssigned(tag) ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(isAssigned(tag) ? .accentPrimary : .textSub)
+
+                                Text(tag.name)
+                                    .font(.bodyMedium)
+                                    .foregroundColor(.textMain)
+
+                                Spacer()
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    }
+                }
+            }
+            .navigationTitle(L10n.text("home.note_tag.title"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L10n.text("common.done")) {
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+
+    private func isAssigned(_ tag: Tag) -> Bool {
+        note.tags.contains(where: { $0.id == tag.id })
     }
 }
 

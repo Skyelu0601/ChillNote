@@ -29,7 +29,7 @@ class VoiceProcessingService: ObservableObject {
             let processedText = try await processTranscript(cleanTranscript)
 
             withAnimation(.spring(response: 0.5, dampingFraction: 0.7)) {
-                note.content = processedText
+                note.updateContent(processedText)
                 note.syncContentStructure(with: context)
                 note.updatedAt = Date()
             }

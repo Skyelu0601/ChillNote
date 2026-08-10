@@ -9,6 +9,8 @@ struct OnboardingFlowView: View {
     @State private var saveVideoDemoCompleted = false
     @State private var extractIdeasDemoCompleted = false
     @State private var generateHooksDemoCompleted = false
+    @State private var showsLockedSwipeHint = false
+    @State private var lockedSwipeHintRequest = 0
 
     private let pages: [OnboardingPage] = [
         .hero,
@@ -64,9 +66,9 @@ struct OnboardingFlowView: View {
         ZStack {
             BrandBackground()
 
-            TabView(selection: $currentPage) {
+            TabView(selection: pageSelection) {
                 ForEach(Array(pages.enumerated()), id: \.element.id) { index, page in
-                    pageView(for: page)
+                    pageView(for: page, isActive: currentPage == index)
                         .padding(.horizontal, BrandTokens.Space.s4)
                         .padding(.top, BrandTokens.Space.s4)
                         .padding(.bottom, BrandTokens.Space.s2)
@@ -74,34 +76,14 @@ struct OnboardingFlowView: View {
                 }
             }
             .tabViewStyle(.page(indexDisplayMode: .never))
+            .scrollDisabled(true)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 24)
+                    .onEnded(handlePagingDrag)
+            )
             .animation(.spring(response: 0.35, dampingFraction: 0.82), value: currentPage)
-            .onChange(of: currentPage) { _, newPage in
-                guard let firstIncompleteDemoPageIndex,
-                      newPage > firstIncompleteDemoPageIndex else { return }
-                withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-                    currentPage = firstIncompleteDemoPageIndex
-                }
-            }
         }
         .background(Color.bgPrimary.ignoresSafeArea())
-        .overlay(alignment: .topTrailing) {
-            if !isHeroPage && !isLastPage && !isDemoLocked {
-                Button {
-                    OnboardingHaptics.lightTap()
-                    onFinish()
-                } label: {
-                    Text(L10n.text("common.skip"))
-                        .font(.brandLabel)
-                        .foregroundStyle(Color.textSub)
-                        .padding(.horizontal, BrandTokens.Space.s2)
-                        .padding(.vertical, BrandTokens.Space.s1)
-                }
-                .buttonStyle(OnboardingPressButtonStyle(scale: 0.94))
-                .padding(.trailing, BrandTokens.Space.s3)
-                .padding(.top, BrandTokens.Space.s1)
-                .transition(.opacity.combined(with: .move(edge: .top)))
-            }
-        }
         .safeAreaInset(edge: .bottom) {
             if !isDemoLocked {
                 actionBar
@@ -122,23 +104,39 @@ struct OnboardingFlowView: View {
                     .transition(.opacity.combined(with: .move(edge: .bottom)))
             }
         }
+        .overlay(alignment: .bottom) {
+            if showsLockedSwipeHint {
+                OnboardingLockedSwipeHint()
+                    .padding(.bottom, BrandTokens.Space.s4)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .allowsHitTesting(false)
+            }
+        }
+        .task(id: lockedSwipeHintRequest) {
+            guard showsLockedSwipeHint else { return }
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeOut(duration: 0.2)) {
+                showsLockedSwipeHint = false
+            }
+        }
     }
 
     @ViewBuilder
-    private func pageView(for page: OnboardingPage) -> some View {
+    private func pageView(for page: OnboardingPage, isActive: Bool) -> some View {
         switch page {
         case .hero:
             OnboardingHeroPage()
         case .saveVideo:
-            OnboardingSaveVideoPage(isFlowComplete: $saveVideoDemoCompleted)
+            OnboardingSaveVideoPage(isActive: isActive, isFlowComplete: $saveVideoDemoCompleted)
         case .extractIdeas:
-            OnboardingExtractIdeasPage(isFlowComplete: $extractIdeasDemoCompleted)
+            OnboardingExtractIdeasPage(isActive: isActive, isFlowComplete: $extractIdeasDemoCompleted)
         case .captureShowcase:
             OnboardingCaptureShowcasePage()
         case .generateHooks:
-            OnboardingGenerateHooksPage(isFlowComplete: $generateHooksDemoCompleted)
+            OnboardingGenerateHooksPage(isActive: isActive, isFlowComplete: $generateHooksDemoCompleted)
         case .aiSkills:
-            OnboardingAISkillsPage()
+            OnboardingAISkillsPage(isActive: isActive)
         }
     }
 
@@ -200,6 +198,41 @@ struct OnboardingFlowView: View {
         !isHeroPage && !isLastPage
     }
 
+    private var pageSelection: Binding<Int> {
+        Binding(
+            get: { currentPage },
+            set: requestPage
+        )
+    }
+
+    private func handlePagingDrag(_ value: DragGesture.Value) {
+        let horizontalDistance = value.translation.width
+        let verticalDistance = value.translation.height
+        guard abs(horizontalDistance) > abs(verticalDistance),
+              abs(horizontalDistance) >= 52 else { return }
+
+        let requestedPage = horizontalDistance < 0 ? currentPage + 1 : currentPage - 1
+        withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
+            requestPage(requestedPage)
+        }
+    }
+
+    private func requestPage(_ requestedPage: Int) {
+        guard pages.indices.contains(requestedPage) else { return }
+        guard let firstIncompleteDemoPageIndex,
+              requestedPage > firstIncompleteDemoPageIndex else {
+            showsLockedSwipeHint = false
+            currentPage = requestedPage
+            return
+        }
+
+        OnboardingHaptics.waitingHint()
+        lockedSwipeHintRequest += 1
+        withAnimation(.easeOut(duration: 0.2)) {
+            showsLockedSwipeHint = true
+        }
+    }
+
     private func handlePrimaryAction() {
         guard !isDemoLocked else { return }
         if isLastPage {
@@ -207,7 +240,7 @@ struct OnboardingFlowView: View {
             return
         }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.82)) {
-            currentPage += 1
+            requestPage(currentPage + 1)
         }
     }
 }
@@ -258,6 +291,11 @@ private enum OnboardingHaptics {
         let generator = UIImpactFeedbackGenerator(style: .soft)
         generator.impactOccurred(intensity: 0.62)
     }
+
+    static func waitingHint() {
+        let generator = UIImpactFeedbackGenerator(style: .soft)
+        generator.impactOccurred(intensity: 0.38)
+    }
 }
 
 private func onboardingOptionalTitleText(_ key: String) -> String {
@@ -269,10 +307,26 @@ private func onboardingOptionalTitleText(_ key: String) -> String {
 }
 
 private enum OnboardingPhoneFrameMetrics {
-    static let outerCornerRadius: CGFloat = 40
-    static let screenCornerRadius: CGFloat = 34
+    static let outerCornerRadius: CGFloat = 28
+    static let screenCornerRadius: CGFloat = 22
     static let horizontalBezel: CGFloat = 6
     static let verticalBezel: CGFloat = 7
+}
+
+private struct OnboardingLockedSwipeHint: View {
+    var body: some View {
+        Text(L10n.text("onboarding.flow.demo.almost_done"))
+            .font(.brandBody.weight(.semibold))
+            .foregroundStyle(Color.white)
+            .padding(.horizontal, BrandTokens.Space.s3)
+            .padding(.vertical, BrandTokens.Space.s2)
+            .background(
+                Capsule()
+                    .fill(Color.black.opacity(0.76))
+            )
+            .shadow(color: Color.black.opacity(0.14), radius: 10, x: 0, y: 5)
+            .accessibilityAddTraits(.isStaticText)
+    }
 }
 
 // MARK: - Hero Page
@@ -425,28 +479,31 @@ private struct OnboardingCaptureShowcasePage: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .accessibilityIdentifier("onboarding.page.capture")
-        .onAppear {
-            withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
+        .task(id: revealPhase >= 2) {
+            guard revealPhase >= 2, !animateVoice else { return }
+            try? await Task.sleep(nanoseconds: 100_000_000)
+            guard !Task.isCancelled else { return }
+            withAnimation(.easeInOut(duration: 0.55).repeatForever(autoreverses: true)) {
                 animateVoice = true
             }
         }
         .task {
             guard revealPhase == 0 else { return }
-            for phase in 1...7 {
+            for phase in 1...6 {
                 let delay: UInt64 = {
                     switch phase {
                     case 1:
-                        return 160_000_000
-                    case 2, 7:
-                        return 680_000_000
-                    case 3...6:
-                        return 420_000_000
+                        return 120_000_000
+                    case 2...5:
+                        return 320_000_000
+                    case 6:
+                        return 480_000_000
                     default:
                         return 300_000_000
                     }
                 }()
                 try? await Task.sleep(nanoseconds: delay)
-                withAnimation(.easeOut(duration: 0.24)) {
+                withAnimation(.easeOut(duration: 0.2)) {
                     revealPhase = phase
                 }
             }
@@ -486,16 +543,16 @@ private struct IdeaCaptureBoard: View {
             IdeaCaptureMethodRow(
                 kind: .voice,
                 isVisible: revealPhase >= 2,
-                checkedCount: max(0, min(4, revealPhase - 2)),
+                checkedCount: max(1, min(4, revealPhase - 1)),
                 animateVoice: animateVoice
             )
 
             Divider()
-                .opacity(revealPhase >= 7 ? 1 : 0)
+                .opacity(revealPhase >= 6 ? 1 : 0)
 
             IdeaCaptureMethodRow(
                 kind: .links,
-                isVisible: revealPhase >= 7,
+                isVisible: revealPhase >= 6,
                 checkedCount: 0,
                 animateVoice: animateVoice
             )
@@ -551,7 +608,7 @@ private struct IdeaCaptureMethodRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(kind.background(isVisible: isVisible))
         .opacity(isVisible ? 1 : 0)
-        .scaleEffect(isVisible ? 1 : 0.98)
+        .scaleEffect((kind == .voice || isVisible) ? 1 : 0.98)
         .accessibilityHidden(!isVisible)
     }
 }
@@ -704,15 +761,15 @@ private struct IdeaVoiceCapabilityChip: View {
                 )
         )
         .scaleEffect(isChecked ? 1 : 0.98)
-        .animation(.easeOut(duration: 0.22), value: isChecked)
+        .animation(.easeOut(duration: 0.18), value: isChecked)
     }
 }
 
 private struct OnboardingGenerateHooksPage: View {
+    let isActive: Bool
     @Binding var isFlowComplete: Bool
     @State private var revealMessage = false
     @State private var videoCompleted = false
-    @State private var isPlaying = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -725,7 +782,7 @@ private struct OnboardingGenerateHooksPage: View {
 
             ShareDemoStageView(
                 step: .generateHooks,
-                isPlaying: $isPlaying,
+                isActive: isActive,
                 onComplete: complete
             )
             .frame(maxWidth: .infinity, alignment: .center)
@@ -755,7 +812,6 @@ private struct OnboardingGenerateHooksPage: View {
     }
 
     private func complete() {
-        isPlaying = false
         videoCompleted = true
     }
 
@@ -766,7 +822,7 @@ private struct OnboardingGenerateHooksPage: View {
         var highlight = AttributedString(L10n.text("onboarding.flow.generate_hooks.title.highlight"))
         highlight.foregroundColor = Color.accentPrimary
 
-        var suffix = AttributedString(L10n.text("onboarding.flow.generate_hooks.title.suffix"))
+        var suffix = AttributedString(onboardingOptionalTitleText("onboarding.flow.generate_hooks.title.suffix"))
         suffix.foregroundColor = Color.textMain
 
         return prefix + highlight + suffix
@@ -776,7 +832,7 @@ private struct OnboardingGenerateHooksPage: View {
 private struct OnboardingGenerateHooksTransition: View {
     var body: some View {
         HStack(alignment: .center, spacing: BrandTokens.Space.s2) {
-            Image(systemName: "sparkles")
+            Image(systemName: "bolt.fill")
                 .font(.system(size: 15, weight: .bold))
                 .foregroundStyle(Color.accentPrimary)
                 .frame(width: 30, height: 30)
@@ -810,62 +866,80 @@ private struct OnboardingGenerateHooksTransition: View {
 // MARK: - AI Skills Page
 
 private struct OnboardingAISkillsPage: View {
+    let isActive: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var revealPhase = 1
+
     private var isCompactHeight: Bool {
         UIScreen.main.bounds.height <= 700
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .top, spacing: 12) {
-                    Text(highlightedTitle)
-                        .font(.system(size: 30, weight: .bold))
-                        .foregroundStyle(Color.textMain)
-                        .lineSpacing(2)
-                        .minimumScaleFactor(0.9)
-                        .fixedSize(horizontal: false, vertical: true)
+            Text(highlightedTitle)
+                .font(.brandDisplay)
+                .foregroundStyle(Color.textMain)
+                .lineSpacing(2)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.top, BrandTokens.Space.s5)
 
-                    Spacer(minLength: 4)
-
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 38, height: 38)
-                        .background(Circle().fill(Color.accentPrimary))
-                        .shadow(color: Color.accentPrimary.opacity(0.22), radius: 10, x: 0, y: 5)
-                        .padding(.top, 4)
-                        .accessibilityHidden(true)
-                }
-
-            }
-            .padding(.top, isCompactHeight ? 14 : BrandTokens.Space.s5)
-
-            Spacer(minLength: isCompactHeight ? 16 : 32)
-
-            AISkillsDesignedDemoCard(isCompactHeight: isCompactHeight)
+            AISkillsDesignedDemoCard(
+                isCompactHeight: isCompactHeight,
+                revealPhase: revealPhase
+            )
+            .padding(.top, isCompactHeight ? 16 : 32)
 
             Spacer(minLength: isCompactHeight ? 18 : 28)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
         .accessibilityIdentifier("onboarding.page.ai_skills")
+        .task(id: isActive) {
+            guard isActive else {
+                revealPhase = 1
+                return
+            }
+
+            let finalPhase = AISkillsLibraryPreviewItem.previewItems.count + 2
+            guard !reduceMotion else {
+                revealPhase = finalPhase
+                return
+            }
+
+            revealPhase = 1
+            try? await Task.sleep(nanoseconds: 300_000_000)
+
+            for phase in 2...finalPhase {
+                guard !Task.isCancelled else { return }
+                withAnimation(.easeOut(duration: 0.24)) {
+                    revealPhase = phase
+                }
+                try? await Task.sleep(
+                    nanoseconds: phase == finalPhase ? 280_000_000 : 220_000_000
+                )
+            }
+        }
     }
 
     private var highlightedTitle: AttributedString {
-        var prefix = AttributedString(L10n.text("onboarding.flow.ai_skills.title.prefix"))
-        prefix.foregroundColor = Color.textMain
+        var title = AttributedString(L10n.text("onboarding.flow.ai_skills.title"))
+        title.foregroundColor = Color.textMain
+        let highlight = L10n.text("onboarding.flow.ai_skills.title.highlight")
 
-        var content = AttributedString(L10n.text("onboarding.flow.ai_skills.title.highlight"))
-        content.foregroundColor = Color.accentPrimary
+        if let highlightRange = title.range(of: highlight) {
+            title[highlightRange].foregroundColor = Color.accentPrimary
+        }
 
-        return prefix + content
+        return title
     }
 }
 
 private struct AISkillsDesignedDemoCard: View {
     let isCompactHeight: Bool
+    let revealPhase: Int
 
     private var visibleSkills: [AISkillsLibraryPreviewItem] {
-        AISkillsLibraryPreviewItem.previewItems.compactMap { item in
+        let visibleCount = min(max(revealPhase, 1), AISkillsLibraryPreviewItem.previewItems.count)
+        return AISkillsLibraryPreviewItem.previewItems.prefix(visibleCount).compactMap { item in
             guard let recipe = AgentRecipe.allRecipes.first(where: { $0.id == item.recipeID }) else {
                 return nil
             }
@@ -875,6 +949,14 @@ private struct AISkillsDesignedDemoCard: View {
                 recipe: recipe
             )
         }
+    }
+
+    private var showsBuildYourOwn: Bool {
+        revealPhase > AISkillsLibraryPreviewItem.previewItems.count
+    }
+
+    private var showsLibrarySummary: Bool {
+        revealPhase > AISkillsLibraryPreviewItem.previewItems.count + 1
     }
 
     var body: some View {
@@ -888,16 +970,21 @@ private struct AISkillsDesignedDemoCard: View {
 
                 Spacer(minLength: 0)
 
-                AISkillsLibraryIconStack()
+                if showsLibrarySummary {
+                    AISkillsLibraryIconStack()
+                        .transition(.opacity.combined(with: .move(edge: .trailing)))
+                }
             }
 
             VStack(spacing: 0) {
                 ForEach(Array(visibleSkills.enumerated()), id: \.element.id) { index, item in
                     AISkillsLibraryPreviewRow(item: item, isCompactHeight: isCompactHeight)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
 
                     if index < visibleSkills.count - 1 {
                         Divider()
                             .padding(.leading, isCompactHeight ? 52 : 58)
+                            .transition(.opacity)
                     }
                 }
             }
@@ -908,7 +995,10 @@ private struct AISkillsDesignedDemoCard: View {
                     .stroke(Color.black.opacity(0.06), lineWidth: 1)
             )
 
-            AISkillsBuildYourOwnRow()
+            if showsBuildYourOwn {
+                AISkillsBuildYourOwnRow()
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
         }
         .padding(isCompactHeight ? 12 : 14)
         .background(
@@ -932,11 +1022,10 @@ private struct AISkillsLibraryPreviewItem: Identifiable {
     var id: String { recipeID }
 
     static let previewItems: [AISkillsLibraryPreviewItem] = [
-        .init(recipeID: "rewrite", status: .installed),
         .init(recipeID: "hook_generator", status: .installed),
+        .init(recipeID: "rewrite", status: .installed),
         .init(recipeID: "caption_pack", status: .installed),
         .init(recipeID: "repurpose_pack", status: .installed),
-        .init(recipeID: "why_viral", status: .new),
         .init(recipeID: "humanizer", status: .new),
         .init(recipeID: "style_match", status: .new)
     ]
@@ -1061,7 +1150,7 @@ private struct AISkillsLibraryStatusBadge: View {
 
 private struct AISkillsLibraryIconStack: View {
     private var recipes: [AgentRecipe] {
-        ["rewrite", "hook_generator", "caption_pack", "repurpose_pack"].compactMap { id in
+        ["hook_generator", "rewrite", "caption_pack", "repurpose_pack"].compactMap { id in
             AgentRecipe.allRecipes.first { $0.id == id }
         }
     }
@@ -1075,7 +1164,7 @@ private struct AISkillsLibraryIconStack: View {
                     .shadow(color: Color.shadowColor.opacity(0.18), radius: 4, x: 0, y: 2)
             }
 
-            Text(verbatim: "+10")
+            Text(verbatim: "10+")
                 .font(.system(size: 10, weight: .black))
                 .foregroundStyle(Color.accentPrimary)
                 .frame(width: 31, height: 28)
@@ -1092,11 +1181,11 @@ private struct AISkillsLibraryIconStack: View {
 // MARK: - Share Extension Page
 
 private struct OnboardingSaveVideoPage: View {
+    let isActive: Bool
     @Binding var isFlowComplete: Bool
     @State private var revealVideo = false
     @State private var platformRevealPhase = 0
     @State private var videoCompleted = false
-    @State private var isPlaying = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1109,7 +1198,7 @@ private struct OnboardingSaveVideoPage: View {
 
             ShareDemoStageView(
                 step: .share,
-                isPlaying: $isPlaying,
+                isActive: isActive,
                 onComplete: complete
             )
             .frame(maxWidth: .infinity, alignment: .center)
@@ -1164,7 +1253,6 @@ private struct OnboardingSaveVideoPage: View {
     }
 
     private func complete() {
-        isPlaying = false
         videoCompleted = true
     }
 
@@ -1183,10 +1271,10 @@ private struct OnboardingSaveVideoPage: View {
 }
 
 private struct OnboardingExtractIdeasPage: View {
+    let isActive: Bool
     @Binding var isFlowComplete: Bool
     @State private var sectionRevealPhase = 0
     @State private var videoCompleted = false
-    @State private var isPlaying = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -1199,7 +1287,7 @@ private struct OnboardingExtractIdeasPage: View {
 
             ShareDemoStageView(
                 step: .importNote,
-                isPlaying: $isPlaying,
+                isActive: isActive,
                 onComplete: complete
             )
             .frame(maxWidth: .infinity, alignment: .center)
@@ -1231,21 +1319,19 @@ private struct OnboardingExtractIdeasPage: View {
     }
 
     private func complete() {
-        isPlaying = false
         videoCompleted = true
     }
 
     private var highlightedTitle: AttributedString {
-        var prefix = AttributedString(L10n.text("onboarding.flow.extract_ideas.title.prefix"))
-        prefix.foregroundColor = Color.textMain
+        var title = AttributedString(L10n.text("onboarding.flow.extract_ideas.title"))
+        title.foregroundColor = Color.textMain
+        let highlight = L10n.text("onboarding.flow.extract_ideas.title.highlight")
 
-        var highlight = AttributedString(L10n.text("onboarding.flow.extract_ideas.title.highlight"))
-        highlight.foregroundColor = Color.accentPrimary
+        if let highlightRange = title.range(of: highlight) {
+            title[highlightRange].foregroundColor = Color.accentPrimary
+        }
 
-        var suffix = AttributedString(onboardingOptionalTitleText("onboarding.flow.extract_ideas.title.suffix"))
-        suffix.foregroundColor = Color.textMain
-
-        return prefix + highlight + suffix
+        return title
     }
 }
 
@@ -1255,7 +1341,7 @@ private struct ExtractedVideoSectionsCard: View {
     private let sectionKeys = [
         "onboarding.flow.extract_ideas.section.description",
         "onboarding.flow.extract_ideas.section.author",
-        "onboarding.flow.extract_ideas.section.hooks",
+        "onboarding.flow.extract_ideas.section.link",
         "onboarding.flow.extract_ideas.section.transcript"
     ]
 
@@ -1424,32 +1510,19 @@ private enum ShareDemoStep: String, Identifiable {
     var resourceName: String {
         switch self {
         case .share: return "demo1"
-        case .importNote: return "demo2"
-        case .generateHooks: return "demo3"
+        case .importNote: return "演示2"
+        case .generateHooks: return "演示3"
         }
     }
 
-    var titleKey: String {
-        switch self {
-        case .share: return "onboarding.flow.share.step.share.title"
-        case .importNote: return "onboarding.flow.share.step.import.title"
-        case .generateHooks: return "onboarding.flow.generate_hooks.stage.title"
-        }
-    }
-
-    var tint: Color {
-        switch self {
-        case .share: return Color.accentPrimary
-        case .importNote: return Color.accentPrimary
-        case .generateHooks: return Color.accentPrimary
-        }
-    }
 }
 
 private struct ShareDemoStageView: View {
     let step: ShareDemoStep
-    @Binding var isPlaying: Bool
+    let isActive: Bool
     let onComplete: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private let maxPhoneWidth: CGFloat = 260
     private var phoneAspectRatio: CGFloat {
@@ -1458,18 +1531,17 @@ private struct ShareDemoStageView: View {
 
     @StateObject private var loader: ShareDemoVideoLoader
 
-    init(step: ShareDemoStep, isPlaying: Binding<Bool>, onComplete: @escaping () -> Void) {
+    init(step: ShareDemoStep, isActive: Bool, onComplete: @escaping () -> Void) {
         self.step = step
-        self._isPlaying = isPlaying
+        self.isActive = isActive
         self.onComplete = onComplete
         _loader = StateObject(wrappedValue: ShareDemoVideoLoader(resourceName: step.resourceName, ext: "mov", onComplete: onComplete))
     }
 
     var body: some View {
         Button {
-            guard !isPlaying else { return }
             OnboardingHaptics.playDemo()
-            isPlaying = true
+            loader.togglePlayback()
         } label: {
             ZStack {
                 RoundedRectangle(cornerRadius: OnboardingPhoneFrameMetrics.outerCornerRadius, style: .continuous)
@@ -1488,48 +1560,99 @@ private struct ShareDemoStageView: View {
                         ProgressView()
                             .tint(.white)
                     }
+
+                    if loader.playbackState == .idle || loader.playbackState == .paused || loader.playbackState == .completed {
+                        Circle()
+                            .fill(Color.accentPrimary)
+                            .frame(width: 68, height: 68)
+                            .shadow(color: Color.accentPrimary.opacity(0.28), radius: 16, x: 0, y: 8)
+                            .overlay {
+                                Image(systemName: loader.playbackState == .completed ? "arrow.counterclockwise" : "play.fill")
+                                    .font(.system(size: 23, weight: .bold))
+                                    .foregroundStyle(Color.white)
+                                    .offset(x: loader.playbackState == .paused ? 2 : 0)
+                            }
+                            .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                    }
+                }
+                .overlay(alignment: .bottom) {
+                    OnboardingVideoProgressBar(progress: loader.progress)
+                        .padding(.horizontal, 3)
+                        .padding(.bottom, 3)
                 }
                 .clipShape(RoundedRectangle(cornerRadius: OnboardingPhoneFrameMetrics.screenCornerRadius, style: .continuous))
                 .padding(.horizontal, OnboardingPhoneFrameMetrics.horizontalBezel)
                 .padding(.vertical, OnboardingPhoneFrameMetrics.verticalBezel)
-
-                if !isPlaying {
-                    Circle()
-                        .fill(Color.white.opacity(0.94))
-                        .frame(width: 58, height: 58)
-                        .shadow(color: Color.black.opacity(0.18), radius: 12, x: 0, y: 6)
-                        .overlay {
-                            Image(systemName: "play.fill")
-                                .font(.system(size: 20, weight: .bold))
-                                .foregroundStyle(step.tint)
-                                .offset(x: 2)
-                        }
-                }
             }
             .aspectRatio(phoneAspectRatio, contentMode: .fit)
             .frame(maxWidth: maxPhoneWidth)
             .shadow(color: Color.shadowColor.opacity(0.45), radius: 16, x: 0, y: 9)
         }
         .buttonStyle(OnboardingPressButtonStyle(scale: 0.985))
-        .accessibilityLabel(Text(L10n.text(step.titleKey)))
-        .accessibilityHint(Text(L10n.text("onboarding.flow.share.stage.tap")))
-        .onChange(of: isPlaying) { _, shouldPlay in
-            if shouldPlay {
-                loader.play()
-            } else {
-                loader.pause()
+        .disabled(!isActive)
+        .accessibilityLabel(Text(L10n.text(accessibilityLabelKey)))
+        .accessibilityValue(Text(L10n.text("onboarding.flow.demo.accessibility.progress", Int(loader.progress * 100))))
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.2), value: loader.playbackState)
+        .task(id: isActive) {
+            guard isActive else {
+                loader.resetIfIncomplete()
+                return
             }
-        }
-        .onAppear {
-            if isPlaying {
-                loader.play()
+
+            if loader.playbackState == .failed {
+                onComplete()
+                return
             }
+
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled,
+                  isActive,
+                  loader.playbackState == .idle,
+                  UIAccessibility.isVideoAutoplayEnabled else { return }
+            loader.playFromBeginning()
         }
         .onDisappear {
             loader.pause()
-            isPlaying = false
         }
     }
+
+    private var accessibilityLabelKey: String {
+        switch loader.playbackState {
+        case .playing:
+            return "onboarding.flow.demo.accessibility.pause"
+        case .completed:
+            return "onboarding.flow.demo.accessibility.replay"
+        case .idle, .paused, .failed:
+            return "onboarding.flow.demo.accessibility.play"
+        }
+    }
+}
+
+private struct OnboardingVideoProgressBar: View {
+    let progress: Double
+
+    var body: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.white.opacity(0.24))
+
+                Capsule()
+                    .fill(Color.accentPrimary)
+                    .frame(width: proxy.size.width * min(max(progress, 0), 1))
+            }
+        }
+        .frame(height: 3)
+        .accessibilityHidden(true)
+    }
+}
+
+private enum ShareDemoPlaybackState: Equatable {
+    case idle
+    case playing
+    case paused
+    case completed
+    case failed
 }
 
 private struct VideoPlayerLayerView: UIViewRepresentable {
@@ -1558,18 +1681,39 @@ private final class PlayerContainerView: UIView {
 @MainActor
 private final class ShareDemoVideoLoader: ObservableObject {
     @Published private(set) var player: AVPlayer?
+    @Published private(set) var progress: Double = 0
+    @Published private(set) var playbackState: ShareDemoPlaybackState = .idle
+
     private let onComplete: () -> Void
     private var endObserver: NSObjectProtocol?
+    private nonisolated(unsafe) var timeObserver: Any?
+    private nonisolated(unsafe) var observedPlayer: AVPlayer?
     private var hasCompleted = false
 
     init(resourceName: String, ext: String, onComplete: @escaping () -> Void) {
         self.onComplete = onComplete
-        guard let url = Bundle.main.url(forResource: resourceName, withExtension: ext) else { return }
+        guard let url = Bundle.main.url(forResource: resourceName, withExtension: ext) else {
+            playbackState = .failed
+            return
+        }
         let item = AVPlayerItem(url: url)
         let player = AVPlayer(playerItem: item)
         player.isMuted = true
         player.actionAtItemEnd = .pause
         self.player = player
+        observedPlayer = player
+
+        timeObserver = player.addPeriodicTimeObserver(
+            forInterval: CMTime(seconds: 0.05, preferredTimescale: 600),
+            queue: .main
+        ) { [weak self, weak player] time in
+            Task { @MainActor in
+                guard let self, let player else { return }
+                let duration = player.currentItem?.duration.seconds ?? 0
+                guard duration.isFinite, duration > 0 else { return }
+                self.progress = min(max(time.seconds / duration, 0), 1)
+            }
+        }
 
         endObserver = NotificationCenter.default.addObserver(
             forName: .AVPlayerItemDidPlayToEndTime,
@@ -1582,24 +1726,64 @@ private final class ShareDemoVideoLoader: ObservableObject {
         }
     }
 
-    func play() {
+    func togglePlayback() {
+        switch playbackState {
+        case .playing:
+            pause()
+        case .paused:
+            resume()
+        case .idle, .completed:
+            playFromBeginning()
+        case .failed:
+            break
+        }
+    }
+
+    func playFromBeginning() {
+        guard let player else { return }
         try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
-        player?.seek(to: .zero)
-        player?.play()
+        progress = 0
+        playbackState = .playing
+        player.seek(to: .zero)
+        player.play()
+    }
+
+    private func resume() {
+        guard let player else { return }
+        try? AVAudioSession.sharedInstance().setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        playbackState = .playing
+        player.play()
     }
 
     func pause() {
+        guard playbackState == .playing else { return }
         player?.pause()
+        playbackState = .paused
+    }
+
+    func resetIfIncomplete() {
+        guard !hasCompleted, playbackState != .failed else { return }
+        player?.pause()
+        player?.seek(to: .zero)
+        progress = 0
+        playbackState = .idle
     }
 
     private func completeIfNeeded() {
-        guard !hasCompleted else { return }
+        let shouldNotifyCompletion = !hasCompleted
         hasCompleted = true
+        progress = 1
+        playbackState = .completed
         player?.pause()
-        onComplete()
+        if shouldNotifyCompletion {
+            onComplete()
+        }
     }
 
     deinit {
+        if let timeObserver, let observedPlayer {
+            observedPlayer.removeTimeObserver(timeObserver)
+        }
         if let endObserver {
             NotificationCenter.default.removeObserver(endObserver)
         }

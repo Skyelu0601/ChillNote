@@ -62,6 +62,14 @@ final class AppRatingService: ObservableObject {
 
         UIApplication.shared.open(url)
     }
+
+    func openAppStoreReview() {
+        guard let url = URL(string: "https://apps.apple.com/app/id6758427839?action=write-review") else {
+            return
+        }
+
+        UIApplication.shared.open(url)
+    }
 }
 
 private extension AppRatingService {

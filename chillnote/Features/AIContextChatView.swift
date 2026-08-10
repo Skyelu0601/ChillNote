@@ -207,13 +207,7 @@ struct AIContextChatView: View {
 
     private func shouldPresentSubscription(for errorMessage: String) -> Bool {
         let lowered = errorMessage.lowercased()
-        return lowered.contains("daily free ai chat limit reached")
-            || lowered.contains("daily ai chat limit reached")
-            || lowered.contains("chat limit reached")
-            || lowered.contains("too many requests")
-            || lowered.contains("quota")
-            || lowered.contains("429")
-            || lowered.contains("insufficient credits")
+        return lowered.contains("insufficient credits")
     }
     
     var body: some View {
@@ -393,12 +387,12 @@ struct AIContextChatView: View {
                         Circle()
                             .fill(userInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                   ? Color.textSub.opacity(0.2)
-                                  : Color.accentPrimary)
+                                  : Color.accentSecondary)
                             .frame(width: 36, height: 36)
                             .shadow(
                                 color: userInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                                     ? .clear
-                                    : Color.accentPrimary.opacity(0.35),
+                                    : Color.accentSecondary.opacity(0.35),
                                 radius: 6, y: 3
                             )
 
@@ -795,7 +789,7 @@ struct ChatMessageBubble: View {
                             .font(.bodyMedium)
                             .foregroundColor(.textMain)
                             .padding(12)
-                            .background(Color.selectionHighlight)
+                            .background(Color.secondaryHighlight)
                             .cornerRadius(16)
                     }
                     
@@ -814,10 +808,10 @@ struct ChatMessageBubble: View {
                                 .font(.caption)
                                 .fontWeight(.medium)
                         }
-                        .foregroundColor(isSaved ? .green : .accentPrimary)
+                        .foregroundColor(isSaved ? .green : .accentSecondaryText)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(isSaved ? Color.green.opacity(0.1) : Color.accentPrimary.opacity(0.1))
+                        .background(isSaved ? Color.green.opacity(0.1) : Color.accentSecondary.opacity(0.1))
                         .cornerRadius(12)
                     }
                     .disabled(isSaved)
@@ -835,7 +829,7 @@ private struct ThinkingBubble: View {
         HStack(spacing: 10) {
             Image(systemName: "sparkles")
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundColor(.accentPrimary)
+                .foregroundColor(.accentSecondaryText)
 
             Text(L10n.text("ai_chat.thinking"))
                 .font(.bodyMedium)
@@ -858,7 +852,7 @@ private struct ThinkingDots: View {
             HStack(spacing: 5) {
                 ForEach(0..<3, id: \.self) { index in
                     Circle()
-                        .fill(index <= phase ? Color.accentPrimary : Color.textSub.opacity(0.25))
+                        .fill(index <= phase ? Color.accentSecondary : Color.textSub.opacity(0.25))
                         .frame(width: 6, height: 6)
                         .scaleEffect(index == phase ? 1.15 : 0.9)
                         .animation(.easeInOut(duration: 0.18), value: phase)
@@ -925,7 +919,7 @@ private struct ContextPreviewView: View, Equatable {
     private var headerContent: some View {
         HStack {
             Image(systemName: "doc.text.fill")
-                .foregroundColor(.accentPrimary)
+                .foregroundColor(.accentSecondaryText)
                 .font(.system(size: 14))
 
             Text(
@@ -968,13 +962,13 @@ private struct ContextNoteCard: View {
         }
         .padding(10)
         .frame(width: 140, height: 100)
-        .background(isHighlighted ? Color.selectionHighlight : Color.white)
+        .background(isHighlighted ? Color.secondaryHighlight : Color.white)
         .cornerRadius(12)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(isHighlighted ? Color.accentPrimary.opacity(0.75) : Color.black.opacity(0.05), lineWidth: isHighlighted ? 2 : 1)
+                .stroke(isHighlighted ? Color.accentSecondary.opacity(0.75) : Color.black.opacity(0.05), lineWidth: isHighlighted ? 2 : 1)
         )
-        .shadow(color: isHighlighted ? Color.accentPrimary.opacity(0.18) : Color.black.opacity(0.03), radius: isHighlighted ? 10 : 4, y: 2)
+        .shadow(color: isHighlighted ? Color.accentSecondary.opacity(0.18) : Color.black.opacity(0.03), radius: isHighlighted ? 10 : 4, y: 2)
         .scaleEffect(isHighlighted ? 1.03 : 1.0)
     }
 }
@@ -1039,7 +1033,7 @@ private struct InteractiveMarkdownTextView: UIViewRepresentable {
         context.coordinator.citations = citations
         textView.attributedText = makeAttributedText()
         textView.linkTextAttributes = [
-            .foregroundColor: UIColor(Color.accentPrimary),
+            .foregroundColor: UIColor(Color.accentSecondaryText),
             .underlineStyle: 0
         ]
         textView.invalidateIntrinsicContentSize()
@@ -1072,7 +1066,7 @@ private struct InteractiveMarkdownTextView: UIViewRepresentable {
             let url = URL(string: "chillnote-citation://\(number)")!
             attributed.addAttributes([
                 .link: url,
-                .foregroundColor: UIColor(Color.accentPrimary),
+                .foregroundColor: UIColor(Color.accentSecondaryText),
                 .font: UIFont.systemFont(ofSize: font.pointSize - 2, weight: .semibold)
             ], range: match.range)
         }

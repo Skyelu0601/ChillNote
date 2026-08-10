@@ -7,7 +7,7 @@ extension NoteDetailViewModel {
     func restoreOriginalVoiceResultIfAvailable() {
         guard let originalText = completedOriginalText else { return }
         withAnimation {
-            note.content = originalText
+            note.updateContent(originalText)
             if let modelContext {
                 note.syncContentStructure(with: modelContext)
                 note.updatedAt = dependencies.now()
@@ -21,7 +21,4 @@ extension NoteDetailViewModel {
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 
-    func triggerRetryHaptic() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-    }
 }

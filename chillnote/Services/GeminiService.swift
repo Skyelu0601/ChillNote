@@ -113,7 +113,7 @@ struct GeminiService {
         systemInstruction: String? = nil,
         jsonMode: Bool = false,
         countUsage: Bool = false,
-        usageType: DailyQuotaFeature? = nil
+        usageType: CreditFeature? = nil
     ) async throws -> String {
         let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .text)
         guard hasConsent else {
@@ -343,15 +343,6 @@ struct GeminiService {
         return try JSONDecoder().decode(MediaLinkTranscriptionResult.self, from: data)
     }
 
-    func transcribeTikTokLink(_ url: URL) async throws -> MediaLinkTranscriptionResult {
-        try await transcribeMediaLink(url)
-    }
-
-    /// Backward compatible alias. Intentionally returns STT-only text now.
-    func transcribeAndPolish(audioFileURL: URL) async throws -> String {
-        try await transcribeAudio(audioFileURL: audioFileURL)
-    }
-    
     /// Simple chat method for text-based AI interactions
     /// - Parameter prompt: The user's message/prompt
     /// - Returns: AI's response
@@ -367,7 +358,7 @@ struct GeminiService {
     func streamGenerateContent(
         prompt: String,
         systemInstruction: String? = nil,
-        usageType: DailyQuotaFeature? = nil
+        usageType: CreditFeature? = nil
     ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             Task {

@@ -60,7 +60,6 @@ struct ChatInputBar: View {
     @State private var waveformHeights: [CGFloat] = Array(repeating: 6, count: 5)
 
     @State private var elapsed: TimeInterval = 0
-    @State private var didTriggerLimit = false
     @State private var showSubscription = false
     private let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
 
@@ -68,9 +67,19 @@ struct ChatInputBar: View {
         let formatter = DateComponentsFormatter()
         formatter.allowedUnits = [.minute, .second]
         formatter.zeroFormattingBehavior = .pad
-        let current = formatter.string(from: elapsed) ?? "00:00"
-        let maxTime = formatter.string(from: storeService.recordingTimeLimit) ?? "01:00"
-        return "\(current) / \(maxTime)"
+        let current = formatter.string(from: min(elapsed, SpeechRecognizer.maxRecordingDuration)) ?? "00:00"
+        return current
+    }
+
+    private var recordingLimitText: String {
+        formatterString(for: SpeechRecognizer.maxRecordingDuration)
+    }
+
+    private func formatterString(for interval: TimeInterval) -> String {
+        let formatter = DateComponentsFormatter()
+        formatter.allowedUnits = [.minute, .second]
+        formatter.zeroFormattingBehavior = .pad
+        return formatter.string(from: interval) ?? "10:00"
     }
     
     var body: some View {
@@ -88,20 +97,9 @@ struct ChatInputBar: View {
         }
         .onReceive(timer) { _ in
             syncElapsed()
-
-            if elapsed >= storeService.recordingTimeLimit, speechRecognizer.isRecording {
-                if storeService.currentTier == .free && !didTriggerLimit {
-                    didTriggerLimit = true
-                    showSubscription = true
-                }
-                onConfirmVoice()
-            }
         }
         .onChange(of: speechRecognizer.recordingState) { _, _ in
             syncElapsed()
-            if speechRecognizer.recordingState == .recording {
-                didTriggerLimit = false
-            }
         }
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
@@ -115,10 +113,7 @@ struct ChatInputBar: View {
 
     private var voiceCenterView: some View {
         VStack(spacing: 10) {
-            if speechRecognizer.isRecording {
-                ghostPromptView
-                    .transition(.move(edge: .top).combined(with: .opacity))
-            } else if showMissingLinkHint {
+            if !speechRecognizer.isRecording && showMissingLinkHint {
                 missingLinkHintView
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
@@ -135,7 +130,6 @@ struct ChatInputBar: View {
         .padding(.top, 4)
         .frame(maxWidth: .infinity)
         .animation(.spring(response: 0.4, dampingFraction: 0.7), value: speechRecognizer.recordingState)
-        .animation(.easeInOut(duration: 0.25), value: shouldShowFreeTierUpgradePrompt)
         .animation(.spring(response: 0.35, dampingFraction: 0.82), value: showMissingLinkHint)
     }
 
@@ -148,36 +142,6 @@ struct ChatInputBar: View {
                 }
             }
         )
-    }
-
-    private var ghostPromptView: some View {
-        Button {
-            showSubscription = true
-        } label: {
-            Text(L10n.text("recording.free_tier_prompt.longer_time"))
-                .font(.bodySmall)
-                .foregroundColor(.accentPrimary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 10)
-                .frame(maxWidth: 320)
-                .underline()
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.86))
-                        .background(.ultraThinMaterial, in: Capsule(style: .continuous))
-                )
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(Color.black.opacity(0.04), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.06), radius: 10, x: 0, y: 4)
-        }
-        .buttonStyle(.plain)
-        .opacity(shouldShowFreeTierUpgradePrompt ? 1 : 0)
-        .accessibilityHidden(!shouldShowFreeTierUpgradePrompt)
-        .accessibilityHint(L10n.text("recording.free_tier_prompt.longer_time_hint"))
-        .allowsHitTesting(shouldShowFreeTierUpgradePrompt)
     }
 
     private var missingLinkHintView: some View {
@@ -377,7 +341,7 @@ struct ChatInputBar: View {
                                 }
                             }
 
-                            Text(timeText)
+                            Text(L10n.text("note_detail.recording.duration_progress", timeText, recordingLimitText))
                                 .font(.caption2)
                                 .bold()
                                 .foregroundColor(.accentPrimary)
@@ -510,12 +474,6 @@ struct ChatInputBar: View {
                 speechRecognizer.startRecording(countsTowardQuota: false)
             }
         }
-    }
-
-    private var shouldShowFreeTierUpgradePrompt: Bool {
-        speechRecognizer.isRecording
-            && storeService.currentTier == .free
-            && speechRecognizer.transcript.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     private var isProcessingQuickCaptureImport: Bool {

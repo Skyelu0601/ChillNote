@@ -81,6 +81,17 @@ struct NoteDetailAISkillsSheet: View {
                         dismiss()
                     }
                 }
+
+                ToolbarItem(placement: .primaryAction) {
+                    NavigationLink {
+                        ChillRecipesView()
+                    } label: {
+                        Label(
+                            L10n.text("note_detail.ai_skills.add_skills"),
+                            systemImage: "plus"
+                        )
+                    }
+                }
             }
         }
         .presentationDetents([.medium, .large])

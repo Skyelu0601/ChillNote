@@ -20,7 +20,7 @@ final class MarkdownEditorSession {
         _ markdown: String,
         to textView: UITextView,
         markdownSelection: RichTextEditorSelection?
-    ) {
+    ) -> RichTextSerializationSnapshot {
         let rendered = RichTextConverter.markdownToAttributedString(
             markdown,
             baseFont: baseFont,
@@ -42,6 +42,7 @@ final class MarkdownEditorSession {
         }
 
         normalizeTypingAttributes(in: textView)
+        return snapshot
     }
 
     func pastePlainText(_ source: String, into textView: UITextView) {
@@ -82,7 +83,6 @@ final class MarkdownEditorSession {
         textView.selectedRange = selectionAfterEdit
         normalizeTypingAttributes(in: textView)
         textView.delegate?.textViewDidChange?(textView)
-        NotificationCenter.default.post(name: UITextView.textDidChangeNotification, object: textView)
     }
 
     func normalizeTypingAttributes(in textView: UITextView) {

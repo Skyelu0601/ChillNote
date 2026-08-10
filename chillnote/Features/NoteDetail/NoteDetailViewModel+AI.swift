@@ -11,7 +11,7 @@ extension NoteDetailViewModel {
 
         withAnimation {
             isProgrammaticContentUpdate = true
-            note.content = aiOriginalContent
+            note.updateContent(aiOriginalContent)
             note.updatedAt = dependencies.now()
             persistAndSync()
 
@@ -74,8 +74,7 @@ extension NoteDetailViewModel {
         } catch {
             isProcessing = false
             let message = error.localizedDescription
-            if message.localizedCaseInsensitiveContains("daily free agent recipe limit reached")
-                || message.localizedCaseInsensitiveContains("insufficient credits") {
+            if message.localizedCaseInsensitiveContains("insufficient credits") {
                 showSubscription = true
             } else {
                 aiSkillErrorMessage = message
@@ -90,7 +89,7 @@ extension NoteDetailViewModel {
         lastAITransformation = .aiSkill(preview, mode)
 
         isProgrammaticContentUpdate = true
-        note.content = contentByApplying(preview.result, mode: mode, to: note.content, selection: preview.sourceSelection)
+        note.updateContent(contentByApplying(preview.result, mode: mode, to: note.content, selection: preview.sourceSelection))
         if let modelContext {
             note.syncContentStructure(with: modelContext)
         }
@@ -107,33 +106,6 @@ extension NoteDetailViewModel {
         }
     }
 
-    func handleAIInput(voiceInput: String? = nil) async {
-        let userInput = voiceInput ?? inputText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !userInput.isEmpty else { return }
-
-        inputText = ""
-        isProcessing = true
-
-        do {
-            let response = try await dependencies.generateAIEdit(note.content, userInput)
-
-            isProgrammaticContentUpdate = true
-            note.content = response
-            if let modelContext {
-                note.syncContentStructure(with: modelContext)
-            }
-            note.updatedAt = dependencies.now()
-            isProcessing = false
-            persistAndSync()
-
-            DispatchQueue.main.async {
-                self.isProgrammaticContentUpdate = false
-            }
-        } catch {
-            isProcessing = false
-        }
-    }
-
     func retryLastAITransformation() async {
         guard let transformation = lastAITransformation else { return }
 
@@ -141,7 +113,7 @@ extension NoteDetailViewModel {
         case .aiSkill(let preview, let mode):
             isProcessing = true
             isProgrammaticContentUpdate = true
-            note.content = preview.sourceContent
+            note.updateContent(preview.sourceContent)
             if let modelContext {
                 note.syncContentStructure(with: modelContext)
             }
@@ -163,7 +135,7 @@ extension NoteDetailViewModel {
                     sourceSelection: preview.sourceSelection,
                     instruction: preview.instruction
                 )
-                note.content = contentByApplying(result, mode: mode, to: preview.sourceContent, selection: preview.sourceSelection)
+                note.updateContent(contentByApplying(result, mode: mode, to: preview.sourceContent, selection: preview.sourceSelection))
                 if let modelContext {
                     note.syncContentStructure(with: modelContext)
                 }

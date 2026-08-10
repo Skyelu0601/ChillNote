@@ -30,6 +30,7 @@ enum TranscriptionFailureReason: Equatable {
 @MainActor
 final class SpeechRecognizer: NSObject, ObservableObject {
     private static let logger = Logger(subsystem: "com.chillnote.app", category: "speech")
+    static let maxRecordingDuration: TimeInterval = 10 * 60
 
     // MARK: - Types
     
@@ -66,12 +67,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     private var transcriptionCountUsageByFilePath: [String: Bool] = [:]
     private var isStopping = false
     private var activeTranscriptionJobIDs: Set<UUID> = []
-    private var lastPrewarmAt: Date?
-    private var sessionPrimed = false
-    private var primedRecordingURL: URL?
-    private var primedRecorder: AVAudioRecorder?
-    private var recorderPrimeWorkItem: DispatchWorkItem?
-    private var prewarmDeactivateTask: DispatchWorkItem?
+    private var maxDurationTask: Task<Void, Never>?
     private let maxAudioBytes = 25 * 1024 * 1024 // 25MB limit (plenty for M4A)
     private let fileManager = RecordingFileManager.shared
     
@@ -98,6 +94,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     }
     
     deinit {
+        maxDurationTask?.cancel()
         NotificationCenter.default.removeObserver(self)
     }
     
@@ -185,6 +182,12 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             }
             recordingState = .recording
             recordingStartTime = Date()
+            maxDurationTask?.cancel()
+            maxDurationTask = Task { [weak self] in
+                try? await Task.sleep(for: .seconds(Self.maxRecordingDuration))
+                guard !Task.isCancelled else { return }
+                self?.stopRecording(reason: .finished)
+            }
             if shouldClearTranscript {
                 transcript = ""
             }
@@ -207,39 +210,6 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         return true
     }
 
-    func prewarmRecordingSession() {
-        guard permissionGranted else {
-            return
-        }
-
-        if let lastPrewarmAt, Date().timeIntervalSince(lastPrewarmAt) < 20 {
-            if primedRecorder == nil {
-                primeRecorderIfNeededAsync()
-            }
-            return
-        }
-
-        do {
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(
-                .playAndRecord,
-                mode: .spokenAudio,
-                options: [.duckOthers, .defaultToSpeaker]
-            )
-            try? audioSession.setPreferredInputNumberOfChannels(1)
-            try? audioSession.setPreferredSampleRate(16_000)
-            preferBuiltInMicIfAvailable(audioSession)
-            try audioSession.setActive(true)
-            primeRecordingURLIfNeeded()
-            primeRecorderIfNeededAsync()
-            sessionPrimed = true
-            lastPrewarmAt = Date()
-            schedulePrewarmDeactivation()
-        } catch {
-            Self.logger.warning("Failed to prewarm recording session: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-    
     /// Retry transcribing the existing audio file without re-recording
     /// Useful for network errors or timeouts
     func retryTranscription() {
@@ -282,6 +252,9 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         isStopping = true
         
         let fileURL = audioFileURL
+
+        maxDurationTask?.cancel()
+        maxDurationTask = nil
 
         audioRecorder?.stop()
         audioRecorder = nil
@@ -611,26 +584,18 @@ final class SpeechRecognizer: NSObject, ObservableObject {
 
 private extension SpeechRecognizer {
     func startRecordingInternal() throws {
-        prewarmDeactivateTask?.cancel()
-        prewarmDeactivateTask = nil
-
         let audioSession = AVAudioSession.sharedInstance()
-        if !sessionPrimed {
-            try audioSession.setCategory(
-                .playAndRecord,
-                mode: .spokenAudio,
-                options: [.duckOthers, .defaultToSpeaker]
-            )
-        }
-
-        if !sessionPrimed {
-            try? audioSession.setPreferredInputNumberOfChannels(1)
-            // 16kHz mono is sufficient for speech and keeps uploads small (important for server/proxy limits).
-            // Note: `setPreferredSampleRate` is a best-effort hint; we still set the recorder sample rate below.
-            try? audioSession.setPreferredSampleRate(16_000)
-            preferBuiltInMicIfAvailable(audioSession)
-            try audioSession.setActive(true)
-        }
+        try audioSession.setCategory(
+            .playAndRecord,
+            mode: .spokenAudio,
+            options: [.duckOthers, .defaultToSpeaker]
+        )
+        try? audioSession.setPreferredInputNumberOfChannels(1)
+        // 16kHz mono is sufficient for speech and keeps uploads small (important for server/proxy limits).
+        // Note: `setPreferredSampleRate` is a best-effort hint; we still set the recorder sample rate below.
+        try? audioSession.setPreferredSampleRate(16_000)
+        preferBuiltInMicIfAvailable(audioSession)
+        try audioSession.setActive(true)
 
         guard audioSession.isInputAvailable else {
             throw NSError(
@@ -640,36 +605,19 @@ private extension SpeechRecognizer {
             )
         }
 
-        let fileURL: URL
-        if let primed = primedRecordingURL {
-            fileURL = primed
-            primedRecordingURL = nil
-        } else {
-            fileURL = try makeAudioURL(ext: "m4a")
-        }
+        let fileURL = try makeAudioURL(ext: "m4a")
         Self.logger.debug("Recording to \(fileURL.path, privacy: .private)")
-        let recorder: AVAudioRecorder
-        if let primedRecorder {
-            recorder = primedRecorder
-            self.primedRecorder = nil
-            recorderPrimeWorkItem?.cancel()
-            recorderPrimeWorkItem = nil
-        } else {
-            // Safe cleanup only when creating a brand-new recorder.
-            // If we unlink a file already opened by a primed recorder, the final path disappears
-            // after stop (first-recording race in onboarding).
-            try? FileManager.default.removeItem(at: fileURL)
-            recorder = try Self.makeRecorder(fileURL: fileURL)
-            recorder.delegate = self
-            recorder.isMeteringEnabled = true
+        try? FileManager.default.removeItem(at: fileURL)
+        let recorder = try Self.makeRecorder(fileURL: fileURL)
+        recorder.delegate = self
+        recorder.isMeteringEnabled = true
 
-            guard recorder.prepareToRecord() else {
-                throw NSError(
-                    domain: "SpeechRecognizer",
-                    code: 11,
-                    userInfo: [NSLocalizedDescriptionKey: L10n.text("speech_recognizer.error.failed_to_prepare_recorder")]
-                )
-            }
+        guard recorder.prepareToRecord() else {
+            throw NSError(
+                domain: "SpeechRecognizer",
+                code: 11,
+                userInfo: [NSLocalizedDescriptionKey: L10n.text("speech_recognizer.error.failed_to_prepare_recorder")]
+            )
         }
 
         guard recorder.record() else {
@@ -683,102 +631,17 @@ private extension SpeechRecognizer {
         audioRecorder = recorder
         fileManager.markPending(fileURL: fileURL)
         audioFileURL = fileURL
-        sessionPrimed = true
     }
 
     func cleanupRecordingSession() {
         let session = AVAudioSession.sharedInstance()
         try? session.setActive(false, options: .notifyOthersOnDeactivation)
-        sessionPrimed = false
-        primedRecorder = nil
-        recorderPrimeWorkItem?.cancel()
-        recorderPrimeWorkItem = nil
-    }
-
-    func schedulePrewarmDeactivation() {
-        prewarmDeactivateTask?.cancel()
-        let task = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            guard self.recordingState == .idle else { return }
-            if let primedURL = self.primedRecordingURL {
-                try? FileManager.default.removeItem(at: primedURL)
-                self.primedRecordingURL = nil
-            }
-            self.primedRecorder = nil
-            self.recorderPrimeWorkItem?.cancel()
-            self.recorderPrimeWorkItem = nil
-            self.cleanupRecordingSession()
-        }
-        prewarmDeactivateTask = task
-        DispatchQueue.main.asyncAfter(deadline: .now() + 12, execute: task)
     }
 
     func preferBuiltInMicIfAvailable(_ audioSession: AVAudioSession) {
         guard let inputs = audioSession.availableInputs else { return }
         if let builtInMic = inputs.first(where: { $0.portType == .builtInMic }) {
             try? audioSession.setPreferredInput(builtInMic)
-        }
-    }
-
-    func primeRecordingURLIfNeeded() {
-        guard primedRecordingURL == nil else {
-            return
-        }
-        do {
-            let url = try fileManager.createRecordingURL(ext: "m4a", markPending: false)
-            primedRecordingURL = url
-        } catch {
-            Self.logger.warning("Failed to create primed recording URL: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
-    func primeRecorderIfNeededAsync() {
-        guard primedRecorder == nil else {
-            return
-        }
-        guard recorderPrimeWorkItem == nil else {
-            return
-        }
-        guard let primedRecordingURL else {
-            return
-        }
-
-        let targetPath = primedRecordingURL.path
-        var workItem: DispatchWorkItem?
-        workItem = DispatchWorkItem { [weak self] in
-            guard let self else { return }
-            do {
-                let url = URL(fileURLWithPath: targetPath)
-                let recorder = try Self.makeRecorder(fileURL: url)
-                guard recorder.prepareToRecord() else {
-                    DispatchQueue.main.async {
-                        guard let workItem, !workItem.isCancelled else { return }
-                        self.recorderPrimeWorkItem = nil
-                    }
-                    return
-                }
-                DispatchQueue.main.async {
-                    guard let workItem, !workItem.isCancelled else { return }
-                    defer { self.recorderPrimeWorkItem = nil }
-                    guard self.recordingState == .idle else { return }
-                    guard self.primedRecordingURL?.path == targetPath else { return }
-                    if self.primedRecorder == nil {
-                        recorder.delegate = self
-                        recorder.isMeteringEnabled = true
-                        self.primedRecorder = recorder
-                    }
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    guard let workItem, !workItem.isCancelled else { return }
-                    self.recorderPrimeWorkItem = nil
-                    self.primedRecorder = nil
-                }
-            }
-        }
-        if let workItem {
-            recorderPrimeWorkItem = workItem
-            DispatchQueue.global(qos: .userInitiated).async(execute: workItem)
         }
     }
 

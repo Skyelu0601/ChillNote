@@ -1,5 +1,6 @@
 import XCTest
 import SwiftData
+import SwiftUI
 @testable import chillnote
 
 @MainActor
@@ -102,6 +103,15 @@ final class chillnoteTests: XCTestCase {
         let shortText = "Short note"
         let note = Note(content: shortText, userId: "u1")
         XCTAssertEqual(note.displayText, shortText)
+    }
+
+    func testNoteUpdateContentRefreshesPersistedPreview() {
+        let note = Note(content: "Old text", userId: "u1")
+
+        note.updateContent("# New text")
+
+        XCTAssertEqual(note.content, "# New text")
+        XCTAssertEqual(note.previewPlainText, "New text")
     }
 
     func testNoteDisplayTextUsesLatestContentWhenPreviewCacheIsStale() {
@@ -400,6 +410,24 @@ final class chillnoteTests: XCTestCase {
         )
     }
 
+    func testRichTextSelectionAfterTodoDoesNotIncludeCheckbox() {
+        for markdown in ["- [ ] Buy milk", "- [x] Buy milk"] {
+            let attributed = RichTextConverter.markdownToAttributedString(markdown)
+            let contentRange = (attributed.string as NSString).range(of: "Buy milk")
+            let snapshot = RichTextConverter.serializationSnapshot(from: attributed)
+            let markdownSelection = snapshot.markdownSelection(for: contentRange)
+
+            XCTAssertNil(attributed.attribute(.attachment, at: 0, effectiveRange: nil))
+            XCTAssertEqual(
+                snapshot.visualRange(
+                    forMarkdownLocation: markdownSelection.location,
+                    length: markdownSelection.length
+                ),
+                contentRange
+            )
+        }
+    }
+
     func testMarkdownEditorSessionNormalizesPasteAndMatchesBaseFont() {
         let textView = UITextView()
         let session = MarkdownEditorSession(baseFont: .systemFont(ofSize: 17), textColor: .label)
@@ -412,6 +440,207 @@ final class chillnoteTests: XCTestCase {
         XCTAssertEqual((textView.textStorage.attribute(.font, at: secondLineLocation, effectiveRange: nil) as? UIFont)?.pointSize, 17)
         XCTAssertEqual(RichTextConverter.attributedStringToMarkdown(textView.attributedText), "\\# Large\nNormal text")
         XCTAssertEqual(MarkdownEditorSession.normalizePastedText("\n\nFirst\n\nLast\n\n"), "\nFirst\nLast\n")
+    }
+
+    func testRichTextEditorDefersMarkdownCommitUntilExplicitFlush() {
+        var markdown = "Original"
+        var selection = RichTextEditorSelection()
+        let controller = RichTextEditorController()
+        let editor = RichTextEditorView(
+            text: Binding(get: { markdown }, set: { markdown = $0 }),
+            selection: Binding(get: { selection }, set: { selection = $0 }),
+            controller: controller
+        )
+        let coordinator = editor.makeCoordinator()
+        let textView = InteractiveTextView(usingTextLayoutManager: true)
+        textView.delegate = coordinator
+        coordinator.textView = textView
+
+        let initialSnapshot = coordinator.editorSession.applyExternalMarkdown(
+            markdown,
+            to: textView,
+            markdownSelection: selection
+        )
+        coordinator.acceptExternalMarkdown(markdown, snapshot: initialSnapshot)
+        textView.attributedText = RichTextConverter.markdownToAttributedString("Changed")
+
+        coordinator.textViewDidChange(textView)
+        XCTAssertEqual(markdown, "Original")
+
+        coordinator.flushPendingChanges()
+        XCTAssertEqual(markdown, "Changed")
+        XCTAssertNotNil(textView.textLayoutManager)
+    }
+
+    func testRichTextEditorCheckboxTapTogglesAndPersistsImmediately() {
+        var markdown = "- [ ] Buy milk"
+        var selection = RichTextEditorSelection()
+        let controller = RichTextEditorController()
+        let editor = RichTextEditorView(
+            text: Binding(get: { markdown }, set: { markdown = $0 }),
+            selection: Binding(get: { selection }, set: { selection = $0 }),
+            controller: controller
+        )
+        let coordinator = editor.makeCoordinator()
+        let textView = InteractiveTextView(usingTextLayoutManager: true)
+        textView.delegate = coordinator
+        coordinator.textView = textView
+        let snapshot = coordinator.editorSession.applyExternalMarkdown(
+            markdown,
+            to: textView,
+            markdownSelection: selection
+        )
+        coordinator.acceptExternalMarkdown(markdown, snapshot: snapshot)
+
+        var checkboxRange = NSRange(location: 0, length: 0)
+        _ = textView.textStorage.attribute(
+            RichTextConverter.Key.checkbox,
+            at: 0,
+            effectiveRange: &checkboxRange
+        )
+        coordinator.toggleCheckbox(at: checkboxRange, in: textView)
+
+        XCTAssertEqual(markdown, "- [x] Buy milk")
+        XCTAssertTrue(textView.text.hasPrefix("☑ "))
+        XCTAssertNotNil(textView.textStorage.attribute(.strikethroughStyle, at: 2, effectiveRange: nil))
+    }
+
+    func testRichTextEditorChecklistToolbarActionPersistsImmediately() {
+        var markdown = "Buy milk"
+        var selection = RichTextEditorSelection()
+        let controller = RichTextEditorController()
+        let editor = RichTextEditorView(
+            text: Binding(get: { markdown }, set: { markdown = $0 }),
+            selection: Binding(get: { selection }, set: { selection = $0 }),
+            controller: controller
+        )
+        let coordinator = editor.makeCoordinator()
+        let textView = InteractiveTextView(usingTextLayoutManager: true)
+        textView.delegate = coordinator
+        coordinator.textView = textView
+        let snapshot = coordinator.editorSession.applyExternalMarkdown(
+            markdown,
+            to: textView,
+            markdownSelection: selection
+        )
+        coordinator.acceptExternalMarkdown(markdown, snapshot: snapshot)
+        textView.selectedRange = NSRange(location: 0, length: 0)
+
+        coordinator.handleToolbarAction(.checklist, in: textView)
+
+        XCTAssertEqual(markdown, "- [ ] Buy milk")
+        XCTAssertTrue(textView.text.hasPrefix("☐ "))
+    }
+
+    func testRichTextEditorCheckboxTapHitTestingWorksWithTextKit2() {
+        let textView = InteractiveTextView(usingTextLayoutManager: true)
+        textView.installCheckboxTapHandling()
+        textView.frame = CGRect(x: 0, y: 0, width: 320, height: 120)
+        textView.attributedText = RichTextConverter.markdownToAttributedString("- [ ] Buy milk")
+        textView.layoutIfNeeded()
+
+        let start = textView.position(from: textView.beginningOfDocument, offset: 0)!
+        let end = textView.position(from: start, offset: 1)!
+        let checkboxTextRange = textView.textRange(from: start, to: end)!
+        let checkboxRect = textView.firstRect(for: checkboxTextRange)
+        let detectedRange = textView.checkboxRangeForTap(
+            at: CGPoint(x: checkboxRect.midX, y: checkboxRect.midY)
+        )
+
+        XCTAssertEqual(detectedRange?.location, 0)
+        XCTAssertEqual(detectedRange?.length, 1)
+        XCTAssertTrue(textView.isCheckboxTapHandlingInstalled)
+        XCTAssertNotNil(textView.textLayoutManager)
+    }
+
+    func testRichTextEditorReturnContinuesChecklistWithUncheckedItem() {
+        var markdown = "- [x] Done"
+        var selection = RichTextEditorSelection()
+        let controller = RichTextEditorController()
+        let editor = RichTextEditorView(
+            text: Binding(get: { markdown }, set: { markdown = $0 }),
+            selection: Binding(get: { selection }, set: { selection = $0 }),
+            controller: controller
+        )
+        let coordinator = editor.makeCoordinator()
+        let textView = InteractiveTextView(usingTextLayoutManager: true)
+        textView.delegate = coordinator
+        coordinator.textView = textView
+        let snapshot = coordinator.editorSession.applyExternalMarkdown(
+            markdown,
+            to: textView,
+            markdownSelection: selection
+        )
+        coordinator.acceptExternalMarkdown(markdown, snapshot: snapshot)
+        textView.selectedRange = NSRange(location: textView.textStorage.length, length: 0)
+
+        let shouldInsertDefaultNewline = coordinator.textView(
+            textView,
+            shouldChangeTextIn: textView.selectedRange,
+            replacementText: "\n"
+        )
+        coordinator.flushPendingChanges()
+
+        XCTAssertFalse(shouldInsertDefaultNewline)
+        XCTAssertEqual(markdown, "- [x] Done\n- [ ] ")
+        XCTAssertTrue(textView.text.hasSuffix("\n☐ "))
+    }
+
+    func testRichTextEditorReturnOnEmptyChecklistItemExitsChecklist() {
+        var markdown = "- [ ] "
+        var selection = RichTextEditorSelection()
+        let controller = RichTextEditorController()
+        let editor = RichTextEditorView(
+            text: Binding(get: { markdown }, set: { markdown = $0 }),
+            selection: Binding(get: { selection }, set: { selection = $0 }),
+            controller: controller
+        )
+        let coordinator = editor.makeCoordinator()
+        let textView = InteractiveTextView(usingTextLayoutManager: true)
+        textView.delegate = coordinator
+        coordinator.textView = textView
+        let snapshot = coordinator.editorSession.applyExternalMarkdown(
+            markdown,
+            to: textView,
+            markdownSelection: selection
+        )
+        coordinator.acceptExternalMarkdown(markdown, snapshot: snapshot)
+        textView.selectedRange = NSRange(location: textView.textStorage.length, length: 0)
+
+        _ = coordinator.textView(
+            textView,
+            shouldChangeTextIn: textView.selectedRange,
+            replacementText: "\n"
+        )
+        coordinator.flushPendingChanges()
+
+        XCTAssertEqual(markdown, "\n")
+        XCTAssertNil(textView.typingAttributes[RichTextConverter.Key.checkbox])
+    }
+
+    func testRichTextEditorExpandsToContentHeightWhenInnerScrollingIsDisabled() {
+        let textView = InteractiveTextView(usingTextLayoutManager: true)
+        textView.setEditorScrollingEnabled(false)
+        textView.bounds = CGRect(x: 0, y: 0, width: 320, height: 100)
+        textView.attributedText = RichTextConverter.markdownToAttributedString(
+            Array(repeating: "This is a long transcript line that must remain reachable.", count: 40)
+                .joined(separator: "\n")
+        )
+
+        // Simulate TextKit reporting only the currently laid-out viewport.
+        // The editor must measure the full document instead of trusting this value.
+        textView.contentSize = CGSize(width: 320, height: 100)
+        let expandedHeight = textView.intrinsicContentSize.height
+
+        XCTAssertFalse(textView.isScrollEnabled)
+        XCTAssertFalse(textView.panGestureRecognizer.isEnabled)
+        XCTAssertGreaterThan(expandedHeight, 1_000)
+
+        textView.setEditorScrollingEnabled(true)
+
+        XCTAssertTrue(textView.isScrollEnabled)
+        XCTAssertTrue(textView.panGestureRecognizer.isEnabled)
+        XCTAssertEqual(textView.keyboardDismissMode, .interactive)
     }
 
     func testNoteDisplayTextOmitsMarkdownImages() {

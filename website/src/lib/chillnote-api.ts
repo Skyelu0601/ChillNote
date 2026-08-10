@@ -55,17 +55,6 @@ export type SubscriptionStatus = {
   expiresAt: string | null;
 };
 
-export type DailyQuotaFeature = "voice" | "agent_recipe" | "chat";
-
-export type DailyQuotaState = {
-  success: boolean;
-  feature: DailyQuotaFeature;
-  tier: "free" | "pro";
-  allowed: boolean;
-  remaining: number | null;
-  limit: number | null;
-};
-
 function authHeaders(token: string) {
   return {
     Authorization: `Bearer ${token}`,
@@ -123,15 +112,6 @@ export async function createCreemCheckout(token: string, plan: "monthly" | "year
     body: JSON.stringify({ plan }),
   });
   return parseResponse<{ checkoutUrl: string; checkoutId: string | null }>(response);
-}
-
-export async function checkDailyQuota(token: string, feature: DailyQuotaFeature, action: "check" | "consume" = "check") {
-  const response = await fetch(`${webConfig.apiBaseUrl}/quota/daily`, {
-    method: "POST",
-    headers: authHeaders(token),
-    body: JSON.stringify({ feature, action }),
-  });
-  return parseResponse<DailyQuotaState>(response);
 }
 
 export async function transcribeAudio(

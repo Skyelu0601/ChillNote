@@ -563,27 +563,6 @@ final class NotesSearchIndexer {
         }
     }
 
-    func reindex(noteIDs: [UUID], context: ModelContext, userId: String) async {
-        guard !noteIDs.isEmpty else { return }
-        do {
-            var descriptor = FetchDescriptor<Note>()
-            descriptor.predicate = #Predicate<Note> { note in
-                note.userId == userId && noteIDs.contains(note.id)
-            }
-            let notes = try context.fetch(descriptor)
-            let existingIDs = Set(notes.map(\.id))
-            let missingIDs = noteIDs.filter { !existingIDs.contains($0) }
-            if !notes.isEmpty {
-                await index.upsert(documents: notes.map(makeDocument))
-            }
-            if !missingIDs.isEmpty {
-                await index.remove(noteIDs: missingIDs)
-            }
-        } catch {
-            PerformanceTelemetry.mark("search_index.reindex_failed", detail: error.localizedDescription)
-        }
-    }
-
     func remove(noteIDs: [UUID]) async {
         await index.remove(noteIDs: noteIDs)
     }
@@ -600,7 +579,9 @@ final class NotesSearchIndexer {
         let sourceSearchText = [
             note.sourcePlatformName,
             note.sourceHost,
-            note.sourceTitle
+            note.sourceTitle,
+            note.sourceAuthorName,
+            note.sourceAuthorHandle
         ]
             .compactMap { $0 }
             .joined(separator: " ")

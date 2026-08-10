@@ -71,8 +71,6 @@ final class _TypewriterTextView: UIView {
     private var fullContent: String = ""
     private var displayedCharCount: Int = 0
     private var displayLink: CADisplayLink?
-    private var charDelay: TimeInterval = 1.0 / 60.0  // target ~60 chars/sec
-
     // Character-level cache so we don't recompute Array() every frame
     private var fullContentChars: [Character] = []
 

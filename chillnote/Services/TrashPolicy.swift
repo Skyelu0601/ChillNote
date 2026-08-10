@@ -25,6 +25,11 @@ struct TrashPolicy {
         do {
             let notes = try context.fetch(descriptor)
             guard !notes.isEmpty else { return }
+            let noteIDsByUser = Dictionary(grouping: notes, by: \Note.userId)
+                .mapValues { $0.map(\.id) }
+            for (userId, noteIDs) in noteIDsByUser {
+                HardDeleteQueueStore.enqueue(noteIDs: noteIDs, for: userId)
+            }
             for note in notes {
                 context.delete(note)
             }

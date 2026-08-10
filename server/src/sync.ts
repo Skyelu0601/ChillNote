@@ -1,6 +1,7 @@
 import type { ConflictDTO, NoteDTO, SyncPayload, TagDTO } from "./types.js";
 import { prisma } from "./db.js";
 import { logSyncChange, upsertNote, upsertTag } from "./store.js";
+import { hardDeleteNoteWithWeeklyTopicCleanup } from "./weeklyTopics.js";
 
 function parseDate(value?: string | null): number | null {
   if (!value) return null;
@@ -52,15 +53,7 @@ export async function applySync(payload: SyncPayload, userId: string): Promise<{
 
   // 0) Apply hard deletes first. Later uploads are allowed to recreate the entity.
   for (const noteId of hardDeletedNoteIds) {
-    const existing = await prisma.note.findFirst({
-      where: { id: noteId, userId }
-    });
-
-    if (existing) {
-      await prisma.note.delete({
-        where: { id: noteId }
-      });
-    }
+    const existing = await hardDeleteNoteWithWeeklyTopicCleanup(userId, noteId);
 
     await logSyncChange({
       userId,

@@ -68,8 +68,7 @@ extension HomeView {
                 isExecutingAction = false
                 actionProgress = nil
                 let message = error.localizedDescription
-                if message.localizedCaseInsensitiveContains("daily free agent recipe limit reached")
-                    || message.localizedCaseInsensitiveContains("insufficient credits") {
+                if message.localizedCaseInsensitiveContains("insufficient credits") {
                     showSubscription = true
                 }
             }
@@ -80,7 +79,7 @@ extension HomeView {
         switch mode {
         case .replace:
             guard let note = noteForHomeAISkillPreview(preview) else { return }
-            note.content = preview.result
+            note.updateContent(preview.result)
             note.syncContentStructure(with: modelContext)
             note.updatedAt = Date()
             persistAndSync()
@@ -89,7 +88,7 @@ extension HomeView {
         case .append:
             guard let note = noteForHomeAISkillPreview(preview) else { return }
             let separator = note.content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : "\n\n"
-            note.content = note.content + separator + preview.result
+            note.updateContent(note.content + separator + preview.result)
             note.syncContentStructure(with: modelContext)
             note.updatedAt = Date()
             persistAndSync()

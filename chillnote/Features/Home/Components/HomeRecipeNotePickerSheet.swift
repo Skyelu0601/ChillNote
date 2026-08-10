@@ -56,7 +56,7 @@ struct HomeRecipeNotePickerSheet: View {
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 52)
-                        .background(canRun ? Color.accentPrimary : Color.textSub.opacity(0.28))
+                        .background(canRun ? Color.accentSecondary : Color.textSub.opacity(0.28))
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .disabled(!canRun)

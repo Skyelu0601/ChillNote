@@ -5,7 +5,7 @@ import OSLog
 struct WelcomeNoteFlagStore {
     private static let globalKey = "hasSeededWelcomeNote"
     private static let perUserKey = "welcomeNoteSeededByUserId"
-    
+
     static func hasSeenWelcome(for userId: String?) -> Bool {
         let defaults = UserDefaults.standard
         if let userId,
@@ -19,7 +19,7 @@ struct WelcomeNoteFlagStore {
             return defaults.bool(forKey: globalKey)
         }
     }
-    
+
     static func setHasSeenWelcome(_ value: Bool, for userId: String?) {
         let defaults = UserDefaults.standard
         if let userId {
@@ -29,7 +29,7 @@ struct WelcomeNoteFlagStore {
         }
         defaults.set(value, forKey: globalKey)
     }
-    
+
     static func syncGlobalFlag(for userId: String?) {
         let value = hasSeenWelcome(for: userId)
         UserDefaults.standard.set(value, forKey: globalKey)
@@ -72,10 +72,4 @@ class DataService: ObservableObject {
         }
     }
     
-    /// Welcome Note seeding has been retired in favor of the first-user guide.
-    /// Keep this no-op for compatibility with any older call sites.
-    @discardableResult
-    func seedDataIfNeeded(context: ModelContext? = nil, userId: String? = nil) -> Bool {
-        false
-    }
 }

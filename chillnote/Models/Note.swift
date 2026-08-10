@@ -20,17 +20,46 @@ struct NoteSourceMetadata: Equatable, Sendable {
     let platformID: String
     let platformName: String
     let host: String
+    let authorName: String?
+    let authorHandle: String?
+
+    init(
+        url: String,
+        title: String,
+        platformID: String,
+        platformName: String,
+        host: String,
+        authorName: String? = nil,
+        authorHandle: String? = nil
+    ) {
+        self.url = url
+        self.title = title
+        self.platformID = platformID
+        self.platformName = platformName
+        self.host = host
+        self.authorName = authorName
+        self.authorHandle = authorHandle
+    }
+
+    var authorDisplayName: String? {
+        let name = authorName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !name.isEmpty {
+            return name
+        }
+
+        let handle = authorHandle?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .trimmingCharacters(in: CharacterSet(charactersIn: "@"))
+            ?? ""
+        return handle.isEmpty ? nil : "@\(handle)"
+    }
 }
 
 @Model
 final class Note {
     var id: UUID
     var userId: String
-    var content: String {  // Markdown format - single source of truth
-        didSet {
-            refreshPreviewPlainText()
-        }
-    }
+    var content: String  // Markdown format - persisted source of truth
     var contentFormat: String
     var checklistNotes: String
     var previewPlainText: String
@@ -48,6 +77,8 @@ final class Note {
     var sourcePlatformID: String?
     var sourcePlatformName: String?
     var sourceHost: String?
+    var sourceAuthorName: String?
+    var sourceAuthorHandle: String?
     var sourceCapturedAt: Date?
     var sectionRaw: String?
     var importStatusRaw: String?
@@ -119,6 +150,8 @@ final class Note {
         self.sourcePlatformID = nil
         self.sourcePlatformName = nil
         self.sourceHost = nil
+        self.sourceAuthorName = nil
+        self.sourceAuthorHandle = nil
         self.sourceCapturedAt = nil
         self.sectionRaw = NoteSection.inbox.rawValue
         self.importStatusRaw = nil
@@ -189,13 +222,59 @@ final class Note {
         let title = sourceTitle?.trimmingCharacters(in: .whitespacesAndNewlines)
             ?? host
 
+        let authorName = nonEmptySourceValue(sourceAuthorName) ?? legacySourceAuthorName
+        let authorHandle = nonEmptySourceValue(sourceAuthorHandle)
+
         return NoteSourceMetadata(
             url: sourceURL,
             title: title.isEmpty ? sourceURL : title,
             platformID: platformID,
             platformName: platformName,
-            host: host
+            host: host,
+            authorName: authorName,
+            authorHandle: authorHandle
         )
+    }
+
+    private func nonEmptySourceValue(_ value: String?) -> String? {
+        let trimmed = value?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        return trimmed.isEmpty ? nil : trimmed
+    }
+
+    private var legacySourceAuthorName: String? {
+        let authorHeadings: Set<String> = ["Author", "Autor", "Auteur", "作者", "작성자"]
+        let unknownAuthors: Set<String> = [
+            "Unknown author",
+            "Unbekannter Autor",
+            "Autor desconocido",
+            "Auteur inconnu",
+            "不明な作者",
+            "알 수 없는 작성자",
+            "未知作者"
+        ]
+        let lines = content
+            .replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
+            .components(separatedBy: "\n")
+
+        guard let headingIndex = lines.firstIndex(where: { line in
+            let heading = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard heading.hasPrefix("## ") else { return false }
+            return authorHeadings.contains(String(heading.dropFirst(3)))
+        }) else {
+            return nil
+        }
+
+        for line in lines.dropFirst(headingIndex + 1) {
+            let candidate = line.trimmingCharacters(in: .whitespacesAndNewlines)
+            if candidate.hasPrefix("#") {
+                break
+            }
+            if !candidate.isEmpty {
+                return unknownAuthors.contains(candidate) ? nil : candidate
+            }
+        }
+        return nil
     }
 
     func applySourceMetadata(_ source: NoteSourceMetadata?) {
@@ -204,6 +283,8 @@ final class Note {
         sourcePlatformID = source?.platformID
         sourcePlatformName = source?.platformName
         sourceHost = source?.host
+        sourceAuthorName = source?.authorName
+        sourceAuthorHandle = source?.authorHandle
         sourceCapturedAt = source == nil ? nil : Date()
     }
 
@@ -249,9 +330,9 @@ final class Note {
         refreshPreviewPlainText()
     }
 
-    func rebuildContentFromChecklist() {
-        content = ChecklistMarkdown.serialize(notes: checklistNotes, items: checklistItems)
-        contentParseBackup = nil
+    func updateContent(_ newContent: String) {
+        guard content != newContent else { return }
+        content = newContent
         refreshPreviewPlainText()
     }
     

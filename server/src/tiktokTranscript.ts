@@ -93,6 +93,7 @@ export type MediaLinkTranscriptReason =
 
 type MediaLinkMetadata = {
   platform: MediaLinkPlatform;
+  resolvedURL?: string;
   title?: string;
   authorName?: string;
   authorURL?: string;
@@ -117,6 +118,13 @@ type YtDlpCaptionFormat = {
 };
 
 type YtDlpInfo = {
+  title?: string;
+  description?: string;
+  uploader?: string;
+  uploader_id?: string;
+  channel?: string;
+  channel_id?: string;
+  webpage_url?: string;
   subtitles?: Record<string, YtDlpCaptionFormat[]>;
   automatic_captions?: Record<string, YtDlpCaptionFormat[]>;
 };
@@ -126,6 +134,7 @@ export type MediaLinkTranscriptMetadata = {
   videoID?: string;
   title?: string;
   authorName?: string;
+  authorHandle?: string;
   durationSec?: number;
   mimeType?: string;
 };
@@ -264,10 +273,11 @@ function makeTranscriptResponseMetadata(
   metadata: MediaLinkMetadata
 ): MediaLinkTranscriptMetadata {
   return {
-    resolvedURL,
+    resolvedURL: metadata.resolvedURL ?? resolvedURL,
     videoID: metadata.videoID,
     title: metadata.title,
-    authorName: metadata.authorName
+    authorName: metadata.authorName,
+    authorHandle: metadata.authorUniqueID
   };
 }
 
@@ -580,7 +590,10 @@ async function fetchMediaCaptionTranscript(
   }
 }
 
-async function dumpYtDlpInfo(url: string): Promise<YtDlpInfo> {
+async function dumpYtDlpInfo(
+  url: string,
+  timeout = MEDIA_LINK_DOWNLOAD_TIMEOUT_MS
+): Promise<YtDlpInfo> {
   const { stdout } = await execFileAsync(MEDIA_LINK_YTDLP_BIN, [
     "--dump-json",
     "--skip-download",
@@ -588,7 +601,7 @@ async function dumpYtDlpInfo(url: string): Promise<YtDlpInfo> {
     "--no-warnings",
     url
   ], {
-    timeout: MEDIA_LINK_DOWNLOAD_TIMEOUT_MS,
+    timeout,
     maxBuffer: 16 * 1024 * 1024
   });
 
@@ -1216,17 +1229,48 @@ function parseTranscriptModelOutput(raw: string): { text: string; parsed: boolea
 // Instagram metadata
 // ---------------------------------------------------------------------------
 
+export function instagramMetadataFromYtDlpInfo(info: YtDlpInfo): Pick<
+  MediaLinkMetadata,
+  "resolvedURL" | "title" | "authorName" | "authorUniqueID"
+> {
+  return {
+    resolvedURL: normalizeOptionalString(info.webpage_url),
+    title: normalizeOptionalString(info.description) ?? normalizeOptionalString(info.title),
+    authorName: normalizeOptionalString(info.uploader) ?? normalizeOptionalString(info.channel),
+    authorUniqueID: normalizeOptionalString(info.uploader_id) ?? normalizeOptionalString(info.channel_id)
+  };
+}
+
 /**
- * Fetch Instagram Reels metadata by scraping the page HTML for Open Graph
- * and Twitter Card meta tags — no API token required.
+ * Fetch Instagram Reels metadata from yt-dlp first, then fill any missing
+ * title or author name from the public page's Open Graph metadata.
  *
  * The function always resolves (never rejects): on any network or parse
- * error it falls back gracefully to a minimal object containing only the
- * videoID extracted from the URL.
+ * error it falls back gracefully to whatever metadata was already found.
  */
 async function fetchInstagramMetadata(url: string): Promise<MediaLinkMetadata> {
   const videoID = extractVideoIDFromURL(url, "instagram");
   const base: MediaLinkMetadata = { platform: "instagram", videoID };
+  let structured = base;
+
+  if (MEDIA_LINK_USE_YTDLP !== "false") {
+    try {
+      const info = await dumpYtDlpInfo(
+        url,
+        Math.min(MEDIA_LINK_DOWNLOAD_TIMEOUT_MS, 20_000)
+      );
+      structured = {
+        ...base,
+        ...instagramMetadataFromYtDlpInfo(info)
+      };
+    } catch {
+      // The public-page parser below remains available when yt-dlp is blocked.
+    }
+  }
+
+  if (structured.title && structured.authorName && structured.authorUniqueID) {
+    return structured;
+  }
 
   try {
     const response = await fetch(url, {
@@ -1241,7 +1285,7 @@ async function fetchInstagramMetadata(url: string): Promise<MediaLinkMetadata> {
     });
 
     if (!response.ok) {
-      return base;
+      return structured;
     }
 
     // Read only the <head> portion to keep memory low — Instagram pages are large.
@@ -1254,20 +1298,19 @@ async function fetchInstagramMetadata(url: string): Promise<MediaLinkMetadata> {
       extractTitleTag(html);
 
     if (!rawTitle) {
-      return base;
+      return structured;
     }
 
     const decoded = decodeHTMLEntities(rawTitle);
     const { title, authorName } = parseInstagramTitleComponents(decoded);
 
     return {
-      ...base,
-      title: title || undefined,
-      authorName: authorName || undefined
+      ...structured,
+      title: structured.title ?? title ?? undefined,
+      authorName: structured.authorName ?? authorName ?? undefined
     };
   } catch {
-    // Best-effort: always return at least the videoID.
-    return base;
+    return structured;
   }
 }
 

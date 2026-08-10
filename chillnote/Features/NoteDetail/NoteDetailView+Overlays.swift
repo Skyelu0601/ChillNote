@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NoteDetailOverlaysView: View {
     @ObservedObject var viewModel: NoteDetailViewModel
+    let onBeforeContentAction: () -> Void
     @ObservedObject private var voiceService = VoiceProcessingService.shared
 
     var body: some View {
@@ -55,7 +56,7 @@ struct NoteDetailOverlaysView: View {
                     .frame(width: 1, height: 16)
                     .padding(.horizontal, 4)
 
-                Button(action: viewModel.restoreOriginalVoiceResultIfAvailable) {
+                Button(action: restoreOriginalVoiceResult) {
                     Text(L10n.text("note_detail.overlay.show_original"))
                         .font(.subheadline)
                         .fontWeight(.bold)
@@ -93,12 +94,15 @@ struct NoteDetailOverlaysView: View {
                 Spacer()
                 AIPreviewCard(
                     onRetry: {
+                        onBeforeContentAction()
                         viewModel.send(.aiRetryTapped)
                     },
                     onUndo: {
+                        onBeforeContentAction()
                         viewModel.send(.aiUndoTapped)
                     },
                     onSave: {
+                        onBeforeContentAction()
                         viewModel.send(.aiSaveTapped)
                     }
                 )
@@ -109,5 +113,10 @@ struct NoteDetailOverlaysView: View {
             .padding(.bottom, 20)
             .transition(.move(edge: .bottom).combined(with: .opacity))
         }
+    }
+
+    private func restoreOriginalVoiceResult() {
+        onBeforeContentAction()
+        viewModel.restoreOriginalVoiceResultIfAvailable()
     }
 }

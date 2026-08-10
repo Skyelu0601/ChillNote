@@ -82,7 +82,6 @@ extension HomeView {
                     persistAndSync()
                     await MainActor.run {
                         guard didFinishProcessing else { return }
-                        VoiceNotePaywallService.shared.registerSuccessfulVoiceNoteSave()
                         if AppRatingService.shared.registerSuccessfulVoiceNoteSave() {
                             requestAppRating()
                         }
@@ -123,10 +122,6 @@ extension HomeView {
         modelContext.insert(note)
         persistAndSync()
         navigationPath.append(note)
-    }
-
-    func savePastedLink(_ result: QuickCaptureImportService.LinkImportResult) {
-        _ = saveNote(text: result.noteText, source: result.source, shouldNavigate: true)
     }
 
     @discardableResult
@@ -179,6 +174,7 @@ extension HomeView {
                     section: note.section
                 )
                 let didSaveJob = await MainActor.run {
+                    StoreService.shared.applyBackendCreditBalance(job.balance, tier: job.tier)
                     note.importJobId = job.jobId
                     note.importStatus = job.status == "processing" ? .processing : .queued
                     note.updatedAt = Date()
@@ -192,8 +188,13 @@ extension HomeView {
                     note.importCompletedAt = Date()
                     note.updatedAt = Date()
                     _ = saveHomeVoiceContext(reason: "saving failed link import")
-                    clipboardLinkImportErrorMessage = error.localizedDescription
-                    showClipboardLinkImportErrorAlert = true
+                    if case QuickCaptureImportError.insufficientCredits(let balance) = error {
+                        StoreService.shared.applyBackendCreditBalance(balance, tier: SubscriptionTier.free.rawValue)
+                        showSubscription = true
+                    } else {
+                        clipboardLinkImportErrorMessage = error.localizedDescription
+                        showClipboardLinkImportErrorAlert = true
+                    }
                     requestReload(keepItemsWhileLoading: true)
                 }
             }
@@ -244,16 +245,18 @@ extension HomeView {
         var delayNanoseconds: UInt64 = 3_000_000_000
 
         while !Task.isCancelled {
-            do {
-                try await Task.sleep(nanoseconds: delayNanoseconds)
-            } catch {
-                return
-            }
             guard scenePhase == .active else {
-                delayNanoseconds = 10_000_000_000
+                delayNanoseconds = 3_000_000_000
+                do {
+                    try await Task.sleep(nanoseconds: 10_000_000_000)
+                } catch {
+                    return
+                }
                 continue
             }
 
+            // Sync before sleeping so opening/foregrounding Home can consume a
+            // completion that has already produced a push notification.
             let didSync = await syncManager.syncNow(context: modelContext)
             guard !Task.isCancelled else { return }
             if didSync {
@@ -261,8 +264,14 @@ extension HomeView {
             }
             await homeViewModel.reload(keepItemsWhileLoading: true)
             clampSelectionToCurrentFilter()
+            reconcileFirstActionGuideImport()
 
-            delayNanoseconds = min(delayNanoseconds * 2, 30_000_000_000)
+            do {
+                try await Task.sleep(nanoseconds: delayNanoseconds)
+            } catch {
+                return
+            }
+            delayNanoseconds = min(delayNanoseconds * 2, 10_000_000_000)
         }
     }
 

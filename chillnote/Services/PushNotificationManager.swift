@@ -6,6 +6,7 @@ import UserNotifications
 enum PushNotificationDestination: Equatable {
     case note(UUID)
     case home
+    case weeklyTopics
 }
 
 extension Notification.Name {
@@ -180,7 +181,9 @@ final class PushNotificationManager {
 
     func handle(userInfo: [AnyHashable: Any]) {
         let destination: PushNotificationDestination
-        if userInfo["route"] as? String == "note",
+        if userInfo["route"] as? String == "weekly_topics" {
+            destination = .weeklyTopics
+        } else if userInfo["route"] as? String == "note",
            let rawNoteID = userInfo["noteId"] as? String,
            let noteID = UUID(uuidString: rawNoteID) {
             destination = .note(noteID)

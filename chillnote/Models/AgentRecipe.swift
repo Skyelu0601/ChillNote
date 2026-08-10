@@ -10,10 +10,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
     let category: AgentRecipeCategory
     let isCustom: Bool
     
-    var isMedia: Bool {
-        return category == .publish
-    }
-
     var localizedName: String {
         isCustom ? name : L10n.text("agent_recipe.\(id).name")
     }

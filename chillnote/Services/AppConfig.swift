@@ -44,10 +44,6 @@ struct AppConfig {
     // GoMarketMe's iOS SDK uses this client key inside the distributed app.
     static let goMarketMeAPIKey = "WuTvqO8AYT5IlT6eOv4G68DKiwMJWgmZ40F8KWyA"
     
-    static var isAIEnabled: Bool {
-        return !backendBaseURL.isEmpty
-    }
-
     // MARK: - App Review Login
 
     static let appReviewWhitelistEmails: [String] = {
@@ -65,10 +61,6 @@ struct AppConfig {
     }()
 
     static let appReviewVerificationCode: String = stringConfig("APP_REVIEW_VERIFICATION_CODE") ?? ""
-
-    static var appReviewPrimaryEmail: String? {
-        appReviewWhitelistEmails.first
-    }
 
     static var isAppReviewQuickLoginEnabled: Bool {
         boolConfig("APP_REVIEW_LOGIN_ENABLED", defaultValue: false)

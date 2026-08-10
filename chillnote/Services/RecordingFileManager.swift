@@ -151,11 +151,6 @@ final class RecordingFileManager {
         return pending
     }
     
-    /// Removes a recording from recovery tracking without deleting the file.
-    func clearPendingReference(fileURL: URL) {
-        clearPending(fileURL: fileURL)
-    }
-    
     /// Clean up old recordings (older than maxFileAgeHours)
     func cleanupOldRecordings() {
         let directory: URL

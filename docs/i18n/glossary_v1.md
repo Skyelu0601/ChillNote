@@ -7,7 +7,7 @@
 
 ## Product Terms
 - Note: 笔记
-- Tag: 标签
+- Topic: 主题（用于按视频内容主题分类；代码和同步模型内部可继续使用 `Tag`）
 - Recycle Bin: 回收站
 - Voice Transcription: 语音转写
 - Subscription: 订阅

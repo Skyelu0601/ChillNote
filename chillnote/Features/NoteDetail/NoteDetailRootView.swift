@@ -2,29 +2,50 @@ import SwiftUI
 import SwiftData
 
 struct NoteDetailView: View {
-    private enum VoiceAlertAction {
-        case retryTranscription
-        case dismissOnly
-    }
-
     private struct VoiceAlertState: Identifiable {
         let id = UUID()
         let title: String
         let message: String
-        let action: VoiceAlertAction
     }
 
     @Bindable var note: Note
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var syncManager: SyncManager
-    @EnvironmentObject private var speechRecognizer: SpeechRecognizer
-    @StateObject private var storeService = StoreService.shared
+    @ObservedObject private var firstActionGuide = FirstActionGuideService.shared
 
     @StateObject private var viewModel: NoteDetailViewModel
     @State private var activeVoiceAlert: VoiceAlertState?
+    @State private var editorController = RichTextEditorController()
 
-    private let timer = Timer.publish(every: 0.1, on: .main, in: .common).autoconnect()
+    private var noteContentBinding: Binding<String> {
+        Binding(
+            get: { note.content },
+            set: { note.updateContent($0) }
+        )
+    }
+
+    private var firstActionSpotlight: FirstActionGuideSpotlightConfiguration? {
+        guard firstActionGuide.targetNoteID == note.id else { return nil }
+
+        switch firstActionGuide.stage {
+        case .tapAISkills:
+            return FirstActionGuideSpotlightConfiguration(
+                target: .aiSkills,
+                message: L10n.text("onboarding.first_action.ai_skills"),
+                step: 3
+            )
+        case .tapTeleprompter:
+            return FirstActionGuideSpotlightConfiguration(
+                target: .teleprompter,
+                message: L10n.text("onboarding.first_action.teleprompter"),
+                step: 4
+            )
+        default:
+            return nil
+        }
+    }
 
     init(note: Note) {
         self.note = note
@@ -38,17 +59,19 @@ struct NoteDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 NoteDetailHeaderView(
                     isDeleted: viewModel.isDeleted,
-                    isRecording: speechRecognizer.isRecording,
-                    recordingTimeString: viewModel.timeString(from: viewModel.recordingDuration),
                     isAISkillsEnabled: viewModel.isAISkillsEnabled,
-                    onBack: { viewModel.send(.backTapped) },
+                    onBack: { sendAfterFlushing(.backTapped) },
                     onRestore: { viewModel.send(.restoreTapped) },
-                    onStopRecording: { viewModel.send(.stopRecordingTapped) },
-                    onAISkills: { viewModel.send(.aiSkillsTapped) },
-                    onTeleprompter: { viewModel.send(.teleprompterTapped) },
-                    onExport: { viewModel.send(.exportTapped) },
-                    onDelete: { viewModel.send(.deleteTapped) },
-                    onDeletePermanently: { viewModel.send(.deletePermanentlyTapped) }
+                    onAISkills: {
+                        firstActionGuide.markAISkillsTapped(in: note.id)
+                        sendAfterFlushing(.aiSkillsTapped)
+                    },
+                    onTeleprompter: {
+                        firstActionGuide.markTeleprompterTapped(in: note.id)
+                        sendAfterFlushing(.teleprompterTapped)
+                    },
+                    onExport: { sendAfterFlushing(.exportTapped) },
+                    onDelete: { sendAfterFlushing(.deleteTapped) }
                 )
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
@@ -72,8 +95,9 @@ struct NoteDetailView: View {
 
                 NoteDetailEditorSectionView(
                     note: note,
-                    noteContent: $note.content,
+                    noteContent: noteContentBinding,
                     editorSelection: $viewModel.editorSelection,
+                    editorController: editorController,
                     isDeleted: viewModel.isDeleted,
                     isProcessing: viewModel.isProcessing,
                     isVoiceProcessing: viewModel.isVoiceProcessing,
@@ -83,67 +107,79 @@ struct NoteDetailView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
 
-            NoteDetailOverlaysView(viewModel: viewModel)
+            NoteDetailOverlaysView(
+                viewModel: viewModel,
+                onBeforeContentAction: editorController.flush
+            )
         }
+        .firstActionGuideSpotlight(
+            configuration: firstActionSpotlight,
+            onSkip: { firstActionGuide.dismiss() }
+        )
         .navigationBarHidden(true)
         .fullScreenCover(isPresented: $viewModel.showTeleprompterCamera) {
             TeleprompterCameraView(initialScript: note.content)
         }
         .noteDetailAlertsAndSheets(viewModel: viewModel)
-        .onReceive(timer) { _ in
-            viewModel.updateRecordingDurationIfNeeded()
-        }
-        .onChange(of: speechRecognizer.recordingState) { _, newState in
-            viewModel.onRecordingStateChange(newState)
-        }
-        .onChange(of: viewModel.recordingErrorMessage) { _, message in
-            guard let message else { return }
-            activeVoiceAlert = VoiceAlertState(
-                title: VoiceErrorPresentation.transcriptionFailedTitle,
-                message: VoiceErrorPresentation.userMessage(for: message),
-                action: .retryTranscription
-            )
-        }
         .onChange(of: viewModel.voiceProcessingErrorMessage) { _, message in
             guard let message else { return }
             activeVoiceAlert = VoiceAlertState(
                 title: VoiceErrorPresentation.transcriptionFailedTitle,
-                message: VoiceErrorPresentation.userMessage(for: message),
-                action: .dismissOnly
+                message: VoiceErrorPresentation.userMessage(for: message)
             )
         }
-        .alert(item: $activeVoiceAlert) { alert in
-            switch alert.action {
-            case .retryTranscription:
-                Alert(
-                    title: Text(alert.title),
-                    message: Text(alert.message),
-                    primaryButton: .default(Text(L10n.text("common.retry"))) {
-                        viewModel.triggerRetryHaptic()
-                        viewModel.send(.retryTranscriptionTapped)
-                    },
-                    secondaryButton: .cancel {
-                        viewModel.send(.dismissRecordingErrorTapped)
-                    }
-                )
-            case .dismissOnly:
-                Alert(
-                    title: Text(alert.title),
-                    message: Text(alert.message),
-                    dismissButton: .default(Text(L10n.text("common.ok"))) {
-                        viewModel.send(.dismissVoiceProcessingErrorTapped)
-                    }
-                )
+        .onChange(of: viewModel.showAISkillsSheet) { _, _ in
+            advanceFirstActionGuideAfterAISkillsIfReady()
+        }
+        .onChange(of: viewModel.showAISkillTranslateSheet) { _, _ in
+            advanceFirstActionGuideAfterAISkillsIfReady()
+        }
+        .onChange(of: viewModel.aiSkillPreview?.id) { _, _ in
+            advanceFirstActionGuideAfterAISkillsIfReady()
+        }
+        .onChange(of: viewModel.isProcessing) { _, _ in
+            advanceFirstActionGuideAfterAISkillsIfReady()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase != .active {
+                editorController.flush()
             }
+        }
+        .alert(item: $activeVoiceAlert) { alert in
+            Alert(
+                title: Text(alert.title),
+                message: Text(alert.message),
+                dismissButton: .default(Text(L10n.text("common.ok"))) {
+                    viewModel.send(.dismissVoiceProcessingErrorTapped)
+                }
+            )
         }
         .onAppear {
             viewModel.configure(
                 modelContext: modelContext,
                 syncManager: syncManager,
-                speechRecognizer: speechRecognizer,
                 dismissAction: { dismiss() }
             )
+            advanceFirstActionGuideAfterAISkillsIfReady()
         }
+        .onDisappear {
+            editorController.flush()
+        }
+    }
+
+    private func sendAfterFlushing(_ action: NoteDetailViewModel.NoteDetailAction) {
+        editorController.flush()
+        viewModel.send(action)
+    }
+
+    private func advanceFirstActionGuideAfterAISkillsIfReady() {
+        guard !viewModel.showAISkillsSheet,
+              !viewModel.showAISkillTranslateSheet,
+              viewModel.aiSkillPreview == nil,
+              !viewModel.isProcessing else {
+            return
+        }
+        firstActionGuide.markAISkillsFlowDismissed(in: note.id)
     }
 
 }

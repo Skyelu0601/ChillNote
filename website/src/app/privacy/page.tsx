@@ -47,7 +47,7 @@ export default function PrivacyPage() {
         <h2>2. How We Use Information</h2>
         <ul>
           <li>Authenticate your account and keep you signed in.</li>
-          <li>Sync notes and tags across devices.</li>
+          <li>Sync notes and topics across devices.</li>
           <li>Process AI features you intentionally request.</li>
           <li>Maintain performance, security, and compatibility.</li>
         </ul>
@@ -75,7 +75,10 @@ export default function PrivacyPage() {
         </ul>
 
         <h2>6. Your Rights and Control</h2>
-        <p>You may edit or delete note content at any time. You can request permanent account deletion in the app settings.</p>
+        <p>
+          You may edit or delete note content at any time. You can permanently delete your account in the app settings
+          or use our <a className="inline-link" href="/delete-account">account deletion page</a> if you no longer have access to the app.
+        </p>
 
         <h2>7. Children's Privacy</h2>
         <p>ChillScript is not intended for children under 13, and we do not knowingly collect personal information from children under 13.</p>

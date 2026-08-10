@@ -128,3 +128,14 @@ server {
   # ... other config
 }
 ```
+# Google Play subscription verification
+
+Android subscription verification uses the Google Play Developer API and requires these production environment variables:
+
+```text
+GOOGLE_PLAY_PACKAGE_NAME=com.sponteoai.chillscript
+GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL=service-account@project.iam.gserviceaccount.com
+GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```
+
+The service account must be invited in Google Play Console and granted permission to view orders and manage subscriptions. Never commit the private key.

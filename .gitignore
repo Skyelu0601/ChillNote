@@ -146,3 +146,14 @@ bin/
 obj/
 *.db-journal
 .vercel
+android/.gradle/
+android/local.properties
+android/keystore.properties
+android/*.jks
+android/*.keystore
+android/app/build/
+
+# Local review artifacts and caches
+.codex-audits/
+audit/
+**/__pycache__/

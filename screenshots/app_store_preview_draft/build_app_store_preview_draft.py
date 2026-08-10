@@ -8,24 +8,26 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 ASSET_DIR = OUT_DIR / "assets"
 
 W, H = 1290, 2796
-TITLE_SIZE = 112
-TITLE_Y = 120
-TITLE_LINE_GAP = 10
-SHARE_TITLE_SIZE = 132
-SHARE_TITLE_Y = 300
+CONTENT_X = 84
+TITLE_SIZE = 126
+TITLE_Y = 292
+TITLE_LINE_GAP = 18
+SHARE_TITLE_SIZE = 126
+SHARE_TITLE_Y = 292
 PHONE_W = 850
 PHONE_H = 1848
 PHONE_X = (W - PHONE_W) // 2
-PHONE_Y = 500
+PHONE_Y = 640
 
-BG = (247, 249, 252)
-INK = (24, 35, 54)
-MUTED = (111, 120, 132)
-BLUE = (67, 135, 255)
+BG = (247, 246, 242)
+INK = (21, 23, 26)
+MUTED = (154, 154, 150)
+BLUE = (56, 103, 232)
 TEAL = (16, 184, 192)
 
 FONT_BOLD = "/System/Library/Fonts/Supplemental/Arial Bold.ttf"
 FONT_REG = "/System/Library/Fonts/Supplemental/Arial.ttf"
+FONT_SF = "/System/Library/Fonts/SFNS.ttf"
 FONT_DISPLAY = "/System/Library/Fonts/Avenir Next.ttc"
 FONT_CJK_DISPLAY = "/System/Library/Fonts/Hiragino Sans GB.ttc"
 FONT_JA_DISPLAY = "/System/Library/Fonts/ヒラギノ角ゴシック W7.ttc"
@@ -49,8 +51,17 @@ def has_korean(text):
     return any("\uac00" <= ch <= "\ud7af" for ch in text)
 
 
+def sf_font(size, weight="Regular"):
+    f = ImageFont.truetype(FONT_SF, size)
+    try:
+        f.set_variation_by_name(weight)
+    except (AttributeError, OSError):
+        pass
+    return f
+
+
 def font(size, bold=False):
-    return ImageFont.truetype(FONT_BOLD if bold else FONT_REG, size)
+    return sf_font(size, "Bold" if bold else "Regular")
 
 
 def display_font(size):
@@ -64,7 +75,7 @@ def title_font(text, size):
         return ImageFont.truetype(FONT_JA_DISPLAY, size)
     if has_cjk(text):
         return ImageFont.truetype(FONT_CJK_DISPLAY, size, index=2)
-    return display_font(size)
+    return sf_font(size, "Bold")
 
 
 def text_width(draw, text, font):
@@ -125,12 +136,12 @@ def draw_wrapped_center(draw, text, y, max_width, size, line_gap=18):
     return y + total_h
 
 
-def draw_display_title(draw, text, y, max_width, size, accent, highlight=None, line_gap=12):
-    # Preserve the intentional localized line breaks. Only reduce unusually long
-    # titles slightly instead of letting one line spill into an awkward extra row.
+def draw_display_title(draw, text, y, max_width, size, accent, highlight=None, line_gap=18, x=CONTENT_X):
+    # Prefer the intentional two-line composition. Reduce unusually long
+    # localized headlines before allowing an explicitly authored third line.
     lines = text.split("\n")
     fitted_size = size
-    while fitted_size > 84:
+    while fitted_size > 96:
         f = title_font(text, fitted_size)
         if all(text_width(draw, line, f) <= max_width for line in lines):
             break
@@ -143,11 +154,10 @@ def draw_display_title(draw, text, y, max_width, size, accent, highlight=None, l
             (segment, text_width(draw, segment, f), is_highlighted)
             for segment, is_highlighted in highlighted_segments(line, highlight)
         ]
-        total_w = sum(w for _, w, _ in segments)
-        x = (W - total_w) // 2
+        line_x = x
         for segment, segment_w, is_highlighted in segments:
-            draw.text((x, cy), segment, font=f, fill=accent if is_highlighted else INK)
-            x += segment_w
+            draw.text((line_x, cy), segment, font=f, fill=accent if is_highlighted else INK)
+            line_x += segment_w
         cy += fitted_size + line_gap
     return cy
 
@@ -299,16 +309,114 @@ def platform_icon(label, size=48):
     return icon
 
 
+def draw_platform_list(canvas, y=760):
+    draw = ImageDraw.Draw(canvas)
+    icon_x = 104
+    text_x = 344
+    icon_size = 140
+    row_gap = 290
+    f = sf_font(92, "Semibold")
+
+    for index, label in enumerate(("TikTok", "YouTube", "Reels")):
+        row_y = y + index * row_gap
+        icon = platform_icon(label, size=icon_size)
+        canvas.alpha_composite(icon, (icon_x, row_y))
+        bbox = draw.textbbox((0, 0), label, font=f)
+        text_y = row_y + (icon.height - (bbox[3] - bbox[1])) // 2 - bbox[1]
+        draw.text((text_x, text_y), label, font=f, fill=INK)
+
+
+def saved_check_icon(size=210):
+    source = Image.open("/Users/luwenting/Downloads/IMG_0021.PNG").convert("RGBA")
+    icon = source.crop((510, 1338, 696, 1524)).resize((size, size), Image.LANCZOS)
+    pixels = icon.load()
+    for py in range(icon.height):
+        for px in range(icon.width):
+            r, g, b, a = pixels[px, py]
+            if g > r * 1.25 and g > b * 1.15 and g > 110:
+                pixels[px, py] = BLUE + (a,)
+            if (px - size / 2) ** 2 + (py - size / 2) ** 2 > (size / 2 - 2) ** 2:
+                pixels[px, py] = (r, g, b, 0)
+    return icon
+
+
+def draw_minimal_saved_card(canvas, y=1638):
+    draw = ImageDraw.Draw(canvas)
+    x = 145
+    width = W - x
+    height = H - y + 180
+    radius = 64
+
+    shadow = Image.new("RGBA", (width + 100, height + 100), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shadow)
+    sd.rounded_rectangle((50, 34, 50 + width, 34 + height), radius=radius, fill=(20, 24, 30, 22))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(28))
+    canvas.alpha_composite(shadow, (x - 50, y - 34))
+    draw.rounded_rectangle((x, y, x + width, y + height), radius=radius, fill=(255, 255, 255))
+
+    wordmark_y = y + 102
+    wordmark_font = sf_font(66, "Bold")
+    draw.text((x + 92, wordmark_y), "Chill", font=wordmark_font, fill=INK)
+    chill_width = text_width(draw, "Chill", wordmark_font)
+    draw.text((x + 92 + chill_width, wordmark_y), "Script", font=wordmark_font, fill=BLUE)
+
+    source_font = sf_font(44, "Regular")
+    source_text = "Source: TikTok"
+    source_width = text_width(draw, source_text, source_font)
+    draw.text((W - 82 - source_width, wordmark_y + 7), source_text, font=source_font, fill=MUTED)
+
+    icon = saved_check_icon(size=250)
+    icon_x = x + 92
+    icon_y = y + 430
+    icon_shadow = Image.new("RGBA", (icon.width + 70, icon.height + 70), (0, 0, 0, 0))
+    isd = ImageDraw.Draw(icon_shadow)
+    isd.ellipse((35, 25, 35 + icon.width, 25 + icon.height), fill=(35, 70, 160, 24))
+    icon_shadow = icon_shadow.filter(ImageFilter.GaussianBlur(18))
+    canvas.alpha_composite(icon_shadow, (icon_x - 35, icon_y - 25))
+    canvas.alpha_composite(icon, (icon_x, icon_y))
+
+    saved_font = sf_font(80, "Semibold")
+    draw.text((x + 92, y + 740), "Saved to ChillScript", font=saved_font, fill=INK)
+
+
+def draw_interface_panel(canvas, screenshot_path, crop_top=0, crop_bottom=0, y=816):
+    source = Image.open(screenshot_path).convert("RGB")
+    if crop_top or crop_bottom:
+        source = source.crop((0, crop_top, source.width, source.height - crop_bottom))
+
+    width = W - 56
+    scale = width / source.width
+    height = round(source.height * scale)
+    source = source.resize((width, height), Image.LANCZOS)
+    x = (W - width) // 2
+
+    radius = 68
+    shadow = Image.new("RGBA", (width + 80, height + 90), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shadow)
+    sd.rounded_rectangle((40, 26, 40 + width, 26 + height), radius=radius, fill=(25, 30, 38, 18))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(24))
+    canvas.alpha_composite(shadow, (x - 40, y - 26))
+
+    mask = rounded_rect_mask((width, height), radius)
+    canvas.paste(source, (x, y), mask)
+    draw = ImageDraw.Draw(canvas)
+    draw.rounded_rectangle((x, y, x + width - 1, y + height - 1), radius=radius, outline=(220, 220, 216), width=2)
+
+
+def platform_pill_metrics(draw, label):
+    f = font(54, True)
+    bbox = draw.textbbox((0, 0), label, font=f)
+    icon = platform_icon(label, size=72)
+    pad_x = 42
+    icon_gap = 24
+    width = icon.width + icon_gap + bbox[2] - bbox[0] + pad_x * 2
+    return f, icon, width, 128, pad_x, icon_gap
+
+
 def draw_platform_pill(canvas, label, x, y):
     draw = ImageDraw.Draw(canvas)
     fill, outline, text_fill = platform_colors(label)
-    f = font(40, True)
-    bbox = draw.textbbox((0, 0), label, font=f)
-    icon = platform_icon(label)
-    pad_x = 30
-    icon_gap = 16
-    width = icon.width + icon_gap + bbox[2] - bbox[0] + pad_x * 2
-    height = 92
+    f, icon, width, height, pad_x, icon_gap = platform_pill_metrics(draw, label)
 
     shadow = Image.new("RGBA", (width + 50, height + 50), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shadow)
@@ -318,35 +426,35 @@ def draw_platform_pill(canvas, label, x, y):
 
     draw.rounded_rectangle(
         (x, y, x + width, y + height),
-        radius=46,
+        radius=height // 2,
         fill=fill,
         outline=outline,
-        width=3,
+        width=4,
     )
     icon_y = y + (height - icon.height) // 2
     canvas.alpha_composite(icon, (x + pad_x, icon_y))
-    draw.text((x + pad_x + icon.width + icon_gap, y + 23), label, font=f, fill=text_fill)
+    text_bbox = draw.textbbox((0, 0), label, font=f)
+    text_y = y + (height - (text_bbox[3] - text_bbox[1])) // 2 - text_bbox[1]
+    draw.text((x + pad_x + icon.width + icon_gap, text_y), label, font=f, fill=text_fill)
     return width
 
 
 def draw_platform_pills(canvas, y):
     draw = ImageDraw.Draw(canvas)
     labels = ("TikTok", "YouTube", "Reels")
-    widths = []
-    for label in labels:
-        f = font(40, True)
-        bbox = draw.textbbox((0, 0), label, font=f)
-        widths.append(platform_icon(label).width + 16 + bbox[2] - bbox[0] + 60)
     gap = 24
-    x = (W - sum(widths) - gap * (len(labels) - 1)) // 2
-    for label, width in zip(labels, widths):
+    height = 128
+    for index, label in enumerate(labels):
+        _, _, width, _, _, _ = platform_pill_metrics(draw, label)
+        x = (W - width) // 2
         draw_platform_pill(canvas, label, x, y)
-        x += width + gap
+        y += height + gap
+    return y - gap
 
 
 def draw_saved_hero_card(canvas, y):
     x, width, height = 105, 1080, 800
-    source = Image.open("/Users/luwenting/Downloads/Share Extension tiktok.PNG").convert("RGB")
+    source = Image.open("/Users/luwenting/Downloads/IMG_0021.PNG").convert("RGB")
     crop_height = round(height * source.width / width)
     img = source.crop((0, 1000, source.width, 1000 + crop_height))
     img = img.resize((width, height), Image.LANCZOS)
@@ -372,7 +480,7 @@ def draw_process_cue(draw, text, y):
         wordmark_italic = ImageFont.truetype(FONT_DISPLAY, cue_size, index=9)
         wordmark_width = (
             draw.textbbox((0, 0), "Chill", font=wordmark_regular)[2]
-            + draw.textbbox((0, 0), "Note", font=wordmark_italic)[2]
+            + draw.textbbox((0, 0), "Script", font=wordmark_italic)[2]
         )
         label_widths = [
             wordmark_width if label == "ChillScript" else draw.textbbox((0, 0), label, font=f)[2]
@@ -389,7 +497,7 @@ def draw_process_cue(draw, text, y):
         if label == "ChillScript":
             draw.text((x, y), "Chill", font=wordmark_regular, fill=BLUE)
             chill_width = draw.textbbox((0, 0), "Chill", font=wordmark_regular)[2]
-            draw.text((x + chill_width, y), "Note", font=wordmark_italic, fill=BLUE)
+            draw.text((x + chill_width, y), "Script", font=wordmark_italic, fill=BLUE)
         else:
             draw.text((x, y), label, font=f, fill=INK)
         x += width
@@ -401,39 +509,27 @@ def draw_process_cue(draw, text, y):
 
 def make_multi_share_slide(
     output_dir,
-    title="Save Videos\nFrom Anywhere",
-    highlight="Anywhere",
+    filename="01-share-any-video-get-transcript.png",
+    title="Share Any Video\nGet the Transcript",
+    highlight="Transcript",
     process_text="Share → ChillScript → Saved",
 ):
     canvas = Image.new("RGBA", (W, H), BG + (255,))
     draw = ImageDraw.Draw(canvas)
 
-    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glow)
-    gd.ellipse((-250, 260, 620, 1120), fill=BLUE + (42,))
-    gd.ellipse((720, 340, 1540, 1220), fill=TEAL + (30,))
-    gd.ellipse((250, 1420, 1120, 2320), fill=(255, 86, 170, 24))
-    glow = glow.filter(ImageFilter.GaussianBlur(96))
-    canvas.alpha_composite(glow)
-
-    title_bottom = draw_display_title(
+    draw_display_title(
         draw,
         title,
         SHARE_TITLE_Y,
-        1200,
+        W - CONTENT_X * 2,
         SHARE_TITLE_SIZE,
         BLUE,
         highlight=highlight,
         line_gap=TITLE_LINE_GAP,
     )
-
-    pills_y = title_bottom + 130
-    draw_platform_pills(canvas, pills_y)
-
-    card_y = pills_y + 300
-    card_bottom = draw_saved_hero_card(canvas, card_y)
-    draw_process_cue(draw, process_text, max(card_bottom + 230, 2100))
-    canvas.convert("RGB").save(output_dir / "03-save-any-video-idea.png", quality=96)
+    draw_platform_list(canvas)
+    draw_minimal_saved_card(canvas)
+    canvas.convert("RGB").save(output_dir / filename, quality=96)
 
 
 def make_slide(
@@ -452,26 +548,17 @@ def make_slide(
     canvas = Image.new("RGBA", (W, H), BG + (255,))
     draw = ImageDraw.Draw(canvas)
 
-    # Soft brand wash.
-    glow = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    gd = ImageDraw.Draw(glow)
-    gd.ellipse((-250, 250, 520, 1020), fill=accent + (35,))
-    gd.ellipse((770, 320, 1530, 1120), fill=TEAL + (26,))
-    glow = glow.filter(ImageFilter.GaussianBlur(90))
-    canvas.alpha_composite(glow)
-
-    title_bottom = draw_display_title(
+    draw_display_title(
         draw,
         title,
         TITLE_Y,
-        1120,
+        W - CONTENT_X * 2,
         TITLE_SIZE,
         accent,
         highlight=highlight,
         line_gap=TITLE_LINE_GAP,
     )
-    phone_y = max(PHONE_Y, title_bottom + 70)
-    draw_phone(canvas, screenshot, crop_top=crop_top, crop_bottom=crop_bottom, zoom=zoom, y=phone_y, fit=fit)
+    draw_interface_panel(canvas, screenshot, crop_top=crop_top, crop_bottom=crop_bottom)
 
     canvas.convert("RGB").save(output_dir / filename, quality=96)
 
@@ -484,131 +571,131 @@ def prepare_output_dir(output_dir):
 
 slides = [
     (
-        "01-turn-videos-into-notes.png",
-        "/Users/luwenting/Downloads/笔记详情页.PNG",
-        "Turn Videos\nInto Notes",
+        "02-get-video-transcripts-instantly.png",
+        "/Users/luwenting/Downloads/IMG_0194.PNG",
+        "Summarize\nAny Video",
         "EXTRACT",
-        TEAL,
-        24,
+        BLUE,
+        150,
         80,
         1.0,
         "cover",
-        "Notes",
+        "Transcripts",
     ),
     (
-        "02-build-your-content-vault.png",
-        "/Users/luwenting/Downloads/首页 : 内容库页面.PNG",
+        "03-build-your-content-vault.png",
+        "/Users/luwenting/Downloads/IMG_0593.PNG",
         "Build Your\nContent Vault",
         "ORGANIZE",
-        (45, 104, 230),
-        0,
+        BLUE,
+        130,
         120,
         1.0,
         "cover",
         "Vault",
     ),
     (
-        "04-creator-ai-skills.png",
-        "/Users/luwenting/Downloads/Creator AI Skills 页面.PNG",
+        "04-generate-hooks-from-any-note.png",
+        "/Users/luwenting/Downloads/IMG_0594.PNG",
+        "Generate\nViral Hooks",
+        "CREATE",
+        BLUE,
+        120,
+        120,
+        1.0,
+        "cover",
+        "Hooks",
+    ),
+    (
+        "05-creator-ai-skills.png",
+        "/Users/luwenting/Downloads/IMG_0193.PNG",
         "Use Skills Built\nFor Creators",
         "SKILLS",
-        (239, 150, 42),
-        0,
+        BLUE,
+        120,
         90,
         1.0,
         "cover",
         "Creators",
     ),
     (
-        "05-create-scripts-from-notes.png",
-        "/Users/luwenting/Downloads/AI 生成结果页.PNG",
-        "Create Scripts\nFrom Your Notes",
-        "CREATE",
-        BLUE,
-        0,
-        120,
-        1.0,
-        "cover",
-        "Scripts",
-    ),
-    (
-        "06-ask-ai-about-ideas.png",
+        "06-turn-notes-into-full-scripts.png",
         "/Users/luwenting/Downloads/Ask AI.PNG",
-        "Ask AI About\nYour Ideas",
+        "Turn Ideas Into\nFull Scripts",
         "REMIX",
-        (125, 92, 246),
-        0,
+        BLUE,
+        120,
         90,
         1.0,
         "cover",
-        "AI",
+        "Scripts",
     ),
 ]
 
 localized_titles = {
     "en": [
-        ("Save Videos\nFrom Anywhere", "Anywhere"),
-        ("Turn Videos\nInto Notes", "Notes"),
+        ("Share Any Video\nGet the Transcript", "Transcript"),
+        ("Summarize\nAny Video", "Any Video"),
         ("Build Your\nContent Vault", "Vault"),
+        ("Generate\nViral Hooks", "Viral Hooks"),
         ("Use Skills Built\nFor Creators", "Creators"),
-        ("Create Scripts\nFrom Your Notes", "Scripts"),
-        ("Ask AI About\nYour Ideas", "AI"),
+        ("Turn Ideas Into\nFull Scripts", "Scripts"),
     ],
     "zh-Hans": [
-        ("随手保存\n任意视频", "保存"),
-        ("把视频\n变成笔记", "笔记"),
+        ("分享任意视频\n获取视频转写", "转写"),
+        ("总结\n任意视频", "任意视频"),
         ("打造你的\n内容库", "内容库"),
+        ("生成\n爆款开场", "爆款开场"),
         ("创作者专属\nAI 技能", "创作者"),
-        ("用笔记\n生成脚本", "脚本"),
-        ("让 AI 帮你\n整理想法", "AI"),
+        ("把灵感变成\n完整脚本", "完整脚本"),
     ],
     "zh-Hant": [
-        ("隨手儲存\n任何影片", "儲存"),
-        ("把影片\n變成筆記", "筆記"),
+        ("分享任何影片\n取得影片轉錄", "轉錄"),
+        ("摘要\n任何影片", "任何影片"),
         ("打造你的\n內容庫", "內容庫"),
+        ("生成\n爆款開場", "爆款開場"),
         ("創作者專屬\nAI 技能", "創作者"),
-        ("用筆記\n生成腳本", "腳本"),
-        ("讓 AI 幫你\n整理想法", "AI"),
+        ("把靈感變成\n完整腳本", "完整腳本"),
     ],
     "ja": [
-        ("どこからでも\n動画を保存", "保存"),
-        ("動画を\nノート化", "ノート"),
+        ("あらゆる動画を共有\n文字起こしを取得", "文字起こし"),
+        ("あらゆる動画を\n要約", "動画"),
         ("コンテンツを\nまとめて管理", "コンテンツ"),
+        ("バズるフックを\n生成", "バズるフック"),
         ("クリエイター向け\nAI スキル", "クリエイター"),
-        ("ノートから\n台本を作成", "台本"),
-        ("アイデアを\nAI に相談", "AI"),
+        ("アイデアから\n完成した台本を作成", "台本"),
     ],
     "fr": [
-        ("Enregistrez vos vidéos\noù qu’elles soient", "vidéos"),
-        ("Transformez vos\nvidéos en notes", "notes"),
-        ("Créez votre\nbibliothèque\nde contenu", "contenu"),
+        ("Partagez n’importe quelle vidéo\nObtenez la transcription", "transcription"),
+        ("Résumez\nchaque vidéo", "chaque vidéo"),
+        ("Créez votre bibliothèque\nde contenu", "contenu"),
+        ("Générez\ndes accroches virales", "accroches virales"),
         ("Des outils conçus\npour les créateurs", "créateurs"),
-        ("Créez des scripts\nà partir de vos notes", "scripts"),
-        ("Interrogez l’IA\nsur vos idées", "IA"),
+        ("Transformez vos idées\nen scripts complets", "scripts"),
     ],
     "es": [
-        ("Guarda videos\ndesde cualquier lugar", "videos"),
-        ("Convierte\nvideos en notas", "notas"),
+        ("Comparte cualquier vídeo\nObtén la transcripción", "transcripción"),
+        ("Resume\ncualquier video", "cualquier video"),
         ("Crea tu biblioteca\nde contenido", "contenido"),
+        ("Genera\nhooks virales", "hooks virales"),
         ("Usa herramientas\npara creadores", "creadores"),
-        ("Crea guiones\ndesde tus notas", "guiones"),
-        ("Pregunta a la IA\nsobre tus ideas", "IA"),
+        ("Convierte ideas\nen guiones completos", "guiones"),
     ],
     "de": [
-        ("Videos von überall\nspeichern", "Videos"),
-        ("Videos in Notizen\nverwandeln", "Notizen"),
+        ("Teile jedes Video\nErhalte das Transkript", "Transkript"),
+        ("Fasse jedes\nVideo zusammen", "Video"),
         ("Baue deine\nInhaltsbibliothek auf", "Inhaltsbibliothek"),
+        ("Erstelle\nvirale Hooks", "virale Hooks"),
         ("Tools für\nCreator nutzen", "Creator"),
-        ("Aus Notizen\nSkripte erstellen", "Skripte"),
-        ("Frag die KI\nzu deinen Ideen", "KI"),
+        ("Ideen in vollständige\nSkripte verwandeln", "Skripte"),
     ],
     "ko": [
-        ("어디서나\n동영상 저장", "저장"),
-        ("동영상을\n노트로", "노트"),
+        ("어떤 영상이든 공유\n트랜스크립트 받기", "트랜스크립트"),
+        ("어떤 영상이든\n요약하세요", "영상"),
         ("나만의 콘텐츠\n보관함", "보관함"),
+        ("바이럴 훅을\n생성하세요", "바이럴 훅"),
         ("크리에이터용\nAI 스킬", "크리에이터"),
-        ("노트로\n스크립트 만들기", "스크립트"),
-        ("아이디어를\nAI에게 물어보기", "AI"),
+        ("아이디어를 완성된\n대본으로 바꾸세요", "대본"),
     ],
 }
 

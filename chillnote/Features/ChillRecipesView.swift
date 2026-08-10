@@ -270,7 +270,11 @@ private struct SkillManagementRow: View {
                     Button(action: onToggle) {
                         Image(systemName: isInstalled ? "checkmark.circle.fill" : "plus.circle")
                             .font(.system(size: 21, weight: .semibold))
-                            .foregroundColor(isInstalled ? .accentPrimary : .textSub.opacity(0.55))
+                            .foregroundColor(
+                                isInstalled
+                                    ? .accentSecondary
+                                    : .textSub.opacity(0.55)
+                            )
                             .frame(width: 28, height: 28)
                     }
                     .buttonStyle(.plain)
@@ -293,10 +297,10 @@ private struct CreateCustomSkillRow: View {
             HStack(spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .fill(Color.secondaryHighlight)
+                        .fill(CreatorSkillPalette.customCreationTint.opacity(0.11))
                     Image(systemName: "sparkles")
                         .font(.system(size: 18, weight: .semibold))
-                        .foregroundColor(.accentSecondary)
+                        .foregroundColor(CreatorSkillPalette.customCreationTint)
                 }
                 .frame(width: 40, height: 40)
 
@@ -309,10 +313,10 @@ private struct CreateCustomSkillRow: View {
 
                         Text(L10n.text("recipes.custom.create.badge"))
                             .font(.system(size: 11, weight: .bold))
-                            .foregroundColor(.accentPrimary)
+                            .foregroundColor(CreatorSkillPalette.customCreationTint)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.selectionHighlight)
+                            .background(CreatorSkillPalette.customCreationTint.opacity(0.11))
                             .clipShape(Capsule())
                     }
 
@@ -326,7 +330,7 @@ private struct CreateCustomSkillRow: View {
 
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 21, weight: .semibold))
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(CreatorSkillPalette.customCreationTint)
             }
             .frame(minHeight: 64)
             .padding(.horizontal, 14)
@@ -617,45 +621,6 @@ private struct RepurposePackSettingsSheet: View {
             }
         )
     }
-}
-
-private struct EmptyStateView: View {
-    let icon: String
-    let title: LocalizedStringKey
-    let message: LocalizedStringKey
-    
-    var body: some View {
-        VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 48))
-                .foregroundColor(.textSub.opacity(0.3))
-                .padding(.bottom, 4)
-            
-            Text(title)
-                .font(.title3.bold())
-                .foregroundColor(.textMain)
-            
-            Text(message)
-                .font(.body)
-                .foregroundColor(.textSub)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 40)
-        }
-    }
-}
-
-// Basic scaling button style
-private struct RecipeScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.96 : 1)
-            .animation(.easeOut(duration: 0.2), value: configuration.isPressed)
-            .opacity(configuration.isPressed ? 0.9 : 1)
-    }
-}
-
-extension ButtonStyle where Self == RecipeScaleButtonStyle {
-    static var recipeScale: RecipeScaleButtonStyle { RecipeScaleButtonStyle() }
 }
 
 private struct CreateRecipeSheet: View {

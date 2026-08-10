@@ -11,7 +11,7 @@ model User {
   id        String   @id
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  
+
   // Subscription Info
   subscriptionTier      String    @default("free") // "free" or "pro"
   subscriptionExpiresAt DateTime?
@@ -19,108 +19,103 @@ model User {
   originalTransactionId String?   @unique // To link Apple receipt to User
   creemCustomerId       String?
   creemSubscriptionId   String?   @unique
-  
-  notes     Note[]
-  tags      Tag[]
-  linkImportJobs LinkImportJob[]
-  dailyUsages DailyUsage[]
-  inviteCode InviteCode?
-  sentInvites Invite[] @relation("InviteInviter")
-  receivedInvite Invite? @relation("InviteInvitee")
-  membershipGrants MembershipGrantLedger[]
-  credits          UserCredits?
-}
 
-model DailyUsage {
-  id        Int      @id @default(autoincrement())
-  userId    String
-  dateKey   String
-  feature   String
-  count     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, dateKey, feature])
-  @@index([userId, dateKey])
+  notes                  Note[]
+  tags                   Tag[]
+  linkImportJobs         LinkImportJob[]
+  inviteCode             InviteCode?
+  sentInvites            Invite[]                @relation("InviteInviter")
+  receivedInvite         Invite?                 @relation("InviteInvitee")
+  membershipGrants       MembershipGrantLedger[]
+  credits                UserCredits?
+  pushDevices            PushDevice[]
+  notificationDeliveries NotificationDelivery[]
+  weeklyTopicSettings    WeeklyTopicSettings?
+  weeklyTopicReports     WeeklyTopicReport[]
 }
 
 model Note {
-  id                  String   @id
-  userId              String
-  content             String
-  createdAt           DateTime
-  updatedAt           DateTime
-  deletedAt           DateTime?
-  pinnedAt            DateTime?
-  version             Int      @default(1)
-  serverUpdatedAt     DateTime @default(now())
-  serverDeletedAt     DateTime?
+  id                     String          @id
+  userId                 String
+  content                String
+  createdAt              DateTime
+  updatedAt              DateTime
+  deletedAt              DateTime?
+  pinnedAt               DateTime?
+  version                Int             @default(1)
+  serverUpdatedAt        DateTime        @default(now())
+  serverDeletedAt        DateTime?
   lastModifiedByDeviceId String?
-  sourceURL           String?
-  sourceTitle         String?
-  sourcePlatformID    String?
-  sourcePlatformName  String?
-  sourceHost          String?
-  sourceCapturedAt    DateTime?
-  section             String   @default("inbox")
-  importStatus        String?
-  importJobId         String?
-  importErrorCode     String?
-  importStartedAt     DateTime?
-  importCompletedAt   DateTime?
-  tags                Tag[]
-  linkImportJobs      LinkImportJob[]
+  sourceURL              String?
+  sourceTitle            String?
+  sourcePlatformID       String?
+  sourcePlatformName     String?
+  sourceHost             String?
+  sourceAuthorName       String?
+  sourceAuthorHandle     String?
+  sourceCapturedAt       DateTime?
+  section                String          @default("inbox")
+  importStatus           String?
+  importJobId            String?
+  importErrorCode        String?
+  importStartedAt        DateTime?
+  importCompletedAt      DateTime?
+  tags                   Tag[]
+  linkImportJobs         LinkImportJob[]
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model LinkImportJob {
-  id          String   @id
-  userId      String
-  noteId      String
-  url         String
-  status      String
-  showDescription Boolean @default(true)
-  showAuthor   Boolean @default(true)
-  showHook     Boolean @default(true)
-  showTranscript Boolean @default(true)
-  errorCode   String?
-  attempts    Int      @default(0)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  startedAt   DateTime?
-  completedAt DateTime?
+  id                 String    @id
+  userId             String
+  noteId             String
+  url                String
+  status             String
+  showDescription    Boolean   @default(true)
+  showAuthor         Boolean   @default(true)
+  showHook           Boolean   @default(true)
+  showTranscript     Boolean   @default(true)
+  errorCode          String?
+  attempts           Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+  startedAt          DateTime?
+  completedAt        DateTime?
+  creditAuthorizedAt DateTime?
 
   note Note @relation(fields: [noteId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@unique([userId, noteId])
   @@index([userId, status])
   @@index([status, createdAt])
-  @@unique([userId, noteId])
 }
 
 model Tag {
-  id                  String   @id
-  userId              String
-  name                String
-  colorHex            String
-  createdAt           DateTime
-  updatedAt           DateTime
-  lastUsedAt          DateTime?
-  sortOrder           Int
-  parentId            String?
-  deletedAt           DateTime?
-  version             Int      @default(1)
-  serverUpdatedAt     DateTime @default(now())
-  serverDeletedAt     DateTime?
+  id                     String    @id
+  userId                 String
+  name                   String
+  colorHex               String
+  createdAt              DateTime
+  updatedAt              DateTime
+  lastUsedAt             DateTime?
+  sortOrder              Int
+  parentId               String?
+  deletedAt              DateTime?
+  version                Int       @default(1)
+  serverUpdatedAt        DateTime  @default(now())
+  serverDeletedAt        DateTime?
   lastModifiedByDeviceId String?
 
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent   Tag?   @relation("TagHierarchy", fields: [parentId], references: [id])
   children Tag[]  @relation("TagHierarchy")
   notes    Note[]
+
+  @@index([userId])
 }
 
 model SyncLog {
@@ -151,7 +146,7 @@ model Waitlist {
   id        String   @id @default(cuid())
   email     String   @unique
   createdAt DateTime @default(now())
-  source    String?  // e.g., "twitter", "website"
+  source    String? // e.g., "twitter", "website"
 }
 
 model InviteCode {
@@ -167,22 +162,22 @@ model InviteCode {
 }
 
 model Invite {
-  id           String   @id @default(cuid())
+  id           String    @id @default(cuid())
   inviterId    String
-  inviteeId    String   @unique
+  inviteeId    String    @unique
   inviteCodeId String
   inviteCode   String
   status       String
-  rewardDays   Int      @default(7)
-  boundAt      DateTime @default(now())
+  rewardDays   Int       @default(7)
+  boundAt      DateTime  @default(now())
   rewardedAt   DateTime?
   rejectReason String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  inviter       User                  @relation("InviteInviter", fields: [inviterId], references: [id], onDelete: Cascade)
-  invitee       User                  @relation("InviteInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
-  inviteCodeRef InviteCode            @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
+  inviter       User                    @relation("InviteInviter", fields: [inviterId], references: [id], onDelete: Cascade)
+  invitee       User                    @relation("InviteInvitee", fields: [inviteeId], references: [id], onDelete: Cascade)
+  inviteCodeRef InviteCode              @relation(fields: [inviteCodeId], references: [id], onDelete: Cascade)
   grants        MembershipGrantLedger[]
 
   @@index([inviterId, rewardedAt])
@@ -190,7 +185,7 @@ model Invite {
 }
 
 model MembershipGrantLedger {
-  id              Int      @id @default(autoincrement())
+  id              Int       @id @default(autoincrement())
   userId          String
   inviteId        String
   role            String
@@ -199,7 +194,7 @@ model MembershipGrantLedger {
   beforeExpiresAt DateTime?
   afterTier       String
   afterExpiresAt  DateTime?
-  createdAt       DateTime @default(now())
+  createdAt       DateTime  @default(now())
 
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   invite Invite @relation(fields: [inviteId], references: [id], onDelete: Cascade)
@@ -215,4 +210,80 @@ model UserCredits {
   updatedAt DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PushDevice {
+  id                  String   @id @default(uuid())
+  userId              String
+  token               String   @unique
+  platform            String   @default("ios")
+  environment         String
+  locale              String   @default("en")
+  timeZone            String   @default("UTC")
+  authorizationStatus String?
+  isActive            Boolean  @default(true)
+  lastSeenAt          DateTime @default(now())
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isActive])
+}
+
+model NotificationDelivery {
+  id          String    @id @default(uuid())
+  userId      String
+  kind        String
+  dedupeKey   String    @unique
+  noteId      String?
+  scheduledAt DateTime
+  sentAt      DateTime?
+  status      String    @default("scheduled")
+  attempts    Int       @default(0)
+  lastError   String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status, scheduledAt])
+  @@index([userId, kind])
+}
+
+model WeeklyTopicSettings {
+  userId        String    @id
+  enabled       Boolean   @default(false)
+  weekday       Int       @default(1)
+  hour          Int       @default(9)
+  minute        Int       @default(0)
+  timeZone      String    @default("UTC")
+  locale        String    @default("en")
+  lastPeriodEnd DateTime?
+  nextRunAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([enabled, nextRunAt])
+}
+
+model WeeklyTopicReport {
+  id                String    @id @default(uuid())
+  userId            String
+  periodStart       DateTime
+  periodEnd         DateTime
+  sourceNoteCount   Int
+  language          String
+  topics            Json
+  readAt            DateTime?
+  regenerationCount Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, periodEnd])
+  @@index([userId, periodEnd])
 }

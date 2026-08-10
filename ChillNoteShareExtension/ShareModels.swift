@@ -19,6 +19,8 @@ struct SharePendingImport: Codable, Sendable {
         let platformID: String
         let platformName: String
         let host: String
+        let authorName: String?
+        let authorHandle: String?
     }
 
     let id: UUID

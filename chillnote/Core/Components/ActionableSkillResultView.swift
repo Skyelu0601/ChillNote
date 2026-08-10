@@ -210,18 +210,18 @@ struct SkillResultCopyToast: View {
         HStack(spacing: 10) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(.accentPrimary)
+                .foregroundColor(.accentSecondaryText)
 
             Text(L10n.text("ai_skills.result.copy_success"))
                 .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.accentPrimary)
+                .foregroundColor(.accentSecondaryText)
 
             Spacer(minLength: 0)
 
             Button(action: onDismiss) {
                 Image(systemName: "xmark")
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(.accentSecondaryText)
                     .frame(width: 36, height: 36)
             }
             .buttonStyle(.plain)
@@ -263,9 +263,9 @@ private struct ActionableSkillResultRow: View {
             Button(action: onCopy) {
                 Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(isCopied ? .white : .accentPrimary)
+                    .foregroundColor(isCopied ? .white : .accentSecondaryText)
                     .frame(width: 44, height: 44)
-                    .background(isCopied ? Color.accentPrimary : Color.bgPrimary)
+                    .background(isCopied ? Color.accentSecondary : Color.bgPrimary)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .overlay {
                         if !isCopied {

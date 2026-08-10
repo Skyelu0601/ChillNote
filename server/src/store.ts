@@ -1,6 +1,29 @@
 import type { NoteDTO, SyncChanges, TagDTO } from "./types.js";
 import { prisma } from "./db.js";
 
+export function isProSubscriptionActive(
+  tier: string | null | undefined,
+  expiresAt: Date | null | undefined,
+  now = new Date()
+): boolean {
+  return tier === "pro" && (!expiresAt || expiresAt.getTime() > now.getTime());
+}
+
+export async function hasActiveProSubscription(
+  userId: string,
+  now = new Date()
+): Promise<boolean> {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { subscriptionTier: true, subscriptionExpiresAt: true }
+  });
+  return isProSubscriptionActive(
+    user?.subscriptionTier,
+    user?.subscriptionExpiresAt,
+    now
+  );
+}
+
 export async function upsertUser(userId: string): Promise<void> {
   // Avoid Prisma upsert race conditions when multiple requests try to
   // create the same user row at the same time.
@@ -66,6 +89,8 @@ function mapNoteToDTO(note: any): NoteDTO {
     sourcePlatformID: note.sourcePlatformID ?? null,
     sourcePlatformName: note.sourcePlatformName ?? null,
     sourceHost: note.sourceHost ?? null,
+    sourceAuthorName: note.sourceAuthorName ?? null,
+    sourceAuthorHandle: note.sourceAuthorHandle ?? null,
     sourceCapturedAt: note.sourceCapturedAt?.toISOString() ?? null,
     section: note.section ?? "inbox",
     importStatus: note.importStatus ?? null,
@@ -114,6 +139,12 @@ function sourceUpdateData(incoming: NoteDTO) {
   if (hasOwnField(incoming, "sourceHost")) {
     data.sourceHost = incoming.sourceHost ?? null;
   }
+  if (hasOwnField(incoming, "sourceAuthorName")) {
+    data.sourceAuthorName = incoming.sourceAuthorName ?? null;
+  }
+  if (hasOwnField(incoming, "sourceAuthorHandle")) {
+    data.sourceAuthorHandle = incoming.sourceAuthorHandle ?? null;
+  }
   if (hasOwnField(incoming, "sourceCapturedAt")) {
     data.sourceCapturedAt = incoming.sourceCapturedAt ? new Date(incoming.sourceCapturedAt) : null;
   }
@@ -160,6 +191,8 @@ function sourceCreateData(incoming: NoteDTO) {
     sourcePlatformID: incoming.sourcePlatformID ?? null,
     sourcePlatformName: incoming.sourcePlatformName ?? null,
     sourceHost: incoming.sourceHost ?? null,
+    sourceAuthorName: incoming.sourceAuthorName ?? null,
+    sourceAuthorHandle: incoming.sourceAuthorHandle ?? null,
     sourceCapturedAt: incoming.sourceCapturedAt ? new Date(incoming.sourceCapturedAt) : null
   };
 }
@@ -167,26 +200,26 @@ function sourceCreateData(incoming: NoteDTO) {
 export async function getChangesSinceCursor(userId: string, cursor?: string | null): Promise<{ changes: SyncChanges; cursor: string }> {
   const parsedCursor = cursor ? Number(cursor) : null;
   const cursorId = Number.isFinite(parsedCursor) ? parsedCursor : null;
-  const logs = await prisma.syncLog.findMany({
-    where: cursorId ? { userId, id: { gt: cursorId } } : { userId },
-    orderBy: { id: "asc" }
-  });
-
-  let newCursor = cursorId ?? 0;
-  if (logs.length > 0) {
-    newCursor = logs[logs.length - 1].id;
-  }
 
   if (cursorId == null) {
-    const notes = await prisma.note.findMany({
-      where: { userId },
-      include: { tags: true }
-    });
-    const tags = await prisma.tag.findMany({
-      where: { userId }
-    });
+    // A bootstrap sync only needs the newest log ID as its high-water mark.
+    // Loading every historical log here makes first sync slower as the user's
+    // edit history grows, even though none of those log rows are returned.
+    const [latestLog, notes, tags] = await Promise.all([
+      prisma.syncLog.aggregate({
+        where: { userId },
+        _max: { id: true }
+      }),
+      prisma.note.findMany({
+        where: { userId },
+        include: { tags: true }
+      }),
+      prisma.tag.findMany({
+        where: { userId }
+      })
+    ]);
     return {
-      cursor: String(newCursor),
+      cursor: String(latestLog._max.id ?? 0),
       changes: {
         notes: notes.map(mapNoteToDTO),
         tags: tags.map(mapTagToDTO),
@@ -194,6 +227,16 @@ export async function getChangesSinceCursor(userId: string, cursor?: string | nu
         hardDeletedTagIds: []
       }
     };
+  }
+
+  const logs = await prisma.syncLog.findMany({
+    where: { userId, id: { gt: cursorId } },
+    orderBy: { id: "asc" }
+  });
+
+  let newCursor = cursorId;
+  if (logs.length > 0) {
+    newCursor = logs[logs.length - 1].id;
   }
 
   const latestByEntity = new Map<string, { entityType: string; entityId: string; operation: string }>();

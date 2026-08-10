@@ -18,7 +18,7 @@ struct AIPreviewCard: View {
                         Text(L10n.text("common.retry"))
                             .font(.system(size: 10))
                     }
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(.accentSecondaryText)
                     .frame(width: 60, height: 50)
                 }
                 
@@ -34,7 +34,7 @@ struct AIPreviewCard: View {
                         Text(L10n.text("common.undo"))
                             .font(.system(size: 10))
                     }
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(.accentSecondaryText)
                     .frame(width: 60, height: 50)
                 }
                 
@@ -50,7 +50,7 @@ struct AIPreviewCard: View {
                         Text(L10n.text("common.save"))
                             .font(.system(size: 10))
                     }
-                    .foregroundColor(.accentSecondary)
+                    .foregroundColor(.accentSecondaryText)
                     .frame(width: 60, height: 50)
                 }
             }

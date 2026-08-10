@@ -5,23 +5,23 @@ import OSLog
 private let homeSelectionLogger = Logger(subsystem: "com.chillnote.app", category: "home-selection")
 
 extension HomeView {
-    func applyTagToSelected(_ tag: Tag) {
-        let notes = getSelectedNotes()
-        guard !notes.isEmpty else { return }
-
+    func toggleTag(_ tag: Tag, for note: Note) {
         withAnimation {
-            let now = Date()
-            for note in notes {
-                if !note.tags.contains(where: { $0.id == tag.id }) {
-                    note.tags.append(tag)
-                }
-                note.updatedAt = now
+            if note.tags.contains(where: { $0.id == tag.id }) {
+                note.tags.removeAll { $0.id == tag.id }
+                note.updatedAt = Date()
+                TagService.shared.cleanupEmptyTags(
+                    context: modelContext,
+                    candidates: [tag],
+                    shouldSave: false
+                )
+            } else {
+                note.tags.append(tag)
+                touchTag(tag, note: note)
             }
-            touchTag(tag)
         }
 
         persistAndSync()
-        exitSelectionMode()
     }
 
     func clampSelectionToCurrentFilter() {

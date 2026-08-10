@@ -115,8 +115,6 @@ extension Font {
     static let brandBodySmall = Font.system(size: 15, weight: .medium)
     /// 13 / semibold — tab labels, captions.
     static let brandLabel = Font.system(size: 13, weight: .semibold)
-    /// 11 / bold — uppercase eyebrow ("INPUT", "OUTPUT"). Pair with tracking 0.5.
-    static let brandEyebrow = Font.system(size: 11, weight: .bold)
 }
 
 // MARK: - View helpers
@@ -160,12 +158,4 @@ extension View {
             .brandShadow(BrandTokens.Shadow.neutralButton)
     }
 
-    /// Standard white card surface used by hero/feature cards across the flow.
-    func brandCardSurface() -> some View {
-        background(
-            RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
-                .fill(Color.cardBackground)
-                .brandShadow(BrandTokens.Shadow.card)
-        )
-    }
 }

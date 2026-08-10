@@ -42,7 +42,7 @@ struct HomeCreditGiftPromptOverlay: View {
                     .fill(Color.cardBackground)
                     .overlay(
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
-                            .stroke(Color.accentPrimary.opacity(0.10), lineWidth: 1)
+                            .stroke(Color.inspirationAccent.opacity(0.14), lineWidth: 1)
                     )
             )
             .shadow(color: Color.black.opacity(0.14), radius: 28, x: 0, y: 16)
@@ -54,12 +54,16 @@ struct HomeCreditGiftPromptOverlay: View {
     private var giftMark: some View {
         ZStack {
             Circle()
-                .fill(Color.selectionHighlight)
+                .fill(Color.inspirationHighlight)
+                .overlay(
+                    Circle()
+                        .stroke(Color.inspirationAccent.opacity(0.18), lineWidth: 1)
+                )
                 .frame(width: 86, height: 86)
 
             Image(systemName: "gift.fill")
                 .font(.system(size: 36, weight: .semibold))
-                .foregroundStyle(Color.accentPrimary)
+                .foregroundStyle(Color.inspirationAccent)
         }
         .accessibilityLabel(L10n.text("home.credit_gift.icon_accessibility"))
     }

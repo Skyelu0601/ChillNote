@@ -32,6 +32,8 @@ struct SyncMapper {
             sourcePlatformID: note.sourcePlatformID,
             sourcePlatformName: note.sourcePlatformName,
             sourceHost: note.sourceHost,
+            sourceAuthorName: note.sourceAuthorName,
+            sourceAuthorHandle: note.sourceAuthorHandle,
             sourceCapturedAt: note.sourceCapturedAt.map { dateFormatter.string(from: $0) },
             section: note.section.rawValue,
             importStatus: note.importStatusRaw,
@@ -67,7 +69,7 @@ struct SyncMapper {
     }
 
     func apply(_ dto: NoteDTO, to note: Note) {
-        note.content = dto.content
+        note.updateContent(dto.content)
         if let createdAt = parseDate(dto.createdAt) {
             note.createdAt = createdAt
         }
@@ -93,11 +95,19 @@ struct SyncMapper {
         if let deviceId = dto.lastModifiedByDeviceId {
             note.lastModifiedByDeviceId = deviceId
         }
+        let isSameSource = note.sourceURL == dto.sourceURL
         note.sourceURL = dto.sourceURL
         note.sourceTitle = dto.sourceTitle
         note.sourcePlatformID = dto.sourcePlatformID
         note.sourcePlatformName = dto.sourcePlatformName
         note.sourceHost = dto.sourceHost
+        if dto.sourceAuthorName != nil || dto.sourceAuthorHandle != nil {
+            note.sourceAuthorName = dto.sourceAuthorName
+            note.sourceAuthorHandle = dto.sourceAuthorHandle
+        } else if !isSameSource {
+            note.sourceAuthorName = nil
+            note.sourceAuthorHandle = nil
+        }
         note.sourceCapturedAt = dto.sourceCapturedAt.flatMap { parseDate($0) }
         note.section = dto.section.flatMap(NoteSection.init(rawValue:)) ?? .inbox
         note.importStatusRaw = dto.importStatus

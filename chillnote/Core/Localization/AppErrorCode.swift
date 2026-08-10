@@ -29,7 +29,6 @@ enum AppErrorCode: String {
     case recordingStateProcessing = "recording.state.processing"
     case recordingStateError = "recording.state.error"
     case recordingLimitReached = "recording.limit.reached"
-    case recordingDailyLimitReached = "recording.limit.daily_reached"
 
     var message: String {
         L10n.text(rawValue)

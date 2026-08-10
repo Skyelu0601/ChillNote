@@ -63,6 +63,7 @@ private extension QuickCaptureLinkParser {
 enum QuickCaptureImportError: LocalizedError {
     case invalidURL
     case emptyContent
+    case insufficientCredits(balance: Int?)
 
     var errorDescription: String? {
         switch self {
@@ -70,6 +71,8 @@ enum QuickCaptureImportError: LocalizedError {
             return L10n.text("quick_capture.error.no_link")
         case .emptyContent:
             return L10n.text("quick_capture.error.link_empty")
+        case .insufficientCredits:
+            return L10n.text("sidebar.credits.locked")
         }
     }
 }
@@ -89,32 +92,25 @@ struct MediaLinkTranscriptSectionPreferences: Equatable {
         [showDescription, showAuthor, showHook, showTranscript].filter { $0 }.count
     }
 
-    static var all: MediaLinkTranscriptSectionPreferences {
+    static var transcriptOnly: MediaLinkTranscriptSectionPreferences {
         MediaLinkTranscriptSectionPreferences(
-            showDescription: true,
-            showAuthor: true,
-            showHook: true,
+            showDescription: false,
+            showAuthor: false,
+            showHook: false,
             showTranscript: true
         )
     }
 
-    static func load(from userDefaults: UserDefaults = .standard) -> MediaLinkTranscriptSectionPreferences {
-        let preferences = MediaLinkTranscriptSectionPreferences(
-            showDescription: userDefaults.mediaLinkTranscriptSectionBool(forKey: descriptionStorageKey),
-            showAuthor: userDefaults.mediaLinkTranscriptSectionBool(forKey: authorStorageKey),
-            showHook: userDefaults.mediaLinkTranscriptSectionBool(forKey: hookStorageKey),
-            showTranscript: userDefaults.mediaLinkTranscriptSectionBool(forKey: transcriptStorageKey)
-        )
-
-        return preferences.selectedCount == 0 ? .all : preferences
+    static func load(from _: UserDefaults = .standard) -> MediaLinkTranscriptSectionPreferences {
+        transcriptOnly
     }
 
     static func syncToShareExtension(
-        from userDefaults: UserDefaults = .standard,
+        from _: UserDefaults = .standard,
         sharedDefaults: UserDefaults? = SharedImportQueue.sharedDefaults()
     ) {
         guard let sharedDefaults else { return }
-        load(from: userDefaults).save(to: sharedDefaults)
+        transcriptOnly.save(to: sharedDefaults)
     }
 
     func save(to userDefaults: UserDefaults) {
@@ -122,12 +118,6 @@ struct MediaLinkTranscriptSectionPreferences: Equatable {
         userDefaults.set(showAuthor, forKey: Self.authorStorageKey)
         userDefaults.set(showHook, forKey: Self.hookStorageKey)
         userDefaults.set(showTranscript, forKey: Self.transcriptStorageKey)
-    }
-}
-
-private extension UserDefaults {
-    func mediaLinkTranscriptSectionBool(forKey key: String) -> Bool {
-        object(forKey: key) == nil ? true : bool(forKey: key)
     }
 }
 
@@ -229,6 +219,8 @@ struct QuickCaptureImportService {
     struct AsyncLinkImportJob: Decodable, Equatable, Sendable {
         let jobId: String
         let status: String
+        let balance: Int?
+        let tier: String?
     }
 
     enum LinkImportPhase: Sendable {
@@ -317,18 +309,26 @@ struct QuickCaptureImportService {
         }
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
 
+        var sourcePayload: [String: Any] = [
+            "url": source.url,
+            "title": source.title,
+            "platformID": source.platformID,
+            "platformName": source.platformName,
+            "host": source.host
+        ]
+        if let authorName = source.authorName {
+            sourcePayload["authorName"] = authorName
+        }
+        if let authorHandle = source.authorHandle {
+            sourcePayload["authorHandle"] = authorHandle
+        }
+
         let body: [String: Any] = [
             "noteId": noteID.uuidString,
             "url": url.absoluteString,
             "placeholderContent": placeholderContent,
             "section": section.rawValue,
-            "source": [
-                "url": source.url,
-                "title": source.title,
-                "platformID": source.platformID,
-                "platformName": source.platformName,
-                "host": source.host
-            ],
+            "source": sourcePayload,
             "mediaLinkSections": [
                 "showDescription": preferences.showDescription,
                 "showAuthor": preferences.showAuthor,
@@ -341,6 +341,10 @@ struct QuickCaptureImportService {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw GeminiError.invalidResponse
+        }
+        if httpResponse.statusCode == 402 {
+            let payload = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+            throw QuickCaptureImportError.insufficientCredits(balance: payload?["balance"] as? Int)
         }
         guard (200...299).contains(httpResponse.statusCode) else {
             throw GeminiError.apiError("Status code: \(httpResponse.statusCode)")
@@ -485,7 +489,9 @@ extension QuickCaptureImportService {
                 title: sourceTitle,
                 platformID: "tiktok",
                 platformName: NoteSourcePlatformResolver.platform(for: url).displayName,
-                host: NoteSourcePlatformResolver.normalizedHost(from: url)
+                host: NoteSourcePlatformResolver.normalizedHost(from: url),
+                authorName: metadata.authorName,
+                authorHandle: metadata.authorUniqueID
             )
 
             let creatorMetadata = CreatorMediaMetadata(
@@ -526,7 +532,8 @@ extension QuickCaptureImportService {
             title: sourceTitle,
             platformID: "youtube",
             platformName: NoteSourcePlatformResolver.platform(for: url).displayName,
-            host: NoteSourcePlatformResolver.normalizedHost(from: url)
+            host: NoteSourcePlatformResolver.normalizedHost(from: url),
+            authorName: metadata?.authorName
         )
         let creatorMetadata = CreatorMediaMetadata(
             title: sourceTitle,
@@ -565,7 +572,9 @@ extension QuickCaptureImportService {
             title: creatorMetadata.title,
             platformID: "instagram",
             platformName: NoteSourcePlatformResolver.platform(for: url).displayName,
-            host: NoteSourcePlatformResolver.normalizedHost(from: url)
+            host: NoteSourcePlatformResolver.normalizedHost(from: url),
+            authorName: creatorMetadata.authorName,
+            authorHandle: creatorMetadata.authorHandle
         )
 
         if let transcript = await fetchCreatorMediaTranscript(for: url),
@@ -719,7 +728,7 @@ extension QuickCaptureImportService {
             title: components.title,
             authorName: components.authorName,
             authorURL: nil,
-            authorHandle: instagramAuthorHandle(from: url)
+            authorHandle: nil
         )
     }
 
@@ -955,17 +964,6 @@ extension QuickCaptureImportService {
         return authorHandle.isEmpty ? L10n.text("quick_capture.media_link.author_unknown") : authorHandle
     }
 
-    func makeTikTokLinkNote(title: String, metadata: TikTokOEmbedResponse) -> String {
-        makeCreatorMediaLinkNote(
-            metadata: CreatorMediaMetadata(
-                title: title,
-                authorName: metadata.authorName,
-                authorURL: metadata.authorURL,
-                authorHandle: metadata.authorUniqueID
-            )
-        )
-    }
-
     func makeCreatorMediaTranscriptNote(
         metadata: CreatorMediaMetadata,
         transcript: String,
@@ -973,7 +971,7 @@ extension QuickCaptureImportService {
         preferences: MediaLinkTranscriptSectionPreferences = .load()
     ) async -> String {
         let cleanedTranscript = transcript.trimmingCharacters(in: .whitespacesAndNewlines)
-        let effectivePreferences = preferences.selectedCount == 0 ? .all : preferences
+        let effectivePreferences = preferences.selectedCount == 0 ? .transcriptOnly : preferences
 
         guard !cleanedTranscript.isEmpty else {
             return makeCreatorMediaLinkNote(metadata: metadata, preferences: effectivePreferences)
@@ -1233,14 +1231,6 @@ extension QuickCaptureImportService {
         }
 
         return (nil, nil)
-    }
-
-    func instagramAuthorHandle(from url: URL) -> String? {
-        let components = url.pathComponents.filter { $0 != "/" }
-        guard let reelIndex = components.firstIndex(of: "reel"), reelIndex > 0 else {
-            return nil
-        }
-        return components[reelIndex - 1].trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     func firstMetaContent(in html: String, names: [String]) -> String? {

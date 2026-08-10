@@ -8,6 +8,8 @@ struct HomeView: View {
     @Environment(\.scenePhase) var scenePhase
     @StateObject var homeViewModel = HomeViewModel()
     @StateObject private var storeService = StoreService.shared
+    @StateObject var weeklyTopicsStore = WeeklyTopicsStore()
+    @StateObject var firstActionGuide = FirstActionGuideService.shared
 
     var currentUserId: String? {
         authService.currentUserId
@@ -34,7 +36,7 @@ struct HomeView: View {
     @State var isExecutingAction = false
     @State var actionProgress: String?
 
-    @State var showBatchTagSheet = false
+    @State var taggingNote: Note?
     @Query(filter: #Predicate<Tag> { $0.deletedAt == nil }, sort: \Tag.name) var availableTags: [Tag]
 
     @State var pendingAgentAction: AgentRecipe?
@@ -59,6 +61,7 @@ struct HomeView: View {
     @State var pendingRecipeForConfirmation: AgentRecipe?
 
     @State var showSubscription = false
+    @State private var showWeeklyTopicsPreview = false
     @State private var showCreditGiftPrompt = false
 
     private let initialFreeCreditGiftAmount = 50
@@ -88,7 +91,6 @@ struct HomeView: View {
     @State var showClipboardLinkImportErrorAlert = false
     @State var showImportNotificationPermissionPrompt = false
 
-    @State var hasScheduledInitialMaintenance = false
     @State var lastMaintenanceAt: Date?
     let minimumMaintenanceInterval: TimeInterval = 30
 
@@ -98,6 +100,7 @@ struct HomeView: View {
     @State var bootstrappingUserId: String?
     @State var lastBootstrappedUserId: String?
     @State var shouldReloadAfterSync = false
+    @State var isBootstrappingNotesSync = false
 
     var pendingLinkImportIDs: [UUID] {
         homeViewModel.items
@@ -135,7 +138,7 @@ struct HomeView: View {
             translateTargetLanguage: translateTargetLanguage,
             showDeleteConfirmation: showDeleteConfirmation,
             showEmptyTrashConfirmation: showEmptyTrashConfirmation,
-            showBatchTagSheet: showBatchTagSheet,
+            taggingNote: taggingNote,
             isSidebarPresented: isSidebarPresented,
             selectedTag: selectedTag,
             selectedSection: selectedSection,
@@ -144,11 +147,14 @@ struct HomeView: View {
             cachedVisibleNotes: homeViewModel.items,
             sectionCounts: homeViewModel.sectionCounts,
             isLoadingNotes: homeViewModel.isLoading,
-            isSyncingNotes: syncManager.isSyncing,
+            isInitialNotesSync: isBootstrappingNotesSync
+                && currentUserId.map { !syncManager.hasCompletedSync(for: $0) } == true
+                && !homeViewModel.sectionCounts.values.contains(where: { $0 > 0 }),
             hasLoadedNotesAtLeastOnce: homeViewModel.hasLoadedAtLeastOnce,
             availableTags: availableTagsForCurrentUser,
             translateLanguages: translateLanguages,
             recipeManager: recipeManager,
+            weeklyTopicsStore: weeklyTopicsStore,
             speechRecognizer: speechRecognizer,
             syncManager: syncManager,
             headerTitle: headerTitle,
@@ -176,7 +182,8 @@ struct HomeView: View {
             state: screenState,
             dispatch: dispatch,
             isSearchFocused: $isSearchFocused,
-            searchBar: AnyView(searchBar)
+            searchBar: AnyView(searchBar),
+            firstActionGuide: firstActionGuide
         )
     }
 
@@ -234,6 +241,7 @@ struct HomeView: View {
             isVoiceMode = false
             bootstrappingUserId = nil
             lastBootstrappedUserId = nil
+            firstActionGuide.resetForSignedOutUser()
         }
         .onChange(of: isTrashSelected) { _, newValue in
             if newValue {
@@ -268,9 +276,14 @@ struct HomeView: View {
             Task {
                 await PushNotificationManager.shared.refreshRegistration()
                 await bootstrapHome(for: userId, source: .authChanged)
+                configureFirstActionGuide()
+                await weeklyTopicsStore.reload()
                 await checkForClipboardLinkImport()
                 await evaluateImportNotificationPermissionPrompt()
             }
+        }
+        .onChange(of: authService.currentUser?.createdAt) { _, _ in
+            configureFirstActionGuide()
         }
         )
     }
@@ -279,6 +292,7 @@ struct HomeView: View {
         AnyView(
             homeViewLifecyclePhaseTwo
         .onChange(of: syncManager.isSyncing) { _, isSyncing in
+            guard !isBootstrappingNotesSync else { return }
             if isSyncing {
                 shouldReloadAfterSync = true
                 return
@@ -321,6 +335,7 @@ struct HomeView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .sharedImportsRequested)) { _ in
+            configureFirstActionGuide()
             importPendingSharedNotes(navigateToLatest: true)
         }
         .onReceive(NotificationCenter.default.publisher(for: .pushNotificationDestinationRequested)) { _ in
@@ -332,6 +347,7 @@ struct HomeView: View {
             scheduleMaintenance(reason: .foreground)
             Task {
                 await PushNotificationManager.shared.refreshRegistration()
+                await weeklyTopicsStore.reload()
                 await checkForClipboardLinkImport()
             }
         }
@@ -340,13 +356,15 @@ struct HomeView: View {
             guard let userId = currentUserId else { return }
             await PushNotificationManager.shared.refreshRegistration()
             await bootstrapHome(for: userId, source: .initialTask)
+            configureFirstActionGuide()
+            await weeklyTopicsStore.reload()
             importPendingSharedNotes(navigateToLatest: false)
-            scheduleInitialMaintenance()
             await checkForClipboardLinkImport()
             await evaluateImportNotificationPermissionPrompt()
             handlePendingPushNotificationDestination()
         }
         .task(id: pendingLinkImportIDs) {
+            reconcileFirstActionGuideImport()
             guard !pendingLinkImportIDs.isEmpty else { return }
             await monitorLinkImportProgress()
         }
@@ -357,6 +375,14 @@ struct HomeView: View {
         homeViewWithLifecycleHandlers
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
+        }
+        .fullScreenCover(isPresented: $showWeeklyTopicsPreview) {
+            WeeklyTopicsPreviewView {
+                showWeeklyTopicsPreview = false
+                DispatchQueue.main.async {
+                    showSubscription = true
+                }
+            }
         }
         .alert(VoiceErrorPresentation.transcriptionFailedTitle, isPresented: $showTranscriptionFailureAlert) {
             Button(L10n.text("sidebar.nav.pending_records")) {
@@ -487,8 +513,8 @@ struct HomeView: View {
             showDeleteConfirmation = value
         case .setShowEmptyTrashConfirmation(let value):
             showEmptyTrashConfirmation = value
-        case .setShowBatchTagSheet(let value):
-            showBatchTagSheet = value
+        case .setTaggingNote(let note):
+            taggingNote = note
         case .setSidebarPresented(let value):
             isSidebarPresented = value
         case .setAgentMenuOpen(let value):
@@ -567,8 +593,8 @@ struct HomeView: View {
             deleteSelectedNotes()
         case .emptyTrash:
             emptyTrash()
-        case .applyTagToSelected(let tag):
-            applyTagToSelected(tag)
+        case .toggleTag(let note, let tag):
+            toggleTag(tag, for: note)
         case .hideKeyboard:
             hideKeyboard()
 
@@ -599,6 +625,27 @@ struct HomeView: View {
             showChillRecipes = true
         case .closeChillRecipes:
             showChillRecipes = false
+        case .openWeeklyTopics:
+            Task { @MainActor in
+                await storeService.ensureSubscriptionStatusReadyForFeatureGate()
+                if storeService.currentTier == .pro {
+                    navigationPath.append(WeeklyTopicsRoute.dashboard)
+                } else {
+                    showWeeklyTopicsPreview = true
+                }
+            }
+        case .openWeeklyTopicSource(let noteID):
+            Task { @MainActor in
+                if let note = resolveNote(noteID) {
+                    navigationPath.append(note)
+                    return
+                }
+                _ = await syncManager.syncNow(context: modelContext)
+                await homeViewModel.reload(keepItemsWhileLoading: true)
+                if let note = resolveNote(noteID) {
+                    navigationPath.append(note)
+                }
+            }
 
         case .confirmAskSoftLimit:
             cachedContextNotes = getSelectedNotes()
@@ -707,12 +754,17 @@ struct HomeView: View {
         await homeViewModel.updateSearchQuery(searchText)
         await homeViewModel.reload()
         clampSelectionToCurrentFilter()
+
+        isBootstrappingNotesSync = true
+        await runMaintenance(
+            reason: source == .authChanged ? .userChanged : .initial
+        )
+        await homeViewModel.reload(keepItemsWhileLoading: true)
+        clampSelectionToCurrentFilter()
+        isBootstrappingNotesSync = false
+
         await storeService.fetchCreditBalance()
         evaluateCreditGiftPrompt()
-
-        if source == .authChanged {
-            scheduleMaintenance(reason: .userChanged)
-        }
 
         Task(priority: .utility) {
             let delay: UInt64 = source == .initialTask ? 1_200_000_000 : 300_000_000

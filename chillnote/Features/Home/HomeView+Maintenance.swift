@@ -7,16 +7,6 @@ extension HomeView {
         case userChanged
     }
 
-    func scheduleInitialMaintenance() {
-        guard !hasScheduledInitialMaintenance else { return }
-        hasScheduledInitialMaintenance = true
-        Task {
-            await Task.yield()
-            try? await Task.sleep(nanoseconds: 150_000_000)
-            await runMaintenance(reason: .initial)
-        }
-    }
-
     func scheduleMaintenance(reason: MaintenanceReason) {
         Task {
             await runMaintenance(reason: reason)
@@ -26,7 +16,12 @@ extension HomeView {
     @MainActor
     func runMaintenance(reason: MaintenanceReason) async {
         let now = Date()
-        let bypassIntervalLimit = reason == .userChanged
+        // A pending import may have completed on the server while the app was in
+        // the background. In that case the local `processing` state is stale, so
+        // foregrounding must not be blocked by the general maintenance cooldown.
+        let bypassIntervalLimit = reason == .initial
+            || reason == .userChanged
+            || (reason == .foreground && !pendingLinkImportIDs.isEmpty)
         if !bypassIntervalLimit,
            let lastMaintenanceAt,
            now.timeIntervalSince(lastMaintenanceAt) < minimumMaintenanceInterval {
@@ -40,7 +35,7 @@ extension HomeView {
 
         switch reason {
         case .initial, .userChanged:
-            await syncAndSeedStarterGuideIfNeeded()
+            _ = await syncManager.syncNow(context: modelContext)
         case .foreground:
             if pendingLinkImportIDs.isEmpty {
                 await syncManager.syncIfNeeded(context: modelContext)
@@ -51,19 +46,6 @@ extension HomeView {
 
         registerCompletedLinkImportsForRating()
         await checkForPendingRecordingsAsync()
-    }
-
-    @MainActor
-    private func syncAndSeedStarterGuideIfNeeded() async {
-        let syncSucceeded = await syncManager.syncNow(context: modelContext)
-        guard syncSucceeded, let user = AuthService.shared.currentUser else { return }
-        let didSeedWelcome = StarterGuideService.shared.seedWelcomeContentIfNeeded(
-            context: modelContext,
-            user: user
-        )
-        guard didSeedWelcome else { return }
-        await homeViewModel.reload(keepItemsWhileLoading: true)
-        clampSelectionToCurrentFilter()
     }
 
     func checkForPendingRecordingsAsync() async {

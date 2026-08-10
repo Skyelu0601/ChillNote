@@ -69,7 +69,7 @@ struct AIConsentSheet: View {
             Button(action: openPrivacyPolicy) {
                 Text(L10n.text("ai_consent.view_privacy_policy"))
                     .font(.chillCaption)
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(.accentPrimaryText)
                     .underline()
             }
             .buttonStyle(.plain)

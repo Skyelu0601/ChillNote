@@ -1,0 +1,5 @@
+# Google Play upload keys and local signing secrets
+*.jks
+*.keystore
+keystore.properties
+

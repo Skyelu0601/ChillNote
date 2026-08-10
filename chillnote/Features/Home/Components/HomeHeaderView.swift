@@ -13,12 +13,10 @@ struct HomeHeaderView: View {
 
     let onToggleSidebar: () -> Void
     let onCreateBlankNote: () -> Void
-    let onEnterSelectionMode: () -> Void
     let onToggleSearch: () -> Void
     let onExitSelectionMode: () -> Void
     let onSelectAll: () -> Void
     let onDeselectAll: () -> Void
-    let onShowBatchTagSheet: () -> Void
     let onShowDeleteConfirmation: () -> Void
     let onShowEmptyTrashConfirmation: () -> Void
 
@@ -48,14 +46,6 @@ struct HomeHeaderView: View {
                             .font(.bodyMedium)
                             .foregroundColor(.accentPrimary)
                         }
-
-                        Button(action: onShowBatchTagSheet) {
-                            Image(systemName: "tag")
-                                .font(.system(size: 18, weight: .medium))
-                                .foregroundColor(.accentPrimary)
-                        }
-                        .disabled(selectedNotesCount == 0)
-                        .opacity(selectedNotesCount == 0 ? 0.3 : 1.0)
 
                         Button(action: onShowDeleteConfirmation) {
                             Image(systemName: "trash")
@@ -104,28 +94,8 @@ struct HomeHeaderView: View {
         .padding(.leading, -10)
     }
 
-    @ViewBuilder
     private var headerTitleView: some View {
-        if isTrashSelected {
-            titleText
-        } else {
-            Menu {
-                Button(action: onEnterSelectionMode) {
-                    Label(L10n.text("home.header.title_menu.select_notes"), systemImage: "checkmark.circle")
-                }
-            } label: {
-                HStack(spacing: 5) {
-                    titleText
-
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundColor(.textSub.opacity(0.78))
-                        .offset(y: 1)
-                }
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(L10n.text("home.header.accessibility.title_menu"))
-        }
+        titleText
     }
 
     @ViewBuilder

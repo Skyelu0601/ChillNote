@@ -14,9 +14,36 @@ struct RichTextEditorSelection: Equatable {
     }
 }
 
+@MainActor
+private protocol RichTextEditorControlling: AnyObject {
+    func flushPendingChanges()
+}
+
+/// Keeps persistence and external actions out of UITextView's per-keystroke path.
+/// The note screen can explicitly flush before navigation, AI actions, exports,
+/// or when the app moves to the background.
+@MainActor
+final class RichTextEditorController {
+    private weak var editor: RichTextEditorControlling?
+
+    fileprivate func connect(_ editor: RichTextEditorControlling) {
+        self.editor = editor
+    }
+
+    fileprivate func disconnect(_ editor: RichTextEditorControlling) {
+        guard self.editor === editor else { return }
+        self.editor = nil
+    }
+
+    func flush() {
+        editor?.flushPendingChanges()
+    }
+}
+
 struct RichTextEditorView: UIViewRepresentable {
     @Binding var text: String
     var selection: Binding<RichTextEditorSelection>?
+    let controller: RichTextEditorController
     var isEditable: Bool = true
     var font: UIFont = .systemFont(ofSize: 17)
     var textColor: UIColor = .label
@@ -24,12 +51,16 @@ struct RichTextEditorView: UIViewRepresentable {
     var isScrollEnabled: Bool = true
     
     func makeUIView(context: Context) -> InteractiveTextView {
-        let textView = InteractiveTextView()
+        let textView = InteractiveTextView(usingTextLayoutManager: true)
+        // `usingTextLayoutManager` is backed by a UIKit class factory and can
+        // bypass the subclass initializers where the gesture is normally set up.
+        textView.installCheckboxTapHandling()
         textView.delegate = context.coordinator
         textView.backgroundColor = .clear
         textView.isEditable = isEditable
         textView.allowsEditingTextAttributes = true
         textView.setEditorScrollingEnabled(isScrollEnabled)
+        textView.setContentHuggingPriority(.defaultLow, for: .vertical)
 
         // Remember the editor's configured base font/color so paste handling
         // doesn't have to rely on UITextView.font (which can return nil or a
@@ -71,11 +102,16 @@ struct RichTextEditorView: UIViewRepresentable {
         textView.onCheckboxTap = { lineIndex, range in
             context.coordinator.toggleCheckbox(at: range, in: textView)
         }
+        context.coordinator.textView = textView
+        controller.connect(context.coordinator)
 
         return textView
     }
     
     func updateUIView(_ textView: InteractiveTextView, context: Context) {
+        context.coordinator.parent = self
+        context.coordinator.textView = textView
+        controller.connect(context.coordinator)
         textView.isEditable = isEditable
         textView.setEditorScrollingEnabled(isScrollEnabled)
         textView.editorBaseFont = font
@@ -87,26 +123,56 @@ struct RichTextEditorView: UIViewRepresentable {
         // to avoid clobbering the user's cursor while typing.
         if text != context.coordinator.lastKnownMarkdown {
             guard textView.markedTextRange == nil else { return }
-            context.coordinator.editorSession.applyExternalMarkdown(
+            let snapshot = context.coordinator.editorSession.applyExternalMarkdown(
                 text,
                 to: textView,
                 markdownSelection: selection?.wrappedValue
             )
-            context.coordinator.lastKnownMarkdown = text
-            context.coordinator.publishSelection(from: textView)
+            context.coordinator.acceptExternalMarkdown(text, snapshot: snapshot)
         }
+    }
+
+    func sizeThatFits(
+        _ proposal: ProposedViewSize,
+        uiView: InteractiveTextView,
+        context: Context
+    ) -> CGSize? {
+        guard !isScrollEnabled,
+              let width = proposal.width,
+              width > 0 else {
+            return nil
+        }
+
+        return CGSize(
+            width: width,
+            height: uiView.heightThatFitsAllContent(width: width)
+        )
+    }
+
+    static func dismantleUIView(_ uiView: InteractiveTextView, coordinator: Coordinator) {
+        coordinator.flushPendingChanges()
+        coordinator.parent.controller.disconnect(coordinator)
     }
     
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
     }
     
-    class Coordinator: NSObject, UITextViewDelegate {
+    @MainActor
+    class Coordinator: NSObject, UITextViewDelegate, RichTextEditorControlling {
         var parent: RichTextEditorView
         let editorSession: MarkdownEditorSession
+        weak var textView: UITextView?
         // Cache to prevent circular updates
         var lastKnownMarkdown: String = ""
+        private var latestSnapshot: RichTextSerializationSnapshot?
+        private var hasUncommittedText = false
+        private var commitWorkItem: DispatchWorkItem?
+        private var selectionWorkItem: DispatchWorkItem?
         private var pendingInputStyle: PendingInputStyle?
+
+        private static let commitDelay: TimeInterval = 0.4
+        private static let selectionDelay: TimeInterval = 0.12
 
         private struct PendingInputStyle {
             let range: NSRange
@@ -130,15 +196,16 @@ struct RichTextEditorView: UIViewRepresentable {
 
         func textViewDidBeginEditing(_ textView: UITextView) {
             normalizeTypingAttributesForListPrefixIfNeeded(in: textView)
+            scheduleCaretVisibilityUpdate(in: textView)
         }
         
         func textViewDidChange(_ textView: UITextView) {
             applyPendingInputStyleIfNeeded(in: textView)
             guard textView.markedTextRange == nil else { return }
-            let snapshot = RichTextConverter.serializationSnapshot(from: textView.attributedText)
-            lastKnownMarkdown = snapshot.markdown
-            parent.text = snapshot.markdown
-            publishSelection(from: textView, snapshot: snapshot)
+            textView.setNeedsLayout()
+            hasUncommittedText = true
+            scheduleCommit()
+            scheduleCaretVisibilityUpdate(in: textView)
             if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
                 updateToolbarState(in: textView, toolbar: toolbar)
             }
@@ -147,9 +214,82 @@ struct RichTextEditorView: UIViewRepresentable {
         func textViewDidChangeSelection(_ textView: UITextView) {
             normalizeTypingAttributesForListPrefixIfNeeded(in: textView)
             guard textView.markedTextRange == nil else { return }
-            publishSelection(from: textView)
+            if !hasUncommittedText {
+                scheduleSelectionPublish()
+            }
+            scheduleCaretVisibilityUpdate(in: textView)
             if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
                 updateToolbarState(in: textView, toolbar: toolbar)
+            }
+        }
+
+        func textViewDidEndEditing(_ textView: UITextView) {
+            flushPendingChanges()
+        }
+
+        func acceptExternalMarkdown(
+            _ markdown: String,
+            snapshot: RichTextSerializationSnapshot
+        ) {
+            cancelScheduledWork()
+            lastKnownMarkdown = markdown
+            latestSnapshot = snapshot
+            hasUncommittedText = false
+            scheduleSelectionPublish()
+        }
+
+        func flushPendingChanges() {
+            cancelScheduledWork()
+            guard let textView, textView.markedTextRange == nil else { return }
+
+            if hasUncommittedText || latestSnapshot == nil {
+                let snapshot = RichTextConverter.serializationSnapshot(from: textView.attributedText)
+                latestSnapshot = snapshot
+                hasUncommittedText = false
+                lastKnownMarkdown = snapshot.markdown
+                if parent.text != snapshot.markdown {
+                    parent.text = snapshot.markdown
+                }
+            }
+
+            if let latestSnapshot {
+                publishSelection(from: textView, snapshot: latestSnapshot)
+            }
+        }
+
+        private func scheduleCommit() {
+            commitWorkItem?.cancel()
+            selectionWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self] in
+                self?.flushPendingChanges()
+            }
+            commitWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.commitDelay, execute: workItem)
+        }
+
+        private func scheduleSelectionPublish() {
+            selectionWorkItem?.cancel()
+            let workItem = DispatchWorkItem { [weak self] in
+                guard let self, let textView = self.textView else { return }
+                if let latestSnapshot = self.latestSnapshot {
+                    self.publishSelection(from: textView, snapshot: latestSnapshot)
+                }
+            }
+            selectionWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + Self.selectionDelay, execute: workItem)
+        }
+
+        private func cancelScheduledWork() {
+            commitWorkItem?.cancel()
+            selectionWorkItem?.cancel()
+            commitWorkItem = nil
+            selectionWorkItem = nil
+        }
+
+        private func scheduleCaretVisibilityUpdate(in textView: UITextView) {
+            guard !parent.isScrollEnabled else { return }
+            DispatchQueue.main.async { [weak textView] in
+                (textView as? InteractiveTextView)?.scrollCaretToVisibleInEnclosingScrollView()
             }
         }
 
@@ -159,14 +299,11 @@ struct RichTextEditorView: UIViewRepresentable {
         ) {
             guard let selection = parent.selection else { return }
             let selectedRange = textView.selectedRange
-            let currentSnapshot = snapshot
-                ?? RichTextConverter.serializationSnapshot(from: textView.attributedText ?? NSAttributedString())
+            guard let currentSnapshot = snapshot ?? latestSnapshot else { return }
             let nextSelection = currentSnapshot.markdownSelection(for: selectedRange)
 
             guard selection.wrappedValue != nextSelection else { return }
-            DispatchQueue.main.async {
-                selection.wrappedValue = nextSelection
-            }
+            selection.wrappedValue = nextSelection
         }
         
         // MARK: - Smart Enter Logic
@@ -358,35 +495,13 @@ struct RichTextEditorView: UIViewRepresentable {
             
             // Apply Styles to the Prefix (Orange Zone)
             if isCheckbox {
-                let symbolFont = UIFont.systemFont(
-                    ofSize: parent.font.pointSize + RichTextConverter.Config.checkboxSymbolFontSizeOffset,
-                    weight: .medium
-                )
                 let isChecked = checkboxState ?? false
-                let symbolColor = isChecked ? RichTextConverter.Config.checkboxCheckedColor : RichTextConverter.Config.checkboxUncheckedColor
-                let symbolRange = NSRange(location: stylingRange.location, length: min(1, stylingRange.length))
-                let spacerRange = NSRange(location: stylingRange.location + symbolRange.length, length: max(0, stylingRange.length - symbolRange.length))
-                if isChecked {
-                    let prefix = RichTextConverter.makeCheckedCheckboxPrefix(
-                        baseFont: parent.font,
-                        paragraphStyle: checkboxParagraphStyle
-                    )
-                    textView.textStorage.replaceCharacters(in: stylingRange, with: prefix)
-                } else {
-                    textView.textStorage.addAttributes([
-                        .foregroundColor: symbolColor,
-                        .font: symbolFont,
-                        .baselineOffset: RichTextConverter.Config.checkboxBaselineOffset,
-                        .paragraphStyle: checkboxParagraphStyle,
-                        RichTextConverter.Key.checkbox: isChecked
-                    ], range: symbolRange)
-                }
-                
-                // Ensure no strikethrough (safety)
-                textView.textStorage.removeAttribute(.strikethroughStyle, range: symbolRange)
-                if spacerRange.length > 0 {
-                    textView.textStorage.setAttributes(checkboxTypingAttributes(), range: spacerRange)
-                }
+                let prefix = RichTextConverter.makeCheckboxPrefix(
+                    checked: isChecked,
+                    baseFont: parent.font,
+                    paragraphStyle: checkboxParagraphStyle
+                )
+                textView.textStorage.replaceCharacters(in: stylingRange, with: prefix)
                 applyCheckboxParagraphStyle(in: textView, at: NSRange(location: lineRange.location, length: max(newText.count, 1)))
                 
             } else if isOrdered {
@@ -466,9 +581,13 @@ struct RichTextEditorView: UIViewRepresentable {
             if trimmedLine.trimmingCharacters(in: .whitespacesAndNewlines) == current.trimmingCharacters(in: .whitespacesAndNewlines) {
                 // Remove the list item from the current line, but keep a blank line
                 textView.textStorage.beginEditing()
-                textView.textStorage.replaceCharacters(in: lineRange, with: "\n")
+                textView.textStorage.replaceCharacters(
+                    in: lineRange,
+                    with: NSAttributedString(string: "\n", attributes: defaultTypingAttributes())
+                )
                 textView.textStorage.endEditing()
                 textView.selectedRange = NSRange(location: lineRange.location + 1, length: 0)
+                applyDefaultTypingAttributes(to: textView)
                 textViewDidChange(textView)
                 return false
             }
@@ -498,25 +617,12 @@ struct RichTextEditorView: UIViewRepresentable {
             
             // Apply Styles to the Prefix (Orange Zone)
             if isCheckbox {
-                let symbolFont = UIFont.systemFont(
-                    ofSize: parent.font.pointSize + RichTextConverter.Config.checkboxSymbolFontSizeOffset,
-                    weight: .medium
+                let checkboxPrefix = RichTextConverter.makeCheckboxPrefix(
+                    checked: false,
+                    baseFont: parent.font,
+                    paragraphStyle: checkboxParagraphStyle
                 )
-                let symbolRange = NSRange(location: prefixRange.location, length: min(1, prefixRange.length))
-                let spacerRange = NSRange(location: prefixRange.location + symbolRange.length, length: max(0, prefixRange.length - symbolRange.length))
-                textView.textStorage.addAttributes([
-                    .foregroundColor: RichTextConverter.Config.checkboxUncheckedColor,
-                    .font: symbolFont,
-                    .baselineOffset: RichTextConverter.Config.checkboxBaselineOffset,
-                    .paragraphStyle: checkboxParagraphStyle,
-                    RichTextConverter.Key.checkbox: false
-                ], range: symbolRange)
-                
-                // Ensure no strikethrough on the checkbox itself (safety)
-                textView.textStorage.removeAttribute(.strikethroughStyle, range: symbolRange)
-                if spacerRange.length > 0 {
-                    textView.textStorage.setAttributes(checkboxTypingAttributes(), range: spacerRange)
-                }
+                textView.textStorage.replaceCharacters(in: prefixRange, with: checkboxPrefix)
                 applyCheckboxParagraphStyle(in: textView, at: prefixRange)
                 
             } else if isOrdered {
@@ -567,6 +673,12 @@ struct RichTextEditorView: UIViewRepresentable {
                 applyBlockStyle(level: 2, in: textView, range: selectedRange)
             case .checklist:
                 applyChecklist(in: textView, range: selectedRange)
+                // Checklist is a structural edit. Publish it immediately so a
+                // SwiftUI refresh cannot restore the pre-action Markdown while
+                // the normal debounced commit is still pending.
+                textViewDidChange(textView)
+                flushPendingChanges()
+                return
             case .undo:
                 textView.undoManager?.undo()
             case .redo:
@@ -699,54 +811,68 @@ struct RichTextEditorView: UIViewRepresentable {
         
         private func applyChecklist(in textView: UITextView, range: NSRange) {
             let nsText = textView.text as NSString
-            let lineRange = nsText.lineRange(for: range)
-            let lineText = nsText.substring(with: lineRange)
-            
+            let safeRange = NSRange(
+                location: min(max(range.location, 0), nsText.length),
+                length: min(range.length, max(0, nsText.length - range.location))
+            )
+            let selectedLinesRange = nsText.lineRange(for: safeRange)
+            let lineRanges = paragraphRanges(in: selectedLinesRange, text: nsText)
+            let shouldRemove = !lineRanges.isEmpty && lineRanges.allSatisfy {
+                checkboxState(atLineStart: $0.location, in: textView) != nil
+            }
+
             textView.textStorage.beginEditing()
-            
-            // Check if already a checkbox
-            if lineText.hasPrefix(RichTextConverter.Config.checkboxAttachmentPrefix)
-                || lineText.hasPrefix("\(RichTextConverter.Config.checkboxUncheckedSymbol) ")
-                || lineText.hasPrefix("\(RichTextConverter.Config.checkboxCheckedSymbol) ") {
-                // Remove checkbox
-                textView.textStorage.replaceCharacters(in: NSRange(location: lineRange.location, length: 2), with: "")
-                let newFullRange = NSRange(location: lineRange.location, length: lineRange.length - 2)
-                textView.textStorage.removeAttribute(RichTextConverter.Key.checkbox, range: newFullRange)
-                if newFullRange.length > 0 {
-                    textView.textStorage.addAttribute(.paragraphStyle, value: RichTextConverter.Config.baseStyle(), range: newFullRange)
+
+            for lineRange in lineRanges.reversed() {
+                if shouldRemove {
+                    guard let prefixRange = checkboxPrefixRange(atLineStart: lineRange.location, in: textView) else {
+                        continue
+                    }
+                    textView.textStorage.replaceCharacters(in: prefixRange, with: "")
+                    let contentLength = max(0, lineRange.length - prefixRange.length)
+                    if contentLength > 0 {
+                        let contentRange = NSRange(location: lineRange.location, length: contentLength)
+                        textView.textStorage.removeAttribute(.strikethroughStyle, range: contentRange)
+                        textView.textStorage.addAttributes([
+                            .foregroundColor: parent.textColor,
+                            .paragraphStyle: RichTextConverter.Config.baseStyle()
+                        ], range: contentRange)
+                    }
+                } else if checkboxState(atLineStart: lineRange.location, in: textView) == nil {
+                    let prefix = RichTextConverter.makeCheckboxPrefix(
+                        checked: false,
+                        baseFont: parent.font,
+                        paragraphStyle: checkboxParagraphStyle
+                    )
+                    textView.textStorage.replaceCharacters(
+                        in: NSRange(location: lineRange.location, length: 0),
+                        with: prefix
+                    )
+                    let styledLength = max(1, lineRange.length + prefix.length)
+                    textView.textStorage.addAttribute(
+                        .paragraphStyle,
+                        value: checkboxParagraphStyle,
+                        range: NSRange(location: lineRange.location, length: styledLength)
+                    )
                 }
-                let shiftedLocation = max(lineRange.location, range.location - 2)
-                textView.selectedRange = NSRange(location: shiftedLocation, length: 0)
-            } else {
-                // Add checkbox symbol at start of line
-                let symbol = "\(RichTextConverter.Config.checkboxUncheckedSymbol) "
-                textView.textStorage.replaceCharacters(in: NSRange(location: lineRange.location, length: 0), with: symbol)
-                
-                // Set Attributes
-                let symbolRange = NSRange(location: lineRange.location, length: 1)
-                let spacerRange = NSRange(location: lineRange.location + 1, length: 1)
-                textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: false, range: symbolRange)
-                textView.textStorage.addAttribute(.foregroundColor, value: RichTextConverter.Config.checkboxUncheckedColor, range: symbolRange)
-                textView.textStorage.addAttribute(.baselineOffset, value: RichTextConverter.Config.checkboxBaselineOffset, range: symbolRange)
-                textView.textStorage.addAttribute(.paragraphStyle, value: checkboxParagraphStyle, range: symbolRange)
-                textView.textStorage.addAttribute(
-                    .font,
-                    value: UIFont.systemFont(
-                        ofSize: parent.font.pointSize + RichTextConverter.Config.checkboxSymbolFontSizeOffset,
-                        weight: .medium
-                    ),
-                    range: symbolRange
-                )
-                textView.textStorage.setAttributes(checkboxTypingAttributes(), range: spacerRange)
-                applyCheckboxParagraphStyle(in: textView, at: NSRange(location: lineRange.location, length: max(lineRange.length + 2, 1)))
-                textView.selectedRange = NSRange(location: spacerRange.upperBound, length: 0)
             }
-            
             textView.textStorage.endEditing()
-            if textView.textStorage.length > 0,
-               let lineRangeAfterEdit = currentLineRange(in: textView) {
-                applyCheckboxParagraphStyle(in: textView, at: lineRangeAfterEdit)
+
+            let prefixLength = RichTextConverter.makeCheckboxPrefix(
+                checked: false,
+                baseFont: parent.font,
+                paragraphStyle: checkboxParagraphStyle
+            ).length
+            if range.length == 0 {
+                let caretLocation = shouldRemove
+                    ? max(selectedLinesRange.location, range.location - prefixLength)
+                    : range.location + (checkboxState(atLineStart: selectedLinesRange.location, in: textView) == nil ? 0 : prefixLength)
+                textView.selectedRange = NSRange(
+                    location: min(max(caretLocation, selectedLinesRange.location), textView.textStorage.length),
+                    length: 0
+                )
             }
+
             if isCursorInCheckboxLine(in: textView) {
                 textView.typingAttributes = checkboxTypingAttributes()
             } else {
@@ -764,43 +890,16 @@ struct RichTextEditorView: UIViewRepresentable {
             let newState = !checkboxState
             textView.textStorage.beginEditing()
             
-            let newColor = newState ? RichTextConverter.Config.checkboxCheckedColor : RichTextConverter.Config.checkboxUncheckedColor
-
-            let replacementLength: Int
-            if newState {
-                let replacement = RichTextConverter.makeCheckedCheckboxPrefix(
-                    baseFont: parent.font,
-                    paragraphStyle: checkboxParagraphStyle
-                )
-                replacementLength = replacement.length
-                textView.textStorage.replaceCharacters(in: replacementRange, with: replacement)
-            } else {
-                let newSymbol = "\(RichTextConverter.Config.checkboxUncheckedSymbol) "
-                replacementLength = (newSymbol as NSString).length
-                textView.textStorage.replaceCharacters(in: replacementRange, with: newSymbol)
-            }
+            let originalSelection = textView.selectedRange
+            let replacement = RichTextConverter.makeCheckboxPrefix(
+                checked: newState,
+                baseFont: parent.font,
+                paragraphStyle: checkboxParagraphStyle
+            )
+            let replacementLength = replacement.length
+            textView.textStorage.replaceCharacters(in: replacementRange, with: replacement)
             
             let newRange = NSRange(location: replacementRange.location, length: replacementLength)
-            let symbolRange = NSRange(location: newRange.location, length: min(1, newRange.length))
-            let spacerRange = NSRange(location: newRange.location + symbolRange.length, length: max(0, newRange.length - symbolRange.length))
-            textView.textStorage.addAttribute(RichTextConverter.Key.checkbox, value: newState, range: symbolRange)
-            if !newState {
-                textView.textStorage.addAttribute(.foregroundColor, value: newColor, range: symbolRange)
-                textView.textStorage.addAttribute(.baselineOffset, value: RichTextConverter.Config.checkboxBaselineOffset, range: symbolRange)
-                textView.textStorage.addAttribute(.paragraphStyle, value: checkboxParagraphStyle, range: symbolRange)
-                textView.textStorage.addAttribute(
-                    .font,
-                    value: UIFont.systemFont(
-                        ofSize: parent.font.pointSize + RichTextConverter.Config.checkboxSymbolFontSizeOffset,
-                        weight: .medium
-                    ),
-                    range: symbolRange
-                )
-            }
-            if spacerRange.length > 0 {
-                textView.textStorage.setAttributes(checkboxTypingAttributes(), range: spacerRange)
-            }
-            
             let lineRange = (textView.text as NSString).lineRange(for: newRange)
             applyCheckboxParagraphStyle(in: textView, at: lineRange)
             let contentRange = NSRange(location: newRange.upperBound, length: lineRange.upperBound - newRange.upperBound)
@@ -816,9 +915,15 @@ struct RichTextEditorView: UIViewRepresentable {
             }
             
             textView.textStorage.endEditing()
-            textView.selectedRange = NSRange(location: newRange.upperBound, length: 0)
-            textView.typingAttributes = checkboxTypingAttributes()
+            let lengthDelta = replacementLength - replacementRange.length
+            if originalSelection.location >= replacementRange.upperBound {
+                textView.selectedRange = NSRange(
+                    location: max(0, originalSelection.location + lengthDelta),
+                    length: originalSelection.length
+                )
+            }
             textViewDidChange(textView)
+            flushPendingChanges()
         }
 
         private func checkboxReplacementRange(for range: NSRange, in textView: UITextView) -> NSRange {
@@ -833,6 +938,44 @@ struct RichTextEditorView: UIViewRepresentable {
             }
 
             return replacementRange
+        }
+
+        private func paragraphRanges(in selectedRange: NSRange, text: NSString) -> [NSRange] {
+            if selectedRange.length == 0 {
+                return [selectedRange]
+            }
+
+            var ranges: [NSRange] = []
+            var cursor = selectedRange.location
+            while cursor < selectedRange.upperBound {
+                let lineRange = text.lineRange(for: NSRange(location: cursor, length: 0))
+                ranges.append(lineRange)
+                guard lineRange.upperBound > cursor else { break }
+                cursor = lineRange.upperBound
+            }
+            return ranges
+        }
+
+        private func checkboxState(atLineStart location: Int, in textView: UITextView) -> Bool? {
+            guard location >= 0, location < textView.textStorage.length else { return nil }
+            return textView.textStorage.attribute(
+                RichTextConverter.Key.checkbox,
+                at: location,
+                effectiveRange: nil
+            ) as? Bool
+        }
+
+        private func checkboxPrefixRange(atLineStart location: Int, in textView: UITextView) -> NSRange? {
+            guard location >= 0, location < textView.textStorage.length else { return nil }
+            var effectiveRange = NSRange(location: 0, length: 0)
+            guard textView.textStorage.attribute(
+                RichTextConverter.Key.checkbox,
+                at: location,
+                effectiveRange: &effectiveRange
+            ) != nil else {
+                return nil
+            }
+            return checkboxReplacementRange(for: effectiveRange, in: textView)
         }
 
         private func defaultTypingAttributes() -> [NSAttributedString.Key: Any] {
@@ -940,7 +1083,7 @@ class EditorFormattingToolbar: UIView {
     
     private func setupUI() {
         self.backgroundColor = UIColor.systemBackground.withAlphaComponent(0.95)
-        self.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 44)
+        self.frame = CGRect(x: 0, y: 0, width: UIScreen.main.bounds.width, height: 50)
         
         let blurEffect = UIBlurEffect(style: .systemMaterial)
         let blurView = UIVisualEffectView(effect: blurEffect)
@@ -952,7 +1095,7 @@ class EditorFormattingToolbar: UIView {
         stackView.axis = .horizontal
         stackView.distribution = .equalSpacing
         stackView.alignment = .center
-        stackView.spacing = 16
+        stackView.spacing = 8
         
         let buttons: [(String, EditorAction)] = [
             ("bold", .bold),
@@ -965,9 +1108,15 @@ class EditorFormattingToolbar: UIView {
         
         for (icon, action) in buttons {
             let btn = UIButton(type: .system)
-            let config = UIImage.SymbolConfiguration(pointSize: 18, weight: .medium)
+            let config = UIImage.SymbolConfiguration(pointSize: 17, weight: .semibold)
             btn.setImage(UIImage(systemName: icon, withConfiguration: config), for: .normal)
             btn.tintColor = inactiveTintColor
+            btn.layer.cornerRadius = 9
+            btn.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                btn.widthAnchor.constraint(equalToConstant: 38),
+                btn.heightAnchor.constraint(equalToConstant: 38)
+            ])
             btn.addAction(UIAction { [weak self] _ in
                 self?.onAction?(action)
                 // Haptic feedback
@@ -981,6 +1130,12 @@ class EditorFormattingToolbar: UIView {
         let dismissBtn = UIButton(type: .system)
         dismissBtn.setImage(UIImage(systemName: "keyboard.chevron.compact.down"), for: .normal)
         dismissBtn.tintColor = .secondaryLabel
+        dismissBtn.layer.cornerRadius = 9
+        dismissBtn.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            dismissBtn.widthAnchor.constraint(equalToConstant: 38),
+            dismissBtn.heightAnchor.constraint(equalToConstant: 38)
+        ])
         dismissBtn.addAction(UIAction { [weak self] _ in
             self?.textView.resignFirstResponder()
         }, for: .touchUpInside)
@@ -989,8 +1144,8 @@ class EditorFormattingToolbar: UIView {
         addSubview(stackView)
         stackView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 20),
-            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -20),
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
             stackView.topAnchor.constraint(equalTo: topAnchor),
             stackView.bottomAnchor.constraint(equalTo: bottomAnchor)
         ])
@@ -999,6 +1154,7 @@ class EditorFormattingToolbar: UIView {
     func setActive(_ action: EditorAction, isActive: Bool) {
         guard let button = buttons[action] else { return }
         button.tintColor = isActive ? activeTintColor : inactiveTintColor
+        button.backgroundColor = isActive ? activeTintColor.withAlphaComponent(0.12) : .clear
     }
 
     func setEnabled(_ action: EditorAction, isEnabled: Bool) {
@@ -1018,24 +1174,66 @@ class InteractiveTextView: UITextView {
     private let checkboxTapTargetWidth: CGFloat = 44
     private let checkboxTapVerticalPadding: CGFloat = 10
     private weak var checkboxTapGesture: UITapGestureRecognizer?
+    private var lastIntrinsicContentHeight: CGFloat = 0
+    private var lastMeasuredWidth: CGFloat = 0
+
+    override var contentSize: CGSize {
+        didSet {
+            guard !isScrollEnabled else { return }
+            let nextHeight = max(contentSize.height, 100)
+            guard abs(lastIntrinsicContentHeight - nextHeight) > 0.5 else { return }
+            lastIntrinsicContentHeight = nextHeight
+            invalidateIntrinsicContentSize()
+        }
+    }
+
+    override var intrinsicContentSize: CGSize {
+        guard !isScrollEnabled else { return super.intrinsicContentSize }
+        return CGSize(
+            width: UIView.noIntrinsicMetric,
+            height: heightThatFitsAllContent(width: bounds.width)
+        )
+    }
+
+    func heightThatFitsAllContent(width: CGFloat) -> CGFloat {
+        let fittingWidth = width > 0 ? width : UIScreen.main.bounds.width - 32
+        let fittingSize = sizeThatFits(
+            CGSize(width: fittingWidth, height: .greatestFiniteMagnitude)
+        )
+        return max(fittingSize.height, 100)
+    }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        if !isScrollEnabled,
+           bounds.width > 0,
+           abs(lastMeasuredWidth - bounds.width) > 0.5 {
+            lastMeasuredWidth = bounds.width
+            invalidateIntrinsicContentSize()
+        }
+    }
     
     override init(frame: CGRect, textContainer: NSTextContainer?) {
         super.init(frame: frame, textContainer: textContainer)
-        setupTapGesture()
-        setupTextChangeObserver()
+        installCheckboxTapHandling()
     }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
-        setupTapGesture()
-        setupTextChangeObserver()
+        installCheckboxTapHandling()
     }
-    
-    private func setupTapGesture() {
+
+    func installCheckboxTapHandling() {
+        guard checkboxTapGesture == nil else { return }
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
         tapGesture.delegate = self
+        tapGesture.cancelsTouchesInView = false
         addGestureRecognizer(tapGesture)
         checkboxTapGesture = tapGesture
+    }
+
+    var isCheckboxTapHandlingInstalled: Bool {
+        checkboxTapGesture != nil
     }
 
     func setEditorScrollingEnabled(_ enabled: Bool) {
@@ -1043,21 +1241,31 @@ class InteractiveTextView: UITextView {
         panGestureRecognizer.isEnabled = enabled
         showsVerticalScrollIndicator = enabled
         alwaysBounceVertical = enabled
-    }
-    
-    private func setupTextChangeObserver() {
-        // Observe text changes to invalidate intrinsic content size
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(textDidChangeNotification),
-            name: UITextView.textDidChangeNotification,
-            object: self
-        )
-    }
-    
-    @objc private func textDidChangeNotification() {
-        // Force layout recalculation when text changes
+        keyboardDismissMode = enabled ? .interactive : .none
         invalidateIntrinsicContentSize()
+    }
+
+    func scrollCaretToVisibleInEnclosingScrollView() {
+        guard !isScrollEnabled,
+              let selectedTextRange,
+              let enclosingScrollView else { return }
+
+        layoutIfNeeded()
+        let caretRect = caretRect(for: selectedTextRange.end)
+            .insetBy(dx: -8, dy: -16)
+        let targetRect = convert(caretRect, to: enclosingScrollView)
+        enclosingScrollView.scrollRectToVisible(targetRect, animated: false)
+    }
+
+    private var enclosingScrollView: UIScrollView? {
+        var ancestor = superview
+        while let view = ancestor {
+            if let scrollView = view as? UIScrollView {
+                return scrollView
+            }
+            ancestor = view.superview
+        }
+        return nil
     }
     
     // MARK: - Paste Handling
@@ -1074,26 +1282,6 @@ class InteractiveTextView: UITextView {
         }
     }
 
-    // MARK: - Intrinsic Content Size for ScrollView support
-    
-    override var intrinsicContentSize: CGSize {
-        // When scrolling is disabled, calculate the size needed to show all content
-        if !isScrollEnabled {
-            let fixedWidth = bounds.width > 0 ? bounds.width : UIScreen.main.bounds.width - 32
-            let size = sizeThatFits(CGSize(width: fixedWidth, height: .greatestFiniteMagnitude))
-            return CGSize(width: UIView.noIntrinsicMetric, height: max(size.height, 100))
-        }
-        return super.intrinsicContentSize
-    }
-    
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        // Ensure intrinsic size is updated after layout
-        if !isScrollEnabled {
-            invalidateIntrinsicContentSize()
-        }
-    }
-    
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         let location = gesture.location(in: self)
         if let range = checkboxRangeForTap(at: location) {
@@ -1102,7 +1290,7 @@ class InteractiveTextView: UITextView {
         }
     }
 
-    private func checkboxRangeForTap(at location: CGPoint) -> NSRange? {
+    func checkboxRangeForTap(at location: CGPoint) -> NSRange? {
         if let index = characterIndex(at: location),
            let range = checkboxRange(atCharacterIndex: index) {
             return range
@@ -1136,25 +1324,14 @@ class InteractiveTextView: UITextView {
 
     private func lineCharacterRange(at location: CGPoint) -> NSRange? {
         guard textStorage.length > 0 else { return nil }
-
-        let containerPoint = CGPoint(
-            x: location.x - textContainerInset.left,
-            y: location.y - textContainerInset.top
+        guard let position = closestPosition(to: location) else { return nil }
+        let characterIndex = min(
+            max(offset(from: beginningOfDocument, to: position), 0),
+            textStorage.length - 1
         )
-        let glyphIndex = layoutManager.glyphIndex(
-            for: containerPoint,
-            in: textContainer,
-            fractionOfDistanceThroughGlyph: nil
+        return (text as NSString).lineRange(
+            for: NSRange(location: characterIndex, length: 0)
         )
-        guard glyphIndex < layoutManager.numberOfGlyphs else { return nil }
-
-        var lineGlyphRange = NSRange(location: 0, length: 0)
-        _ = layoutManager.lineFragmentUsedRect(
-            forGlyphAt: glyphIndex,
-            effectiveRange: &lineGlyphRange,
-            withoutAdditionalLayout: true
-        )
-        return layoutManager.characterRange(forGlyphRange: lineGlyphRange, actualGlyphRange: nil)
     }
 
     private func firstCheckboxRange(in lineRange: NSRange) -> NSRange? {
@@ -1162,7 +1339,6 @@ class InteractiveTextView: UITextView {
 
         let lineUpperBound = lineRange.location + lineRange.length
         var index = lineRange.location
-
         while index < lineUpperBound {
             var effectiveRange = NSRange(location: 0, length: 0)
             let value = textStorage.attribute(
@@ -1170,48 +1346,35 @@ class InteractiveTextView: UITextView {
                 at: index,
                 effectiveRange: &effectiveRange
             )
-
             if value != nil {
                 return NSIntersectionRange(lineRange, effectiveRange)
             }
-
-            index += 1
+            index = NSMaxRange(effectiveRange)
         }
-
         return nil
     }
 
     private func isPointInsideExpandedCheckboxZone(_ location: CGPoint, checkboxRange: NSRange) -> Bool {
-        guard checkboxRange.location < textStorage.length else { return false }
+        guard checkboxRange.location >= 0,
+              checkboxRange.upperBound <= textStorage.length,
+              let start = position(from: beginningOfDocument, offset: checkboxRange.location),
+              let end = position(from: start, offset: checkboxRange.length),
+              let textRange = textRange(from: start, to: end) else {
+            return false
+        }
 
-        let containerPoint = CGPoint(
-            x: location.x - textContainerInset.left,
-            y: location.y - textContainerInset.top
-        )
-        let glyphIndex = layoutManager.glyphIndexForCharacter(at: checkboxRange.location)
-
-        var lineGlyphRange = NSRange(location: 0, length: 0)
-        let lineRect = layoutManager.lineFragmentUsedRect(
-            forGlyphAt: glyphIndex,
-            effectiveRange: &lineGlyphRange,
-            withoutAdditionalLayout: true
-        )
+        let checkboxRect = firstRect(for: textRange)
+        guard !checkboxRect.isNull, !checkboxRect.isInfinite else { return false }
 
         let tapZone = CGRect(
-            x: 0,
-            y: lineRect.minY - checkboxTapVerticalPadding,
-            width: min(lineRect.minX + checkboxTapTargetWidth, textContainer.size.width),
-            height: lineRect.height + (checkboxTapVerticalPadding * 2)
+            x: max(0, checkboxRect.midX - (checkboxTapTargetWidth / 2)),
+            y: checkboxRect.minY - checkboxTapVerticalPadding,
+            width: checkboxTapTargetWidth,
+            height: checkboxRect.height + (checkboxTapVerticalPadding * 2)
         )
 
-        return tapZone.contains(containerPoint)
+        return tapZone.contains(location)
     }
-    
-    deinit {
-        NotificationCenter.default.removeObserver(self)
-    }
-
-    
 }
 
 extension InteractiveTextView: UIGestureRecognizerDelegate {
@@ -1227,5 +1390,10 @@ extension InteractiveTextView: UIGestureRecognizerDelegate {
         }
 
         return super.gestureRecognizerShouldBegin(gestureRecognizer)
+    }
+
+    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                           shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
+        gestureRecognizer === checkboxTapGesture || otherGestureRecognizer === checkboxTapGesture
     }
 }

@@ -15,6 +15,8 @@ export type NoteDTO = {
   sourcePlatformID?: string | null;
   sourcePlatformName?: string | null;
   sourceHost?: string | null;
+  sourceAuthorName?: string | null;
+  sourceAuthorHandle?: string | null;
   sourceCapturedAt?: string | null;
   section?: string | null;
   importStatus?: string | null;

@@ -15,7 +15,7 @@ final class QuickCaptureImportServiceTests: XCTestCase {
         XCTAssertEqual(title, "学英语口语 每天10分钟")
     }
 
-    func testMakeTikTokTranscriptNoteUsesDescriptionAuthorHookTranscriptFormat() async {
+    func testMakeTikTokTranscriptNoteGeneratesTranscriptOnly() async {
         let service = QuickCaptureImportService.shared
         let metadata = QuickCaptureImportService.TikTokOEmbedResponse(
             title: "示例标题 #tag",
@@ -29,17 +29,14 @@ final class QuickCaptureImportServiceTests: XCTestCase {
             metadata: metadata,
             transcript: "第一句转写",
             polishTranscript: false,
-            preferences: .all
+            preferences: .transcriptOnly
         )
 
-        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\n示例标题\n## \(authorHeading)\nCreator\n## \(hookHeading)\n第一句转写\n## \(transcriptHeading)"))
+        XCTAssertEqual(note, "## \(transcriptHeading)\n第一句转写")
         XCTAssertFalse(note.hasPrefix("# "))
-        XCTAssertFalse(note.contains("**示例标题**"))
-        XCTAssertFalse(note.contains("#tag"))
-        XCTAssertFalse(note.contains(L10n.text("quick_capture.media_link.topic_heading")))
-        XCTAssertFalse(note.contains("## \(L10n.text("quick_capture.media_link.source_heading"))"))
-        XCTAssertFalse(note.contains(L10n.text("quick_capture.media_link.author_link_label")))
-        XCTAssertFalse(note.contains("@creator"))
+        XCTAssertFalse(note.contains(descriptionHeading))
+        XCTAssertFalse(note.contains(authorHeading))
+        XCTAssertFalse(note.contains(hookHeading))
     }
 
     func testMakeCreatorMediaTranscriptNoteCanShowTranscriptOnly() async {
@@ -70,7 +67,7 @@ final class QuickCaptureImportServiceTests: XCTestCase {
         XCTAssertFalse(note.contains(hookHeading))
     }
 
-    func testMakeCreatorMediaLinkNoteUsesSimplifiedYouTubeAuthorMetadata() {
+    func testMakeCreatorMediaLinkNoteKeepsMetadataOutOfBody() {
         let service = QuickCaptureImportService.shared
         let metadata = QuickCaptureImportService.CreatorMediaMetadata(
             title: "Video Title",
@@ -81,11 +78,12 @@ final class QuickCaptureImportServiceTests: XCTestCase {
 
         let note = service.makeCreatorMediaLinkNote(metadata: metadata)
 
-        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\nVideo Title\n## \(authorHeading)\nCreator Name"))
-        XCTAssertTrue(note.contains("Creator Name"))
-        XCTAssertFalse(note.contains(L10n.text("quick_capture.media_link.topic_heading")))
-        XCTAssertFalse(note.contains("https://youtube.com/@creator"))
-        XCTAssertFalse(note.contains(L10n.text("quick_capture.media_link.author_link_label")))
+        XCTAssertEqual(
+            note,
+            "## \(transcriptHeading)\n\(L10n.text("quick_capture.media_link.unavailable"))"
+        )
+        XCTAssertFalse(note.contains("Video Title"))
+        XCTAssertFalse(note.contains("Creator Name"))
     }
 
     func testSanitizedInstagramTitleRemovesChromeText() {
@@ -111,39 +109,175 @@ final class QuickCaptureImportServiceTests: XCTestCase {
         XCTAssertEqual(components.authorName, "Mayor Olivia Chow 🇨🇦")
     }
 
-    func testMakeCreatorMediaLinkNoteUsesInstagramAuthorFromTitle() {
+    func testSourceMetadataUsesInstagramAuthorFromTitle() {
         let service = QuickCaptureImportService.shared
         let components = service.instagramTitleComponents(
             "Instagram 用户 Mayor Olivia Chow 🇨🇦 : \"Last year I introduced a food program for CampTO\"",
             fallback: "Instagram"
         )
 
-        let note = service.makeCreatorMediaLinkNote(
-            metadata: QuickCaptureImportService.CreatorMediaMetadata(
-                title: components.title,
-                authorName: components.authorName,
-                authorURL: nil,
-                authorHandle: nil
-            )
+        let source = NoteSourceMetadata(
+            url: "https://www.instagram.com/reel/example",
+            title: components.title,
+            platformID: "instagram",
+            platformName: "Instagram Reels",
+            host: "instagram.com",
+            authorName: components.authorName
         )
 
-        XCTAssertTrue(note.hasPrefix("## \(descriptionHeading)\nLast year I introduced a food program for CampTO\n## \(authorHeading)"))
-        XCTAssertTrue(note.contains("Mayor Olivia Chow 🇨🇦"))
-        XCTAssertFalse(note.contains("未知作者"))
+        XCTAssertEqual(source.authorDisplayName, "Mayor Olivia Chow 🇨🇦")
     }
 
-    func testMakeCreatorMediaLinkNoteUsesHandleWithoutAtWhenNameMissing() {
-        let service = QuickCaptureImportService.shared
-        let metadata = QuickCaptureImportService.CreatorMediaMetadata(
+    func testSourceMetadataUsesHandleWithAtWhenNameMissing() {
+        let source = NoteSourceMetadata(
+            url: "https://www.tiktok.com/@creator/video/123",
             title: "Video Title",
-            authorName: nil,
-            authorURL: nil,
+            platformID: "tiktok",
+            platformName: "TikTok",
+            host: "tiktok.com",
             authorHandle: "@creator"
         )
 
-        let note = service.makeCreatorMediaLinkNote(metadata: metadata)
+        XCTAssertEqual(source.authorDisplayName, "@creator")
+    }
 
-        XCTAssertTrue(note.contains("## \(authorHeading)\ncreator"))
-        XCTAssertFalse(note.contains("@creator"))
+    func testNotePersistsSourceAuthorMetadata() {
+        let note = Note(content: "## Transcript\nHello", userId: "user")
+        note.applySourceMetadata(
+            NoteSourceMetadata(
+                url: "https://www.tiktok.com/@creator/video/123",
+                title: "Video Title",
+                platformID: "tiktok",
+                platformName: "TikTok",
+                host: "tiktok.com",
+                authorName: "Creator Name",
+                authorHandle: "creator"
+            )
+        )
+
+        XCTAssertEqual(note.sourceAuthorName, "Creator Name")
+        XCTAssertEqual(note.sourceAuthorHandle, "creator")
+        XCTAssertEqual(note.sourceMetadata?.authorDisplayName, "Creator Name")
+    }
+
+    func testLegacyAuthorSectionAppearsInSourceMetadata() {
+        let note = Note(
+            content: """
+            ## Description
+            Video Title
+            ## Author
+            Legacy Creator
+            ## Hook
+            Opening line
+            ## Transcript
+            Opening line and the rest of the transcript.
+            """,
+            userId: "user"
+        )
+        note.applySourceMetadata(
+            NoteSourceMetadata(
+                url: "https://www.tiktok.com/@creator/video/123",
+                title: "Video Title",
+                platformID: "tiktok",
+                platformName: "TikTok",
+                host: "tiktok.com"
+            )
+        )
+
+        XCTAssertEqual(note.sourceMetadata?.authorDisplayName, "Legacy Creator")
+    }
+
+    func testLegacyUnknownAuthorIsNotDisplayed() {
+        let note = Note(
+            content: "## Author\nUnknown author\n## Transcript\nHello",
+            userId: "user"
+        )
+        note.applySourceMetadata(
+            NoteSourceMetadata(
+                url: "https://www.youtube.com/watch?v=123",
+                title: "Video Title",
+                platformID: "youtube",
+                platformName: "YouTube",
+                host: "youtube.com"
+            )
+        )
+
+        XCTAssertNil(note.sourceMetadata?.authorDisplayName)
+    }
+
+    func testSyncKeepsLocallyResolvedAuthorWhenServerDoesNotYetProvideIt() {
+        let sourceURL = "https://www.tiktok.com/@creator/video/123"
+        let note = Note(content: "## Transcript\nHello", userId: "user")
+        note.applySourceMetadata(
+            NoteSourceMetadata(
+                url: sourceURL,
+                title: "Video Title",
+                platformID: "tiktok",
+                platformName: "TikTok",
+                host: "tiktok.com",
+                authorName: "Creator Name",
+                authorHandle: "creator"
+            )
+        )
+        let dto = NoteDTO(
+            id: note.id.uuidString,
+            content: note.content,
+            createdAt: "2026-08-06T00:00:00.000Z",
+            updatedAt: nil,
+            deletedAt: nil,
+            pinnedAt: nil,
+            tagIds: nil,
+            version: nil,
+            baseVersion: nil,
+            clientUpdatedAt: nil,
+            lastModifiedByDeviceId: nil,
+            sourceURL: sourceURL,
+            sourceTitle: "Video Title",
+            sourcePlatformID: "tiktok",
+            sourcePlatformName: "TikTok",
+            sourceHost: "tiktok.com"
+        )
+
+        SyncMapper().apply(dto, to: note)
+
+        XCTAssertEqual(note.sourceAuthorName, "Creator Name")
+        XCTAssertEqual(note.sourceAuthorHandle, "creator")
+    }
+
+    func testSyncClearsAuthorWhenSourceChangesAndServerHasNoAuthor() {
+        let note = Note(content: "## Transcript\nHello", userId: "user")
+        note.applySourceMetadata(
+            NoteSourceMetadata(
+                url: "https://www.tiktok.com/@old/video/123",
+                title: "Old Video",
+                platformID: "tiktok",
+                platformName: "TikTok",
+                host: "tiktok.com",
+                authorName: "Old Creator"
+            )
+        )
+        let dto = NoteDTO(
+            id: note.id.uuidString,
+            content: note.content,
+            createdAt: "2026-08-06T00:00:00.000Z",
+            updatedAt: nil,
+            deletedAt: nil,
+            pinnedAt: nil,
+            tagIds: nil,
+            version: nil,
+            baseVersion: nil,
+            clientUpdatedAt: nil,
+            lastModifiedByDeviceId: nil,
+            sourceURL: "https://www.youtube.com/watch?v=new",
+            sourceTitle: "New Video",
+            sourcePlatformID: "youtube",
+            sourcePlatformName: "YouTube",
+            sourceHost: "youtube.com"
+        )
+
+        SyncMapper().apply(dto, to: note)
+
+        XCTAssertNil(note.sourceAuthorName)
+        XCTAssertNil(note.sourceAuthorHandle)
     }
 }

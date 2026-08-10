@@ -233,7 +233,7 @@ struct SubscriptionView: View {
                     Task { await storeService.refreshProducts() }
                 }
                 .font(.brandLabel)
-                .foregroundColor(.accentPrimary)
+                .foregroundColor(.accentPrimaryText)
             }
             .padding(.top, 16)
         } else {
@@ -246,7 +246,7 @@ struct SubscriptionView: View {
                     Task { await storeService.refreshProducts() }
                 }
                 .font(.brandLabel)
-                .foregroundColor(.accentPrimary)
+                .foregroundColor(.accentPrimaryText)
             }
             .padding(.top, 16)
         }
@@ -364,17 +364,6 @@ struct SubscriptionView: View {
             // Header
             VStack(spacing: 16) {
                 BrandWordmark()
-
-                HStack(spacing: 6) {
-                    Image(systemName: "crown.fill")
-                        .foregroundColor(.yellow)
-                    Text(L10n.text("subscription.current_plan"))
-                }
-                .font(.footnote.weight(.medium))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.black.opacity(0.05))
-                .clipShape(Capsule())
             }
             .padding(.top, 20)
             
@@ -442,7 +431,7 @@ struct SubscriptionView: View {
                 } label: {
                     Text(L10n.text("subscription.manage"))
                         .font(.brandButton)
-                        .foregroundColor(.accentPrimary)
+                        .foregroundColor(.accentPrimaryText)
                         .frame(maxWidth: .infinity)
                         .frame(height: BrandTokens.Size.primaryButtonHeight)
                         .background(
@@ -467,19 +456,6 @@ struct SubscriptionView: View {
     private var heroSection: some View {
         VStack(spacing: 20) {
             BrandWordmark()
-            
-            if storeService.currentTier == .pro {
-                HStack(spacing: 6) {
-                    Image(systemName: "crown.fill")
-                        .foregroundColor(.yellow)
-                    Text(L10n.text("subscription.current_plan"))
-                }
-                .font(.footnote.weight(.medium))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.black.opacity(0.05))
-                .clipShape(Capsule())
-            }
         }
     }
     
@@ -488,7 +464,7 @@ struct SubscriptionView: View {
             BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: L10n.text("subscription.benefit.custom_skills.title"), subtitle: L10n.text("subscription.benefit.custom_skills.subtitle"))
             BenefitRow(icon: "plus.app.fill", iconColor: .green, title: L10n.text("subscription.benefit.flexible_capture.title"), subtitle: L10n.text("subscription.benefit.flexible_capture.subtitle"))
             BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: L10n.text("subscription.benefit.unlimited_chat.title"), subtitle: L10n.text("subscription.benefit.unlimited_chat.subtitle"))
-            BenefitRow(icon: "waveform", iconColor: .orange, title: L10n.text("subscription.benefit.deep_dives.title"), subtitle: L10n.text("subscription.benefit.deep_dives.subtitle"))
+            BenefitRow(icon: "lightbulb.max.fill", iconColor: .orange, title: L10n.text("subscription.benefit.deep_dives.title"), subtitle: L10n.text("subscription.benefit.deep_dives.subtitle"))
         }
         .padding(BrandTokens.Space.s4)
         .background(
@@ -534,7 +510,7 @@ struct SubscriptionView: View {
                         Task { await storeService.refreshProducts() }
                     }
                     .font(.caption.weight(.semibold))
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(.accentPrimaryText)
                 }
             } else {
                 VStack(spacing: 10) {
@@ -545,7 +521,7 @@ struct SubscriptionView: View {
                         Task { await storeService.refreshProducts() }
                     }
                     .font(.caption.weight(.semibold))
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(.accentPrimaryText)
                 }
             }
         }
@@ -686,7 +662,7 @@ struct ProductHeroCard: View {
             if let equivalentMonthlyLine = displayInfo.equivalentMonthlyText {
                 Text(equivalentMonthlyLine)
                     .font(.callout)
-                    .foregroundColor(.accentPrimary)
+                    .foregroundColor(.accentPrimaryText)
                     .fontWeight(.medium)
             }
 
@@ -770,7 +746,7 @@ private struct OnboardingTrialFeatureList: View {
                 HStack(alignment: .top, spacing: 10) {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.accentPrimary)
+                        .foregroundColor(.accentSecondaryText)
                         .padding(.top, 1)
 
                     Text(L10n.text(key))

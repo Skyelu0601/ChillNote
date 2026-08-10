@@ -72,17 +72,19 @@ struct RichTextConverter {
         static let h1Size: CGFloat = 24
         static let h2Size: CGFloat = 20
         static let h3Size: CGFloat = 17 // Same as base but bold
-        static let checkboxUncheckedSymbol = "○"
-        static let checkboxCheckedSymbol = "◉"
+        // Keep both states as single text glyphs. This makes the tap target,
+        // caret position, and Markdown serialization identical in both states.
+        static let checkboxUncheckedSymbol = "☐"
+        static let checkboxCheckedSymbol = "☑"
         static let checkboxAttachmentPrefix = "\u{FFFC} "
-        static let checkboxSymbolFontSizeOffset: CGFloat = 10
-        static let checkboxBaselineOffset: CGFloat = -2
+        static let checkboxSymbolFontSizeOffset: CGFloat = 4
+        static let checkboxBaselineOffset: CGFloat = -1
         static let imageMaxWidth: CGFloat = 320
         static let imageMaxHeight: CGFloat = 260
         
         static let listPrefixColor = UIColor.secondaryLabel
-        static let checkboxUncheckedColor = UIColor(Color.accentPrimary)
-        static let checkboxCheckedColor = UIColor.systemGreen
+        static let checkboxUncheckedColor = UIColor.tertiaryLabel
+        static let checkboxCheckedColor = UIColor(Color.accentPrimary)
         static let quoteBarColor = UIColor(Color.accentPrimary)
         static let codeColor = UIColor.systemPurple
         static let codeBgColor = UIColor.systemGray6
@@ -143,7 +145,7 @@ struct RichTextConverter {
         for (index, line) in lines.enumerated() {
             let parsedLine = parseLine(line, baseFont: baseFont, textColor: textColor)
             result.append(parsedLine)
-            
+
             if index < lines.count - 1 {
                 result.append(NSAttributedString(string: "\n", attributes: [
                     .font: baseFont,
@@ -174,10 +176,13 @@ struct RichTextConverter {
         }
         
         // --- Checkboxes ---
-        if trimmed.hasPrefix("- [ ] ") {
-            return parseCheckbox(String(trimmed.dropFirst(6)), checked: false, baseFont: baseFont, textColor: textColor, paragraphStyle: paragraphStyle)
-        } else if trimmed.hasPrefix("- [x] ") || trimmed.hasPrefix("- [X] ") {
-            return parseCheckbox(String(trimmed.dropFirst(6)), checked: true, baseFont: baseFont, textColor: textColor, paragraphStyle: paragraphStyle)
+        if trimmed == "- [ ]" || trimmed.hasPrefix("- [ ] ") {
+            let content = trimmed == "- [ ]" ? "" : String(trimmed.dropFirst(6))
+            return parseCheckbox(content, checked: false, baseFont: baseFont, textColor: textColor, paragraphStyle: paragraphStyle)
+        } else if trimmed == "- [x]" || trimmed == "- [X]"
+                    || trimmed.hasPrefix("- [x] ") || trimmed.hasPrefix("- [X] ") {
+            let content = trimmed.count == 5 ? "" : String(trimmed.dropFirst(6))
+            return parseCheckbox(content, checked: true, baseFont: baseFont, textColor: textColor, paragraphStyle: paragraphStyle)
         }
         
         // --- Bullets ---
@@ -247,20 +252,11 @@ struct RichTextConverter {
         let result = NSMutableAttributedString()
         let checkboxStyle = Config.checkboxStyle()
 
-        if checked {
-            result.append(makeCheckedCheckboxPrefix(baseFont: baseFont, paragraphStyle: checkboxStyle))
-        } else {
-            let symbol = "\(Config.checkboxUncheckedSymbol) "
-            let symbolFont = UIFont.systemFont(ofSize: baseFont.pointSize + Config.checkboxSymbolFontSizeOffset, weight: .medium)
-            let symbolAttrs: [NSAttributedString.Key: Any] = [
-                .font: symbolFont,
-                .foregroundColor: Config.checkboxUncheckedColor,
-                .baselineOffset: Config.checkboxBaselineOffset,
-                .paragraphStyle: checkboxStyle,
-                Key.checkbox: false
-            ]
-            result.append(NSAttributedString(string: symbol, attributes: symbolAttrs))
-        }
+        result.append(makeCheckboxPrefix(
+            checked: checked,
+            baseFont: baseFont,
+            paragraphStyle: checkboxStyle
+        ))
         
         // Content
         let contentColor = checked ? UIColor.secondaryLabel : textColor
@@ -420,7 +416,7 @@ struct RichTextConverter {
                 currentIndex = text.index(after: escapedIndex)
                 continue
             }
-            
+
             // Bold **
             if remaining.hasPrefix("**"), let end = text.range(of: "**", range: text.index(currentIndex, offsetBy: 2)..<text.endIndex)?.lowerBound {
                 let content = unescapeInlineText(String(text[text.index(currentIndex, offsetBy: 2)..<end]))
@@ -470,9 +466,24 @@ struct RichTextConverter {
         serializationSnapshot(from: attr).markdown
     }
 
+    private struct MarkdownBuffer {
+        private(set) var value = ""
+        private(set) var characterCount = 0
+
+        mutating func append(_ string: String) {
+            value.append(contentsOf: string)
+            characterCount += string.count
+        }
+
+        mutating func append(_ character: Character) {
+            value.append(character)
+            characterCount += 1
+        }
+    }
+
     static func serializationSnapshot(from attr: NSAttributedString) -> RichTextSerializationSnapshot {
         let source = attr.string as NSString
-        var markdown = ""
+        var markdown = MarkdownBuffer()
         var mapping = Array(repeating: 0, count: attr.length + 1)
         var selectionEndMapping = Array(repeating: 0, count: attr.length + 1)
         var lineStart = 0
@@ -494,10 +505,10 @@ struct RichTextConverter {
             )
 
             if hasNewline {
-                mapping[contentRange.upperBound] = markdown.count
+                mapping[contentRange.upperBound] = markdown.characterCount
                 markdown.append("\n")
-                mapping[fullLineRange.upperBound] = markdown.count
-                selectionEndMapping[fullLineRange.upperBound] = markdown.count
+                mapping[fullLineRange.upperBound] = markdown.characterCount
+                selectionEndMapping[fullLineRange.upperBound] = markdown.characterCount
             }
             lineStart = fullLineRange.upperBound
         }
@@ -506,11 +517,11 @@ struct RichTextConverter {
             mapping[0] = 0
             selectionEndMapping[0] = 0
         } else if lineStart == attr.length {
-            mapping[attr.length] = markdown.count
+            mapping[attr.length] = markdown.characterCount
         }
 
         return RichTextSerializationSnapshot(
-            markdown: markdown,
+            markdown: markdown.value,
             visualBoundaryToMarkdownCharacterOffset: mapping,
             visualBoundaryToMarkdownSelectionEndOffset: selectionEndMapping
         )
@@ -525,31 +536,31 @@ struct RichTextConverter {
     private static func appendLine(
         from attr: NSAttributedString,
         range: NSRange,
-        markdown: inout String,
+        markdown: inout MarkdownBuffer,
         mapping: inout [Int],
         selectionEndMapping: inout [Int]
     ) {
         guard range.length > 0 else {
-            mapping[range.location] = markdown.count
-            selectionEndMapping[range.location] = markdown.count
+            mapping[range.location] = markdown.characterCount
+            selectionEndMapping[range.location] = markdown.characterCount
             return
         }
 
         let attributes = attr.attributes(at: range.location, effectiveRange: nil)
         if let imageURL = attributes[Key.imageURL] as? String {
-            mapping[range.location] = markdown.count
-            selectionEndMapping[range.location] = markdown.count
-            markdown += "![](\(imageURL))"
-            mapping[range.upperBound] = markdown.count
-            selectionEndMapping[range.upperBound] = markdown.count
+            mapping[range.location] = markdown.characterCount
+            selectionEndMapping[range.location] = markdown.characterCount
+            markdown.append("![](\(imageURL))")
+            mapping[range.upperBound] = markdown.characterCount
+            selectionEndMapping[range.upperBound] = markdown.characterCount
             return
         }
 
         if attributes[Key.divider] != nil {
-            let start = markdown.count
-            markdown += "---"
+            let start = markdown.characterCount
+            markdown.append("---")
             for boundary in range.location...range.upperBound {
-                mapping[boundary] = boundary == range.upperBound ? markdown.count : start
+                mapping[boundary] = boundary == range.upperBound ? markdown.characterCount : start
                 selectionEndMapping[boundary] = mapping[boundary]
             }
             return
@@ -560,9 +571,9 @@ struct RichTextConverter {
         var escapeBlockPrefix = false
 
         if let level = attributes[Key.headerLevel] as? Int {
-            markdown += String(repeating: "#", count: level) + " "
-            mapping[range.location] = markdown.count
-            selectionEndMapping[range.location] = markdown.count
+            markdown.append(String(repeating: "#", count: level) + " ")
+            mapping[range.location] = markdown.characterCount
+            selectionEndMapping[range.location] = markdown.characterCount
             ignoreBold = true
         } else if let checked = attributes[Key.checkbox] as? Bool {
             let prefix = checked ? "- [x] " : "- [ ] "
@@ -622,19 +633,35 @@ struct RichTextConverter {
         sourcePrefix: String,
         visualLength: Int,
         lineRange: inout NSRange,
-        markdown: inout String,
+        markdown: inout MarkdownBuffer,
         mapping: inout [Int],
         selectionEndMapping: inout [Int]
     ) {
         let start = lineRange.location
-        mapping[start] = markdown.count
-        selectionEndMapping[start] = markdown.count
-        markdown += sourcePrefix
+        mapping[start] = markdown.characterCount
+        selectionEndMapping[start] = markdown.characterCount
+        let markdownStart = markdown.characterCount
+        markdown.append(sourcePrefix)
+        let markdownEnd = markdown.characterCount
+        let sourceLength = markdownEnd - markdownStart
         let visualEnd = start + visualLength
         if visualLength > 0 {
             for boundary in (start + 1)...visualEnd {
-                mapping[boundary] = markdown.count
-                selectionEndMapping[boundary] = markdown.count
+                let visualOffset = boundary - start
+                let sourceOffset: Int
+                if visualLength == sourceLength {
+                    sourceOffset = visualOffset
+                } else if visualOffset == visualLength {
+                    sourceOffset = sourceLength
+                } else {
+                    // Collapsed prefixes keep the trailing space as its own
+                    // visual character. Map the checkbox glyph to the Markdown
+                    // prefix before that space, and the following boundary to
+                    // the true start of the item content.
+                    sourceOffset = max(0, sourceLength - 1)
+                }
+                mapping[boundary] = markdownStart + sourceOffset
+                selectionEndMapping[boundary] = markdownStart + sourceOffset
             }
         }
         lineRange = NSRange(location: visualEnd, length: lineRange.length - visualLength)
@@ -645,13 +672,13 @@ struct RichTextConverter {
         range: NSRange,
         ignoreBold: Bool,
         escapeBlockPrefix: Bool,
-        markdown: inout String,
+        markdown: inout MarkdownBuffer,
         mapping: inout [Int],
         selectionEndMapping: inout [Int]
     ) {
         guard range.length > 0 else {
-            mapping[range.location] = markdown.count
-            selectionEndMapping[range.location] = markdown.count
+            mapping[range.location] = markdown.characterCount
+            selectionEndMapping[range.location] = markdown.characterCount
             return
         }
 
@@ -671,37 +698,37 @@ struct RichTextConverter {
             // A visual boundary at the end of styled text has two valid
             // Markdown positions: selections end before the closing marker,
             // while a caret starts after it. Keep both affinities explicitly.
-            selectionEndMapping[characterRange.location] = markdown.count
+            selectionEndMapping[characterRange.location] = markdown.characterCount
             if style != activeStyle {
                 if let activeStyle {
-                    markdown += closingMarker(for: activeStyle)
+                    markdown.append(closingMarker(for: activeStyle))
                 }
                 activeStyle = style
-                markdown += openingMarker(for: style)
+                markdown.append(openingMarker(for: style))
             }
 
             if isFirstCharacter && escapeBlockPrefix {
                 markdown.append("\\")
             }
-            mapping[characterRange.location] = markdown.count
+            mapping[characterRange.location] = markdown.characterCount
 
             let rawCharacter = nsText.substring(with: characterRange)
-            markdown += escapedInlineText(rawCharacter, style: style)
+            markdown.append(escapedInlineText(rawCharacter, style: style))
             if characterRange.length > 1 {
                 for boundary in (characterRange.location + 1)..<characterRange.upperBound {
                     mapping[boundary] = mapping[characterRange.location]
                     selectionEndMapping[boundary] = selectionEndMapping[characterRange.location]
                 }
             }
-            mapping[characterRange.upperBound] = markdown.count
-            selectionEndMapping[characterRange.upperBound] = markdown.count
+            mapping[characterRange.upperBound] = markdown.characterCount
+            selectionEndMapping[characterRange.upperBound] = markdown.characterCount
             cursor = characterRange.upperBound
             isFirstCharacter = false
         }
 
         if let activeStyle {
-            markdown += closingMarker(for: activeStyle)
-            mapping[range.upperBound] = markdown.count
+            markdown.append(closingMarker(for: activeStyle))
+            mapping[range.upperBound] = markdown.characterCount
         }
     }
 
@@ -776,27 +803,28 @@ struct RichTextConverter {
         return font
     }
 
-    static func makeCheckedCheckboxPrefix(baseFont: UIFont, paragraphStyle: NSParagraphStyle) -> NSAttributedString {
-        let symbolPointSize = baseFont.pointSize + Config.checkboxSymbolFontSizeOffset
-        let imageConfig = UIImage.SymbolConfiguration(pointSize: symbolPointSize, weight: .semibold)
-        let image = UIImage(systemName: "checkmark.circle.fill", withConfiguration: imageConfig)?
-            .withTintColor(Config.checkboxCheckedColor, renderingMode: .alwaysOriginal)
-
-        let attachment = NSTextAttachment()
-        attachment.image = image
-        attachment.bounds = CGRect(
-            x: 0,
-            y: Config.checkboxBaselineOffset,
-            width: symbolPointSize,
-            height: symbolPointSize
+    static func makeCheckboxPrefix(
+        checked: Bool,
+        baseFont: UIFont,
+        paragraphStyle: NSParagraphStyle
+    ) -> NSAttributedString {
+        let symbol = checked ? Config.checkboxCheckedSymbol : Config.checkboxUncheckedSymbol
+        let symbolFont = UIFont.systemFont(
+            ofSize: baseFont.pointSize + Config.checkboxSymbolFontSizeOffset,
+            weight: checked ? .semibold : .regular
         )
-
-        let result = NSMutableAttributedString(attachment: attachment)
-        result.addAttributes([
+        let result = NSMutableAttributedString(string: symbol, attributes: [
+            .font: symbolFont,
+            .foregroundColor: checked ? Config.checkboxCheckedColor : Config.checkboxUncheckedColor,
+            .baselineOffset: Config.checkboxBaselineOffset,
             .paragraphStyle: paragraphStyle,
-            Key.checkbox: true
-        ], range: NSRange(location: 0, length: result.length))
-        result.append(NSAttributedString(string: " ", attributes: [.paragraphStyle: paragraphStyle]))
+            Key.checkbox: checked
+        ])
+        result.append(NSAttributedString(string: " ", attributes: [
+            .font: baseFont,
+            .paragraphStyle: paragraphStyle
+        ]))
         return result
     }
+
 }

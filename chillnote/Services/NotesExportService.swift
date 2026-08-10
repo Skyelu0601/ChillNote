@@ -47,13 +47,6 @@ struct ExportProgress: Sendable {
     }
 }
 
-struct ExportResult: Sendable {
-    let fileURL: URL
-    let noteCount: Int
-    let duration: TimeInterval
-    let fileSizeBytes: Int64
-}
-
 enum ExportError: LocalizedError {
     case missingContainer
     case noNotes

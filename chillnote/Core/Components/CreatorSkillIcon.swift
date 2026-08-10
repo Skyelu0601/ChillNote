@@ -6,7 +6,7 @@ struct CreatorSkillIcon: View {
     var container: CGFloat = 38
 
     private var style: CreatorSkillIconStyle {
-        CreatorSkillIconStyle(recipeID: recipe.id)
+        CreatorSkillIconStyle(recipe: recipe)
     }
 
     var body: some View {
@@ -30,29 +30,73 @@ private struct CreatorSkillIconStyle {
     let tint: Color
     let symbolName: String?
 
-    init(recipeID: String) {
-        switch recipeID {
+    init(recipe: AgentRecipe) {
+        tint = CreatorSkillPalette.tint(for: recipe)
+
+        switch recipe.id {
         case "hook_generator":
-            tint = .brandBlue
             symbolName = "link"
         case "caption_pack":
-            tint = Color(hex: "D59B16")
             symbolName = "captions.bubble"
         case "rewrite":
-            tint = Color(hex: "15966E")
             symbolName = "pencil.and.scribble"
         case "repurpose_pack":
-            tint = Color(hex: "E05F4F")
             symbolName = "square.stack.3d.up"
         case "style_match":
-            tint = Color(hex: "8B6CFF")
             symbolName = "waveform"
         case "timed_script":
-            tint = Color(hex: "6B7A90")
             symbolName = "timer"
         default:
-            tint = .accentPrimary
             symbolName = nil
         }
+    }
+}
+
+/// A restrained multi-color palette for identifying individual AI Skills.
+/// Color identifies the Skill only; teal remains the broader AI feature color.
+enum CreatorSkillPalette {
+    static let customCreationTint = Color(hex: "8069B0")
+
+    private static let customTints: [Color] = [
+        .brandBlue,
+        Color(hex: "A06B9A"),
+        Color(hex: "B77A2D"),
+        Color(hex: "3F8174"),
+        Color(hex: "B86655"),
+        Color(hex: "63758F")
+    ]
+
+    static func tint(for recipe: AgentRecipe) -> Color {
+        switch recipe.id {
+        case "why_viral":
+            return Color(hex: "C46B54")
+        case "summarize":
+            return Color(hex: "5F7394")
+        case "translate":
+            return Color(hex: "7866AD")
+        case "humanizer":
+            return Color(hex: "B56C82")
+        case "rewrite":
+            return Color(hex: "38886F")
+        case "style_match":
+            return Color(hex: "8A69A5")
+        case "hook_generator":
+            return .brandBlue
+        case "caption_pack":
+            return Color(hex: "B77A2D")
+        case "timed_script":
+            return Color(hex: "68758A")
+        case "repurpose_pack":
+            return Color(hex: "C76655")
+        default:
+            return customTint(for: recipe.id)
+        }
+    }
+
+    private static func customTint(for recipeID: String) -> Color {
+        let stableIndex = recipeID.utf8.reduce(0) { partialResult, byte in
+            (partialResult &* 31 &+ Int(byte)) % customTints.count
+        }
+        return customTints[stableIndex]
     }
 }

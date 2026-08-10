@@ -19,6 +19,7 @@ final class SyncManager: ObservableObject {
     private var hasPendingSyncRequest: Bool = false
     
     private let minimumSyncInterval: TimeInterval = 60
+    private let completedSyncUserIDsKey = "syncCompletedUserIDs"
 
     struct SyncCheckpoint: Equatable {
         let since: Date?
@@ -38,6 +39,11 @@ final class SyncManager: ObservableObject {
     var lastSyncAt: Date? {
         guard lastSyncAtTimestamp > 0 else { return nil }
         return Date(timeIntervalSince1970: lastSyncAtTimestamp)
+    }
+
+    func hasCompletedSync(for userId: String) -> Bool {
+        Set(UserDefaults.standard.stringArray(forKey: completedSyncUserIDsKey) ?? [])
+            .contains(userId)
     }
     
     func syncIfNeeded(context: ModelContext) async {
@@ -156,6 +162,7 @@ final class SyncManager: ObservableObject {
                 }
                 await NotesSearchIndexer.shared.syncIncremental(context: context, userId: currentUserId)
             }
+            markSyncCompleted(for: currentUserId)
             didSucceed = true
         } catch {
             if case SyncError.unauthorized = error {
@@ -190,6 +197,14 @@ final class SyncManager: ObservableObject {
             return false
         }
         return true
+    }
+
+    private func markSyncCompleted(for userId: String) {
+        var completedUserIDs = Set(
+            UserDefaults.standard.stringArray(forKey: completedSyncUserIDsKey) ?? []
+        )
+        completedUserIDs.insert(userId)
+        UserDefaults.standard.set(Array(completedUserIDs), forKey: completedSyncUserIDsKey)
     }
 
     nonisolated static func resolveCheckpoint(

@@ -36,7 +36,6 @@ import {
 import type { Session } from "@supabase/supabase-js";
 import { copy } from "@/lib/copy";
 import {
-  checkDailyQuota,
   createCreemCheckout,
   getSubscriptionStatus,
   makeEmptyNote,
@@ -55,13 +54,11 @@ import {
   activeTagsForNote,
   autoColorHex,
   daysRemainingInTrash,
-  FREE_RECORDING_TIME_LIMIT_SECONDS,
   dateTimeOrNull,
   getOrCreateDeviceId,
   metadataFromURL,
   normalizeTagColorHex,
   previewPlainText,
-  PRO_RECORDING_TIME_LIMIT_SECONDS,
   sortNotesForFeed,
   sourceMetadataForNote,
 } from "@/lib/chillnote-model";
@@ -548,7 +545,6 @@ export function ChillScriptWebApp() {
   const recorderRef = useRef<MediaRecorder | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const deviceIdRef = useRef<string | null>(null);
-  const recordingTimeoutRef = useRef<number | null>(null);
   const stoppingRecordingRef = useRef(false);
   const syncInFlightRef = useRef(false);
 
@@ -592,7 +588,6 @@ export function ChillScriptWebApp() {
   const activeTags = activeTagsForNote(activeNote, tags);
   const sourceMetadata = sourceMetadataForNote(activeNote);
   const isPro = subscription?.tier === "pro";
-  const recordingLimit = isPro ? PRO_RECORDING_TIME_LIMIT_SECONDS : FREE_RECORDING_TIME_LIMIT_SECONDS;
 
   const visibleTags = useMemo(() => {
     return [...tags]
@@ -885,7 +880,6 @@ export function ChillScriptWebApp() {
         return;
       }
 
-      await checkDailyQuota(session.access_token, "voice", "consume");
       const stream = await getUserMedia({ audio: true });
       const recorder = new MediaRecorder(stream);
       chunksRef.current = [];
@@ -900,14 +894,6 @@ export function ChillScriptWebApp() {
       recorderRef.current = recorder;
       setRecording(true);
 
-      if (recordingTimeoutRef.current !== null) {
-        window.clearTimeout(recordingTimeoutRef.current);
-      }
-      recordingTimeoutRef.current = window.setTimeout(() => {
-        if (recorderRef.current?.state === "recording") {
-          void stopAndTranscribe();
-        }
-      }, recordingLimit * 1000);
     } catch (error) {
       setError(error instanceof Error ? error.message : copy.errors.microphone);
     }
@@ -918,10 +904,6 @@ export function ChillScriptWebApp() {
       if (!session || !recorderRef.current || stoppingRecordingRef.current) return;
       const recorder = recorderRef.current;
       stoppingRecordingRef.current = true;
-      if (recordingTimeoutRef.current !== null) {
-        window.clearTimeout(recordingTimeoutRef.current);
-        recordingTimeoutRef.current = null;
-      }
 
       const stopped = new Promise<void>((resolve) => {
         recorder.addEventListener("stop", () => resolve(), { once: true });

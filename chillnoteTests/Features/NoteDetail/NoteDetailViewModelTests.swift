@@ -91,63 +91,6 @@ final class NoteDetailViewModelTests: XCTestCase {
         XCTAssertTrue(didDismiss)
     }
 
-    func testHandleAIInputWithEmptyInputSkipsRequest() async {
-        let note = Note(content: "original", userId: "u1")
-        context.insert(note)
-
-        var didCallAI = false
-        var deps = NoteDetailViewModel.Dependencies()
-        deps.generateAIEdit = { _, _ in
-            didCallAI = true
-            return "unused"
-        }
-
-        let viewModel = NoteDetailViewModel(note: note, dependencies: deps)
-        viewModel.configureForTesting(modelContext: context)
-        viewModel.inputText = "   "
-
-        await viewModel.handleAIInput()
-
-        XCTAssertFalse(didCallAI)
-        XCTAssertEqual(note.content, "original")
-    }
-
-    func testHandleAIInputSuccessUpdatesContent() async {
-        let note = Note(content: "original", userId: "u1")
-        context.insert(note)
-
-        var deps = NoteDetailViewModel.Dependencies()
-        deps.generateAIEdit = { _, _ in "rewritten" }
-
-        let viewModel = NoteDetailViewModel(note: note, dependencies: deps)
-        viewModel.configureForTesting(modelContext: context)
-        viewModel.inputText = "make it better"
-
-        await viewModel.handleAIInput()
-
-        XCTAssertEqual(note.content, "rewritten")
-        XCTAssertFalse(viewModel.isProcessing)
-    }
-
-    func testHandleAIInputFailureResetsProcessing() async {
-        let note = Note(content: "original", userId: "u1")
-        context.insert(note)
-
-        var deps = NoteDetailViewModel.Dependencies()
-        deps.generateAIEdit = { _, _ in
-            throw NSError(domain: "Test", code: 2, userInfo: nil)
-        }
-
-        let viewModel = NoteDetailViewModel(note: note, dependencies: deps)
-        viewModel.configureForTesting(modelContext: context)
-        viewModel.inputText = "edit"
-
-        await viewModel.handleAIInput()
-
-        XCTAssertEqual(note.content, "original")
-        XCTAssertFalse(viewModel.isProcessing)
-    }
-
     func testConfirmTagUsesExistingTagOnlyOnce() {
         let note = Note(content: "content", userId: "u1")
         let existingTag = Tag(name: "Work", userId: "u1")

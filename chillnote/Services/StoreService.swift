@@ -8,7 +8,7 @@ enum SubscriptionTier: String, CaseIterable {
     case pro
 }
 
-enum DailyQuotaFeature: String {
+enum CreditFeature: String {
     case voice
     case agentRecipe = "agent_recipe"
     case chat
@@ -257,9 +257,6 @@ class StoreService: ObservableObject {
     static let shared = StoreService()
     nonisolated private static let logger = Logger(subsystem: "com.chillnote.app", category: "store")
 
-    static let freeRecordingTimeLimit: TimeInterval = 60
-    static let proRecordingTimeLimit: TimeInterval = 600
-
     @Published var currentTier: SubscriptionTier = .free
     @Published var availableProducts: [Product] = []
     @Published var isPurchasing = false
@@ -277,11 +274,6 @@ class StoreService: ObservableObject {
     @Published var hasFetchedCreditBalanceFromBackend = false
 
     private static let creditBalanceCacheKey = "cached_credit_balance"
-
-    // Feature Limits
-    var recordingTimeLimit: TimeInterval {
-        currentTier == .pro ? Self.proRecordingTimeLimit : Self.freeRecordingTimeLimit
-    }
 
     // MARK: - Credit API
 
@@ -329,9 +321,17 @@ class StoreService: ObservableObject {
         }
     }
 
+    func applyBackendCreditBalance(_ balance: Int?, tier: String?) {
+        guard tier?.lowercased() != SubscriptionTier.pro.rawValue,
+              let balance else { return }
+        creditBalance = balance
+        hasFetchedCreditBalanceFromBackend = true
+        UserDefaults.standard.set(balance, forKey: Self.creditBalanceCacheKey)
+    }
+
     /// Consume credits for a feature. Returns `true` if the action is allowed, `false` if credits are exhausted.
     /// Pro users always return `true`. Network failures fail open.
-    func consumeCredits(feature: DailyQuotaFeature) async -> Bool {
+    func consumeCredits(feature: CreditFeature) async -> Bool {
         await ensureSubscriptionStatusReadyForFeatureGate()
 
         if currentTier == .pro { return true }
@@ -548,15 +548,6 @@ class StoreService: ObservableObject {
             introductoryOffer: introductoryOffer,
             locale: locale
         )
-    }
-    
-    // MARK: - Data Fetching
-    
-    // MARK: - App Account Token
-    // Optional: Use this to link the purchase to the user account in Apple's system (obfuscated)
-    private var appAccountToken: UUID? {
-        guard let userId = AuthService.shared.confirmedUserId else { return nil }
-        return UUID(uuidString: userId) // Simplified, ideally hash checking
     }
     
     // MARK: - Data Fetching

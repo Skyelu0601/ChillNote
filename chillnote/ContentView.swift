@@ -5,9 +5,7 @@ struct ContentView: View {
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var aiConsentManager: AIConsentManager
     @StateObject private var storeService = StoreService.shared
-    @StateObject private var voiceNotePaywallService = VoiceNotePaywallService.shared
     @State private var consentSheetHeight: CGFloat = 360
-    @State private var showPostFirstVoiceSavePaywall = false
     @State private var showPostOnboardingPaywall = false
     @State private var hasCompletedOnboarding = false
     @State private var hasViewedIntroOnDevice = OnboardingStateStore.hasViewedIntroOnDevice()
@@ -47,11 +45,6 @@ struct ContentView: View {
                     await resolvePostOnboardingDestination(for: userId)
                 }
             }
-            .onChange(of: voiceNotePaywallService.shouldShowPaywall) { _, shouldShow in
-                guard shouldShow else { return }
-                showPostFirstVoiceSavePaywall = true
-                voiceNotePaywallService.consumePaywallRequest()
-            }
             .sheet(item: consentPromptBinding) { prompt in
                 AIConsentSheet(
                     consentManager: aiConsentManager,
@@ -59,9 +52,6 @@ struct ContentView: View {
                     measuredHeight: $consentSheetHeight
                 )
                 .presentationDetents([.height(consentSheetDetentHeight)])
-            }
-            .sheet(isPresented: $showPostFirstVoiceSavePaywall) {
-                SubscriptionView()
             }
             .fullScreenCover(isPresented: $showPostOnboardingPaywall, onDismiss: markIntroPaywallSeen) {
                 SubscriptionView(context: .onboardingTrial)
@@ -163,17 +153,6 @@ struct ContentView: View {
         )
     }
 
-    private func finishOnboarding(for userId: String) {
-        if OnboardingStateStore.hasShownIntroPaywall(for: userId) {
-            completeOnboarding(for: userId)
-            return
-        }
-
-        Task {
-            await resolveIntroPaywallBeforeHome(for: userId)
-        }
-    }
-
     private func markIntroPaywallSeen() {
         guard let userId = authService.currentUserId else { return }
         OnboardingStateStore.setHasShownIntroPaywall(true, for: userId)
@@ -189,27 +168,6 @@ struct ContentView: View {
     private func completeOnboarding(for userId: String) {
         OnboardingStateStore.setHasCompleted(true, for: userId)
         hasCompletedOnboarding = true
-    }
-
-    private func resolveIntroPaywallBeforeHome(for userId: String) async {
-        await refreshSubscriptionStatusWithTimeout()
-
-        guard authService.currentUserId == userId else { return }
-        guard !OnboardingStateStore.hasShownIntroPaywall(for: userId) else {
-            introPaywallShownForCurrentUser = true
-            completeOnboarding(for: userId)
-            return
-        }
-
-        if storeService.currentTier == .pro {
-            OnboardingStateStore.setHasShownIntroPaywall(true, for: userId)
-            introPaywallShownForCurrentUser = true
-            completeOnboarding(for: userId)
-            showPostOnboardingPaywall = false
-            return
-        }
-
-        showPostOnboardingPaywall = true
     }
 
     private func resolvePostOnboardingDestination(for userId: String) async {

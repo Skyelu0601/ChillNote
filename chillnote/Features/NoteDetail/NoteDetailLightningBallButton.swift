@@ -1,21 +1,5 @@
 import SwiftUI
 
-struct NoteDetailLightningBallButton: View {
-    let action: () -> Void
-    let isEnabled: Bool
-    var size: CGFloat = 36
-
-    var body: some View {
-        Button(action: action) {
-            NoteDetailLightningBallIcon(size: size)
-        }
-        .buttonStyle(.plain)
-        .disabled(!isEnabled)
-        .opacity(isEnabled ? 1 : 0.55)
-        .accessibilityLabel(L10n.text("note_detail.header.accessibility.ai_skills"))
-    }
-}
-
 struct NoteDetailLightningBallIcon: View {
     var size: CGFloat = 36
 

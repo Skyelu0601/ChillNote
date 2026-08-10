@@ -27,29 +27,21 @@ struct ChillScriptApp: App {
         WindowGroup {
             Group {
                 if let container = dataService.container {
-                    ContentView()
-                        // Inject the modelContext into the environment
-                        .modelContainer(container)
-                        .environmentObject(authService)
-                        .environmentObject(syncManager)
-                        .environmentObject(aiConsentManager)
-
-                        .onOpenURL { url in
-                            // Handle Google Sign-In URL
-                            if GIDSignIn.sharedInstance.handle(url) {
-                                return
-                            }
-                            
-                            if url.scheme == "chillnote" && url.host == "record" {
-                                NotificationCenter.default.post(name: NSNotification.Name("StartRecording"), object: nil)
-                                return
-                            }
-
-                            if url.scheme == "chillnote" && url.host == "shared-imports" {
-                                NotificationCenter.default.post(name: .sharedImportsRequested, object: nil)
-                                return
-                            }
-                        }
+#if DEBUG
+                    if ProcessInfo.processInfo.arguments.contains("-weekly-topics-design-preview") {
+                        WeeklyTopicsDesignPreview()
+                    } else if ProcessInfo.processInfo.arguments.contains("-first-action-spotlight-design-preview") {
+                        FirstActionGuideSpotlightDesignPreview()
+                    } else if ProcessInfo.processInfo.arguments.contains("-first-action-guide-design-preview") {
+                        HomeEmptyStateDesignPreview(showsFirstActionPrompt: true)
+                    } else if ProcessInfo.processInfo.arguments.contains("-home-empty-state-design-preview") {
+                        HomeEmptyStateDesignPreview()
+                    } else {
+                        mainContent(container: container)
+                    }
+#else
+                    mainContent(container: container)
+#endif
                 } else {
                     DataInitializationFailedView(
                         errorMessage: dataService.initializationErrorMessage,
@@ -62,6 +54,31 @@ struct ChillScriptApp: App {
                 }
             }
         }
+    }
+
+    private func mainContent(container: ModelContainer) -> some View {
+        ContentView()
+            // Inject the modelContext into the environment
+            .modelContainer(container)
+            .environmentObject(authService)
+            .environmentObject(syncManager)
+            .environmentObject(aiConsentManager)
+            .onOpenURL { url in
+                // Handle Google Sign-In URL
+                if GIDSignIn.sharedInstance.handle(url) {
+                    return
+                }
+
+                if url.scheme == "chillnote" && url.host == "record" {
+                    NotificationCenter.default.post(name: NSNotification.Name("StartRecording"), object: nil)
+                    return
+                }
+
+                if url.scheme == "chillnote" && url.host == "shared-imports" {
+                    NotificationCenter.default.post(name: .sharedImportsRequested, object: nil)
+                    return
+                }
+            }
     }
 }
 

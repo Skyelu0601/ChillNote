@@ -1,34 +1,46 @@
 import SwiftUI
 
 extension Color {
-    // MARK: - Brand Palette (Clean / Fast / Modern)
+    // MARK: - Brand Palette (Calm / Warm / Focused)
     //
     // Goal: "秒开、秒记、秒同步" 的轻快工具感
-    // - More neutral backgrounds (less warm paper tone)
-    // - Crisp separators instead of heavy shadows
-    // - iOS-like blue, slightly lighter than systemBlue (#007AFF)
-    static let brandBlue = Color(hex: "2F86FF") // light iOS-like blue
-    static let brandBlueSoft = Color(hex: "EAF2FF") // selection / subtle highlight
-    static let brandTeal = Color(hex: "10A7A1") // fresh secondary accent
-    static let brandTealSoft = Color(hex: "E8F8F7") // subtle AI / source highlight
+    // - Keep the existing blue as the recognizable brand signature.
+    // - Let warmer neutrals carry most of the interface.
+    // - Give AI and inspiration their own quieter semantic colors.
+    static let brandBlue = Color(hex: "2F86FF")
+    static let brandBlueText = Color(hex: "176BCB")
+    static let brandBlueSoft = Color(hex: "EEF5FF")
+
+    static let brandTeal = Color(hex: "258C86")
+    static let brandTealText = Color(hex: "176F6A")
+    static let brandTealSoft = Color(hex: "EAF4F2")
+
+    static let brandHoney = Color(hex: "D89A3D")
+    static let brandHoneyText = Color(hex: "8C5A10")
+    static let brandHoneySoft = Color(hex: "FBF3E4")
 
     // MARK: - Semantic Colors
-    static let bgPrimary = Color(hex: "F7F7F8") // neutral near-white
+    static let bgPrimary = Color(hex: "F6F5F2") // warm near-white
     static let bgSecondary = Color(hex: "FFFFFF")
     static let cardBackground = Color(hex: "FFFFFF")
 
     // Surfaces & Separators
-    static let separator = Color(hex: "E6E6E8")
-    static let borderSubtle = Color(hex: "ECECEF")
+    static let separator = Color(hex: "E7E5E0")
+    static let borderSubtle = Color(hex: "EBE9E4")
 
     // Actions & Highlights
     static let accentPrimary = brandBlue
+    static let accentPrimaryText = brandBlueText
     static let accentSecondary = brandTeal
+    static let accentSecondaryText = brandTealText
+    static let inspirationAccent = brandHoney
+    static let inspirationAccentText = brandHoneyText
     static let selectionHighlight = brandBlueSoft
     static let secondaryHighlight = brandTealSoft
+    static let inspirationHighlight = brandHoneySoft
 
     // Text Colors
-    static let textMain = Color(hex: "111114") // near-black
+    static let textMain = Color(hex: "17181B") // warm near-black
     static let textSub = Color(hex: "6B6B73")  // system-like secondary
     static let textTertiary = Color(hex: "9A9AA3")
 

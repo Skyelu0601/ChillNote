@@ -14,17 +14,21 @@ struct NoteSourceCard: View {
             HStack(spacing: 10) {
                 sourceBadge
 
-                VStack(alignment: .leading, spacing: compact ? 1 : 2) {
-                    Text(source.platformName)
-                        .font(.chillCaption.weight(.semibold))
-                        .foregroundColor(.textSub)
-                        .lineLimit(1)
+                VStack(alignment: .leading, spacing: compact ? 1 : 3) {
+                    if let authorDisplayName = source.authorDisplayName {
+                        Text(authorDisplayName)
+                            .font(.chillCaption.weight(.semibold))
+                            .foregroundColor(.textSub)
+                            .lineLimit(1)
+                    }
 
-                    Text(source.title)
-                        .font(compact ? .bodySmall : .bodyMedium)
-                        .foregroundColor(.textMain)
-                        .lineLimit(compact ? 1 : 2)
-                        .multilineTextAlignment(.leading)
+                    if showsDescription {
+                        Text(source.title)
+                            .font(compact ? .bodySmall : .bodyMedium)
+                            .foregroundColor(.textMain)
+                            .lineLimit(compact ? 1 : 2)
+                            .multilineTextAlignment(.leading)
+                    }
                 }
 
                 Spacer(minLength: 8)
@@ -41,6 +45,14 @@ struct NoteSourceCard: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(L10n.text("note_source.accessibility.open", source.platformName, source.title))
+        .accessibilityValue(source.authorDisplayName ?? "")
+    }
+
+    private var showsDescription: Bool {
+        let title = source.title.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !title.isEmpty else { return false }
+        return title.caseInsensitiveCompare(source.platformName) != .orderedSame
+            && title.caseInsensitiveCompare(source.host) != .orderedSame
     }
 
     private var sourceBadge: some View {
@@ -49,7 +61,14 @@ struct NoteSourceCard: View {
                 .fill(badgeColor)
                 .frame(width: compact ? 30 : 34, height: compact ? 30 : 34)
 
-            if let initials = badgeInitials {
+            if let brandAssetName {
+                Image(brandAssetName)
+                    .renderingMode(.template)
+                    .resizable()
+                    .scaledToFit()
+                    .foregroundColor(.white)
+                    .frame(width: compact ? 17 : 19, height: compact ? 17 : 19)
+            } else if let initials = badgeInitials {
                 Text(initials)
                     .font(.system(size: compact ? 9 : 10, weight: .bold))
                     .foregroundColor(.white)
@@ -65,16 +84,23 @@ struct NoteSourceCard: View {
         .accessibilityHidden(true)
     }
 
+    private var brandAssetName: String? {
+        switch source.platformID {
+        case "youtube":
+            return "YouTubeBrandLogo"
+        case "tiktok":
+            return "TikTokBrandLogo"
+        case "instagram":
+            return "InstagramBrandLogo"
+        default:
+            return nil
+        }
+    }
+
     private var badgeInitials: String? {
         switch source.platformID {
         case "xiaohongshu":
             return "小红书"
-        case "youtube":
-            return "YT"
-        case "tiktok":
-            return "TT"
-        case "instagram":
-            return "IG"
         case "threads":
             return "TH"
         case "reddit":

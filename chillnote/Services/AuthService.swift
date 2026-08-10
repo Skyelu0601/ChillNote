@@ -6,12 +6,6 @@ import OSLog
 import Supabase
 import CryptoKit
 
-enum AuthProvider: String, Codable {
-    case apple
-    case google
-    case email
-}
-
 private enum AuthServiceError: LocalizedError {
     case invalidNonceLength
     case nonceGenerationFailed(OSStatus)
@@ -378,6 +372,21 @@ final class AuthService: ObservableObject {
         return L10n.text("auth.login.error.verification_failed")
     }
 
+    private func userFacingEmailOTPRequestErrorMessage(for error: Error) -> String {
+        if shouldRetryAuthNetworkError(error) {
+            return L10n.text("auth.login.error.network")
+        }
+
+        let message = error.localizedDescription.lowercased()
+        if message.contains("rate limit")
+            || message.contains("too many requests")
+            || message.contains("429") {
+            return L10n.text("auth.login.error.too_many_requests")
+        }
+
+        return L10n.text("auth.login.error.send_failed")
+    }
+
     private func shouldRetryAuthNetworkError(_ error: Error) -> Bool {
         let nsError = error as NSError
         guard nsError.domain == NSURLErrorDomain else { return false }
@@ -461,7 +470,7 @@ final class AuthService: ObservableObject {
             return true
         } catch {
             Self.logger.error("Email OTP request failed: \(error.localizedDescription, privacy: .public)")
-            errorMessage = error.localizedDescription
+            errorMessage = userFacingEmailOTPRequestErrorMessage(for: error)
             return false
         }
     }

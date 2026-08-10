@@ -8,6 +8,11 @@ import {
   transcribeMediaLinkURL,
   type MediaLinkTranscriptMetadata
 } from "./tiktokTranscript.js";
+import { scheduleImportCompletionNotifications } from "./pushNotifications.js";
+import {
+  normalizeMediaLinkSections,
+  type MediaLinkSections
+} from "./mediaLinkSections.js";
 
 type LinkImportJobStatus = "queued" | "processing" | "completed" | "failed";
 
@@ -30,13 +35,8 @@ type LinkImportSource = {
   platformID: string;
   platformName: string;
   host: string;
-};
-
-type MediaLinkSections = {
-  showDescription: boolean;
-  showAuthor: boolean;
-  showHook: boolean;
-  showTranscript: boolean;
+  authorName?: string | null;
+  authorHandle?: string | null;
 };
 
 type LinkImportFailureDetails = {
@@ -44,6 +44,22 @@ type LinkImportFailureDetails = {
   content?: string;
   source?: LinkImportSource;
 };
+
+type LinkImportCreditAuthorization = {
+  tier: "free" | "pro";
+  cost: number;
+  initialCredits: number;
+};
+
+export class LinkImportInsufficientCreditsError extends Error {
+  constructor(
+    readonly balance: number,
+    readonly cost: number
+  ) {
+    super("Insufficient credits");
+    this.name = "LinkImportInsufficientCreditsError";
+  }
+}
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() || "";
@@ -75,7 +91,13 @@ export async function enqueueLinkImportJob(params: {
   source: LinkImportSource;
   section?: string | null;
   mediaLinkSections?: MediaLinkSections;
-}): Promise<{ jobId: string; status: LinkImportJobStatus }> {
+  creditAuthorization: LinkImportCreditAuthorization;
+}): Promise<{
+  jobId: string;
+  status: LinkImportJobStatus;
+  balance: number | null;
+  tier: "free" | "pro";
+}> {
   const now = new Date();
   const mediaLinkSections = normalizeMediaLinkSections(params.mediaLinkSections);
   const existingRows = await prisma.$queryRaw<Array<{ importJobId: string | null }>>`
@@ -88,74 +110,151 @@ export async function enqueueLinkImportJob(params: {
   const existing = existingRows[0];
   const jobId = existing?.importJobId || randomUUID();
 
-  const noteRows = await prisma.$queryRaw<Array<{ version: number; serverUpdatedAt: Date }>>`
-    INSERT INTO "Note" (
-      "id", "userId", "content", "createdAt", "updatedAt", "serverUpdatedAt",
-      "sourceURL", "sourceTitle", "sourcePlatformID", "sourcePlatformName", "sourceHost", "sourceCapturedAt",
-      "section", "importStatus", "importJobId", "importErrorCode", "importStartedAt", "importCompletedAt"
-    )
-    VALUES (
-      ${params.noteId}, ${params.userId}, ${params.placeholderContent}, ${now}, ${now}, ${now},
-      ${params.source.url}, ${params.source.title}, ${params.source.platformID}, ${params.source.platformName}, ${params.source.host}, ${now},
-      ${params.section ?? "inbox"}, 'queued', ${jobId}, NULL, NULL, NULL
-    )
-    ON CONFLICT ("id") DO UPDATE SET
-      "content" = EXCLUDED."content",
-      "updatedAt" = EXCLUDED."updatedAt",
-      "serverUpdatedAt" = EXCLUDED."serverUpdatedAt",
-      "version" = "Note"."version" + 1,
-      "sourceURL" = EXCLUDED."sourceURL",
-      "sourceTitle" = EXCLUDED."sourceTitle",
-      "sourcePlatformID" = EXCLUDED."sourcePlatformID",
-      "sourcePlatformName" = EXCLUDED."sourcePlatformName",
-      "sourceHost" = EXCLUDED."sourceHost",
-      "sourceCapturedAt" = EXCLUDED."sourceCapturedAt",
-      "section" = EXCLUDED."section",
-      "importStatus" = 'queued',
-      "importJobId" = ${jobId},
-      "importErrorCode" = NULL,
-      "importStartedAt" = NULL,
-      "importCompletedAt" = NULL
-    RETURNING "version", "serverUpdatedAt"
-  `;
+  const transactionResult = await prisma.$transaction(async (tx) => {
+    const noteRows = await tx.$queryRaw<Array<{ version: number; serverUpdatedAt: Date }>>`
+      INSERT INTO "Note" (
+        "id", "userId", "content", "createdAt", "updatedAt", "serverUpdatedAt",
+        "sourceURL", "sourceTitle", "sourcePlatformID", "sourcePlatformName", "sourceHost",
+        "sourceAuthorName", "sourceAuthorHandle", "sourceCapturedAt",
+        "section", "importStatus", "importJobId", "importErrorCode", "importStartedAt", "importCompletedAt"
+      )
+      VALUES (
+        ${params.noteId}, ${params.userId}, ${params.placeholderContent}, ${now}, ${now}, ${now},
+        ${params.source.url}, ${params.source.title}, ${params.source.platformID}, ${params.source.platformName}, ${params.source.host},
+        ${params.source.authorName ?? null}, ${params.source.authorHandle ?? null}, ${now},
+        ${params.section ?? "inbox"}, 'queued', ${jobId}, NULL, NULL, NULL
+      )
+      ON CONFLICT ("id") DO UPDATE SET
+        "content" = EXCLUDED."content",
+        "updatedAt" = EXCLUDED."updatedAt",
+        "serverUpdatedAt" = EXCLUDED."serverUpdatedAt",
+        "version" = "Note"."version" + 1,
+        "sourceURL" = EXCLUDED."sourceURL",
+        "sourceTitle" = EXCLUDED."sourceTitle",
+        "sourcePlatformID" = EXCLUDED."sourcePlatformID",
+        "sourcePlatformName" = EXCLUDED."sourcePlatformName",
+        "sourceHost" = EXCLUDED."sourceHost",
+        "sourceAuthorName" = EXCLUDED."sourceAuthorName",
+        "sourceAuthorHandle" = EXCLUDED."sourceAuthorHandle",
+        "sourceCapturedAt" = EXCLUDED."sourceCapturedAt",
+        "section" = EXCLUDED."section",
+        "importStatus" = 'queued',
+        "importJobId" = ${jobId},
+        "importErrorCode" = NULL,
+        "importStartedAt" = NULL,
+        "importCompletedAt" = NULL
+      RETURNING "version", "serverUpdatedAt"
+    `;
 
-  await prisma.$executeRaw`
-    INSERT INTO "LinkImportJob" (
-      "id", "userId", "noteId", "url", "status",
-      "showDescription", "showAuthor", "showHook", "showTranscript",
-      "createdAt", "updatedAt"
-    )
-    VALUES (
-      ${jobId}, ${params.userId}, ${params.noteId}, ${params.url}, 'queued',
-      ${mediaLinkSections.showDescription}, ${mediaLinkSections.showAuthor},
-      ${mediaLinkSections.showHook}, ${mediaLinkSections.showTranscript},
-      ${now}, ${now}
-    )
-    ON CONFLICT ("userId", "noteId") DO UPDATE SET
-      "url" = EXCLUDED."url",
-      "status" = CASE
-        WHEN "LinkImportJob"."status" = 'completed' THEN "LinkImportJob"."status"
-        ELSE 'queued'
-      END,
-      "showDescription" = EXCLUDED."showDescription",
-      "showAuthor" = EXCLUDED."showAuthor",
-      "showHook" = EXCLUDED."showHook",
-      "showTranscript" = EXCLUDED."showTranscript",
-      "errorCode" = NULL,
-      "updatedAt" = EXCLUDED."updatedAt"
-  `;
+    const jobRows = await tx.$queryRaw<Array<{ id: string; status: LinkImportJobStatus }>>`
+      INSERT INTO "LinkImportJob" (
+        "id", "userId", "noteId", "url", "status",
+        "showDescription", "showAuthor", "showHook", "showTranscript",
+        "createdAt", "updatedAt"
+      )
+      VALUES (
+        ${jobId}, ${params.userId}, ${params.noteId}, ${params.url}, 'queued',
+        ${mediaLinkSections.showDescription}, ${mediaLinkSections.showAuthor},
+        ${mediaLinkSections.showHook}, ${mediaLinkSections.showTranscript},
+        ${now}, ${now}
+      )
+      ON CONFLICT ("userId", "noteId") DO UPDATE SET
+        "url" = EXCLUDED."url",
+        "status" = CASE
+          WHEN "LinkImportJob"."status" = 'completed' THEN "LinkImportJob"."status"
+          ELSE 'queued'
+        END,
+        "showDescription" = EXCLUDED."showDescription",
+        "showAuthor" = EXCLUDED."showAuthor",
+        "showHook" = EXCLUDED."showHook",
+        "showTranscript" = EXCLUDED."showTranscript",
+        "errorCode" = NULL,
+        "updatedAt" = EXCLUDED."updatedAt"
+      RETURNING "id", "status"
+    `;
+    const persistedJobId = jobRows[0]?.id ?? jobId;
+    const persistedJobStatus = jobRows[0]?.status ?? "queued";
+
+    // A concurrent request may have won the unique (userId, noteId) insert
+    // with a different generated ID. Keep the note and API response aligned
+    // with the single persisted job.
+    if (persistedJobId !== jobId) {
+      await tx.$executeRaw`
+        UPDATE "Note"
+        SET "importJobId" = ${persistedJobId}
+        WHERE "id" = ${params.noteId} AND "userId" = ${params.userId}
+      `;
+    }
+
+    const authorizationRows = await tx.$queryRaw<Array<{ creditAuthorizedAt: Date | null }>>`
+      SELECT "creditAuthorizedAt"
+      FROM "LinkImportJob"
+      WHERE "userId" = ${params.userId} AND "noteId" = ${params.noteId}
+      FOR UPDATE
+    `;
+    const isAlreadyAuthorized = authorizationRows[0]?.creditAuthorizedAt != null;
+    let balance: number | null = null;
+
+    if (params.creditAuthorization.tier === "free") {
+      await tx.$executeRaw`
+        INSERT INTO "UserCredits" ("userId", "balance", "createdAt", "updatedAt")
+        VALUES (${params.userId}, ${params.creditAuthorization.initialCredits}, NOW(), NOW())
+        ON CONFLICT ("userId") DO NOTHING
+      `;
+
+      if (isAlreadyAuthorized) {
+        const rows = await tx.$queryRaw<Array<{ balance: number }>>`
+          SELECT "balance" FROM "UserCredits" WHERE "userId" = ${params.userId} LIMIT 1
+        `;
+        balance = Number(rows[0]?.balance ?? 0);
+      } else {
+        const updated = await tx.$queryRaw<Array<{ balance: number }>>`
+          UPDATE "UserCredits"
+          SET "balance" = "balance" - ${params.creditAuthorization.cost}, "updatedAt" = NOW()
+          WHERE "userId" = ${params.userId}
+            AND "balance" >= ${params.creditAuthorization.cost}
+          RETURNING "balance"
+        `;
+        if (!updated.length) {
+          const rows = await tx.$queryRaw<Array<{ balance: number }>>`
+            SELECT "balance" FROM "UserCredits" WHERE "userId" = ${params.userId} LIMIT 1
+          `;
+          throw new LinkImportInsufficientCreditsError(
+            Number(rows[0]?.balance ?? 0),
+            params.creditAuthorization.cost
+          );
+        }
+        balance = Number(updated[0].balance);
+      }
+    }
+
+    if (!isAlreadyAuthorized) {
+      await tx.$executeRaw`
+        UPDATE "LinkImportJob"
+        SET "creditAuthorizedAt" = ${now}, "updatedAt" = ${now}
+        WHERE "userId" = ${params.userId} AND "noteId" = ${params.noteId}
+      `;
+    }
+
+    return { noteRows, balance, jobId: persistedJobId, status: persistedJobStatus };
+  });
 
   await logSyncChange({
     userId: params.userId,
     entityType: "note",
     entityId: params.noteId,
-    version: noteRows[0]?.version ?? 1,
-    serverUpdatedAt: noteRows[0]?.serverUpdatedAt ?? now,
+    version: transactionResult.noteRows[0]?.version ?? 1,
+    serverUpdatedAt: transactionResult.noteRows[0]?.serverUpdatedAt ?? now,
     operation: "upsert"
   });
 
   scheduleLinkImportWorker();
-  return { jobId, status: "queued" };
+  return {
+    jobId: transactionResult.jobId,
+    status: transactionResult.status,
+    balance: transactionResult.balance,
+    tier: params.creditAuthorization.tier
+  };
 }
 
 export function scheduleLinkImportWorker() {
@@ -249,6 +348,8 @@ async function completeJob(job: LinkImportJobRow, content: string, source: LinkI
         "sourcePlatformID" = ${source.platformID},
         "sourcePlatformName" = ${source.platformName},
         "sourceHost" = ${source.host},
+        "sourceAuthorName" = COALESCE(${source.authorName ?? null}, "sourceAuthorName"),
+        "sourceAuthorHandle" = COALESCE(${source.authorHandle ?? null}, "sourceAuthorHandle"),
         "sourceCapturedAt" = COALESCE("sourceCapturedAt", ${now}),
         "importStatus" = 'completed',
         "importJobId" = ${job.id},
@@ -278,6 +379,21 @@ async function completeJob(job: LinkImportJobRow, content: string, source: LinkI
       serverUpdatedAt: updated.serverUpdatedAt,
       operation: "upsert"
     });
+
+    try {
+      await scheduleImportCompletionNotifications({
+        jobId: job.id,
+        userId: job.userId,
+        noteId: job.noteId
+      });
+    } catch (error) {
+      // A notification problem must never turn a successfully imported note
+      // into a failed import.
+      console.error("Failed to schedule import completion notification:", {
+        jobId: job.id,
+        error
+      });
+    }
   }
 }
 
@@ -307,6 +423,8 @@ async function failJob(
         "sourcePlatformID" = COALESCE(${fallback?.source?.platformID ?? null}, "sourcePlatformID"),
         "sourcePlatformName" = COALESCE(${fallback?.source?.platformName ?? null}, "sourcePlatformName"),
         "sourceHost" = COALESCE(${fallback?.source?.host ?? null}, "sourceHost"),
+        "sourceAuthorName" = COALESCE(${fallback?.source?.authorName ?? null}, "sourceAuthorName"),
+        "sourceAuthorHandle" = COALESCE(${fallback?.source?.authorHandle ?? null}, "sourceAuthorHandle"),
         "sourceCapturedAt" = COALESCE("sourceCapturedAt", ${now}),
         "importStatus" = 'failed',
         "importJobId" = ${job.id},
@@ -340,8 +458,9 @@ async function failureDetailsForError(
 
   const source = sourceFromTranscriptMetadata(job.url, error.metadata);
   const content = makeCreatorMediaUnavailableNote({
-    description: source.title.trim() || source.platformName,
-    author: error.metadata?.authorName?.trim() || "Unknown author"
+    description: source.title,
+    author: creatorMediaAuthorLabel(source),
+    mediaLinkSections: sectionsFromJob(job)
   });
 
   return {
@@ -360,11 +479,10 @@ async function buildImportedNote(
   if (isSupportedMediaLinkURL(rawURL)) {
     const transcript = await transcribeMediaLinkURL(rawURL);
     if (transcript.available && transcript.text?.trim()) {
-      const title = transcript.metadata?.title?.trim() || source.title;
       const updatedSource = sourceFromTranscriptMetadata(rawURL, transcript.metadata);
       const content = await makeCreatorMediaTranscriptNote({
-        description: updatedSource.title || title,
-        author: transcript.metadata?.authorName?.trim() || "Unknown author",
+        description: updatedSource.title,
+        author: creatorMediaAuthorLabel(updatedSource),
         transcript: transcript.text,
         mediaLinkSections
       });
@@ -375,7 +493,8 @@ async function buildImportedNote(
     return {
       content: makeCreatorMediaUnavailableNote({
         description: updatedSource.title,
-        author: transcript.metadata?.authorName?.trim() || "Unknown author"
+        author: creatorMediaAuthorLabel(updatedSource),
+        mediaLinkSections
       }),
       source: updatedSource
     };
@@ -398,13 +517,25 @@ async function buildImportedNote(
 function makeCreatorMediaUnavailableNote(params: {
   description: string;
   author: string;
+  mediaLinkSections: MediaLinkSections;
 }): string {
-  return [
-    markdownSection("Description", params.description.trim() || UNAVAILABLE_TEXT),
-    markdownSection("Author", params.author.trim() || "Unknown author"),
-    markdownSection("Hook", UNAVAILABLE_TEXT),
-    markdownSection("Transcript", UNAVAILABLE_TEXT)
-  ].join("\n\n");
+  const sections = normalizeMediaLinkSections(params.mediaLinkSections);
+  const content: string[] = [];
+
+  if (sections.showDescription) {
+    content.push(markdownSection("Description", params.description.trim() || UNAVAILABLE_TEXT));
+  }
+  if (sections.showAuthor) {
+    content.push(markdownSection("Author", params.author.trim() || "Unknown author"));
+  }
+  if (sections.showHook) {
+    content.push(markdownSection("Hook", UNAVAILABLE_TEXT));
+  }
+  if (sections.showTranscript) {
+    content.push(markdownSection("Transcript", UNAVAILABLE_TEXT));
+  }
+
+  return content.join("\n\n");
 }
 
 function sourceFromTranscriptMetadata(
@@ -416,7 +547,9 @@ function sourceFromTranscriptMetadata(
 
   return {
     ...source,
-    title: title || source.title
+    title: title || source.title,
+    authorName: metadata?.authorName?.trim() || null,
+    authorHandle: metadata?.authorHandle?.trim() || null
   };
 }
 
@@ -427,86 +560,52 @@ async function makeCreatorMediaTranscriptNote(params: {
   mediaLinkSections: MediaLinkSections;
 }): Promise<string> {
   const cleanedTranscript = params.transcript.trim();
-  const description = params.description.trim();
-  const author = params.author.trim() || "Unknown author";
-  const mediaLinkSections = normalizeMediaLinkSections(params.mediaLinkSections);
+  const sections = normalizeMediaLinkSections(params.mediaLinkSections);
 
   if (!cleanedTranscript) {
-    const sections: string[] = [];
-
-    if (mediaLinkSections.showDescription) {
-      sections.push(markdownSection("Description", description || UNAVAILABLE_TEXT));
-    }
-
-    if (mediaLinkSections.showAuthor) {
-      sections.push(markdownSection("Author", author));
-    }
-
-    if (mediaLinkSections.showHook) {
-      sections.push(markdownSection("Hook", UNAVAILABLE_TEXT));
-    }
-
-    if (mediaLinkSections.showTranscript) {
-      sections.push(markdownSection("Transcript", UNAVAILABLE_TEXT));
-    }
-
-    if (sections.length === 0) {
-      sections.push(markdownSection("Description", description || UNAVAILABLE_TEXT));
-    }
-
-    return sections.join("\n\n");
+    return makeCreatorMediaUnavailableNote({
+      description: params.description,
+      author: params.author,
+      mediaLinkSections: sections
+    });
   }
 
-  const transcriptPromise = mediaLinkSections.showTranscript
-    ? polishCreatorMediaTranscript(cleanedTranscript)
-    : Promise.resolve(cleanedTranscript);
+  const polishedTranscript = sections.showTranscript
+    ? await polishCreatorMediaTranscript(cleanedTranscript)
+    : cleanedTranscript;
+  const content: string[] = [];
 
-  const polishedTranscript = await transcriptPromise;
-  const hook = fallbackCreatorMediaHook(cleanedTranscript);
-
-  const sections: string[] = [];
-
-  if (mediaLinkSections.showDescription) {
-    sections.push(markdownSection("Description", description || "Imported media link"));
+  if (sections.showDescription) {
+    content.push(markdownSection("Description", params.description.trim() || "Imported media link"));
+  }
+  if (sections.showAuthor) {
+    content.push(markdownSection("Author", params.author.trim() || "Unknown author"));
+  }
+  if (sections.showHook) {
+    content.push(markdownSection("Hook", fallbackCreatorMediaHook(cleanedTranscript)));
+  }
+  if (sections.showTranscript) {
+    content.push(markdownSection("Transcript", polishedTranscript));
   }
 
-  if (mediaLinkSections.showAuthor) {
-    sections.push(markdownSection("Author", author));
-  }
-
-  if (mediaLinkSections.showHook) {
-    sections.push(markdownSection("Hook", hook));
-  }
-
-  if (mediaLinkSections.showTranscript) {
-    sections.push(markdownSection("Transcript", polishedTranscript));
-  }
-
-  if (sections.length === 0) {
-    sections.push(markdownSection("Transcript", cleanedTranscript));
-  }
-
-  return sections.join("\n\n");
+  return content.join("\n\n");
 }
 
-function normalizeMediaLinkSections(input?: Partial<MediaLinkSections> | null): MediaLinkSections {
-  const normalized: MediaLinkSections = {
-    showDescription: input?.showDescription ?? true,
-    showAuthor: input?.showAuthor ?? true,
-    showHook: input?.showHook ?? true,
-    showTranscript: input?.showTranscript ?? true
+function sectionsFromJob(job: LinkImportJobRow): MediaLinkSections {
+  return {
+    showDescription: job.showDescription,
+    showAuthor: job.showAuthor,
+    showHook: job.showHook,
+    showTranscript: job.showTranscript
   };
+}
 
-  if (!normalized.showDescription && !normalized.showAuthor && !normalized.showHook && !normalized.showTranscript) {
-    return {
-      showDescription: true,
-      showAuthor: true,
-      showHook: true,
-      showTranscript: true
-    };
-  }
+function creatorMediaAuthorLabel(source: LinkImportSource): string {
+  const authorName = source.authorName?.trim();
+  if (authorName) return authorName;
 
-  return normalized;
+  const authorHandle = source.authorHandle?.trim().replace(/^@+/, "");
+  return authorHandle ? `@${authorHandle}` : "Unknown author";
 }
 
 function fallbackCreatorMediaHook(transcript: string): string {
@@ -546,6 +645,7 @@ You clean up audio/video transcripts for a personal notes app.
 Return only the cleaned transcript text.
 Keep the speaker's original language, meaning, order, and wording.
 Add helpful punctuation and paragraph breaks.
+Separate paragraphs with single line breaks. Never insert blank lines.
 Clean obvious transcription noise when needed.
 `.trim();
 
@@ -585,7 +685,11 @@ async function generateGeminiText(
 }
 
 function markdownSection(heading: string, body: string): string {
-  return `## ${heading}\n\n${body.trim()}`;
+  const compactBody = body
+    .trim()
+    .replace(/\r\n?/g, "\n")
+    .replace(/\n[\t ]*\n+/g, "\n");
+  return `## ${heading}\n${compactBody}`;
 }
 
 async function fetchWebPage(rawURL: string): Promise<{ title: string; description: string; text: string }> {
