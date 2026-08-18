@@ -412,14 +412,24 @@ type CreditConsumeResult = {
   cost: number;
 };
 
+function positiveIntegerFromEnv(name: string, fallback: number): number {
+  const configuredValue = Number(process.env[name]);
+  return Number.isInteger(configuredValue) && configuredValue > 0
+    ? configuredValue
+    : fallback;
+}
+
+// Keep enough free usage to reach the product's core value, while making the
+// paid boundary reachable. Environment overrides let us tune this without an
+// app release after observing real conversion data.
 const CREDIT_COSTS: Record<CreditFeature, number> = {
-  voice: 3,
-  agent_recipe: 1,
-  import: 2,
-  chat: 1
+  voice: positiveIntegerFromEnv("CREDIT_COST_VOICE", 8),
+  agent_recipe: positiveIntegerFromEnv("CREDIT_COST_AGENT_RECIPE", 5),
+  import: positiveIntegerFromEnv("CREDIT_COST_IMPORT", 10),
+  chat: positiveIntegerFromEnv("CREDIT_COST_CHAT", 2)
 };
 
-const INITIAL_CREDITS = Number(process.env.INITIAL_FREE_CREDITS ?? 50);
+const INITIAL_CREDITS = positiveIntegerFromEnv("INITIAL_FREE_CREDITS", 50);
 
 const creditFeatureSchema = z.object({
   feature: z.enum(["voice", "agent_recipe", "chat", "import"])

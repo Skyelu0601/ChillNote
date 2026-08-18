@@ -5,22 +5,33 @@ import OSLog
 private let homeSelectionLogger = Logger(subsystem: "com.chillnote.app", category: "home-selection")
 
 extension HomeView {
-    func toggleTag(_ tag: Tag, for note: Note) {
-        withAnimation {
-            if note.tags.contains(where: { $0.id == tag.id }) {
-                note.tags.removeAll { $0.id == tag.id }
-                note.updatedAt = Date()
-                TagService.shared.cleanupEmptyTags(
-                    context: modelContext,
-                    candidates: [tag],
-                    shouldSave: false
-                )
+    func addTag(named name: String, colorHex: String, to note: Note) {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedName.isEmpty else { return }
+
+        let didAddTag = withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+            if let existingTag = availableTagsForCurrentUser.first(where: {
+                $0.name.caseInsensitiveCompare(trimmedName) == .orderedSame
+            }) {
+                guard !note.tags.contains(where: { $0.id == existingTag.id }) else { return false }
+                note.tags.append(existingTag)
+                touchTag(existingTag, note: note)
+                return true
             } else {
-                note.tags.append(tag)
-                touchTag(tag, note: note)
+                guard let userId = currentUserId else { return false }
+                let newTag = Tag(
+                    name: trimmedName,
+                    userId: userId,
+                    colorHex: TagColorService.normalizedHex(colorHex)
+                )
+                modelContext.insert(newTag)
+                note.tags.append(newTag)
+                note.updatedAt = Date()
+                return true
             }
         }
 
+        guard didAddTag else { return }
         persistAndSync()
     }
 

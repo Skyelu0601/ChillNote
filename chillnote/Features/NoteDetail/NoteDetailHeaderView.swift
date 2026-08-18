@@ -2,11 +2,9 @@ import SwiftUI
 
 struct NoteDetailHeaderView: View {
     let isDeleted: Bool
-    let isAISkillsEnabled: Bool
     let onBack: () -> Void
     let onRestore: () -> Void
-    let onAISkills: () -> Void
-    let onTeleprompter: () -> Void
+    let onAddTopic: () -> Void
     let onExport: () -> Void
     let onDelete: () -> Void
 
@@ -16,7 +14,7 @@ struct NoteDetailHeaderView: View {
                 Image(systemName: "arrow.left")
                     .font(.system(size: 18, weight: .semibold))
                     .foregroundColor(.textMain)
-                    .padding(8)
+                    .frame(width: 44, height: 44)
             }
             .buttonStyle(.bouncy)
             .accessibilityLabel(L10n.text("note_detail.header.accessibility.back"))
@@ -29,64 +27,36 @@ struct NoteDetailHeaderView: View {
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(.accentPrimary)
                         .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
+                        .frame(height: 44)
                         .background(Color.accentPrimary.opacity(0.1))
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.tactile)
                 .accessibilityLabel(L10n.text("note_detail.header.accessibility.restore_note"))
             } else {
-                HStack(spacing: 4) {
-                    Button(action: onAISkills) {
-                        Image(systemName: "bolt.fill")
-                            .font(.system(size: 16, weight: .bold))
-                            .foregroundColor(.brandBlue)
-                            .rotationEffect(.degrees(4))
-                            .frame(width: 36, height: 36)
-                            .background(Color.brandBlueSoft)
-                            .clipShape(Circle())
+                Menu {
+                    Button(action: onAddTopic) {
+                        Label(L10n.text("note_detail.tag.add"), systemImage: "tag")
                     }
-                    .buttonStyle(.bouncy)
-                    .disabled(!isAISkillsEnabled)
-                    .opacity(isAISkillsEnabled ? 1 : 0.55)
-                    .accessibilityLabel(L10n.text("note_detail.header.accessibility.ai_skills"))
-                    .firstActionGuideTarget(.aiSkills)
 
-                    Button(action: onTeleprompter) {
-                        Image(systemName: "video.fill")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundColor(.white)
-                            .frame(width: 36, height: 36)
-                            .background(Color.brandBlue)
-                            .clipShape(Circle())
+                    Divider()
+
+                    Button(action: onExport) {
+                        Label(L10n.text("note_detail.header.action.export_markdown"), systemImage: "square.and.arrow.up")
                     }
-                    .buttonStyle(.bouncy)
-                    .accessibilityLabel(L10n.text("note_detail.header.action.teleprompter"))
-                    .firstActionGuideTarget(.teleprompter)
 
-                    Menu {
-                        Button(action: onExport) {
-                            Label(L10n.text("note_detail.header.action.export_markdown"), systemImage: "square.and.arrow.up")
-                        }
-
-                        Button(role: .destructive, action: onDelete) {
-                            Label(L10n.text("note_detail.header.action.delete_note"), systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 16))
-                            .foregroundColor(.textSub)
-                            .frame(width: 36, height: 36)
-                            .background(Color.textSub.opacity(0.08))
-                            .clipShape(Circle())
+                    Button(role: .destructive, action: onDelete) {
+                        Label(L10n.text("note_detail.header.action.delete_note"), systemImage: "trash")
                     }
-                    .accessibilityLabel(L10n.text("note_detail.header.accessibility.more_actions"))
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.textMain)
+                        .frame(width: 44, height: 44)
                 }
-                .padding(4)
-                .background(Color.bgSecondary)
-                .clipShape(Capsule())
-                .shadow(color: Color.shadowColor, radius: 8, x: 0, y: 3)
+                .accessibilityLabel(L10n.text("note_detail.header.accessibility.more_actions"))
             }
         }
+        .frame(height: 44)
     }
 }

@@ -53,7 +53,7 @@ struct RichTextPreview: View {
             return parseCheckbox(String(trimmed.dropFirst(6)), isChecked: true)
         }
 
-        if trimmed.hasPrefix("- ") || trimmed.hasPrefix("• ") {
+        if trimmed.hasPrefix("- ") || trimmed.hasPrefix("• ") || trimmed.hasPrefix("* ") {
             return parseBulletPoint(String(trimmed.dropFirst(2)))
         }
 
@@ -131,13 +131,25 @@ struct RichTextPreview: View {
         var result = AttributedString()
 
         while currentIndex < text.endIndex {
-            if text[currentIndex...].hasPrefix("**"),
-               let endIndex = text.range(of: "**", range: text.index(currentIndex, offsetBy: 2)..<text.endIndex)?.lowerBound {
-                let boldContent = String(text[text.index(currentIndex, offsetBy: 2)..<endIndex])
+            let remaining = text[currentIndex...]
+            let strongMarker: String? = if remaining.hasPrefix("**") {
+                "**"
+            } else if remaining.hasPrefix("__") {
+                "__"
+            } else {
+                nil
+            }
+
+            if let strongMarker,
+               let endIndex = text.range(
+                   of: strongMarker,
+                   range: text.index(currentIndex, offsetBy: strongMarker.count)..<text.endIndex
+               )?.lowerBound {
+                let boldContent = String(text[text.index(currentIndex, offsetBy: strongMarker.count)..<endIndex])
                 var segment = AttributedString(boldContent)
                 segment.inlinePresentationIntent = .stronglyEmphasized
                 result += segment
-                currentIndex = text.index(endIndex, offsetBy: 2)
+                currentIndex = text.index(endIndex, offsetBy: strongMarker.count)
                 continue
             }
 

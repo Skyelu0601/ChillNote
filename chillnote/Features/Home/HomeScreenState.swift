@@ -26,7 +26,6 @@ struct HomeScreenState {
     let isSearchVisible: Bool
     let isTrashSelected: Bool
     let isAgentMenuOpen: Bool
-    let showChillRecipes: Bool
     let showingSettings: Bool
     let autoOpenPendingRecordings: Bool
     let showAIChat: Bool
@@ -88,7 +87,6 @@ enum HomeScreenAction {
     case setTaggingNote(Note?)
     case setSidebarPresented(Bool)
     case setAgentMenuOpen(Bool)
-    case setShowChillRecipes(Bool)
     case setSelectedTag(Tag?)
     case setSelectedSection(NoteSection?)
     case setTrashSelected(Bool)
@@ -120,7 +118,7 @@ enum HomeScreenAction {
 
     case deleteSelectedNotes
     case emptyTrash
-    case toggleTag(Note, Tag)
+    case addTag(Note, String, String)
     case hideKeyboard
 
     case executePendingAgentAction(String)
@@ -129,8 +127,6 @@ enum HomeScreenAction {
 
     case showSettings
     case aiChatDisappear
-    case openChillRecipes
-    case closeChillRecipes
     case openWeeklyTopics
     case openWeeklyTopicSource(UUID)
 

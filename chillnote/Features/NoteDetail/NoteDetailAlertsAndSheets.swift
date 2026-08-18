@@ -7,7 +7,9 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
     func body(content: Content) -> some View {
         content
             .sheet(isPresented: $viewModel.showAddTagAlert) {
-                AddTagSheetView(viewModel: viewModel)
+                AddTagSheetView(initialColorHex: viewModel.newTagColorHex) { name, colorHex in
+                    viewModel.confirmTag(name, preferredColorHex: colorHex)
+                }
             }
             .sheet(isPresented: $viewModel.showAISkillsSheet) {
                 NoteDetailAISkillsSheet(
@@ -70,20 +72,31 @@ extension View {
     }
 }
 
-private struct AddTagSheetView: View {
-    @ObservedObject var viewModel: NoteDetailViewModel
+struct AddTagSheetView: View {
     @Environment(\.dismiss) private var dismiss
+    @State private var newTagName = ""
+    @State private var newTagColorHex: String
+
+    let onAdd: (_ name: String, _ colorHex: String) -> Void
 
     private let columns = [GridItem(.adaptive(minimum: 42), spacing: 12)]
 
     private var trimmedName: String {
-        viewModel.newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
+        newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    init(
+        initialColorHex: String = TagColorService.defaultColorHex,
+        onAdd: @escaping (_ name: String, _ colorHex: String) -> Void
+    ) {
+        _newTagColorHex = State(initialValue: TagColorService.normalizedHex(initialColorHex))
+        self.onAdd = onAdd
     }
 
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 18) {
-                TextField(L10n.text("note_detail.add_tag.name_placeholder"), text: $viewModel.newTagName)
+                TextField(L10n.text("note_detail.add_tag.name_placeholder"), text: $newTagName)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
                     .padding(.horizontal, 12)
@@ -101,9 +114,11 @@ private struct AddTagSheetView: View {
                     LazyVGrid(columns: columns, spacing: 12) {
                         ForEach(TagColorService.paletteHexes, id: \.self) { hex in
                             let normalized = TagColorService.normalizedHex(hex)
-                            let isSelected = viewModel.newTagColorHex == normalized
+                            let isSelected = newTagColorHex == normalized
                             Button {
-                                viewModel.newTagColorHex = normalized
+                                guard newTagColorHex != normalized else { return }
+                                newTagColorHex = normalized
+                                AppInteractionFeedback.selectionChanged()
                             } label: {
                                 Circle()
                                     .fill(TagColorService.color(for: normalized))
@@ -138,9 +153,9 @@ private struct AddTagSheetView: View {
                         .padding(.vertical, 6)
                         .background(
                             Capsule()
-                                .fill(TagColorService.color(for: viewModel.newTagColorHex).opacity(TagColorService.tagBackgroundOpacity))
+                                .fill(TagColorService.color(for: newTagColorHex).opacity(TagColorService.tagBackgroundOpacity))
                         )
-                        .foregroundColor(TagColorService.textColor(for: viewModel.newTagColorHex))
+                        .foregroundColor(TagColorService.textColor(for: newTagColorHex))
                 }
 
                 Spacer()
@@ -151,13 +166,13 @@ private struct AddTagSheetView: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(L10n.text("common.cancel")) {
-                        viewModel.showAddTagAlert = false
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(L10n.text("common.add")) {
-                        viewModel.confirmNewTagFromAlert()
+                        onAdd(trimmedName, newTagColorHex)
+                        AppInteractionFeedback.success()
                         dismiss()
                     }
                     .disabled(trimmedName.isEmpty)

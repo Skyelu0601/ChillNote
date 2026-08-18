@@ -3,7 +3,7 @@ import SwiftUI
 struct TagBannerView: View {
     let tags: [Tag]
     let onRemove: (Tag) -> Void
-    let onAddClick: () -> Void
+    var onAddClick: (() -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -18,17 +18,19 @@ struct TagBannerView: View {
                     }
                 }
 
-                Button(action: onAddClick) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 12, weight: .bold))
-                        Text(L10n.text("note_detail.tag.add"))
-                            .font(.system(size: 14, weight: .medium))
+                if let onAddClick {
+                    Button(action: onAddClick) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                                .font(.system(size: 12, weight: .bold))
+                            Text(L10n.text("note_detail.tag.add"))
+                                .font(.system(size: 14, weight: .medium))
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Capsule().stroke(Color.textSub.opacity(0.3), lineWidth: 1))
+                        .foregroundColor(.textSub)
                     }
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
-                    .background(Capsule().stroke(Color.textSub.opacity(0.3), lineWidth: 1))
-                    .foregroundColor(.textSub)
                 }
             }
         }
@@ -53,5 +55,6 @@ struct TagPill: View {
             )
             .foregroundColor(textColor)
         }
+        .buttonStyle(.tactile)
     }
 }

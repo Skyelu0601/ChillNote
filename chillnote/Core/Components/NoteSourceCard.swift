@@ -11,41 +11,87 @@ struct NoteSourceCard: View {
             guard let url = URL(string: source.url) else { return }
             openURL(url)
         } label: {
-            HStack(spacing: 10) {
-                sourceBadge
-
-                VStack(alignment: .leading, spacing: compact ? 1 : 3) {
-                    if let authorDisplayName = source.authorDisplayName {
-                        Text(authorDisplayName)
-                            .font(.chillCaption.weight(.semibold))
-                            .foregroundColor(.textSub)
-                            .lineLimit(1)
-                    }
-
-                    if showsDescription {
-                        Text(source.title)
-                            .font(compact ? .bodySmall : .bodyMedium)
-                            .foregroundColor(.textMain)
-                            .lineLimit(compact ? 1 : 2)
-                            .multilineTextAlignment(.leading)
-                    }
-                }
-
-                Spacer(minLength: 8)
-
-                Image(systemName: "arrow.up.right")
-                    .font(.system(size: compact ? 12 : 13, weight: .semibold))
-                    .foregroundColor(.textSub)
+            if compact {
+                compactContent
+            } else {
+                detailContent
             }
-            .padding(.horizontal, compact ? 10 : 12)
-            .padding(.vertical, compact ? 9 : 11)
-            .background(Color.bgSecondary)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-            .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(L10n.text("note_source.accessibility.open", source.platformName, source.title))
         .accessibilityValue(source.authorDisplayName ?? "")
+    }
+
+    private var detailContent: some View {
+        HStack(spacing: 14) {
+            sourceBadge
+
+            VStack(alignment: .leading, spacing: 4) {
+                if showsDescription {
+                    Text(source.title)
+                        .font(.body.weight(.semibold))
+                        .foregroundColor(.textMain)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.leading)
+                }
+
+                Text(sourceMetadataLine)
+                    .font(.subheadline)
+                    .foregroundColor(.textSub)
+                    .lineLimit(1)
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "arrow.up.right.square")
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(.textSub)
+        }
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
+    }
+
+    private var compactContent: some View {
+        HStack(spacing: 10) {
+            sourceBadge
+
+            VStack(alignment: .leading, spacing: 1) {
+                if let authorDisplayName = source.authorDisplayName {
+                    Text(authorDisplayName)
+                        .font(.chillCaption.weight(.semibold))
+                        .foregroundColor(.textSub)
+                        .lineLimit(1)
+                }
+
+                if showsDescription {
+                    Text(source.title)
+                        .font(.bodySmall)
+                        .foregroundColor(.textMain)
+                        .lineLimit(1)
+                        .multilineTextAlignment(.leading)
+                }
+            }
+
+            Spacer(minLength: 8)
+
+            Image(systemName: "arrow.up.right")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundColor(.textSub)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 9)
+        .background(Color.bgSecondary)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+    }
+
+    private var sourceMetadataLine: String {
+        guard let authorDisplayName = source.authorDisplayName,
+              !authorDisplayName.isEmpty else {
+            return source.platformName
+        }
+        return [authorDisplayName, source.platformName].joined(separator: " · ")
     }
 
     private var showsDescription: Bool {
@@ -59,7 +105,7 @@ struct NoteSourceCard: View {
         ZStack {
             Circle()
                 .fill(badgeColor)
-                .frame(width: compact ? 30 : 34, height: compact ? 30 : 34)
+                .frame(width: compact ? 30 : 38, height: compact ? 30 : 38)
 
             if let brandAssetName {
                 Image(brandAssetName)
@@ -67,7 +113,7 @@ struct NoteSourceCard: View {
                     .resizable()
                     .scaledToFit()
                     .foregroundColor(.white)
-                    .frame(width: compact ? 17 : 19, height: compact ? 17 : 19)
+                    .frame(width: compact ? 17 : 21, height: compact ? 17 : 21)
             } else if let initials = badgeInitials {
                 Text(initials)
                     .font(.system(size: compact ? 9 : 10, weight: .bold))
@@ -77,7 +123,7 @@ struct NoteSourceCard: View {
                     .padding(.horizontal, 3)
             } else {
                 Image(systemName: badgeSystemImage)
-                    .font(.system(size: compact ? 14 : 15, weight: .semibold))
+                    .font(.system(size: compact ? 14 : 17, weight: .semibold))
                     .foregroundColor(.white)
             }
         }

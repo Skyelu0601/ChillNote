@@ -147,9 +147,12 @@ struct ActionableSkillResultView: View {
 
     var body: some View {
         if blocks.isEmpty {
-            Text(result)
-                .font(.body)
-                .foregroundColor(.textMain)
+            RichTextPreview(
+                content: result,
+                lineLimit: .max,
+                font: .body,
+                textColor: .textMain
+            )
                 .textSelection(.enabled)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(14)

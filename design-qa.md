@@ -53,6 +53,86 @@ final result: passed
 
 ---
 
+# Note 详情页独立 Record 区域
+
+**对照目标**
+
+- 用户选定设计：`/Users/luwenting/development/chillnote/audit/note-detail-record-tab-2026-08-14/01-selected-design.png`
+- 模拟器实现截图：`/Users/luwenting/development/chillnote/audit/note-detail-record-tab-2026-08-14/02-implementation.jpg`
+- 完整并排对照：`/Users/luwenting/development/chillnote/audit/note-detail-record-tab-2026-08-14/03-full-comparison.jpg`
+- 设备与状态：iPhone 16 Pro 模拟器、浅色模式、简体中文、视频来源、Record 选中页。
+- 尺寸与密度：设计稿为 852 × 1850 px，实现截图为 368 × 800 px；并排对照按相同视口高度等比归一。
+- Record 主体本身就是本轮唯一重点区域，因此完整并排图同时承担局部检查，不再重复生成裁切图。
+
+**检查结果**
+
+- 没有仍需处理的 P0、P1 或 P2 差异。
+- 信息层级：`Script / Create / Record` 保持同级，Record 选中时使用品牌蓝；主要操作只有一个蓝色“开始录制”按钮。
+- 布局：提词预览卡、脚本状态、开始按钮和录制规格按设计稿顺序纵向排列；在 368 × 800 px 小屏中完整可见，无需先滚动才能开始录制。
+- 提词预览：使用当前笔记正文生成最多三页真实预览，可左右滑动；当前页为高对比白字，后续内容渐隐，页码圆点与设计一致。
+- 功能：点击“开始录制”已在模拟器实测进入现有完整提词拍摄界面，原有摄像头、提词和录制流程未被替换。
+- 无障碍：Record 标签和“开始录制”按钮均可被运行时无障碍快照识别；纯装饰预览不重复朗读正文。
+- 国际化：新增 Record 页相关语义文案键，并补齐项目要求的 8 种语言。
+
+**对照历史**
+
+1. 首轮实现按选定设计复刻三段式标签、黑色提词预览卡、就绪状态、主按钮和规格信息。
+2. 完整并排检查确认主要层级、比例和间距一致；实现版适度压缩纵向留白，以保证小屏首屏可直接看到完整主操作。
+3. 运行时点击主按钮成功进入真实提词拍摄界面，因此没有功能性阻断项。
+
+**验证清单**
+
+- [x] iPhone 16 Pro 模拟器构建、安装和启动成功。
+- [x] Record 页在 368 × 800 px 首屏完整显示。
+- [x] 点击“开始录制”进入现有 Teleprompter 拍摄界面。
+- [x] `npm run lint:i18n` 通过。
+- [x] `git diff --check` 通过。
+
+final result: passed
+
+---
+
+# Note 编辑工作区 — Script / Create
+
+**对照目标**
+
+- 视觉基准：`/Users/luwenting/.codex/generated_images/019ffa3a-1bc5-7ac3-9c8d-d906bae0807d/exec-659423cc-eaa7-4a2e-978e-68c02b186b2e.png`
+- 无来源实现截图：`/var/folders/yp/tg7h91s544s4pyxgnctb5xph0000gn/T/screenshot_optimized_607d26f2-2d4e-4aa7-88d0-dac1837af643.jpg`
+- Create 实现截图：`/var/folders/yp/tg7h91s544s4pyxgnctb5xph0000gn/T/screenshot_optimized_c9749069-7814-4b07-8e58-f4214a746d2e.jpg`
+- 视频来源实现截图：`/var/folders/yp/tg7h91s544s4pyxgnctb5xph0000gn/T/screenshot_optimized_d94ecc31-3b5f-4f9f-a0e1-df5950490951.jpg`
+- 更多菜单实现截图：`/var/folders/yp/tg7h91s544s4pyxgnctb5xph0000gn/T/screenshot_optimized_9cb71fc9-3a79-445a-9147-f2376e965777.jpg`
+- 编辑状态实现截图：`/var/folders/yp/tg7h91s544s4pyxgnctb5xph0000gn/T/screenshot_optimized_118ae134-7c9f-4303-9799-e10b257a5ec9.jpg`
+- 设备与状态：iPhone 16 Pro、iOS 18.6、浅色模式、英文、368 × 800 px。
+
+**检查结果**
+
+- 没有仍需处理的 P0、P1 或 P2 差异。
+- 页面默认打开 Script，右侧为 Create；移除了 `Create from this video` 标题。
+- 顶部居中标题已移除，只保留返回与更多操作。
+- Create 页面直接观察首页 Creator Skills 使用的 `RecipeManager.savedRecipes`，安装、移除和自定义技能都会同步更新。
+- 所有技能使用一致的白色卡片样式，Hook 不再使用蓝色主操作样式。
+- Add Topic 已从正文上方移入右上角更多菜单；已有 Topic 仍显示为可移除标签。
+- 手动输入和语音转文字共用无来源状态：页面顶部不渲染来源卡片，也不保留空白占位。
+- 视频导入状态显示真实来源卡片，作者、标题、平台图标和外链入口均可访问。
+- Note 正文始终可直接编辑；键盘出现时底部提词器按钮自动隐藏，避免遮挡编辑区。
+- 底部 `Record with Teleprompter` 在浏览态固定可见，Note 与 Create 两页共用同一份正文内容。
+- [P3] 视觉稿以 853 × 1844 像素展示，真实模拟器为 368 × 800；实现按照项目现有的字号、间距和安全区令牌收紧了纵向密度。
+- [P3] 最终命名采用用户确认后的 `Script / Create`，而不是视觉稿较早版本中的 `Create / Transcript`。
+
+**交互与质量验证**
+
+- [x] Script 与 Create 标签切换已在模拟器实际点击。
+- [x] 无来源、视频来源、Create、编辑键盘四种状态均已真实运行和截图。
+- [x] 编辑器焦点出现时提词器按钮隐藏。
+- [x] iPhone 16 Pro 模拟器构建、安装和启动通过。
+- [x] `npm run lint:i18n` 通过，新增文案覆盖项目现有 8 种语言。
+- [x] `git diff --check` 通过。
+- [ ] 全量测试和缩小后的 NoteDetailViewModel 测试都超过 300 秒，被测试工具截断；构建与本次核心交互验证不受影响。
+
+final result: passed
+
+---
+
 # 首页首次视频引导配色 — 方案 1
 
 **对照目标**
@@ -442,5 +522,160 @@ final result: passed
 - [x] 新增及修改文案覆盖项目现有 8 种语言。
 - [x] “知道了”按钮的关闭交互通过模拟器验证。
 - [x] 视觉基准与真实实现已并排比较。
+
+final result: passed
+
+---
+
+# Note 详情页白底工作区与来源区 — Otter 风格方案
+
+**对照目标**
+
+- 视觉基准：`/Users/luwenting/.codex/generated_images/019ffe13-4280-7a61-a130-576bb62bf0e4/exec-4e6f1d87-7612-4bb7-a3cf-07c229c8810a.png`
+- 实现截图：`/Users/luwenting/development/chillnote/audit/note-detail-workspace-2026-08-14/implementation.jpg`
+- 并排对照：`/Users/luwenting/development/chillnote/audit/note-detail-workspace-2026-08-14/comparison.png`
+- 设备与状态：iPhone 16 Pro 模拟器、浅色模式、简体中文、视频来源、Script 默认页，368 × 800 px。
+
+**检查结果**
+
+- 没有仍需处理的 P0、P1 或 P2 差异。
+- 页面改为纯白底，品牌蓝只用于选中标签、下划线、Create 星光和提词器图标，解决品牌蓝与米黄色背景互相争抢的问题。
+- 来源区取消独立大卡片，改为扁平信息行：标题优先，作者与平台作为次要信息，外链入口保持在最右侧。
+- Script / Create 改为全宽下划线标签页；选中状态清楚，但不会像分段胶囊一样显得僵硬。
+- 底部操作改为 `打开提词器`，保留固定胶囊和蓝色摄像机图标，文案更短，主操作更容易扫读。
+- [P3] 视觉稿不含真实 iPhone 状态栏和 Home Indicator；实现保留系统安全区，因此归一化对照中应用内容整体向下约一个状态栏高度。
+- [P3] 实现截图跟随设备语言显示中文标签，视觉稿使用英文；信息结构、字号层级和控件尺寸一致。
+
+**功能与质量验证**
+
+- [x] iPhone 16 Pro 模拟器构建、安装和启动成功。
+- [x] 运行时无障碍快照可识别来源、Script、Create 和 `打开提词器` 四类主要操作。
+- [x] `npm run lint:i18n` 通过；新按钮文案覆盖项目现有 8 种语言。
+- [x] `git diff --check` 与本地化 JSON 格式检查通过。
+- [x] 视觉基准与真实实现已在同一张并排图中核对。
+
+final result: passed
+
+---
+
+# Note 正文阅读留白 — 顶部 20 / 左右 24
+
+**对照目标**
+
+- 视觉基准：`/Users/luwenting/.codex/generated_images/019ffe13-4280-7a61-a130-576bb62bf0e4/exec-4e6f1d87-7612-4bb7-a3cf-07c229c8810a.png`
+- 修改前审查截图：`/Users/luwenting/development/chillnote/audit/note-detail-typography-2026-08-14/01-script-reading-state.png`
+- 修改后实现截图：`/Users/luwenting/development/chillnote/audit/note-detail-typography-2026-08-14/02-script-reading-20-24.jpg`
+- 完整并排对照：`/Users/luwenting/development/chillnote/audit/note-detail-typography-2026-08-14/full-comparison-20-24.png`
+- 正文局部对照：`/Users/luwenting/development/chillnote/audit/note-detail-typography-2026-08-14/body-comparison-20-24.png`
+- 设备与状态：iPhone 16 Pro 模拟器、浅色模式、简体中文、视频来源、Script 默认页。
+- 尺寸归一：源图 852 × 1846 px 等比缩放至约 370 × 800 px；实现截图为 368 × 800 px。实现保留真实 iOS 状态栏与 Home Indicator。
+
+**检查结果**
+
+- 没有仍需处理的 P0、P1 或 P2 差异。
+- 字体与排版：正文继续使用 17 pt 系统字体和左对齐；没有使用会拉大英文词间距的两端对齐。
+- 间距与布局：正文顶部内边距从 8 pt 增加到 20 pt，左右内边距固定为 24 pt；首行不再贴近标签栏分隔线，每行长度也更适合连续阅读。
+- 颜色与视觉令牌：背景、正文颜色、标签状态和品牌蓝均未改变。
+- 图片与图标：本次只调整文本容器，没有新增或替换图片、图标与来源素材。
+- 文案与内容：没有修改用户可见文案；中英文正文、数字和链接仍使用自然左对齐换行。
+
+**对照历史**
+
+1. 修改前发现 P2：正文距离标签栏下边线只有约 8 pt，左右阅读区域也偏满，页面更像表单输入区而不是阅读区。
+2. 修正：移除 UITextView 默认行片段附加留白，将正文内边距明确设为顶部 20 pt、左右 24 pt。
+3. 修改后完整与局部并排图确认：首行呼吸感、左右留白和英文换行均更接近视觉基准，早期 P2 已消除。
+
+**验证清单**
+
+- [x] iPhone 16 Pro 模拟器构建、安装和启动成功。
+- [x] 运行时无障碍快照仍可识别可编辑正文、Script、Create、来源和提词器操作。
+- [x] 正文完整对照与局部放大对照均已检查。
+- [x] `git diff --check` 通过。
+
+final result: passed
+
+---
+
+# Note 来源区高度收紧 — 10 / 10 / 10
+
+**对照目标**
+
+- 视觉基准与修改前状态：`/Users/luwenting/development/chillnote/audit/note-source-density-2026-08-14/01-current-source-area.jpg`
+- 修改后实现截图：`/Users/luwenting/development/chillnote/audit/note-source-density-2026-08-14/02-compact-source-area.jpg`
+- 完整并排对照：`/Users/luwenting/development/chillnote/audit/note-source-density-2026-08-14/full-comparison.png`
+- 来源区局部对照：`/Users/luwenting/development/chillnote/audit/note-source-density-2026-08-14/source-focused-comparison.png`
+- 设备与状态：iPhone 16 Pro 模拟器、浅色模式、简体中文、视频来源、Script 默认页，368 × 800 px；两张截图使用相同设备密度与系统安全区，无需缩放归一。
+
+**检查结果**
+
+- 没有仍需处理的 P0、P1 或 P2 差异。
+- 字体与排版：来源标题继续使用两行半粗体，作者与平台保持次级字号；没有截断或字号缩小。
+- 间距与布局：来源行内部上下留白从 14 pt 改为 10 pt，来源区域外部上下留白从 12 pt 改为 10 pt，总高度减少约 12 pt；标签栏和正文同步上移，但没有与来源信息粘连。
+- 颜色与视觉令牌：白色背景、主次文字、品牌蓝和分隔线保持不变。
+- 图片与图标：YouTube 图标、外链 SF Symbol、尺寸和清晰度均保持不变。
+- 文案与内容：没有修改来源标题、作者、平台或任何本地化文案。
+
+**对照历史**
+
+1. 修改前发现 P2：在正文阅读区收窄并增加上方留白后，来源区纵向占比显得偏大。
+2. 修正：只压缩三处上下留白，不缩小标题、图标或外链入口。
+3. 修改后完整与局部并排图确认：来源区域更紧凑，标题仍有足够呼吸空间，早期 P2 已消除。
+
+**验证清单**
+
+- [x] iPhone 16 Pro 模拟器构建、安装和启动成功。
+- [x] 运行时无障碍快照仍可识别来源外链、Script、Create、正文编辑和提词器操作。
+- [x] 完整页面与来源区局部对照均已检查。
+- [x] `git diff --check` 通过。
+
+final result: passed
+
+---
+
+# Note 详情页连续滚动与 Script / Create 吸顶
+
+**对照目标**
+
+- 初始视觉基准：`/Users/luwenting/development/chillnote/audit/note-source-density-2026-08-14/02-compact-source-area.jpg`
+- 初始实现截图：`/Users/luwenting/development/chillnote/audit/note-detail-sticky-tabs-2026-08-14/01-initial.jpg`
+- Script 吸顶截图：`/Users/luwenting/development/chillnote/audit/note-detail-sticky-tabs-2026-08-14/02-pinned-script.jpg`
+- 长正文继续滚动截图：`/Users/luwenting/development/chillnote/audit/note-detail-sticky-tabs-2026-08-14/03-pinned-script-deep.jpg`
+- Create 吸顶截图：`/Users/luwenting/development/chillnote/audit/note-detail-sticky-tabs-2026-08-14/04-pinned-create.jpg`
+- 完整状态对照：`/Users/luwenting/development/chillnote/audit/note-detail-sticky-tabs-2026-08-14/full-state-comparison.png`
+- 吸顶区域局部对照：`/Users/luwenting/development/chillnote/audit/note-detail-sticky-tabs-2026-08-14/sticky-region-comparison.png`
+- 设备与状态：iPhone 16 Pro 模拟器、浅色模式、简体中文、视频来源；短正文与六倍长正文两种 Script 状态，并实际切换到 Create。
+- 尺寸与密度：所有实现截图均为 368 × 800 px，同一模拟器与系统安全区，无需密度缩放。
+
+**检查结果**
+
+- 没有仍需处理的 P0、P1 或 P2 差异。
+- 字体与排版：来源、标签、正文和 Creator Skill 卡片字体、换行和层级保持原样。
+- 间距与布局：返回/更多操作保持固定；来源区先随单一滚动容器离场；Script / Create 到达顶部操作栏下方后吸顶；继续上滑时只有当前页内容发生位移。
+- 颜色与视觉令牌：吸顶标签保持白色不透明背景、品牌蓝选中状态和底部分隔线，滚动内容不会穿透标签栏。
+- 图片与图标：YouTube 标识、外链图标、Creator Skill 图标和提词器图标均保持清晰且未替换。
+- 文案与内容：没有修改任何产品文案或本地化资源；长正文只通过 DEBUG 预览参数生成，用于验证真实滚动距离。
+- 交互：已实际完成“初始状态 → 上滑来源区 → Script 吸顶 → 继续滚动长正文 → 切换 Create → 切回 Script → 下滑恢复来源区 → 点击正文输入”的完整路径。
+
+**实现说明**
+
+- 页面改为一个纵向 ScrollView，避免同方向嵌套滚动导致手势突然被接管。
+- Script / Create 使用 `LazyVStack` 的 pinned section header 实现原生吸顶。
+- Script 编辑器和 Create 列表作为同一滚动内容的当前页主体，短内容也会填满标签栏下方的可用空间。
+- 底部提词器按钮继续固定，不会被正文滚动带走。
+
+**对照历史**
+
+1. 第一轮实现即完成单一滚动容器和原生吸顶，没有发现需要修复的 P0、P1 或 P2 差异。
+2. 短正文、长正文和 Create 三种状态的模拟器截图均确认固定头部、来源离场和标签吸顶行为一致，因此无需额外修复循环。
+
+**验证清单**
+
+- [x] iPhone 16 Pro 模拟器构建、安装和启动成功。
+- [x] 短正文和长正文均完成真实上滑与下滑验证。
+- [x] Script / Create 在吸顶状态下完成真实点击切换。
+- [x] 吸顶状态下正文仍可进入编辑，键盘出现时底部提词器按钮正确隐藏。
+- [x] 运行时无障碍快照仍可识别来源、正文编辑、标签、Creator Skills 和提词器操作。
+- [x] `npm run lint:i18n` 通过。
+- [x] `git diff --check` 通过。
 
 final result: passed

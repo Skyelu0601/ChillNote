@@ -478,7 +478,6 @@ private fun HomeScreen(
     var teleprompterOpen by remember { mutableStateOf(false) }
     var teleprompterScript by remember { mutableStateOf("") }
     var showNoteExport by remember { mutableStateOf(false) }
-    var showCreditGift by remember { mutableStateOf(false) }
     var showSubscription by remember { mutableStateOf(false) }
     var appliedAITransformation by remember { mutableStateOf<AppliedAISkillTransformation?>(null) }
     var retryingAITransformation by remember { mutableStateOf<AppliedAISkillTransformation?>(null) }
@@ -495,7 +494,6 @@ private fun HomeScreen(
     val voiceRefinedMessage = stringResource(R.string.voice_refined)
     val voiceShowOriginal = stringResource(R.string.voice_show_original)
     val voiceRecorder = remember { VoiceRecorder(context) }
-    val giftPreferences = remember { context.getSharedPreferences("credit_gift", android.content.Context.MODE_PRIVATE) }
     var isRecording by remember { mutableStateOf(false) }
     val microphonePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) runCatching { voiceRecorder.start(); isRecording = true }
@@ -543,12 +541,6 @@ private fun HomeScreen(
     }
     LaunchedEffect(aiSkillState.errorMessage) {
         if (aiSkillState.errorMessage != null) retryingAITransformation = null
-    }
-    LaunchedEffect(viewModel.currentUserId, uiState.creditBalance, uiState.hasFetchedCreditBalance, uiState.subscriptionTier) {
-        val userId = viewModel.currentUserId ?: return@LaunchedEffect
-        if (uiState.subscriptionTier == "free" && uiState.hasFetchedCreditBalance && uiState.creditBalance == 50 &&
-            !giftPreferences.getBoolean("seen.$userId", false)
-        ) showCreditGift = true
     }
     LaunchedEffect(sharedText) {
         if (!sharedText.isNullOrBlank()) {
@@ -1168,21 +1160,6 @@ private fun HomeScreen(
             confirmButton = { TextButton(onClick = viewModel::dismissCreatorSkillResult) { Text(stringResource(R.string.common_close)) } },
         )
     }
-    if (showCreditGift) AlertDialog(
-        onDismissRequest = {
-            viewModel.currentUserId?.let { giftPreferences.edit().putBoolean("seen.$it", true).apply() }
-            showCreditGift = false
-        },
-        title = { Text(pluralStringResource(R.plurals.home_credit_gift_title, 50, 50)) },
-        text = { Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(stringResource(R.string.home_credit_gift_message))
-            Text(stringResource(R.string.home_credit_gift_balance_hint), style = MaterialTheme.typography.bodySmall)
-        } },
-        confirmButton = { Button(onClick = {
-            viewModel.currentUserId?.let { giftPreferences.edit().putBoolean("seen.$it", true).apply() }
-            showCreditGift = false
-        }) { Text(stringResource(R.string.home_credit_gift_action)) } },
-    )
     if (showSubscription) SubscriptionDialog(
         uiState = uiState,
         billingState = billingState,

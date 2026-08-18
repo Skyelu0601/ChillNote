@@ -71,8 +71,11 @@ final class FirstActionGuideServiceTests: XCTestCase {
         service.registerSharedVideoImport(noteID: noteID)
         service.updateTargetImportStatus(.completed)
         service.markImportedNoteOpened(noteID)
+        service.markTranscriptReviewed(in: noteID)
+        service.markCreateTabTapped(in: noteID)
         service.markAISkillsTapped(in: noteID)
         service.markAISkillsFlowDismissed(in: noteID)
+        service.markRecordTabTapped(in: noteID)
         service.markTeleprompterTapped(in: noteID)
 
         XCTAssertEqual(service.stage, .completed)
@@ -81,6 +84,38 @@ final class FirstActionGuideServiceTests: XCTestCase {
         restored.configure(userId: "new-user", accountCreatedAt: now)
         XCTAssertEqual(restored.stage, .completed)
         XCTAssertEqual(restored.targetNoteID, noteID)
+    }
+
+    func testNewEditorGuideRequiresWorkspaceTabsInOrder() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let noteID = UUID()
+        let service = makeService(now: now)
+
+        service.configure(userId: "new-user", accountCreatedAt: now)
+        service.registerSharedVideoImport(noteID: noteID)
+        service.updateTargetImportStatus(.completed)
+        service.markImportedNoteOpened(noteID)
+
+        XCTAssertEqual(service.stage, .reviewTranscript)
+        service.markCreateTabTapped(in: noteID)
+        XCTAssertEqual(service.stage, .reviewTranscript)
+
+        service.markTranscriptReviewed(in: noteID)
+        XCTAssertEqual(service.stage, .tapCreateTab)
+        service.markAISkillsTapped(in: noteID)
+        XCTAssertEqual(service.stage, .tapCreateTab)
+
+        service.markCreateTabTapped(in: noteID)
+        service.markAISkillsTapped(in: noteID)
+        service.markAISkillsFlowDismissed(in: noteID)
+        XCTAssertEqual(service.stage, .tapRecordTab)
+
+        service.markTeleprompterTapped(in: noteID)
+        XCTAssertEqual(service.stage, .tapRecordTab)
+
+        service.markRecordTabTapped(in: noteID)
+        service.markTeleprompterTapped(in: noteID)
+        XCTAssertEqual(service.stage, .completed)
     }
 
     private func makeService(now: Date) -> FirstActionGuideService {

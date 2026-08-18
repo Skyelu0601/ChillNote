@@ -167,6 +167,23 @@ struct ChillRecipesView: View {
     }
 }
 
+struct CreatorSkillsManagementSheet: View {
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ChillRecipesView()
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(L10n.text("common.close")) {
+                            dismiss()
+                        }
+                    }
+                }
+        }
+    }
+}
+
 // MARK: - Subviews
 
 private struct SkillSection: View {

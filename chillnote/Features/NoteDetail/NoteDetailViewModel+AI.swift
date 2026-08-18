@@ -89,7 +89,7 @@ extension NoteDetailViewModel {
         lastAITransformation = .aiSkill(preview, mode)
 
         isProgrammaticContentUpdate = true
-        note.updateContent(contentByApplying(preview.result, mode: mode, to: note.content, selection: preview.sourceSelection))
+        note.updateContent(contentByApplying(preview.result, mode: mode, to: note.content))
         if let modelContext {
             note.syncContentStructure(with: modelContext)
         }
@@ -135,7 +135,7 @@ extension NoteDetailViewModel {
                     sourceSelection: preview.sourceSelection,
                     instruction: preview.instruction
                 )
-                note.updateContent(contentByApplying(result, mode: mode, to: preview.sourceContent, selection: preview.sourceSelection))
+                note.updateContent(contentByApplying(result, mode: mode, to: preview.sourceContent))
                 if let modelContext {
                     note.syncContentStructure(with: modelContext)
                 }
@@ -168,46 +168,15 @@ extension NoteDetailViewModel {
     private func contentByApplying(
         _ result: String,
         mode: NoteAISkillApplyMode,
-        to content: String,
-        selection: RichTextEditorSelection
+        to content: String
     ) -> String {
         switch mode {
-        case .replaceSelection:
-            return replacingRange(
-                location: selection.location,
-                length: selection.length,
-                in: content,
-                with: result
-            )
-        case .insertAtCursor:
-            return inserting(result, at: selection.location, in: content)
-        case .insertBelowSelection:
-            return inserting("\n\n\(result)", at: selection.location + selection.length, in: content)
         case .appendToEnd:
             let separator = content.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : "\n\n"
             return content + separator + result
         case .replaceAll:
             return result
         }
-    }
-
-    private func replacingRange(location: Int, length: Int, in content: String, with replacement: String) -> String {
-        guard let range = characterRange(location: location, length: length, in: content) else {
-            return content
-        }
-        var updated = content
-        updated.replaceSubrange(range, with: replacement)
-        return updated
-    }
-
-    private func inserting(_ insertion: String, at location: Int, in content: String) -> String {
-        let boundedLocation = max(0, min(location, content.count))
-        guard let index = content.index(content.startIndex, offsetBy: boundedLocation, limitedBy: content.endIndex) else {
-            return content + insertion
-        }
-        var updated = content
-        updated.insert(contentsOf: insertion, at: index)
-        return updated
     }
 
     private func characterRange(location: Int, length: Int, in content: String) -> Range<String.Index>? {

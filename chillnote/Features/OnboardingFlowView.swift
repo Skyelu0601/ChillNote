@@ -489,19 +489,14 @@ private struct OnboardingCaptureShowcasePage: View {
         }
         .task {
             guard revealPhase == 0 else { return }
-            for phase in 1...6 {
-                let delay: UInt64 = {
-                    switch phase {
-                    case 1:
-                        return 120_000_000
-                    case 2...5:
-                        return 320_000_000
-                    case 6:
-                        return 480_000_000
-                    default:
-                        return 300_000_000
-                    }
-                }()
+            let reveals: [(phase: Int, delay: UInt64)] = [
+                (1, 120_000_000),
+                (2, 320_000_000),
+                (6, 480_000_000)
+            ]
+            for reveal in reveals {
+                let phase = reveal.phase
+                let delay = reveal.delay
                 try? await Task.sleep(nanoseconds: delay)
                 withAnimation(.easeOut(duration: 0.2)) {
                     revealPhase = phase
@@ -533,7 +528,6 @@ private struct IdeaCaptureBoard: View {
             IdeaCaptureMethodRow(
                 kind: .text,
                 isVisible: revealPhase >= 1,
-                checkedCount: 0,
                 animateVoice: animateVoice
             )
 
@@ -543,7 +537,6 @@ private struct IdeaCaptureBoard: View {
             IdeaCaptureMethodRow(
                 kind: .voice,
                 isVisible: revealPhase >= 2,
-                checkedCount: max(1, min(4, revealPhase - 1)),
                 animateVoice: animateVoice
             )
 
@@ -553,7 +546,6 @@ private struct IdeaCaptureBoard: View {
             IdeaCaptureMethodRow(
                 kind: .links,
                 isVisible: revealPhase >= 6,
-                checkedCount: 0,
                 animateVoice: animateVoice
             )
         }
@@ -570,7 +562,6 @@ private struct IdeaCaptureBoard: View {
 private struct IdeaCaptureMethodRow: View {
     let kind: IdeaCaptureMethodKind
     let isVisible: Bool
-    let checkedCount: Int
     let animateVoice: Bool
 
     var body: some View {
@@ -585,10 +576,9 @@ private struct IdeaCaptureMethodRow: View {
 
                 if kind == .voice {
                     VStack(alignment: .leading, spacing: 7) {
-                        ForEach(Array(IdeaVoiceCapability.allCases.enumerated()), id: \.element.id) { index, capability in
+                        ForEach(IdeaVoiceCapability.allCases) { capability in
                             IdeaVoiceCapabilityChip(
-                                titleKey: capability.titleKey,
-                                isChecked: index < checkedCount
+                                titleKey: capability.titleKey
                             )
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
@@ -736,17 +726,16 @@ private enum IdeaVoiceCapability: String, CaseIterable, Identifiable {
 
 private struct IdeaVoiceCapabilityChip: View {
     let titleKey: String
-    let isChecked: Bool
 
     var body: some View {
         HStack(spacing: 5) {
-            Image(systemName: isChecked ? "checkmark.circle.fill" : "circle")
+            Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(isChecked ? Color.accentPrimary : Color.textSub.opacity(0.42))
+                .foregroundStyle(Color.accentPrimary)
 
             Text(L10n.text(titleKey))
                 .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(isChecked ? Color.textMain : Color.textSub.opacity(0.64))
+                .foregroundStyle(Color.textMain)
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
         }
@@ -754,14 +743,12 @@ private struct IdeaVoiceCapabilityChip: View {
         .padding(.vertical, 6)
         .background(
             Capsule()
-                .fill(isChecked ? Color.white.opacity(0.88) : Color.white.opacity(0.48))
+                .fill(Color.white.opacity(0.88))
                 .overlay(
                     Capsule()
-                        .stroke(isChecked ? Color.accentPrimary.opacity(0.16) : Color.black.opacity(0.04), lineWidth: 1)
+                        .stroke(Color.accentPrimary.opacity(0.16), lineWidth: 1)
                 )
         )
-        .scaleEffect(isChecked ? 1 : 0.98)
-        .animation(.easeOut(duration: 0.18), value: isChecked)
     }
 }
 
@@ -1510,8 +1497,8 @@ private enum ShareDemoStep: String, Identifiable {
     var resourceName: String {
         switch self {
         case .share: return "demo1"
-        case .importNote: return "演示2"
-        case .generateHooks: return "演示3"
+        case .importNote: return "demo2"
+        case .generateHooks: return "demo3"
         }
     }
 

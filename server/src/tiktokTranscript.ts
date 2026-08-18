@@ -6,6 +6,7 @@ import { promises as fs } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { z } from "zod";
+import { downloadTikTokVideoWithApify } from "./apifyTikTok.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -21,8 +22,11 @@ const MEDIA_LINK_RESOLVER_TOKEN =
   || "";
 const MEDIA_LINK_YTDLP_BIN =
   process.env.MEDIA_LINK_YTDLP_BIN?.trim()
-  || process.env.TIKTOK_YTDLP_BIN?.trim()
   || "yt-dlp";
+const MEDIA_LINK_TIKTOK_YTDLP_BIN =
+  process.env.MEDIA_LINK_TIKTOK_YTDLP_BIN?.trim()
+  || process.env.TIKTOK_YTDLP_BIN?.trim()
+  || MEDIA_LINK_YTDLP_BIN;
 const MEDIA_LINK_FFMPEG_BIN =
   process.env.MEDIA_LINK_FFMPEG_BIN?.trim()
   || process.env.TIKTOK_FFMPEG_BIN?.trim()
@@ -55,6 +59,26 @@ const MEDIA_LINK_MAX_MEDIA_MB = Number(
   ?? process.env.TIKTOK_TRANSCRIPT_MAX_MEDIA_MB
   ?? 100
 );
+const MEDIA_LINK_APIFY_TOKEN =
+  process.env.MEDIA_LINK_APIFY_TOKEN?.trim()
+  || process.env.TIKTOK_APIFY_TOKEN?.trim()
+  || process.env.APIFY_TOKEN?.trim()
+  || "";
+const MEDIA_LINK_APIFY_FALLBACK =
+  process.env.MEDIA_LINK_APIFY_FALLBACK
+  ?? process.env.TIKTOK_APIFY_FALLBACK
+  ?? "true";
+const MEDIA_LINK_APIFY_ACTOR_ID =
+  process.env.MEDIA_LINK_APIFY_ACTOR_ID?.trim()
+  || "clockworks~tiktok-video-scraper";
+const MEDIA_LINK_APIFY_TIMEOUT_MS = Number(
+  process.env.MEDIA_LINK_APIFY_TIMEOUT_MS
+  ?? 150_000
+) || 150_000;
+const MEDIA_LINK_APIFY_MAX_TOTAL_CHARGE_USD = Number(
+  process.env.MEDIA_LINK_APIFY_MAX_TOTAL_CHARGE_USD
+  ?? 0.10
+) || 0.10;
 
 const mediaOEmbedSchema = z.object({
   title: z.string().optional().nullable(),
@@ -102,6 +126,22 @@ type MediaLinkMetadata = {
 };
 
 type MediaLinkPlatform = "tiktok" | "youtube" | "instagram";
+
+export function selectYtDlpBinary(
+  platform: string,
+  defaultBinary: string,
+  tikTokBinary: string
+): string {
+  return platform === "tiktok" ? tikTokBinary : defaultBinary;
+}
+
+function ytDlpBinaryForPlatform(platform: MediaLinkPlatform): string {
+  return selectYtDlpBinary(
+    platform,
+    MEDIA_LINK_YTDLP_BIN,
+    MEDIA_LINK_TIKTOK_YTDLP_BIN
+  );
+}
 
 type PreparedMedia = {
   bytes: Buffer;
@@ -175,7 +215,19 @@ export async function transcribeMediaLinkURL(rawURL: string): Promise<MediaLinkT
   }
 
   const resolvedURL = await resolveMediaLinkURL(rawURL, platform);
-  const metadata = await fetchMediaLinkMetadata(resolvedURL, platform);
+  let metadata: MediaLinkMetadata;
+  try {
+    metadata = await fetchMediaLinkMetadata(resolvedURL, platform);
+  } catch (error) {
+    if (!canUseApifyFallback(platform)) {
+      throw error;
+    }
+    metadata = {
+      platform,
+      resolvedURL,
+      videoID: extractVideoIDFromURL(resolvedURL, platform)
+    };
+  }
   const responseMetadata = makeTranscriptResponseMetadata(resolvedURL, metadata);
 
   try {
@@ -439,10 +491,72 @@ async function prepareMediaLinkMedia(url: string, metadata: MediaLinkMetadata): 
   }
 
   if (MEDIA_LINK_USE_YTDLP !== "false") {
-    return await prepareMediaWithYtDlp(url, metadata.platform);
+    try {
+      return await prepareMediaWithYtDlp(url, metadata.platform);
+    } catch (error) {
+      if (!canUseApifyFallback(metadata.platform, error)) {
+        throw error;
+      }
+      return await prepareMediaWithApify(url);
+    }
+  }
+
+  if (canUseApifyFallback(metadata.platform)) {
+    return await prepareMediaWithApify(url);
   }
 
   throw new MediaLinkTranscriptError("resolver_not_configured");
+}
+
+export function isApifyFallbackReason(
+  platform: string,
+  reason?: MediaLinkTranscriptReason
+): boolean {
+  if (platform !== "tiktok") {
+    return false;
+  }
+  return reason == null || [
+    "media_fetch_failed",
+    "media_fetch_forbidden",
+    "media_fetch_login_required",
+    "media_fetch_rate_limited"
+  ].includes(reason);
+}
+
+function canUseApifyFallback(platform: MediaLinkPlatform, error?: unknown): boolean {
+  if (!MEDIA_LINK_APIFY_TOKEN || MEDIA_LINK_APIFY_FALLBACK === "false") {
+    return false;
+  }
+  if (error != null && !(error instanceof MediaLinkTranscriptError)) {
+    return false;
+  }
+  const reason = error instanceof MediaLinkTranscriptError ? error.reason : undefined;
+  return isApifyFallbackReason(platform, reason);
+}
+
+async function prepareMediaWithApify(url: string): Promise<PreparedMedia> {
+  try {
+    const media = await downloadTikTokVideoWithApify(url, {
+      token: MEDIA_LINK_APIFY_TOKEN,
+      actorID: MEDIA_LINK_APIFY_ACTOR_ID,
+      timeoutMs: MEDIA_LINK_APIFY_TIMEOUT_MS,
+      maxBytes: Math.max(1, MEDIA_LINK_MAX_MEDIA_MB) * 1024 * 1024,
+      maxTotalChargeUSD: Math.max(0.01, MEDIA_LINK_APIFY_MAX_TOTAL_CHARGE_USD)
+    });
+    const prepared: PreparedMedia = media;
+    if (MEDIA_LINK_EXTRACT_AUDIO !== "false" && prepared.mimeType.startsWith("video/")) {
+      const extracted = await maybeExtractAudio(prepared, undefined, "tiktok");
+      extracted.durationSec = prepared.durationSec;
+      return extracted;
+    }
+    return prepared;
+  } catch (error) {
+    const message = String(error);
+    const reason = message.toLowerCase().includes("exceeded")
+      ? "media_too_large"
+      : classifyMediaFetchFailure(message);
+    throw new MediaLinkTranscriptError(reason, message);
+  }
 }
 
 async function prepareMediaWithResolver(
@@ -507,7 +621,7 @@ async function prepareMediaWithYtDlp(url: string, platform: MediaLinkPlatform): 
   const tempBase = join(tmpdir(), `chillnote-${platform}-${randomUUID()}`);
   const audioTemplate = `${tempBase}.%(ext)s`;
   try {
-    const downloadedAudio = await downloadWithYtDlp(url, [
+    const downloadedAudio = await downloadWithYtDlp(platform, url, [
       "--no-playlist",
       "--no-warnings",
       "--restrict-filenames",
@@ -530,7 +644,7 @@ async function prepareMediaWithYtDlp(url: string, platform: MediaLinkPlatform): 
   } catch (audioError) {
     try {
       const videoTemplate = `${tempBase}-video.%(ext)s`;
-      const downloadedVideo = await downloadWithYtDlp(url, [
+      const downloadedVideo = await downloadWithYtDlp(platform, url, [
         "--no-playlist",
         "--no-warnings",
         "--restrict-filenames",
@@ -571,7 +685,7 @@ async function fetchMediaCaptionTranscript(
   }
 
   try {
-    const info = await dumpYtDlpInfo(url);
+    const info = await dumpYtDlpInfo(url, metadata.platform);
     const caption = selectBestCaption(info, metadata);
     if (!caption?.url) {
       return null;
@@ -592,9 +706,10 @@ async function fetchMediaCaptionTranscript(
 
 async function dumpYtDlpInfo(
   url: string,
+  platform: MediaLinkPlatform,
   timeout = MEDIA_LINK_DOWNLOAD_TIMEOUT_MS
 ): Promise<YtDlpInfo> {
-  const { stdout } = await execFileAsync(MEDIA_LINK_YTDLP_BIN, [
+  const { stdout } = await execFileAsync(ytDlpBinaryForPlatform(platform), [
     "--dump-json",
     "--skip-download",
     "--no-playlist",
@@ -841,9 +956,13 @@ function normalizeCaptionTranscript(text: string): string | null {
   return normalized.length >= 2 ? normalized : null;
 }
 
-async function downloadWithYtDlp(url: string, args: string[]): Promise<{ filePath: string; fileName: string }> {
+async function downloadWithYtDlp(
+  platform: MediaLinkPlatform,
+  url: string,
+  args: string[]
+): Promise<{ filePath: string; fileName: string }> {
   try {
-    const { stdout } = await execFileAsync(MEDIA_LINK_YTDLP_BIN, args, {
+    const { stdout } = await execFileAsync(ytDlpBinaryForPlatform(platform), args, {
       timeout: MEDIA_LINK_DOWNLOAD_TIMEOUT_MS,
       maxBuffer: 8 * 1024 * 1024
     });
@@ -1257,6 +1376,7 @@ async function fetchInstagramMetadata(url: string): Promise<MediaLinkMetadata> {
     try {
       const info = await dumpYtDlpInfo(
         url,
+        "instagram",
         Math.min(MEDIA_LINK_DOWNLOAD_TIMEOUT_MS, 20_000)
       );
       structured = {

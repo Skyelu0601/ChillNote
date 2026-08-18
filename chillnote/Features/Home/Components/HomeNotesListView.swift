@@ -168,7 +168,7 @@ struct HomeNotesListView: View {
                                         onManageTags(note)
                                     } label: {
                                         Label(
-                                            L10n.text("home.note_tag.title"),
+                                            L10n.text("note_detail.tag.add"),
                                             systemImage: "tag"
                                         )
                                     }
@@ -350,14 +350,6 @@ struct HomeEmptyStateDesignPreview: View {
 
                 ScrollView {
                     VStack(alignment: .leading, spacing: 10) {
-                        HomeQuickActionsView(
-                            showsUnreadIndicator: false,
-                            onPostIdeasTap: {},
-                            onCreatorSkillsTap: {}
-                        )
-                        .padding(.horizontal, BrandTokens.Space.s4)
-                        .padding(.top, 10)
-
                         HomeNotesListView(
                             cachedVisibleNotes: [],
                             searchQuery: "",

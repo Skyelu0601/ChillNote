@@ -40,13 +40,6 @@ struct HomeBodyView: View {
         )
     }
 
-    private var showChillRecipesBinding: Binding<Bool> {
-        Binding(
-            get: { state.showChillRecipes },
-            set: { dispatch(.setShowChillRecipes($0)) }
-        )
-    }
-
     private var showPendingRecordingsBinding: Binding<Bool> {
         Binding(
             get: { state.showPendingRecordings },
@@ -168,7 +161,9 @@ struct HomeBodyView: View {
                 isTrashSelected: trashSelectedBinding,
                 hasPendingRecordings: state.hasPendingRecordings,
                 pendingRecordingsCount: state.pendingRecordingsCount,
+                hasUnreadWeeklyTopicsReport: state.weeklyTopicsStore.hasUnreadReport,
                 onSettingsTap: { dispatch(.showSettings) },
+                onWeeklyTopicsTap: { dispatch(.openWeeklyTopics) },
                 onPendingRecordingsTap: { dispatch(.setShowPendingRecordings(true)) }
             )
         }
@@ -212,18 +207,6 @@ struct HomeBodyView: View {
                 .onDisappear {
                     dispatch(.aiChatDisappear)
                 }
-        }
-        .sheet(isPresented: showChillRecipesBinding) {
-            NavigationStack {
-                ChillRecipesView()
-                    .toolbar {
-                        ToolbarItem(placement: .navigationBarLeading) {
-                            Button(L10n.text("common.close")) {
-                                dispatch(.closeChillRecipes)
-                            }
-                        }
-                    }
-            }
         }
         .alert(L10n.text("home.ask_agent.title"), isPresented: customActionInputPresentedBinding) {
             TextField(L10n.text("home.ask_agent.prompt"), text: customActionPromptBinding)
@@ -301,10 +284,14 @@ struct HomeBodyView: View {
             Text(L10n.text("home.alert.empty_recycle_bin.message"))
         }
         .sheet(item: taggingNoteBinding) { note in
-            NoteTagSheet(
-                note: note,
-                availableTags: state.availableTags,
-                onToggleTag: { dispatch(.toggleTag(note, $0)) }
+            AddTagSheetView(
+                initialColorHex: TagColorService.autoColorHex(
+                    for: "",
+                    existingTags: state.availableTags
+                ),
+                onAdd: { name, colorHex in
+                    dispatch(.addTag(note, name, colorHex))
+                }
             )
         }
     }
@@ -351,14 +338,8 @@ struct HomeBodyView: View {
         showsSearchBar || showsSectionPicker
     }
 
-    private var showsQuickActions: Bool {
-        !state.isSelectionMode
-            && !state.isTrashSelected
-            && state.selectedTag == nil
-    }
-
     private var scrollContentTopPadding: CGFloat {
-        showsQuickActions ? 8 : 16
+        16
     }
 
     private var mainContent: some View {
@@ -391,16 +372,6 @@ struct HomeBodyView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 10) {
-                    if showsQuickActions {
-                        HomeQuickActionsView(
-                            showsUnreadIndicator: state.weeklyTopicsStore.hasUnreadReport,
-                            onPostIdeasTap: { dispatch(.openWeeklyTopics) },
-                            onCreatorSkillsTap: { dispatch(.openChillRecipes) }
-                        )
-                        .padding(.horizontal, 24)
-                        .padding(.top, 2)
-                    }
-
                     HomeNotesListView(
                         cachedVisibleNotes: state.cachedVisibleNotes,
                         searchQuery: state.searchText,
@@ -547,57 +518,6 @@ struct HomeBodyView: View {
                 AgentProgressOverlayView(progress: progress)
             }
         }
-    }
-}
-
-private struct NoteTagSheet: View {
-    @Environment(\.dismiss) private var dismiss
-
-    let note: Note
-    let availableTags: [Tag]
-    let onToggleTag: (Tag) -> Void
-
-    var body: some View {
-        NavigationStack {
-            List {
-                if availableTags.isEmpty {
-                    Text(L10n.text("home.note_tag.empty"))
-                        .foregroundColor(.textSub)
-                } else {
-                    ForEach(availableTags) { tag in
-                        Button {
-                            onToggleTag(tag)
-                        } label: {
-                            HStack(spacing: 12) {
-                                Image(systemName: isAssigned(tag) ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(isAssigned(tag) ? .accentPrimary : .textSub)
-
-                                Text(tag.name)
-                                    .font(.bodyMedium)
-                                    .foregroundColor(.textMain)
-
-                                Spacer()
-                            }
-                            .padding(.vertical, 4)
-                        }
-                    }
-                }
-            }
-            .navigationTitle(L10n.text("home.note_tag.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.text("common.done")) {
-                        dismiss()
-                    }
-                }
-            }
-        }
-        .presentationDetents([.medium, .large])
-    }
-
-    private func isAssigned(_ tag: Tag) -> Bool {
-        note.tags.contains(where: { $0.id == tag.id })
     }
 }
 

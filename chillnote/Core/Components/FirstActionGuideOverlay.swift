@@ -3,7 +3,9 @@ import UIKit
 
 enum FirstActionGuideTarget: Hashable {
     case importedNote(UUID)
+    case createTab
     case aiSkills
+    case recordTab
     case teleprompter
 }
 
@@ -11,6 +13,7 @@ struct FirstActionGuideSpotlightConfiguration {
     let target: FirstActionGuideTarget
     let message: String
     let step: Int
+    let totalSteps: Int = 7
 }
 
 private struct FirstActionGuideTargetPreferenceKey: PreferenceKey {
@@ -44,6 +47,7 @@ extension View {
                         targetRect: proxy[anchor],
                         message: configuration.message,
                         step: configuration.step,
+                        totalSteps: configuration.totalSteps,
                         containerSize: proxy.size,
                         onSkip: onSkip
                     )
@@ -60,9 +64,15 @@ struct FirstActionSharePromptView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             HStack(spacing: BrandTokens.Space.s2) {
-                Text(L10n.text("onboarding.first_action.share.title"))
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundStyle(Color.textMain)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.text("onboarding.first_action.step_progress", Int64(1), Int64(7)))
+                        .font(.chillCaption.weight(.bold))
+                        .foregroundStyle(Color.accentPrimary)
+
+                    Text(L10n.text("onboarding.first_action.share.title"))
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(Color.textMain)
+                }
 
                 Spacer(minLength: 0)
 
@@ -157,10 +167,72 @@ struct FirstActionSharePromptView: View {
     }
 }
 
+struct FirstActionTranscriptReviewPromptView: View {
+    let onContinue: () -> Void
+    let onSkip: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .top, spacing: BrandTokens.Space.s2) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(L10n.text("onboarding.first_action.step_progress", Int64(3), Int64(7)))
+                        .font(.chillCaption.weight(.bold))
+                        .foregroundStyle(Color.accentPrimary)
+
+                    Text(L10n.text("onboarding.first_action.transcript_review.title"))
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundStyle(Color.textMain)
+                }
+
+                Spacer(minLength: 0)
+
+                Button(action: onSkip) {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(Color.textSub)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L10n.text("common.skip"))
+            }
+
+            Button(action: onContinue) {
+                HStack(spacing: 7) {
+                    Text(L10n.text("onboarding.first_action.transcript_review.action"))
+                        .font(.bodySmall.weight(.bold))
+
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 12, weight: .bold))
+                }
+                .foregroundStyle(Color.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 48)
+                .background(Color.accentPrimary)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.tactile)
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
+                .fill(Color.cardBackground)
+        )
+        .overlay {
+            RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
+                .stroke(Color.borderSubtle, lineWidth: 1)
+        }
+        .brandShadow(BrandTokens.Shadow.card)
+        .accessibilityElement(children: .contain)
+    }
+}
+
 private struct FirstActionGuideSpotlight: View {
     let targetRect: CGRect
     let message: String
     let step: Int
+    let totalSteps: Int
     let containerSize: CGSize
     let onSkip: () -> Void
 
@@ -262,19 +334,25 @@ private struct FirstActionGuideSpotlight: View {
     }
 
     private var guideBubble: some View {
-        Text(message)
-            .font(.bodySmall.weight(.semibold))
-            .foregroundStyle(Color.textMain)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(.horizontal, BrandTokens.Space.s3)
-            .padding(.vertical, BrandTokens.Space.s2)
-            .frame(width: bubbleWidth, alignment: .leading)
-            .frame(minHeight: 64, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: BrandTokens.Radius.button, style: .continuous)
-                    .fill(Color.cardBackground)
-            )
-            .brandShadow(BrandTokens.Shadow.card)
+        VStack(alignment: .leading, spacing: 6) {
+            Text(L10n.text("onboarding.first_action.step_progress", Int64(step), Int64(totalSteps)))
+                .font(.chillCaption.weight(.bold))
+                .foregroundStyle(Color.accentPrimary)
+
+            Text(message)
+                .font(.bodySmall.weight(.semibold))
+                .foregroundStyle(Color.textMain)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, BrandTokens.Space.s3)
+        .padding(.vertical, BrandTokens.Space.s2)
+        .frame(width: bubbleWidth, alignment: .leading)
+        .frame(minHeight: 64, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: BrandTokens.Radius.button, style: .continuous)
+                .fill(Color.cardBackground)
+        )
+        .brandShadow(BrandTokens.Shadow.card)
     }
 }
 
@@ -282,18 +360,13 @@ private struct FirstActionGuideSpotlight: View {
 struct FirstActionGuideSpotlightDesignPreview: View {
     var body: some View {
         VStack(spacing: 0) {
-            NoteDetailHeaderView(
-                isDeleted: false,
-                isAISkillsEnabled: true,
-                onBack: {},
-                onRestore: {},
-                onAISkills: {},
-                onTeleprompter: {},
-                onExport: {},
-                onDelete: {}
+            NoteDetailWorkspacePicker(
+                selection: .script,
+                isCreateEnabled: true,
+                guideRequiredPage: .create,
+                guideTarget: .createTab,
+                onSelect: { _ in }
             )
-            .padding(.horizontal, 16)
-            .padding(.top, 10)
 
             Spacer()
         }
@@ -301,9 +374,9 @@ struct FirstActionGuideSpotlightDesignPreview: View {
         .background(Color.bgPrimary.ignoresSafeArea())
         .firstActionGuideSpotlight(
             configuration: FirstActionGuideSpotlightConfiguration(
-                target: .aiSkills,
-                message: L10n.text("onboarding.first_action.ai_skills"),
-                step: 3
+                target: .createTab,
+                message: L10n.text("onboarding.first_action.create_tab"),
+                step: 4
             ),
             onSkip: {}
         )

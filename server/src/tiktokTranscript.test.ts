@@ -1,7 +1,20 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { normalizeMediaLinkSections } from "./mediaLinkSections.js";
-import { instagramMetadataFromYtDlpInfo } from "./tiktokTranscript.js";
+import {
+  instagramMetadataFromYtDlpInfo,
+  isApifyFallbackReason,
+  selectYtDlpBinary
+} from "./tiktokTranscript.js";
+
+test("TikTok can use a dedicated yt-dlp binary without downgrading other platforms", () => {
+  const currentBinary = "/usr/local/bin/yt-dlp";
+  const tikTokBinary = "/opt/chillnote/bin/yt-dlp-tiktok-2026.03.17";
+
+  assert.equal(selectYtDlpBinary("tiktok", currentBinary, tikTokBinary), tikTokBinary);
+  assert.equal(selectYtDlpBinary("youtube", currentBinary, tikTokBinary), currentBinary);
+  assert.equal(selectYtDlpBinary("instagram", currentBinary, tikTokBinary), currentBinary);
+});
 
 test("Instagram metadata prefers yt-dlp uploader and description fields", () => {
   const metadata = instagramMetadataFromYtDlpInfo({
@@ -61,4 +74,15 @@ test("new clients can request transcript-only notes", () => {
     showHook: false,
     showTranscript: true
   });
+});
+
+test("Apify fallback is limited to TikTok media-fetch failures", () => {
+  assert.equal(isApifyFallbackReason("tiktok", "media_fetch_failed"), true);
+  assert.equal(isApifyFallbackReason("tiktok", "media_fetch_forbidden"), true);
+  assert.equal(isApifyFallbackReason("tiktok", "media_fetch_login_required"), true);
+  assert.equal(isApifyFallbackReason("tiktok", "media_fetch_rate_limited"), true);
+  assert.equal(isApifyFallbackReason("youtube", "media_fetch_failed"), false);
+  assert.equal(isApifyFallbackReason("instagram", "media_fetch_failed"), false);
+  assert.equal(isApifyFallbackReason("tiktok", "transcription_failed"), false);
+  assert.equal(isApifyFallbackReason("tiktok", "media_too_large"), false);
 });

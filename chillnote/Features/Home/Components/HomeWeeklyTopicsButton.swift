@@ -3,28 +3,17 @@ import SwiftUI
 struct HomeQuickActionsView: View {
     let showsUnreadIndicator: Bool
     let onPostIdeasTap: () -> Void
-    let onCreatorSkillsTap: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            quickActionButton(
-                icon: "lightbulb",
-                title: L10n.text("weekly_topics.home.button"),
-                tint: .accentPrimary,
-                accessibilityHint: showsUnreadIndicator
-                    ? L10n.text("weekly_topics.home.unread_hint")
-                    : L10n.text("weekly_topics.home.hint"),
-                action: onPostIdeasTap
-            )
-
-            quickActionButton(
-                icon: "bolt.fill",
-                title: L10n.text("home.creator_skills.title"),
-                tint: .accentSecondary,
-                accessibilityHint: L10n.text("home.creator_skills.open_hint"),
-                action: onCreatorSkillsTap
-            )
-        }
+        quickActionButton(
+            icon: "lightbulb",
+            title: L10n.text("weekly_topics.home.button"),
+            tint: .accentPrimary,
+            accessibilityHint: showsUnreadIndicator
+                ? L10n.text("weekly_topics.home.unread_hint")
+                : L10n.text("weekly_topics.home.hint"),
+            action: onPostIdeasTap
+        )
     }
 
     private func quickActionButton(

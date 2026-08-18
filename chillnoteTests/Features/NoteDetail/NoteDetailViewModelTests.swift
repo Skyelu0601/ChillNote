@@ -142,4 +142,30 @@ final class NoteDetailViewModelTests: XCTestCase {
         XCTAssertFalse(fileName.contains(":"))
         XCTAssertLessThanOrEqual(fileName.count, 60 + "-19700101-000000-123456.md".count)
     }
+
+    func testAISkillPreviewOnlyOffersAppendAndReplaceEntireNote() {
+        let recipe = AgentRecipe(
+            id: "test",
+            systemIcon: "sparkles",
+            name: "Test",
+            description: "Test",
+            prompt: "Test",
+            category: .shape
+        )
+
+        for selection in [
+            RichTextEditorSelection(location: 0, length: 0, selectedText: ""),
+            RichTextEditorSelection(location: 0, length: 4, selectedText: "Text")
+        ] {
+            let preview = NoteAISkillPreview(
+                recipe: recipe,
+                result: "Result",
+                sourceContent: "Text",
+                sourceSelection: selection,
+                instruction: nil
+            )
+
+            XCTAssertEqual(preview.availableApplyModes, [.appendToEnd, .replaceAll])
+        }
+    }
 }

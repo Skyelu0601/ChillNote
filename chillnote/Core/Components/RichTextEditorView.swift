@@ -17,6 +17,7 @@ struct RichTextEditorSelection: Equatable {
 @MainActor
 private protocol RichTextEditorControlling: AnyObject {
     func flushPendingChanges()
+    func endEditing()
 }
 
 /// Keeps persistence and external actions out of UITextView's per-keystroke path.
@@ -38,6 +39,10 @@ final class RichTextEditorController {
     func flush() {
         editor?.flushPendingChanges()
     }
+
+    func endEditing() {
+        editor?.endEditing()
+    }
 }
 
 struct RichTextEditorView: UIViewRepresentable {
@@ -49,6 +54,7 @@ struct RichTextEditorView: UIViewRepresentable {
     var textColor: UIColor = .label
     var bottomInset: CGFloat = 8
     var isScrollEnabled: Bool = true
+    var isEditing: Binding<Bool>?
     
     func makeUIView(context: Context) -> InteractiveTextView {
         let textView = InteractiveTextView(usingTextLayoutManager: true)
@@ -86,7 +92,8 @@ struct RichTextEditorView: UIViewRepresentable {
             textView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         }
         
-        textView.textContainerInset = UIEdgeInsets(top: 8, left: 12, bottom: bottomInset, right: 12)
+        textView.textContainer.lineFragmentPadding = 0
+        textView.textContainerInset = UIEdgeInsets(top: 20, left: 24, bottom: bottomInset, right: 24)
         
         // Setup Toolbar
         let toolbar = EditorFormattingToolbar(textView: textView)
@@ -195,6 +202,7 @@ struct RichTextEditorView: UIViewRepresentable {
         }
 
         func textViewDidBeginEditing(_ textView: UITextView) {
+            parent.isEditing?.wrappedValue = true
             normalizeTypingAttributesForListPrefixIfNeeded(in: textView)
             scheduleCaretVisibilityUpdate(in: textView)
         }
@@ -224,7 +232,12 @@ struct RichTextEditorView: UIViewRepresentable {
         }
 
         func textViewDidEndEditing(_ textView: UITextView) {
+            parent.isEditing?.wrappedValue = false
             flushPendingChanges()
+        }
+
+        func endEditing() {
+            textView?.resignFirstResponder()
         }
 
         func acceptExternalMarkdown(
@@ -412,6 +425,7 @@ struct RichTextEditorView: UIViewRepresentable {
                         textView.selectedRange = NSRange(location: lineRange.location, length: 0)
                         applyDefaultTypingAttributes(to: textView)
                         textViewDidChange(textView)
+                        AppInteractionFeedback.impact(.soft, intensity: 0.62)
                         return true // handled manually; block original mutation
                     }
                 }
@@ -437,6 +451,7 @@ struct RichTextEditorView: UIViewRepresentable {
                      textView.selectedRange = NSRange(location: lineRange.location, length: 0)
                      applyDefaultTypingAttributes(to: textView)
                      textViewDidChange(textView)
+                     AppInteractionFeedback.impact(.soft, intensity: 0.62)
                      return true // handled manually; block original mutation
                 }
             }
@@ -533,6 +548,7 @@ struct RichTextEditorView: UIViewRepresentable {
             textView.typingAttributes = cleanAttributes
             
             textViewDidChange(textView)
+            AppInteractionFeedback.impact(.soft, intensity: 0.68)
             return true
         }
 
@@ -589,6 +605,7 @@ struct RichTextEditorView: UIViewRepresentable {
                 textView.selectedRange = NSRange(location: lineRange.location + 1, length: 0)
                 applyDefaultTypingAttributes(to: textView)
                 textViewDidChange(textView)
+                AppInteractionFeedback.selectionChanged()
                 return false
             }
             
@@ -1099,8 +1116,6 @@ class EditorFormattingToolbar: UIView {
         
         let buttons: [(String, EditorAction)] = [
             ("bold", .bold),
-            ("h1.circle", .h1),
-            ("h2.circle", .h2),
             ("checklist", .checklist),
             ("arrow.uturn.left", .undo),
             ("arrow.uturn.right", .redo)
@@ -1119,8 +1134,12 @@ class EditorFormattingToolbar: UIView {
             ])
             btn.addAction(UIAction { [weak self] _ in
                 self?.onAction?(action)
-                // Haptic feedback
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                switch action {
+                case .bold, .h1, .h2, .checklist:
+                    AppInteractionFeedback.selectionChanged()
+                case .undo, .redo:
+                    AppInteractionFeedback.impact(.soft, intensity: 0.68)
+                }
             }, for: .touchUpInside)
             self.buttons[action] = btn
             stackView.addArrangedSubview(btn)
@@ -1138,6 +1157,7 @@ class EditorFormattingToolbar: UIView {
         ])
         dismissBtn.addAction(UIAction { [weak self] _ in
             self?.textView.resignFirstResponder()
+            AppInteractionFeedback.impact(.soft, intensity: 0.6)
         }, for: .touchUpInside)
         stackView.addArrangedSubview(dismissBtn)
         
@@ -1285,7 +1305,7 @@ class InteractiveTextView: UITextView {
     @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
         let location = gesture.location(in: self)
         if let range = checkboxRangeForTap(at: location) {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            AppInteractionFeedback.selectionChanged()
             onCheckboxTap?(0, range)
         }
     }

@@ -48,7 +48,6 @@ struct HomeView: View {
     @State var isTranslateInputPresented = false
     @State var translateTargetLanguage = ""
     @StateObject var recipeManager = RecipeManager.shared
-    @State var showChillRecipes = false
 
     let askSoftLimit = 10
     let askHardLimit = 20
@@ -62,10 +61,6 @@ struct HomeView: View {
 
     @State var showSubscription = false
     @State private var showWeeklyTopicsPreview = false
-    @State private var showCreditGiftPrompt = false
-
-    private let initialFreeCreditGiftAmount = 50
-    private let creditGiftPromptSeenKeyPrefix = "home_credit_gift_prompt_seen."
 
     let translateLanguages: [TranslateLanguage] = TranslateLanguage.defaultLanguages
 
@@ -128,7 +123,6 @@ struct HomeView: View {
             isSearchVisible: isSearchVisible,
             isTrashSelected: isTrashSelected,
             isAgentMenuOpen: isAgentMenuOpen,
-            showChillRecipes: showChillRecipes,
             showingSettings: showingSettings,
             autoOpenPendingRecordings: autoOpenPendingRecordings,
             showAIChat: showAIChat,
@@ -433,58 +427,6 @@ struct HomeView: View {
                 onApply: { applyHomeAISkillPreview(preview, mode: $0) }
             )
         }
-        .overlay {
-            if showCreditGiftPrompt {
-                HomeCreditGiftPromptOverlay {
-                    dismissCreditGiftPrompt()
-                }
-                .transition(.opacity.combined(with: .scale(scale: 0.96)))
-                .zIndex(20)
-            }
-        }
-        .onChange(of: storeService.hasFetchedCreditBalanceFromBackend) { _, _ in
-            evaluateCreditGiftPrompt()
-        }
-        .onChange(of: storeService.creditBalance) { _, _ in
-            evaluateCreditGiftPrompt()
-        }
-        .onChange(of: storeService.currentTier) { _, _ in
-            evaluateCreditGiftPrompt()
-        }
-        .onChange(of: authService.currentUserId) { _, _ in
-            evaluateCreditGiftPrompt()
-        }
-        .onAppear {
-            evaluateCreditGiftPrompt()
-        }
-    }
-
-    private func evaluateCreditGiftPrompt() {
-        guard let userId = currentUserId else { return }
-        guard storeService.currentTier == .free else {
-            showCreditGiftPrompt = false
-            return
-        }
-        guard storeService.hasFetchedCreditBalanceFromBackend else { return }
-        guard storeService.creditBalance == initialFreeCreditGiftAmount else { return }
-        guard !UserDefaults.standard.bool(forKey: creditGiftPromptSeenKey(for: userId)) else { return }
-
-        withAnimation(.spring(response: 0.34, dampingFraction: 0.86)) {
-            showCreditGiftPrompt = true
-        }
-    }
-
-    private func dismissCreditGiftPrompt() {
-        if let userId = currentUserId {
-            UserDefaults.standard.set(true, forKey: creditGiftPromptSeenKey(for: userId))
-        }
-        withAnimation(.spring(response: 0.28, dampingFraction: 0.9)) {
-            showCreditGiftPrompt = false
-        }
-    }
-
-    private func creditGiftPromptSeenKey(for userId: String) -> String {
-        "\(creditGiftPromptSeenKeyPrefix)\(userId)"
     }
 
     func dispatch(_ action: HomeScreenAction) {
@@ -519,8 +461,6 @@ struct HomeView: View {
             isSidebarPresented = value
         case .setAgentMenuOpen(let value):
             isAgentMenuOpen = value
-        case .setShowChillRecipes(let value):
-            showChillRecipes = value
         case .setSelectedTag(let value):
             selectedTag = value
         case .setSelectedSection(let value):
@@ -593,8 +533,8 @@ struct HomeView: View {
             deleteSelectedNotes()
         case .emptyTrash:
             emptyTrash()
-        case .toggleTag(let note, let tag):
-            toggleTag(tag, for: note)
+        case .addTag(let note, let name, let colorHex):
+            addTag(named: name, colorHex: colorHex, to: note)
         case .hideKeyboard:
             hideKeyboard()
 
@@ -621,10 +561,6 @@ struct HomeView: View {
             showingSettings = true
         case .aiChatDisappear:
             exitSelectionMode()
-        case .openChillRecipes:
-            showChillRecipes = true
-        case .closeChillRecipes:
-            showChillRecipes = false
         case .openWeeklyTopics:
             Task { @MainActor in
                 await storeService.ensureSubscriptionStatusReadyForFeatureGate()
@@ -764,7 +700,6 @@ struct HomeView: View {
         isBootstrappingNotesSync = false
 
         await storeService.fetchCreditBalance()
-        evaluateCreditGiftPrompt()
 
         Task(priority: .utility) {
             let delay: UInt64 = source == .initialTask ? 1_200_000_000 : 300_000_000

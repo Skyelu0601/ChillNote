@@ -47,7 +47,6 @@ final class NoteDetailViewModel: ObservableObject {
     @Published var initialTags: Set<UUID> = []
 
     @Published var showAddTagAlert = false
-    @Published var newTagName = ""
     @Published var newTagColorHex = TagColorService.defaultColorHex
 
     @Published var showExportSheet = false
@@ -185,7 +184,6 @@ final class NoteDetailViewModel: ObservableObject {
     }
 
     func resetNewTagInput() {
-        newTagName = ""
         if let modelContext {
             let fetchDescriptor = FetchDescriptor<Tag>(predicate: #Predicate { $0.deletedAt == nil })
             let allTags: [Tag]
@@ -202,13 +200,6 @@ final class NoteDetailViewModel: ObservableObject {
             newTagColorHex = TagColorService.defaultColorHex
         }
         showAddTagAlert = true
-    }
-
-    func confirmNewTagFromAlert() {
-        let trimmed = newTagName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        confirmTag(trimmed, preferredColorHex: newTagColorHex)
-        showAddTagAlert = false
     }
 
     func updateTimestampAndDismiss() {

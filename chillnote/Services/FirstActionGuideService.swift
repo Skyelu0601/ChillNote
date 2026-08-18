@@ -9,8 +9,11 @@ final class FirstActionGuideService: ObservableObject {
         case awaitingShare
         case waitingForImport
         case openImportedNote
+        case reviewTranscript
+        case tapCreateTab
         case tapAISkills
         case waitingForAISkillsDismissal
+        case tapRecordTab
         case tapTeleprompter
         case completed
         case dismissed
@@ -88,6 +91,16 @@ final class FirstActionGuideService: ObservableObject {
 
     func markImportedNoteOpened(_ noteID: UUID) {
         guard stage == .openImportedNote, targetNoteID == noteID else { return }
+        transition(to: .reviewTranscript)
+    }
+
+    func markTranscriptReviewed(in noteID: UUID) {
+        guard stage == .reviewTranscript, targetNoteID == noteID else { return }
+        transition(to: .tapCreateTab)
+    }
+
+    func markCreateTabTapped(in noteID: UUID) {
+        guard stage == .tapCreateTab, targetNoteID == noteID else { return }
         transition(to: .tapAISkills)
     }
 
@@ -98,6 +111,11 @@ final class FirstActionGuideService: ObservableObject {
 
     func markAISkillsFlowDismissed(in noteID: UUID) {
         guard stage == .waitingForAISkillsDismissal, targetNoteID == noteID else { return }
+        transition(to: .tapRecordTab)
+    }
+
+    func markRecordTabTapped(in noteID: UUID) {
+        guard stage == .tapRecordTab, targetNoteID == noteID else { return }
         transition(to: .tapTeleprompter)
     }
 
