@@ -17,8 +17,8 @@ export default function PrivacyPage() {
 
         <p>
           <strong>Sponteoai</strong> respects your privacy and is committed to protecting it. This policy describes the
-          information we may collect when you use <strong>ChillScript</strong>, including the mobile app, web app, and
-          related services.
+          information we may collect when you use <strong>ChillScript</strong>, including the iOS and Android apps,
+          website, and related services.
         </p>
 
         <h2>1. Information We Collect</h2>

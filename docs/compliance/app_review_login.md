@@ -16,7 +16,7 @@
 
 ## Developer Notes
 
-- Credentials are configured in `chillnote/Info.plist`.
+- Credentials are configured in `ios/chillnote/Info.plist`.
 - Config keys:
   - `APP_REVIEW_LOGIN_ENABLED`
   - `APP_REVIEW_WHITELIST_EMAILS`

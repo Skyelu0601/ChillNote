@@ -1,17 +1,10 @@
 # ChillScript Docs Index
 
-当前文档按用途分为三类：
+- 项目与架构背景：`PROJECT_CONTEXT.md`
+- Android / Google Play：`android/`
+- App Store 与合规说明：`compliance/`
+- 隐私政策与服务条款源文档：`compliance/legal/`
+- 国际化规范、术语与检查报告：`i18n/`
+- 产品与设计资料：`product/`
 
-- `docs/product`: 产品理念、设计取舍
-- `docs/testing`: 测试指南、结果与总结
-- `docs/compliance`: App Store 合规与复测记录
-
-## 快速入口
-
-- 产品设计: `docs/product/DESIGN_PHILOSOPHY.md`
-- 测试总览: `docs/testing/TEST_RESULTS.md`
-- 测试指南: `docs/testing/TESTING_GUIDE.md`
-- 合规报告: `docs/compliance/APP_STORE_COMPLIANCE_REPORT.md`
-- 合规复测: `docs/compliance/APP_STORE_RETEST_RESULTS.md`
-- 隐私政策: `docs/compliance/legal/PRIVACY_POLICY.md`
-- 服务条款: `docs/compliance/legal/TERMS_OF_SERVICE.md`
+文档中的 `ChillNote` 若不是历史引用或技术标识，应逐步更新为当前产品名 `ChillScript`。

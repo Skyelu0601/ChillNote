@@ -4,9 +4,9 @@ import json
 import re
 from pathlib import Path
 
-CATALOG_PATH = Path('chillnote/Resources/Localizable.xcstrings')
+CATALOG_PATH = Path('ios/chillnote/Resources/Localizable.xcstrings')
 OUTPUT_DIR = Path('docs/i18n')
-SWIFT_ROOT = Path('chillnote')
+SWIFT_ROOT = Path('ios/chillnote')
 
 UI_LITERAL_PATTERN = re.compile(
     r'\b(Text|Button|Label|TextField)\(\s*"((?:\\.|[^"\\])*)"|'

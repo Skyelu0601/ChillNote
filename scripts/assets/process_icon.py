@@ -2,8 +2,8 @@ from PIL import Image
 import os
 
 source_path = "/Users/luwenting/.gemini/antigravity/brain/2d980493-d25a-4c8a-affd-f70a2e79d47b/chillnote_app_icon_v3_1767792497559.png"
-app_icon_path = "/Users/luwenting/development/ChillNote/chillnote/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
-logo_path = "/Users/luwenting/development/ChillNote/chillnote/Assets.xcassets/ChillLogo.imageset/ChillLogo.png"
+app_icon_path = "/Users/luwenting/development/ChillNote/ios/chillnote/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
+logo_path = "/Users/luwenting/development/ChillNote/ios/chillnote/Assets.xcassets/ChillLogo.imageset/ChillLogo.png"
 
 def process_image():
     if not os.path.exists(source_path):

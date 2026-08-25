@@ -3,7 +3,7 @@ import { MarketingShell } from "@/components/marketing-shell";
 
 export const metadata: Metadata = {
   title: "Terms of Service | ChillScript",
-  description: "Read the ChillScript user agreement and terms of service for the app, web app, and related services.",
+  description: "Read the ChillScript user agreement and terms of service for the mobile apps, website, and related services.",
 };
 
 export default function TermsPage() {
@@ -15,8 +15,8 @@ export default function TermsPage() {
         <p><strong>Last Updated:</strong> January 2026</p>
 
         <p>
-          Welcome to <strong>ChillScript</strong>. These Terms of Service govern your use of the ChillScript mobile app,
-          web app, and related services provided by <strong>Sponteoai</strong>.
+          Welcome to <strong>ChillScript</strong>. These Terms of Service govern your use of the ChillScript iOS and
+          Android apps, website, and related services provided by <strong>Sponteoai</strong>.
         </p>
 
         <h2>1. Use of the App</h2>

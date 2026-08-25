@@ -4,9 +4,9 @@ import re
 import sys
 from pathlib import Path
 
-CATALOG_PATH = Path('chillnote/Resources/Localizable.xcstrings')
+CATALOG_PATH = Path('ios/chillnote/Resources/Localizable.xcstrings')
 REQUIRED_LOCALES = ['en', 'zh-Hans', 'zh-Hant', 'ja', 'fr', 'de', 'es', 'ko']
-SWIFT_ROOT = Path('chillnote')
+SWIFT_ROOT = Path('ios/chillnote')
 
 UI_LITERAL_PATTERN = re.compile(
     r'\b(Text|Button|Label|TextField)\(\s*"((?:\\.|[^"\\])*)"|'

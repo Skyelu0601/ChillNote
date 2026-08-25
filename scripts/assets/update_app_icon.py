@@ -1,8 +1,8 @@
 from PIL import Image
 import os
 
-logo_path = "/Users/luwenting/development/ChillNote/chillnote/Assets.xcassets/logo.imageset/logo.png"
-app_icon_path = "/Users/luwenting/development/ChillNote/chillnote/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
+logo_path = "/Users/luwenting/development/ChillNote/ios/chillnote/Assets.xcassets/logo.imageset/logo.png"
+app_icon_path = "/Users/luwenting/development/ChillNote/ios/chillnote/Assets.xcassets/AppIcon.appiconset/AppIcon.png"
 
 def update_icon():
     if not os.path.exists(logo_path):

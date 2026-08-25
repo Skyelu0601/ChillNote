@@ -12,8 +12,8 @@
 
 国际化相关代码，优先看这几个地方：
 
-- 词条文件：`chillnote/Resources/Localizable.xcstrings`
-- 代码入口：`chillnote/Core/Localization/L10n.swift`
+- 词条文件：`ios/chillnote/Resources/Localizable.xcstrings`
+- 代码入口：`ios/chillnote/Core/Localization/L10n.swift`
 - 校验脚本：`scripts/i18n/lint_i18n.py`
 - 规范化脚本：`scripts/i18n/normalize_xcstrings.py`
 - 术语表：`docs/i18n/glossary_v1.md`
@@ -148,7 +148,7 @@ L10n.text("some.key", arg1, arg2)
 
 1. 先判断这是不是用户可见文案。
 2. 如果是，就先想一个稳定的语义化 key。
-3. 在 `chillnote/Resources/Localizable.xcstrings` 里新增或复用该 key。
+3. 在 `ios/chillnote/Resources/Localizable.xcstrings` 里新增或复用该 key。
 4. 在代码里改成 `L10n.text(...)` 或等价的稳定 key 用法。
 5. 如果有变量，使用格式化模板，不要在代码里拼整句英文。
 6. 检查同一页面有没有类似旧写法，能顺手收口就一起收口。
@@ -167,7 +167,7 @@ L10n.text("some.key", arg1, arg2)
 
 ```bash
 npm run lint:i18n
-xcodebuild -project chillnote.xcodeproj -scheme chillnote -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6' build
+xcodebuild -project ios/chillnote.xcodeproj -scheme chillnote -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6' build
 ```
 
 如果只做了其中一个，要在最终说明里写清楚。

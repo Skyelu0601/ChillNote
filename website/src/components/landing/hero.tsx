@@ -3,6 +3,7 @@
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { copy } from "@/lib/copy";
+import { storeLinks } from "@/lib/links";
 import { Wordmark } from "../wordmark";
 import { Orbit } from "./orbit";
 
@@ -26,11 +27,11 @@ export function Hero() {
           </h1>
           <p>{c.subtitle}</p>
           <div className="lp-hero-actions">
-            <a className="lp-btn lp-btn-primary" href="https://apps.apple.com/us/app/chillnote-ai-quick-capture/id6758427839">
+            <a className="lp-btn lp-btn-primary" href={storeLinks.appStore}>
               {c.primaryAction}
               <ArrowRight size={18} />
             </a>
-            <a className="lp-btn lp-btn-ghost" href="/app">
+            <a className="lp-btn lp-btn-ghost" href={storeLinks.googlePlay}>
               {c.secondaryAction}
             </a>
           </div>

@@ -1,15 +1,34 @@
+# ChillScript Repository Instructions
+
 ## General
 
-- 除了必要的专业术语，默认请用中文回复我。
-- 我是代码小白。解释问题时请尽量通俗，不要只给结论，要把关键原因讲明白。
+- 除了必要的专业术语，默认使用中文回复。
+- 用户是代码初学者。解释问题时说明关键原因、影响和验证结果，不只给结论。
+- 当前产品名是 **ChillScript**。`ChillNote` / `chillnote` 只应作为历史技术标识保留，不要新增用户可见的旧品牌文案。
+- 开始跨端或架构任务前，先阅读 `docs/PROJECT_CONTEXT.md`。
 
-## Required Reading
+## Repository Boundaries
 
-- 只要任务涉及用户可见文案、翻译、`Localizable.xcstrings`、`NSLocalizedString`、`String(localized:)`、`Text("...")`、按钮标题、报错提示、空状态、弹窗、无障碍文案，开始修改前都必须先阅读：
-  - [docs/i18n/I18N_RULES.md](/Users/luwenting/development/ChillNote/docs/i18n/I18N_RULES.md)
+- `ios/`：iOS、Widget、分享扩展及 Xcode 工程。
+- `android/`：Android / Google Play 原生客户端。
+- `server/`：iOS 和 Android 共用的后端、同步、AI、推送与订阅服务。
+- `website/`：只维护公开官网、价格、隐私政策、服务条款和账号删除说明；不提供登录后的 Web App。
+- 删除网页功能时，不得据此删除移动端仍在使用的 `server/` 接口。
 
-## i18n Guardrail
+## Compatibility Guardrails
 
-- 国际化相关修改必须遵守 [docs/i18n/I18N_RULES.md](/Users/luwenting/development/ChillNote/docs/i18n/I18N_RULES.md)。
-- 如果发现当前代码和规范冲突，优先把代码改到规范上，而不是沿用旧写法。
-- 新增或修改国际化后，优先运行项目已有检查；如果当前任务不方便运行，也要在最终回复里明确说明没有验证。
+- 不要为了品牌统一而修改已发布应用使用的 Bundle ID、Android application ID、App Group、Keychain Group、商品 ID、数据库字段、迁移历史、URL Scheme 或线上域名。
+- 如果任务确实需要修改这些兼容标识，必须先说明迁移影响并取得用户明确确认。
+- 工作区可能有用户尚未提交的修改。只改当前任务相关文件，不覆盖或回退其他改动。
+
+## User-visible Copy and i18n
+
+- 只要任务涉及用户可见文案、翻译、`Localizable.xcstrings`、`NSLocalizedString`、`String(localized:)`、`Text("...")`、按钮标题、报错提示、空状态、弹窗或无障碍文案，修改前必须完整阅读 `docs/i18n/I18N_RULES.md`。
+- 国际化修改必须遵守该规范；发现旧代码与规范冲突时，优先改到规范要求的写法。
+- 修改国际化后优先运行项目已有检查；未运行时必须在最终回复中明确说明。
+
+## Verification
+
+- 只验证本次涉及的平台，除非修改了共享协议或用户明确要求全端验证。
+- iOS、Android、后端和官网的具体命令分别记录在各目录的 `AGENTS.md`。
+- 最终回复需说明实际运行了哪些检查，以及哪些检查未运行。

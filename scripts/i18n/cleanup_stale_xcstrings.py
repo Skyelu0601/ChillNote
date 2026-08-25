@@ -3,11 +3,13 @@ import argparse
 import json
 from pathlib import Path
 
-CATALOG = Path("chillnote/Resources/Localizable.xcstrings")
+CATALOG = Path("ios/chillnote/Resources/Localizable.xcstrings")
 SEARCH_ROOTS = [
-    Path("chillnote"),
-    Path("ChillNoteWidget"),
-    Path("chillnoteTests"),
+    Path("ios/chillnote"),
+    Path("ios/ChillNoteWidget"),
+    Path("ios/ChillNoteShareExtension"),
+    Path("ios/chillnoteTests"),
+    Path("ios/chillnoteUITests"),
 ]
 SEARCH_SUFFIXES = {
     ".swift",

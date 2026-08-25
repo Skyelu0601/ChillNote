@@ -1,23 +1,25 @@
 import { ArrowRight } from "lucide-react";
+import Image from "next/image";
 import { copy } from "@/lib/copy";
+import { storeLinks } from "@/lib/links";
 import { Wordmark } from "./wordmark";
 
 export function MarketingHeader() {
   return (
     <header className="marketing-header">
       <a className="brand-lockup" href="/">
-        <img src="/assets/chillnote-logo.png" alt="" />
+        <Image src="/assets/chillscript-logo.png" alt="" width={40} height={40} />
         <Wordmark />
       </a>
       <nav>
         <a href="/pricing">{copy.nav.pricing}</a>
         <a href="/privacy">{copy.nav.privacy}</a>
         <a href="/terms">{copy.nav.terms}</a>
-        <a href="https://apps.apple.com/us/app/chillnote-ai-quick-capture/id6758427839">
+        <a href={storeLinks.appStore}>
           {copy.nav.appStore}
         </a>
-        <a className="nav-pill" href="/app">
-          {copy.nav.app}
+        <a className="nav-pill" href={storeLinks.googlePlay}>
+          {copy.nav.googlePlay}
         </a>
       </nav>
     </header>
@@ -29,7 +31,7 @@ export function MarketingFooter() {
     <footer className="marketing-footer">
       <div>
         <a className="brand-lockup" href="/">
-          <img src="/assets/chillnote-logo.png" alt="" />
+          <Image src="/assets/chillscript-logo.png" alt="" width={40} height={40} />
           <span>{copy.productName}</span>
         </a>
         <p>AI creator notes, quick capture, and reusable workflows.</p>
@@ -39,8 +41,8 @@ export function MarketingFooter() {
         <a href="/privacy">Privacy</a>
         <a href="/delete-account">Delete account</a>
         <a href="/terms">Terms</a>
-        <a href="/app">
-          Sign in
+        <a href={storeLinks.googlePlay}>
+          Get the Android app
           <ArrowRight size={16} />
         </a>
       </nav>

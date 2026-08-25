@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-CATALOG = Path('chillnote/Resources/Localizable.xcstrings')
+CATALOG = Path('ios/chillnote/Resources/Localizable.xcstrings')
 REQUIRED_LOCALES = ['en', 'zh-Hans', 'zh-Hant', 'ja', 'fr', 'de', 'es', 'ko']
 
 

@@ -17,7 +17,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 ANDROID_STRINGS = ROOT / "android/app/src/main/res/values/strings.xml"
-IOS_STRINGS = ROOT / "chillnote/Resources/Localizable.xcstrings"
+IOS_STRINGS = ROOT / "ios/chillnote/Resources/Localizable.xcstrings"
 
 LOCALES = {
     "de": ("de", "values-de"),

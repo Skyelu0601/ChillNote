@@ -3,6 +3,7 @@
 import { ArrowRight } from "lucide-react";
 import { motion } from "framer-motion";
 import { copy } from "@/lib/copy";
+import { storeLinks } from "@/lib/links";
 
 const c = copy.landing.final;
 
@@ -26,12 +27,12 @@ export function FinalCta() {
         <div className="lp-hero-actions lp-final-actions">
           <a
             className="lp-btn lp-btn-primary"
-            href="https://apps.apple.com/us/app/chillnote-ai-quick-capture/id6758427839"
+            href={storeLinks.appStore}
           >
             {c.primaryAction}
             <ArrowRight size={18} />
           </a>
-          <a className="lp-btn lp-btn-ghost lp-btn-on-dark" href="/app">
+          <a className="lp-btn lp-btn-ghost lp-btn-on-dark" href={storeLinks.googlePlay}>
             {c.secondaryAction}
           </a>
         </div>

@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Check, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Sparkles } from "lucide-react";
 import { MarketingShell } from "@/components/marketing-shell";
 import { copy } from "@/lib/copy";
+import { storeLinks } from "@/lib/links";
 
 export const metadata: Metadata = {
   title: "Pricing | ChillScript",
@@ -13,7 +14,6 @@ type PricingPlan = {
   name: string;
   price: string;
   caption: string;
-  cta: string;
   features: string[];
   note?: string;
 };
@@ -47,11 +47,22 @@ export default function PricingPage() {
                 </li>
               ))}
             </ul>
-            <a className={index === 2 ? "primary-button" : "secondary-button"} href="/app">
-              {plan.cta}
-            </a>
           </article>
         ))}
+      </section>
+
+      <section className="store-downloads">
+        <h2>{copy.pricing.downloadTitle}</h2>
+        <div>
+          <a className="primary-button" href={storeLinks.appStore}>
+            {copy.pricing.iosAction}
+            <ArrowRight size={17} />
+          </a>
+          <a className="secondary-button" href={storeLinks.googlePlay}>
+            {copy.pricing.androidAction}
+            <ArrowRight size={17} />
+          </a>
+        </div>
       </section>
     </MarketingShell>
   );

@@ -1,5 +1,5 @@
 {
-  "name": "chillnote-tooling",
+  "name": "chillscript-tooling",
   "private": true,
   "scripts": {
     "lint:i18n": "./scripts/i18n/lint_i18n.py",
