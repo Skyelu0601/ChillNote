@@ -20,6 +20,8 @@ data class NoteDto(
     val sourcePlatformID: String? = null,
     val sourcePlatformName: String? = null,
     val sourceHost: String? = null,
+    val sourceAuthorName: String? = null,
+    val sourceAuthorHandle: String? = null,
     val sourceCapturedAt: String? = null,
     val section: String? = null,
     val importStatus: String? = null,

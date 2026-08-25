@@ -81,7 +81,7 @@ class CoreComposeFlowTest {
         }
         composeRule.enableAccessibilityChecks()
 
-        composeRule.onNodeWithText(resources.getString(R.string.ai_chat_empty_title)).assertIsDisplayed()
+        composeRule.onNodeWithText(resources.getString(R.string.ai_chat_empty_no_notes_title)).assertIsDisplayed()
         composeRule.onAllNodes(isRoot()).tryPerformAccessibilityChecks()
         composeRule.onNodeWithText(resources.getString(R.string.ai_chat_input_placeholder))
             .performTextInput("  Help me write a hook  ")

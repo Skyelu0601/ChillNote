@@ -2,6 +2,8 @@ package com.sponteoai.chillscript.billing
 
 import android.app.Activity
 import android.content.Context
+import android.util.Log
+import com.sponteoai.chillscript.R
 import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
@@ -37,6 +39,7 @@ class PlayBillingManager(
     context: Context,
     private val onPurchased: (productId: String, purchaseToken: String) -> Unit,
 ) {
+    private val appContext = context.applicationContext
     private val mutableState = MutableStateFlow(BillingUiState())
     val state: StateFlow<BillingUiState> = mutableState
 
@@ -45,7 +48,7 @@ class PlayBillingManager(
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                 purchases.orEmpty().filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }.forEach(::processPurchase)
             } else if (result.responseCode != BillingClient.BillingResponseCode.USER_CANCELED) {
-                mutableState.value = mutableState.value.copy(error = result.debugMessage)
+                reportBillingError("Purchase update failed", result)
             }
         }
         .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
@@ -61,7 +64,8 @@ class PlayBillingManager(
                     queryProducts()
                     queryExistingPurchases()
                 } else {
-                    mutableState.value = BillingUiState(error = result.debugMessage, loading = false)
+                    logBillingResult("Billing setup failed", result)
+                    mutableState.value = BillingUiState(error = userFacingError(), loading = false)
                 }
             }
             override fun onBillingServiceDisconnected() {
@@ -81,7 +85,7 @@ class PlayBillingManager(
             .build()
         val result = billingClient.launchBillingFlow(activity, params)
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
-            mutableState.value = mutableState.value.copy(error = result.debugMessage)
+            reportBillingError("Billing flow failed to launch", result)
         }
     }
 
@@ -107,7 +111,8 @@ class PlayBillingManager(
             QueryProductDetailsParams.newBuilder().setProductList(products).build(),
         ) { result, detailsResult ->
             if (result.responseCode != BillingClient.BillingResponseCode.OK) {
-                mutableState.value = mutableState.value.copy(loading = false, error = result.debugMessage)
+                logBillingResult("Product query failed", result)
+                mutableState.value = mutableState.value.copy(loading = false, error = userFacingError())
                 return@queryProductDetailsAsync
             }
             val mapped = detailsResult.productDetailsList.mapNotNull { details ->
@@ -132,9 +137,12 @@ class PlayBillingManager(
                 purchases.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }.forEach(::processPurchase)
             }
             if (isUserRestore || mutableState.value.restoring) {
+                if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+                    logBillingResult("Purchase restore failed", result)
+                }
                 mutableState.value = mutableState.value.copy(
                     restoring = false,
-                    error = result.debugMessage.takeIf { result.responseCode != BillingClient.BillingResponseCode.OK },
+                    error = userFacingError().takeIf { result.responseCode != BillingClient.BillingResponseCode.OK },
                 )
             }
         }
@@ -144,7 +152,19 @@ class PlayBillingManager(
         purchase.products.firstOrNull { it in PRODUCT_IDS }?.let { onPurchased(it, purchase.purchaseToken) }
     }
 
+    private fun reportBillingError(operation: String, result: BillingResult) {
+        logBillingResult(operation, result)
+        mutableState.value = mutableState.value.copy(error = userFacingError())
+    }
+
+    private fun logBillingResult(operation: String, result: BillingResult) {
+        Log.w(TAG, "$operation: code=${result.responseCode}, detail=${result.debugMessage}")
+    }
+
+    private fun userFacingError(): String = appContext.getString(R.string.subscription_billing_error)
+
     companion object {
+        private const val TAG = "PlayBillingManager"
         val PRODUCT_IDS = listOf("com.chillnote.pro.monthly", "com.chillnote.pro.yearly")
     }
 }

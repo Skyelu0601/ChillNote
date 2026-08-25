@@ -2,6 +2,15 @@
 
 这份文案只描述当前 Android App 已实现的功能，不使用 iOS 旧文案中尚未实现或容易误导的“图片导入”“Mac/iPad 客户端”“无限使用”等说法。
 
+## 已准备的商店素材
+
+- 512 × 512 商店图标：`android/play-store/assets/app-icon-512.png`
+- 1024 × 500 Feature Graphic：`android/play-store/assets/feature-graphic-1024x500.png`
+- 图标保留原品牌的蓝底、白色闪电和折页符号，只把内容缩进圆形安全区；遮罩预览位于 `android/play-store/design-sources/app-icon-brand-mask-preview.png`。
+- Feature Graphic 使用白底、蓝色 App 图标和原版 `ChillScript` 字标，避免大面积蓝色压住品牌信息。
+- Android 正式截图目录：`android/play-store/screenshots/android/en-US/`。该目录当前特意保持为空；必须在最终候选版本通过构建后，从真实 Android 界面重新采集至少 2 张，不能拿 iOS 截图冒充。
+- 旧版 Material 风格截图已移到 `android/play-store/parity-audit/legacy-store-screenshots/`，仅保留作差异审计证据，禁止上传 Google Play。
+
 ## English (United States)
 
 ### App name（29 / 30）
@@ -47,6 +56,10 @@ Use creator-focused AI Skills to:
 CREATE FROM YOUR OWN LIBRARY
 
 Select multiple notes and ask AI to combine what you have already captured. Save a useful AI response as a new note and keep developing it without starting from a blank page.
+
+GET FRESH IDEAS EVERY WEEK
+
+Turn your saved source library into a private weekly topic report. Review suggested angles, open the notes behind each idea and reorganize a report once when you want a different direction.
 
 STAY ORGANIZED
 
@@ -185,10 +198,25 @@ Transformez vidéos, notes vocales et idées en accroches, légendes et scripts.
 - 隐私政策：`https://www.chillnoteai.com/privacy`
 - 账号删除网址：`https://www.chillnoteai.com/delete-account`
 
+## 最终 Android 截图拍摄顺序
+
+统一使用同一台 Android 手机、浅色模式和真实候选包。最终上传图统一排版为 1080 × 1920（9:16）；如果真机原始截图是 1080 × 2400，先裁切或排版到 1080 × 1920，不能直接上传。每张图先与相同状态的 iOS 母版并排核对，再放入正式截图目录。
+
+1. Home：已有视频来源笔记、主题标签和底部快捷输入栏。
+2. Creator Skills：Installed / Available、内置技能和 Create custom skill。
+3. Note：Script / Create 工作区、来源卡和提词拍摄入口。
+4. Teleprompter：真实脚本文字、相机画面和录制控制。
+5. Weekly Post Ideas：本周报告、来源数量和主题卡片。
+
+引导页与登录页可以作为补充截图，但不应替代上述核心产品体验。
+
 ## 上线前文案核对
 
 - [ ] 确认生产后端实际支持的链接平台，再决定是否在截图中逐个平台展示
 - [ ] Play Console 商品和额度规则确认后，再补充 Pro 权益；当前文案没有承诺“无限”
 - [ ] 所有本地化商店文案由母语人员做最后校对
 - [ ] 截图中的界面语言与该商店语言一致
+- [ ] 至少上传 2 张真实 Android 手机截图，并确认画面来自本次候选 AAB
+- [ ] 截图必须来自新版 iOS 对齐界面，不能出现旧版青绿色按钮或已经删除的 Photo / Media 能力描述
+- [ ] 截图优先覆盖 Home、Creator Skills、提词器等核心体验，而不是只放引导页
 - [ ] 不在商店文案中出现 App 当前没有的图片导入、桌面端或自动发布功能

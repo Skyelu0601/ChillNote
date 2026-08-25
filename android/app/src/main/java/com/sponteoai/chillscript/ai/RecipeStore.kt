@@ -1,6 +1,7 @@
 package com.sponteoai.chillscript.ai
 
 import android.content.Context
+import com.sponteoai.chillscript.preferences.CreatorSkillPreferences
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -18,6 +19,7 @@ class RecipeStore(context: Context) {
         get() = BuiltInRecipes.all + loadCustom()
 
     init {
+        CreatorSkillPreferences.initialize(context)
         if (!preferences.contains(KEY_INSTALLED_IDS)) {
             saveInstalledIds(BuiltInRecipes.defaultIds)
             mutableInstalled.value = loadInstalled()

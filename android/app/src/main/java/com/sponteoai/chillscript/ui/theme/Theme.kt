@@ -1,9 +1,7 @@
 package com.sponteoai.chillscript.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,23 +9,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 
 private val LightColors = lightColorScheme(
-    primary = Color(0xFF368F85),
+    primary = ChillColors.BrandBlue,
     onPrimary = Color.White,
-    background = Color(0xFFF7F8F4),
-    onBackground = Color(0xFF17211F),
-    surface = Color(0xFFFFFFFF),
-    onSurface = Color(0xFF17211F),
-)
-
-private val DarkColors = darkColorScheme(
-    primary = Color(0xFF78C8BE),
-    background = Color(0xFF101615),
-    surface = Color(0xFF17211F),
+    primaryContainer = ChillColors.BrandBlueSoft,
+    onPrimaryContainer = ChillColors.BrandBlueText,
+    secondary = ChillColors.BrandTeal,
+    onSecondary = Color.White,
+    secondaryContainer = ChillColors.BrandTealSoft,
+    onSecondaryContainer = ChillColors.BrandTealText,
+    tertiary = ChillColors.BrandHoney,
+    onTertiary = Color.White,
+    tertiaryContainer = ChillColors.BrandHoneySoft,
+    onTertiaryContainer = ChillColors.BrandHoneyText,
+    background = ChillColors.BackgroundPrimary,
+    onBackground = ChillColors.TextMain,
+    surface = ChillColors.BackgroundSecondary,
+    onSurface = ChillColors.TextMain,
+    surfaceVariant = ChillColors.BrandBlueSoft,
+    onSurfaceVariant = ChillColors.TextSub,
+    outline = ChillColors.BorderSubtle,
+    outlineVariant = ChillColors.Separator,
 )
 
 @Composable
 fun ChillScriptTheme(content: @Composable () -> Unit) {
-    MaterialTheme(colorScheme = if (isSystemInDarkTheme()) DarkColors else LightColors) {
+    // The current iOS source uses a fixed warm-light palette. Android stays on
+    // that same palette until iOS defines a complete dark appearance.
+    MaterialTheme(
+        colorScheme = LightColors,
+        typography = ChillTypography,
+    ) {
         Surface(
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background,

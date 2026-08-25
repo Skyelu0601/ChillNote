@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [NoteEntity::class, TagEntity::class, NoteTagCrossRef::class, ChecklistItemEntity::class, SyncStateEntity::class, PendingHardDeleteEntity::class, NoteSearchEntity::class],
-    version = 4,
+    version = 5,
     exportSchema = true,
 )
 abstract class ChillScriptDatabase : RoomDatabase() {
@@ -53,6 +53,26 @@ abstract class ChillScriptDatabase : RoomDatabase() {
             }
         }
 
-        internal val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+        internal val MIGRATION_4_5 = object : Migration(4, 5) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `notes` ADD COLUMN `sourceAuthorName` TEXT")
+                db.execSQL("ALTER TABLE `notes` ADD COLUMN `sourceAuthorHandle` TEXT")
+                db.execSQL("DROP TRIGGER IF EXISTS notes_fts_after_insert")
+                db.execSQL("DROP TRIGGER IF EXISTS notes_fts_after_update")
+                db.execSQL("DROP TRIGGER IF EXISTS notes_fts_after_delete")
+                db.execSQL("DROP TABLE IF EXISTS notes_fts")
+                db.execSQL(
+                    "CREATE VIRTUAL TABLE `notes_fts` USING FTS4(`noteId` TEXT NOT NULL, `userId` TEXT NOT NULL, `content` TEXT NOT NULL, `previewPlainText` TEXT NOT NULL, `sourceTitle` TEXT NOT NULL, `sourcePlatformName` TEXT NOT NULL, `sourceHost` TEXT NOT NULL, `sourceAuthorName` TEXT NOT NULL, `sourceAuthorHandle` TEXT NOT NULL, tokenize=unicode61)",
+                )
+                db.execSQL(
+                    "INSERT INTO notes_fts(noteId, userId, content, previewPlainText, sourceTitle, sourcePlatformName, sourceHost, sourceAuthorName, sourceAuthorHandle) SELECT id, userId, content, previewPlainText, COALESCE(sourceTitle, ''), COALESCE(sourcePlatformName, ''), COALESCE(sourceHost, ''), COALESCE(sourceAuthorName, ''), COALESCE(sourceAuthorHandle, '') FROM notes",
+                )
+                db.execSQL("CREATE TRIGGER notes_fts_after_insert AFTER INSERT ON notes BEGIN INSERT INTO notes_fts(noteId, userId, content, previewPlainText, sourceTitle, sourcePlatformName, sourceHost, sourceAuthorName, sourceAuthorHandle) VALUES (new.id, new.userId, new.content, new.previewPlainText, COALESCE(new.sourceTitle, ''), COALESCE(new.sourcePlatformName, ''), COALESCE(new.sourceHost, ''), COALESCE(new.sourceAuthorName, ''), COALESCE(new.sourceAuthorHandle, '')); END")
+                db.execSQL("CREATE TRIGGER notes_fts_after_update AFTER UPDATE ON notes BEGIN DELETE FROM notes_fts WHERE noteId = old.id; INSERT INTO notes_fts(noteId, userId, content, previewPlainText, sourceTitle, sourcePlatformName, sourceHost, sourceAuthorName, sourceAuthorHandle) VALUES (new.id, new.userId, new.content, new.previewPlainText, COALESCE(new.sourceTitle, ''), COALESCE(new.sourcePlatformName, ''), COALESCE(new.sourceHost, ''), COALESCE(new.sourceAuthorName, ''), COALESCE(new.sourceAuthorHandle, '')); END")
+                db.execSQL("CREATE TRIGGER notes_fts_after_delete AFTER DELETE ON notes BEGIN DELETE FROM notes_fts WHERE noteId = old.id; END")
+            }
+        }
+
+        internal val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
     }
 }

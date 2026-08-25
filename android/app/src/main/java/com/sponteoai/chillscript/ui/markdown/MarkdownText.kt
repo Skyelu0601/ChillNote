@@ -27,6 +27,8 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.res.stringResource
+import com.sponteoai.chillscript.R
 import com.sponteoai.chillscript.domain.MarkdownBlockType
 import com.sponteoai.chillscript.domain.MarkdownParser
 import com.sponteoai.chillscript.domain.MarkdownImages
@@ -45,12 +47,17 @@ fun MarkdownText(
 ) {
     val primary = MaterialTheme.colorScheme.primary
     val secondary = MaterialTheme.colorScheme.onSurfaceVariant
-    val localImages = MarkdownImages.urls(markdown)
+    val localImages = MarkdownImages.images(markdown)
     if (localImages.isEmpty()) {
         Text(markdownAnnotatedString(markdown, primary, secondary), modifier = modifier, maxLines = maxLines, style = style)
     } else {
         Column(modifier) {
-            localImages.take(if (maxLines == Int.MAX_VALUE) localImages.size else 1).forEach { LocalMarkdownImage(it) }
+            localImages.take(if (maxLines == Int.MAX_VALUE) localImages.size else 1).forEach { image ->
+                LocalMarkdownImage(
+                    rawUrl = image.url,
+                    contentDescription = image.altText.ifBlank { stringResource(R.string.markdown_image_description) },
+                )
+            }
             Text(
                 markdownAnnotatedString(MarkdownImages.removingImages(markdown), primary, secondary),
                 maxLines = maxLines,
@@ -61,7 +68,7 @@ fun MarkdownText(
 }
 
 @Composable
-private fun LocalMarkdownImage(rawUrl: String) {
+private fun LocalMarkdownImage(rawUrl: String, contentDescription: String) {
     val bitmap by produceState<Bitmap?>(initialValue = null, rawUrl) {
         value = withContext(Dispatchers.IO) {
             val file = runCatching { File(URI(rawUrl)) }.getOrNull()?.takeIf(File::isFile) ?: return@withContext null
@@ -71,7 +78,7 @@ private fun LocalMarkdownImage(rawUrl: String) {
     bitmap?.let {
         Image(
             bitmap = it.asImageBitmap(),
-            contentDescription = null,
+            contentDescription = contentDescription,
             modifier = Modifier.fillMaxWidth().height(180.dp).clip(RoundedCornerShape(10.dp)),
             contentScale = ContentScale.Crop,
         )

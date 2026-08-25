@@ -92,6 +92,47 @@ final result: passed
 
 ---
 
+# Android onboarding 与当前 iOS 对齐（2026-08-24）
+
+**对照目标**
+
+- iOS 首屏证据：`/Users/luwenting/development/ChillNote/android/play-store/parity-audit/ios/01-onboarding-hero.png`
+- iOS 其余页面证据：同目录 `02-onboarding-page.png` 至 `05-onboarding-page.png`
+- 唯一实现母版：`chillnote/Features/OnboardingFlowView.swift`、`chillnote/Core/DesignSystem/BrandTokens.swift`、iOS 原始视频与 `Localizable.xcstrings`
+- Android 实拍：`/Users/luwenting/development/ChillNote/android/play-store/parity-audit/android/01-onboarding-hero-parity.png`
+- 设备：Medium Phone API 36.1，1080 × 2400，简体中文
+
+**已完成的视觉修正**
+
+- 第一轮实拍发现 P1：Compose 宽度约束顺序把手机演示框撑到全屏宽，遮挡首屏副标题。已改为先约束再填充，首屏手机框 210 dp、演示页 260 dp，与归一后的 iOS 证据宽度一致。
+- 补齐 Android 状态栏与导航栏安全区；标题、主按钮和登录入口遵循 iOS 的安全区层级。
+- 品牌渐变、两枚背景光斑、主蓝、文字色、间距、标题尺度、圆角、CTA 高度和手机边框渐变均按 iOS token 实现。
+- 视频使用 iOS 原始 `demo1/2/3` 转码资产，并改为 aspect-fill 裁切；播放、暂停、重播、进度、完成解锁和向前滑动锁定均按 SwiftUI 流程实现。
+- 第 4 页只保留 Text / Voice / Links；Voice 使用四段动态波形。第 6 页还原技能列表、状态徽章、图标堆叠和 Build Your Own。
+- 用户可见文案与无障碍页码均使用资源键；57 个 onboarding 字符串在 8 个 locale 数量一致。
+
+**当前阻塞**
+
+- 冷启动同一 AVD 后系统完成 boot，但连续出现 `Digital Wellbeing isn't responding` 和 `Process system isn't responding` 系统级 ANR 弹窗；第二张弹窗遮挡应用主体。
+- 按任务约束没有 wipe data、删除 AVD、清理宿主文件或继续操作异常模拟器，因此无法取得不含系统遮挡的最终首屏截图，也无法逐页完成 2–6 页交互截图。
+- 已完成的首轮同屏对照足以定位并修复手机框宽度 P1，但最后一轮安全区和间距修正无法在健康运行环境中复拍确认。
+
+**静态与构建验证**
+
+- onboarding 代码曾完整通过 `compileDebugKotlin` 与 `assembleDebug`；最后一轮全局编译只被并行订阅页面缺失资源阻塞，没有出现 onboarding 报错。
+- Android 国际化检查通过：477 strings、6 plurals、7 个非英文 locale。
+- onboarding 相关文件 `git diff --check` 通过。
+- 3 个视频均为 Android 可用 H.264 / yuv420p，810 × 1760，无音轨；wordmark 为 952 × 278 透明 PNG。
+
+**仍需在健康设备复核**
+
+- 六页最终截图、视频完成后的内容回流与 CTA 出现位置。
+- Android 系统字体与 iOS SF Pro 的字面宽度差异，以及系统状态栏、导航栏、视频解码帧时序和触觉强度等原生平台差异。
+
+final result: blocked
+
+---
+
 # Note 编辑工作区 — Script / Create
 
 **对照目标**

@@ -9,6 +9,7 @@ data class ChatMessage(
     val id: String = UUID.randomUUID().toString(),
     val role: ChatRole,
     val content: String,
+    val createdAt: Long = System.currentTimeMillis(),
 )
 
 object ContextChatPrompt {

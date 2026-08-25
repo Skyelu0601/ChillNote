@@ -26,24 +26,25 @@ Google 将“离开设备传输”视为收集。语音即使只为一次请求�
 | 财务信息 → 购买记录 | 是 | 否* | 可选 | App 功能、账号管理 | Google Play Billing 的商品 ID、购买令牌、订阅状态和到期时间 |
 | 用户内容 → 其他用户生成的内容 | 是 | 否* | 可选 | App 功能 | 笔记、标签、AI 指令、导入链接产生的文本同步到服务器 |
 | 音频文件 → 语音或声音录音 | 是，临时处理 | 否* | 可选 | App 功能 | 用户主动录音后发送至 ChillScript 服务器和 Gemini 转写；服务器不保留原始音频 |
-| 设备或其他 ID | 是 | 否* | 必需 | App 功能、安全与防欺诈 | App 生成的同步设备 ID；提交前确认服务器日志是否还保存其他标识符 |
+| 设备或其他 ID | 是 | 否* | 必需 | App 功能、安全与防欺诈 | App 生成的同步设备 ID，以及用于消息推送的 Firebase Installation ID；提交前确认服务器日志是否还保存其他标识符 |
 
 `否*` 的前提是 Supabase、Google Cloud/Gemini 等以 ChillScript 的服务提供商身份代表开发者处理数据，且不会将数据用于自身独立目的。Google 对“共享”的定义排除第一方服务提供商，但最终答案必须与合同和生产配置一致。
 
 ## 当前不建议申报为收集
 
 - 照片和视频：提词器相机视频仅保存在 App 私有目录，用户主动保存到相册或分享；当前没有上传接口。
-- 崩溃日志、性能和分析：Android 客户端未集成 Firebase Analytics、Crashlytics 或广告 SDK。若发布前新增，必须重新更新表单。
+- 崩溃日志、性能和分析：Android 客户端只接入 Firebase Cloud Messaging，不包含 Firebase Analytics、Crashlytics 或广告 SDK。若发布前新增这些组件，必须重新更新表单。
 - 位置信息、联系人、短信、通话记录、健康信息：Manifest 没有对应权限，也没有相关功能。
 - 麦克风和相机权限本身不等于数据收集；是否申报取决于数据是否离开设备。相机视频不上传，语音录音会上传处理。
 
 ## 删除与保留
 
-- App 内删除会调用 `DELETE /auth/account`，删除业务数据库用户数据与 Supabase Auth 用户。
+- App 内删除会调用 `DELETE /auth/account`，在事务中删除业务数据库用户数据、同步日志和硬删除墓碑，再删除 Supabase Auth 用户；任一步失败都不会向客户端谎报成功，并可安全重试。
 - Android 随后清理该用户在 Room 中的笔记、标签、清单关系、同步状态、待删除队列、待处理录音、自定义 Creator Skills 和相关本地状态。
 - 网页提供无需重新安装 App 的邮件删除入口。
 - 删除账号不会自动取消 Google Play 或 App Store 管理的订阅；删除网页已明确提示用户单独取消续订。
 - 隐私政策目前声明：原始音频仅临时处理；待处理本地录音成功后删除或最长保留 7 天；文本笔记保留到用户删除内容或账号。
+- Android 通知使用 Firebase Cloud Messaging。服务端仅为投递内容更新通知保存 Firebase Installation ID、语言、时区和授权状态；退出账号或删除账号时会停用该设备记录。
 
 ## 提交前必须人工确认
 
@@ -51,9 +52,10 @@ Google 将“离开设备传输”视为收集。语音即使只为一次请求�
 - [ ] Supabase 的数据安全说明和数据处理协议是否与“服务提供商、不共享”答案一致
 - [ ] Google Gemini/Google Cloud 的数据处理与保留设置是否与隐私政策一致
 - [ ] Google Play Billing 验证数据库实际保存了哪些购买字段
+- [ ] Firebase/Google Cloud 项目关闭不需要的 Analytics，并确认 Firebase Cloud Messaging 的数据处理条款与本表一致
 - [ ] Play Console 开发者实体名称与隐私政策里的 `Sponteoai` 一致
 - [ ] `https://www.chillnoteai.com/delete-account` 已部署并可从未登录浏览器正常访问
-- [ ] 以后新增任何分析、崩溃、广告或推送 SDK 时重新审核本表
+- [ ] 以后新增任何分析、崩溃、广告 SDK，或改变推送用途时重新审核本表
 
 ## Google 官方参考
 

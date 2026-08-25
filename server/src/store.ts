@@ -1,6 +1,20 @@
 import type { NoteDTO, SyncChanges, TagDTO } from "./types.js";
 import { prisma } from "./db.js";
 
+type DeleteManyDelegate<Where> = {
+  deleteMany(args: { where: Where }): PromiseLike<{ count: number }>;
+};
+
+type UserDeletionTransaction = {
+  hardDeleteTombstone: DeleteManyDelegate<{ userId: string }>;
+  syncLog: DeleteManyDelegate<{ userId: string }>;
+  user: DeleteManyDelegate<{ id: string }>;
+};
+
+type UserDeletionDatabase = {
+  $transaction<T>(operation: (transaction: UserDeletionTransaction) => Promise<T>): Promise<T>;
+};
+
 export function isProSubscriptionActive(
   tier: string | null | undefined,
   expiresAt: Date | null | undefined,
@@ -404,9 +418,19 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
   });
 }
 
-export async function deleteUser(userId: string): Promise<void> {
-  await prisma.user.delete({
-    where: { id: userId }
+export async function deleteUser(
+  userId: string,
+  database: UserDeletionDatabase = prisma
+): Promise<void> {
+  await database.$transaction(async (transaction) => {
+    // Sync logs and hard-delete tombstones intentionally survive individual
+    // note/tag deletion, but they must not survive deletion of the account.
+    await transaction.syncLog.deleteMany({ where: { userId } });
+    await transaction.hardDeleteTombstone.deleteMany({ where: { userId } });
+
+    // deleteMany is deliberate: a retry after a partial external failure must
+    // remain successful even when the User row was deleted by the first call.
+    await transaction.user.deleteMany({ where: { id: userId } });
   });
 }
 

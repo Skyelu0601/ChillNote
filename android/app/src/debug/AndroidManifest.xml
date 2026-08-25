@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application>
+        <activity
+            android:name="com.sponteoai.chillscript.onboarding.OnboardingParityPreviewActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.sponteoai.chillscript.action.ONBOARDING_PARITY_PREVIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+        <activity
+            android:name="com.sponteoai.chillscript.ui.home.FirstActionGuidePreviewActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="com.sponteoai.chillscript.action.FIRST_ACTION_GUIDE_PREVIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+    </application>
+</manifest>

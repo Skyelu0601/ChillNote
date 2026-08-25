@@ -1,3 +1,5 @@
+import groovy.json.JsonOutput
+
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
@@ -18,14 +20,35 @@ def uploadKeyAlias = System.getenv("CHILLSCRIPT_UPLOAD_KEY_ALIAS") ?: uploadKeys
 def uploadKeyPassword = System.getenv("CHILLSCRIPT_UPLOAD_KEY_PASSWORD") ?: uploadKeystoreProperties.getProperty("keyPassword")
 def hasUploadSigning = [uploadStoreFile, uploadStorePassword, uploadKeyAlias, uploadKeyPassword].every { it != null && !it.isBlank() }
 
-def generatedIosIconResDir = layout.buildDirectory.dir("generated/iosAppIcon/res")
-
-tasks.register("syncIosAppIcon", Sync) {
-    from("../../chillnote/Assets.xcassets/AppIcon.appiconset/AppIcon.png") {
-        rename { "ic_launcher_foreground.png" }
-    }
-    into(generatedIosIconResDir.map { it.dir("drawable-nodpi") })
+def localProperties = new Properties()
+def localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localPropertiesFile.withInputStream { localProperties.load(it) }
 }
+def firebaseConfigValue = { String environmentName, String propertyName ->
+    System.getenv(environmentName) ?: localProperties.getProperty(propertyName) ?: ""
+}
+def firebaseApiKey = firebaseConfigValue("CHILLSCRIPT_FIREBASE_API_KEY", "chillscript.firebase.apiKey")
+def firebaseAppId = firebaseConfigValue("CHILLSCRIPT_FIREBASE_APP_ID", "chillscript.firebase.appId")
+def firebaseProjectId = firebaseConfigValue("CHILLSCRIPT_FIREBASE_PROJECT_ID", "chillscript.firebase.projectId")
+def firebaseSenderId = firebaseConfigValue("CHILLSCRIPT_FIREBASE_SENDER_ID", "chillscript.firebase.senderId")
+def configuredAuthRedirectUri = firebaseConfigValue(
+    "CHILLSCRIPT_ANDROID_AUTH_REDIRECT_URI", "chillscript.auth.redirectUri"
+)
+def authRedirectUri = configuredAuthRedirectUri?.trim()
+if (!authRedirectUri) authRedirectUri = "chillscript://auth-callback"
+def appReviewLoginEnabled = firebaseConfigValue(
+    "CHILLSCRIPT_APP_REVIEW_LOGIN_ENABLED", "chillscript.appReview.loginEnabled"
+).trim()
+if (!appReviewLoginEnabled) appReviewLoginEnabled = "true"
+def appReviewWhitelistEmails = firebaseConfigValue(
+    "CHILLSCRIPT_APP_REVIEW_WHITELIST_EMAILS", "chillscript.appReview.whitelistEmails"
+).trim()
+if (!appReviewWhitelistEmails) appReviewWhitelistEmails = "androidreview@chillnoteai.com"
+def appReviewVerificationCode = firebaseConfigValue(
+    "CHILLSCRIPT_APP_REVIEW_VERIFICATION_CODE", "chillscript.appReview.verificationCode"
+).trim()
+if (!appReviewVerificationCode) appReviewVerificationCode = "202602"
 
 room {
     schemaDirectory "$projectDir/schemas"
@@ -38,13 +61,21 @@ android {
     defaultConfig {
         applicationId "com.sponteoai.chillscript"
         minSdk 26
-        targetSdk 35
-        versionCode 1
-        versionName "1.0.0"
+        targetSdk 36
+        versionCode 4
+        versionName "1.2.6"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "SUPABASE_URL", '"https://qsyhkpaeyzhjojdvbntq.supabase.co"'
         buildConfigField "String", "SUPABASE_ANON_KEY", '"sb_publishable_smWWadjejdbKYvmg3fidsg_41XPu70e"'
         buildConfigField "String", "GOOGLE_WEB_CLIENT_ID", '"720828371402-scepfqqjt5ffir9kg9ob9c8tlhlblmv5.apps.googleusercontent.com"'
+        buildConfigField "String", "AUTH_REDIRECT_URI", JsonOutput.toJson(authRedirectUri)
+        buildConfigField "String", "FIREBASE_API_KEY", JsonOutput.toJson(firebaseApiKey)
+        buildConfigField "String", "FIREBASE_APP_ID", JsonOutput.toJson(firebaseAppId)
+        buildConfigField "String", "FIREBASE_PROJECT_ID", JsonOutput.toJson(firebaseProjectId)
+        buildConfigField "String", "FIREBASE_SENDER_ID", JsonOutput.toJson(firebaseSenderId)
+        buildConfigField "boolean", "APP_REVIEW_LOGIN_ENABLED", appReviewLoginEnabled.toBoolean().toString()
+        buildConfigField "String", "APP_REVIEW_WHITELIST_EMAILS", JsonOutput.toJson(appReviewWhitelistEmails)
+        buildConfigField "String", "APP_REVIEW_VERIFICATION_CODE", JsonOutput.toJson(appReviewVerificationCode)
     }
 
     buildFeatures {
@@ -80,12 +111,27 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
         }
     }
-
-    sourceSets.main.res.srcDir(generatedIosIconResDir)
 }
 
-tasks.named("preBuild").configure {
-    dependsOn(tasks.named("syncIosAppIcon"))
+def verifyReleaseSigning = tasks.register("verifyReleaseSigning") {
+    group = "verification"
+    description = "Fails release packaging when the Google Play upload key is not configured."
+    doLast {
+        if (!hasUploadSigning) {
+            throw new GradleException(
+                "Release signing is not configured. Add android/keystore.properties or the " +
+                    "CHILLSCRIPT_UPLOAD_* environment variables before building a Play bundle."
+            )
+        }
+        def resolvedStoreFile = rootProject.file(uploadStoreFile)
+        if (!resolvedStoreFile.isFile()) {
+            throw new GradleException("Release upload keystore not found: ${resolvedStoreFile}")
+        }
+    }
+}
+
+tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.configureEach {
+    dependsOn(verifyReleaseSigning)
 }
 
 dependencies {
@@ -101,6 +147,9 @@ dependencies {
     implementation "androidx.lifecycle:lifecycle-runtime-compose:2.10.0"
     implementation "androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0"
     implementation "androidx.navigation:navigation-compose:2.9.5"
+    implementation "androidx.work:work-runtime-ktx:2.11.2"
+    implementation platform("com.google.firebase:firebase-bom:34.17.0")
+    implementation "com.google.firebase:firebase-messaging"
     debugImplementation "androidx.compose.ui:ui-tooling"
     debugImplementation "androidx.compose.ui:ui-test-manifest"
 
@@ -110,8 +159,8 @@ dependencies {
 
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.8.1"
-    implementation "androidx.credentials:credentials:1.7.0-alpha02"
-    implementation "androidx.credentials:credentials-play-services-auth:1.7.0-alpha02"
+    implementation "androidx.credentials:credentials:1.6.0"
+    implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
     implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
     implementation "com.android.billingclient:billing:9.1.0"
 

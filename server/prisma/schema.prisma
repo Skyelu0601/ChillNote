@@ -32,6 +32,39 @@ model User {
   notificationDeliveries NotificationDelivery[]
   weeklyTopicSettings    WeeklyTopicSettings?
   weeklyTopicReports     WeeklyTopicReport[]
+  syncLogs               SyncLog[]
+  hardDeleteTombstones   HardDeleteTombstone[]
+  googlePlayPurchases    GooglePlayPurchase[]
+}
+
+model GooglePlayPurchase {
+  purchaseToken        String    @id
+  userId               String
+  productId            String
+  packageName          String
+  status               String    @default("RECEIVED")
+  subscriptionState    String?
+  acknowledgementState String?
+  latestOrderId        String?
+  linkedPurchaseToken  String?
+  expiresAt            DateTime?
+  verifiedAt           DateTime?
+  acknowledgedAt       DateTime?
+  entitlementGrantedAt DateTime?
+  ackAttempts          Int       @default(0)
+  lastAckAttemptAt     DateTime?
+  nextAckAttemptAt     DateTime?
+  processingStartedAt  DateTime?
+  processingId         String?
+  lastErrorCode        String?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, status])
+  @@index([status, nextAckAttemptAt])
+  @@index([status, processingStartedAt])
 }
 
 model Note {
@@ -127,6 +160,8 @@ model SyncLog {
   serverUpdatedAt DateTime
   operation       String
 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
   @@index([userId, id])
   @@index([userId, entityType, entityId])
 }
@@ -137,6 +172,8 @@ model HardDeleteTombstone {
   entityType String
   entityId   String
   deletedAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, entityType, entityId])
   @@index([userId, deletedAt])

@@ -9,9 +9,9 @@ export function normalizeMediaLinkSections(
   input?: Partial<MediaLinkSections> | null
 ): MediaLinkSections {
   const normalized = {
-    showDescription: input?.showDescription ?? true,
-    showAuthor: input?.showAuthor ?? true,
-    showHook: input?.showHook ?? true,
+    showDescription: input?.showDescription ?? false,
+    showAuthor: input?.showAuthor ?? false,
+    showHook: input?.showHook ?? false,
     showTranscript: input?.showTranscript ?? true
   };
 
@@ -20,9 +20,9 @@ export function normalizeMediaLinkSections(
   }
 
   return {
-    showDescription: true,
-    showAuthor: true,
-    showHook: true,
+    showDescription: false,
+    showAuthor: false,
+    showHook: false,
     showTranscript: true
   };
 }

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1200" height="680" viewBox="0 0 1200 680">
+  <defs>
+    <clipPath id="circle"><circle cx="0" cy="0" r="118"/></clipPath>
+    <clipPath id="squircle"><rect x="-118" y="-118" width="236" height="236" rx="58"/></clipPath>
+    <filter id="previewShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="7" stdDeviation="10" flood-color="#101615" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="680" fill="#F6F5F2"/>
+  <text x="600" y="58" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#17181B">ChillScript icon mask preview</text>
+
+  <text x="310" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#17181B">Ink — recommended</text>
+  <g transform="translate(170 275)" filter="url(#previewShadow)">
+    <image x="-118" y="-118" width="236" height="236" xlink:href="app-icon-ink-v2.svg" clip-path="url(#circle)"/>
+  </g>
+  <g transform="translate(450 275)" filter="url(#previewShadow)">
+    <image x="-118" y="-118" width="236" height="236" xlink:href="app-icon-ink-v2.svg" clip-path="url(#squircle)"/>
+  </g>
+
+  <text x="890" y="110" text-anchor="middle" font-family="Arial, sans-serif" font-size="22" font-weight="700" fill="#17181B">Warm — alternative</text>
+  <g transform="translate(750 275)" filter="url(#previewShadow)">
+    <image x="-118" y="-118" width="236" height="236" xlink:href="app-icon-warm-v2.svg" clip-path="url(#circle)"/>
+  </g>
+  <g transform="translate(1030 275)" filter="url(#previewShadow)">
+    <image x="-118" y="-118" width="236" height="236" xlink:href="app-icon-warm-v2.svg" clip-path="url(#squircle)"/>
+  </g>
+
+  <text x="170" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#6B6B73">circle</text>
+  <text x="450" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#6B6B73">rounded square</text>
+  <text x="750" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#6B6B73">circle</text>
+  <text x="1030" y="430" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#6B6B73">rounded square</text>
+
+  <text x="600" y="505" text-anchor="middle" font-family="Arial, sans-serif" font-size="18" font-weight="700" fill="#17181B">Small-size check</text>
+  <g transform="translate(520 580)" filter="url(#previewShadow)">
+    <image x="-30" y="-30" width="60" height="60" xlink:href="app-icon-ink-v2.svg" clip-path="url(#circle)" transform="scale(.254)"/>
+  </g>
+  <g transform="translate(680 580)" filter="url(#previewShadow)">
+    <circle r="30" fill="#111216"/>
+    <image x="-30" y="-30" width="60" height="60" xlink:href="app-icon-warm-v2.svg"/>
+  </g>
+</svg>

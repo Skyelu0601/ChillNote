@@ -12,8 +12,8 @@ CONTENT_X = 84
 TITLE_SIZE = 126
 TITLE_Y = 292
 TITLE_LINE_GAP = 18
-SHARE_TITLE_SIZE = 126
-SHARE_TITLE_Y = 292
+SHARE_TITLE_SIZE = 124
+SHARE_TITLE_Y = 195
 PHONE_W = 850
 PHONE_H = 1848
 PHONE_X = (W - PHONE_W) // 2
@@ -326,6 +326,34 @@ def draw_platform_list(canvas, y=760):
         draw.text((text_x, text_y), label, font=f, fill=INK)
 
 
+def draw_platform_row(canvas, y=570):
+    draw = ImageDraw.Draw(canvas)
+    labels = ("TikTok", "YouTube", "Reels")
+    icon_size = 90
+    f = sf_font(46, "Semibold")
+
+    # The logos have different visible shapes inside their source images, so
+    # use small optical adjustments instead of mathematically equal gaps.
+    icon_positions = {
+        "TikTok": 94,
+        "YouTube": 488,
+        "Reels": 936,
+    }
+    label_positions = {
+        "TikTok": 216,
+        "YouTube": 635,
+        "Reels": 1064,
+    }
+
+    for label in labels:
+        icon = platform_icon(label, size=icon_size)
+        x = icon_positions[label]
+        canvas.alpha_composite(icon, (x, y))
+        bbox = draw.textbbox((0, 0), label, font=f)
+        text_y = y + (icon.height - (bbox[3] - bbox[1])) // 2 - bbox[1]
+        draw.text((label_positions[label], text_y), label, font=f, fill=INK)
+
+
 def saved_check_icon(size=210):
     source = Image.open("/Users/luwenting/Downloads/IMG_0021.PNG").convert("RGBA")
     icon = source.crop((510, 1338, 696, 1524)).resize((size, size), Image.LANCZOS)
@@ -379,21 +407,34 @@ def draw_minimal_saved_card(canvas, y=1638):
     draw.text((x + 92, y + 740), "Saved to ChillScript", font=saved_font, fill=INK)
 
 
-def draw_interface_panel(canvas, screenshot_path, crop_top=0, crop_bottom=0, y=816):
+def draw_interface_panel(
+    canvas,
+    screenshot_path,
+    crop_top=0,
+    crop_bottom=0,
+    y=816,
+    width=None,
+    x=None,
+    radius=68,
+    shadow_alpha=18,
+):
     source = Image.open(screenshot_path).convert("RGB")
     if crop_top or crop_bottom:
         source = source.crop((0, crop_top, source.width, source.height - crop_bottom))
 
-    width = W - 56
+    width = width or W - 56
     scale = width / source.width
     height = round(source.height * scale)
     source = source.resize((width, height), Image.LANCZOS)
-    x = (W - width) // 2
+    x = (W - width) // 2 if x is None else x
 
-    radius = 68
     shadow = Image.new("RGBA", (width + 80, height + 90), (0, 0, 0, 0))
     sd = ImageDraw.Draw(shadow)
-    sd.rounded_rectangle((40, 26, 40 + width, 26 + height), radius=radius, fill=(25, 30, 38, 18))
+    sd.rounded_rectangle(
+        (40, 26, 40 + width, 26 + height),
+        radius=radius,
+        fill=(25, 30, 38, shadow_alpha),
+    )
     shadow = shadow.filter(ImageFilter.GaussianBlur(24))
     canvas.alpha_composite(shadow, (x - 40, y - 26))
 
@@ -401,6 +442,7 @@ def draw_interface_panel(canvas, screenshot_path, crop_top=0, crop_bottom=0, y=8
     canvas.paste(source, (x, y), mask)
     draw = ImageDraw.Draw(canvas)
     draw.rounded_rectangle((x, y, x + width - 1, y + height - 1), radius=radius, outline=(220, 220, 216), width=2)
+    return x, y, width, height
 
 
 def platform_pill_metrics(draw, label):
@@ -510,8 +552,8 @@ def draw_process_cue(draw, text, y):
 def make_multi_share_slide(
     output_dir,
     filename="01-share-any-video-get-transcript.png",
-    title="Share Any Video\nGet the Transcript",
-    highlight="Transcript",
+    title="Share Any Video.\nGet the Transcript.",
+    highlight="Get the Transcript.",
     process_text="Share → ChillScript → Saved",
 ):
     canvas = Image.new("RGBA", (W, H), BG + (255,))
@@ -527,23 +569,22 @@ def make_multi_share_slide(
         highlight=highlight,
         line_gap=TITLE_LINE_GAP,
     )
-    draw_platform_list(canvas)
-    draw_minimal_saved_card(canvas)
+    draw_platform_row(canvas)
+    draw_interface_panel(
+        canvas,
+        "/Users/luwenting/Downloads/IMG_1089.PNG",
+        crop_top=350,
+        y=790,
+        width=W - 180,
+    )
     canvas.convert("RGB").save(output_dir / filename, quality=96)
 
 
-def make_slide(
+def make_ai_toolkit_slide(
     output_dir,
-    filename,
-    screenshot,
-    title,
-    eyebrow=None,
-    accent=BLUE,
-    crop_top=0,
-    crop_bottom=0,
-    zoom=1.0,
-    fit="cover",
-    highlight=None,
+    filename="02-rewrite-repurpose-create-more.png",
+    title="Rewrite, Repurpose,\nand Create More.",
+    highlight="and Create More.",
 ):
     canvas = Image.new("RGBA", (W, H), BG + (255,))
     draw = ImageDraw.Draw(canvas)
@@ -551,14 +592,147 @@ def make_slide(
     draw_display_title(
         draw,
         title,
-        TITLE_Y,
+        SHARE_TITLE_Y,
         W - CONTENT_X * 2,
-        TITLE_SIZE,
-        accent,
+        SHARE_TITLE_SIZE,
+        BLUE,
         highlight=highlight,
         line_gap=TITLE_LINE_GAP,
     )
-    draw_interface_panel(canvas, screenshot, crop_top=crop_top, crop_bottom=crop_bottom)
+
+    # The large panel establishes the breadth of the AI toolkit.
+    draw_interface_panel(
+        canvas,
+        "/Users/luwenting/Downloads/IMG_1090.PNG",
+        crop_top=350,
+        crop_bottom=190,
+        y=610,
+        width=900,
+        x=75,
+        radius=72,
+        shadow_alpha=22,
+    )
+
+    # The smaller result panel demonstrates what happens after using a skill.
+    draw_interface_panel(
+        canvas,
+        "/Users/luwenting/Downloads/IMG_1093.PNG",
+        crop_top=400,
+        crop_bottom=900,
+        y=1810,
+        width=720,
+        x=485,
+        radius=58,
+        shadow_alpha=48,
+    )
+
+    canvas.convert("RGB").save(output_dir / filename, quality=96)
+
+
+def make_teleprompter_slide(
+    output_dir,
+    filename="03-record-with-a-teleprompter.png",
+    title="Record With a\nTeleprompter.",
+    highlight="Teleprompter.",
+):
+    canvas = Image.new("RGBA", (W, H), BG + (255,))
+    draw = ImageDraw.Draw(canvas)
+
+    draw_display_title(
+        draw,
+        title,
+        SHARE_TITLE_Y,
+        W - CONTENT_X * 2,
+        SHARE_TITLE_SIZE,
+        BLUE,
+        highlight=highlight,
+        line_gap=TITLE_LINE_GAP,
+    )
+
+    # Start below the status and navigation rows so the teleprompter itself
+    # becomes the visual focus of the slide.
+    draw_interface_panel(
+        canvas,
+        "/Users/luwenting/Downloads/IMG_1098.PNG",
+        crop_top=350,
+        crop_bottom=190,
+        y=610,
+        width=W - 180,
+        radius=72,
+        shadow_alpha=22,
+    )
+
+    canvas.convert("RGB").save(output_dir / filename, quality=96)
+
+
+def make_content_inbox_slide(
+    output_dir,
+    filename="04-never-lose-a-content-idea-again.png",
+    title="Never Lose a\nContent Idea Again.",
+    highlight="Content Idea Again.",
+):
+    canvas = Image.new("RGBA", (W, H), BG + (255,))
+    draw = ImageDraw.Draw(canvas)
+
+    draw_display_title(
+        draw,
+        title,
+        SHARE_TITLE_Y,
+        W - CONTENT_X * 2,
+        SHARE_TITLE_SIZE,
+        BLUE,
+        highlight=highlight,
+        line_gap=TITLE_LINE_GAP,
+    )
+
+    # Keep the Inbox, workflow tabs, and cards from several platforms visible
+    # while removing the iOS status bar from the source screenshot.
+    draw_interface_panel(
+        canvas,
+        "/Users/luwenting/Downloads/IMG_1095 2.PNG",
+        crop_top=170,
+        crop_bottom=100,
+        y=610,
+        width=W - 180,
+        radius=72,
+        shadow_alpha=22,
+    )
+
+    canvas.convert("RGB").save(output_dir / filename, quality=96)
+
+
+def make_weekly_post_ideas_slide(
+    output_dir,
+    filename="05-new-post-ideas-ready-every-week.png",
+    title="New Post Ideas.\nReady Every Week.",
+    highlight="Ready Every Week.",
+):
+    canvas = Image.new("RGBA", (W, H), BG + (255,))
+    draw = ImageDraw.Draw(canvas)
+
+    draw_display_title(
+        draw,
+        title,
+        SHARE_TITLE_Y,
+        W - CONTENT_X * 2,
+        SHARE_TITLE_SIZE,
+        BLUE,
+        highlight=highlight,
+        line_gap=TITLE_LINE_GAP,
+    )
+
+    # The weekly summary and source count explain where the post ideas came
+    # from; only the unrelated iOS status bar is removed.
+    draw_interface_panel(
+        canvas,
+        "/Users/luwenting/Downloads/IMG_1100.PNG",
+        crop_top=170,
+        crop_bottom=80,
+        y=610,
+        width=W - 180,
+        radius=72,
+        shadow_alpha=22,
+    )
 
     canvas.convert("RGB").save(output_dir / filename, quality=96)
 
@@ -569,133 +743,62 @@ def prepare_output_dir(output_dir):
         png.unlink()
 
 
-slides = [
-    (
-        "02-save-viral-video-as-text.png",
-        "/Users/luwenting/Downloads/IMG_0973.PNG",
-        "Study Viral Videos\nWord for Word",
-        "SAVE",
-        BLUE,
-        150,
-        80,
-        1.0,
-        "cover",
-        "Word for Word",
-    ),
-    (
-        "03-never-run-out-of-post-ideas.png",
-        "/Users/luwenting/Downloads/IMG_0796.PNG",
-        "Never Run Out of\nContent Ideas",
-        "IDEAS",
-        BLUE,
-        120,
-        90,
-        1.0,
-        "cover",
-        "Content Ideas",
-    ),
-    (
-        "04-build-your-content-vault.png",
-        "/Users/luwenting/Downloads/IMG_0976.PNG",
-        "Keep Every Idea\nin One Place",
-        "ORGANIZE",
-        BLUE,
-        130,
-        120,
-        1.0,
-        "cover",
-        "One Place",
-    ),
-    (
-        "05-generate-hooks-that-stop-the-scroll.png",
-        "/Users/luwenting/Downloads/IMG_0594.PNG",
-        "Generate Hooks That\nStop the Scroll",
-        "CREATE",
-        BLUE,
-        120,
-        120,
-        1.0,
-        "cover",
-        "Stop the Scroll",
-    ),
-    (
-        "06-create-faster-with-ai-skills.png",
-        "/Users/luwenting/Downloads/IMG_0193.PNG",
-        "Create Faster With\nAI Skills",
-        "SKILLS",
-        BLUE,
-        120,
-        90,
-        1.0,
-        "cover",
-        "AI Skills",
-    ),
-]
-
 localized_titles = {
     "en": [
-        ("Share Any Video\nGet the Transcript", "Transcript"),
-        ("Study Viral Videos\nWord for Word", "Word for Word"),
-        ("Never Run Out of\nContent Ideas", "Content Ideas"),
-        ("Keep Every Idea\nin One Place", "One Place"),
-        ("Generate Hooks That\nStop the Scroll", "Stop the Scroll"),
-        ("Create Faster With\nAI Skills", "AI Skills"),
+        ("Share Any Video.\nGet the Transcript.", "Get the Transcript."),
+        ("Rewrite, Repurpose,\nand Create More.", "and Create More."),
+        ("Record With a\nTeleprompter.", "Teleprompter."),
+        ("Never Lose a\nContent Idea Again.", "Content Idea Again."),
+        ("New Post Ideas.\nReady Every Week.", "Ready Every Week."),
     ],
     "zh-Hans": [
-        ("分享任意视频\n获取视频转写", "转写"),
-        ("逐字拆解\n爆款视频", "逐字拆解"),
-        ("永远不缺\n内容灵感", "内容灵感"),
-        ("把每个灵感\n都收在一处", "收在一处"),
-        ("生成吸睛开场\n让人停下滑动", "让人停下滑动"),
-        ("用 AI 技能\n更快创作", "更快创作"),
+        ("分享任意视频\n获取视频转写", "获取视频转写"),
+        ("重写、改编\n创作更多内容", "创作更多内容"),
+        ("使用提词器\n轻松拍摄", "轻松拍摄"),
+        ("不再丢失\n任何内容灵感", "任何内容灵感"),
+        ("新的发帖灵感\n每周准时就绪", "每周准时就绪"),
     ],
     "zh-Hant": [
-        ("分享任何影片\n取得影片轉錄", "轉錄"),
-        ("逐字拆解\n爆款影片", "逐字拆解"),
-        ("永遠不缺\n內容靈感", "內容靈感"),
-        ("將每個靈感\n集中收在一處", "收在一處"),
-        ("生成吸睛開場\n讓人停止滑動", "讓人停止滑動"),
-        ("用 AI 技能\n加速創作", "加速創作"),
+        ("分享任何影片\n取得影片轉錄", "取得影片轉錄"),
+        ("重寫、改編\n創作更多內容", "創作更多內容"),
+        ("使用提詞器\n輕鬆拍攝", "輕鬆拍攝"),
+        ("不再遺失\n任何內容靈感", "任何內容靈感"),
+        ("新的貼文靈感\n每週準時就緒", "每週準時就緒"),
     ],
     "ja": [
-        ("あらゆる動画を共有\n文字起こしを取得", "文字起こし"),
-        ("バズ動画を\n一言一句分析", "一言一句分析"),
-        ("コンテンツのアイデアに\nもう困らない", "コンテンツのアイデア"),
-        ("すべてのアイデアを\nひとつに整理", "ひとつに整理"),
-        ("スクロールを止める\nフックを生成", "スクロールを止める"),
-        ("AI スキルで\n創作を効率化", "AI スキル"),
+        ("あらゆる動画を共有\n文字起こしを取得", "文字起こしを取得"),
+        ("リライト・再活用で\nもっと創作", "もっと創作"),
+        ("テレプロンプターで\n撮影", "撮影"),
+        ("コンテンツのアイデアを\nもう見失わない", "もう見失わない"),
+        ("新しい投稿アイデアを\n毎週お届け", "毎週お届け"),
     ],
     "fr": [
-        ("Partagez n’importe quelle vidéo\nObtenez la transcription", "transcription"),
-        ("Étudiez les vidéos virales\nmot pour mot", "mot pour mot"),
-        ("Ne manquez jamais\nd’idées de contenu", "idées de contenu"),
-        ("Toutes vos idées\nau même endroit", "au même endroit"),
-        ("Générez des accroches\nqui captent l’attention", "captent l’attention"),
-        ("Créez plus vite\navec les outils IA", "outils IA"),
+        ("Partagez n’importe quelle vidéo\nObtenez la transcription", "Obtenez la transcription"),
+        ("Réécrivez, déclinez\net créez davantage", "et créez davantage"),
+        ("Filmez avec un\ntéléprompteur", "téléprompteur"),
+        ("Ne perdez plus jamais\nune idée de contenu", "une idée de contenu"),
+        ("De nouvelles idées de posts\nprêtes chaque semaine", "prêtes chaque semaine"),
     ],
     "es": [
-        ("Comparte cualquier vídeo\nObtén la transcripción", "transcripción"),
-        ("Estudia videos virales\npalabra por palabra", "palabra por palabra"),
-        ("Nunca te quedes sin\nideas de contenido", "ideas de contenido"),
-        ("Todas tus ideas\nen un solo lugar", "un solo lugar"),
-        ("Genera hooks que\ndetienen el scroll", "detienen el scroll"),
-        ("Crea más rápido\ncon herramientas de IA", "herramientas de IA"),
+        ("Comparte cualquier vídeo\nObtén la transcripción", "Obtén la transcripción"),
+        ("Reescribe, reutiliza\ny crea más", "y crea más"),
+        ("Graba con un\nteleprónter", "teleprónter"),
+        ("No vuelvas a perder\nuna idea de contenido", "una idea de contenido"),
+        ("Nuevas ideas para posts\nlistas cada semana", "listas cada semana"),
     ],
     "de": [
-        ("Teile jedes Video\nErhalte das Transkript", "Transkript"),
-        ("Virale Videos\nWort für Wort analysieren", "Wort für Wort"),
-        ("Nie wieder ohne\nContent-Ideen", "Content-Ideen"),
-        ("Alle Ideen\nan einem Ort", "an einem Ort"),
-        ("Erstelle Hooks, die\nden Scroll stoppen", "den Scroll stoppen"),
-        ("Schneller erstellen\nmit KI-Tools", "KI-Tools"),
+        ("Teile jedes Video\nErhalte das Transkript", "Erhalte das Transkript"),
+        ("Umschreiben, neu nutzen\nund mehr erstellen", "und mehr erstellen"),
+        ("Aufnehmen mit\nTeleprompter", "Teleprompter"),
+        ("Verliere nie wieder\neine Content-Idee", "eine Content-Idee"),
+        ("Neue Post-Ideen\njede Woche bereit", "jede Woche bereit"),
     ],
     "ko": [
-        ("어떤 영상이든 공유\n트랜스크립트 받기", "트랜스크립트"),
-        ("바이럴 영상을\n한마디씩 분석하세요", "한마디씩 분석하세요"),
-        ("콘텐츠 아이디어가\n끊이지 않아요", "콘텐츠 아이디어"),
-        ("모든 아이디어를\n한곳에 보관하세요", "한곳에 보관하세요"),
-        ("스크롤을 멈추는\n훅을 생성하세요", "스크롤을 멈추는"),
-        ("AI 스킬로\n더 빠르게 제작하세요", "AI 스킬"),
+        ("어떤 영상이든 공유\n트랜스크립트 받기", "트랜스크립트 받기"),
+        ("다시 쓰고, 재활용하고\n더 많이 만드세요", "더 많이 만드세요"),
+        ("텔레프롬프터로\n촬영하세요", "촬영하세요"),
+        ("콘텐츠 아이디어를\n다시는 놓치지 마세요", "다시는 놓치지 마세요"),
+        ("새로운 게시물 아이디어\n매주 준비 완료", "매주 준비 완료"),
     ],
 }
 
@@ -712,9 +815,10 @@ localized_share_steps = {
 
 prepare_output_dir(OUT_DIR)
 make_multi_share_slide(OUT_DIR)
-
-for slide in slides:
-    make_slide(OUT_DIR, *slide)
+make_ai_toolkit_slide(OUT_DIR)
+make_teleprompter_slide(OUT_DIR)
+make_content_inbox_slide(OUT_DIR)
+make_weekly_post_ideas_slide(OUT_DIR)
 
 for locale, titles in localized_titles.items():
     locale_dir = OUT_DIR / locale
@@ -725,20 +829,25 @@ for locale, titles in localized_titles.items():
         highlight=titles[0][1],
         process_text=localized_share_steps[locale],
     )
-    for slide, (title, highlight) in zip(slides, titles[1:]):
-        filename, screenshot, _title, eyebrow, accent, crop_top, crop_bottom, zoom, fit, _highlight = slide
-        make_slide(
-            locale_dir,
-            filename,
-            screenshot,
-            title,
-            eyebrow,
-            accent,
-            crop_top,
-            crop_bottom,
-            zoom,
-            fit,
-            highlight,
-        )
+    make_ai_toolkit_slide(
+        locale_dir,
+        title=titles[1][0],
+        highlight=titles[1][1],
+    )
+    make_teleprompter_slide(
+        locale_dir,
+        title=titles[2][0],
+        highlight=titles[2][1],
+    )
+    make_content_inbox_slide(
+        locale_dir,
+        title=titles[3][0],
+        highlight=titles[3][1],
+    )
+    make_weekly_post_ideas_slide(
+        locale_dir,
+        title=titles[4][0],
+        highlight=titles[4][1],
+    )
 
 print(OUT_DIR)

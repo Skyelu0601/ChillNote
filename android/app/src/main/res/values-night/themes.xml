@@ -1,9 +1,24 @@
-<resources>
-    <style name="Theme.ChillScript" parent="android:style/Theme.Material.NoActionBar">
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <!--
+        Compose intentionally uses the same warm-light palette in every system
+        appearance. Keep the window chrome light as well; otherwise a device in
+        dark mode renders white status-bar icons over the app's white surface.
+    -->
+    <style name="Theme.ChillScript" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:statusBarColor">@color/brand_dark_background</item>
-        <item name="android:navigationBarColor">@color/brand_dark_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">true</item>
+        <item name="android:statusBarColor">@color/brand_surface</item>
+        <item name="android:navigationBarColor">@color/brand_surface</item>
+        <item name="android:colorAccent">@color/brand_teal</item>
+    </style>
+    <style name="Theme.ChillScript.Share" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowIsFloating">false</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowDisablePreview">true</item>
         <item name="android:colorAccent">@color/brand_teal</item>
     </style>
 </resources>

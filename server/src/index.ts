@@ -83,6 +83,17 @@ import {
   registerPushDevice,
   scheduleNotificationWorker
 } from "./pushNotifications.js";
+import { pushDeviceDeleteSchema, pushDeviceSchema } from "./pushDeviceSchemas.js";
+import { handleAccountDeletion } from "./accountDeletion.js";
+import {
+  GooglePlayPublisherError,
+  verifyGooglePlayPurchase
+} from "./googlePlayBilling.js";
+import {
+  createGooglePlayPublisher,
+  createPrismaGooglePlayBillingStore,
+  scheduleGooglePlayBillingWorker
+} from "./googlePlayBillingRuntime.js";
 import {
   getWeeklyTopicDashboard,
   getWeeklyTopicReport,
@@ -139,15 +150,21 @@ const GOOGLE_PLAY_PRODUCT_IDS = new Set(["com.chillnote.pro.monthly", "com.chill
 
 let googlePlayAccessTokenCache: { token: string; expiresAt: number } | null = null;
 
-async function googlePlayAccessToken(): Promise<string> {
+async function googlePlayAccessToken(forceRefresh = false): Promise<string> {
+  if (forceRefresh) googlePlayAccessTokenCache = null;
   const now = Date.now();
   if (googlePlayAccessTokenCache && googlePlayAccessTokenCache.expiresAt > now + 60_000) {
     return googlePlayAccessTokenCache.token;
   }
   if (!GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL || !GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY) {
-    throw new Error("Google Play service account is not configured");
+    throw new GooglePlayPublisherError("PUBLISHER_AUTH", false);
   }
-  const privateKey = await importPKCS8(GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY, "RS256");
+  let privateKey;
+  try {
+    privateKey = await importPKCS8(GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY, "RS256");
+  } catch {
+    throw new GooglePlayPublisherError("PUBLISHER_AUTH", false);
+  }
   const issuedAt = Math.floor(now / 1000);
   const assertion = await new SignJWT({
     scope: "https://www.googleapis.com/auth/androidpublisher"
@@ -158,17 +175,37 @@ async function googlePlayAccessToken(): Promise<string> {
     .setIssuedAt(issuedAt)
     .setExpirationTime(issuedAt + 3600)
     .sign(privateKey);
-  const response = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
-      assertion
-    }).toString()
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  let response;
+  try {
+    response = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+        assertion
+      }).toString(),
+      signal: controller.signal
+    });
+  } catch (error) {
+    throw new GooglePlayPublisherError(
+      error instanceof Error && error.name === "AbortError" ? "TIMEOUT" : "NETWORK",
+      true
+    );
+  } finally {
+    clearTimeout(timeout);
+  }
   const body = await response.json() as { access_token?: string; expires_in?: number; error?: string };
   if (!response.ok || !body.access_token) {
-    throw new Error(`Google OAuth token failed: ${body.error ?? response.status}`);
+    if (response.status === 429 || response.status >= 500) {
+      throw new GooglePlayPublisherError(
+        response.status === 429 ? "RATE_LIMITED" : "PUBLISHER_UNAVAILABLE",
+        true,
+        response.status
+      );
+    }
+    throw new GooglePlayPublisherError("PUBLISHER_AUTH", false, response.status);
   }
   googlePlayAccessTokenCache = {
     token: body.access_token,
@@ -180,6 +217,18 @@ async function googlePlayAccessToken(): Promise<string> {
 function googlePlayAccountId(userId: string): string {
   return createHash("sha256").update(userId).digest("hex");
 }
+
+const googlePlayBillingDependencies = {
+  publisher: createGooglePlayPublisher({
+    packageName: GOOGLE_PLAY_PACKAGE_NAME,
+    getAccessToken: googlePlayAccessToken,
+    fetchImpl: fetch as unknown as typeof globalThis.fetch
+  }),
+  store: createPrismaGooglePlayBillingStore(),
+  packageName: GOOGLE_PLAY_PACKAGE_NAME,
+  accountIdForUser: googlePlayAccountId,
+  onEntitlementChanged: invalidateUserTierCache
+};
 
 function buildGeminiGenerateContentURL(model: string): string {
   const encodedModel = encodeURIComponent(model);
@@ -266,18 +315,6 @@ const linkImportJobSchema = z.object({
     showHook: z.boolean(),
     showTranscript: z.boolean()
   }).optional()
-});
-
-const pushDeviceSchema = z.object({
-  token: z.string().regex(/^[a-fA-F0-9]{64,256}$/),
-  environment: z.enum(["sandbox", "production"]),
-  locale: z.string().min(1).max(35),
-  timeZone: z.string().min(1).max(100),
-  authorizationStatus: z.string().min(1).max(40).optional()
-});
-
-const pushDeviceDeleteSchema = z.object({
-  token: z.string().regex(/^[a-fA-F0-9]{64,256}$/)
 });
 
 // Middleware to validate Supabase Auth Header
@@ -755,33 +792,12 @@ app.post("/waitlist", async (req, res) => {
   }
 });
 
-// Delete Account: Deletes from both public DB and Supabase Auth
-app.delete("/auth/account", requireAuth, async (req, res) => {
-  const userId = req.userId;
-  if (!userId) {
-    res.status(401).json({ error: "Unauthorized" });
-    return;
-  }
-  try {
-    // 1. Delete user data provided by the user from public schema (Prisma)
-    await deleteUser(userId);
-
-    // 2. Delete user from Supabase Auth (requires service role)
-    const { error } = await supabaseAdmin.auth.admin.deleteUser(userId);
-    if (error) {
-      console.error(`❌ [Backend] Failed to delete Supabase Auth user ${userId}:`, error);
-      // We continue even if auth deletion fails, as data is gone. 
-      // But practically we might want to alert/retry.
-    } else {
-      console.log(`🗑️ [Backend] Deleted user account: ${userId}`);
-    }
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error(`❌ [Backend] Failed to delete user ${userId}:`, error);
-    res.status(500).json({ error: "Failed to delete account" });
-  }
-});
+// Delete Account: Deletes from both public DB and Supabase Auth.
+app.delete("/auth/account", requireAuth, (req, res) => handleAccountDeletion(req, res, {
+  deleteBusinessData: deleteUser,
+  deleteAuthUser: (userId) => supabaseAdmin.auth.admin.deleteUser(userId),
+  onBusinessDataDeleted: invalidateUserTierCache
+}));
 
 app.post("/sync", requireAuth, async (req, res) => {
   const parsed = syncSchema.safeParse(req.body);
@@ -1396,7 +1412,7 @@ app.post("/ai/tiktok-transcript", aiJsonParser, requireAuth, async (req, res) =>
 
 const googlePlayVerifySchema = z.object({
   productId: z.string().min(1),
-  purchaseToken: z.string().min(20)
+  purchaseToken: z.string().min(20).max(2048)
 });
 
 app.post("/subscription/google/verify", requireAuth, async (req, res) => {
@@ -1409,75 +1425,33 @@ app.post("/subscription/google/verify", requireAuth, async (req, res) => {
   const { productId, purchaseToken } = parsed.data;
   try {
     await upsertUser(userId);
-    const accessToken = await googlePlayAccessToken();
-    const purchaseURL =
-      `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(GOOGLE_PLAY_PACKAGE_NAME)}` +
-      `/purchases/subscriptionsv2/tokens/${encodeURIComponent(purchaseToken)}`;
-    const purchaseResponse = await fetch(purchaseURL, {
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }
-    });
-    const purchase = await purchaseResponse.json() as any;
-    if (!purchaseResponse.ok) {
-      console.error("❌ Google Play purchase verification failed:", purchaseResponse.status, purchase);
-      res.status(400).json({ error: "Invalid Google Play purchase" });
-      return;
-    }
-    const lineItems = Array.isArray(purchase.lineItems) ? purchase.lineItems : [];
-    const matchingLine = lineItems.find((line: any) => line.productId === productId);
-    if (!matchingLine) {
-      res.status(400).json({ error: "Purchase does not contain product" });
-      return;
-    }
-    const boundAccountId = purchase.externalAccountIdentifiers?.obfuscatedExternalAccountId;
-    if (boundAccountId && boundAccountId !== googlePlayAccountId(userId)) {
-      res.status(409).json({ error: "Subscription is linked to another account" });
-      return;
-    }
-    const expiresAt = matchingLine.expiryTime ? new Date(matchingLine.expiryTime) : null;
-    const entitledStates = new Set([
-      "SUBSCRIPTION_STATE_ACTIVE",
-      "SUBSCRIPTION_STATE_IN_GRACE_PERIOD",
-      "SUBSCRIPTION_STATE_CANCELED"
-    ]);
-    const isEntitled =
-      entitledStates.has(purchase.subscriptionState) &&
-      expiresAt != null && !Number.isNaN(expiresAt.getTime()) && expiresAt.getTime() > Date.now();
-    if (!isEntitled) {
-      res.status(409).json({
-        error: "Subscription is not active",
-        tier: "free",
-        subscriptionState: purchase.subscriptionState ?? null,
-        expiresAt: expiresAt?.toISOString() ?? null
-      });
-      return;
-    }
-    await updateSubscriptionStatus(
-      userId,
-      "pro",
-      expiresAt,
-      purchase.latestOrderId ?? purchaseToken,
-      "google_play"
+    const result = await verifyGooglePlayPurchase(
+      { userId, productId, purchaseToken },
+      googlePlayBillingDependencies
     );
-    invalidateUserTierCache(userId);
-
-    if (purchase.acknowledgementState === "ACKNOWLEDGEMENT_STATE_PENDING") {
-      const acknowledgeURL =
-        `https://androidpublisher.googleapis.com/androidpublisher/v3/applications/${encodeURIComponent(GOOGLE_PLAY_PACKAGE_NAME)}` +
-        `/purchases/subscriptions/${encodeURIComponent(productId)}/tokens/${encodeURIComponent(purchaseToken)}:acknowledge`;
-      const acknowledgeResponse = await fetch(acknowledgeURL, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
-        body: "{}"
+    if (!result.ok) {
+      res.status(result.httpStatus).json({
+        error: "Google Play purchase could not be completed",
+        code: result.code,
+        retryable: result.retryable,
+        subscriptionState: result.subscriptionState ?? null,
+        expiresAt: result.expiresAt?.toISOString() ?? null
       });
-      if (!acknowledgeResponse.ok) {
-        console.error("⚠️ Google Play acknowledgement failed:", acknowledgeResponse.status, await acknowledgeResponse.text());
-      }
+      return;
     }
-
-    console.log(`✅ Google Play subscription verified: user=${userId}, product=${productId}`);
-    res.json({ success: true, tier: "pro", expiresAt: expiresAt.toISOString() });
+    invalidateUserTierCache(userId);
+    console.log(`Google Play subscription activated: user=${userId}, product=${productId}`);
+    res.json({
+      success: true,
+      tier: result.tier,
+      expiresAt: result.expiresAt.toISOString(),
+      activeProductId: productId
+    });
   } catch (error) {
-    console.error("❌ Google Play subscription verification error:", error);
+    console.error(
+      "Google Play subscription verification internal failure:",
+      error instanceof Error ? error.name : "UnknownError"
+    );
     res.status(500).json({ error: "Google Play verification unavailable" });
   }
 });
@@ -1662,7 +1636,17 @@ app.get("/subscription/status", requireAuth, async (req, res) => {
     await upsertUser(userId);
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { subscriptionTier: true, subscriptionExpiresAt: true }
+      select: {
+        subscriptionTier: true,
+        subscriptionExpiresAt: true,
+        subscriptionProvider: true,
+        googlePlayPurchases: {
+          where: { status: "ENTITLED" },
+          select: { productId: true },
+          orderBy: { expiresAt: "desc" },
+          take: 1
+        }
+      }
     });
 
     const now = Date.now();
@@ -1675,7 +1659,10 @@ app.get("/subscription/status", requireAuth, async (req, res) => {
     res.json({
       success: true,
       tier,
-      expiresAt: expiresAt?.toISOString() ?? null
+      expiresAt: expiresAt?.toISOString() ?? null,
+      activeProductId: isPro && user?.subscriptionProvider === "google_play"
+        ? user.googlePlayPurchases[0]?.productId ?? null
+        : null
     });
   } catch (error) {
     console.error("❌ Subscription Status Error:", error);
@@ -1821,6 +1808,7 @@ app.listen(PORT, () => {
   scheduleLinkImportWorker();
   scheduleNotificationWorker();
   scheduleWeeklyTopicWorker();
+  scheduleGooglePlayBillingWorker(googlePlayBillingDependencies);
 });
 
 declare global {

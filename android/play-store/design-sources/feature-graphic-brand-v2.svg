@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1024" height="500" viewBox="0 0 1024 500">
+  <defs>
+    <radialGradient id="softBlueLeft" cx="0" cy="0" r="1">
+      <stop offset="0" stop-color="#DCEBFF" stop-opacity="0.72"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="softBlueRight" cx="1" cy="1" r="1">
+      <stop offset="0" stop-color="#EEF5FF" stop-opacity="0.9"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="iconShape">
+      <rect x="166" y="154" width="192" height="192" rx="48"/>
+    </clipPath>
+    <filter id="iconShadow" x="-35%" y="-35%" width="170%" height="180%">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#1739D6" flood-opacity="0.20"/>
+    </filter>
+  </defs>
+  <rect width="1024" height="500" fill="#FFFFFF"/>
+  <circle cx="0" cy="0" r="330" fill="url(#softBlueLeft)"/>
+  <circle cx="1024" cy="500" r="360" fill="url(#softBlueRight)"/>
+  <g filter="url(#iconShadow)">
+    <image x="166" y="154" width="192" height="192"
+           xlink:href="app-icon-brand-safe-v2.svg"
+           clip-path="url(#iconShape)"/>
+  </g>
+  <!-- Exact in-app wordmark. Brand name stays unchanged across locales. -->
+  <image x="392" y="180" width="470" height="137"
+         xlink:href="chillscript-wordmark.png"
+         preserveAspectRatio="xMidYMid meet"/>
+</svg>

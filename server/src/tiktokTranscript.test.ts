@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { normalizeMediaLinkSections } from "./mediaLinkSections.js";
+import { normalizeTranscriptParagraphs } from "./linkImportJobs.js";
 import {
   instagramMetadataFromYtDlpInfo,
   isApifyFallbackReason,
@@ -53,11 +54,11 @@ test("Instagram metadata falls back to channel fields and ignores blanks", () =>
   });
 });
 
-test("legacy media-link section preferences remain enabled by default", () => {
+test("missing media-link preferences use the iOS transcript-only canonical format", () => {
   assert.deepEqual(normalizeMediaLinkSections(undefined), {
-    showDescription: true,
-    showAuthor: true,
-    showHook: true,
+    showDescription: false,
+    showAuthor: false,
+    showHook: false,
     showTranscript: true
   });
 });
@@ -74,6 +75,27 @@ test("new clients can request transcript-only notes", () => {
     showHook: false,
     showTranscript: true
   });
+});
+
+test("an empty section selection falls back to transcript-only", () => {
+  assert.deepEqual(normalizeMediaLinkSections({
+    showDescription: false,
+    showAuthor: false,
+    showHook: false,
+    showTranscript: false
+  }), {
+    showDescription: false,
+    showAuthor: false,
+    showHook: false,
+    showTranscript: true
+  });
+});
+
+test("creator transcript paragraphs never retain visual blank lines", () => {
+  assert.equal(
+    normalizeTranscriptParagraphs("\r\nFirst paragraph.\r\n \r\nSecond paragraph.\u2029\u2029Third paragraph.\r\n"),
+    "First paragraph.\nSecond paragraph.\nThird paragraph."
+  );
 });
 
 test("Apify fallback is limited to TikTok media-fetch failures", () => {

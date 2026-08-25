@@ -147,3 +147,6 @@ GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----
 ```
 
 The service account must be invited in Google Play Console and granted permission to view orders and manage subscriptions. Never commit the private key.
+
+Durable token ownership, acknowledgement retries, deployment checks, and the
+current RTDN limitation are documented in [GOOGLE_PLAY_BILLING.md](./GOOGLE_PLAY_BILLING.md).

@@ -684,11 +684,16 @@ async function generateGeminiText(
   return String(data.candidates?.[0]?.content?.parts?.[0]?.text ?? "");
 }
 
-function markdownSection(heading: string, body: string): string {
-  const compactBody = body
+export function normalizeTranscriptParagraphs(body: string): string {
+  return body
     .trim()
     .replace(/\r\n?/g, "\n")
+    .replace(/[\u2028\u2029]/g, "\n")
     .replace(/\n[\t ]*\n+/g, "\n");
+}
+
+function markdownSection(heading: string, body: string): string {
+  const compactBody = normalizeTranscriptParagraphs(body);
   return `## ${heading}\n${compactBody}`;
 }
 

@@ -25,6 +25,7 @@ enum class NotesExportStage {
     PREPARING,
     WRITING,
     PACKAGING,
+    FINISHING,
 }
 
 data class NotesExportProgress(

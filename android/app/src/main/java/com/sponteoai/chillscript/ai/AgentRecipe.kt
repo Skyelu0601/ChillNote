@@ -2,6 +2,9 @@ package com.sponteoai.chillscript.ai
 
 import androidx.annotation.StringRes
 import com.sponteoai.chillscript.R
+import com.sponteoai.chillscript.preferences.CaptionPackPlatform
+import com.sponteoai.chillscript.preferences.CreatorSkillPreferences
+import com.sponteoai.chillscript.preferences.RepurposeFormat
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -18,9 +21,6 @@ data class AgentRecipe(
 enum class RecipeCategory { THINK, SHAPE, PUBLISH }
 
 enum class AISkillApplyMode(@StringRes val title: Int) {
-    REPLACE_SELECTION(R.string.ai_skill_apply_replace_selection),
-    INSERT_AT_CURSOR(R.string.ai_skill_apply_insert_at_cursor),
-    INSERT_BELOW_SELECTION(R.string.ai_skill_apply_insert_below_selection),
     APPEND_TO_END(R.string.ai_skill_apply_append),
     REPLACE_ALL(R.string.ai_skill_apply_replace_all),
 }
@@ -36,23 +36,11 @@ data class TextSelection(val start: Int, val end: Int) {
 }
 
 object AISkillTextApplication {
-    fun availableModes(selection: TextSelection): List<AISkillApplyMode> = if (selection.isCollapsed) {
-        listOf(AISkillApplyMode.INSERT_AT_CURSOR, AISkillApplyMode.APPEND_TO_END, AISkillApplyMode.REPLACE_ALL)
-    } else {
-        listOf(
-            AISkillApplyMode.REPLACE_SELECTION,
-            AISkillApplyMode.INSERT_BELOW_SELECTION,
-            AISkillApplyMode.APPEND_TO_END,
-            AISkillApplyMode.REPLACE_ALL,
-        )
-    }
+    fun availableModes(selection: TextSelection): List<AISkillApplyMode> =
+        listOf(AISkillApplyMode.APPEND_TO_END, AISkillApplyMode.REPLACE_ALL)
 
     fun apply(source: String, result: String, selection: TextSelection, mode: AISkillApplyMode): String {
-        val safe = selection.normalized(source)
         return when (mode) {
-            AISkillApplyMode.REPLACE_SELECTION -> source.replaceRange(safe.start, safe.end, result)
-            AISkillApplyMode.INSERT_AT_CURSOR -> source.replaceRange(safe.start, safe.start, result)
-            AISkillApplyMode.INSERT_BELOW_SELECTION -> source.replaceRange(safe.end, safe.end, "\n\n$result")
             AISkillApplyMode.APPEND_TO_END -> source + if (source.isBlank()) result else "\n\n$result"
             AISkillApplyMode.REPLACE_ALL -> result
         }
@@ -95,19 +83,248 @@ object BuiltInRecipes {
 }
 
 fun AgentRecipe.requestPrompts(content: String, instruction: String? = null): Pair<String, String> {
-    val languageRule = "Detect the main language of the supplied note and return the result in that same language unless translation is explicitly requested. Preserve mixed-language names and quoted text."
-    val effectiveInstruction = when (id) {
-        "translate" -> "$prompt\nTarget language: ${instruction?.trim().takeUnless { it.isNullOrBlank() } ?: "English"}."
-        else -> prompt
-    }
-    val userPrompt = "Instruction:\n$effectiveInstruction\n\nNotes:\n$content"
-    val systemPrompt = """
-        You are a creator writing assistant working on an existing note, not answering a chat message.
-        Rules:
-        - $languageRule
-        - Follow the instruction precisely.
-        - Preserve Markdown, code blocks, and line breaks when useful.
-        - Return only the requested result without commentary or a preamble.
+    val languageRule = """
+        - Keep the output in the same language(s) as the input.
+        - If the input is mixed-language, preserve each segment's original language instead of normalizing to a single language.
+        - Do NOT translate unless explicitly requested.
     """.trimIndent()
-    return userPrompt to systemPrompt
+
+    return when (id) {
+        "translate" -> {
+            val targetLanguage = instruction?.trim().takeUnless { it.isNullOrBlank() } ?: "English"
+            val userPrompt = buildString {
+                appendLine("Translate the following notes into $targetLanguage.")
+                appendLine("Target language: $targetLanguage.")
+                appendLine()
+                appendLine("Notes:")
+                append(content)
+            }
+            val systemPrompt = """
+                You are a professional translator.
+                Rules:
+                - Translate into $targetLanguage.
+                - Preserve meaning, tone, and formatting (including markdown).
+                - Keep proper nouns, product names, URLs, code, and hashtags intact unless a standard translation exists.
+                - Do not localize units, dates, or numbers unless explicitly requested.
+                - Return only the translated content.
+            """.cleanPromptIndent()
+            userPrompt to systemPrompt
+        }
+
+        "timed_script" -> {
+            val preferences = CreatorSkillPreferences.timedScript()
+            val duration = preferences.duration
+            val userPrompt = buildString {
+                appendLine("Create a ${duration.seconds}-second short video script from these notes.")
+                appendLine()
+                appendLine("Target length: ${duration.seconds} seconds.")
+                appendLine("Target spoken word count: ${duration.wordCountRange} words.")
+                appendLine()
+                appendLine("Notes:")
+                append(content)
+            }
+            val systemPrompt = """
+                You write short-form video scripts for TikTok, Instagram Reels, and YouTube Shorts. The input is an existing note, transcript, rough idea, or creator inspiration, not a chat message.
+
+                Core rules:
+                $languageRule
+                - Produce a script that can be spoken in about ${duration.seconds} seconds.
+                - Aim for ${duration.wordCountRange} spoken words. If the script is over the range, rewrite it shorter before returning.
+                - Use the notes to understand the idea, audience, angle, and useful details, but do not copy distinctive wording from third-party reference text.
+                - Do not invent facts, stats, quotes, personal experiences, product promises, or results that are not supported by the notes.
+                - Make it recordable as a spoken script with short, natural sentences.
+                - Include a strong opening line, a clear middle, a payoff, and a light CTA only when it fits.
+                - Return only the script. Do not include timestamps, labels, notes, word count, or explanations.
+            """.cleanPromptIndent()
+            userPrompt to systemPrompt
+        }
+
+        "caption_pack" -> {
+            val preferences = CreatorSkillPreferences.captionPack()
+            val platforms = preferences.selectedPlatforms
+            val platformNames = platforms.joinToString(", ") { it.displayName }
+            val styleInstruction = platforms.joinToString("\n") { it.styleInstruction(preferences.outputStyle) }
+            val platformRules = platforms.joinToString("\n") { it.platformRule }
+            val platformCTAInstruction = if (
+                platforms.any {
+                    it == CaptionPackPlatform.TIKTOK || it == CaptionPackPlatform.INSTAGRAM_REELS
+                }
+            ) {
+                "- For TikTok and Instagram Reels, naturally fold any question or soft call to action into the caption when it fits. Do not create a separate CTA section."
+            } else {
+                ""
+            }
+            val outputTemplate = platforms.joinToString("\n\n") { it.outputTemplate }
+            val goal = CreatorSkillPreferences.localizedTitle(preferences.goal.titleRes, preferences.goal.fallbackTitle)
+            val tone = CreatorSkillPreferences.localizedTitle(preferences.tone.titleRes, preferences.tone.fallbackTitle)
+            val outputStyle = CreatorSkillPreferences.localizedTitle(
+                preferences.outputStyle.titleRes,
+                preferences.outputStyle.fallbackTitle,
+            )
+            val userPrompt = buildString {
+                appendLine("Create a Caption Pack for these selected platforms: $platformNames.")
+                appendLine()
+                appendLine("User goal: $goal")
+                appendLine("Tone: $tone")
+                appendLine("Output style: $outputStyle")
+                appendLine()
+                appendLine("Notes:")
+                append(content)
+            }
+            val systemPrompt = """
+                You create original platform-ready publishing copy for content creators.
+
+                The notes may contain third-party creator inspiration, including descriptions, transcripts, hooks, or author metadata. Treat the notes as a private inspiration library, not source copy to rewrite.
+
+                Core rules:
+                $languageRule
+                - Use the notes only to understand the topic, audience, emotional angle, content pattern, and reusable insight.
+                - Do not copy, closely paraphrase, or preserve distinctive wording from the notes.
+                - Do not mention the original author unless the notes explicitly ask for attribution.
+                - Do not invent claims, stats, personal experiences, product promises, discounts, or results that are not supported.
+                - If the notes do not contain enough substance, write safe, editable platform copy based on the broad idea and avoid specific unsupported claims.
+                - Return only the Caption Pack. Do not explain your reasoning.
+
+                Length and style:
+                $styleInstruction
+                - Character counts must include the generated field text, not the label.
+                - If a draft exceeds any platform limit, rewrite it shorter before returning.
+
+                Platform rules:
+                $platformRules
+                $platformCTAInstruction
+
+                Output format:
+                Use only the selected platforms and keep this exact section style:
+
+                $outputTemplate
+            """.cleanPromptIndent()
+            userPrompt to systemPrompt
+        }
+
+        "style_match" -> {
+            val preferences = CreatorSkillPreferences.brandVoice()
+            if (!preferences.isConfigured) {
+                val userPrompt = buildString {
+                    appendLine("Rewrite this note in a natural, consistent writing voice. Preserve its meaning, facts, and structure.")
+                    appendLine()
+                    appendLine("Note:")
+                    append(content)
+                }
+                val systemPrompt = """
+                    You polish a creator's note so it reads naturally and consistently, without changing what it says.
+                    Rules:
+                    $languageRule
+                    - Preserve all facts, structure, and the note's purpose.
+                    - Do not add new claims or invent details.
+                    - Return only the rewritten note. Do not explain.
+                """.cleanPromptIndent()
+                userPrompt to systemPrompt
+            } else {
+                val userPrompt = buildString {
+                    appendLine("Brand Voice profile:")
+                    appendLine(preferences.promptProfile)
+                    appendLine()
+                    appendLine("Rewrite the note below so it follows this Brand Voice profile.")
+                    appendLine()
+                    appendLine("Note to rewrite:")
+                    append(content)
+                }
+                val systemPrompt = """
+                    You rewrite a creator's note using their saved Brand Voice profile.
+                    Rules:
+                    $languageRule
+                    - Apply the saved tone, audience, preferred CTA, avoided wording, and example-post style when provided.
+                    - Treat example posts as style references only. Do not copy their sentences, phrases, claims, or topics.
+                    - Use the preferred CTA only if it fits the rewritten note naturally.
+                    - Respect the avoided wording and style notes.
+                    - Preserve the note's meaning, facts, and structure. Do not invent new facts.
+                    - Return only the rewritten note. Do not explain.
+                """.cleanPromptIndent()
+                userPrompt to systemPrompt
+            }
+        }
+
+        "repurpose_pack" -> {
+            val preferences = CreatorSkillPreferences.repurposePack()
+            val formats = preferences.selectedFormats
+            val formatNames = formats.joinToString(", ") { it.displayName }
+            val formatRules = formats.joinToString("\n") { it.formatRule }
+            val outputTemplate = formats.joinToString("\n\n") { it.outputTemplate }
+            val threadLengthInstruction = if (
+                RepurposeFormat.THREADS in formats
+            ) {
+                "Thread length (Threads): ${preferences.threadLength.tweetCountRange} posts."
+            } else {
+                ""
+            }
+            val ctaRule = if (preferences.includeCTA) {
+                "- Include a light, natural call to action on each piece when it fits."
+            } else {
+                "- Do not add a call to action."
+            }
+            val tone = CreatorSkillPreferences.localizedTitle(preferences.tone.titleRes, preferences.tone.fallbackTitle)
+            val userPrompt = buildString {
+                appendLine("Repurpose this long-form content into native posts for these formats: $formatNames.")
+                appendLine()
+                if (threadLengthInstruction.isNotEmpty()) appendLine(threadLengthInstruction)
+                appendLine("Tone: $tone")
+                appendLine()
+                appendLine("Long-form content:")
+                append(content)
+            }
+            val systemPrompt = """
+                You repurpose one piece of long-form content (a blog post, video script, transcript, essay, or newsletter) into native posts for multiple platforms. The text is existing content, not a chat message.
+
+                Core rules:
+                $languageRule
+                - First identify the single core thesis and 3-5 key takeaways, then reshape them per platform.
+                - Rewrite natively for each format. Do not truncate the same paragraph and paste it everywhere.
+                - Do not invent facts, stats, quotes, or results that are not supported by the content.
+                - Preserve the author's intent and point of view.
+                $ctaRule
+                - Return only the repurposed posts. Do not explain your reasoning.
+
+                Format rules:
+                $formatRules
+
+                Output format:
+                Use only the selected formats and keep this exact section style:
+
+                $outputTemplate
+            """.cleanPromptIndent()
+            userPrompt to systemPrompt
+        }
+
+        else -> {
+            val userPrompt = buildString {
+                appendLine("Instruction:")
+                appendLine(prompt)
+                appendLine()
+                appendLine("Notes:")
+                append(content)
+            }
+            val systemPrompt = """
+                You are a helpful assistant.
+                Rules:
+                $languageRule
+                - Follow the user's instruction precisely.
+                - Return only the result without any extra commentary.
+            """.cleanPromptIndent()
+            userPrompt to systemPrompt
+        }
+    }
+}
+
+private fun String.cleanPromptIndent(): String {
+    val lines = trim('\n', '\r').lines()
+    val firstContentLine = lines.firstOrNull { it.isNotBlank() } ?: return ""
+    val baseIndent = firstContentLine.indexOfFirst { !it.isWhitespace() }.coerceAtLeast(0)
+    return lines.joinToString("\n") { line ->
+        if (baseIndent > 0 && line.length >= baseIndent && line.take(baseIndent).all { it.isWhitespace() }) {
+            line.drop(baseIndent)
+        } else {
+            line
+        }
+    }.trimEnd()
 }

@@ -25,6 +25,8 @@ data class NoteEntity(
     val sourcePlatformId: String? = null,
     val sourcePlatformName: String? = null,
     val sourceHost: String? = null,
+    val sourceAuthorName: String? = null,
+    val sourceAuthorHandle: String? = null,
     val sourceCapturedAt: String? = null,
     val section: String = "inbox",
     val importStatus: String? = null,
@@ -103,4 +105,9 @@ data class NoteSearchEntity(
     val userId: String,
     val content: String,
     val previewPlainText: String,
+    val sourceTitle: String,
+    val sourcePlatformName: String,
+    val sourceHost: String,
+    val sourceAuthorName: String,
+    val sourceAuthorHandle: String,
 )

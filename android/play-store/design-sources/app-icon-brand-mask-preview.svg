@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="1000" height="540" viewBox="0 0 1000 540">
+  <defs>
+    <clipPath id="circleLarge"><circle cx="250" cy="238" r="142"/></clipPath>
+    <clipPath id="roundLarge"><rect x="608" y="96" width="284" height="284" rx="70"/></clipPath>
+    <clipPath id="circleSmall"><circle cx="470" cy="468" r="30"/></clipPath>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%">
+      <feDropShadow dx="0" dy="8" stdDeviation="10" flood-color="#1739D6" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+  <rect width="1000" height="540" fill="#F6F5F2"/>
+  <text x="500" y="54" text-anchor="middle" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#17181B">Original brand, mask-safe composition</text>
+  <g filter="url(#shadow)">
+    <image x="108" y="96" width="284" height="284" xlink:href="app-icon-brand-safe-v2.svg" clip-path="url(#circleLarge)"/>
+    <image x="608" y="96" width="284" height="284" xlink:href="app-icon-brand-safe-v2.svg" clip-path="url(#roundLarge)"/>
+  </g>
+  <text x="250" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" fill="#6B6B73">circle mask</text>
+  <text x="750" y="420" text-anchor="middle" font-family="Arial, sans-serif" font-size="17" fill="#6B6B73">rounded-square mask</text>
+  <g filter="url(#shadow)">
+    <image x="440" y="438" width="60" height="60" xlink:href="app-icon-brand-safe-v2.svg" clip-path="url(#circleSmall)"/>
+  </g>
+  <text x="525" y="475" font-family="Arial, sans-serif" font-size="16" fill="#6B6B73">60 px check</text>
+</svg>

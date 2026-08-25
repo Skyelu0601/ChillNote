@@ -11,6 +11,7 @@ import java.net.URL
     val success: Boolean,
     val tier: String,
     val expiresAt: String? = null,
+    val activeProductId: String? = null,
 )
 
 @Serializable data class CreditBalanceResponse(val balance: Int? = null, val tier: String? = null)
@@ -31,11 +32,17 @@ class AccountApi(
         }
 
     suspend fun consumeImportCredits(accessToken: String): CreditConsumeResponse =
+        consumeCredits(accessToken, "import")
+
+    suspend fun consumeVoiceCredits(accessToken: String): CreditConsumeResponse =
+        consumeCredits(accessToken, "voice")
+
+    private suspend fun consumeCredits(accessToken: String, feature: String): CreditConsumeResponse =
         request(
             "POST",
             "/credits/consume",
             accessToken,
-            json.encodeToString(CreditConsumeRequest.serializer(), CreditConsumeRequest("import")),
+            json.encodeToString(CreditConsumeRequest.serializer(), CreditConsumeRequest(feature)),
         ) { json.decodeFromString(CreditConsumeResponse.serializer(), it) }
 
     suspend fun deleteAccount(accessToken: String) {

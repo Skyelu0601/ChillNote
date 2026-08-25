@@ -1,14 +1,14 @@
 package com.sponteoai.chillscript.rating
 
 import android.content.Context
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
 
 class AppRatingTracker(context: Context) {
     private val preferences = context.getSharedPreferences("app_rating", Context.MODE_PRIVATE)
-    private val mutableRequests = MutableSharedFlow<Unit>(extraBufferCapacity = 1)
-    val requests: SharedFlow<Unit> = mutableRequests.asSharedFlow()
+    private val requestChannel = Channel<Unit>(capacity = 1)
+    val requests: Flow<Unit> = requestChannel.receiveAsFlow()
 
     fun registerVoiceNote() = registerSuccessfulEvent()
 
@@ -28,10 +28,10 @@ class AppRatingTracker(context: Context) {
         if (preferences.getBoolean(KEY_TRIGGERED, false)) return
         val count = preferences.getInt(KEY_COUNT, 0) + 1
         val editor = preferences.edit().putInt(KEY_COUNT, count)
-        if (count >= 3) {
+        if (count >= PROMPT_THRESHOLD) {
             editor.putBoolean(KEY_TRIGGERED, true)
             editor.apply()
-            mutableRequests.tryEmit(Unit)
+            requestChannel.trySend(Unit)
         } else editor.apply()
     }
 
@@ -39,5 +39,6 @@ class AppRatingTracker(context: Context) {
         const val KEY_COUNT = "successful_event_count"
         const val KEY_TRIGGERED = "has_triggered_prompt"
         const val KEY_COUNTED_LINKS = "counted_link_import_ids"
+        const val PROMPT_THRESHOLD = 1
     }
 }

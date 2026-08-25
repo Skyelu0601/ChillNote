@@ -5,17 +5,21 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Matrix
 import android.media.MediaCodec
 import android.media.MediaExtractor
 import android.media.MediaFormat
+import android.media.MediaMetadataRetriever
 import android.media.MediaMuxer
 import android.os.Build
 import android.provider.MediaStore
+import android.util.Log
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.DynamicRange
 import androidx.camera.core.MirrorMode
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
-import androidx.camera.video.FallbackStrategy
 import androidx.camera.video.FileOutputOptions
 import androidx.camera.video.Quality
 import androidx.camera.video.QualitySelector
@@ -39,7 +43,12 @@ import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-data class TeleprompterClip(val id: String, val file: File, val durationMillis: Long)
+data class TeleprompterClip(
+    val id: String,
+    val file: File,
+    val durationMillis: Long,
+    val thumbnail: Bitmap?,
+)
 
 class TeleprompterCameraController(
     private val context: Context,
@@ -54,6 +63,8 @@ class TeleprompterCameraController(
         private set
     var quality by mutableStateOf(Quality.FHD)
         private set
+    var supportedQualities by mutableStateOf<List<Quality>>(emptyList())
+        private set
     var errorMessage by mutableStateOf<String?>(null)
     var exporting by mutableStateOf(false)
         private set
@@ -64,10 +75,15 @@ class TeleprompterCameraController(
     private var previewView: PreviewView? = null
     private var videoCapture: VideoCapture<Recorder>? = null
     private var activeRecording: Recording? = null
+    private var exportedTempFile: File? = null
+    private var isCleaningUp = false
+    private var bindRequestId = 0
 
     fun attach(view: PreviewView) {
         previewView = view
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED) bind()
+        val hasCamera = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        val hasMicrophone = ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+        if (hasCamera && hasMicrophone) bind()
     }
 
     fun onPermissionsGranted() = bind()
@@ -75,19 +91,38 @@ class TeleprompterCameraController(
     fun switchCamera() {
         if (isRecording) return
         isFrontCamera = !isFrontCamera
+        supportedQualities = emptyList()
+        videoCapture = null
+        provider?.unbindAll()
         bind()
     }
 
     fun updateQuality(next: Quality) {
-        if (isRecording || next == quality) return
-        quality = next
-        bind()
+        if (isRecording || next == quality || next !in supportedQualities) return
+        bind(requestedQuality = next)
     }
 
     fun startRecording() {
-        val capture = videoCapture ?: return
+        if (isCleaningUp) return
+        val capture = videoCapture ?: run {
+            errorMessage = context.getString(R.string.teleprompter_error_camera_unavailable)
+            return
+        }
         if (activeRecording != null) return
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) return
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED
+        ) {
+            errorMessage = context.getString(R.string.teleprompter_error_permission_required)
+            return
+        }
+        if (clips.size >= MAX_CLIP_COUNT) {
+            errorMessage = context.getString(R.string.teleprompter_error_too_many_clips)
+            return
+        }
+        if (context.cacheDir.usableSpace <= MINIMUM_FREE_DISK_BYTES) {
+            errorMessage = context.getString(R.string.teleprompter_error_low_storage)
+            return
+        }
         val dir = File(context.cacheDir, "teleprompter").apply { mkdirs() }
         val file = File(dir, "clip-${UUID.randomUUID()}.mp4")
         var pending = capture.output.prepareRecording(context, FileOutputOptions.Builder(file).build())
@@ -98,15 +133,26 @@ class TeleprompterCameraController(
         activeRecording = pending.start(ContextCompat.getMainExecutor(context)) { event ->
             when (event) {
                 is VideoRecordEvent.Start -> isRecording = true
-                is VideoRecordEvent.Status -> recordedMillis = event.recordingStats.recordedDurationNanos / 1_000_000
+                is VideoRecordEvent.Status -> {
+                    recordedMillis = event.recordingStats.recordedDurationNanos / 1_000_000
+                    if (recordedMillis >= MAX_CLIP_DURATION_MILLIS) activeRecording?.stop()
+                }
                 is VideoRecordEvent.Finalize -> {
                     isRecording = false
                     activeRecording = null
-                    if (!event.hasError() && file.length() > 0) {
-                        clips += TeleprompterClip(UUID.randomUUID().toString(), file, event.recordingStats.recordedDurationNanos / 1_000_000)
+                    if (isCleaningUp) {
+                        file.delete()
+                    } else if (!event.hasError() && file.length() > 0) {
+                        clips += TeleprompterClip(
+                            id = UUID.randomUUID().toString(),
+                            file = file,
+                            durationMillis = event.recordingStats.recordedDurationNanos / 1_000_000,
+                            thumbnail = thumbnailFor(file),
+                        )
                     } else {
                         file.delete()
-                        errorMessage = event.cause?.message ?: context.getString(R.string.teleprompter_error_record_failed)
+                        event.cause?.let { Log.w(TAG, "Video recording failed", it) }
+                        errorMessage = context.getString(R.string.teleprompter_error_record_failed)
                     }
                 }
             }
@@ -140,46 +186,137 @@ class TeleprompterCameraController(
                 if (clips.size == 1) clips.first().file.copyTo(output, overwrite = true)
                 else VideoClipMerger.merge(clips.map { it.file }, output)
             }
+            exportedTempFile?.takeIf { it != output }?.delete()
+            exportedTempFile = output
             exportedFile = output
             output
         } catch (error: Throwable) {
-            errorMessage = error.message
+            Log.w(TAG, "Video export failed", error)
+            errorMessage = context.getString(R.string.teleprompter_error_export_failed)
             null
         } finally {
             exporting = false
         }
     }
 
-    fun clearExport() { exportedFile = null }
+    fun clearExport() {
+        exportedFile = null
+    }
+
+    fun handleAppDeactivation() {
+        if (!isRecording) return
+        stopRecording()
+        errorMessage = context.getString(R.string.teleprompter_error_recording_interrupted)
+    }
 
     fun cleanup() {
+        if (isCleaningUp) return
+        isCleaningUp = true
+        bindRequestId += 1
         activeRecording?.stop()
         activeRecording = null
         provider?.unbindAll()
+        videoCapture = null
+        supportedQualities = emptyList()
         clips.forEach { it.file.delete() }
         clips.clear()
+        exportedTempFile?.delete()
+        exportedTempFile = null
+        exportedFile = null
     }
 
-    private fun bind() {
+    private fun bind(requestedQuality: Quality = quality) {
         val view = previewView ?: return
+        val requestId = ++bindRequestId
         val future = ProcessCameraProvider.getInstance(context)
         future.addListener({
+            if (isCleaningUp || requestId != bindRequestId) return@addListener
             runCatching {
                 val cameraProvider = future.get()
-                provider = cameraProvider
-                val preview = Preview.Builder().build().also { it.surfaceProvider = view.surfaceProvider }
                 val selector = if (isFrontCamera) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+                val cameraInfo = cameraProvider.getCameraInfo(selector)
+                val capabilities = Recorder.getVideoCapabilities(cameraInfo)
+                val availableQualities = SELECTABLE_QUALITIES.filter { candidate ->
+                    capabilities.isQualitySupported(candidate, DynamicRange.SDR)
+                }
+                val appliedQuality = requestedQuality.takeIf(availableQualities::contains)
+                    ?: availableQualities.firstOrNull()
+                val preview = Preview.Builder().build().also { it.surfaceProvider = view.surfaceProvider }
+
+                videoCapture = null
+                cameraProvider.unbindAll()
+                if (appliedQuality == null) {
+                    cameraProvider.bindToLifecycle(lifecycleOwner, selector, preview)
+                    provider = cameraProvider
+                    supportedQualities = emptyList()
+                    return@runCatching
+                }
+
                 val recorder = Recorder.Builder().setQualitySelector(
-                    QualitySelector.from(quality, FallbackStrategy.higherQualityOrLowerThan(Quality.SD)),
+                    QualitySelector.from(appliedQuality),
                 ).build()
                 val capture = VideoCapture.Builder(recorder)
+                    .setDynamicRange(DynamicRange.SDR)
                     .setMirrorMode(MirrorMode.MIRROR_MODE_ON_FRONT_ONLY)
                     .build()
-                videoCapture = capture
-                cameraProvider.unbindAll()
                 cameraProvider.bindToLifecycle(lifecycleOwner, selector, preview, capture)
-            }.onFailure { errorMessage = it.message }
+                provider = cameraProvider
+                videoCapture = capture
+                quality = appliedQuality
+                supportedQualities = availableQualities
+            }.onFailure {
+                if (requestId != bindRequestId) return@onFailure
+                Log.w(TAG, "Camera binding failed", it)
+                videoCapture = null
+                supportedQualities = emptyList()
+                errorMessage = context.getString(R.string.teleprompter_error_record_failed)
+            }
         }, ContextCompat.getMainExecutor(context))
+    }
+
+    private fun thumbnailFor(file: File): Bitmap? = runCatching {
+        val retriever = MediaMetadataRetriever()
+        try {
+            retriever.setDataSource(file.absolutePath)
+            retriever.getFrameAtTime(0L, MediaMetadataRetriever.OPTION_CLOSEST_SYNC)?.let { frame ->
+                val rotation = retriever
+                    .extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+                    ?.toFloatOrNull()
+                    ?: 0f
+                val oriented = if (rotation == 0f) {
+                    frame
+                } else {
+                    Bitmap.createBitmap(
+                        frame,
+                        0,
+                        0,
+                        frame.width,
+                        frame.height,
+                        Matrix().apply { postRotate(rotation) },
+                        true,
+                    ).also { rotated ->
+                        if (rotated !== frame) frame.recycle()
+                    }
+                }
+                Bitmap.createScaledBitmap(oriented, THUMBNAIL_WIDTH, THUMBNAIL_HEIGHT, true).also { scaled ->
+                    if (scaled !== oriented) oriented.recycle()
+                }
+            }
+        } finally {
+            retriever.release()
+        }
+    }.onFailure {
+        Log.w(TAG, "Could not generate clip thumbnail", it)
+    }.getOrNull()
+
+    private companion object {
+        const val TAG = "TeleprompterCamera"
+        const val MAX_CLIP_COUNT = 24
+        const val MAX_CLIP_DURATION_MILLIS = 180_000L
+        const val MINIMUM_FREE_DISK_BYTES = 250L * 1024L * 1024L
+        const val THUMBNAIL_WIDTH = 108
+        const val THUMBNAIL_HEIGHT = 192
+        val SELECTABLE_QUALITIES = listOf(Quality.HD, Quality.FHD, Quality.UHD)
     }
 }
 
