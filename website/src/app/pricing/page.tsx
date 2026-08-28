@@ -18,7 +18,7 @@ type PricingPlan = {
   note?: string;
 };
 
-const plans: PricingPlan[] = [copy.pricing.free, copy.pricing.monthly, copy.pricing.yearly];
+const plans: PricingPlan[] = [copy.pricing.free, copy.pricing.weekly, copy.pricing.yearly];
 
 export default function PricingPage() {
   return (

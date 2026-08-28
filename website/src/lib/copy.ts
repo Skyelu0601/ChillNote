@@ -123,10 +123,10 @@ export const copy = {
         "Daily AI limits for transcription, recipes, and chat.",
       ],
     },
-    monthly: {
-      name: "Monthly Pro",
-      price: "$12.99",
-      caption: "per month",
+    weekly: {
+      name: "Weekly Pro",
+      price: "$6.99",
+      caption: "per week",
       features: [
         "Up to 10 minutes per recording.",
         "Unlimited AI chat about your notes.",
@@ -136,9 +136,9 @@ export const copy = {
     },
     yearly: {
       name: "Yearly Pro",
-      price: "$89.99",
+      price: "$59.99",
       caption: "per year",
-      note: "Save $65.89 compared with paying monthly all year.",
+      note: "Save $303.49 compared with paying weekly all year.",
       features: [
         "Everything in Pro, billed yearly.",
         "Up to 10 minutes per recording.",
