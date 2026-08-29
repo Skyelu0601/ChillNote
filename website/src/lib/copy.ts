@@ -120,7 +120,7 @@ export const copy = {
       features: [
         "Core notes and your AI creator notes workspace.",
         "Up to 1 minute per recording.",
-        "Daily AI limits for transcription, recipes, and chat.",
+        "30 free AI credits for transcription, recipes, and chat.",
       ],
     },
     weekly: {
