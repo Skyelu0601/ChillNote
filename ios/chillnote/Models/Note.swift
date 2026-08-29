@@ -68,6 +68,15 @@ final class Note {
     var deletedAt: Date?
     var pinnedAt: Date?
     var version: Int
+    /// Durable sync identity reported by the server for the version that the
+    /// client currently uses as its upload baseline.
+    var serverMutationId: String?
+    /// Durable identity and content snapshot of the most recent local upload.
+    /// Keeping these across process restarts makes a retried request idempotent.
+    var lastSubmittedMutationId: String?
+    var lastSubmittedFingerprint: String?
+    /// Fingerprint of the last local state that received an authoritative ACK.
+    var acknowledgedFingerprint: String?
     var serverUpdatedAt: Date
     var serverDeletedAt: Date?
     var lastModifiedByDeviceId: String?
@@ -140,7 +149,13 @@ final class Note {
         self.updatedAt = now
         self.deletedAt = nil
         self.pinnedAt = nil
-        self.version = 1
+        // No server row exists yet; protocol-v4 compares this baseline to the
+        // server's implicit version zero on first upload.
+        self.version = 0
+        self.serverMutationId = nil
+        self.lastSubmittedMutationId = nil
+        self.lastSubmittedFingerprint = nil
+        self.acknowledgedFingerprint = nil
         self.serverUpdatedAt = now
         self.serverDeletedAt = nil
         self.lastModifiedByDeviceId = nil

@@ -2,6 +2,7 @@ import SwiftUI
 
 struct NoteDetailAlertsAndSheets: ViewModifier {
     @ObservedObject var viewModel: NoteDetailViewModel
+    let onAISkillApplied: () -> Void
     @StateObject private var recipeManager = RecipeManager.shared
 
     func body(content: Content) -> some View {
@@ -27,7 +28,10 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
             .sheet(item: $viewModel.aiSkillPreview) { preview in
                 NoteDetailAISkillPreviewSheet(
                     preview: preview,
-                    onApply: { viewModel.applyAISkillPreview(preview, mode: $0) }
+                    onApply: {
+                        viewModel.applyAISkillPreview(preview, mode: $0)
+                        onAISkillApplied()
+                    }
                 )
             }
             .alert(L10n.text("note_detail.alert.delete.title"), isPresented: $viewModel.showDeleteConfirmation) {
@@ -67,8 +71,16 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
 }
 
 extension View {
-    func noteDetailAlertsAndSheets(viewModel: NoteDetailViewModel) -> some View {
-        modifier(NoteDetailAlertsAndSheets(viewModel: viewModel))
+    func noteDetailAlertsAndSheets(
+        viewModel: NoteDetailViewModel,
+        onAISkillApplied: @escaping () -> Void
+    ) -> some View {
+        modifier(
+            NoteDetailAlertsAndSheets(
+                viewModel: viewModel,
+                onAISkillApplied: onAISkillApplied
+            )
+        )
     }
 }
 

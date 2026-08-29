@@ -42,6 +42,39 @@ final class NoteDetailViewModelTests: XCTestCase {
         XCTAssertTrue(didDismiss)
     }
 
+    func testCommitPendingEditsSavesWithoutDismissingAndIsIdempotent() throws {
+        let originalTime = Date(timeIntervalSince1970: 100)
+        let committedTime = Date(timeIntervalSince1970: 200)
+        let note = Note(content: "old", userId: "u1")
+        note.updatedAt = originalTime
+        context.insert(note)
+        try context.save()
+
+        var didDismiss = false
+        var nowCallCount = 0
+        var deps = NoteDetailViewModel.Dependencies()
+        deps.now = {
+            nowCallCount += 1
+            return committedTime
+        }
+        let viewModel = NoteDetailViewModel(note: note, dependencies: deps)
+        viewModel.configureForTesting(modelContext: context) {
+            didDismiss = true
+        }
+
+        note.updateContent("edited before background")
+
+        XCTAssertTrue(viewModel.commitPendingEdits())
+        XCTAssertEqual(note.updatedAt, committedTime)
+        XCTAssertEqual(viewModel.initialContent, "edited before background")
+        XCTAssertFalse(didDismiss)
+        XCTAssertFalse(context.hasChanges)
+
+        XCTAssertFalse(viewModel.commitPendingEdits())
+        XCTAssertEqual(nowCallCount, 1)
+        XCTAssertFalse(didDismiss)
+    }
+
     func testUpdateTimestampAndDismissSyncsChecklistStructureAfterManualEdit() {
         let note = Note(content: "old", userId: "u1")
         context.insert(note)

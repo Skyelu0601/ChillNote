@@ -202,7 +202,10 @@ struct NoteDetailView: View {
         .sheet(isPresented: $isSkillManagerPresented) {
             CreatorSkillsManagementSheet()
         }
-        .noteDetailAlertsAndSheets(viewModel: viewModel)
+        .noteDetailAlertsAndSheets(
+            viewModel: viewModel,
+            onAISkillApplied: returnToNoteWorkspace
+        )
         .onChange(of: viewModel.voiceProcessingErrorMessage) { _, message in
             guard let message else { return }
             AppInteractionFeedback.error()
@@ -226,6 +229,7 @@ struct NoteDetailView: View {
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active {
                 editorController.flush()
+                viewModel.commitPendingEdits()
             }
         }
         .onChange(of: firstActionGuide.stage) { _, _ in
@@ -253,6 +257,7 @@ struct NoteDetailView: View {
         }
         .onDisappear {
             editorController.flush()
+            viewModel.commitPendingEdits()
         }
     }
 
@@ -288,6 +293,12 @@ struct NoteDetailView: View {
         editorController.flush()
         firstActionGuide.markAISkillsTapped(in: note.id)
         viewModel.startAISkill(recipe)
+    }
+
+    private func returnToNoteWorkspace() {
+        withAnimation(.easeInOut(duration: 0.2)) {
+            workspacePage = .script
+        }
     }
 
     private func openTeleprompter() {
@@ -373,7 +384,9 @@ struct NoteDetailView: View {
         case .tapAISkills:
             page = .create
         case .tapRecordTab:
-            page = .create
+            // Keep the current page here. Applying a skill explicitly returns to
+            // Note, while dismissing the skill flow leaves Create unchanged.
+            page = nil
         case .tapTeleprompter:
             page = .record
         default:

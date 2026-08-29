@@ -103,7 +103,7 @@
             ActionType = "Xcode.IDEStandardExecutionActionsCore.ExecutionActionType.ShellScriptAction">
             <ActionContent
                title = "Add GoMarketMe dSYM"
-               scriptText = "&quot;${SRCROOT}/scripts/fix-gomarketme-dsym.sh&quot; &quot;${ARCHIVE_PATH}&quot;">
+               scriptText = "&quot;${SRCROOT}/../scripts/fix-gomarketme-dsym.sh&quot; &quot;${ARCHIVE_PATH}&quot;">
                <EnvironmentBuildable>
                   <BuildableReference
                      BuildableIdentifier = "primary"

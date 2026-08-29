@@ -655,17 +655,20 @@ final class chillnoteTests: XCTestCase {
 
     // MARK: - Sync Checkpoint Tests
 
-    func testSyncCheckpointFallsBackToFullSyncWhenLocalNotesAreEmpty() {
+    func testSyncCheckpointBootstrapsEmptyAccountOnlyOnce() {
         let checkpoint = SyncManager.resolveCheckpoint(
             lastSyncAt: Date(timeIntervalSince1970: 1_700_000_000),
             cursor: "123",
             hasUploadedLocal: true,
-            localNotesCount: 0
+            hasCompletedBootstrap: false,
+            lastKnownLocalEntityCount: nil,
+            localEntityCount: 0
         )
 
         XCTAssertNil(checkpoint.since)
         XCTAssertNil(checkpoint.cursor)
-        XCTAssertFalse(checkpoint.shouldMarkUploadedLocalAfterSuccess)
+        XCTAssertTrue(checkpoint.shouldMarkUploadedLocalAfterSuccess)
+        XCTAssertTrue(checkpoint.shouldMarkBootstrapCompletedAfterSuccess)
     }
 
     func testSyncCheckpointFallsBackToFullSyncWhenLocalNotesExistButNeverUploaded() {
@@ -673,12 +676,15 @@ final class chillnoteTests: XCTestCase {
             lastSyncAt: Date(timeIntervalSince1970: 1_700_000_000),
             cursor: "123",
             hasUploadedLocal: false,
-            localNotesCount: 2
+            hasCompletedBootstrap: true,
+            lastKnownLocalEntityCount: nil,
+            localEntityCount: 2
         )
 
         XCTAssertNil(checkpoint.since)
         XCTAssertNil(checkpoint.cursor)
         XCTAssertTrue(checkpoint.shouldMarkUploadedLocalAfterSuccess)
+        XCTAssertTrue(checkpoint.shouldMarkBootstrapCompletedAfterSuccess)
     }
 
     func testSyncCheckpointKeepsIncrementalStateWhenLocalSnapshotExists() {
@@ -687,11 +693,81 @@ final class chillnoteTests: XCTestCase {
             lastSyncAt: lastSyncAt,
             cursor: "123",
             hasUploadedLocal: true,
-            localNotesCount: 2
+            hasCompletedBootstrap: true,
+            lastKnownLocalEntityCount: 2,
+            localEntityCount: 2
         )
 
         XCTAssertEqual(checkpoint.since, lastSyncAt)
         XCTAssertEqual(checkpoint.cursor, "123")
         XCTAssertTrue(checkpoint.shouldMarkUploadedLocalAfterSuccess)
+        XCTAssertFalse(checkpoint.shouldMarkBootstrapCompletedAfterSuccess)
+    }
+
+    func testSyncCheckpointKeepsCursorForEmptyAccountAfterBootstrap() {
+        let lastSyncAt = Date(timeIntervalSince1970: 1_700_000_000)
+        let checkpoint = SyncManager.resolveCheckpoint(
+            lastSyncAt: lastSyncAt,
+            cursor: "456",
+            hasUploadedLocal: true,
+            hasCompletedBootstrap: true,
+            lastKnownLocalEntityCount: 0,
+            localEntityCount: 0
+        )
+
+        XCTAssertEqual(checkpoint.since, lastSyncAt)
+        XCTAssertEqual(checkpoint.cursor, "456")
+        XCTAssertFalse(checkpoint.shouldMarkBootstrapCompletedAfterSuccess)
+    }
+
+    func testSyncCheckpointFullPullsWhenPreviouslyPopulatedLocalStoreIsEmpty() {
+        let checkpoint = SyncManager.resolveCheckpoint(
+            lastSyncAt: Date(timeIntervalSince1970: 1_700_000_000),
+            cursor: "456",
+            hasUploadedLocal: true,
+            hasCompletedBootstrap: true,
+            lastKnownLocalEntityCount: 4,
+            localEntityCount: 0
+        )
+
+        XCTAssertNil(checkpoint.since)
+        XCTAssertNil(checkpoint.cursor)
+        XCTAssertTrue(checkpoint.shouldMarkBootstrapCompletedAfterSuccess)
+    }
+
+    func testSyncCheckpointStoreKeepsAccountsIndependent() {
+        let suiteName = "sync-checkpoint-tests-\(UUID().uuidString)"
+        let defaults = UserDefaults(suiteName: suiteName)!
+        defer { defaults.removePersistentDomain(forName: suiteName) }
+
+        UserSyncCheckpointStore.save(
+            UserSyncCheckpointState(
+                lastSyncAtTimestamp: 100,
+                cursor: "cursor-a",
+                hasUploadedLocal: true,
+                hasCompletedBootstrap: true,
+                lastKnownLocalEntityCount: 4
+            ),
+            for: "user-a",
+            defaults: defaults
+        )
+        UserSyncCheckpointStore.save(
+            UserSyncCheckpointState(
+                lastSyncAtTimestamp: 200,
+                cursor: "cursor-b",
+                hasUploadedLocal: false,
+                hasCompletedBootstrap: false,
+                lastKnownLocalEntityCount: 0
+            ),
+            for: "user-b",
+            defaults: defaults
+        )
+
+        XCTAssertEqual(UserSyncCheckpointStore.state(for: "user-a", defaults: defaults).cursor, "cursor-a")
+        XCTAssertEqual(UserSyncCheckpointStore.state(for: "user-a", defaults: defaults).lastSyncAtTimestamp, 100)
+        XCTAssertEqual(UserSyncCheckpointStore.state(for: "user-b", defaults: defaults).cursor, "cursor-b")
+        XCTAssertEqual(UserSyncCheckpointStore.state(for: "user-b", defaults: defaults).lastSyncAtTimestamp, 200)
+        XCTAssertEqual(UserSyncCheckpointStore.state(for: "user-a", defaults: defaults).lastKnownLocalEntityCount, 4)
+        XCTAssertEqual(UserSyncCheckpointStore.state(for: "user-b", defaults: defaults).lastKnownLocalEntityCount, 0)
     }
 }

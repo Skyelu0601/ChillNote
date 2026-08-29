@@ -1,4 +1,70 @@
+import CryptoKit
 import Foundation
+
+/// Local-only content identities for durable sync. The server never needs to
+/// reproduce these hashes: they let the client distinguish a real local edit
+/// from clock skew, retries, and metadata-only server updates.
+enum SyncEntityFingerprint {
+    static func note(_ note: Note) -> String {
+        digest([
+            note.content,
+            date(note.createdAt),
+            date(note.deletedAt),
+            date(note.pinnedAt),
+            note.tags
+                .filter { $0.deletedAt == nil }
+                .map { $0.id.uuidString.lowercased() }
+                .sorted()
+                .joined(separator: ","),
+            note.sourceURL,
+            note.sourceTitle,
+            note.sourcePlatformID,
+            note.sourcePlatformName,
+            note.sourceHost,
+            note.sourceAuthorName,
+            note.sourceAuthorHandle,
+            date(note.sourceCapturedAt),
+            note.sectionRaw,
+            note.importStatusRaw,
+            note.importJobId,
+            note.importErrorCode,
+            date(note.importStartedAt),
+            date(note.importCompletedAt)
+        ])
+    }
+
+    static func tag(_ tag: Tag) -> String {
+        digest([
+            tag.name,
+            tag.colorHex,
+            date(tag.createdAt),
+            date(tag.lastUsedAt),
+            date(tag.deletedAt),
+            String(tag.sortOrder),
+            tag.parent?.id.uuidString.lowercased()
+        ])
+    }
+
+    private static func date(_ value: Date?) -> String? {
+        value.map { String($0.timeIntervalSinceReferenceDate.bitPattern) }
+    }
+
+    private static func date(_ value: Date) -> String {
+        String(value.timeIntervalSinceReferenceDate.bitPattern)
+    }
+
+    private static func digest(_ fields: [String?]) -> String {
+        // Length-prefix every field so nil, empty, and embedded separators are
+        // unambiguous without relying on dictionary/JSON key ordering.
+        let canonical = fields.map { value -> String in
+            guard let value else { return "n" }
+            return "s\(value.utf8.count):\(value)"
+        }.joined(separator: "|")
+        return SHA256.hash(data: Data(canonical.utf8))
+            .map { String(format: "%02x", $0) }
+            .joined()
+    }
+}
 
 struct SyncMapper {
     private let dateFormatter: ISO8601DateFormatter = {
@@ -22,11 +88,14 @@ struct SyncMapper {
             pinnedAt: note.pinnedAt.map { dateFormatter.string(from: $0) },
             tagIds: note.tags
                 .filter { $0.deletedAt == nil }
-                .map { $0.id.uuidString },
+                .map { $0.id.uuidString }
+                .sorted(),
             version: nil,
             baseVersion: note.version,
             clientUpdatedAt: dateFormatter.string(from: note.updatedAt),
             lastModifiedByDeviceId: note.lastModifiedByDeviceId,
+            mutationId: note.lastSubmittedMutationId,
+            previousMutationId: note.serverMutationId,
             sourceURL: note.sourceURL,
             sourceTitle: note.sourceTitle,
             sourcePlatformID: note.sourcePlatformID,
@@ -58,7 +127,9 @@ struct SyncMapper {
             version: nil,
             baseVersion: tag.version,
             clientUpdatedAt: dateFormatter.string(from: tag.updatedAt),
-            lastModifiedByDeviceId: tag.lastModifiedByDeviceId
+            lastModifiedByDeviceId: tag.lastModifiedByDeviceId,
+            mutationId: tag.lastSubmittedMutationId,
+            previousMutationId: tag.serverMutationId
         )
     }
 

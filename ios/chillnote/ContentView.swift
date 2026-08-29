@@ -62,7 +62,9 @@ struct ContentView: View {
     private var rootView: some View {
         Group {
             #if DEBUG
-            if AppLaunchOptions.isSkillResultScreenshotMode {
+            if AppLaunchOptions.isSubscriptionScreenshotMode {
+                SubscriptionView(context: .onboardingTrial)
+            } else if AppLaunchOptions.isSkillResultScreenshotMode {
                 SkillResultScreenshotHost()
             } else if AppLaunchOptions.isOnboardingScreenshotMode {
                 OnboardingFlowView(

@@ -66,6 +66,21 @@ struct SubscriptionPeriodDescriptor: Equatable {
         totalMonths == 12
     }
 
+    var isWeekly: Bool {
+        unit == .week && value == 1
+    }
+
+    var trialDayCount: Int? {
+        switch unit {
+        case .day:
+            return value
+        case .week:
+            return value * 7
+        case .month, .year:
+            return nil
+        }
+    }
+
     func localizedDuration(locale: Locale = .current) -> String? {
         let formatter = DateComponentsFormatter()
         formatter.unitsStyle = .full
@@ -137,6 +152,7 @@ struct IntroductoryOfferDescriptor: Equatable {
 
 struct SubscriptionDisplayInfo: Equatable {
     let isAnnual: Bool
+    let isWeekly: Bool
     let badgeText: String
     let ctaText: String
     let billingPeriodText: String
@@ -144,6 +160,7 @@ struct SubscriptionDisplayInfo: Equatable {
     let equivalentWeeklyText: String?
     let renewalText: String?
     let trialDurationText: String?
+    let trialDayCount: Int?
 
     var hasFreeTrial: Bool {
         trialDurationText != nil
@@ -154,23 +171,26 @@ struct SubscriptionDisplayInfo: Equatable {
         priceFormatStyle: Decimal.FormatStyle.Currency,
         billingPeriod: SubscriptionPeriodDescriptor?,
         introductoryOffer: IntroductoryOfferDescriptor?,
+        isEligibleForIntroOffer: Bool,
         locale: Locale = .current
     ) -> SubscriptionDisplayInfo {
         let priceText = price.formatted(priceFormatStyle)
         let isAnnual = billingPeriod?.isAnnual == true
+        let isWeekly = billingPeriod?.isWeekly == true
         let billingPeriodText = String(
-            localized: isAnnual ? "subscription.billing_period.yearly" : "subscription.billing_period.monthly",
+            localized: isAnnual ? "subscription.billing_period.yearly" : "subscription.billing_period.weekly",
             locale: locale
         )
 
-        let trialDurationText: String?
-        if isAnnual,
-           let introductoryOffer,
-           introductoryOffer.isFreeTrial {
-            trialDurationText = introductoryOffer.period.localizedDuration(locale: locale)
-        } else {
-            trialDurationText = nil
-        }
+        let eligibleFreeTrial = isAnnual
+            && isEligibleForIntroOffer
+            && introductoryOffer?.isFreeTrial == true
+        let trialDurationText = eligibleFreeTrial
+            ? introductoryOffer?.period.localizedDuration(locale: locale)
+            : nil
+        let trialDayCount = eligibleFreeTrial
+            ? introductoryOffer?.period.trialDayCount
+            : nil
 
         let badgeText: String
         if let trialDurationText {
@@ -195,7 +215,7 @@ struct SubscriptionDisplayInfo: Equatable {
             .replacingOccurrences(of: "%@", with: trialDurationText)
         } else {
             ctaText = String(
-                localized: isAnnual ? "subscription.cta.start_annual" : "subscription.cta.start_monthly",
+                localized: isAnnual ? "subscription.cta.start_annual" : "subscription.cta.start_weekly",
                 locale: locale
             )
         }
@@ -241,13 +261,15 @@ struct SubscriptionDisplayInfo: Equatable {
 
         return SubscriptionDisplayInfo(
             isAnnual: isAnnual,
+            isWeekly: isWeekly,
             badgeText: badgeText,
             ctaText: ctaText,
             billingPeriodText: billingPeriodText,
             equivalentMonthlyText: equivalentMonthlyText,
             equivalentWeeklyText: equivalentWeeklyText,
             renewalText: renewalText,
-            trialDurationText: trialDurationText
+            trialDurationText: trialDurationText,
+            trialDayCount: trialDayCount
         )
     }
 }
@@ -263,14 +285,15 @@ class StoreService: ObservableObject {
     @Published var errorMessage: String?
     @Published var isLoadingProducts = false
     @Published var productsErrorMessage: String?
+    @Published private(set) var introductoryOfferEligibleProductIds: Set<String> = []
 
     // Subscription Details
     @Published var subscriptionExpirationDate: Date?
     @Published var activeSubscriptionProductId: String?
 
     // MARK: - Credit System
-    /// Remaining AI credits for free users. Default 50 (new-user grant) — overwritten on first server sync.
-    @Published var creditBalance: Int = 50
+    /// Remaining AI credits for free users. Default 30 (new-user grant) — overwritten on first server sync.
+    @Published var creditBalance: Int = 30
     @Published var hasFetchedCreditBalanceFromBackend = false
 
     private static let creditBalanceCacheKey = "cached_credit_balance"
@@ -382,7 +405,12 @@ class StoreService: ObservableObject {
     }
     
     // Product Identifiers
-    private let productIds = ["com.chillnote.pro.monthly", "com.chillnote.pro.yearly"]
+    private let productIds = ["com.chillnote.pro.weekly", "com.chillnote.pro.yearly"]
+    private let recognizedProductIds: Set<String> = [
+        "com.chillnote.pro.weekly",
+        "com.chillnote.pro.yearly",
+        "com.chillnote.pro.monthly"
+    ]
     
     private var transactionListener: Task<Void, Error>?
     private struct BackendSubscriptionStatus: Decodable {
@@ -411,7 +439,7 @@ class StoreService: ObservableObject {
         // Hydrate credit balance from cache immediately so UI is correct before first server sync.
         let cachedBalance = UserDefaults.standard.integer(forKey: Self.creditBalanceCacheKey)
         // If key has never been written, integer(forKey:) returns 0 — treat as new user with full grant.
-        creditBalance = cachedBalance > 0 ? cachedBalance : 50
+        creditBalance = cachedBalance > 0 ? cachedBalance : 30
 
         // Start listening for transaction updates
         transactionListener = listenForTransactions()
@@ -546,6 +574,7 @@ class StoreService: ObservableObject {
             priceFormatStyle: product.priceFormatStyle,
             billingPeriod: billingPeriod,
             introductoryOffer: introductoryOffer,
+            isEligibleForIntroOffer: introductoryOfferEligibleProductIds.contains(product.id),
             locale: locale
         )
     }
@@ -557,6 +586,16 @@ class StoreService: ObservableObject {
         productsErrorMessage = nil
         do {
             let products = try await Product.products(for: productIds)
+            var eligibleProductIds: Set<String> = []
+            for product in products {
+                guard let subscription = product.subscription,
+                      IntroductoryOfferDescriptor(storeKitOffer: subscription.introductoryOffer)?.isFreeTrial == true,
+                      await subscription.isEligibleForIntroOffer else {
+                    continue
+                }
+                eligibleProductIds.insert(product.id)
+            }
+            introductoryOfferEligibleProductIds = eligibleProductIds
             availableProducts = products.sorted(by: { $0.price < $1.price })
             if availableProducts.isEmpty {
                 productsErrorMessage = L10n.text("store.error.no_subscription_products")
@@ -582,7 +621,7 @@ class StoreService: ObservableObject {
             do {
                 let transaction = try checkVerified(result)
                 
-                if productIds.contains(transaction.productID) {
+                if recognizedProductIds.contains(transaction.productID) {
                     if let expirationDate = transaction.expirationDate, expirationDate > Date() {
                         activeTransaction = transaction
                         self.subscriptionExpirationDate = expirationDate

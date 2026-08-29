@@ -145,6 +145,23 @@ final class chillnoteIntegrationTests: XCTestCase {
         XCTAssertEqual(tags.count, 1)
         XCTAssertEqual(tags.first?.name, "Important")
     }
+
+    func testCleanupEmptyTagsPreservesParentWithActiveChild() throws {
+        let parent = Tag(name: "Parent", userId: "u1")
+        let child = Tag(name: "Child", userId: "u1")
+        let note = Note(content: "Uses child", userId: "u1")
+        child.parent = parent
+        note.tags = [child]
+        modelContext.insert(parent)
+        modelContext.insert(child)
+        modelContext.insert(note)
+        try modelContext.save()
+
+        tagService.cleanupEmptyTags(context: modelContext, userId: "u1")
+
+        XCTAssertNil(parent.deletedAt)
+        XCTAssertNil(child.deletedAt)
+    }
     
     /// 测试：Cleanup **应该** 删除那些只有软删除笔记的标签
     func testCleanupEmptyTagsDeletesTagsWithOnlySoftDeletedNotes() throws {
@@ -247,5 +264,18 @@ final class chillnoteIntegrationTests: XCTestCase {
 
         let queuedIds = Set(HardDeleteQueueStore.tagIDs(for: userId))
         XCTAssertTrue(queuedIds.contains(expired.id.uuidString))
+    }
+
+    func testCleanupEmptyTagsOnlyTouchesRequestedUser() throws {
+        let userATag = Tag(name: "user-a-empty", userId: "user-a")
+        let userBTag = Tag(name: "user-b-empty", userId: "user-b")
+        modelContext.insert(userATag)
+        modelContext.insert(userBTag)
+        try modelContext.save()
+
+        TagService.shared.cleanupEmptyTags(context: modelContext, userId: "user-b")
+
+        XCTAssertNil(userATag.deletedAt)
+        XCTAssertNotNil(userBTag.deletedAt)
     }
 }

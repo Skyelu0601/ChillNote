@@ -13,6 +13,10 @@ final class Tag {
     var lastUsedAt: Date
     var deletedAt: Date?
     var version: Int
+    var serverMutationId: String?
+    var lastSubmittedMutationId: String?
+    var lastSubmittedFingerprint: String?
+    var acknowledgedFingerprint: String?
     var serverUpdatedAt: Date
     var serverDeletedAt: Date?
     var lastModifiedByDeviceId: String?
@@ -46,7 +50,11 @@ final class Tag {
         self.children = []
         self.sortOrder = 0
         self.deletedAt = nil
-        self.version = 1
+        self.version = 0
+        self.serverMutationId = nil
+        self.lastSubmittedMutationId = nil
+        self.lastSubmittedFingerprint = nil
+        self.acknowledgedFingerprint = nil
         self.serverUpdatedAt = now
         self.serverDeletedAt = nil
         self.lastModifiedByDeviceId = nil

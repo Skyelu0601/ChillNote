@@ -12,6 +12,8 @@ struct NoteDTO: Codable {
     let baseVersion: Int?
     let clientUpdatedAt: String?
     let lastModifiedByDeviceId: String?
+    let mutationId: String?
+    let previousMutationId: String?
     let sourceURL: String?
     let sourceTitle: String?
     let sourcePlatformID: String?
@@ -39,6 +41,8 @@ struct NoteDTO: Codable {
         baseVersion: Int?,
         clientUpdatedAt: String?,
         lastModifiedByDeviceId: String?,
+        mutationId: String? = nil,
+        previousMutationId: String? = nil,
         sourceURL: String? = nil,
         sourceTitle: String? = nil,
         sourcePlatformID: String? = nil,
@@ -65,6 +69,8 @@ struct NoteDTO: Codable {
         self.baseVersion = baseVersion
         self.clientUpdatedAt = clientUpdatedAt
         self.lastModifiedByDeviceId = lastModifiedByDeviceId
+        self.mutationId = mutationId
+        self.previousMutationId = previousMutationId
         self.sourceURL = sourceURL
         self.sourceTitle = sourceTitle
         self.sourcePlatformID = sourcePlatformID
@@ -96,9 +102,12 @@ struct TagDTO: Codable {
     let baseVersion: Int?
     let clientUpdatedAt: String?
     let lastModifiedByDeviceId: String?
+    var mutationId: String? = nil
+    var previousMutationId: String? = nil
 }
 
 struct SyncPayload: Codable {
+    let protocolVersion: Int?
     let cursor: String?
     let deviceId: String?
     let notes: [NoteDTO]
@@ -129,6 +138,8 @@ struct SyncResponse: Codable {
     let cursor: String
     let changes: SyncChanges
     let conflicts: [ConflictDTO]
+    var forcedNoteIds: [String]? = nil
+    var forcedTagIds: [String]? = nil
     let serverTime: String
 }
 

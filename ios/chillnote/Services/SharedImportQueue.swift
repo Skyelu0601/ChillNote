@@ -29,9 +29,20 @@ enum SharedImportQueue {
         let importJobId: String?
         let importStatus: String?
         let createdAt: Date
+        let userId: String?
 
         var importKind: Kind {
             kind ?? .note
+        }
+
+        func belongs(to currentUserId: String) -> Bool {
+            guard let userId else {
+                // There is no reliable way to infer which account created an old
+                // unowned item after an account switch. Keep it isolated instead
+                // of exposing it to whichever account happens to sign in first.
+                return false
+            }
+            return userId.caseInsensitiveCompare(currentUserId) == .orderedSame
         }
 
         var noteSourceMetadata: NoteSourceMetadata {

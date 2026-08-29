@@ -3,6 +3,7 @@ import Foundation
 enum ShareConstants {
     static let appGroupIdentifier = "group.com.sponteoai.chillnote"
     static let authTokenKey = "syncAuthToken"
+    static let authenticatedUserIdKey = "auth.lastAuthenticatedUserId"
     static let backendBaseURL = "https://api.chillnoteai.com"
     static let pendingImportsDirectoryName = "PendingShareImports"
 }
@@ -30,6 +31,7 @@ struct SharePendingImport: Codable, Sendable {
     let importJobId: String?
     let importStatus: String?
     let createdAt: Date
+    let userId: String?
 
     var importKind: Kind {
         kind ?? .note

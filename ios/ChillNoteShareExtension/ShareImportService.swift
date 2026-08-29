@@ -161,7 +161,8 @@ struct ShareImportService {
             ),
             importJobId: nil,
             importStatus: nil,
-            createdAt: Date()
+            createdAt: Date(),
+            userId: currentAuthenticatedUserId()
         )
     }
 
@@ -221,8 +222,16 @@ struct ShareImportService {
             source: pendingImport.source,
             importJobId: job.jobId,
             importStatus: job.status,
-            createdAt: pendingImport.createdAt
+            createdAt: pendingImport.createdAt,
+            userId: pendingImport.userId
         )
+    }
+
+    private func currentAuthenticatedUserId() -> String? {
+        let userId = UserDefaults(suiteName: ShareConstants.appGroupIdentifier)?
+            .string(forKey: ShareConstants.authenticatedUserIdKey)?
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        return userId?.isEmpty == false ? userId : nil
     }
 
     private func placeholderNoteText(for url: URL, source: SharePendingImport.Source) -> String {

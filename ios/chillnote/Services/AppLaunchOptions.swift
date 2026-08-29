@@ -12,6 +12,10 @@ enum AppLaunchOptions {
         arguments.contains("-SkillResultScreenshotMode")
     }
 
+    static var isSubscriptionScreenshotMode: Bool {
+        arguments.contains("-SubscriptionScreenshotMode")
+    }
+
     static var onboardingScreenshotPage: Int {
         guard let rawValue = environment["CHILLSCRIPT_SCREENSHOT_PAGE"],
               let page = Int(rawValue) else {

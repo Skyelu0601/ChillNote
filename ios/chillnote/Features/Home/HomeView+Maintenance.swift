@@ -14,6 +14,31 @@ extension HomeView {
     }
 
     @MainActor
+    func pollSyncWhileHomeIsVisible() async {
+        guard currentUserId != nil,
+              scenePhase == .active,
+              navigationPath.isEmpty else {
+            return
+        }
+
+        while !Task.isCancelled {
+            do {
+                try await Task.sleep(nanoseconds: 60_000_000_000)
+            } catch {
+                return
+            }
+
+            guard !Task.isCancelled,
+                  currentUserId != nil,
+                  scenePhase == .active,
+                  navigationPath.isEmpty else {
+                return
+            }
+            await syncManager.syncIfNeeded(context: modelContext)
+        }
+    }
+
+    @MainActor
     func runMaintenance(reason: MaintenanceReason) async {
         let now = Date()
         // A pending import may have completed on the server while the app was in

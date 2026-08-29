@@ -64,6 +64,7 @@ final class NoteDetailViewModel: ObservableObject {
     private(set) var voiceService: VoiceProcessingService = .shared
 
     private var dismissAction: (() -> Void)?
+    private var hasPermanentlyDeletedNote = false
 
     let dependencies: Dependencies
 
@@ -208,43 +209,56 @@ final class NoteDetailViewModel: ObservableObject {
             return
         }
 
-        let currentTags = Set(note.tags.map { $0.id })
-        let hasChanged = note.content != initialContent || currentTags != initialTags
+        _ = commitPendingEdits()
+        dismissAction?()
+    }
+
+    /// Commits editor mutations without requiring a particular navigation path.
+    /// The baseline advances only after the local save succeeds, which makes the
+    /// background, disappearance and explicit-back hooks safe to call together.
+    @discardableResult
+    func commitPendingEdits() -> Bool {
+        guard !isDeleted, !hasPermanentlyDeletedNote else { return false }
 
         if note.isEmptyNote && !isVoiceProcessing {
-            deleteNote()
-            return
+            return deleteNotePermanently(shouldDismiss: false)
         }
 
-        if hasChanged {
-            if let modelContext {
-                note.syncContentStructure(with: modelContext)
-            }
-            note.updatedAt = dependencies.now()
-            if let modelContext {
-                TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
-            }
-            persistAndSync()
-        }
+        let currentTags = Set(note.tags.map { $0.id })
+        let hasChanged = note.content != initialContent || currentTags != initialTags
+        guard hasChanged else { return false }
 
-        dismissAction?()
+        if let modelContext {
+            note.syncContentStructure(with: modelContext)
+        }
+        note.updatedAt = dependencies.now()
+        if let modelContext {
+            TagService.shared.cleanupEmptyTags(context: modelContext, candidates: Array(note.tags))
+        }
+        guard persistAndSync() else { return false }
+
+        initialContent = note.content
+        initialTags = currentTags
+        return true
     }
 
     func confirmDeleteNote() {
         deleteNote()
     }
 
-    func persistAndSync() {
-        guard let modelContext else { return }
+    @discardableResult
+    func persistAndSync() -> Bool {
+        guard let modelContext else { return false }
         do {
             try modelContext.save()
         } catch {
             Self.logger.error("Failed to save note detail changes before sync: \(error.localizedDescription, privacy: .public)")
-            return
+            return false
         }
         if let syncManager {
             Task { await syncManager.syncNow(context: modelContext) }
         }
+        return true
     }
 
     private func deleteNote() {
@@ -279,14 +293,19 @@ final class NoteDetailViewModel: ObservableObject {
         persistAndSync()
     }
 
-    private func deleteNotePermanently() {
-        guard let modelContext else { return }
+    @discardableResult
+    private func deleteNotePermanently(shouldDismiss: Bool = true) -> Bool {
+        guard !hasPermanentlyDeletedNote, let modelContext else { return false }
         let candidateTags = Array(note.tags)
         HardDeleteQueueStore.enqueue(noteIDs: [note.id], for: note.userId)
         modelContext.delete(note)
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: candidateTags)
-        persistAndSync()
-        dismissAction?()
+        guard persistAndSync() else { return false }
+        hasPermanentlyDeletedNote = true
+        if shouldDismiss {
+            dismissAction?()
+        }
+        return true
     }
 
     func dismissAIToolbar() {

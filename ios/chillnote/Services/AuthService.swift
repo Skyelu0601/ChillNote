@@ -27,6 +27,38 @@ enum AuthState: Equatable {
     case signedIn(userId: String)
 }
 
+struct AuthSessionSnapshot: Equatable, Sendable {
+    let userId: String
+    let token: String
+    let generation: UInt64
+}
+
+struct AuthSessionIdentity: Equatable, Sendable {
+    let userId: String?
+    let generation: UInt64
+}
+
+enum AuthSessionSnapshotResolver {
+    static func resolve(
+        initial: AuthSessionIdentity,
+        fetchedUserId: String,
+        token: String,
+        current: AuthSessionIdentity
+    ) -> AuthSessionSnapshot? {
+        guard !token.isEmpty,
+              let initialUserId = initial.userId,
+              initial == current,
+              fetchedUserId.caseInsensitiveCompare(initialUserId) == .orderedSame else {
+            return nil
+        }
+        return AuthSessionSnapshot(
+            userId: initialUserId,
+            token: token,
+            generation: initial.generation
+        )
+    }
+}
+
 @MainActor
 final class AuthService: ObservableObject {
     static let shared = AuthService()
@@ -50,7 +82,15 @@ final class AuthService: ObservableObject {
         )
     )
 
-    @Published private(set) var state: AuthState = .checking
+    private var syncSessionGeneration: UInt64 = 0
+    private var isSignOutInProgress = false
+    @Published private(set) var state: AuthState = .checking {
+        didSet {
+            if oldValue != state {
+                syncSessionGeneration &+= 1
+            }
+        }
+    }
     @Published var errorMessage: String?
     @Published var isPro: Bool = false
     @Published var currentUser: User?
@@ -88,6 +128,7 @@ final class AuthService: ObservableObject {
     }
 
     var confirmedUserId: String? {
+        guard !isSignOutInProgress else { return nil }
         if case .signedIn(let userId) = state {
             return userId
         }
@@ -171,6 +212,7 @@ final class AuthService: ObservableObject {
     }
 
     private func applyAuthenticatedSession(_ session: Session) {
+        guard !isSignOutInProgress else { return }
         persistSession(session)
         state = .signedIn(userId: session.user.id.uuidString)
         currentUser = session.user
@@ -271,6 +313,13 @@ final class AuthService: ObservableObject {
     }
     
     func signOut() {
+        guard !isSignOutInProgress else { return }
+        // Stop new sync work and invalidate every captured auth snapshot before
+        // awaiting push cleanup or the Supabase network request. Otherwise a
+        // response can pass its final generation check after the user already
+        // tapped Sign Out.
+        isSignOutInProgress = true
+        syncSessionGeneration &+= 1
         Task {
             await PushNotificationManager.shared.deactivateCurrentDevice()
             do {
@@ -281,6 +330,7 @@ final class AuthService: ObservableObject {
             state = .signedOut
             currentUser = nil
             clearCachedSession()
+            isSignOutInProgress = false
         }
     }
     
@@ -501,14 +551,54 @@ final class AuthService: ObservableObject {
         }
     }
     // MARK: - Token Helper
+
+    /// Captures account identity and bearer token as one logical auth snapshot.
+    /// If an account transition occurs while Supabase is loading/refreshing the
+    /// session, no snapshot is returned and sync must not start.
+    func syncSessionSnapshot() async -> AuthSessionSnapshot? {
+        let initial = AuthSessionIdentity(
+            userId: confirmedUserId,
+            generation: syncSessionGeneration
+        )
+        guard initial.userId != nil else { return nil }
+
+        do {
+            let session = try await supabase.auth.session
+            let current = AuthSessionIdentity(
+                userId: confirmedUserId,
+                generation: syncSessionGeneration
+            )
+            guard let snapshot = AuthSessionSnapshotResolver.resolve(
+                initial: initial,
+                fetchedUserId: session.user.id.uuidString,
+                token: session.accessToken,
+                current: current
+            ) else {
+                return nil
+            }
+            persistSession(session)
+            return snapshot
+        } catch {
+            handleSessionLookupFailure(error)
+            return nil
+        }
+    }
+
+    func isCurrentSyncSession(_ snapshot: AuthSessionSnapshot) -> Bool {
+        syncSessionGeneration == snapshot.generation
+            && confirmedUserId?.caseInsensitiveCompare(snapshot.userId) == .orderedSame
+    }
     
     func getSessionToken() async -> String? {
         do {
             let session = try await supabase.auth.session
+            if let confirmedUserId,
+               session.user.id.uuidString.caseInsensitiveCompare(confirmedUserId) != .orderedSame {
+                return nil
+            }
             persistSession(session)
             if !isSignedIn {
-                state = .signedIn(userId: session.user.id.uuidString)
-                currentUser = session.user
+                applyAuthenticatedSession(session)
             }
             return session.accessToken
         } catch {

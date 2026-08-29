@@ -3,9 +3,11 @@ import Foundation
 extension HomeView {
     @MainActor
     func importPendingSharedNotes(navigateToLatest: Bool) {
-        guard currentUserId != nil else { return }
+        guard let currentUserId else { return }
 
-        let pendingFiles = SharedImportQueue.pendingImports()
+        let pendingFiles = SharedImportQueue.pendingImports().filter {
+            $0.importItem.belongs(to: currentUserId)
+        }
         guard !pendingFiles.isEmpty else { return }
 
         var didImport = false

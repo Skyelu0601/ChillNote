@@ -280,4 +280,54 @@ final class QuickCaptureImportServiceTests: XCTestCase {
         XCTAssertNil(note.sourceAuthorName)
         XCTAssertNil(note.sourceAuthorHandle)
     }
+
+    func testSharedImportOwnershipIsolatedAcrossAccountSwitches() {
+        let source = SharedImportQueue.PendingImport.Source(
+            url: "https://example.com/video",
+            title: "Video",
+            platformID: "web",
+            platformName: "Web",
+            host: "example.com",
+            authorName: nil,
+            authorHandle: nil
+        )
+        let legacy = SharedImportQueue.PendingImport(
+            id: UUID(),
+            kind: .note,
+            noteText: "legacy",
+            source: source,
+            importJobId: nil,
+            importStatus: nil,
+            createdAt: Date(),
+            userId: nil
+        )
+        let owned = SharedImportQueue.PendingImport(
+            id: UUID(),
+            kind: .note,
+            noteText: "owned",
+            source: source,
+            importJobId: nil,
+            importStatus: nil,
+            createdAt: Date(),
+            userId: "USER-A"
+        )
+
+        XCTAssertFalse(legacy.belongs(to: "user-a"))
+        XCTAssertFalse(legacy.belongs(to: "user-b"))
+        XCTAssertTrue(owned.belongs(to: "user-a"))
+        XCTAssertFalse(owned.belongs(to: "user-b"))
+    }
+
+    func testLegacySharedImportDecodesWithoutUserId() throws {
+        let legacyJSON = #"{"id":"00000000-0000-0000-0000-000000000001","kind":"note","noteText":"legacy","source":{"url":"https://example.com/video","title":"Video","platformID":"web","platformName":"Web","host":"example.com","authorName":null,"authorHandle":null},"importJobId":null,"importStatus":null,"createdAt":"2026-08-27T12:00:00Z"}"#
+
+        let decoded = try JSONDecoder.sharedImportDecoder.decode(
+            SharedImportQueue.PendingImport.self,
+            from: Data(legacyJSON.utf8)
+        )
+
+        XCTAssertNil(decoded.userId)
+        XCTAssertFalse(decoded.belongs(to: "user-a"))
+        XCTAssertFalse(decoded.belongs(to: "user-b"))
+    }
 }

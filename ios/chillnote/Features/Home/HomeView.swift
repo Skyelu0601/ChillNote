@@ -97,6 +97,12 @@ struct HomeView: View {
     @State var shouldReloadAfterSync = false
     @State var isBootstrappingNotesSync = false
 
+    var homeSyncPollingTaskID: String {
+        let userId = currentUserId ?? "signed-out"
+        let isHomeVisible = scenePhase == .active && navigationPath.isEmpty
+        return "\(userId)|\(isHomeVisible)"
+    }
+
     var pendingLinkImportIDs: [UUID] {
         homeViewModel.items
             .filter(\.isLinkImportInProgress)
@@ -361,6 +367,9 @@ struct HomeView: View {
             reconcileFirstActionGuideImport()
             guard !pendingLinkImportIDs.isEmpty else { return }
             await monitorLinkImportProgress()
+        }
+        .task(id: homeSyncPollingTaskID) {
+            await pollSyncWhileHomeIsVisible()
         }
         )
     }
