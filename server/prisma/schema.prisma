@@ -34,6 +34,7 @@ model User {
   weeklyTopicReports     WeeklyTopicReport[]
   syncLogs               SyncLog[]
   hardDeleteTombstones   HardDeleteTombstone[]
+  syncIdentityArchives   SyncIdentityDuplicateArchive[]
   googlePlayPurchases    GooglePlayPurchase[]
 }
 
@@ -79,6 +80,7 @@ model Note {
   serverUpdatedAt        DateTime        @default(now())
   serverDeletedAt        DateTime?
   lastModifiedByDeviceId String?
+  lastMutationId         String?
   sourceURL              String?
   sourceTitle            String?
   sourcePlatformID       String?
@@ -142,6 +144,7 @@ model Tag {
   serverUpdatedAt        DateTime  @default(now())
   serverDeletedAt        DateTime?
   lastModifiedByDeviceId String?
+  lastMutationId         String?
 
   user     User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   parent   Tag?   @relation("TagHierarchy", fields: [parentId], references: [id])
@@ -177,6 +180,34 @@ model HardDeleteTombstone {
 
   @@unique([userId, entityType, entityId])
   @@index([userId, deletedAt])
+}
+
+/// Permanent fail-closed marker written before business data is erased. It is
+/// deliberately not related to User, so a token that was authenticated just
+/// before account deletion cannot recreate the deleted account via sync.
+model AccountDeletionMarker {
+  userId    String   @id
+  startedAt DateTime @default(now())
+}
+
+/// Recovery archive created before historical UUID case aliases are merged.
+/// It is intentionally not part of the live sync protocol; operators can use
+/// it to restore an older row if a duplicate repair ever chose the wrong copy.
+model SyncIdentityDuplicateArchive {
+  id                Int      @id @default(autoincrement())
+  userId            String
+  entityType        String
+  canonicalEntityId String
+  archivedEntityId  String
+  winnerEntityId    String
+  payload           Json
+  dependencies      Json
+  archivedAt        DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, entityType, archivedEntityId])
+  @@index([userId, entityType, canonicalEntityId])
 }
 
 model Waitlist {
@@ -242,7 +273,7 @@ model MembershipGrantLedger {
 
 model UserCredits {
   userId    String   @id
-  balance   Int      @default(50)
+  balance   Int      @default(30)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

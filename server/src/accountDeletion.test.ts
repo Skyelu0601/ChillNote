@@ -37,6 +37,21 @@ test("deleteUser removes sync metadata before the User in one idempotent transac
   let transactionCount = 0;
 
   const transaction = {
+    $queryRaw: async <T = unknown>() => {
+      operations.push("lock");
+      return [{ locked: 1 }] as T;
+    },
+    accountDeletionMarker: {
+      upsert: async ({ where, create }: {
+        where: { userId: string };
+        create: { userId: string };
+      }) => {
+        assert.equal(where.userId, "user-1");
+        assert.equal(create.userId, "user-1");
+        operations.push("marker");
+        return { userId: "user-1" };
+      }
+    },
     syncLog: {
       deleteMany: async ({ where }: { where: { userId: string } }) => {
         assert.equal(where.userId, "user-1");
@@ -77,9 +92,13 @@ test("deleteUser removes sync metadata before the User in one idempotent transac
 
   assert.equal(transactionCount, 2);
   assert.deepEqual(operations, [
+    "lock",
+    "marker",
     "syncLog",
     "hardDeleteTombstone",
     "user",
+    "lock",
+    "marker",
     "syncLog",
     "hardDeleteTombstone",
     "user"

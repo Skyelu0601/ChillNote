@@ -1,7 +1,10 @@
 import fetch from "node-fetch";
 import { randomUUID } from "node:crypto";
 import { prisma } from "./db.js";
-import { logSyncChange } from "./store.js";
+import { acquireUserSyncTransactionLock, logSyncChange, upsertUser } from "./store.js";
+import { isUUIDSyncIdentity, normalizeNewSyncEntityId } from "./syncIdentity.js";
+import { shouldReuseCompletedLinkImportJob } from "./linkImportPolicy.js";
+import { hasForeignSyncIdentityOwner, SyncOwnershipError } from "./syncPolicy.js";
 import {
   isHandledTikTokTranscriptError,
   isSupportedMediaLinkURL,
@@ -65,6 +68,13 @@ const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite"
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() || "";
 const MAX_WEB_TEXT_CHARS = Number(process.env.LINK_IMPORT_MAX_WEB_TEXT_CHARS ?? 18_000);
 const JOB_MAX_ATTEMPTS = Number(process.env.LINK_IMPORT_MAX_ATTEMPTS ?? 2);
+const configuredProcessingLeaseMs = Number(
+  process.env.LINK_IMPORT_PROCESSING_LEASE_MS ?? 15 * 60 * 1_000
+);
+const JOB_PROCESSING_LEASE_MS = Number.isFinite(configuredProcessingLeaseMs)
+  && configuredProcessingLeaseMs > 0
+  ? configuredProcessingLeaseMs
+  : 15 * 60 * 1_000;
 const UNAVAILABLE_TEXT = "Unavailable";
 
 let isWorkerRunning = false;
@@ -100,26 +110,82 @@ export async function enqueueLinkImportJob(params: {
 }> {
   const now = new Date();
   const mediaLinkSections = normalizeMediaLinkSections(params.mediaLinkSections);
-  const existingRows = await prisma.$queryRaw<Array<{ importJobId: string | null }>>`
-    SELECT "importJobId"
-    FROM "Note"
-    WHERE "id" = ${params.noteId}
-      AND "userId" = ${params.userId}
-    LIMIT 1
-  `;
-  const existing = existingRows[0];
-  const jobId = existing?.importJobId || randomUUID();
 
   const transactionResult = await prisma.$transaction(async (tx) => {
+    await acquireUserSyncTransactionLock(params.userId, tx);
+    await upsertUser(params.userId, tx);
+    const identityRows = await tx.note.findMany({
+      where: {
+        id: isUUIDSyncIdentity(params.noteId)
+          ? { equals: params.noteId, mode: "insensitive" }
+          : params.noteId
+      },
+      orderBy: [{ serverUpdatedAt: "desc" }, { updatedAt: "desc" }],
+      select: { id: true, userId: true, importJobId: true }
+    });
+    if (hasForeignSyncIdentityOwner(params.userId, identityRows.map((note) => note.userId))) {
+      throw new SyncOwnershipError();
+    }
+    const tombstones = await tx.hardDeleteTombstone.findMany({
+      where: {
+        entityType: "note",
+        entityId: isUUIDSyncIdentity(params.noteId)
+          ? { equals: params.noteId, mode: "insensitive" }
+          : params.noteId
+      },
+      select: { userId: true }
+    });
+    if (
+      tombstones.length > 0
+      || hasForeignSyncIdentityOwner(params.userId, tombstones.map((item) => item.userId))
+    ) {
+      throw new SyncOwnershipError();
+    }
+    const existing = identityRows[0];
+    const resolvedNoteId = existing?.id ?? normalizeNewSyncEntityId(params.noteId);
+    const existingJob = existing
+      ? await tx.linkImportJob.findUnique({
+        where: {
+          userId_noteId: {
+            userId: params.userId,
+            noteId: resolvedNoteId
+          }
+        },
+        select: { id: true, status: true }
+      })
+      : null;
+    if (shouldReuseCompletedLinkImportJob(existingJob?.status)) {
+      let balance: number | null = null;
+      if (params.creditAuthorization.tier === "free") {
+        const rows = await tx.$queryRaw<Array<{ balance: number }>>`
+          SELECT "balance"
+          FROM "UserCredits"
+          WHERE "userId" = ${params.userId}
+          LIMIT 1
+        `;
+        balance = Number(rows[0]?.balance ?? params.creditAuthorization.initialCredits);
+      }
+      return {
+        balance,
+        jobId: existingJob!.id,
+        status: "completed" as const,
+        shouldScheduleWorker: false
+      };
+    }
+    const jobId = existing?.importJobId || randomUUID();
+    const noteMutationId = randomUUID();
+
     const noteRows = await tx.$queryRaw<Array<{ version: number; serverUpdatedAt: Date }>>`
       INSERT INTO "Note" (
         "id", "userId", "content", "createdAt", "updatedAt", "serverUpdatedAt",
+        "lastMutationId",
         "sourceURL", "sourceTitle", "sourcePlatformID", "sourcePlatformName", "sourceHost",
         "sourceAuthorName", "sourceAuthorHandle", "sourceCapturedAt",
         "section", "importStatus", "importJobId", "importErrorCode", "importStartedAt", "importCompletedAt"
       )
       VALUES (
-        ${params.noteId}, ${params.userId}, ${params.placeholderContent}, ${now}, ${now}, ${now},
+        ${resolvedNoteId}, ${params.userId}, ${params.placeholderContent}, ${now}, ${now}, ${now},
+        ${noteMutationId},
         ${params.source.url}, ${params.source.title}, ${params.source.platformID}, ${params.source.platformName}, ${params.source.host},
         ${params.source.authorName ?? null}, ${params.source.authorHandle ?? null}, ${now},
         ${params.section ?? "inbox"}, 'queued', ${jobId}, NULL, NULL, NULL
@@ -129,6 +195,7 @@ export async function enqueueLinkImportJob(params: {
         "updatedAt" = EXCLUDED."updatedAt",
         "serverUpdatedAt" = EXCLUDED."serverUpdatedAt",
         "version" = "Note"."version" + 1,
+        "lastMutationId" = EXCLUDED."lastMutationId",
         "sourceURL" = EXCLUDED."sourceURL",
         "sourceTitle" = EXCLUDED."sourceTitle",
         "sourcePlatformID" = EXCLUDED."sourcePlatformID",
@@ -143,8 +210,10 @@ export async function enqueueLinkImportJob(params: {
         "importErrorCode" = NULL,
         "importStartedAt" = NULL,
         "importCompletedAt" = NULL
+      WHERE "Note"."userId" = EXCLUDED."userId"
       RETURNING "version", "serverUpdatedAt"
     `;
+    if (!noteRows.length) throw new SyncOwnershipError();
 
     const jobRows = await tx.$queryRaw<Array<{ id: string; status: LinkImportJobStatus }>>`
       INSERT INTO "LinkImportJob" (
@@ -153,7 +222,7 @@ export async function enqueueLinkImportJob(params: {
         "createdAt", "updatedAt"
       )
       VALUES (
-        ${jobId}, ${params.userId}, ${params.noteId}, ${params.url}, 'queued',
+        ${jobId}, ${params.userId}, ${resolvedNoteId}, ${params.url}, 'queued',
         ${mediaLinkSections.showDescription}, ${mediaLinkSections.showAuthor},
         ${mediaLinkSections.showHook}, ${mediaLinkSections.showTranscript},
         ${now}, ${now}
@@ -182,14 +251,14 @@ export async function enqueueLinkImportJob(params: {
       await tx.$executeRaw`
         UPDATE "Note"
         SET "importJobId" = ${persistedJobId}
-        WHERE "id" = ${params.noteId} AND "userId" = ${params.userId}
+        WHERE "id" = ${resolvedNoteId} AND "userId" = ${params.userId}
       `;
     }
 
     const authorizationRows = await tx.$queryRaw<Array<{ creditAuthorizedAt: Date | null }>>`
       SELECT "creditAuthorizedAt"
       FROM "LinkImportJob"
-      WHERE "userId" = ${params.userId} AND "noteId" = ${params.noteId}
+      WHERE "userId" = ${params.userId} AND "noteId" = ${resolvedNoteId}
       FOR UPDATE
     `;
     const isAlreadyAuthorized = authorizationRows[0]?.creditAuthorizedAt != null;
@@ -232,23 +301,31 @@ export async function enqueueLinkImportJob(params: {
       await tx.$executeRaw`
         UPDATE "LinkImportJob"
         SET "creditAuthorizedAt" = ${now}, "updatedAt" = ${now}
-        WHERE "userId" = ${params.userId} AND "noteId" = ${params.noteId}
+        WHERE "userId" = ${params.userId} AND "noteId" = ${resolvedNoteId}
       `;
     }
 
-    return { noteRows, balance, jobId: persistedJobId, status: persistedJobStatus };
+    await logSyncChange({
+      userId: params.userId,
+      entityType: "note",
+      entityId: resolvedNoteId,
+      version: noteRows[0].version,
+      serverUpdatedAt: noteRows[0].serverUpdatedAt,
+      operation: "upsert"
+    }, tx);
+
+    return {
+      balance,
+      jobId: persistedJobId,
+      status: persistedJobStatus,
+      shouldScheduleWorker: true
+    };
+  }, {
+    maxWait: 10_000,
+    timeout: 30_000
   });
 
-  await logSyncChange({
-    userId: params.userId,
-    entityType: "note",
-    entityId: params.noteId,
-    version: transactionResult.noteRows[0]?.version ?? 1,
-    serverUpdatedAt: transactionResult.noteRows[0]?.serverUpdatedAt ?? now,
-    operation: "upsert"
-  });
-
-  scheduleLinkImportWorker();
+  if (transactionResult.shouldScheduleWorker) scheduleLinkImportWorker();
   return {
     jobId: transactionResult.jobId,
     status: transactionResult.status,
@@ -281,33 +358,68 @@ export async function runLinkImportWorker(): Promise<void> {
 }
 
 async function claimNextJob(): Promise<LinkImportJobRow | null> {
-  const jobs = await prisma.$queryRaw<LinkImportJobRow[]>`
-    UPDATE "LinkImportJob"
-    SET "status" = 'processing',
-        "attempts" = "attempts" + 1,
-        "startedAt" = NOW(),
-        "updatedAt" = NOW()
-    WHERE "id" = (
-      SELECT "id"
-      FROM "LinkImportJob"
-      WHERE "status" IN ('queued', 'processing')
-        AND "attempts" < ${JOB_MAX_ATTEMPTS}
-      ORDER BY "createdAt" ASC
-      LIMIT 1
-    )
-    RETURNING
-      "id",
-      "userId",
-      "noteId",
-      "url",
-      "status",
-      "attempts",
-      "showDescription",
-      "showAuthor",
-      "showHook",
-      "showTranscript"
-  `;
-  return jobs[0] ?? null;
+  while (true) {
+    const staleBefore = new Date(Date.now() - JOB_PROCESSING_LEASE_MS);
+    const result = await prisma.$transaction(async (tx) => {
+      // Do not hold a job row lock while waiting for the per-user advisory
+      // lock: sync-driven hard deletes take the advisory lock first and may
+      // cascade into this table. The guarded UPDATE below is the actual claim.
+      const candidates = await tx.$queryRaw<Array<{ id: string; userId: string }>>`
+        SELECT "id", "userId"
+        FROM "LinkImportJob"
+        WHERE "attempts" < ${JOB_MAX_ATTEMPTS}
+          AND (
+            "status" = 'queued'
+            OR (
+              "status" = 'processing'
+              AND ("startedAt" IS NULL OR "startedAt" <= ${staleBefore})
+            )
+          )
+        ORDER BY "createdAt" ASC
+        LIMIT 1
+      `;
+      const candidate = candidates[0];
+      if (!candidate) return { hadCandidate: false, job: null };
+
+      await acquireUserSyncTransactionLock(candidate.userId, tx);
+      const jobs = await tx.$queryRaw<LinkImportJobRow[]>`
+        UPDATE "LinkImportJob"
+        SET "status" = 'processing',
+            "attempts" = "attempts" + 1,
+            "startedAt" = NOW(),
+            "updatedAt" = NOW()
+        WHERE "id" = ${candidate.id}
+          AND "userId" = ${candidate.userId}
+          AND "attempts" < ${JOB_MAX_ATTEMPTS}
+          AND (
+            "status" = 'queued'
+            OR (
+              "status" = 'processing'
+              AND ("startedAt" IS NULL OR "startedAt" <= ${staleBefore})
+            )
+          )
+        RETURNING
+          "id",
+          "userId",
+          "noteId",
+          "url",
+          "status",
+          "attempts",
+          "showDescription",
+          "showAuthor",
+          "showHook",
+          "showTranscript"
+      `;
+      return { hadCandidate: true, job: jobs[0] ?? null };
+    }, {
+      maxWait: 10_000,
+      timeout: 30_000
+    });
+
+    if (result.job || !result.hadCandidate) return result.job;
+    // Another worker claimed the same unlocked candidate first. Re-read the
+    // queue so this worker can move on to a different account's job.
+  }
 }
 
 async function processJob(job: LinkImportJobRow): Promise<void> {
@@ -337,49 +449,64 @@ async function processJob(job: LinkImportJobRow): Promise<void> {
 
 async function completeJob(job: LinkImportJobRow, content: string, source: LinkImportSource): Promise<void> {
   const now = new Date();
-  const rows = await prisma.$queryRaw<Array<{ version: number; serverUpdatedAt: Date }>>`
-    UPDATE "Note"
-    SET "content" = ${content},
-        "updatedAt" = ${now},
-        "serverUpdatedAt" = ${now},
-        "version" = "version" + 1,
-        "sourceURL" = ${source.url},
-        "sourceTitle" = ${source.title},
-        "sourcePlatformID" = ${source.platformID},
-        "sourcePlatformName" = ${source.platformName},
-        "sourceHost" = ${source.host},
-        "sourceAuthorName" = COALESCE(${source.authorName ?? null}, "sourceAuthorName"),
-        "sourceAuthorHandle" = COALESCE(${source.authorHandle ?? null}, "sourceAuthorHandle"),
-        "sourceCapturedAt" = COALESCE("sourceCapturedAt", ${now}),
-        "importStatus" = 'completed',
-        "importJobId" = ${job.id},
-        "importErrorCode" = NULL,
-        "importCompletedAt" = ${now}
-    WHERE "id" = ${job.noteId}
-      AND "userId" = ${job.userId}
-    RETURNING "version", "serverUpdatedAt"
-  `;
+  const noteMutationId = randomUUID();
+  const updated = await prisma.$transaction(async (tx) => {
+    await acquireUserSyncTransactionLock(job.userId, tx);
+    const completedJobs = await tx.$executeRaw`
+      UPDATE "LinkImportJob"
+      SET "status" = 'completed',
+          "errorCode" = NULL,
+          "completedAt" = ${now},
+          "updatedAt" = ${now}
+      WHERE "id" = ${job.id}
+        AND "userId" = ${job.userId}
+        AND "status" = 'processing'
+        AND "attempts" = ${job.attempts}
+    `;
+    if (completedJobs === 0) return null;
 
-  await prisma.$executeRaw`
-    UPDATE "LinkImportJob"
-    SET "status" = 'completed',
-        "errorCode" = NULL,
-        "completedAt" = ${now},
-        "updatedAt" = ${now}
-    WHERE "id" = ${job.id}
-  `;
+    const rows = await tx.$queryRaw<Array<{ version: number; serverUpdatedAt: Date }>>`
+      UPDATE "Note"
+      SET "content" = ${content},
+          "updatedAt" = ${now},
+          "serverUpdatedAt" = ${now},
+          "version" = "version" + 1,
+          "lastMutationId" = ${noteMutationId},
+          "sourceURL" = ${source.url},
+          "sourceTitle" = ${source.title},
+          "sourcePlatformID" = ${source.platformID},
+          "sourcePlatformName" = ${source.platformName},
+          "sourceHost" = ${source.host},
+          "sourceAuthorName" = COALESCE(${source.authorName ?? null}, "sourceAuthorName"),
+          "sourceAuthorHandle" = COALESCE(${source.authorHandle ?? null}, "sourceAuthorHandle"),
+          "sourceCapturedAt" = COALESCE("sourceCapturedAt", ${now}),
+          "importStatus" = 'completed',
+          "importJobId" = ${job.id},
+          "importErrorCode" = NULL,
+          "importCompletedAt" = ${now}
+      WHERE "id" = ${job.noteId}
+        AND "userId" = ${job.userId}
+      RETURNING "version", "serverUpdatedAt"
+    `;
 
-  const updated = rows[0];
+    const note = rows[0];
+    if (note) {
+      await logSyncChange({
+        userId: job.userId,
+        entityType: "note",
+        entityId: job.noteId,
+        version: note.version,
+        serverUpdatedAt: note.serverUpdatedAt,
+        operation: "upsert"
+      }, tx);
+    }
+    return note;
+  }, {
+    maxWait: 10_000,
+    timeout: 30_000
+  });
+
   if (updated) {
-    await logSyncChange({
-      userId: job.userId,
-      entityType: "note",
-      entityId: job.noteId,
-      version: updated.version,
-      serverUpdatedAt: updated.serverUpdatedAt,
-      operation: "upsert"
-    });
-
     try {
       await scheduleImportCompletionNotifications({
         jobId: job.id,
@@ -403,49 +530,61 @@ async function failJob(
   fallback?: { content?: string; source?: LinkImportSource }
 ): Promise<void> {
   const now = new Date();
-  await prisma.$executeRaw`
-    UPDATE "LinkImportJob"
-    SET "status" = 'failed',
-        "errorCode" = ${errorCode},
-        "completedAt" = ${now},
-        "updatedAt" = ${now}
-    WHERE "id" = ${job.id}
-  `;
+  const noteMutationId = randomUUID();
+  await prisma.$transaction(async (tx) => {
+    await acquireUserSyncTransactionLock(job.userId, tx);
+    const failedJobs = await tx.$executeRaw`
+      UPDATE "LinkImportJob"
+      SET "status" = 'failed',
+          "errorCode" = ${errorCode},
+          "completedAt" = ${now},
+          "updatedAt" = ${now}
+      WHERE "id" = ${job.id}
+        AND "userId" = ${job.userId}
+        AND "status" = 'processing'
+        AND "attempts" = ${job.attempts}
+    `;
+    if (failedJobs === 0) return;
 
-  const rows = await prisma.$queryRaw<Array<{ version: number; serverUpdatedAt: Date }>>`
-    UPDATE "Note"
-    SET "content" = COALESCE(${fallback?.content ?? null}, "content"),
-        "updatedAt" = ${now},
-        "serverUpdatedAt" = ${now},
-        "version" = "version" + 1,
-        "sourceURL" = COALESCE(${fallback?.source?.url ?? null}, "sourceURL"),
-        "sourceTitle" = COALESCE(${fallback?.source?.title ?? null}, "sourceTitle"),
-        "sourcePlatformID" = COALESCE(${fallback?.source?.platformID ?? null}, "sourcePlatformID"),
-        "sourcePlatformName" = COALESCE(${fallback?.source?.platformName ?? null}, "sourcePlatformName"),
-        "sourceHost" = COALESCE(${fallback?.source?.host ?? null}, "sourceHost"),
-        "sourceAuthorName" = COALESCE(${fallback?.source?.authorName ?? null}, "sourceAuthorName"),
-        "sourceAuthorHandle" = COALESCE(${fallback?.source?.authorHandle ?? null}, "sourceAuthorHandle"),
-        "sourceCapturedAt" = COALESCE("sourceCapturedAt", ${now}),
-        "importStatus" = 'failed',
-        "importJobId" = ${job.id},
-        "importErrorCode" = ${errorCode},
-        "importCompletedAt" = ${now}
-    WHERE "id" = ${job.noteId}
-      AND "userId" = ${job.userId}
-    RETURNING "version", "serverUpdatedAt"
-  `;
+    const rows = await tx.$queryRaw<Array<{ version: number; serverUpdatedAt: Date }>>`
+      UPDATE "Note"
+      SET "content" = COALESCE(${fallback?.content ?? null}, "content"),
+          "updatedAt" = ${now},
+          "serverUpdatedAt" = ${now},
+          "version" = "version" + 1,
+          "lastMutationId" = ${noteMutationId},
+          "sourceURL" = COALESCE(${fallback?.source?.url ?? null}, "sourceURL"),
+          "sourceTitle" = COALESCE(${fallback?.source?.title ?? null}, "sourceTitle"),
+          "sourcePlatformID" = COALESCE(${fallback?.source?.platformID ?? null}, "sourcePlatformID"),
+          "sourcePlatformName" = COALESCE(${fallback?.source?.platformName ?? null}, "sourcePlatformName"),
+          "sourceHost" = COALESCE(${fallback?.source?.host ?? null}, "sourceHost"),
+          "sourceAuthorName" = COALESCE(${fallback?.source?.authorName ?? null}, "sourceAuthorName"),
+          "sourceAuthorHandle" = COALESCE(${fallback?.source?.authorHandle ?? null}, "sourceAuthorHandle"),
+          "sourceCapturedAt" = COALESCE("sourceCapturedAt", ${now}),
+          "importStatus" = 'failed',
+          "importJobId" = ${job.id},
+          "importErrorCode" = ${errorCode},
+          "importCompletedAt" = ${now}
+      WHERE "id" = ${job.noteId}
+        AND "userId" = ${job.userId}
+      RETURNING "version", "serverUpdatedAt"
+    `;
 
-  const updated = rows[0];
-  if (updated) {
-    await logSyncChange({
-      userId: job.userId,
-      entityType: "note",
-      entityId: job.noteId,
-      version: updated.version,
-      serverUpdatedAt: updated.serverUpdatedAt,
-      operation: "upsert"
-    });
-  }
+    const updated = rows[0];
+    if (updated) {
+      await logSyncChange({
+        userId: job.userId,
+        entityType: "note",
+        entityId: job.noteId,
+        version: updated.version,
+        serverUpdatedAt: updated.serverUpdatedAt,
+        operation: "upsert"
+      }, tx);
+    }
+  }, {
+    maxWait: 10_000,
+    timeout: 30_000
+  });
 }
 
 async function failureDetailsForError(

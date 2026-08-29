@@ -105,6 +105,19 @@ echo "📥 安装生产依赖..."
 export NODE_ENV=production
 npm ci --omit=dev || npm install --omit=dev
 
+if ! command -v pm2 &> /dev/null; then
+    echo "📥 安装 PM2..."
+    npm install -g pm2
+fi
+
+# Synchronization invariants are enforced jointly by the migrations and the
+# new server process. Keep legacy workers from writing between those two steps.
+# A short maintenance window is safer than allowing an old request to recreate
+# a repaired tag cycle or race an account-deletion marker.
+echo "🛑 暂停旧应用，进入短暂维护窗口..."
+pm2 stop chillnote 2>/dev/null || true
+pm2 stop chillnote-api 2>/dev/null || true
+
 echo "🔧 应用 Prisma 迁移并生成客户端..."
 if [ -n "$RESOLVE_ROLLED_BACK" ]; then
   echo "🧯 预处理失败迁移记录: $RESOLVE_ROLLED_BACK"
@@ -118,11 +131,6 @@ fi
 npx prisma migrate deploy
 npx prisma generate
 # npx prisma db push --accept-data-loss
-
-if ! command -v pm2 &> /dev/null; then
-    echo "📥 安装 PM2..."
-    npm install -g pm2
-fi
 
 echo "🚀 重启应用..."
 # 停止旧进程（ID 0 是 chillnote，以及我们之前误创建的 chillnote-api）

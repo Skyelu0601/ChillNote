@@ -1,0 +1,1 @@
+ALTER TABLE "UserCredits" ALTER COLUMN "balance" SET DEFAULT 30;

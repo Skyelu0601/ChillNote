@@ -3,8 +3,10 @@ import test from "node:test";
 import { normalizeMediaLinkSections } from "./mediaLinkSections.js";
 import { normalizeTranscriptParagraphs } from "./linkImportJobs.js";
 import {
+  buildYtDlpInfoArgs,
   instagramMetadataFromYtDlpInfo,
   isApifyFallbackReason,
+  selectBestCaption,
   selectYtDlpBinary
 } from "./tiktokTranscript.js";
 
@@ -15,6 +17,114 @@ test("TikTok can use a dedicated yt-dlp binary without downgrading other platfor
   assert.equal(selectYtDlpBinary("tiktok", currentBinary, tikTokBinary), tikTokBinary);
   assert.equal(selectYtDlpBinary("youtube", currentBinary, tikTokBinary), currentBinary);
   assert.equal(selectYtDlpBinary("instagram", currentBinary, tikTokBinary), currentBinary);
+});
+
+test("YouTube metadata excludes auto-translated subtitle tracks", () => {
+  const url = "https://www.youtube.com/watch?v=example";
+  assert.deepEqual(buildYtDlpInfoArgs("youtube", url), [
+    "--dump-json",
+    "--skip-download",
+    "--no-playlist",
+    "--no-warnings",
+    "--extractor-args",
+    "youtube:skip=translated_subs",
+    url
+  ]);
+  assert.equal(buildYtDlpInfoArgs("instagram", url).includes("youtube:skip=translated_subs"), false);
+});
+
+test("explicit source language beats an English subtitle", () => {
+  const selected = selectBestCaption({
+    language: "es-ES",
+    subtitles: {
+      en: [{ ext: "vtt", url: "https://captions.example/en.vtt" }],
+      es: [{ ext: "vtt", url: "https://captions.example/es.vtt" }]
+    }
+  }, {
+    platform: "youtube",
+    resolvedURL: "https://www.youtube.com/watch?v=spanish"
+  });
+
+  assert.equal(selected?.url, "https://captions.example/es.vtt");
+});
+
+test("Spanish automatic captions beat a manual English translation", () => {
+  const selected = selectBestCaption({
+    title: "Cómo crear vídeos para redes sociales",
+    description: "The complete guide for you and your team, with more examples in the description.",
+    subtitles: {
+      en: [{ ext: "vtt", url: "https://captions.example/en.vtt" }]
+    },
+    automatic_captions: {
+      es: [{ ext: "json3", url: "https://captions.example/es.json3" }]
+    }
+  }, {
+    platform: "youtube",
+    resolvedURL: "https://www.youtube.com/watch?v=spanish"
+  });
+
+  assert.equal(selected?.url, "https://captions.example/es.json3");
+});
+
+test("a sole YouTube automatic-caption language identifies the original track", () => {
+  const selected = selectBestCaption({
+    title: "Episode 1",
+    subtitles: {
+      en: [{ ext: "vtt", url: "https://captions.example/en.vtt" }]
+    },
+    automatic_captions: {
+      "es-orig": [{ ext: "json3", url: "https://captions.example/es.json3" }]
+    }
+  }, {
+    platform: "youtube",
+    resolvedURL: "https://www.youtube.com/watch?v=spanish"
+  });
+
+  assert.equal(selected?.url, "https://captions.example/es.json3");
+});
+
+test("French metadata selects French instead of English captions", () => {
+  const selected = selectBestCaption({
+    title: "Comment créer une vidéo avec ces astuces",
+    subtitles: {
+      en: [{ ext: "vtt", url: "https://captions.example/en.vtt" }],
+      fr: [{ ext: "vtt", url: "https://captions.example/fr.vtt" }]
+    }
+  }, {
+    platform: "youtube",
+    resolvedURL: "https://www.youtube.com/watch?v=french"
+  });
+
+  assert.equal(selected?.url, "https://captions.example/fr.vtt");
+});
+
+test("German metadata selects German instead of English captions", () => {
+  const selected = selectBestCaption({
+    title: "Wie du bessere Videos mit diesen Tipps erstellst",
+    subtitles: {
+      en: [{ ext: "vtt", url: "https://captions.example/en.vtt" }],
+      de: [{ ext: "vtt", url: "https://captions.example/de.vtt" }]
+    }
+  }, {
+    platform: "youtube",
+    resolvedURL: "https://www.youtube.com/watch?v=german"
+  });
+
+  assert.equal(selected?.url, "https://captions.example/de.vtt");
+});
+
+test("unknown source language keeps extractor order instead of forcing English", () => {
+  const selected = selectBestCaption({
+    subtitles: {
+      pt: [{ ext: "vtt", url: "https://captions.example/pt.vtt" }],
+      en: [{ ext: "vtt", url: "https://captions.example/en.vtt" }]
+    }
+  }, {
+    platform: "youtube",
+    resolvedURL: "https://www.youtube.com/watch?v=unknown"
+  });
+
+  assert.equal(selected?.url, "https://captions.example/pt.vtt");
 });
 
 test("Instagram metadata prefers yt-dlp uploader and description fields", () => {

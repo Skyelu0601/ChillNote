@@ -160,6 +160,7 @@ type YtDlpCaptionFormat = {
 type YtDlpInfo = {
   title?: string;
   description?: string;
+  language?: string;
   uploader?: string;
   uploader_id?: string;
   channel?: string;
@@ -709,37 +710,63 @@ async function dumpYtDlpInfo(
   platform: MediaLinkPlatform,
   timeout = MEDIA_LINK_DOWNLOAD_TIMEOUT_MS
 ): Promise<YtDlpInfo> {
-  const { stdout } = await execFileAsync(ytDlpBinaryForPlatform(platform), [
-    "--dump-json",
-    "--skip-download",
-    "--no-playlist",
-    "--no-warnings",
-    url
-  ], {
-    timeout,
-    maxBuffer: 16 * 1024 * 1024
-  });
+  const { stdout } = await execFileAsync(
+    ytDlpBinaryForPlatform(platform),
+    buildYtDlpInfoArgs(platform, url),
+    {
+      timeout,
+      maxBuffer: 16 * 1024 * 1024
+    }
+  );
 
   return JSON.parse(stdout) as YtDlpInfo;
 }
 
-function selectBestCaption(info: YtDlpInfo, metadata: MediaLinkMetadata): YtDlpCaptionFormat | null {
+export function buildYtDlpInfoArgs(platform: MediaLinkPlatform, url: string): string[] {
+  const args = [
+    "--dump-json",
+    "--skip-download",
+    "--no-playlist",
+    "--no-warnings"
+  ];
+
+  // YouTube otherwise exposes auto-translated captions beside the original
+  // track. Removing translated tracks prevents an English translation from
+  // winning over the video's spoken language.
+  if (platform === "youtube") {
+    args.push("--extractor-args", "youtube:skip=translated_subs");
+  }
+
+  args.push(url);
+  return args;
+}
+
+export function selectBestCaption(
+  info: YtDlpInfo,
+  metadata: MediaLinkMetadata
+): YtDlpCaptionFormat | null {
   const captionGroups = [
     info.subtitles ?? {},
     info.automatic_captions ?? {}
   ];
-  const preferredLanguages = preferredCaptionLanguages(metadata);
+  const preferredLanguages = preferredCaptionLanguages(info, metadata);
 
+  // Search the preferred language across both manual and automatic captions
+  // before accepting a different language. This lets an original-language
+  // automatic caption beat a manually uploaded English translation.
   for (const captions of captionGroups) {
-    const exactLanguage = preferredLanguages
-      .map((language) => captions[language])
-      .find((formats) => formats?.length);
-    const fallbackLanguage = Object.entries(captions)
-      .find(([language, formats]) => formats?.length && preferredLanguages.some((preferred) => language.startsWith(preferred)))?.[1];
-    const anyLanguage = Object.values(captions).find((formats) => formats?.length);
+    const selectedFormats = captionFormatsForLanguages(captions, preferredLanguages);
+    const selected = selectBestCaptionFormat(selectedFormats);
+    if (selected) {
+      return selected;
+    }
+  }
 
-    const selectedFormats = exactLanguage ?? fallbackLanguage ?? anyLanguage;
-    const selected = selectBestCaptionFormat(selectedFormats ?? []);
+  // If the source language cannot be inferred, preserve the extractor's order
+  // instead of imposing an English-first fallback.
+  for (const captions of captionGroups) {
+    const anyLanguage = Object.values(captions).find((formats) => formats?.length);
+    const selected = selectBestCaptionFormat(anyLanguage ?? []);
     if (selected) {
       return selected;
     }
@@ -748,47 +775,160 @@ function selectBestCaption(info: YtDlpInfo, metadata: MediaLinkMetadata): YtDlpC
   return null;
 }
 
-function preferredCaptionLanguages(metadata: MediaLinkMetadata): string[] {
-  const text = [
-    metadata.title,
+function captionFormatsForLanguages(
+  captions: Record<string, YtDlpCaptionFormat[]>,
+  preferredLanguages: string[]
+): YtDlpCaptionFormat[] {
+  if (!preferredLanguages.length) return [];
+
+  const entries = Object.entries(captions)
+    .filter(([, formats]) => formats?.length)
+    .map(([language, formats]) => ({
+      language: normalizeLanguageTag(language),
+      formats
+    }));
+
+  for (const preferred of preferredLanguages) {
+    const exact = entries.find((entry) => entry.language === preferred);
+    if (exact) return exact.formats;
+  }
+
+  for (const preferred of preferredLanguages) {
+    const preferredBase = baseLanguage(preferred);
+    const related = entries.find((entry) => baseLanguage(entry.language) === preferredBase);
+    if (related) return related.formats;
+  }
+
+  return [];
+}
+
+function preferredCaptionLanguages(info: YtDlpInfo, metadata: MediaLinkMetadata): string[] {
+  const explicitLanguage = normalizeLanguageTag(info.language);
+  if (explicitLanguage) {
+    return languageTagPreferences(explicitLanguage);
+  }
+
+  const automaticCaptionLanguage = originalAutomaticCaptionLanguage(info, metadata.platform);
+  if (automaticCaptionLanguage) {
+    return languageTagPreferences(automaticCaptionLanguage);
+  }
+
+  const titleText = [
+    info.title,
+    metadata.title
+  ].filter(Boolean).join(" ");
+  const contextText = [
+    titleText,
+    info.description,
+    info.uploader,
+    info.channel,
     metadata.authorName,
     metadata.authorUniqueID
   ].filter(Boolean).join(" ");
 
-  if (/[\u3040-\u30FF]/u.test(text)) {
-    return ["ja", "ja-JP", ...DEFAULT_CAPTION_LANGUAGE_PREFERENCES];
+  if (/[\u3040-\u30FF]/u.test(contextText)) {
+    return ["ja"];
   }
-  if (/[\uAC00-\uD7AF]/u.test(text)) {
-    return ["ko", "ko-KR", ...DEFAULT_CAPTION_LANGUAGE_PREFERENCES];
+  if (/[\uAC00-\uD7AF]/u.test(contextText)) {
+    return ["ko"];
   }
-  if (/[\u4E00-\u9FFF]/u.test(text)) {
-    return [
-      "zh",
-      "zh-Hans",
-      "zh-Hant",
-      "zh-CN",
-      "zh-TW",
-      "zh-HK",
-      ...DEFAULT_CAPTION_LANGUAGE_PREFERENCES
-    ];
+  if (/[\u4E00-\u9FFF]/u.test(contextText)) {
+    return ["zh", "zh-hans", "zh-hant", "zh-cn", "zh-tw", "zh-hk"];
   }
 
-  return DEFAULT_CAPTION_LANGUAGE_PREFERENCES;
+  // Titles are normally kept in the video's source language, while
+  // descriptions often contain translated marketing copy. Prefer the title's
+  // signal before consulting the wider metadata context.
+  const inferredLanguage = inferLatinTextLanguage(titleText)
+    ?? inferLatinTextLanguage(contextText);
+  return inferredLanguage ? [inferredLanguage] : [];
 }
 
-const DEFAULT_CAPTION_LANGUAGE_PREFERENCES = [
-  "en",
-  "en-US",
-  "en-GB",
-  "zh-Hans",
-  "zh-Hant",
-  "zh",
-  "ja",
-  "ko",
-  "es",
-  "fr",
-  "de"
-];
+function originalAutomaticCaptionLanguage(
+  info: YtDlpInfo,
+  platform: MediaLinkPlatform
+): string | null {
+  if (platform !== "youtube") return null;
+
+  const languages = Object.keys(info.automatic_captions ?? {})
+    .map(normalizeLanguageTag)
+    .filter((language) => /^[a-z]{2,3}(?:-|$)/u.test(language));
+  const languageFamilies = [...new Set(languages.map(baseLanguage))];
+
+  // With translated_subs disabled, one remaining language family identifies
+  // YouTube's original automatic-caption track, including tags such as es-orig.
+  return languageFamilies.length === 1 ? languageFamilies[0] : null;
+}
+
+function languageTagPreferences(language: string): string[] {
+  const base = baseLanguage(language);
+  return language === base ? [base] : [language, base];
+}
+
+function normalizeLanguageTag(language?: string): string {
+  return language?.trim().replace(/_/g, "-").toLowerCase().replace(/-orig$/u, "") ?? "";
+}
+
+function baseLanguage(language: string): string {
+  return language.split("-")[0] ?? language;
+}
+
+function inferLatinTextLanguage(text: string): string | null {
+  const normalized = text.toLocaleLowerCase();
+  const tokens = normalized.match(/\p{L}+(?:['’]\p{L}+)?/gu) ?? [];
+  const tokenCounts = new Map<string, number>();
+  for (const token of tokens) {
+    tokenCounts.set(token, (tokenCounts.get(token) ?? 0) + 1);
+  }
+
+  const score = (
+    words: string[],
+    characterHints?: RegExp,
+    characterWeight = 0
+  ): number => {
+    const wordScore = words.reduce((total, word) => total + (tokenCounts.get(word) ?? 0), 0);
+    return wordScore + (characterHints?.test(normalized) ? characterWeight : 0);
+  };
+
+  const scores = [
+    {
+      language: "es",
+      score: score(
+        ["el", "los", "las", "una", "para", "por", "con", "como", "cómo", "que", "qué", "del", "este", "esta", "muy", "pero", "porque", "cuando", "más", "sin", "trucos", "crear", "aprende"],
+        /[¿¡ñáíóú]/u,
+        3
+      )
+    },
+    {
+      language: "fr",
+      score: score(
+        ["le", "les", "des", "une", "pour", "avec", "dans", "est", "sont", "sur", "pas", "vous", "nous", "comment", "cette", "ces", "aux", "au", "du", "sans", "plus", "astuces", "créer"],
+        /[àâçèêëîïôùûÿœæ]/u,
+        3
+      )
+    },
+    {
+      language: "de",
+      score: score(
+        ["der", "die", "das", "den", "dem", "ein", "eine", "einen", "einer", "und", "ist", "sind", "nicht", "mit", "für", "auf", "zu", "von", "im", "wie", "du", "dein", "deine", "ohne", "mehr", "heute", "tipps", "erstellen"],
+        /[ßäö]/u,
+        3
+      )
+    },
+    {
+      language: "en",
+      score: score(
+        ["the", "and", "how", "to", "with", "for", "you", "your", "this", "is", "are", "of", "in", "on", "without", "more", "today"]
+      )
+    }
+  ].sort((left, right) => right.score - left.score);
+
+  const [best, second] = scores;
+  if (!best || best.score < 2 || best.score === second?.score) {
+    return null;
+  }
+  return best.language;
+}
 
 function selectBestCaptionFormat(formats: YtDlpCaptionFormat[]): YtDlpCaptionFormat | null {
   const preferredFormats = ["json3", "vtt", "ttml", "srv3", "srv2", "srv1"];

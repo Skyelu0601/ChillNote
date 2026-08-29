@@ -256,7 +256,7 @@ class FakePublisher implements GooglePlayPublisher {
   }
 }
 
-const productId = "com.chillnote.pro.monthly";
+const productId = "com.chillnote.pro.weekly";
 const purchaseToken = "test-purchase-token-that-is-long-enough";
 const start = new Date("2026-08-23T12:00:00.000Z");
 const expiry = new Date("2026-09-23T12:00:00.000Z");

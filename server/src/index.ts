@@ -54,13 +54,23 @@ import { createHash, createHmac, randomUUID, timingSafeEqual } from "crypto";
 import { importPKCS8, SignJWT } from "jose";
 import { applySync } from "./sync.js";
 import {
+  acquireUserSyncTransactionLock,
   getChangesSinceCursor,
+  getLatestSyncLogId,
   hasActiveProSubscription,
   upsertUser,
   deleteUser,
   updateCreemSubscriptionStatus,
   updateSubscriptionStatus
 } from "./store.js";
+import {
+  DURABLE_MUTATION_PROTOCOL_VERSION,
+  AccountDeletedError,
+  isAccountDeletedDatabaseError,
+  isPrismaUniqueConstraintError,
+  SyncOwnershipError,
+  SyncReferenceError
+} from "./syncPolicy.js";
 import { prisma } from "./db.js"; // Import prisma for direct queries in index.ts if needed, though best to abstract
 import type { SyncPayload } from "./types.js";
 import { supabaseAdmin } from "./supabase.js";
@@ -111,6 +121,7 @@ app.use(compression());
 app.use(cors());
 
 const defaultJsonParser = express.json({ limit: process.env.DEFAULT_JSON_LIMIT ?? "1mb" });
+const syncJsonParser = express.json({ limit: process.env.SYNC_JSON_LIMIT ?? "10mb" });
 const defaultFormParser = express.urlencoded({
   limit: process.env.DEFAULT_FORM_LIMIT ?? "1mb",
   extended: true
@@ -118,6 +129,10 @@ const defaultFormParser = express.urlencoded({
 const aiJsonParser = express.json({ limit: process.env.AI_JSON_LIMIT ?? "150mb" });
 
 app.use((req, res, next) => {
+  if (req.path === "/sync") {
+    syncJsonParser(req, res, next);
+    return;
+  }
   if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem") {
     next();
     return;
@@ -146,7 +161,12 @@ const WEB_APP_BASE_URL = process.env.WEB_APP_BASE_URL?.trim() || "https://www.ch
 const GOOGLE_PLAY_PACKAGE_NAME = process.env.GOOGLE_PLAY_PACKAGE_NAME?.trim() || "com.sponteoai.chillscript";
 const GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL?.trim() || "";
 const GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY = (process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY ?? "").replace(/\\n/g, "\n");
-const GOOGLE_PLAY_PRODUCT_IDS = new Set(["com.chillnote.pro.monthly", "com.chillnote.pro.yearly"]);
+const GOOGLE_PLAY_PRODUCT_IDS = new Set([
+  "com.chillnote.pro.weekly",
+  "com.chillnote.pro.yearly",
+  // Keep verifying renewals/restores for customers on the retired monthly plan.
+  "com.chillnote.pro.monthly"
+]);
 
 let googlePlayAccessTokenCache: { token: string; expiresAt: number } | null = null;
 
@@ -253,6 +273,8 @@ const noteSchema = z.object({
   baseVersion: z.number().int().optional(),
   clientUpdatedAt: isoDateString.nullish(),
   lastModifiedByDeviceId: z.string().nullish(),
+  mutationId: z.string().min(1).max(128).nullish(),
+  previousMutationId: z.string().min(1).max(128).nullish(),
   sourceURL: z.string().nullish(),
   sourceTitle: z.string().nullish(),
   sourcePlatformID: z.string().nullish(),
@@ -270,6 +292,7 @@ const noteSchema = z.object({
 });
 
 const syncSchema = z.object({
+  protocolVersion: z.number().int().nonnegative().optional(),
   cursor: z.string().nullish(),
   deviceId: z.string().nullish(),
   notes: z.array(noteSchema),
@@ -287,12 +310,34 @@ const syncSchema = z.object({
       version: z.number().int().optional(),
       baseVersion: z.number().int().optional(),
       clientUpdatedAt: isoDateString.nullish(),
-      lastModifiedByDeviceId: z.string().nullish()
+      lastModifiedByDeviceId: z.string().nullish(),
+      mutationId: z.string().min(1).max(128).nullish(),
+      previousMutationId: z.string().min(1).max(128).nullish()
     })
   ).optional(),
   hardDeletedNoteIds: z.array(z.string().min(1)).nullish(),
   hardDeletedTagIds: z.array(z.string().min(1)).nullish(),
   preferences: z.record(z.string(), z.string()).optional()
+}).superRefine((payload, context) => {
+  if ((payload.protocolVersion ?? 0) < DURABLE_MUTATION_PROTOCOL_VERSION) return;
+  payload.notes.forEach((note, index) => {
+    if (!note.mutationId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["notes", index, "mutationId"],
+        message: "protocol v4 requires mutationId"
+      });
+    }
+  });
+  (payload.tags ?? []).forEach((tag, index) => {
+    if (!tag.mutationId) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["tags", index, "mutationId"],
+        message: "protocol v4 requires mutationId"
+      });
+    }
+  });
 });
 
 const linkImportJobSchema = z.object({
@@ -466,7 +511,7 @@ const CREDIT_COSTS: Record<CreditFeature, number> = {
   chat: positiveIntegerFromEnv("CREDIT_COST_CHAT", 2)
 };
 
-const INITIAL_CREDITS = positiveIntegerFromEnv("INITIAL_FREE_CREDITS", 50);
+const INITIAL_CREDITS = positiveIntegerFromEnv("INITIAL_FREE_CREDITS", 30);
 
 const creditFeatureSchema = z.object({
   feature: z.enum(["voice", "agent_recipe", "chat", "import"])
@@ -809,34 +854,65 @@ app.post("/sync", requireAuth, async (req, res) => {
   const userId = req.userId as string;
   const cursor = typeof parsed.data.cursor === "string" ? parsed.data.cursor : undefined;
 
-  // Ensure user exists in our local DB table
-  await upsertUser(userId);
-
   const incoming = parsed.data as SyncPayload;
-  const {
-    conflicts,
-    forcedHardDeletedNoteIds,
-    forcedHardDeletedTagIds
-  } = await applySync(incoming, userId);
-  const { changes, cursor: newCursor } = await getChangesSinceCursor(userId, cursor);
-  const mergedHardDeletedNoteIds = Array.from(new Set([
-    ...(changes.hardDeletedNoteIds ?? []),
-    ...forcedHardDeletedNoteIds
-  ]));
-  const mergedHardDeletedTagIds = Array.from(new Set([
-    ...(changes.hardDeletedTagIds ?? []),
-    ...forcedHardDeletedTagIds
-  ]));
-  res.json({
-    cursor: newCursor,
-    changes: {
-      ...changes,
-      hardDeletedNoteIds: mergedHardDeletedNoteIds,
-      hardDeletedTagIds: mergedHardDeletedTagIds
-    },
-    conflicts,
-    serverTime: new Date().toISOString()
-  });
+  try {
+    const result = await prisma.$transaction(async (transaction) => {
+      // Serialize sync batches for one account. READ COMMITTED is intentional:
+      // a request waiting for the advisory lock must see the previous holder's
+      // committed writes in the statements that follow this lock acquisition.
+      await acquireUserSyncTransactionLock(userId, transaction);
+      await upsertUser(userId, transaction);
+
+      // Validate every client's cursor against this user's checkpoint before
+      // this request appends its own logs; otherwise an old global/future cursor
+      // could be made to look valid and permanently skip account history.
+      const maximumAcceptedCursor = await getLatestSyncLogId(userId, transaction);
+      const applied = await applySync(incoming, userId, transaction);
+      const downloaded = await getChangesSinceCursor(userId, cursor, transaction, {
+        protocolVersion: incoming.protocolVersion,
+        maximumAcceptedCursor,
+        forcedNoteIds: applied.forcedNoteIds,
+        forcedTagIds: applied.forcedTagIds,
+        forcedHardDeletedNoteIds: applied.forcedHardDeletedNoteIds,
+        forcedHardDeletedTagIds: applied.forcedHardDeletedTagIds
+      });
+      return {
+        ...downloaded,
+        conflicts: applied.conflicts,
+        forcedNoteIds: applied.forcedNoteIds,
+        forcedTagIds: applied.forcedTagIds
+      };
+    }, {
+      maxWait: 10_000,
+      timeout: 30_000
+    });
+
+    res.json({
+      cursor: result.cursor,
+      changes: result.changes,
+      conflicts: result.conflicts,
+      forcedNoteIds: result.forcedNoteIds,
+      forcedTagIds: result.forcedTagIds,
+      serverTime: new Date().toISOString()
+    });
+  } catch (error) {
+    if (error instanceof AccountDeletedError || isAccountDeletedDatabaseError(error)) {
+      res.status(410).json({ error: "sync.account_deleted" });
+      return;
+    }
+    if (error instanceof SyncOwnershipError || isPrismaUniqueConstraintError(error)) {
+      res.status(409).json({
+        error: error instanceof SyncOwnershipError ? error.message : "sync.identity_unavailable"
+      });
+      return;
+    }
+    if (error instanceof SyncReferenceError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+    console.error("Sync transaction failed:", error);
+    res.status(500).json({ error: "sync.failed" });
+  }
 });
 
 app.post("/link-import-jobs", requireAuth, async (req, res) => {
@@ -847,7 +923,6 @@ app.post("/link-import-jobs", requireAuth, async (req, res) => {
   }
 
   const userId = req.userId as string;
-  await upsertUser(userId);
 
   try {
     const source = parsed.data.source ?? makeInitialLinkSource(parsed.data.url);
@@ -868,12 +943,22 @@ app.post("/link-import-jobs", requireAuth, async (req, res) => {
     });
     res.status(202).json(job);
   } catch (error) {
+    if (error instanceof AccountDeletedError || isAccountDeletedDatabaseError(error)) {
+      res.status(410).json({ error: "sync.account_deleted" });
+      return;
+    }
     if (error instanceof LinkImportInsufficientCreditsError) {
       res.status(402).json({
         error: "Insufficient credits",
         balance: error.balance,
         cost: error.cost,
         feature: "import"
+      });
+      return;
+    }
+    if (error instanceof SyncOwnershipError || isPrismaUniqueConstraintError(error)) {
+      res.status(409).json({
+        error: error instanceof SyncOwnershipError ? error.message : "sync.identity_unavailable"
       });
       return;
     }
@@ -890,11 +975,15 @@ app.post("/push-devices", requireAuth, async (req, res) => {
   }
 
   const userId = req.userId as string;
-  await upsertUser(userId);
   try {
+    await upsertUser(userId);
     await registerPushDevice({ userId, ...parsed.data });
     res.status(204).send();
   } catch (error) {
+    if (error instanceof AccountDeletedError || isAccountDeletedDatabaseError(error)) {
+      res.status(410).json({ error: "sync.account_deleted" });
+      return;
+    }
     console.error("Push device registration failed:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }

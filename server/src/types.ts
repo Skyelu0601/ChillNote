@@ -10,6 +10,8 @@ export type NoteDTO = {
   baseVersion?: number | null;
   clientUpdatedAt?: string | null;
   lastModifiedByDeviceId?: string | null;
+  mutationId?: string | null;
+  previousMutationId?: string | null;
   sourceURL?: string | null;
   sourceTitle?: string | null;
   sourcePlatformID?: string | null;
@@ -40,9 +42,12 @@ export type TagDTO = {
   baseVersion?: number | null;
   clientUpdatedAt?: string | null;
   lastModifiedByDeviceId?: string | null;
+  mutationId?: string | null;
+  previousMutationId?: string | null;
 };
 
 export type SyncPayload = {
+  protocolVersion?: number | null;
   cursor?: string | null;
   deviceId?: string | null;
   notes: NoteDTO[];
@@ -73,6 +78,14 @@ export type SyncResponse = {
   cursor: string;
   changes: SyncChanges;
   conflicts: ConflictDTO[];
+  /**
+   * The server intentionally rejected these uploaded values and returned its
+   * authoritative row in `changes`. Clients must apply that row even when its
+   * version/timestamp equals their local copy (for example a completed import
+   * that an old queued upload attempted to restore).
+   */
+  forcedNoteIds?: string[];
+  forcedTagIds?: string[];
   serverTime: string;
 };
 

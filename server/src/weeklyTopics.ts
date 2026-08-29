@@ -186,9 +186,10 @@ export async function regenerateWeeklyTopicReport(userId: string, reportId: stri
 
 export async function hardDeleteNoteWithWeeklyTopicCleanup(
   userId: string,
-  noteId: string
+  noteId: string,
+  database?: Prisma.TransactionClient
 ): Promise<{ version: number } | null> {
-  return prisma.$transaction(async (transaction) => {
+  const operation = async (transaction: Prisma.TransactionClient) => {
     const existing = await transaction.note.findFirst({
       where: { id: noteId, userId },
       select: { version: true }
@@ -212,7 +213,8 @@ export async function hardDeleteNoteWithWeeklyTopicCleanup(
       await transaction.note.delete({ where: { id: noteId } });
     }
     return existing;
-  });
+  };
+  return database ? operation(database) : prisma.$transaction(operation);
 }
 
 async function runWeeklyTopicWorker(): Promise<void> {

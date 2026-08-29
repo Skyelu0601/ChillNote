@@ -1,11 +1,42 @@
 import type { NoteDTO, SyncChanges, TagDTO } from "./types.js";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "./db.js";
+import { pickLatestBySyncIdentity, syncIdentityKey } from "./syncIdentity.js";
+import {
+  requireOwnedSyncCursor,
+  resolveSyncCursor,
+  AccountDeletedError,
+  SyncOwnershipError
+} from "./syncPolicy.js";
+
+export type SyncDatabase = Prisma.TransactionClient;
+
+export async function acquireUserSyncTransactionLock(
+  userId: string,
+  database: SyncDatabase
+): Promise<void> {
+  // Selecting the void-returning lock function directly makes Prisma fail to
+  // deserialize PostgreSQL's `void` type. Put it in FROM and return a regular
+  // integer column after the lock has been acquired.
+  await database.$queryRaw<Array<{ locked: number }>>`
+    SELECT 1::int AS locked
+    FROM pg_advisory_xact_lock(hashtextextended(${userId}, 0))
+  `;
+}
 
 type DeleteManyDelegate<Where> = {
   deleteMany(args: { where: Where }): PromiseLike<{ count: number }>;
 };
 
 type UserDeletionTransaction = {
+  $queryRaw<T = unknown>(query: TemplateStringsArray | Prisma.Sql, ...values: any[]): Promise<T>;
+  accountDeletionMarker: {
+    upsert(args: {
+      where: { userId: string };
+      create: { userId: string };
+      update: Record<string, never>;
+    }): PromiseLike<unknown>;
+  };
   hardDeleteTombstone: DeleteManyDelegate<{ userId: string }>;
   syncLog: DeleteManyDelegate<{ userId: string }>;
   user: DeleteManyDelegate<{ id: string }>;
@@ -38,10 +69,16 @@ export async function hasActiveProSubscription(
   );
 }
 
-export async function upsertUser(userId: string): Promise<void> {
+export async function upsertUser(userId: string, database: SyncDatabase = prisma): Promise<void> {
+  const deletionMarker = await database.accountDeletionMarker.findUnique({
+    where: { userId },
+    select: { userId: true }
+  });
+  if (deletionMarker) throw new AccountDeletedError();
+
   // Avoid Prisma upsert race conditions when multiple requests try to
   // create the same user row at the same time.
-  await prisma.$executeRaw`
+  await database.$executeRaw`
     INSERT INTO "User" ("id", "createdAt", "updatedAt")
     VALUES (${userId}, NOW(), NOW())
     ON CONFLICT ("id") DO NOTHING
@@ -98,6 +135,7 @@ function mapNoteToDTO(note: any): NoteDTO {
       : [],
     version: note.version ?? 1,
     lastModifiedByDeviceId: note.lastModifiedByDeviceId ?? null,
+    mutationId: note.lastMutationId ?? null,
     sourceURL: note.sourceURL ?? null,
     sourceTitle: note.sourceTitle ?? null,
     sourcePlatformID: note.sourcePlatformID ?? null,
@@ -127,8 +165,19 @@ function mapTagToDTO(tag: any): TagDTO {
     parentId: tag.parentId ?? null,
     deletedAt: tag.serverDeletedAt?.toISOString() ?? tag.deletedAt?.toISOString() ?? null,
     version: tag.version ?? 1,
-    lastModifiedByDeviceId: tag.lastModifiedByDeviceId ?? null
+    lastModifiedByDeviceId: tag.lastModifiedByDeviceId ?? null,
+    mutationId: tag.lastMutationId ?? null
   };
+}
+
+function latestEntityRows<T extends { id: string; serverUpdatedAt?: Date | null; updatedAt?: Date | null }>(rows: T[]): T[] {
+  return Array.from(pickLatestBySyncIdentity(rows, (row) =>
+    row.serverUpdatedAt?.getTime() ?? row.updatedAt?.getTime() ?? -Infinity
+  ).values());
+}
+
+function uniqueSyncIDs(ids: string[]): string[] {
+  return Array.from(new Map(ids.map((id) => [syncIdentityKey(id), id])).values());
 }
 
 function hasOwnField<T extends object>(value: T, key: keyof NoteDTO): boolean {
@@ -211,40 +260,81 @@ function sourceCreateData(incoming: NoteDTO) {
   };
 }
 
-export async function getChangesSinceCursor(userId: string, cursor?: string | null): Promise<{ changes: SyncChanges; cursor: string }> {
-  const parsedCursor = cursor ? Number(cursor) : null;
-  const cursorId = Number.isFinite(parsedCursor) ? parsedCursor : null;
+export type GetChangesOptions = {
+  protocolVersion?: number | null;
+  maximumAcceptedCursor?: number;
+  forcedNoteIds?: string[];
+  forcedTagIds?: string[];
+  forcedHardDeletedNoteIds?: string[];
+  forcedHardDeletedTagIds?: string[];
+};
+
+export async function getLatestSyncLogId(userId: string, database: SyncDatabase = prisma): Promise<number> {
+  const latestLog = await database.syncLog.aggregate({
+    where: { userId },
+    _max: { id: true }
+  });
+  return latestLog._max.id ?? 0;
+}
+
+export async function getChangesSinceCursor(
+  userId: string,
+  cursor?: string | null,
+  database: SyncDatabase = prisma,
+  options: GetChangesOptions = {}
+): Promise<{ changes: SyncChanges; cursor: string }> {
+  // Capture the high-water mark before reading entities. Rows that commit after
+  // this point can be visible in the response, but their later log ID remains
+  // above this cursor and will be delivered again instead of being skipped.
+  const latestLogId = await getLatestSyncLogId(userId, database);
+  let cursorId = resolveSyncCursor(
+    cursor,
+    options.protocolVersion,
+    options.maximumAcceptedCursor ?? latestLogId
+  );
+  if (cursorId != null && cursorId !== 0) {
+    const ownedCheckpoint = await database.syncLog.findFirst({
+      where: { id: cursorId, userId },
+      select: { id: true }
+    });
+    cursorId = requireOwnedSyncCursor(cursorId, !!ownedCheckpoint);
+  }
 
   if (cursorId == null) {
-    // A bootstrap sync only needs the newest log ID as its high-water mark.
-    // Loading every historical log here makes first sync slower as the user's
-    // edit history grows, even though none of those log rows are returned.
-    const [latestLog, notes, tags] = await Promise.all([
-      prisma.syncLog.aggregate({
-        where: { userId },
-        _max: { id: true }
-      }),
-      prisma.note.findMany({
-        where: { userId },
-        include: { tags: true }
-      }),
-      prisma.tag.findMany({
-        where: { userId }
-      })
+    const notes = await database.note.findMany({
+      where: { userId },
+      include: { tags: true }
+    });
+    const tags = await database.tag.findMany({ where: { userId } });
+    const tombstones = await database.hardDeleteTombstone.findMany({ where: { userId } });
+    const hardDeletedNoteIds = uniqueSyncIDs([
+      ...tombstones.filter((item) => item.entityType === "note").map((item) => item.entityId),
+      ...(options.forcedHardDeletedNoteIds ?? [])
     ]);
+    const hardDeletedTagIds = uniqueSyncIDs([
+      ...tombstones.filter((item) => item.entityType === "tag").map((item) => item.entityId),
+      ...(options.forcedHardDeletedTagIds ?? [])
+    ]);
+    const hardDeletedNoteKeys = new Set(hardDeletedNoteIds.map(syncIdentityKey));
+    const hardDeletedTagKeys = new Set(hardDeletedTagIds.map(syncIdentityKey));
+
     return {
-      cursor: String(latestLog._max.id ?? 0),
+      cursor: String(latestLogId),
       changes: {
-        notes: notes.map(mapNoteToDTO),
-        tags: tags.map(mapTagToDTO),
-        hardDeletedNoteIds: [],
-        hardDeletedTagIds: []
+        notes: latestEntityRows(notes)
+          .filter((note) => !hardDeletedNoteKeys.has(syncIdentityKey(note.id)))
+          .map(mapNoteToDTO),
+        tags: latestEntityRows(tags)
+          .filter((tag) => !hardDeletedTagKeys.has(syncIdentityKey(tag.id)))
+          .map(mapTagToDTO),
+        hardDeletedNoteIds,
+        hardDeletedTagIds
       }
     };
   }
 
-  const logs = await prisma.syncLog.findMany({
-    where: { userId, id: { gt: cursorId } },
+  const logs = await database.syncLog.findMany({
+    where: { userId, id: { gt: cursorId, lte: latestLogId } },
     orderBy: { id: "asc" }
   });
 
@@ -255,7 +345,7 @@ export async function getChangesSinceCursor(userId: string, cursor?: string | nu
 
   const latestByEntity = new Map<string, { entityType: string; entityId: string; operation: string }>();
   for (const log of logs) {
-    const key = `${log.entityType}:${log.entityId}`;
+    const key = `${log.entityType}:${syncIdentityKey(log.entityId)}`;
     latestByEntity.set(key, {
       entityType: log.entityType,
       entityId: log.entityId,
@@ -263,10 +353,10 @@ export async function getChangesSinceCursor(userId: string, cursor?: string | nu
     });
   }
 
-  const noteIds: string[] = [];
-  const tagIds: string[] = [];
-  const hardDeletedNoteIds: string[] = [];
-  const hardDeletedTagIds: string[] = [];
+  const noteIds = [...(options.forcedNoteIds ?? [])];
+  const tagIds = [...(options.forcedTagIds ?? [])];
+  const hardDeletedNoteIds = [...(options.forcedHardDeletedNoteIds ?? [])];
+  const hardDeletedTagIds = [...(options.forcedHardDeletedTagIds ?? [])];
   for (const entry of latestByEntity.values()) {
     if (entry.entityType === "note") {
       if (entry.operation === "hard_delete") {
@@ -283,25 +373,32 @@ export async function getChangesSinceCursor(userId: string, cursor?: string | nu
     }
   }
 
-  const notes = noteIds.length
-    ? await prisma.note.findMany({
-      where: { userId, id: { in: noteIds } },
+  const uniqueHardDeletedNoteIds = uniqueSyncIDs(hardDeletedNoteIds);
+  const uniqueHardDeletedTagIds = uniqueSyncIDs(hardDeletedTagIds);
+  const hardDeletedNoteKeys = new Set(uniqueHardDeletedNoteIds.map(syncIdentityKey));
+  const hardDeletedTagKeys = new Set(uniqueHardDeletedTagIds.map(syncIdentityKey));
+  const requestedNoteIds = uniqueSyncIDs(noteIds).filter((id) => !hardDeletedNoteKeys.has(syncIdentityKey(id)));
+  const requestedTagIds = uniqueSyncIDs(tagIds).filter((id) => !hardDeletedTagKeys.has(syncIdentityKey(id)));
+
+  const notes = requestedNoteIds.length
+    ? await database.note.findMany({
+      where: { userId, id: { in: requestedNoteIds } },
       include: { tags: true }
     })
     : [];
-  const tags = tagIds.length
-    ? await prisma.tag.findMany({
-      where: { userId, id: { in: tagIds } }
+  const tags = requestedTagIds.length
+    ? await database.tag.findMany({
+      where: { userId, id: { in: requestedTagIds } }
     })
     : [];
 
   return {
     cursor: String(newCursor),
     changes: {
-      notes: notes.map(mapNoteToDTO),
-      tags: tags.map(mapTagToDTO),
-      hardDeletedNoteIds,
-      hardDeletedTagIds
+      notes: latestEntityRows(notes).map(mapNoteToDTO),
+      tags: latestEntityRows(tags).map(mapTagToDTO),
+      hardDeletedNoteIds: uniqueHardDeletedNoteIds,
+      hardDeletedTagIds: uniqueHardDeletedTagIds
     }
   };
 }
@@ -309,7 +406,8 @@ export async function getChangesSinceCursor(userId: string, cursor?: string | nu
 export async function upsertTag(
   userId: string,
   incoming: TagDTO,
-  options: { setParent?: boolean } = {}
+  options: { setParent?: boolean } = {},
+  database: SyncDatabase = prisma
 ): Promise<void> {
   const setParent = options.setParent ?? true;
   const serverUpdatedAt = incoming.updatedAt ? new Date(incoming.updatedAt) : new Date();
@@ -320,78 +418,84 @@ export async function upsertTag(
     updatedAt: new Date(),
     lastUsedAt: incoming.lastUsedAt ? new Date(incoming.lastUsedAt) : null,
     sortOrder: incoming.sortOrder,
-    userId,
     deletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
     serverUpdatedAt,
     serverDeletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
     version: incoming.version ?? 1,
-    lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null
+    lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null,
+    ...(hasOwnField(incoming, "mutationId")
+      ? { lastMutationId: incoming.mutationId ?? null }
+      : {})
   };
 
-  await prisma.tag.upsert({
+  const existing = await database.tag.findUnique({
     where: { id: incoming.id },
-    update: {
-      ...baseData,
-      ...(setParent ? { parentId: incoming.parentId ?? null } : {})
-    },
-    create: {
-      id: incoming.id,
-      ...baseData,
-      parentId: setParent ? incoming.parentId ?? null : null
-    }
+    select: { userId: true }
   });
-  await prisma.hardDeleteTombstone.deleteMany({
-    where: {
-      userId,
-      entityType: "tag",
-      entityId: incoming.id
-    }
-  });
+  if (existing && existing.userId !== userId) throw new SyncOwnershipError();
+
+  if (existing) {
+    await database.tag.update({
+      where: { id: incoming.id },
+      data: {
+        ...baseData,
+        ...(setParent ? { parentId: incoming.parentId ?? null } : {})
+      }
+    });
+  } else {
+    await database.tag.create({
+      data: {
+        id: incoming.id,
+        userId,
+        ...baseData,
+        parentId: setParent ? incoming.parentId ?? null : null
+      }
+    });
+  }
 }
 
-export async function upsertNote(userId: string, incoming: NoteDTO): Promise<void> {
+export async function upsertNote(
+  userId: string,
+  incoming: NoteDTO,
+  database: SyncDatabase = prisma
+): Promise<void> {
   const serverUpdatedAt = incoming.updatedAt ? new Date(incoming.updatedAt) : new Date();
   const tagIds = incoming.tagIds ?? undefined;
   const sourceUpdate = sourceUpdateData(incoming);
   const sourceCreate = sourceCreateData(incoming);
   const importUpdate = importUpdateData(incoming);
   const importCreate = importCreateData(incoming);
-  const incomingImportStatus = incoming.importStatus ?? null;
-  if (incomingImportStatus === "queued" || incomingImportStatus === "processing") {
-    const existingRows = await prisma.$queryRaw<Array<{ importStatus: string | null; importJobId: string | null }>>`
-      SELECT "importStatus", "importJobId"
-      FROM "Note"
-      WHERE "id" = ${incoming.id}
-        AND "userId" = ${userId}
-      LIMIT 1
-    `;
-    const existing = existingRows[0];
-    const serverFinished = existing?.importStatus === "completed" || existing?.importStatus === "failed";
-    const sameImport = !incoming.importJobId || !existing?.importJobId || incoming.importJobId === existing.importJobId;
-    if (serverFinished && sameImport) {
-      return;
-    }
-  }
-
-  await prisma.note.upsert({
+  const existing = await database.note.findUnique({
     where: { id: incoming.id },
-    update: {
+    select: { userId: true }
+  });
+  if (existing && existing.userId !== userId) throw new SyncOwnershipError();
+
+  if (existing) {
+    await database.note.update({
+      where: { id: incoming.id },
+      data: {
       content: incoming.content,
       createdAt: new Date(incoming.createdAt),
       updatedAt: new Date(),
       deletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
       pinnedAt: incoming.pinnedAt ? new Date(incoming.pinnedAt) : null,
-      userId,
       serverUpdatedAt,
       serverDeletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
       version: incoming.version ?? 1,
       lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null,
+      ...(hasOwnField(incoming, "mutationId")
+        ? { lastMutationId: incoming.mutationId ?? null }
+        : {}),
       section: incoming.section ?? "inbox",
       ...sourceUpdate,
       ...importUpdate,
       tags: tagIds ? { set: tagIds.map((tagId) => ({ id: tagId })) } : undefined
-    },
-    create: {
+      }
+    });
+  } else {
+    await database.note.create({
+      data: {
       id: incoming.id,
       userId,
       content: incoming.content,
@@ -403,19 +507,16 @@ export async function upsertNote(userId: string, incoming: NoteDTO): Promise<voi
       serverDeletedAt: incoming.deletedAt ? new Date(incoming.deletedAt) : null,
       version: incoming.version ?? 1,
       lastModifiedByDeviceId: incoming.lastModifiedByDeviceId ?? null,
+      ...(hasOwnField(incoming, "mutationId")
+        ? { lastMutationId: incoming.mutationId ?? null }
+        : {}),
       section: incoming.section ?? "inbox",
       ...sourceCreate,
       ...importCreate,
       tags: tagIds ? { connect: tagIds.map((tagId) => ({ id: tagId })) } : undefined
-    }
-  });
-  await prisma.hardDeleteTombstone.deleteMany({
-    where: {
-      userId,
-      entityType: "note",
-      entityId: incoming.id
-    }
-  });
+      }
+    });
+  }
 }
 
 export async function deleteUser(
@@ -423,6 +524,15 @@ export async function deleteUser(
   database: UserDeletionDatabase = prisma
 ): Promise<void> {
   await database.$transaction(async (transaction) => {
+    // Account deletion and sync use the same lock ordering. Once this marker is
+    // committed it survives the User cascade and every later sync fails closed,
+    // including a request that authenticated before Supabase Auth was erased.
+    await acquireUserSyncTransactionLock(userId, transaction as unknown as SyncDatabase);
+    await transaction.accountDeletionMarker.upsert({
+      where: { userId },
+      create: { userId },
+      update: {}
+    });
     // Sync logs and hard-delete tombstones intentionally survive individual
     // note/tag deletion, but they must not survive deletion of the account.
     await transaction.syncLog.deleteMany({ where: { userId } });
@@ -441,8 +551,8 @@ export async function logSyncChange(params: {
   version: number;
   serverUpdatedAt: Date;
   operation: "upsert" | "delete" | "hard_delete";
-}): Promise<void> {
-  await prisma.syncLog.create({
+}, database: SyncDatabase = prisma): Promise<void> {
+  await database.syncLog.create({
     data: {
       userId: params.userId,
       entityType: params.entityType,
