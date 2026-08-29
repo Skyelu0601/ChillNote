@@ -33,15 +33,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.AddBox
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Forum
+import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Verified
+import androidx.compose.material.icons.filled.VideoLibrary
+import androidx.compose.material.icons.filled.ViewCarousel
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -112,12 +119,19 @@ enum class SubscriptionScreenContext {
     OnboardingTrial,
 }
 
+data class SubscriptionDebugPreviewPricing(
+    val annualPrice: String,
+    val annualWeeklyPrice: String,
+    val weeklyPrice: String,
+    val annualTrialDayCount: Int,
+)
+
 /**
  * One-to-one Compose port of iOS `SubscriptionView`.
  *
  * The host owns billing and membership state. This composable deliberately
- * owns only the same presentation state as SwiftUI: yearly/monthly selection,
- * onboarding paging and entrance animation.
+ * owns only the same presentation state as SwiftUI: yearly/weekly selection
+ * and entrance animation.
  */
 @Composable
 fun IOSParitySubscriptionScreen(
@@ -133,6 +147,7 @@ fun IOSParitySubscriptionScreen(
     onDismiss: () -> Unit,
     onManage: () -> Unit = {},
     onOpenUrl: (String) -> Unit,
+    debugPreviewPricing: SubscriptionDebugPreviewPricing? = null,
     applyTopInset: Boolean = true,
     modifier: Modifier = Modifier,
 ) {
@@ -146,13 +161,22 @@ fun IOSParitySubscriptionScreen(
     LaunchedEffect(Unit) { showContent = true }
     BackHandler(onBack = onDismiss)
 
-    BrandBackground(modifier = modifier.fillMaxSize()) {
+    val isOnboardingPaywall = context == SubscriptionScreenContext.OnboardingTrial
+    val screenContent: @Composable () -> Unit = {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (applyTopInset) Modifier.statusBarsPadding() else Modifier),
         ) {
-            SubscriptionTopBar(onDismiss = onDismiss)
+            if (isOnboardingPaywall) {
+                OnboardingSubscriptionTopBar(
+                    restoreEnabled = !billingState.restoring,
+                    onDismiss = onDismiss,
+                    onRestore = onRestore,
+                )
+            } else {
+                SubscriptionTopBar(onDismiss = onDismiss)
+            }
 
             Box(modifier = Modifier.weight(1f)) {
                 when {
@@ -168,9 +192,9 @@ fun IOSParitySubscriptionScreen(
                         isPurchasing = isPurchasing,
                         revealProgress = revealProgress,
                         onPurchase = onPurchase,
-                        onRestore = onRestore,
                         onRetryProducts = onRetryProducts,
                         onOpenUrl = onOpenUrl,
+                        debugPreviewPricing = debugPreviewPricing,
                     )
                     else -> StandardUpgradeContent(
                         billingState = billingState,
@@ -184,10 +208,76 @@ fun IOSParitySubscriptionScreen(
                 }
             }
         }
+    }
 
-        if (isPurchasing || billingState.restoring) {
-            SubscriptionLoadingOverlay()
+    if (isOnboardingPaywall) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(Color.White),
+        ) {
+            screenContent()
+
+            if (isPurchasing || billingState.restoring) {
+                SubscriptionLoadingOverlay()
+            }
         }
+    } else {
+        BrandBackground(modifier = modifier.fillMaxSize()) {
+            screenContent()
+
+            if (isPurchasing || billingState.restoring) {
+                SubscriptionLoadingOverlay()
+            }
+        }
+    }
+}
+
+@Composable
+private fun OnboardingSubscriptionTopBar(
+    restoreEnabled: Boolean,
+    onDismiss: () -> Unit,
+    onRestore: () -> Unit,
+) {
+    val closeLabel = stringResource(R.string.common_close)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .padding(horizontal = 8.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .size(44.dp)
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onDismiss)
+                .semantics { contentDescription = closeLabel },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = null,
+                tint = ChillColors.TextMain,
+                modifier = Modifier.size(23.dp),
+            )
+        }
+
+        Text(
+            text = stringResource(R.string.subscription_restore_purchases),
+            color = ChillColors.TextMain.copy(alpha = if (restoreEnabled) 1f else 0.5f),
+            fontSize = 16.sp,
+            lineHeight = 20.sp,
+            fontWeight = FontWeight.Normal,
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .clickable(
+                    enabled = restoreEnabled,
+                    role = Role.Button,
+                    onClick = onRestore,
+                )
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+        )
     }
 }
 
@@ -226,103 +316,320 @@ private fun OnboardingTrialContent(
     isPurchasing: Boolean,
     revealProgress: Float,
     onPurchase: (BillingProduct) -> Unit,
-    onRestore: () -> Unit,
     onRetryProducts: () -> Unit,
     onOpenUrl: (String) -> Unit,
+    debugPreviewPricing: SubscriptionDebugPreviewPricing?,
 ) {
+    var isAnnual by rememberSaveable { mutableStateOf(true) }
     val yearlyProduct = remember(billingState.products) {
         billingState.products.firstOrNull { it.googlePlaySubscriptionFacts().isAnnual }
             ?: billingState.products.firstOrNull { it.id.contains("year", ignoreCase = true) }
     }
-    val displayInfo = if (yearlyProduct != null) {
-        rememberGooglePlaySubscriptionDisplayInfo(yearlyProduct)
-    } else {
-        null
+    val weeklyProduct = remember(billingState.products) {
+        billingState.products.firstOrNull { it.googlePlaySubscriptionFacts().isWeekly }
+            ?: billingState.products.firstOrNull { it.id.contains("week", ignoreCase = true) }
     }
-    val pagerState = rememberPagerState(pageCount = { 2 })
-    val scope = rememberCoroutineScope()
-    val currentPage = pagerState.currentPage
+    val selectedProduct = if (isAnnual) yearlyProduct ?: weeklyProduct else weeklyProduct ?: yearlyProduct
+    val selectedDisplayInfo = selectedProduct?.let { rememberGooglePlaySubscriptionDisplayInfo(it) }
+    val yearlyDisplayInfo = yearlyProduct?.let { rememberGooglePlaySubscriptionDisplayInfo(it) }
+    val weeklyDisplayInfo = weeklyProduct?.let { rememberGooglePlaySubscriptionDisplayInfo(it) }
     val restoreError = billingState.error.takeIf { billingState.products.isNotEmpty() }
+    val effectiveTrialDayCount = selectedDisplayInfo?.trialDayCount
+        ?: debugPreviewPricing?.annualTrialDayCount?.takeIf { isAnnual }
+    val hasSelectedPlan = selectedProduct != null || debugPreviewPricing != null
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 20.dp)
+            .padding(top = 8.dp, bottom = 20.dp)
+            .navigationBarsPadding()
             .reveal(revealProgress, 18.dp),
+        horizontalAlignment = Alignment.Start,
+        verticalArrangement = Arrangement.spacedBy(18.dp),
     ) {
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.weight(1f),
-        ) { page ->
-            when (page) {
-                // The iOS onboarding intro is a stable promise screen. It does not
-                // wait for StoreKit product metadata before rendering the trial
-                // headline and the "no payment due" badge. Keeping this stable also
-                // prevents the Android first page from visibly changing after Play
-                // Billing finishes loading.
-                0 -> OnboardingTrialIntroPage(hasFreeTrial = true)
-                else -> OnboardingTrialPricePage(
-                    yearlyProduct = yearlyProduct,
-                    displayInfo = displayInfo,
-                    billingState = billingState,
-                    onRetryProducts = onRetryProducts,
+        Text(
+            text = stringResource(R.string.subscription_onboarding_paywall_title),
+            color = ChillColors.TextMain,
+            fontSize = 38.sp,
+            lineHeight = 41.sp,
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Start,
+            modifier = Modifier.fillMaxWidth(),
+        )
+
+        OnboardingTrialFeatureList()
+
+        if (debugPreviewPricing != null) {
+            OnboardingDebugPlanPicker(
+                isAnnual = isAnnual,
+                pricing = debugPreviewPricing,
+                onAnnualChange = { isAnnual = it },
+            )
+        } else if (yearlyProduct != null || weeklyProduct != null) {
+            OnboardingPlanPicker(
+                isAnnual = isAnnual,
+                yearlyProduct = yearlyProduct,
+                weeklyProduct = weeklyProduct,
+                yearlyDisplayInfo = yearlyDisplayInfo,
+                weeklyDisplayInfo = weeklyDisplayInfo,
+                onAnnualChange = { isAnnual = it },
+            )
+        } else {
+            PaywallProductState(
+                loading = billingState.loading,
+                error = billingState.error,
+                onRetryProducts = onRetryProducts,
+                compact = false,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        restoreError?.let { InlineBillingError(it) }
+
+        OnboardingPurchaseButton(
+            text = when {
+                effectiveTrialDayCount != null -> stringResource(
+                    R.string.subscription_onboarding_cta_try_free_days,
+                    effectiveTrialDayCount,
+                )
+                selectedDisplayInfo?.isAnnual == true ||
+                    (selectedDisplayInfo == null && debugPreviewPricing != null && isAnnual) -> stringResource(
+                    R.string.subscription_cta_continue_annual,
+                )
+                else -> stringResource(R.string.subscription_cta_continue_weekly)
+            },
+            enabled = hasSelectedPlan && !isPurchasing,
+            onClick = { selectedProduct?.let(onPurchase) },
+        )
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            Text(
+                text = stringResource(
+                    if (selectedDisplayInfo?.hasFreeTrial == true || effectiveTrialDayCount != null) {
+                        R.string.subscription_onboarding_trust_no_payment_cancel_anytime
+                    } else {
+                        R.string.subscription_onboarding_trust_cancel_anytime
+                    },
+                ),
+                color = ChillColors.TextMain.copy(alpha = 0.82f),
+                fontSize = 14.sp,
+                lineHeight = 19.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            OnboardingLegalFooter(onOpenUrl = onOpenUrl)
+        }
+    }
+}
+
+@Composable
+private fun OnboardingDebugPlanPicker(
+    isAnnual: Boolean,
+    pricing: SubscriptionDebugPreviewPricing,
+    onAnnualChange: (Boolean) -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        OnboardingPlanCard(
+            title = stringResource(
+                R.string.subscription_onboarding_plan_annual_trial_days,
+                pricing.annualTrialDayCount,
+            ),
+            billingText = stringResource(
+                R.string.subscription_price_per_year_format,
+                pricing.annualPrice,
+            ),
+            comparisonPrice = pricing.annualWeeklyPrice,
+            comparisonPeriod = stringResource(R.string.subscription_billing_period_weekly),
+            selected = isAnnual,
+            onClick = { onAnnualChange(true) },
+        )
+        OnboardingPlanCard(
+            title = stringResource(R.string.subscription_interval_weekly),
+            billingText = null,
+            comparisonPrice = pricing.weeklyPrice,
+            comparisonPeriod = stringResource(R.string.subscription_billing_period_weekly),
+            selected = !isAnnual,
+            onClick = { onAnnualChange(false) },
+        )
+    }
+}
+
+@Composable
+private fun OnboardingPlanPicker(
+    isAnnual: Boolean,
+    yearlyProduct: BillingProduct?,
+    weeklyProduct: BillingProduct?,
+    yearlyDisplayInfo: GooglePlaySubscriptionDisplayInfo?,
+    weeklyDisplayInfo: GooglePlaySubscriptionDisplayInfo?,
+    onAnnualChange: (Boolean) -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        if (yearlyProduct != null && yearlyDisplayInfo != null) {
+            OnboardingPlanCard(
+                title = yearlyDisplayInfo.trialDayCount?.let {
+                    stringResource(R.string.subscription_onboarding_plan_annual_trial_days, it)
+                } ?: stringResource(R.string.subscription_interval_yearly),
+                billingText = stringResource(
+                    R.string.subscription_price_per_year_format,
+                    yearlyDisplayInfo.displayPrice,
+                ),
+                comparisonPrice = yearlyDisplayInfo.equivalentWeeklyText
+                    ?: yearlyDisplayInfo.displayPrice,
+                comparisonPeriod = stringResource(R.string.subscription_billing_period_weekly),
+                selected = isAnnual || weeklyProduct == null,
+                onClick = { onAnnualChange(true) },
+            )
+        }
+
+        if (weeklyProduct != null && weeklyDisplayInfo != null) {
+            OnboardingPlanCard(
+                title = stringResource(R.string.subscription_interval_weekly),
+                billingText = null,
+                comparisonPrice = weeklyDisplayInfo.displayPrice,
+                comparisonPeriod = stringResource(R.string.subscription_billing_period_weekly),
+                selected = !isAnnual || yearlyProduct == null,
+                onClick = { onAnnualChange(false) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun OnboardingPlanCard(
+    title: String,
+    billingText: String?,
+    comparisonPrice: String,
+    comparisonPeriod: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val shape = RoundedCornerShape(16.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 86.dp)
+            .clip(shape)
+            .background(if (selected) ChillColors.BrandBlue.copy(alpha = 0.035f) else Color.White)
+            .border(
+                width = 1.5.dp,
+                color = if (selected) ChillColors.BrandBlue else ChillColors.BorderSubtle,
+                shape = shape,
+            )
+            .clickable(role = Role.RadioButton, onClick = onClick)
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(if (selected) ChillColors.BrandBlue else Color.White)
+                .border(
+                    width = 1.5.dp,
+                    color = if (selected) ChillColors.BrandBlue else ChillColors.BorderSubtle,
+                    shape = CircleShape,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            if (selected) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp),
                 )
             }
         }
 
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color.White.copy(alpha = 0f),
-                            Color.White,
-                            Color.White,
-                        ),
-                    ),
-                )
-                .padding(horizontal = ChillSpacing.S4)
-                .padding(bottom = 18.dp)
-                .navigationBarsPadding(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
-            if (restoreError != null) {
-                InlineBillingError(restoreError)
-            }
-
-            if (currentPage == 1 && displayInfo?.hasFreeTrial == true) {
-                NoPaymentDueNow()
-            }
-
-            PrimarySubscriptionButton(
-                text = if (currentPage == 0) {
-                    stringResource(R.string.subscription_onboarding_cta_next)
-                } else {
-                    displayInfo?.ctaText ?: stringResource(R.string.subscription_cta_start_annual)
-                },
-                enabled = currentPage == 0 || (yearlyProduct != null && !isPurchasing),
-                showChevron = true,
-                onClick = {
-                    if (currentPage == 0) {
-                        scope.launch {
-                            pagerState.animateScrollToPage(
-                                page = 1,
-                                animationSpec = spring(dampingRatio = 0.9f, stiffness = 360f),
-                            )
-                        }
-                    } else if (yearlyProduct != null) {
-                        onPurchase(yearlyProduct)
-                    }
-                },
+            Text(
+                text = title,
+                color = if (selected) ChillColors.BrandBlueText else ChillColors.TextMain,
+                fontSize = 15.sp,
+                lineHeight = 19.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
+            billingText?.let {
+                Text(
+                    text = it,
+                    color = ChillColors.TextMain,
+                    fontSize = 15.sp,
+                    lineHeight = 19.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
 
-            OnboardingLegalFooter(
-                restoreEnabled = !billingState.restoring,
-                onRestore = onRestore,
-                onOpenUrl = onOpenUrl,
+        Column(
+            horizontalAlignment = Alignment.End,
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = comparisonPrice,
+                color = ChillColors.TextMain,
+                fontSize = 19.sp,
+                lineHeight = 23.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = comparisonPeriod,
+                color = ChillColors.TextMain.copy(alpha = 0.82f),
+                fontSize = 14.sp,
+                lineHeight = 18.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
+    }
+}
+
+@Composable
+private fun OnboardingPurchaseButton(
+    text: String,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(56.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(ChillColors.BrandBlue.copy(alpha = if (enabled) 1f else 0.5f))
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            color = Color.White,
+            fontSize = 17.sp,
+            lineHeight = 21.sp,
+            fontWeight = FontWeight.SemiBold,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
     }
 }
 
@@ -567,41 +874,39 @@ private fun NoPaymentDueNow() {
 @Composable
 private fun OnboardingTrialFeatureList(modifier: Modifier = Modifier) {
     val features = listOf(
-        stringResource(R.string.subscription_onboarding_feature_video),
-        stringResource(R.string.subscription_onboarding_feature_skills),
-        stringResource(R.string.subscription_onboarding_feature_capture),
+        stringResource(R.string.subscription_onboarding_feature_save_ideas) to Icons.Filled.VideoLibrary,
+        stringResource(R.string.subscription_onboarding_feature_transcribe_extract) to Icons.Filled.GraphicEq,
+        stringResource(R.string.subscription_onboarding_feature_generate_content) to Icons.Filled.AutoAwesome,
+        stringResource(R.string.subscription_onboarding_feature_rewrite_translate) to Icons.Filled.Translate,
+        stringResource(R.string.subscription_onboarding_feature_repurpose_social) to Icons.Filled.ViewCarousel,
+        stringResource(R.string.subscription_onboarding_feature_organize) to Icons.Filled.Folder,
+        stringResource(R.string.subscription_onboarding_feature_teleprompter) to Icons.AutoMirrored.Filled.Article,
     )
     Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(ChillRadius.Card),
-                ambientColor = ChillColors.Shadow,
-                spotColor = ChillColors.Shadow,
-            )
-            .clip(RoundedCornerShape(ChillRadius.Card))
-            .background(Color.White.copy(alpha = 0.92f))
-            .padding(18.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(11.dp),
     ) {
         features.forEach { feature ->
             Row(
-                verticalAlignment = Alignment.Top,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = 32.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 Icon(
-                    imageVector = Icons.Filled.CheckCircle,
+                    imageVector = feature.second,
                     contentDescription = null,
-                    tint = ChillColors.BrandTealText,
-                    modifier = Modifier
-                        .padding(top = 1.dp)
-                        .size(17.dp),
+                    tint = ChillColors.TextMain,
+                    modifier = Modifier.size(24.dp),
                 )
                 Text(
-                    text = feature,
+                    text = feature.first,
                     color = ChillColors.TextMain,
-                    style = ChillTypography.bodyMedium,
+                    fontSize = 15.sp,
+                    lineHeight = 19.sp,
+                    fontWeight = FontWeight.Normal,
+                    modifier = Modifier.weight(1f),
                 )
             }
         }
@@ -610,31 +915,40 @@ private fun OnboardingTrialFeatureList(modifier: Modifier = Modifier) {
 
 @Composable
 private fun OnboardingLegalFooter(
-    restoreEnabled: Boolean,
-    onRestore: () -> Unit,
     onOpenUrl: (String) -> Unit,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(top = 8.dp),
-        horizontalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(30.dp, Alignment.CenterHorizontally),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        FooterLink(
+        OnboardingLegalLink(
             text = stringResource(R.string.subscription_terms_of_use),
             onClick = { onOpenUrl(TermsUrl) },
         )
-        FooterLink(
-            text = stringResource(R.string.subscription_restore_purchases),
-            enabled = restoreEnabled,
-            onClick = onRestore,
-        )
-        FooterLink(
+        OnboardingLegalLink(
             text = stringResource(R.string.subscription_privacy_policy),
             onClick = { onOpenUrl(PrivacyUrl) },
         )
     }
+}
+
+@Composable
+private fun OnboardingLegalLink(
+    text: String,
+    onClick: () -> Unit,
+) {
+    Text(
+        text = text,
+        color = ChillColors.TextMain.copy(alpha = 0.86f),
+        fontSize = 13.sp,
+        lineHeight = 18.sp,
+        fontWeight = FontWeight.Normal,
+        textDecoration = TextDecoration.Underline,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+        modifier = Modifier.clickable(role = Role.Button, onClick = onClick),
+    )
 }
 
 @Composable
@@ -652,24 +966,24 @@ private fun StandardUpgradeContent(
         billingState.products.firstOrNull { it.googlePlaySubscriptionFacts().isAnnual }
             ?: billingState.products.firstOrNull { it.id.contains("year", ignoreCase = true) }
     }
-    val monthlyProduct = remember(billingState.products) {
+    val weeklyProduct = remember(billingState.products) {
         billingState.products.firstOrNull {
             val facts = it.googlePlaySubscriptionFacts()
-            !facts.isAnnual && facts.billingMonthCount == 1
-        } ?: billingState.products.firstOrNull { it.id.contains("month", ignoreCase = true) }
+            facts.isWeekly
+        } ?: billingState.products.firstOrNull { it.id.contains("week", ignoreCase = true) }
     }
     val selectedProduct = if (isAnnual) {
-        yearlyProduct ?: monthlyProduct
+        yearlyProduct ?: weeklyProduct
     } else {
-        monthlyProduct ?: yearlyProduct
+        weeklyProduct ?: yearlyProduct
     }
     val selectedDisplayInfo = if (selectedProduct != null) {
         rememberGooglePlaySubscriptionDisplayInfo(selectedProduct)
     } else {
         null
     }
-    val savingsPercent = remember(monthlyProduct, yearlyProduct) {
-        yearlySavingsPercent(monthlyProduct, yearlyProduct)
+    val savingsPercent = remember(weeklyProduct, yearlyProduct) {
+        yearlySavingsPercent(weeklyProduct, yearlyProduct)
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -741,10 +1055,10 @@ private fun MemberSubscriptionContent(
     val renewalDate = remember(subscriptionExpiresAt, locale) {
         subscriptionExpiresAt?.let { localizedSubscriptionDate(it, locale) }
     }
-    val planTitle = if (activeProductId?.contains("year", ignoreCase = true) == true) {
-        stringResource(R.string.subscription_plan_annual)
-    } else {
-        stringResource(R.string.subscription_plan_monthly)
+    val planTitle = when {
+        activeProductId?.contains("year", ignoreCase = true) == true -> stringResource(R.string.subscription_plan_annual)
+        activeProductId?.contains("month", ignoreCase = true) == true -> stringResource(R.string.subscription_plan_monthly)
+        else -> stringResource(R.string.subscription_plan_weekly)
     }
 
     Column(
@@ -885,15 +1199,19 @@ private fun MemberSubscriptionContent(
 }
 
 @Composable
-private fun SubscriptionWordmark(modifier: Modifier = Modifier) {
+private fun SubscriptionWordmark(
+    modifier: Modifier = Modifier,
+    maxWidth: androidx.compose.ui.unit.Dp = 190.dp,
+    height: androidx.compose.ui.unit.Dp = 56.dp,
+) {
     Image(
         painter = painterResource(R.drawable.onboarding_wordmark),
         contentDescription = stringResource(R.string.app_name),
         contentScale = ContentScale.Fit,
         modifier = modifier
-            .widthIn(max = 190.dp)
+            .widthIn(max = maxWidth)
             .fillMaxWidth()
-            .height(56.dp),
+            .height(height),
     )
 }
 
@@ -1009,7 +1327,7 @@ private fun PricingSection(
                 .padding(4.dp),
         ) {
             PricingToggleButton(
-                title = stringResource(R.string.subscription_interval_monthly),
+                title = stringResource(R.string.subscription_interval_weekly),
                 selected = !isAnnual,
                 onClick = { onAnnualChange(false) },
                 modifier = Modifier.weight(1f),

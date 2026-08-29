@@ -13,6 +13,8 @@ data class NoteDto(
     val tagIds: List<String>? = null,
     val version: Int? = null,
     val baseVersion: Int? = null,
+    val mutationId: String? = null,
+    val previousMutationId: String? = null,
     val clientUpdatedAt: String? = null,
     val lastModifiedByDeviceId: String? = null,
     val sourceURL: String? = null,
@@ -44,12 +46,15 @@ data class TagDto(
     val deletedAt: String? = null,
     val version: Int? = null,
     val baseVersion: Int? = null,
+    val mutationId: String? = null,
+    val previousMutationId: String? = null,
     val clientUpdatedAt: String? = null,
     val lastModifiedByDeviceId: String? = null,
 )
 
 @Serializable
 data class SyncPayload(
+    val protocolVersion: Int = 4,
     val cursor: String? = null,
     val deviceId: String? = null,
     val notes: List<NoteDto>,
@@ -83,5 +88,7 @@ data class SyncResponse(
     val cursor: String,
     val changes: SyncChanges,
     val conflicts: List<ConflictDto>,
+    val forcedNoteIds: List<String> = emptyList(),
+    val forcedTagIds: List<String> = emptyList(),
     val serverTime: String,
 )

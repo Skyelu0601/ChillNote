@@ -39,6 +39,10 @@ object MarkdownParser {
 data class MarkdownEditResult(val text: String, val selectionStart: Int, val selectionEnd: Int)
 
 object MarkdownEditing {
+    private val checklistLine = Regex("^([ \\t]*)- \\[([ xX])] (.*)$")
+    private val bulletLine = Regex("^([ \\t]*)[-*•] (.*)$")
+    private val numberedLine = Regex("^([ \\t]*)(\\d+)\\. (.*)$")
+
     fun toggleBold(text: String, selectionStart: Int, selectionEnd: Int): MarkdownEditResult {
         val start = selectionStart.coerceIn(0, text.length)
         val end = selectionEnd.coerceIn(start, text.length)
@@ -71,6 +75,149 @@ object MarkdownEditing {
                 line.replaceFirst(Regex("^\\s*[-*]\\s*\\[( |x|X)]\\s*"), "")
             } else "- [ ] $line"
         }
+
+    /**
+     * Mirrors the list-editing behavior of the iOS note editor without touching an
+     * active IME composition. A null result means Compose should accept the input
+     * method's proposed value unchanged, including its composition range.
+     */
+    fun smartListInput(
+        previousText: String,
+        previousSelectionStart: Int,
+        previousSelectionEnd: Int,
+        proposedText: String,
+        proposedSelectionStart: Int,
+        proposedSelectionEnd: Int,
+        hasActiveComposition: Boolean,
+    ): MarkdownEditResult? {
+        if (hasActiveComposition || previousSelectionStart != previousSelectionEnd) return null
+        if (proposedSelectionStart != proposedSelectionEnd) return null
+
+        val previousCursor = previousSelectionEnd.coerceIn(0, previousText.length)
+        val proposedCursor = proposedSelectionEnd.coerceIn(0, proposedText.length)
+
+        if (isSingleBackspace(previousText, previousCursor, proposedText, proposedCursor)) {
+            val lineStart = previousText.lastIndexOf('\n', (previousCursor - 1).coerceAtLeast(0))
+                .let { if (it < 0) 0 else it + 1 }
+            val lineEnd = previousText.indexOf('\n', previousCursor)
+                .let { if (it < 0) previousText.length else it }
+            val listLine = parseListLine(previousText.substring(lineStart, lineEnd)) ?: return null
+            val deletedOffset = previousCursor - 1
+            if (deletedOffset in lineStart until (lineStart + listLine.prefix.length)) {
+                val updated = previousText.removeRange(lineStart, lineStart + listLine.prefix.length)
+                return MarkdownEditResult(updated, lineStart, lineStart)
+            }
+            return null
+        }
+
+        val inserted = simpleInsertion(
+            previousText = previousText,
+            previousCursor = previousCursor,
+            proposedText = proposedText,
+            proposedCursor = proposedCursor,
+        ) ?: return null
+
+        if (inserted == " ") {
+            return autoFormatListPrefix(previousText, previousCursor, proposedText, proposedCursor)
+        }
+        if (inserted != "\n") return null
+
+        val lineStart = previousText.lastIndexOf('\n', (previousCursor - 1).coerceAtLeast(0))
+            .let { if (it < 0) 0 else it + 1 }
+        val newline = previousText.indexOf('\n', previousCursor)
+        val lineEnd = if (newline < 0) previousText.length else newline
+        val listLine = parseListLine(previousText.substring(lineStart, lineEnd)) ?: return null
+        if (previousCursor < lineStart + listLine.prefix.length) return null
+
+        if (listLine.content.isBlank()) {
+            val replaceEnd = if (newline < 0) lineEnd else newline + 1
+            val updated = previousText.replaceRange(lineStart, replaceEnd, "\n")
+            return MarkdownEditResult(updated, lineStart + 1, lineStart + 1)
+        }
+
+        val updated = proposedText.substring(0, proposedCursor) +
+            listLine.nextPrefix +
+            proposedText.substring(proposedCursor)
+        val nextCursor = proposedCursor + listLine.nextPrefix.length
+        return MarkdownEditResult(updated, nextCursor, nextCursor)
+    }
+
+    private fun simpleInsertion(
+        previousText: String,
+        previousCursor: Int,
+        proposedText: String,
+        proposedCursor: Int,
+    ): String? {
+        if (proposedCursor < previousCursor) return null
+        val prefix = previousText.substring(0, previousCursor)
+        val suffix = previousText.substring(previousCursor)
+        if (!proposedText.startsWith(prefix) || !proposedText.endsWith(suffix)) return null
+        val insertedEnd = proposedText.length - suffix.length
+        if (insertedEnd < previousCursor || proposedCursor != insertedEnd) return null
+        return proposedText.substring(previousCursor, insertedEnd)
+    }
+
+    private fun isSingleBackspace(
+        previousText: String,
+        previousCursor: Int,
+        proposedText: String,
+        proposedCursor: Int,
+    ): Boolean = previousCursor > 0 &&
+        proposedCursor == previousCursor - 1 &&
+        proposedText == previousText.removeRange(previousCursor - 1, previousCursor)
+
+    private fun autoFormatListPrefix(
+        previousText: String,
+        previousCursor: Int,
+        proposedText: String,
+        proposedCursor: Int,
+    ): MarkdownEditResult? {
+        val lineStart = previousText.lastIndexOf('\n', (previousCursor - 1).coerceAtLeast(0))
+            .let { if (it < 0) 0 else it + 1 }
+        val typedPrefix = previousText.substring(lineStart, previousCursor)
+        val indentation = typedPrefix.takeWhile { it == ' ' || it == '\t' }
+        val trigger = typedPrefix.drop(indentation.length)
+        val replacement = when {
+            trigger == "*" || trigger == "-" -> "$indentation- "
+            trigger in setOf("[]", "[ ]", "- [ ]", "* [ ]") -> "$indentation- [ ] "
+            trigger.lowercase() in setOf("- [x]", "* [x]") -> "$indentation- [x] "
+            trigger.matches(Regex("^\\d+\\.$")) -> "$indentation$trigger "
+            else -> return null
+        }
+        if (proposedText.substring(lineStart, proposedCursor) == replacement) return null
+        val updated = proposedText.replaceRange(lineStart, proposedCursor, replacement)
+        val nextCursor = lineStart + replacement.length
+        return MarkdownEditResult(updated, nextCursor, nextCursor)
+    }
+
+    private fun parseListLine(line: String): SmartListLine? {
+        checklistLine.matchEntire(line)?.let { match ->
+            val indentation = match.groupValues[1]
+            val content = match.groupValues[3]
+            val prefix = line.dropLast(content.length)
+            return SmartListLine(prefix, "$indentation- [ ] ", content)
+        }
+        bulletLine.matchEntire(line)?.let { match ->
+            val indentation = match.groupValues[1]
+            val content = match.groupValues[2]
+            val prefix = line.dropLast(content.length)
+            return SmartListLine(prefix, "$indentation- ", content)
+        }
+        numberedLine.matchEntire(line)?.let { match ->
+            val indentation = match.groupValues[1]
+            val number = match.groupValues[2].toIntOrNull() ?: return null
+            val content = match.groupValues[3]
+            val prefix = line.dropLast(content.length)
+            return SmartListLine(prefix, "$indentation${number + 1}. ", content)
+        }
+        return null
+    }
+
+    private data class SmartListLine(
+        val prefix: String,
+        val nextPrefix: String,
+        val content: String,
+    )
 
     private fun transformSelectedLines(
         text: String,

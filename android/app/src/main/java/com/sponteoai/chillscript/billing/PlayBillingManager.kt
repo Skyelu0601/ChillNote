@@ -117,9 +117,20 @@ class PlayBillingManager(
             }
             val mapped = detailsResult.productDetailsList.mapNotNull { details ->
                 val offers = details.subscriptionOfferDetails.orEmpty()
-                val offer = offers.firstOrNull { candidate ->
-                    candidate.pricingPhases.pricingPhaseList.any { it.priceAmountMicros == 0L }
-                } ?: offers.firstOrNull { it.offerId == null } ?: offers.firstOrNull() ?: return@mapNotNull null
+                val isAnnualProduct = details.productId == ANNUAL_PRODUCT_ID ||
+                    details.productId.contains("year", ignoreCase = true)
+                val offer = if (isAnnualProduct) {
+                    offers.firstOrNull { candidate ->
+                        candidate.pricingPhases.pricingPhaseList.any { it.priceAmountMicros == 0L }
+                    } ?: offers.firstOrNull { it.offerId == null }
+                } else {
+                    offers.firstOrNull { candidate ->
+                        candidate.offerId == null &&
+                            candidate.pricingPhases.pricingPhaseList.none { it.priceAmountMicros == 0L }
+                    } ?: offers.firstOrNull { candidate ->
+                        candidate.pricingPhases.pricingPhaseList.none { it.priceAmountMicros == 0L }
+                    }
+                } ?: offers.firstOrNull() ?: return@mapNotNull null
                 val price = offer.pricingPhases.pricingPhaseList.lastOrNull()?.formattedPrice ?: return@mapNotNull null
                 val hasFreeTrial = offer.pricingPhases.pricingPhaseList.any { it.priceAmountMicros == 0L }
                 BillingProduct(details.productId, details.title, details.description, price, hasFreeTrial, details, offer.offerToken)
@@ -149,7 +160,8 @@ class PlayBillingManager(
     }
 
     private fun processPurchase(purchase: Purchase) {
-        purchase.products.firstOrNull { it in PRODUCT_IDS }?.let { onPurchased(it, purchase.purchaseToken) }
+        purchase.products.firstOrNull { it in RECOGNIZED_PRODUCT_IDS }
+            ?.let { onPurchased(it, purchase.purchaseToken) }
     }
 
     private fun reportBillingError(operation: String, result: BillingResult) {
@@ -165,7 +177,9 @@ class PlayBillingManager(
 
     companion object {
         private const val TAG = "PlayBillingManager"
-        val PRODUCT_IDS = listOf("com.chillnote.pro.monthly", "com.chillnote.pro.yearly")
+        private const val ANNUAL_PRODUCT_ID = "com.chillnote.pro.yearly"
+        val PRODUCT_IDS = listOf("com.chillnote.pro.weekly", ANNUAL_PRODUCT_ID)
+        val RECOGNIZED_PRODUCT_IDS = PRODUCT_IDS.toSet() + "com.chillnote.pro.monthly"
     }
 }
 

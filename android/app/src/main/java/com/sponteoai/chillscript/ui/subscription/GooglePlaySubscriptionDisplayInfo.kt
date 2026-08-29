@@ -24,6 +24,7 @@ import java.util.Locale
  */
 internal data class GooglePlaySubscriptionFacts(
     val isAnnual: Boolean,
+    val isWeekly: Boolean,
     val paidPriceMicros: Long?,
     val paidFormattedPrice: String,
     val currencyCode: String?,
@@ -33,6 +34,7 @@ internal data class GooglePlaySubscriptionFacts(
 
 internal data class GooglePlaySubscriptionDisplayInfo(
     val isAnnual: Boolean,
+    val isWeekly: Boolean,
     val hasFreeTrial: Boolean,
     val displayPrice: String,
     val badgeText: String,
@@ -42,6 +44,7 @@ internal data class GooglePlaySubscriptionDisplayInfo(
     val equivalentWeeklyText: String?,
     val renewalText: String?,
     val trialDurationText: String?,
+    val trialDayCount: Int?,
 )
 
 internal data class GooglePlayPeriod(
@@ -74,6 +77,13 @@ internal data class GooglePlayPeriod(
         val formatter = MeasureFormat.getInstance(locale, MeasureFormat.FormatWidth.WIDE)
         return formatter.formatMeasures(*measures.toTypedArray())
     }
+
+    val exactDayCount: Int?
+        get() = if (years == 0 && months == 0) {
+            (weeks * 7 + days).takeIf { it > 0 }
+        } else {
+            null
+        }
 }
 
 private val GooglePlayPeriodPattern = Regex(
@@ -98,21 +108,23 @@ internal fun BillingProduct.googlePlaySubscriptionFacts(): GooglePlaySubscriptio
         .firstOrNull { it.offerToken == offerToken }
     val phases = selectedOffer?.pricingPhases?.pricingPhaseList.orEmpty()
     val paidPhase = phases.lastOrNull { it.priceAmountMicros > 0L } ?: phases.lastOrNull()
+    val trialPhase = phases.firstOrNull { it.priceAmountMicros == 0L }
     val paidPeriod = parseGooglePlayPeriod(paidPhase?.billingPeriod)
     val isAnnual = paidPeriod?.totalMonths == 12 ||
         (paidPeriod == null && id.contains("year", ignoreCase = true))
-    val trialPhase = phases.firstOrNull { it.priceAmountMicros == 0L }
-    val trialPeriod = trialPhase?.let {
-        parseGooglePlayPeriod(it.billingPeriod)?.multipliedBy(it.billingCycleCount)
-    }
+    val isWeekly = paidPeriod?.let { it.weeks == 1 && it.years + it.months + it.days == 0 } == true ||
+        (paidPeriod == null && id.contains("week", ignoreCase = true))
 
     return GooglePlaySubscriptionFacts(
         isAnnual = isAnnual,
+        isWeekly = isWeekly,
         paidPriceMicros = paidPhase?.priceAmountMicros,
         paidFormattedPrice = paidPhase?.formattedPrice ?: formattedPrice,
         currencyCode = paidPhase?.priceCurrencyCode,
         billingMonthCount = paidPeriod?.totalMonths,
-        trialPeriod = trialPeriod,
+        trialPeriod = parseGooglePlayPeriod(trialPhase?.billingPeriod)?.multipliedBy(
+            trialPhase?.billingCycleCount ?: 1,
+        ),
     )
 }
 
@@ -123,9 +135,7 @@ internal fun rememberGooglePlaySubscriptionDisplayInfo(
     val locale = LocalLocale.current.platformLocale
     val facts = remember(product) { product.googlePlaySubscriptionFacts() }
     val trialDurationText = remember(facts, locale) {
-        facts.trialPeriod
-            ?.takeIf { facts.isAnnual }
-            ?.localized(locale)
+        facts.trialPeriod?.localized(locale)
     }
     val equivalentMonthlyPrice = remember(facts, locale) {
         facts.derivedPrice(divisor = facts.billingMonthCount, locale = locale)
@@ -154,21 +164,19 @@ internal fun rememberGooglePlaySubscriptionDisplayInfo(
             trialDurationText,
         )
         facts.isAnnual -> stringResource(R.string.subscription_cta_start_annual)
-        else -> stringResource(R.string.subscription_cta_start_monthly)
+        else -> stringResource(R.string.subscription_cta_start_weekly)
     }
 
     return GooglePlaySubscriptionDisplayInfo(
         isAnnual = facts.isAnnual,
+        isWeekly = facts.isWeekly,
         hasFreeTrial = trialDurationText != null,
         displayPrice = facts.paidFormattedPrice,
         badgeText = badgeText,
         ctaText = ctaText,
         billingPeriodText = stringResource(
-            if (facts.isAnnual) {
-                R.string.subscription_billing_period_yearly
-            } else {
-                R.string.subscription_billing_period_monthly
-            },
+            if (facts.isAnnual) R.string.subscription_billing_period_yearly
+            else R.string.subscription_billing_period_weekly,
         ),
         equivalentMonthlyText = equivalentMonthlyPrice?.let {
             stringResource(R.string.subscription_equivalent_monthly_billed_yearly_format, it)
@@ -184,23 +192,23 @@ internal fun rememberGooglePlaySubscriptionDisplayInfo(
             null
         },
         trialDurationText = trialDurationText,
+        trialDayCount = facts.trialPeriod?.exactDayCount,
     )
 }
 
 internal fun yearlySavingsPercent(
-    monthlyProduct: BillingProduct?,
+    weeklyProduct: BillingProduct?,
     yearlyProduct: BillingProduct?,
 ): Int? {
-    val monthlyFacts = monthlyProduct?.googlePlaySubscriptionFacts() ?: return null
+    val weeklyFacts = weeklyProduct?.googlePlaySubscriptionFacts() ?: return null
     val yearlyFacts = yearlyProduct?.googlePlaySubscriptionFacts() ?: return null
-    val monthlyMicros = monthlyFacts.paidPriceMicros?.takeIf { it > 0L } ?: return null
+    val weeklyMicros = weeklyFacts.paidPriceMicros?.takeIf { it > 0L } ?: return null
     val yearlyMicros = yearlyFacts.paidPriceMicros?.takeIf { it > 0L } ?: return null
-    val monthCount = yearlyFacts.billingMonthCount?.takeIf { it > 0 } ?: return null
 
-    val monthlyEquivalent = BigDecimal.valueOf(yearlyMicros)
-        .divide(BigDecimal.valueOf(monthCount.toLong()), 12, RoundingMode.HALF_UP)
+    val weeklyEquivalent = BigDecimal.valueOf(yearlyMicros)
+        .divide(BigDecimal.valueOf(52L), 12, RoundingMode.HALF_UP)
     val ratio = BigDecimal.ONE.subtract(
-        monthlyEquivalent.divide(BigDecimal.valueOf(monthlyMicros), 12, RoundingMode.HALF_UP),
+        weeklyEquivalent.divide(BigDecimal.valueOf(weeklyMicros), 12, RoundingMode.HALF_UP),
     )
     val percent = ratio.multiply(BigDecimal.valueOf(100L))
         .setScale(0, RoundingMode.HALF_UP)

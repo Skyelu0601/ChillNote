@@ -19,6 +19,14 @@ data class NoteEntity(
     val deletedAt: String? = null,
     val pinnedAt: String? = null,
     val version: Int = 1,
+    /** Last server revision acknowledged for this row. `version` remains the local revision. */
+    val serverVersion: Int? = null,
+    /** Authoritative mutation currently stored by the server. */
+    val serverMutationId: String? = null,
+    /** Durable mutation most recently prepared for upload by this client. */
+    val lastSubmittedMutationId: String? = null,
+    /** Fingerprint paired with [lastSubmittedMutationId] for idempotent retries. */
+    val lastSubmittedFingerprint: String? = null,
     val lastModifiedByDeviceId: String? = null,
     val sourceUrl: String? = null,
     val sourceTitle: String? = null,
@@ -50,6 +58,11 @@ data class TagEntity(
     val sortOrder: Int = 0,
     val deletedAt: String? = null,
     val version: Int = 1,
+    /** Last server revision acknowledged for this row. `version` remains the local revision. */
+    val serverVersion: Int? = null,
+    val serverMutationId: String? = null,
+    val lastSubmittedMutationId: String? = null,
+    val lastSubmittedFingerprint: String? = null,
     val lastModifiedByDeviceId: String? = null,
     val aiSummary: String? = null,
     val needsSync: Boolean = true,

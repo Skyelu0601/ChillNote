@@ -3,9 +3,13 @@ package com.sponteoai.chillscript.ui.markdown
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -13,6 +17,8 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.PointerEventPass
@@ -28,13 +34,17 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.sp
+import com.sponteoai.chillscript.domain.MarkdownEditing
 import com.sponteoai.chillscript.ui.theme.ChillColors
 
 /**
@@ -53,6 +63,7 @@ fun EditableRichMarkdown(
     onValueChange: (TextFieldValue) -> Unit,
     onOpenLink: (String) -> Unit,
     modifier: Modifier = Modifier,
+    cursorBottomPadding: Dp = 0.dp,
     textStyle: TextStyle = TextStyle(
         color = ChillColors.TextMain,
         fontSize = 17.sp,
@@ -75,10 +86,34 @@ fun EditableRichMarkdown(
         EditableMarkdownVisualTransformation(palette)
     }
     var textLayout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    var isFocused by remember { mutableStateOf(false) }
+    val bringIntoViewRequester = remember { BringIntoViewRequester() }
     val density = LocalDensity.current
     val checkboxHitWidthPx = with(density) { 44.dp.toPx() }
     val checkboxHorizontalLeadingSlopPx = with(density) { 6.dp.toPx() }
     val checkboxVerticalHitSlopPx = with(density) { 6.dp.toPx() }
+    val cursorBottomPaddingPx = with(density) { cursorBottomPadding.toPx() }
+
+    LaunchedEffect(
+        value.text,
+        value.selection,
+        textLayout,
+        isFocused,
+        cursorBottomPaddingPx,
+    ) {
+        if (!isFocused) return@LaunchedEffect
+        val layout = textLayout ?: return@LaunchedEffect
+        val cursorOffset = value.selection.end.coerceIn(0, layout.layoutInput.text.length)
+        val cursor = layout.getCursorRect(cursorOffset)
+        bringIntoViewRequester.bringIntoView(
+            Rect(
+                left = cursor.left,
+                top = cursor.top,
+                right = cursor.right.coerceAtLeast(cursor.left + 1f),
+                bottom = cursor.bottom + cursorBottomPaddingPx,
+            ),
+        )
+    }
 
     val currentTapHandler: (Offset) -> Unit = tapHandler@ { position ->
         val layout = textLayout ?: return@tapHandler
@@ -104,8 +139,12 @@ fun EditableRichMarkdown(
             return@tapHandler
         }
 
-        document.links.firstOrNull { hitOffset in it.start until it.end }
-            ?.let { onOpenLink(it.url) }
+        // While editing, a tap on styled link text must remain available for caret
+        // placement and selection. Opening links is reserved for the read-only state.
+        if (!enabled) {
+            document.links.firstOrNull { hitOffset in it.start until it.end }
+                ?.let { onOpenLink(it.url) }
+        }
     }
     val latestTapHandler by rememberUpdatedState(currentTapHandler)
 
@@ -135,11 +174,43 @@ fun EditableRichMarkdown(
 
     BasicTextField(
         value = value,
-        onValueChange = onValueChange,
+        onValueChange = { proposed ->
+            val smartEdit = MarkdownEditing.smartListInput(
+                previousText = value.text,
+                previousSelectionStart = value.selection.start,
+                previousSelectionEnd = value.selection.end,
+                proposedText = proposed.text,
+                proposedSelectionStart = proposed.selection.start,
+                proposedSelectionEnd = proposed.selection.end,
+                hasActiveComposition = value.composition != null || proposed.composition != null,
+            )
+            if (smartEdit == null) {
+                onValueChange(proposed)
+            } else {
+                onValueChange(
+                    TextFieldValue(
+                        text = smartEdit.text,
+                        selection = androidx.compose.ui.text.TextRange(
+                            smartEdit.selectionStart,
+                            smartEdit.selectionEnd,
+                        ),
+                    ),
+                )
+            }
+        },
         enabled = enabled,
-        modifier = modifier.fillMaxWidth().then(passiveTapObserver),
+        modifier = modifier
+            .fillMaxWidth()
+            .bringIntoViewRequester(bringIntoViewRequester)
+            .onFocusChanged { isFocused = it.isFocused }
+            .then(passiveTapObserver),
         textStyle = textStyle,
         cursorBrush = SolidColor(ChillColors.BrandBlue),
+        keyboardOptions = KeyboardOptions(
+            capitalization = KeyboardCapitalization.Sentences,
+            autoCorrectEnabled = true,
+            keyboardType = KeyboardType.Text,
+        ),
         visualTransformation = visualTransformation,
         onTextLayout = { textLayout = it },
         decorationBox = { innerTextField ->

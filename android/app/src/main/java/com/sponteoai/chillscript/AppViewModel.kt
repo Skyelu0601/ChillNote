@@ -48,6 +48,7 @@ import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import java.util.Locale
+import java.util.UUID
 import com.sponteoai.chillscript.onboarding.OnboardingPreferences
 import com.sponteoai.chillscript.ai.AIConsentManager
 import com.sponteoai.chillscript.ai.AIConsentPrompt
@@ -96,6 +97,11 @@ data class ContextChatUiState(
 )
 
 data class PendingShareImportAdoption(
+    val userId: String,
+    val noteId: String,
+)
+
+data class HomeNoteRevealRequest(
     val userId: String,
     val noteId: String,
 )
@@ -153,6 +159,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var pushRegistrationJob: Job? = null
     private var signOutJob: Job? = null
     private var voiceStartAuthorizationJob: Job? = null
+    private var foregroundPollSyncJob: Job? = null
+    @Volatile private var editorActive: Boolean = false
     private val voiceProcessingJobs = ConcurrentHashMap<String, Job>()
     private val sharedVideoCaptureJobs = ConcurrentHashMap<String, Job>()
     private val sharedVideoAuthorizationJobs = ConcurrentHashMap<String, Job>()
@@ -170,6 +178,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val paywallRequests = mutablePaywallRequests.asSharedFlow()
     private val pendingShareImportAdoptions = Channel<PendingShareImportAdoption>(Channel.BUFFERED)
     val pendingShareImportAdoptionEvents = pendingShareImportAdoptions.receiveAsFlow()
+    private val homeNoteRevealRequests = Channel<HomeNoteRevealRequest>(Channel.BUFFERED)
+    val homeNoteRevealEvents = homeNoteRevealRequests.receiveAsFlow()
     val aiConsentPrompt: StateFlow<AIConsentPrompt?> = aiConsentManager.prompt
     private val mutablePendingRecordings = MutableStateFlow(recordingFileManager.pendingRecordings())
     val pendingRecordings: StateFlow<List<PendingRecording>> = mutablePendingRecordings
@@ -186,6 +196,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val reviewRequests = appRatingTracker.requests
     val currentUserId: String?
         get() = (mutableUiState.value.authState as? AuthState.SignedIn)?.session?.user?.id
+
+    val isEditorActive: Boolean
+        get() = editorActive
 
     suspend fun weeklyTopicsAccessToken(): String? {
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return null
@@ -360,6 +373,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         cancelVoiceWork()
         launchBusy {
             val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return@launchBusy
+            // Invalidate responses from sync requests that were already in flight
+            // before the destructive server operation began.
+            notesRepository.invalidateInFlightSync(session.user.id)
             accountApi.deleteAccount(session.accessToken)
             try {
                 sessionRefreshJob?.cancel()
@@ -968,7 +984,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun moveNote(note: NoteEntity, section: String) {
         if (note.deletedAt != null || note.section == section) return
-        viewModelScope.launch { notesRepository.updateNote(note, note.content, section); sync() }
+        viewModelScope.launch { notesRepository.moveNote(note.userId, note.id, section); sync() }
     }
 
     fun permanentlyDelete(note: NoteEntity) {
@@ -1093,6 +1109,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         hasFetchedCreditBalance = true,
                         subscriptionTier = creditState.tier ?: mutableUiState.value.subscriptionTier,
                     )
+                    val noteId = UUID.randomUUID().toString()
+                    homeNoteRevealRequests.trySend(HomeNoteRevealRequest(session.user.id, noteId))
                     notesRepository.importLink(
                         session.user.id,
                         session.accessToken,
@@ -1101,6 +1119,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         placeholder,
                         mediaLinkSections.value,
                         tagIds,
+                        noteId,
                     )
                 }
                     .onSuccess {
@@ -1125,19 +1144,44 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun sync() {
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
-        viewModelScope.launch {
-            runCatching {
-                notesRepository.purgeExpiredTrash(session.user.id)
-                notesRepository.sync(session.user.id, session.accessToken)
+        viewModelScope.launch { syncSession(session) }
+    }
+
+    fun setEditorActive(active: Boolean) {
+        editorActive = active
+        if (active) {
+            // Cancelling a poll after its HTTP commit is safe because protocol v4
+            // retries the persisted mutation ID instead of guessing from timestamps.
+            foregroundPollSyncJob?.cancel()
+            foregroundPollSyncJob = null
+        }
+    }
+
+    fun syncFromForegroundPoll() {
+        if (editorActive || foregroundPollSyncJob?.isActive == true) return
+        val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
+        foregroundPollSyncJob = viewModelScope.launch {
+            if (!editorActive) syncSession(session)
+        }
+    }
+
+    private suspend fun syncSession(session: AuthSession) {
+        try {
+            notesRepository.purgeExpiredTrash(session.user.id)
+            notesRepository.sync(session.user.id, session.accessToken)
+        } catch (cancellation: CancellationException) {
+            throw cancellation
+        } catch (error: Throwable) {
+            Log.w(TAG, "Note sync failed", error)
+            // Keep a network-constrained retry durable across process death.
+            // If a foreground worker is already pending/running, unique KEEP
+            // semantics avoid creating duplicate work.
+            BackgroundSyncScheduler.enqueueForegroundSync(getApplication())
+            if (currentUserId == session.user.id) {
+                mutableUiState.value = mutableUiState.value.copy(
+                    errorMessage = getApplication<Application>().getString(R.string.sync_error),
+                )
             }
-                .onFailure {
-                    Log.w(TAG, "Note sync failed", it)
-                    if (currentUserId == session.user.id) {
-                        mutableUiState.value = mutableUiState.value.copy(
-                            errorMessage = getApplication<Application>().getString(R.string.sync_error),
-                        )
-                    }
-                }
         }
     }
 
@@ -1155,6 +1199,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         pendingShareImportQueue.pending().forEach { pending ->
             if (pending.ownerUserId != null && pending.ownerUserId != session.user.id) return@forEach
             if (notesRepository.note(session.user.id, pending.id) != null) {
+                // A background sync can download the server-created note before
+                // MainActivity resumes. It is still the newly shared note and must
+                // trigger the same one-shot reveal as a foreground adoption.
+                homeNoteRevealRequests.trySend(HomeNoteRevealRequest(session.user.id, pending.id))
+                pendingShareImportAdoptions.trySend(
+                    PendingShareImportAdoption(
+                        userId = session.user.id,
+                        noteId = pending.id,
+                    ),
+                )
                 pendingShareImportQueue.remove(pending.id)
                 return@forEach
             }
@@ -1195,6 +1249,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     )
                 }
             }.onSuccess {
+                homeNoteRevealRequests.trySend(HomeNoteRevealRequest(session.user.id, pending.id))
                 pendingShareImportAdoptions.trySend(
                     PendingShareImportAdoption(
                         userId = session.user.id,
@@ -1209,6 +1264,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 // Once that row exists, the durable hand-off has completed and must
                 // not enqueue the same paid import again on every foreground event.
                 if (notesRepository.note(session.user.id, pending.id) != null) {
+                    homeNoteRevealRequests.trySend(HomeNoteRevealRequest(session.user.id, pending.id))
                     pendingShareImportQueue.remove(pending.id)
                 }
             }

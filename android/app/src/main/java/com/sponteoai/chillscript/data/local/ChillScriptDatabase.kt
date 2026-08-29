@@ -9,7 +9,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 
 @Database(
     entities = [NoteEntity::class, TagEntity::class, NoteTagCrossRef::class, ChecklistItemEntity::class, SyncStateEntity::class, PendingHardDeleteEntity::class, NoteSearchEntity::class],
-    version = 5,
+    version = 7,
     exportSchema = true,
 )
 abstract class ChillScriptDatabase : RoomDatabase() {
@@ -73,6 +73,37 @@ abstract class ChillScriptDatabase : RoomDatabase() {
             }
         }
 
-        internal val ALL_MIGRATIONS = arrayOf(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+        internal val MIGRATION_5_6 = object : Migration(5, 6) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `notes` ADD COLUMN `serverVersion` INTEGER")
+                db.execSQL("ALTER TABLE `tags` ADD COLUMN `serverVersion` INTEGER")
+
+                // v5 used `version` for local revisions as well as server comparisons,
+                // so even a clean row can contain a value that never existed on the
+                // server. Leave every serverVersion unknown and discard cursors so the
+                // next sync bootstraps an authoritative server baseline for clean rows.
+                db.execSQL("DELETE FROM `sync_state`")
+            }
+        }
+
+        internal val MIGRATION_6_7 = object : Migration(6, 7) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL("ALTER TABLE `notes` ADD COLUMN `serverMutationId` TEXT")
+                db.execSQL("ALTER TABLE `notes` ADD COLUMN `lastSubmittedMutationId` TEXT")
+                db.execSQL("ALTER TABLE `notes` ADD COLUMN `lastSubmittedFingerprint` TEXT")
+                db.execSQL("ALTER TABLE `tags` ADD COLUMN `serverMutationId` TEXT")
+                db.execSQL("ALTER TABLE `tags` ADD COLUMN `lastSubmittedMutationId` TEXT")
+                db.execSQL("ALTER TABLE `tags` ADD COLUMN `lastSubmittedFingerprint` TEXT")
+            }
+        }
+
+        internal val ALL_MIGRATIONS = arrayOf(
+            MIGRATION_1_2,
+            MIGRATION_2_3,
+            MIGRATION_3_4,
+            MIGRATION_4_5,
+            MIGRATION_5_6,
+            MIGRATION_6_7,
+        )
     }
 }

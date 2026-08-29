@@ -223,6 +223,8 @@ fun IOSParityHomeScreen(
     onAcknowledgeFirstActionShare: () -> Unit,
     onDismissFirstActionGuide: () -> Unit,
     onOpenFirstActionTarget: () -> Unit,
+    noteRevealTargetId: String? = null,
+    onNoteRevealed: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     var sidebarOpen by remember { mutableStateOf(false) }
@@ -235,6 +237,16 @@ fun IOSParityHomeScreen(
     val sidebarOpenGestureDistancePx = with(density) { 16.dp.toPx() }
     val sidebarOpenMinTranslationPx = with(density) { 36.dp.toPx() }
     val sidebarHorizontalBiasPx = with(density) { 12.dp.toPx() }
+    val notesListState = rememberLazyListState()
+
+    LaunchedEffect(noteRevealTargetId, notes.map { it.id }) {
+        val noteId = noteRevealTargetId ?: return@LaunchedEffect
+        val targetIndex = notes.indexOfFirst { it.id == noteId }
+        if (targetIndex >= 0) {
+            notesListState.animateScrollToItem(targetIndex)
+            onNoteRevealed(noteId)
+        }
+    }
 
     BackHandler(enabled = sidebarOpen) { sidebarOpen = false }
 
@@ -323,6 +335,7 @@ fun IOSParityHomeScreen(
                 } else {
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
+                        state = notesListState,
                         contentPadding = androidx.compose.foundation.layout.PaddingValues(
                             start = 24.dp,
                             top = 4.dp,

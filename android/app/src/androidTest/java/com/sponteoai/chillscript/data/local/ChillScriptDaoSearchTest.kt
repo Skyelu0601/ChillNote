@@ -79,4 +79,54 @@ class ChillScriptDaoSearchTest {
             dao.searchNotes("user-1", underscoreQuery.match, underscoreQuery.like).first().map { it.id },
         )
     }
+
+    @Test
+    fun observeNotes_ordersPinnedFirstThenByCreationTime() = runBlocking {
+        val dao = database.dao()
+        dao.upsertNotes(orderingFixtures())
+
+        val results = dao.observeNotes("user-order").first()
+
+        assertEquals(
+            listOf("pinned-newer", "pinned-older", "created-newer", "created-older"),
+            results.map { it.id },
+        )
+    }
+
+    private fun orderingFixtures(): List<NoteEntity> = listOf(
+        NoteEntity(
+            id = "created-older",
+            userId = "user-order",
+            content = "Shared older note",
+            previewPlainText = "Shared older note",
+            createdAt = "2026-08-20T00:00:00Z",
+            updatedAt = "2026-08-25T00:00:00Z",
+        ),
+        NoteEntity(
+            id = "created-newer",
+            userId = "user-order",
+            content = "Shared newer note",
+            previewPlainText = "Shared newer note",
+            createdAt = "2026-08-24T00:00:00Z",
+            updatedAt = "2026-08-21T00:00:00Z",
+        ),
+        NoteEntity(
+            id = "pinned-older",
+            userId = "user-order",
+            content = "Shared pinned older note",
+            previewPlainText = "Shared pinned older note",
+            createdAt = "2026-08-23T00:00:00Z",
+            updatedAt = "2026-08-25T00:00:00Z",
+            pinnedAt = "2026-08-22T00:00:00Z",
+        ),
+        NoteEntity(
+            id = "pinned-newer",
+            userId = "user-order",
+            content = "Shared pinned newer note",
+            previewPlainText = "Shared pinned newer note",
+            createdAt = "2026-08-19T00:00:00Z",
+            updatedAt = "2026-08-20T00:00:00Z",
+            pinnedAt = "2026-08-25T00:00:00Z",
+        ),
+    )
 }

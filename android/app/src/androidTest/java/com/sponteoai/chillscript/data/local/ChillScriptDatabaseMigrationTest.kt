@@ -22,7 +22,7 @@ class ChillScriptDatabaseMigrationTest {
     )
 
     @Test
-    fun migrateFrom1To5_preservesNotesAndBuildsSearchIndex() {
+    fun migrateFrom1To7_preservesNotesAndBuildsSearchIndex() {
         helper.createDatabase(databaseName, 1).apply {
             execSQL(
                 """
@@ -46,7 +46,7 @@ class ChillScriptDatabaseMigrationTest {
 
         val database = helper.runMigrationsAndValidate(
             databaseName,
-            5,
+            7,
             true,
             *ChillScriptDatabase.ALL_MIGRATIONS,
         )
@@ -66,6 +66,10 @@ class ChillScriptDatabaseMigrationTest {
             }
             assertEquals(true, "sourceAuthorName" in columns)
             assertEquals(true, "sourceAuthorHandle" in columns)
+            assertEquals(true, "serverVersion" in columns)
+            assertEquals(true, "serverMutationId" in columns)
+            assertEquals(true, "lastSubmittedMutationId" in columns)
+            assertEquals(true, "lastSubmittedFingerprint" in columns)
         }
         database.query("PRAGMA table_info(notes_fts)").use { cursor ->
             val nameIndex = cursor.getColumnIndexOrThrow("name")
@@ -82,6 +86,141 @@ class ChillScriptDatabaseMigrationTest {
             }
             assertEquals(true, "createdAt" in columns)
             assertEquals(true, "updatedAt" in columns)
+        }
+        database.close()
+    }
+
+    @Test
+    fun migrateFrom5To6_invalidatesUntrustworthyServerVersionsAndCursors() {
+        val sourceDatabaseName = "migration-test-server-version"
+        helper.createDatabase(sourceDatabaseName, 5).apply {
+            execSQL(
+                """
+                INSERT INTO notes (
+                    id, userId, content, contentFormat, checklistNotes, previewPlainText,
+                    createdAt, updatedAt, version, section, needsSync
+                ) VALUES
+                    ('clean-note', 'user-1', 'Clean', 'text', '', 'Clean',
+                     '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z', 7, 'inbox', 0),
+                    ('dirty-note', 'user-1', 'Dirty', 'text', '', 'Dirty',
+                     '2026-01-01T00:00:00Z', '2026-01-01T01:00:00Z', 11, 'inbox', 1)
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO tags (
+                    id, userId, name, colorHex, createdAt, updatedAt, lastUsedAt,
+                    sortOrder, version, needsSync
+                ) VALUES
+                    ('clean-tag', 'user-1', 'Clean', '#5EAFA5',
+                     '2026-01-01T00:00:00Z', '2026-01-01T00:00:00Z',
+                     '2026-01-01T00:00:00Z', 0, 5, 0),
+                    ('dirty-tag', 'user-1', 'Dirty', '#8B5CF6',
+                     '2026-01-01T00:00:00Z', '2026-01-01T01:00:00Z',
+                     '2026-01-01T01:00:00Z', 1, 9, 1)
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO sync_state (userId, cursor, deviceId, lastSyncedAt)
+                VALUES ('user-1', 'stale-cursor', 'device-1', '2026-01-01T02:00:00Z')
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val database = helper.runMigrationsAndValidate(
+            sourceDatabaseName,
+            6,
+            true,
+            ChillScriptDatabase.MIGRATION_5_6,
+        )
+
+        database.query("SELECT id, version, serverVersion FROM notes ORDER BY id").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals("clean-note", cursor.getString(0))
+            assertEquals(7, cursor.getInt(1))
+            assertEquals(true, cursor.isNull(2))
+            cursor.moveToNext()
+            assertEquals("dirty-note", cursor.getString(0))
+            assertEquals(11, cursor.getInt(1))
+            assertEquals(true, cursor.isNull(2))
+        }
+        database.query("SELECT id, version, serverVersion FROM tags ORDER BY id").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals("clean-tag", cursor.getString(0))
+            assertEquals(5, cursor.getInt(1))
+            assertEquals(true, cursor.isNull(2))
+            cursor.moveToNext()
+            assertEquals("dirty-tag", cursor.getString(0))
+            assertEquals(9, cursor.getInt(1))
+            assertEquals(true, cursor.isNull(2))
+        }
+        database.query("SELECT COUNT(*) FROM sync_state").use { cursor ->
+            cursor.moveToFirst()
+            assertEquals(0, cursor.getInt(0))
+        }
+        database.close()
+    }
+
+    @Test
+    fun migrateFrom6To7_addsDurableMutationMetadataWithoutChangingRows() {
+        val sourceDatabaseName = "migration-test-durable-mutation"
+        helper.createDatabase(sourceDatabaseName, 6).apply {
+            execSQL(
+                """
+                INSERT INTO notes (
+                    id, userId, content, contentFormat, checklistNotes, previewPlainText,
+                    createdAt, updatedAt, version, serverVersion, section, needsSync
+                ) VALUES (
+                    'note-1', 'user-1', 'Dirty body', 'text', '', 'Dirty body',
+                    '2026-01-01T00:00:00Z', '2026-01-01T01:00:00Z', 8, 3, 'drafts', 1
+                )
+                """.trimIndent(),
+            )
+            execSQL(
+                """
+                INSERT INTO tags (
+                    id, userId, name, colorHex, createdAt, updatedAt, lastUsedAt,
+                    sortOrder, version, serverVersion, needsSync
+                ) VALUES (
+                    'tag-1', 'user-1', 'Ideas', '#5EAFA5',
+                    '2026-01-01T00:00:00Z', '2026-01-01T01:00:00Z',
+                    '2026-01-01T01:00:00Z', 0, 6, 2, 1
+                )
+                """.trimIndent(),
+            )
+            close()
+        }
+
+        val database = helper.runMigrationsAndValidate(
+            sourceDatabaseName,
+            7,
+            true,
+            ChillScriptDatabase.MIGRATION_6_7,
+        )
+
+        database.query(
+            "SELECT content, version, serverVersion, serverMutationId, lastSubmittedMutationId, lastSubmittedFingerprint FROM notes WHERE id = 'note-1'",
+        ).use { cursor ->
+            cursor.moveToFirst()
+            assertEquals("Dirty body", cursor.getString(0))
+            assertEquals(8, cursor.getInt(1))
+            assertEquals(3, cursor.getInt(2))
+            assertEquals(true, cursor.isNull(3))
+            assertEquals(true, cursor.isNull(4))
+            assertEquals(true, cursor.isNull(5))
+        }
+        database.query(
+            "SELECT name, version, serverVersion, serverMutationId, lastSubmittedMutationId, lastSubmittedFingerprint FROM tags WHERE id = 'tag-1'",
+        ).use { cursor ->
+            cursor.moveToFirst()
+            assertEquals("Ideas", cursor.getString(0))
+            assertEquals(6, cursor.getInt(1))
+            assertEquals(2, cursor.getInt(2))
+            assertEquals(true, cursor.isNull(3))
+            assertEquals(true, cursor.isNull(4))
+            assertEquals(true, cursor.isNull(5))
         }
         database.close()
     }

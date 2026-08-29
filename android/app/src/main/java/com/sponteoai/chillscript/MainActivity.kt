@@ -147,6 +147,7 @@ import com.sponteoai.chillscript.domain.MarkdownEditing
 import com.sponteoai.chillscript.domain.TagColors
 import com.sponteoai.chillscript.domain.TagHierarchy
 import com.sponteoai.chillscript.domain.TrashPolicy
+import com.sponteoai.chillscript.domain.shouldPersistEditorContentOnClose
 import com.sponteoai.chillscript.domain.sourceMetadata
 import com.sponteoai.chillscript.ui.markdown.MarkdownText
 import com.sponteoai.chillscript.ui.source.NoteSourceCard
@@ -163,6 +164,7 @@ import com.sponteoai.chillscript.onboarding.OnboardingPreferences
 import com.sponteoai.chillscript.onboarding.IOSParityOnboardingScreen
 import com.sponteoai.chillscript.ui.auth.IOSParityLoginScreen
 import com.sponteoai.chillscript.ui.subscription.IOSParitySubscriptionScreen
+import com.sponteoai.chillscript.ui.subscription.SubscriptionDebugPreviewPricing
 import com.sponteoai.chillscript.ui.subscription.SubscriptionScreenContext
 import com.sponteoai.chillscript.ai.AIConsentDialog
 import com.sponteoai.chillscript.ai.AISkillApplyMode
@@ -223,6 +225,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var billingManager: PlayBillingManager
     private lateinit var onboardingPreferences: OnboardingPreferences
     private lateinit var reviewManager: ReviewManager
+    private var foregroundSyncJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -240,6 +243,8 @@ class MainActivity : ComponentActivity() {
             viewModel.handleOAuthCallback(callback)
         }
         handlePushIntent(intent)
+        val showSubscriptionPreview = BuildConfig.DEBUG &&
+            intent.getBooleanExtra("chillscript.debug.subscription_preview", false)
         setContent {
             val uiState by viewModel.uiState.collectAsState()
             val notes by viewModel.notes.collectAsState()
@@ -254,7 +259,25 @@ class MainActivity : ComponentActivity() {
             }
             var hasViewedIntro by remember { mutableStateOf(onboardingPreferences.hasViewedIntroOnDevice()) }
             ChillScriptTheme {
-                when (uiState.authState) {
+                if (showSubscriptionPreview) {
+                    IOSParitySubscriptionScreen(
+                        context = SubscriptionScreenContext.OnboardingTrial,
+                        isPro = false,
+                        subscriptionExpiresAt = null,
+                        billingState = billingState,
+                        onPurchase = {},
+                        onRestore = billingManager::restorePurchases,
+                        onRetryProducts = billingManager::connect,
+                        onDismiss = ::finish,
+                        onOpenUrl = ::openExternalTarget,
+                        debugPreviewPricing = SubscriptionDebugPreviewPricing(
+                            annualPrice = "¥398",
+                            annualWeeklyPrice = "¥7.65",
+                            weeklyPrice = "¥48",
+                            annualTrialDayCount = 7,
+                        ),
+                    )
+                } else when (uiState.authState) {
                     AuthState.Checking -> LoadingScreen()
                     AuthState.SignedOut -> if (hasViewedIntro) {
                         IOSParityLoginScreen(
@@ -332,6 +355,26 @@ class MainActivity : ComponentActivity() {
             viewModel.handleOAuthCallback(callback)
         }
         handlePushIntent(intent)
+    }
+
+    override fun onStart() {
+        super.onStart()
+        foregroundSyncJob?.cancel()
+        foregroundSyncJob = lifecycleScope.launch {
+            while (true) {
+                // onResume already schedules an immediate network-constrained sync.
+                // Poll only while this Activity remains visible so iOS edits arrive
+                // promptly without keeping a foreground timer alive in background.
+                delay(FOREGROUND_SYNC_INTERVAL_MS)
+                viewModel.syncFromForegroundPoll()
+            }
+        }
+    }
+
+    override fun onStop() {
+        foregroundSyncJob?.cancel()
+        foregroundSyncJob = null
+        super.onStop()
     }
 
     override fun onResume() {
@@ -473,6 +516,7 @@ class MainActivity : ComponentActivity() {
 
     private companion object {
         const val TAG = "MainActivity"
+        const val FOREGROUND_SYNC_INTERVAL_MS = 60_000L
     }
 }
 
@@ -634,6 +678,12 @@ private fun HomeScreen(
     var redoStack by remember { mutableStateOf<List<TextFieldValue>>(emptyList()) }
     var editorOpen by remember { mutableStateOf(false) }
     var editingNote by remember { mutableStateOf<NoteEntity?>(null) }
+    LaunchedEffect(editorOpen) {
+        viewModel.setEditorActive(editorOpen)
+    }
+    DisposableEffect(viewModel) {
+        onDispose { viewModel.setEditorActive(false) }
+    }
     var searchQuery by remember { mutableStateOf("") }
     var searchVisible by remember { mutableStateOf(false) }
     var selectedTagId by remember { mutableStateOf<String?>(null) }
@@ -672,6 +722,7 @@ private fun HomeScreen(
     var creatingEditorNote by remember { mutableStateOf(false) }
     var appliedAITransformation by remember { mutableStateOf<AppliedAISkillTransformation?>(null) }
     var retryingAITransformation by remember { mutableStateOf<AppliedAISkillTransformation?>(null) }
+    var returnToNoteRequest by remember { mutableLongStateOf(0L) }
     val installedRecipes by viewModel.installedRecipes.collectAsState()
     val aiSkillState by viewModel.aiSkillState.collectAsState()
     val contextChatState by viewModel.contextChatState.collectAsState()
@@ -690,6 +741,13 @@ private fun HomeScreen(
     val weeklyTopicsState by weeklyTopicsController.state.collectAsState()
     val context = LocalContext.current
     val signedInUser = (uiState.authState as? AuthState.SignedIn)?.session?.user
+    var homeNoteRevealTargetId by remember(signedInUser?.id) { mutableStateOf<String?>(null) }
+    LaunchedEffect(viewModel, signedInUser?.id) {
+        val userId = signedInUser?.id ?: return@LaunchedEffect
+        viewModel.homeNoteRevealEvents.collect { request ->
+            if (request.userId == userId) homeNoteRevealTargetId = request.noteId
+        }
+    }
     val firstActionGuideStore = remember(context) { HomeFirstActionGuideStore(context) }
     var firstActionGuideState by remember(signedInUser?.id) {
         mutableStateOf(firstActionGuideStore.configure(signedInUser?.id, signedInUser?.createdAt))
@@ -812,7 +870,13 @@ private fun HomeScreen(
             note != null && content.isBlank() && activeVoiceNoteState != null -> Unit
             note != null && content.isBlank() && !isVoiceProcessing -> viewModel.permanentlyDelete(note)
             note != null || content.isNotBlank() -> {
-                if (!isVoiceProcessing) {
+                if (shouldPersistEditorContentOnClose(
+                        hasExistingNote = note != null,
+                        currentContent = content,
+                        persistedContent = editorPersistedContent,
+                        isVoiceProcessing = isVoiceProcessing,
+                    )
+                ) {
                     viewModel.saveNote(note, content, note?.section ?: activeCaptureSection)
                 }
             }
@@ -1413,6 +1477,7 @@ private fun HomeScreen(
                 retryingAITransformation = null
                 appliedAITransformation = null
             },
+            returnToNoteRequest = returnToNoteRequest,
             firstActionGuideState = firstActionGuideState,
             onReviewTranscript = {
                 val userId = signedInUser?.id
@@ -2009,6 +2074,10 @@ private fun HomeScreen(
                     }
                 }
             },
+            noteRevealTargetId = homeNoteRevealTargetId,
+            onNoteRevealed = { noteId ->
+                if (homeNoteRevealTargetId == noteId) homeNoteRevealTargetId = null
+            },
         )
     }
     if (showCreateTag) AddTopicDialog(
@@ -2240,6 +2309,7 @@ private fun HomeScreen(
                     redoStack = emptyList()
                     editorText = TextFieldValue(applied, TextRange(applied.length))
                     checklistDraft = ChecklistMarkdown.parse(applied)
+                    returnToNoteRequest += 1L
                 } else if (homeNote != null) {
                     viewModel.replaceNoteContent(homeNote.id, applied)
                 }

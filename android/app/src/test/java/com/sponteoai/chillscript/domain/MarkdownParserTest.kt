@@ -33,4 +33,64 @@ class MarkdownParserTest {
         assertEquals("- [ ] one\n- [ ] two", checked.text)
         assertEquals("one\ntwo", MarkdownEditing.toggleChecklist(checked.text, 0, checked.text.length).text)
     }
+
+    @Test fun `smart enter continues every supported list and resets checked items`() {
+        assertSmartInput("- item", "- item\n", "- item\n- ")
+        assertSmartInput("- [x] done", "- [x] done\n", "- [x] done\n- [ ] ")
+        assertSmartInput("  7. item", "  7. item\n", "  7. item\n  8. ")
+    }
+
+    @Test fun `smart enter exits an empty list without leaving a hidden prefix`() {
+        assertSmartInput("- [ ] ", "- [ ] \n", "\n")
+        assertSmartInput("- \nnext", "- \n\nnext", "\nnext", previousCursor = 2, proposedCursor = 3)
+    }
+
+    @Test fun `backspace inside list prefix converts it to ordinary text`() {
+        val result = MarkdownEditing.smartListInput(
+            previousText = "- [ ] task",
+            previousSelectionStart = 6,
+            previousSelectionEnd = 6,
+            proposedText = "- [ ]task",
+            proposedSelectionStart = 5,
+            proposedSelectionEnd = 5,
+            hasActiveComposition = false,
+        )
+
+        assertEquals("task", result?.text)
+        assertEquals(0, result?.selectionStart)
+    }
+
+    @Test fun `smart formatting normalizes checklist trigger but preserves active composition`() {
+        assertSmartInput("[]", "[] ", "- [ ] ")
+
+        val composing = MarkdownEditing.smartListInput(
+            previousText = "[]",
+            previousSelectionStart = 2,
+            previousSelectionEnd = 2,
+            proposedText = "[] ",
+            proposedSelectionStart = 3,
+            proposedSelectionEnd = 3,
+            hasActiveComposition = true,
+        )
+        assertEquals(null, composing)
+    }
+
+    private fun assertSmartInput(
+        previous: String,
+        proposed: String,
+        expected: String,
+        previousCursor: Int = previous.length,
+        proposedCursor: Int = previousCursor + 1,
+    ) {
+        val result = MarkdownEditing.smartListInput(
+            previousText = previous,
+            previousSelectionStart = previousCursor,
+            previousSelectionEnd = previousCursor,
+            proposedText = proposed,
+            proposedSelectionStart = proposedCursor,
+            proposedSelectionEnd = proposedCursor,
+            hasActiveComposition = false,
+        )
+        assertEquals(expected, result?.text)
+    }
 }

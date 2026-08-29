@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -151,6 +152,7 @@ fun IOSParityEditorScreen(
     onAIRetry: () -> Unit = {},
     onAIUndo: () -> Unit = {},
     onAISave: () -> Unit = {},
+    returnToNoteRequest: Long = 0L,
     firstActionGuideState: HomeFirstActionGuideState = HomeFirstActionGuideState(),
     onReviewTranscript: () -> Unit = {},
     onOpenCreateTab: () -> Unit = {},
@@ -183,17 +185,26 @@ fun IOSParityEditorScreen(
     }
 
     LaunchedEffect(guideStage) {
+        // The apply event below owns the transition back to Note. If the user
+        // dismisses the AI flow instead, preserve the current Create workspace.
+        if (guideStage == HomeFirstActionStage.TapRecordTab) return@LaunchedEffect
         val guidedWorkspace = when (guideStage) {
             HomeFirstActionStage.ReviewTranscript,
             HomeFirstActionStage.TapCreateTab -> IOSNoteWorkspace.NOTE
             HomeFirstActionStage.TapAISkills,
-            HomeFirstActionStage.WaitingForAISkillsDismissal,
-            HomeFirstActionStage.TapRecordTab -> IOSNoteWorkspace.CREATE
+            HomeFirstActionStage.WaitingForAISkillsDismissal -> IOSNoteWorkspace.CREATE
             HomeFirstActionStage.TapTeleprompter -> IOSNoteWorkspace.RECORD
             else -> workspace
         }
         if (guidedWorkspace != IOSNoteWorkspace.NOTE) focusManager.clearFocus()
         workspace = guidedWorkspace
+    }
+
+    LaunchedEffect(returnToNoteRequest) {
+        if (returnToNoteRequest > 0L) {
+            focusManager.clearFocus()
+            workspace = IOSNoteWorkspace.NOTE
+        }
     }
 
     Box(modifier.fillMaxSize().background(ChillColors.BackgroundSecondary)) {
@@ -260,7 +271,10 @@ fun IOSParityEditorScreen(
             BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
                 val minimumContentHeight = (maxHeight - 56.dp).coerceAtLeast(120.dp)
                 LazyColumn(
-                    Modifier.fillMaxSize(),
+                    Modifier
+                        .fillMaxSize()
+                        .navigationBarsPadding()
+                        .imePadding(),
                     contentPadding = PaddingValues(bottom = if (guideStage == HomeFirstActionStage.ReviewTranscript) 156.dp else 0.dp),
                 ) {
                     if (isDeleted) {
@@ -302,6 +316,7 @@ fun IOSParityEditorScreen(
                                 onValueChange = onTextChange,
                                 onOpenLink = onOpenSource,
                                 focusRequester = focusRequester,
+                                cursorBottomPadding = if (imeVisible) 48.dp else 0.dp,
                                 modifier = Modifier.heightIn(min = minimumContentHeight),
                             )
                             IOSNoteWorkspace.CREATE -> IOSCreateWorkspace(
@@ -323,6 +338,11 @@ fun IOSParityEditorScreen(
                                 onFirstActionStart = onOpenTeleprompter,
                                 guideStage = guideStage,
                             )
+                        }
+                    }
+                    if (workspace == IOSNoteWorkspace.NOTE && imeVisible) {
+                        item(key = "keyboard-toolbar-spacer") {
+                            Spacer(Modifier.height(48.dp))
                         }
                     }
                 }
@@ -942,6 +962,7 @@ private fun IOSNoteEditor(
     onValueChange: (TextFieldValue) -> Unit,
     onOpenLink: (String) -> Unit,
     focusRequester: FocusRequester,
+    cursorBottomPadding: androidx.compose.ui.unit.Dp,
     modifier: Modifier = Modifier,
 ) {
     EditableRichMarkdown(
@@ -950,7 +971,11 @@ private fun IOSNoteEditor(
         placeholder = stringResource(R.string.note_editor_placeholder),
         onValueChange = onValueChange,
         onOpenLink = onOpenLink,
-        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 16.dp).focusRequester(focusRequester),
+        cursorBottomPadding = cursorBottomPadding,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 20.dp, top = 16.dp, end = 20.dp, bottom = 40.dp)
+            .focusRequester(focusRequester),
     )
 }
 
