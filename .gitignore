@@ -159,3 +159,10 @@ android/app/build/
 .codex-audits/
 audit/
 **/__pycache__/
+
+# Local tool environments and standalone workspaces
+/.claude/
+/.idea/
+/.venv*/
+/.vscode/
+/store/app-store/
