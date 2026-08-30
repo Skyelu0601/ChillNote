@@ -7,21 +7,20 @@ import { Wordmark } from "./wordmark";
 export function MarketingHeader() {
   return (
     <header className="marketing-header">
-      <a className="brand-lockup" href="/">
-        <Image src="/assets/chillscript-logo.png" alt="" width={40} height={40} />
-        <Wordmark />
-      </a>
-      <nav>
-        <a href="/pricing">{copy.nav.pricing}</a>
-        <a href="/privacy">{copy.nav.privacy}</a>
-        <a href="/terms">{copy.nav.terms}</a>
-        <a href={storeLinks.appStore}>
-          {copy.nav.appStore}
+      <div className="marketing-header-inner">
+        <a className="brand-lockup" href="/">
+          <Image src="/assets/chillscript-logo.png" alt="" width={40} height={40} />
+          <Wordmark />
         </a>
-        <a className="nav-pill" href={storeLinks.googlePlay}>
-          {copy.nav.googlePlay}
-        </a>
-      </nav>
+        <nav aria-label="Main navigation">
+          <a href="/#how-it-works">How it works</a>
+          <a href="/pricing">{copy.nav.pricing}</a>
+          <a className="nav-pill" href={storeLinks.appStore}>
+            Get the app
+            <ArrowRight aria-hidden size={14} />
+          </a>
+        </nav>
+      </div>
     </header>
   );
 }
@@ -34,7 +33,7 @@ export function MarketingFooter() {
           <Image src="/assets/chillscript-logo.png" alt="" width={40} height={40} />
           <span>{copy.productName}</span>
         </a>
-        <p>AI creator notes, quick capture, and reusable workflows.</p>
+        <p>Save inspiration. Extract ideas. Create with AI.</p>
       </div>
       <nav>
         <a href="/pricing">Pricing</a>
@@ -42,7 +41,7 @@ export function MarketingFooter() {
         <a href="/delete-account">Delete account</a>
         <a href="/terms">Terms</a>
         <a href={storeLinks.googlePlay}>
-          Get the Android app
+          Download ChillScript
           <ArrowRight size={16} />
         </a>
       </nav>

@@ -11,9 +11,25 @@ const brandFont = Mulish({
 });
 
 export const metadata: Metadata = {
-  title: "ChillScript | AI Creator Notes",
+  metadataBase: new URL("https://www.chillnoteai.com"),
+  title: "ChillScript | Save inspiration. Create with AI.",
   description:
-    "ChillScript helps creators capture ideas, transcribe videos, break down hooks, descriptions, and transcripts, then reuse their AI creator notes with AI Skills.",
+    "Save videos, extract ideas, capture thoughts, and turn your notes into content with AI creator skills.",
+  openGraph: {
+    type: "website",
+    url: "/",
+    title: "ChillScript | Save inspiration. Create with AI.",
+    description:
+      "Save videos, extract ideas, capture thoughts, and turn your notes into content with AI creator skills.",
+    images: [{ url: "/og.png", width: 1200, height: 630, alt: "ChillScript creator workflow" }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ChillScript | Save inspiration. Create with AI.",
+    description:
+      "Save videos, extract ideas, capture thoughts, and turn your notes into content with AI creator skills.",
+    images: ["/og.png"],
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
