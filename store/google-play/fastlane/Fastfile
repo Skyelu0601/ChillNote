@@ -1,0 +1,266 @@
+require "open3"
+
+default_platform(:android)
+
+fastlane_version "2.232.2"
+
+GOOGLE_PLAY_ROOT = File.expand_path("..", __dir__)
+REPOSITORY_ROOT = File.expand_path("../..", GOOGLE_PLAY_ROOT)
+ANDROID_PROJECT_DIR = File.join(REPOSITORY_ROOT, "android")
+DEFAULT_AAB_PATH = File.join(ANDROID_PROJECT_DIR, "app", "build", "outputs", "bundle", "release", "app-release.aab")
+ENGLISH_LISTING_PATH = File.join(__dir__, "metadata", "listing")
+SCREENSHOTS_PATH = File.join(__dir__, "metadata", "screenshots")
+ANDROID_APP_BUILD_FILE = File.join(ANDROID_PROJECT_DIR, "app", "build.gradle")
+
+def google_play_json_key_path
+  value = ENV.fetch("GOOGLE_PLAY_JSON_KEY_PATH", "").strip
+  UI.user_error!("Set GOOGLE_PLAY_JSON_KEY_PATH to the local Google Play service-account JSON file") if value.empty?
+
+  path = File.expand_path(value)
+  UI.user_error!("Google Play service-account JSON not found: #{path}") unless File.file?(path)
+  path
+end
+
+def required_version_code(options)
+  value = options[:version_code].to_s.strip
+  UI.user_error!("Pass the Google Play version code, for example: version_code:12") if value.empty?
+  UI.user_error!("version_code must be a positive integer") unless value.match?(/\A[1-9]\d*\z/)
+  value.to_i
+end
+
+def project_version_code
+  configured = ENV.fetch("CHILLSCRIPT_VERSION_CODE", "").strip
+  return configured.to_i if configured.match?(/\A[1-9]\d*\z/)
+
+  source = File.read(ANDROID_APP_BUILD_FILE)
+  match = source.match(/^def releaseVersionCode = .* : (\d+)$/) ||
+          source.match(/^\s*versionCode\s+(\d+)\s*$/)
+  UI.user_error!("Could not read versionCode from #{ANDROID_APP_BUILD_FILE}") unless match
+  match[1].to_i
+end
+
+def required_matching_project_version_code(options)
+  requested = required_version_code(options)
+  configured = project_version_code
+  UI.user_error!(
+    "version_code:#{requested} does not match android/app/build.gradle versionCode #{configured}"
+  ) unless requested == configured
+  requested
+end
+
+def release_aab_path(options)
+  path = File.expand_path(options[:aab].to_s.empty? ? DEFAULT_AAB_PATH : options[:aab])
+  UI.user_error!("Signed release AAB not found: #{path}") unless File.file?(path)
+  UI.user_error!("Production uploads require an .aab file: #{path}") unless File.extname(path) == ".aab"
+  UI.user_error!("AAB looks unexpectedly small: #{path}") if File.size(path) < 1_000_000
+  path
+end
+
+def verify_release_aab!(path)
+  source_paths = Dir.glob(File.join(ANDROID_PROJECT_DIR, "app", "src", "**", "*"))
+                    .select { |candidate| File.file?(candidate) }
+  source_paths.concat([
+    ANDROID_APP_BUILD_FILE,
+    File.join(ANDROID_PROJECT_DIR, "app", "proguard-rules.pro")
+  ])
+  newest_source = source_paths.max_by { |candidate| File.mtime(candidate) }
+
+  if newest_source && File.mtime(path) < File.mtime(newest_source)
+    UI.user_error!(
+      "Release AAB is older than #{newest_source}. Run bundleRelease before uploading."
+    )
+  end
+
+  stdout, stderr, status = Open3.capture3("jarsigner", "-verify", path)
+  unless status.success? && stdout.include?("jar verified.")
+    details = [stdout, stderr].reject(&:empty?).join("\n")
+    UI.user_error!("AAB signature verification failed: #{details}")
+  end
+  UI.success("Verified signed release AAB: #{path}")
+rescue Errno::ENOENT
+  UI.user_error!("jarsigner is unavailable. Install/configure a JDK before uploading to Production.")
+end
+
+def require_production_confirmation!(options, expected)
+  actual = options[:confirm].to_s.strip
+  return if actual == expected
+
+  UI.user_error!(
+    "Production safety check failed. Re-run with confirm:#{expected} after verifying the track and version."
+  )
+end
+
+platform :android do
+  desc "Validate the Google Play service-account credentials without uploading"
+  lane :validate_credentials do
+    validate_play_store_json_key(json_key: google_play_json_key_path)
+  end
+
+  desc "Upload the English listing, icon, and feature graphic for an existing Internal release"
+  lane :upload_english_listing do |options|
+    upload_to_play_store(
+      package_name: "com.sponteoai.chillscript",
+      json_key: google_play_json_key_path,
+      metadata_path: ENGLISH_LISTING_PATH,
+      track: "internal",
+      version_code: required_version_code(options),
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_changelogs: true,
+      skip_upload_screenshots: true,
+      sync_image_upload: true
+    )
+  end
+
+  desc "Replace localized phone screenshots for an existing Internal release"
+  lane :upload_screenshots do |options|
+    upload_to_play_store(
+      package_name: "com.sponteoai.chillscript",
+      json_key: google_play_json_key_path,
+      metadata_path: SCREENSHOTS_PATH,
+      track: "internal",
+      version_code: required_version_code(options),
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      sync_image_upload: true
+    )
+  end
+
+  desc "Upload an existing signed AAB to Internal testing as a draft by default"
+  lane :upload_internal do |options|
+    aab_path = File.expand_path(options[:aab].to_s.empty? ? DEFAULT_AAB_PATH : options[:aab])
+    UI.user_error!("Signed release AAB not found: #{aab_path}") unless File.file?(aab_path)
+
+    release_status = options.fetch(:release_status, "draft").to_s
+    UI.user_error!("release_status must be draft or completed") unless %w[draft completed].include?(release_status)
+
+    upload_to_play_store(
+      package_name: "com.sponteoai.chillscript",
+      json_key: google_play_json_key_path,
+      aab: aab_path,
+      track: "internal",
+      release_status: release_status,
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Build the signed release AAB, then upload it to Internal testing"
+  lane :build_and_upload_internal do |options|
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      project_dir: ANDROID_PROJECT_DIR
+    )
+    upload_internal(release_status: options.fetch(:release_status, "draft"))
+  end
+
+  desc "Upload a CI-built signed AAB to a selected Google Play track"
+  lane :upload_ci_release do |options|
+    version_code = required_matching_project_version_code(options)
+    track = options.fetch(:track, "internal").to_s
+    release_status = options.fetch(:release_status, "completed").to_s
+    allowed_tracks = %w[internal alpha beta production]
+
+    UI.user_error!("track must be one of: #{allowed_tracks.join(', ')}") unless allowed_tracks.include?(track)
+    UI.user_error!("release_status must be draft or completed") unless %w[draft completed].include?(release_status)
+
+    if track == "production"
+      confirmation = release_status == "completed" ? "RELEASE-#{version_code}" : "PRODUCTION-#{version_code}"
+      require_production_confirmation!(options, confirmation)
+    end
+
+    aab_path = release_aab_path(options)
+    verify_release_aab!(aab_path)
+
+    upload_to_play_store(
+      package_name: "com.sponteoai.chillscript",
+      json_key: google_play_json_key_path,
+      aab: aab_path,
+      track: track,
+      release_status: release_status,
+      changes_not_sent_for_review: false,
+      rescue_changes_not_sent_for_review: false,
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Verify the local signed AAB and versionCode without contacting Google Play"
+  lane :verify_production_aab do |options|
+    version_code = required_matching_project_version_code(options)
+    aab_path = release_aab_path(options)
+    verify_release_aab!(aab_path)
+    UI.success("Production candidate is ready: versionCode #{version_code}")
+  end
+
+  desc "Upload a signed AAB to the Production track as a draft (does not submit or roll out)"
+  lane :upload_production do |options|
+    version_code = required_matching_project_version_code(options)
+    require_production_confirmation!(options, "PRODUCTION-#{version_code}")
+
+    aab_path = release_aab_path(options)
+    verify_release_aab!(aab_path)
+
+    upload_to_play_store(
+      package_name: "com.sponteoai.chillscript",
+      json_key: google_play_json_key_path,
+      aab: aab_path,
+      track: "production",
+      release_status: "draft",
+      skip_upload_apk: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+
+  desc "Build, verify, and upload the current release AAB to Production as a draft"
+  lane :build_and_upload_production do |options|
+    version_code = required_matching_project_version_code(options)
+    require_production_confirmation!(options, "PRODUCTION-#{version_code}")
+
+    gradle(
+      task: "bundle",
+      build_type: "Release",
+      project_dir: ANDROID_PROJECT_DIR
+    )
+    upload_production(
+      version_code: version_code,
+      confirm: "PRODUCTION-#{version_code}"
+    )
+  end
+
+  desc "Submit an existing Production draft for full rollout and Google Play review"
+  lane :submit_production do |options|
+    version_code = required_matching_project_version_code(options)
+    require_production_confirmation!(options, "RELEASE-#{version_code}")
+
+    upload_to_play_store(
+      package_name: "com.sponteoai.chillscript",
+      json_key: google_play_json_key_path,
+      track: "production",
+      version_code: version_code,
+      release_status: "completed",
+      rollout: 1.0,
+      changes_not_sent_for_review: false,
+      rescue_changes_not_sent_for_review: false,
+      skip_upload_apk: true,
+      skip_upload_aab: true,
+      skip_upload_metadata: true,
+      skip_upload_changelogs: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end
