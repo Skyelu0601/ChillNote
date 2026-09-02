@@ -29,12 +29,8 @@ def required_version_code(options)
 end
 
 def project_version_code
-  configured = ENV.fetch("CHILLSCRIPT_VERSION_CODE", "").strip
-  return configured.to_i if configured.match?(/\A[1-9]\d*\z/)
-
   source = File.read(ANDROID_APP_BUILD_FILE)
-  match = source.match(/^def releaseVersionCode = .* : (\d+)$/) ||
-          source.match(/^\s*versionCode\s+(\d+)\s*$/)
+  match = source.match(/^\s*versionCode\s+(\d+)\s*$/)
   UI.user_error!("Could not read versionCode from #{ANDROID_APP_BUILD_FILE}") unless match
   match[1].to_i
 end
@@ -159,40 +155,6 @@ platform :android do
       project_dir: ANDROID_PROJECT_DIR
     )
     upload_internal(release_status: options.fetch(:release_status, "draft"))
-  end
-
-  desc "Upload a CI-built signed AAB to a selected Google Play track"
-  lane :upload_ci_release do |options|
-    version_code = required_matching_project_version_code(options)
-    track = options.fetch(:track, "internal").to_s
-    release_status = options.fetch(:release_status, "completed").to_s
-    allowed_tracks = %w[internal alpha beta production]
-
-    UI.user_error!("track must be one of: #{allowed_tracks.join(', ')}") unless allowed_tracks.include?(track)
-    UI.user_error!("release_status must be draft or completed") unless %w[draft completed].include?(release_status)
-
-    if track == "production"
-      confirmation = release_status == "completed" ? "RELEASE-#{version_code}" : "PRODUCTION-#{version_code}"
-      require_production_confirmation!(options, confirmation)
-    end
-
-    aab_path = release_aab_path(options)
-    verify_release_aab!(aab_path)
-
-    upload_to_play_store(
-      package_name: "com.sponteoai.chillscript",
-      json_key: google_play_json_key_path,
-      aab: aab_path,
-      track: track,
-      release_status: release_status,
-      changes_not_sent_for_review: false,
-      rescue_changes_not_sent_for_review: false,
-      skip_upload_apk: true,
-      skip_upload_metadata: true,
-      skip_upload_changelogs: true,
-      skip_upload_images: true,
-      skip_upload_screenshots: true
-    )
   end
 
   desc "Verify the local signed AAB and versionCode without contacting Google Play"

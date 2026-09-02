@@ -53,17 +53,6 @@ def appReviewVerificationCode = firebaseConfigValue(
 ).trim()
 if (!appReviewVerificationCode) appReviewVerificationCode = "202602"
 
-def configuredVersionCode = providers.gradleProperty("chillscriptVersionCode").orNull
-def configuredVersionName = providers.gradleProperty("chillscriptVersionName").orNull
-if (configuredVersionCode != null && !(configuredVersionCode ==~ /[1-9]\d*/)) {
-    throw new GradleException("chillscriptVersionCode must be a positive integer")
-}
-if (configuredVersionName != null && configuredVersionName.trim().isEmpty()) {
-    throw new GradleException("chillscriptVersionName must not be empty")
-}
-def releaseVersionCode = configuredVersionCode != null ? configuredVersionCode.toInteger() : 9
-def releaseVersionName = configuredVersionName != null ? configuredVersionName.trim() : "1.2.10"
-
 room {
     schemaDirectory "$projectDir/schemas"
 }
@@ -76,8 +65,8 @@ android {
         applicationId "com.sponteoai.chillscript"
         minSdk 26
         targetSdk 36
-        versionCode releaseVersionCode
-        versionName releaseVersionName
+        versionCode 9
+        versionName "1.2.10"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "SUPABASE_URL", '"https://qsyhkpaeyzhjojdvbntq.supabase.co"'
         buildConfigField "String", "SUPABASE_ANON_KEY", '"sb_publishable_smWWadjejdbKYvmg3fidsg_41XPu70e"'

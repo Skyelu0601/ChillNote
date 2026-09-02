@@ -114,7 +114,3 @@ bundle exec fastlane android submit_production \
 - AAB 必须已签名、大小合理，且不得早于 Android 源码或构建配置。
 - `confirm` 必须包含目标版本号，防止复制旧命令误发其他版本。
 - 如果 Google Play 仍有其他未提交的商店资料或 App content 变更，提交前仍应在 Publishing overview 核对变更范围。
-
-### GitHub 一键发布
-
-仓库还提供 `Android Google Play release` GitHub Actions 工作流，可自动测试、构建签名 AAB 并上传到 Internal、Alpha、Beta 或 Production。首次配置所需的 GitHub Secrets、环境审批和操作方式见 [`google-play/docs/GOOGLE_PLAY_AUTOMATION.md`](google-play/docs/GOOGLE_PLAY_AUTOMATION.md)。
