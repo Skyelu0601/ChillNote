@@ -60,7 +60,9 @@
     <string name="note_workspace_start_recording">録画を開始</string>
     <string name="note_workspace_record_metadata">テレプロンプター • 9:16 • 1080p</string>
     <string name="note_workspace_hide_keyboard">キーボードを閉じる</string>
-    <string name="note_detail_trash_deleted_in_days">このメモは %1$d 日後に完全に削除されます。</string>
+    <plurals name="note_detail_trash_deleted_in_days">
+        <item quantity="other">このメモは %1$d 日後に完全に削除されます。</item>
+    </plurals>
     <string name="note_detail_trash_deleted_today">このメモは本日完全に削除されます。</string>
     <string name="note_header_add_topic">テーマを追加</string>
     <string name="note_header_export_markdown">マークダウンのエクスポート</string>
@@ -96,7 +98,7 @@
     <string name="sidebar_membership_upgrade">アップグレード</string>
     <string name="sidebar_credits_locked">残り 0 Credits</string>
     <string name="sidebar_credits_remaining">残り %1$d Credits</string>
-    <string name="sidebar_stats_streak">%1$d日連続で作成</string>
+    <plurals name="sidebar_stats_streak"><item quantity="other">%1$d日連続で作成</item></plurals>
     <string name="sidebar_stats_week_up">今週%1$d件 · 先週比+%2$d%%</string>
     <string name="sidebar_stats_week_down">今週%1$d件 · 先週比%2$d%%減</string>
     <string name="sidebar_stats_week_new_start">今週%1$d件 · 新しいスタート</string>
@@ -296,10 +298,10 @@
     <string name="subscription_onboarding_feature_repurpose_social">TikTok・Reelsなどに再活用</string>
     <string name="subscription_onboarding_feature_organize">すべてをひとつに整理</string>
     <string name="subscription_onboarding_feature_teleprompter">内蔵テレプロンプター</string>
-    <string name="subscription_onboarding_plan_annual_trial_days">年間 · %1$d日間無料トライアル</string>
+    <plurals name="subscription_onboarding_plan_annual_trial_days"><item quantity="other">年間 · %1$d日間無料トライアル</item></plurals>
     <string name="subscription_onboarding_trust_no_payment_cancel_anytime">今すぐの支払いなし・いつでもキャンセル可能</string>
     <string name="subscription_onboarding_trust_cancel_anytime">いつでもキャンセル可能</string>
-    <string name="subscription_onboarding_cta_try_free_days">%1$d日間無料で試す</string>
+    <plurals name="subscription_onboarding_cta_try_free_days"><item quantity="other">%1$d日間無料で試す</item></plurals>
     <string name="subscription_onboarding_paywall_subtitle">ChillScriptのクリエイターワークフローをすべて解放。</string>
     <string name="subscription_onboarding_no_trial_notice">無料トライアルなし・いつでも解約可能</string>
     <string name="subscription_onboarding_feature_video">動画を分析</string>
@@ -514,7 +516,7 @@
     <string name="weekly_topics_preview_title">週間投稿アイデア</string>
     <string name="weekly_topics_preview_headline">新しいノートから毎週投稿アイデアレポートを受け取る</string>
     <string name="weekly_topics_preview_headline_highlight">毎週投稿アイデア</string>
-    <string name="weekly_topics_preview_message">ChillNoteが新しいノートを毎週まとめ、すぐに使えるアイデアを届けます。</string>
+    <string name="weekly_topics_preview_message">ChillScriptが新しいノートを毎週まとめ、すぐに使えるアイデアを届けます。</string>
     <string name="weekly_topics_preview_sources_label">保存したノート</string>
     <string name="weekly_topics_preview_result_label">毎週の新しいトピック</string>
     <string name="weekly_topics_preview_illustration_label">Post Ideas</string>
@@ -537,8 +539,9 @@
     <string name="weekly_topics_error_regenerate">このレポートを再整理できませんでした。</string>
     <string name="weekly_topics_report_inspiration_label">今週のインスピレーション</string>
     <string name="weekly_topics_report_date_range">%1$s〜%2$s</string>
-    <string name="weekly_topics_report_summary">%2$d件の素材から%1$d個のトピック</string>
-    <string name="weekly_topics_history_summary">%2$d件の素材から%1$d個のトピック</string>
+    <plurals name="weekly_topics_count_topics"><item quantity="other">%1$d個のトピック</item></plurals>
+    <plurals name="weekly_topics_count_sources"><item quantity="other">%1$d件の素材</item></plurals>
+    <string name="weekly_topics_summary">%2$sから%1$s</string>
     <string name="weekly_topics_history_empty">過去のレポートはまだありません</string>
     <string name="weekly_topics_topic_progress">%1$02d</string>
     <string name="weekly_topics_topic_related_sources">関連素材</string>

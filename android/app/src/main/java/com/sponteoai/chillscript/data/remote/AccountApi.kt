@@ -26,6 +26,11 @@ class AccountApi(
             json.decodeFromString(SubscriptionStatusResponse.serializer(), it)
         }
 
+    suspend fun syncRevenueCatSubscription(accessToken: String): SubscriptionStatusResponse =
+        request("POST", "/subscription/revenuecat/sync", accessToken) {
+            json.decodeFromString(SubscriptionStatusResponse.serializer(), it)
+        }
+
     suspend fun creditBalance(accessToken: String): CreditBalanceResponse =
         request("GET", "/credits/balance", accessToken) {
             json.decodeFromString(CreditBalanceResponse.serializer(), it)

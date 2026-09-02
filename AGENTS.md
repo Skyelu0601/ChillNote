@@ -13,6 +13,7 @@
 - `android/`：Android / Google Play 原生客户端。
 - `server/`：iOS 和 Android 共用的后端、同步、AI、推送与订阅服务。
 - `website/`：只维护公开官网、价格、隐私政策、服务条款和账号删除说明；不提供登录后的 Web App。
+- `store/`：App Store、Google Play、ASO、商店素材和上传工具；`store/app-store/` 是被主仓库忽略的独立 Git 工作区。
 - 删除网页功能时，不得据此删除移动端仍在使用的 `server/` 接口。
 
 ## Compatibility Guardrails

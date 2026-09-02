@@ -354,6 +354,28 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
+    fun syncRevenueCatSubscription() {
+        val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
+        viewModelScope.launch {
+            runCatching { accountApi.syncRevenueCatSubscription(session.accessToken) }
+                .onSuccess { status ->
+                    if (currentUserId == session.user.id) {
+                        mutableUiState.value = mutableUiState.value.copy(
+                            subscriptionTier = status.tier,
+                            subscriptionExpiresAt = status.expiresAt,
+                            activeSubscriptionProductId = status.activeProductId,
+                            introPaywallResolved = true,
+                            introPaywallRequired = status.tier != "pro" &&
+                                !onboardingPreferences.hasShownIntroPaywall(session.user.id),
+                        )
+                        if (status.tier == "pro") onboardingPreferences.setIntroPaywallShown(session.user.id)
+                        refreshCredits()
+                    }
+                }
+                .onFailure { refreshSubscription() }
+        }
+    }
+
     fun refreshCredits() {
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
         viewModelScope.launch {
@@ -1120,6 +1142,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         mediaLinkSections.value,
                         tagIds,
                         noteId,
+                        contentLocale = configuredAppLanguageTag(),
                     )
                 }
                     .onSuccess {
@@ -1246,6 +1269,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         mediaLinkSections = MediaLinkSectionsDto.TranscriptOnly,
                         noteId = pending.id,
                         source = pending.source,
+                        contentLocale = configuredAppLanguageTag(),
                     )
                 }
             }.onSuccess {
@@ -1440,6 +1464,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 }
             mutableUiState.value = mutableUiState.value.copy(busy = false)
         }
+    }
+
+    private fun configuredAppLanguageTag(): String {
+        val configuredLocales = getApplication<Application>().resources.configuration.locales
+        return configuredLocales.get(0)?.toLanguageTag()?.takeIf { it.isNotBlank() }
+            ?: Locale.getDefault().toLanguageTag().ifBlank { "en" }
     }
 
     private companion object {

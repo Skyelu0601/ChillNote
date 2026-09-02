@@ -111,6 +111,7 @@ struct MediaLinkTranscriptSectionPreferences: Equatable {
     ) {
         guard let sharedDefaults else { return }
         transcriptOnly.save(to: sharedDefaults)
+        sharedDefaults.set(L10n.contentLocaleIdentifier, forKey: L10n.contentLocaleStorageKey)
     }
 
     func save(to userDefaults: UserDefaults) {
@@ -329,6 +330,7 @@ struct QuickCaptureImportService {
             "placeholderContent": placeholderContent,
             "section": section.rawValue,
             "source": sourcePayload,
+            "contentLocale": L10n.contentLocaleIdentifier,
             "mediaLinkSections": [
                 "showDescription": preferences.showDescription,
                 "showAuthor": preferences.showAuthor,
@@ -1185,9 +1187,7 @@ extension QuickCaptureImportService {
     }
 
     func preferredQuickCaptureOutputLanguage() -> String {
-        let appLanguageIdentifier = Bundle.main.preferredLocalizations.first
-            ?? Locale.preferredLanguages.first
-            ?? Locale.current.identifier
+        let appLanguageIdentifier = L10n.contentLocaleIdentifier
 
         if let localizedName = Locale.current.localizedString(forIdentifier: appLanguageIdentifier),
            !localizedName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

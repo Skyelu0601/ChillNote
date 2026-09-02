@@ -18,9 +18,9 @@ import java.util.Locale
 /**
  * The StoreKit `SubscriptionDisplayInfo` equivalent for Google Play.
  *
- * Prices, billing periods and trial lengths intentionally come from the offer
- * selected by [BillingProduct.offerToken]. Nothing customer-facing is inferred
- * from a hard-coded product price or trial duration.
+ * Prices, billing periods and trial lengths intentionally come from the option
+ * selected by RevenueCat (or the temporary BillingClient fallback). Nothing
+ * customer-facing is inferred from a hard-coded product price or trial duration.
  */
 internal data class GooglePlaySubscriptionFacts(
     val isAnnual: Boolean,
@@ -103,10 +103,7 @@ internal fun parseGooglePlayPeriod(value: String?): GooglePlayPeriod? {
 }
 
 internal fun BillingProduct.googlePlaySubscriptionFacts(): GooglePlaySubscriptionFacts {
-    val selectedOffer = details.subscriptionOfferDetails
-        .orEmpty()
-        .firstOrNull { it.offerToken == offerToken }
-    val phases = selectedOffer?.pricingPhases?.pricingPhaseList.orEmpty()
+    val phases = pricingPhases
     val paidPhase = phases.lastOrNull { it.priceAmountMicros > 0L } ?: phases.lastOrNull()
     val trialPhase = phases.firstOrNull { it.priceAmountMicros == 0L }
     val paidPeriod = parseGooglePlayPeriod(paidPhase?.billingPeriod)

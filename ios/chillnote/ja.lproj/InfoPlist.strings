@@ -1,4 +1,4 @@
-"NSMicrophoneUsageDescription" = "ChillScript はあなたの考えとテレプロンプター動画の音声を録音するためにマイクへのアクセスが必要です。";
+"NSMicrophoneUsageDescription" = "ChillScript は、音声メモの録音、テレプロンプター動画の収音、および許可を得たうえで安全な AI 文字起こしのために音声を送信する目的で、マイクへのアクセスを使用します。";
 "NSSpeechRecognitionUsageDescription" = "ChillScript は音声をテキストに変換するために音声認識を使用します。";
 "NSCameraUsageDescription" = "ChillScript はテレプロンプター動画を録画するためにカメラを使用します。";
 "NSPhotoLibraryAddUsageDescription" = "保存を選ぶと、ChillScript は書き出したテレプロンプター動画を写真ライブラリに保存します。";

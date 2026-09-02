@@ -60,7 +60,10 @@
     <string name="note_workspace_start_recording">Démarrer l’enregistrement</string>
     <string name="note_workspace_record_metadata">Prompteur • 9:16 • 1080p</string>
     <string name="note_workspace_hide_keyboard">Masquer le clavier</string>
-    <string name="note_detail_trash_deleted_in_days">Cette note sera définitivement supprimée dans %1$d jours.</string>
+    <plurals name="note_detail_trash_deleted_in_days">
+        <item quantity="one">Cette note sera définitivement supprimée dans %1$d jour.</item>
+        <item quantity="other">Cette note sera définitivement supprimée dans %1$d jours.</item>
+    </plurals>
     <string name="note_detail_trash_deleted_today">Cette note sera définitivement supprimée aujourd\'hui.</string>
     <string name="note_header_add_topic">Ajouter un thème</string>
     <string name="note_header_export_markdown">Exporter en Markdown</string>
@@ -96,7 +99,7 @@
     <string name="sidebar_membership_upgrade">Mettre à niveau</string>
     <string name="sidebar_credits_locked">0 Credits restants</string>
     <string name="sidebar_credits_remaining">%1$d Credits restants</string>
-    <string name="sidebar_stats_streak">%1$d jours de création</string>
+    <plurals name="sidebar_stats_streak"><item quantity="one">%1$d jour de création</item><item quantity="other">%1$d jours de création</item></plurals>
     <string name="sidebar_stats_week_up">%1$d notes cette semaine · +%2$d%%</string>
     <string name="sidebar_stats_week_down">%1$d notes cette semaine · %2$d%% de moins</string>
     <string name="sidebar_stats_week_new_start">%1$d notes cette semaine · nouveau départ</string>
@@ -296,10 +299,10 @@
     <string name="subscription_onboarding_feature_repurpose_social">Adaptez pour TikTok, Reels et plus</string>
     <string name="subscription_onboarding_feature_organize">Organisez tout au même endroit</string>
     <string name="subscription_onboarding_feature_teleprompter">Téléprompteur intégré</string>
-    <string name="subscription_onboarding_plan_annual_trial_days">Annuel · %1$d jours d’essai gratuit</string>
+    <plurals name="subscription_onboarding_plan_annual_trial_days"><item quantity="one">Annuel · %1$d jour d’essai gratuit</item><item quantity="other">Annuel · %1$d jours d’essai gratuit</item></plurals>
     <string name="subscription_onboarding_trust_no_payment_cancel_anytime">Aucun paiement maintenant · Résiliable à tout moment</string>
     <string name="subscription_onboarding_trust_cancel_anytime">Résiliable à tout moment</string>
-    <string name="subscription_onboarding_cta_try_free_days">Essayer gratuitement pendant %1$d jours</string>
+    <plurals name="subscription_onboarding_cta_try_free_days"><item quantity="one">Essayer gratuitement pendant %1$d jour</item><item quantity="other">Essayer gratuitement pendant %1$d jours</item></plurals>
     <string name="subscription_onboarding_paywall_subtitle">Débloquez tout le flux créatif de ChillScript.</string>
     <string name="subscription_onboarding_no_trial_notice">Sans essai · Résiliable à tout moment</string>
     <string name="subscription_onboarding_feature_video">Analyse de vidéos</string>
@@ -514,7 +517,7 @@
     <string name="weekly_topics_preview_title">Idées de posts hebdomadaires</string>
     <string name="weekly_topics_preview_headline">Recevez un rapport d’idées de posts hebdomadaires à partir de vos nouvelles notes</string>
     <string name="weekly_topics_preview_headline_highlight">idées de posts hebdomadaires</string>
-    <string name="weekly_topics_preview_message">Chaque semaine, ChillNote transforme vos nouvelles notes en idées prêtes à développer.</string>
+    <string name="weekly_topics_preview_message">Chaque semaine, ChillScript transforme vos nouvelles notes en idées prêtes à développer.</string>
     <string name="weekly_topics_preview_sources_label">Vos notes enregistrées</string>
     <string name="weekly_topics_preview_result_label">Nouveaux sujets chaque semaine</string>
     <string name="weekly_topics_preview_illustration_label">Post Ideas</string>
@@ -537,8 +540,15 @@
     <string name="weekly_topics_error_regenerate">Impossible de réorganiser ce rapport.</string>
     <string name="weekly_topics_report_inspiration_label">Inspiration de la semaine</string>
     <string name="weekly_topics_report_date_range">%1$s – %2$s</string>
-    <string name="weekly_topics_report_summary">%1$d sujets provenant de %2$d sources</string>
-    <string name="weekly_topics_history_summary">%1$d sujets provenant de %2$d sources</string>
+    <plurals name="weekly_topics_count_topics">
+        <item quantity="one">%1$d sujet</item>
+        <item quantity="other">%1$d sujets</item>
+    </plurals>
+    <plurals name="weekly_topics_count_sources">
+        <item quantity="one">%1$d source</item>
+        <item quantity="other">%1$d sources</item>
+    </plurals>
+    <string name="weekly_topics_summary">%1$s provenant de %2$s</string>
     <string name="weekly_topics_history_empty">Aucun ancien rapport</string>
     <string name="weekly_topics_topic_progress">%1$02d</string>
     <string name="weekly_topics_topic_related_sources">Sources associées</string>

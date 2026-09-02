@@ -39,6 +39,15 @@ ChillScript 当前维护两个原生客户端：
 
 Android 的 OAuth / App Link 可能继续使用 `www.chillnoteai.com` 域名作为回调基础设施；这与提供 Web App 是两回事。
 
+## Store Operations
+
+`store/` 是 App Store、Google Play、ASO、商店截图和上传工具的统一入口：
+
+- `store/app-store/`：独立 Git 工作区，包含 Fastlane、App Store Connect、ASO、Apple Ads 和 App Store 素材。
+- `store/google-play/`：主仓库管理的 Google Play 素材、截图生成工具和上架文档。
+
+Android 上传密钥与签名参数仍保留在 `android/`，因为 Gradle 构建直接依赖这些兼容位置。
+
 ## Naming and Compatibility
 
 以下名称是历史兼容标识，除非有完整迁移方案，否则保持不变：

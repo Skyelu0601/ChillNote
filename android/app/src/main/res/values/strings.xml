@@ -60,7 +60,10 @@
     <string name="note_workspace_start_recording">Start Recording</string>
     <string name="note_workspace_record_metadata">Teleprompter • 9:16 • 1080p</string>
     <string name="note_workspace_hide_keyboard">Hide keyboard</string>
-    <string name="note_detail_trash_deleted_in_days">This note will be permanently deleted in %1$d days.</string>
+    <plurals name="note_detail_trash_deleted_in_days">
+        <item quantity="one">This note will be permanently deleted in %1$d day.</item>
+        <item quantity="other">This note will be permanently deleted in %1$d days.</item>
+    </plurals>
     <string name="note_detail_trash_deleted_today">This note will be permanently deleted today.</string>
     <string name="note_header_add_topic">Add Topic</string>
     <string name="note_header_export_markdown">Export Markdown</string>
@@ -96,7 +99,7 @@
     <string name="sidebar_membership_upgrade">Upgrade</string>
     <string name="sidebar_credits_locked">0 Credits left</string>
     <string name="sidebar_credits_remaining">%1$d Credits left</string>
-    <string name="sidebar_stats_streak">%1$d days creating</string>
+    <plurals name="sidebar_stats_streak"><item quantity="one">%1$d day creating</item><item quantity="other">%1$d days creating</item></plurals>
     <string name="sidebar_stats_week_up">%1$d notes this week · +%2$d%% vs last week</string>
     <string name="sidebar_stats_week_down">%1$d notes this week · %2$d%% less</string>
     <string name="sidebar_stats_week_new_start">%1$d notes this week · a fresh start</string>
@@ -305,10 +308,10 @@
     <string name="subscription_onboarding_feature_repurpose_social">Repurpose for TikTok, Reels &amp; more</string>
     <string name="subscription_onboarding_feature_organize">Organize everything in one place</string>
     <string name="subscription_onboarding_feature_teleprompter">Built-in teleprompter</string>
-    <string name="subscription_onboarding_plan_annual_trial_days">Annual · %1$d-day free trial</string>
+    <plurals name="subscription_onboarding_plan_annual_trial_days"><item quantity="one">Annual · %1$d-day free trial</item><item quantity="other">Annual · %1$d-day free trial</item></plurals>
     <string name="subscription_onboarding_trust_no_payment_cancel_anytime">No payment now · Cancel anytime</string>
     <string name="subscription_onboarding_trust_cancel_anytime">Cancel anytime</string>
-    <string name="subscription_onboarding_cta_try_free_days">Try free for %1$d days</string>
+    <plurals name="subscription_onboarding_cta_try_free_days"><item quantity="one">Try free for %1$d day</item><item quantity="other">Try free for %1$d days</item></plurals>
     <string name="subscription_onboarding_paywall_subtitle">Unlock the complete ChillScript creator workflow.</string>
     <string name="subscription_onboarding_no_trial_notice">No trial · Cancel anytime</string>
     <string name="subscription_onboarding_feature_video">Video breakdowns</string>
@@ -532,7 +535,7 @@
     <string name="weekly_topics_preview_title">Weekly Post Ideas</string>
     <string name="weekly_topics_preview_headline">Get a weekly post ideas report from your new notes</string>
     <string name="weekly_topics_preview_headline_highlight">weekly post ideas</string>
-    <string name="weekly_topics_preview_message">Each week, ChillNote turns your new saves into ideas ready to explore.</string>
+    <string name="weekly_topics_preview_message">Each week, ChillScript turns your new saves into ideas ready to explore.</string>
     <string name="weekly_topics_preview_sources_label">Your saved notes</string>
     <string name="weekly_topics_preview_result_label">New topics each week</string>
     <string name="weekly_topics_preview_illustration_label">Post Ideas</string>
@@ -555,8 +558,15 @@
     <string name="weekly_topics_error_regenerate">This report couldn’t be reorganized.</string>
     <string name="weekly_topics_report_inspiration_label">This week’s inspiration</string>
     <string name="weekly_topics_report_date_range">%1$s – %2$s</string>
-    <string name="weekly_topics_report_summary">%1$d topics from %2$d sources</string>
-    <string name="weekly_topics_history_summary">%1$d topics from %2$d sources</string>
+    <plurals name="weekly_topics_count_topics">
+        <item quantity="one">%1$d topic</item>
+        <item quantity="other">%1$d topics</item>
+    </plurals>
+    <plurals name="weekly_topics_count_sources">
+        <item quantity="one">%1$d source</item>
+        <item quantity="other">%1$d sources</item>
+    </plurals>
+    <string name="weekly_topics_summary">%1$s from %2$s</string>
     <string name="weekly_topics_history_empty">No past reports yet</string>
     <string name="weekly_topics_topic_progress">%1$02d</string>
     <string name="weekly_topics_topic_related_sources">Related sources</string>

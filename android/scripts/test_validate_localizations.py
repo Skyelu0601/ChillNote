@@ -62,6 +62,22 @@ class ContentGuardTests(unittest.TestCase):
             [],
         )
 
+    def test_rejects_malformed_markdown_link(self) -> None:
+        failures = validator.value_format_failures(
+            "values-ko",
+            "auth_login_legal_markdown",
+            "[약관] (https://example.com/terms)",
+        )
+        self.assertTrue(any("whitespace separates" in failure for failure in failures))
+
+    def test_rejects_legacy_visible_brand(self) -> None:
+        failures = validator.value_format_failures(
+            "values-fr",
+            "weekly_topics_preview_message",
+            "Chaque semaine, ChillNote prépare vos idées.",
+        )
+        self.assertTrue(any("legacy user-visible brand" in failure for failure in failures))
+
     def test_locale_config_must_match_resource_directories(self) -> None:
         with tempfile.TemporaryDirectory() as temporary_directory:
             root = Path(temporary_directory)

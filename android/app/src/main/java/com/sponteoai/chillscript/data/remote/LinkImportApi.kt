@@ -44,6 +44,7 @@ import com.sponteoai.chillscript.domain.SourcePlatformResolver
     val placeholderContent: String,
     val source: LinkSourceDto,
     val section: String,
+    val contentLocale: String,
     // Keep this required. kotlinx.serialization omits default-valued properties unless
     // encodeDefaults is enabled; omission makes older servers enable every legacy section.
     val mediaLinkSections: MediaLinkSectionsDto,

@@ -60,7 +60,7 @@
     <string name="note_workspace_start_recording">开始录制</string>
     <string name="note_workspace_record_metadata">提词器 • 9:16 • 1080p</string>
     <string name="note_workspace_hide_keyboard">隐藏键盘</string>
-    <string name="note_detail_trash_deleted_in_days">这条笔记将在 %1$d 天后被永久删除。</string>
+    <plurals name="note_detail_trash_deleted_in_days"><item quantity="other">这条笔记将在 %1$d 天后被永久删除。</item></plurals>
     <string name="note_detail_trash_deleted_today">这条笔记今天会被永久删除。</string>
     <string name="note_header_add_topic">添加主题</string>
     <string name="note_header_export_markdown">导出 Markdown</string>
@@ -96,7 +96,7 @@
     <string name="sidebar_membership_upgrade">升级</string>
     <string name="sidebar_credits_locked">剩余 0 Credits</string>
     <string name="sidebar_credits_remaining">剩余 %1$d Credits</string>
-    <string name="sidebar_stats_streak">连续创作 %1$d 天</string>
+    <plurals name="sidebar_stats_streak"><item quantity="other">连续创作 %1$d 天</item></plurals>
     <string name="sidebar_stats_week_up">本周 %1$d 篇 · 比上周 +%2$d%%</string>
     <string name="sidebar_stats_week_down">本周 %1$d 篇 · 比上周少 %2$d%%</string>
     <string name="sidebar_stats_week_new_start">本周 %1$d 篇 · 新的开始</string>
@@ -296,10 +296,10 @@
     <string name="subscription_onboarding_feature_repurpose_social">一键改编为 TikTok、Reels 等内容</string>
     <string name="subscription_onboarding_feature_organize">所有灵感集中管理</string>
     <string name="subscription_onboarding_feature_teleprompter">内置提词器</string>
-    <string name="subscription_onboarding_plan_annual_trial_days">年付 · %1$d 天免费试用</string>
+    <plurals name="subscription_onboarding_plan_annual_trial_days"><item quantity="other">年付 · %1$d 天免费试用</item></plurals>
     <string name="subscription_onboarding_trust_no_payment_cancel_anytime">现在无需付款 · 随时取消</string>
     <string name="subscription_onboarding_trust_cancel_anytime">随时取消</string>
-    <string name="subscription_onboarding_cta_try_free_days">免费试用 %1$d 天</string>
+    <plurals name="subscription_onboarding_cta_try_free_days"><item quantity="other">免费试用 %1$d 天</item></plurals>
     <string name="subscription_onboarding_paywall_subtitle">解锁完整的 ChillScript 创作者工作流。</string>
     <string name="subscription_onboarding_no_trial_notice">无试用 · 随时取消</string>
     <string name="subscription_onboarding_feature_video">视频拆解</string>
@@ -514,7 +514,7 @@
     <string name="weekly_topics_preview_title">每周发帖灵感</string>
     <string name="weekly_topics_preview_headline">根据你的新笔记生成一份每周发帖灵感报告</string>
     <string name="weekly_topics_preview_headline_highlight">每周发帖灵感</string>
-    <string name="weekly_topics_preview_message">ChillNote 每周整理你的新笔记，生成可以直接开写的选题。</string>
+    <string name="weekly_topics_preview_message">ChillScript 每周整理你的新笔记，生成可以直接开写的选题。</string>
     <string name="weekly_topics_preview_sources_label">你保存的 notes</string>
     <string name="weekly_topics_preview_result_label">每周的新选题</string>
     <string name="weekly_topics_preview_illustration_label">Post Ideas</string>
@@ -537,8 +537,9 @@
     <string name="weekly_topics_error_regenerate">无法重新整理这份报告。</string>
     <string name="weekly_topics_report_inspiration_label">本周灵感</string>
     <string name="weekly_topics_report_date_range">%1$s–%2$s</string>
-    <string name="weekly_topics_report_summary">从 %2$d 条素材提炼出 %1$d 个选题</string>
-    <string name="weekly_topics_history_summary">从 %2$d 条素材提炼出 %1$d 个选题</string>
+    <plurals name="weekly_topics_count_topics"><item quantity="other">%1$d 个选题</item></plurals>
+    <plurals name="weekly_topics_count_sources"><item quantity="other">%1$d 条素材</item></plurals>
+    <string name="weekly_topics_summary">从 %2$s 提炼出 %1$s</string>
     <string name="weekly_topics_history_empty">还没有历史报告</string>
     <string name="weekly_topics_topic_progress">%1$02d</string>
     <string name="weekly_topics_topic_related_sources">相关素材</string>

@@ -352,6 +352,7 @@ class NotesRepository(
         tagIds: List<String> = emptyList(),
         noteId: String = UUID.randomUUID().toString(),
         source: LinkSourceDto = sourceForUrl(url),
+        contentLocale: String,
     ): NoteEntity {
         dao.note(userId, noteId)?.let { return it }
         val created = createNote(userId, placeholder, section, noteId)
@@ -375,7 +376,15 @@ class NotesRepository(
             if (tagIds.isNotEmpty()) sync(userId, accessToken)
             val job = linkImportApi.enqueue(
                 accessToken,
-                LinkImportRequest(note.id, url, placeholder, source, section, mediaLinkSections),
+                LinkImportRequest(
+                    noteId = note.id,
+                    url = url,
+                    placeholderContent = placeholder,
+                    source = source,
+                    section = section,
+                    contentLocale = contentLocale,
+                    mediaLinkSections = mediaLinkSections,
+                ),
             )
             // The import endpoint creates the server-side note, but it does not
             // receive tag relationships. Keep tagged captures dirty for the

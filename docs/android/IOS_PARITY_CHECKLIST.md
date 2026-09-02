@@ -2,7 +2,7 @@
 
 这份清单以当前 iOS 源码为事实来源，而不是以旧需求文档或猜测为准。
 
-实际执行顺序请同时参考 `docs/android/GOOGLE_PLAY_LAUNCH_RUNBOOK.md`。
+实际执行顺序请同时参考 `store/google-play/docs/GOOGLE_PLAY_LAUNCH_RUNBOOK.md`。
 
 - `[x]`：Android 当前可达实现已经按 iOS 源码接入，并通过本轮可运行的静态检查。
 - `[ ]`：仍缺实现、外部配置或真机验证，不能作为已经完成对外承诺。

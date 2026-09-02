@@ -83,6 +83,10 @@ class LinkImportApiTest {
 
         val sections = Json.parseToJsonElement(capturedBody)
             .jsonObject.getValue("mediaLinkSections").jsonObject
+        assertEquals(
+            "zh-Hant",
+            Json.parseToJsonElement(capturedBody).jsonObject.getValue("contentLocale").jsonPrimitive.content,
+        )
         assertFalse(sections.getValue("showDescription").jsonPrimitive.boolean)
         assertFalse(sections.getValue("showAuthor").jsonPrimitive.boolean)
         assertFalse(sections.getValue("showHook").jsonPrimitive.boolean)
@@ -134,6 +138,7 @@ class LinkImportApiTest {
         placeholderContent = "Preparing",
         source = sourceForUrl("https://example.com/video"),
         section = "inbox",
+        contentLocale = "zh-Hant",
         mediaLinkSections = MediaLinkSectionsDto.TranscriptOnly,
     )
 }

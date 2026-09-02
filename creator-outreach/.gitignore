@@ -1,0 +1,10 @@
+node_modules/
+previews/
+OfferCodeOneTimeUseCodes_*.csv
+data/SENDING_PAUSED
+data/leads.csv
+data/tiktok-email-runs/
+data/sync-state.json
+data/offer-code-assignments.json
+data/offer-codes/
+data/*.tmp

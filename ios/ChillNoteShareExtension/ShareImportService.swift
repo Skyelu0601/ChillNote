@@ -203,6 +203,7 @@ struct ShareImportService {
             "placeholderContent": placeholderNoteText(for: url, source: pendingImport.source),
             "section": "inbox",
             "source": sourcePayload,
+            "contentLocale": ShareL10n.contentLocaleIdentifier,
             "mediaLinkSections": mediaLinkSectionsPayload()
         ])
 

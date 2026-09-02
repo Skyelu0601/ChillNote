@@ -115,6 +115,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
@@ -2055,7 +2056,11 @@ private fun creditColor(balance: Int?): Color = when {
 @Composable
 private fun IOSSidebarStats(notes: List<NoteEntity>, locale: Locale, modifier: Modifier = Modifier) {
     val snapshot = remember(notes, locale) { SidebarStats.from(notes) }
-    val streakText = stringResource(R.string.sidebar_stats_streak, snapshot.streakDays)
+    val streakText = pluralStringResource(
+        R.plurals.sidebar_stats_streak,
+        snapshot.streakDays,
+        snapshot.streakDays,
+    )
     val streakCountText = snapshot.streakDays.toString()
     val styledStreak = remember(streakText, streakCountText) {
         buildAnnotatedString {

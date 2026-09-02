@@ -1,8 +1,8 @@
 # ChillScript Docs Index
 
 - 项目与架构背景：`PROJECT_CONTEXT.md`
-- Android / Google Play：`android/`
-- App Store 与合规说明：`compliance/`
+- Android 平台接入：`android/`
+- App Store、Google Play、ASO 与上传工具：`../store/README.md`
 - 隐私政策与服务条款源文档：`compliance/legal/`
 - 国际化规范、术语与检查报告：`i18n/`
 - 产品与设计资料：`product/`

@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light">
+    <title>ChillScript Creator Outreach</title>
+    <meta name="description" content="ChillScript creator outreach dashboard.">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <div class="ambient ambient-one"></div>
+    <div class="ambient ambient-two"></div>
+
+    <header class="topbar">
+      <a class="brand" href="#top" aria-label="返回顶部" data-i18n-aria-label="backToTop">
+        <span class="brand-mark">C</span>
+        <span>
+          <strong>ChillScript</strong>
+          <small>Creator Outreach</small>
+        </span>
+      </a>
+      <div class="topbar-actions">
+        <div class="language-switch" role="group" aria-label="语言" data-i18n-aria-label="language">
+          <button type="button" data-language="zh" aria-pressed="true">中文</button>
+          <button type="button" data-language="en" aria-pressed="false">English</button>
+        </div>
+        <span class="local-chip"><i></i> <span data-i18n="localOnly">只在本机运行</span></span>
+        <button class="icon-button" id="refreshButton" type="button" aria-label="刷新数据" title="刷新数据" data-i18n-aria-label="refresh" data-i18n-title="refresh">↻</button>
+      </div>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="campaign-card">
+          <div class="campaign-card-head">
+            <div>
+              <span class="step-label">NEW CAMPAIGN</span>
+              <h2 data-i18n="campaignTitle">你想找哪类创作者？</h2>
+            </div>
+            <span class="cost-badge" id="costBadge">最多约 $0.13</span>
+          </div>
+
+          <label class="keyword-field" for="keywordInput">
+            <span data-i18n="searchKeywords">搜索关键词</span>
+            <textarea id="keywordInput" rows="3" placeholder="例如：UGC creator tips" data-i18n-placeholder="keywordPlaceholder"></textarea>
+            <small data-i18n="multiKeywords">多个关键词可换行或用逗号分隔</small>
+          </label>
+
+          <div class="suggestions" aria-label="推荐关键词" data-i18n-aria-label="suggestedKeywords">
+            <button type="button" data-keyword="content creator tips">content creator tips</button>
+            <button type="button" data-keyword="UGC creator tips">UGC creator tips</button>
+            <button type="button" data-keyword="faceless content creator">faceless content creator</button>
+            <button type="button" data-keyword="video script tips">video script tips</button>
+          </div>
+
+          <details class="advanced-settings">
+            <summary><span data-i18n="advancedSettings">高级设置</span> <span>⌄</span></summary>
+            <div class="settings-grid">
+              <label>
+                <span data-i18n="maxResults">最多抓取</span>
+                <input id="maxEmailsInput" type="number" min="1" max="105" value="50">
+              </label>
+              <label>
+                <span data-i18n="locationOptional">地区（可选）</span>
+                <input id="locationInput" type="text" placeholder="例如：United States" data-i18n-placeholder="locationPlaceholder">
+              </label>
+            </div>
+          </details>
+
+          <div class="campaign-actions">
+            <button class="secondary-button" id="previewCampaignButton" type="button" data-i18n="viewPlan">查看计划</button>
+            <button class="primary-button" id="runCampaignButton" type="button">
+              <span class="button-label" data-i18n="startDiscovery">开始发现创作者</span> <span>→</span>
+            </button>
+          </div>
+
+          <div class="plan-preview hidden" id="planPreview"></div>
+        </div>
+
+        <aside class="pipeline-card">
+          <div class="pipeline-head">
+            <div>
+              <span class="step-label">WORKFLOW</span>
+              <h2 data-i18n="workflowTitle">自动化流程</h2>
+            </div>
+            <span class="health-dot" id="healthDot">就绪</span>
+          </div>
+          <ol class="pipeline-list">
+            <li class="done"><span>01</span><div><strong data-i18n="discovery">TikTok 发现</strong><small>Mass Email Scraper</small></div></li>
+            <li class="done"><span>02</span><div><strong data-i18n="sourceFilter">来源过滤</strong><small data-i18n="directProfilesOnly">只接受 /@username</small></div></li>
+            <li><span>03</span><div><strong data-i18n="validateReview">验证与审核</strong><small data-i18n="dedupeCheck">去重 · 邮箱检查</small></div></li>
+            <li><span>04</span><div><strong data-i18n="monitoredSend">监测发送</strong><small data-i18n="sendInterval">60–120 秒间隔</small></div></li>
+            <li><span>05</span><div><strong data-i18n="partnerConversion">合作转化</strong><small data-i18n="codeAffiliate">兑换码 · 30% 分销</small></div></li>
+          </ol>
+          <div class="safety-note">
+            <span>✓</span>
+            <p><strong data-i18n="sendProtection">发送保护已开启</strong><br><span data-i18n="confirmationRequired">付费、群发和兑换码邮件都需要确认。</span></p>
+          </div>
+        </aside>
+      </section>
+
+      <section class="stats-section" aria-label="推广数据概览" data-i18n-aria-label="outreachOverview">
+        <article><span data-i18n="contacts">联系人</span><strong id="totalStat">—</strong><small data-i18n="allHistory">全部历史记录</small></article>
+        <article><span data-i18n="sent">已发送</span><strong id="sentStat">—</strong><small data-i18n="firstEmail">第一封邮件</small></article>
+        <article><span data-i18n="replied">已回复</span><strong id="replyStat">—</strong><small data-i18n="awaitingPartner">等待合作处理</small></article>
+        <article><span data-i18n="bounced">已退信</span><strong id="bounceStat">—</strong><small data-i18n="noRecontact">自动停止再次联系</small></article>
+        <article class="accent-stat"><span data-i18n="pendingSend">待发送</span><strong id="pendingStat">—</strong><small id="pauseStat">检查发送状态中</small></article>
+      </section>
+
+      <section class="operations-grid">
+        <div class="panel action-panel">
+          <div class="panel-heading">
+            <div><span class="step-label">NEXT ACTIONS</span><h2 data-i18n="nextActions">接下来做什么</h2></div>
+          </div>
+          <div class="action-list">
+            <button class="action-row" id="approveButton" type="button">
+              <span class="action-icon lavender">✓</span>
+              <span><strong data-i18n="approveContacts">批准待发送联系人</strong><small id="approveHelp">等待新联系人</small></span>
+              <b>→</b>
+            </button>
+            <button class="action-row" id="sendButton" type="button">
+              <span class="action-icon mint">↗</span>
+              <span><strong data-i18n="sendFirstEmail">发送第一封邮件</strong><small id="sendHelp">监测退信并自动停止风险发送</small></span>
+              <b>→</b>
+            </button>
+            <button class="action-row" id="syncButton" type="button">
+              <span class="action-icon peach">↻</span>
+              <span><strong data-i18n="syncReplies">同步回复与退信</strong><small data-i18n="last14Days">读取最近 14 天的邮箱动态</small></span>
+              <b>→</b>
+            </button>
+            <button class="action-row" id="templateButton" type="button">
+              <span class="action-icon blue">Aa</span>
+              <span><strong data-i18n="viewTemplate">查看第一封邮件模板</strong><small id="subjectHelp">A creator tool you might like</small></span>
+              <b>→</b>
+            </button>
+          </div>
+        </div>
+
+        <div class="panel job-panel">
+          <div class="panel-heading">
+            <div><span class="step-label">LIVE ACTIVITY</span><h2 data-i18n="taskProgress">任务进度</h2></div>
+            <span class="job-status idle" id="jobStatus">暂无任务</span>
+          </div>
+          <div class="empty-job" id="emptyJob">
+            <span>⌁</span>
+            <p><span data-i18n="activityEmptyOne">开始抓取、发送或同步后，</span><br><span data-i18n="activityEmptyTwo">实时进度会显示在这里。</span></p>
+          </div>
+          <div class="job-console hidden" id="jobConsole">
+            <div class="job-title" id="jobTitle"></div>
+            <pre id="jobLogs"></pre>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel replies-panel">
+        <div class="panel-heading split-heading">
+          <div><span class="step-label">PARTNERS</span><h2 data-i18n="partnerReplies">回复与合作转化</h2></div>
+          <p data-i18n="partnerHelp">首封直接邀请加入 Affiliate；核实注册后，第二封发送一年 Pro。</p>
+        </div>
+        <div class="reply-grid" id="replyGrid"></div>
+      </section>
+
+      <section class="panel contacts-panel">
+        <div class="panel-heading split-heading">
+          <div><span class="step-label">CONTACTS</span><h2 data-i18n="contactRecords">联系人记录</h2></div>
+          <div class="table-tools">
+            <label class="search-box"><span>⌕</span><input id="contactSearch" type="search" placeholder="搜索邮箱或账号" data-i18n-placeholder="searchContacts"></label>
+            <select id="statusFilter" aria-label="筛选联系人状态" data-i18n-aria-label="filterContactStatus">
+              <option value="all" data-i18n="allStatuses">全部状态</option>
+              <option value="sent" data-i18n="sent">已发送</option>
+              <option value="pending" data-i18n="statusPending">待发送</option>
+              <option value="replied" data-i18n="replied">已回复</option>
+              <option value="bounced" data-i18n="bounced">已退信</option>
+              <option value="failed" data-i18n="failed">失败</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th data-i18n="creator">创作者</th><th data-i18n="keyword">关键词</th><th data-i18n="emailStatus">邮箱状态</th><th data-i18n="sendStatus">发送状态</th><th data-i18n="source">来源</th></tr></thead>
+            <tbody id="contactsBody"></tbody>
+          </table>
+        </div>
+        <div class="table-footer"><span id="tableCount">—</span><button id="showMoreButton" type="button" data-i18n="showMore">显示更多</button></div>
+      </section>
+    </main>
+
+    <footer>
+      <span>ChillScript Creator Outreach</span>
+      <span data-i18n="localFooter">数据保存在你的电脑上 · 不公开部署</span>
+    </footer>
+
+    <div class="modal-backdrop hidden" id="modalBackdrop" role="presentation">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button class="modal-close" id="modalClose" type="button" aria-label="关闭" data-i18n-aria-label="close">×</button>
+        <span class="modal-kicker" id="modalKicker">CONFIRM ACTION</span>
+        <h2 id="modalTitle" data-i18n="confirmAction">确认操作</h2>
+        <p id="modalDescription"></p>
+        <div id="modalContent"></div>
+        <div class="modal-actions">
+          <button class="secondary-button" id="modalCancel" type="button" data-i18n="cancel">取消</button>
+          <button class="primary-button" id="modalConfirm" type="button" data-i18n="confirm">确认</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="drawer-backdrop hidden" id="drawerBackdrop"></div>
+    <aside class="drawer" id="drawer" aria-hidden="true">
+      <button class="modal-close" id="drawerClose" type="button" aria-label="关闭" data-i18n-aria-label="close">×</button>
+      <span class="modal-kicker">EMAIL PREVIEW</span>
+      <h2 id="drawerTitle" data-i18n="emailPreview">邮件预览</h2>
+      <div id="drawerContent"></div>
+    </aside>
+
+    <div class="toast-region" id="toastRegion" aria-live="polite"></div>
+    <script type="module" src="/app.js"></script>
+  </body>
+</html>

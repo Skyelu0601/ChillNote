@@ -2,6 +2,7 @@ import Foundation
 import OSLog
 import StoreKit
 import GoMarketMe
+import RevenueCat
 
 enum SubscriptionTier: String, CaseIterable {
     case free
@@ -274,13 +275,29 @@ struct SubscriptionDisplayInfo: Equatable {
     }
 }
 
+private enum RevenueCatPurchaseTarget {
+    case package(RevenueCat.Package)
+    case product(RevenueCat.StoreProduct)
+}
+
+struct SubscriptionProduct: Identifiable {
+    fileprivate let storeKitProduct: StoreKit.Product
+    fileprivate let revenueCatTarget: RevenueCatPurchaseTarget?
+
+    var id: String { storeKitProduct.id }
+    var price: Decimal { storeKitProduct.price }
+    var displayPrice: String { storeKitProduct.displayPrice }
+    var priceFormatStyle: Decimal.FormatStyle.Currency { storeKitProduct.priceFormatStyle }
+    var subscription: StoreKit.Product.SubscriptionInfo? { storeKitProduct.subscription }
+}
+
 @MainActor
 class StoreService: ObservableObject {
     static let shared = StoreService()
     nonisolated private static let logger = Logger(subsystem: "com.chillnote.app", category: "store")
 
     @Published var currentTier: SubscriptionTier = .free
-    @Published var availableProducts: [Product] = []
+    @Published var availableProducts: [SubscriptionProduct] = []
     @Published var isPurchasing = false
     @Published var errorMessage: String?
     @Published var isLoadingProducts = false
@@ -416,6 +433,7 @@ class StoreService: ObservableObject {
     private struct BackendSubscriptionStatus: Decodable {
         let tier: String?
         let expiresAt: String?
+        let activeProductId: String?
     }
 
     private struct CachedBackendSubscriptionStatus: Codable {
@@ -443,6 +461,10 @@ class StoreService: ObservableObject {
 
         // Start listening for transaction updates
         transactionListener = listenForTransactions()
+        RevenueCatService.shared.setCustomerInfoObserver { [weak self] snapshot in
+            self?.applyRevenueCatSnapshot(snapshot)
+            Task { await self?.syncRevenueCatWithBackend() }
+        }
 
         Task {
             await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
@@ -481,29 +503,43 @@ class StoreService: ObservableObject {
     
     // MARK: - Purchasing
     
-    func purchase(_ product: Product) async {
+    func purchase(_ product: SubscriptionProduct) async {
         isPurchasing = true
         errorMessage = nil
-        
+
         do {
-            let result = try await product.purchase()
-            
-            switch result {
-            case .success(let verification):
-                let transaction = try checkVerified(verification)
-                await syncSubscriptionWithBackendIfNeeded(transaction)
-                await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
+            if let target = product.revenueCatTarget, RevenueCatService.shared.configured {
+                let result: (snapshot: RevenueCatEntitlementSnapshot, userCancelled: Bool)
+                switch target {
+                case .package(let package):
+                    result = try await RevenueCatService.shared.purchase(package: package)
+                case .product(let storeProduct):
+                    result = try await RevenueCatService.shared.purchase(product: storeProduct)
+                }
+                guard !result.userCancelled else {
+                    isPurchasing = false
+                    return
+                }
+                applyRevenueCatSnapshot(result.snapshot)
+                // Keep the legacy Apple verifier populated during the migration
+                // window, so a RevenueCat outage cannot strand an existing user.
+                await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
+                await syncRevenueCatWithBackend()
                 _ = await GoMarketMe.shared.syncAllTransactions()
-                await transaction.finish()
-                
-            case .userCancelled:
-                break
-                
-            case .pending:
-                break
-                
-            @unknown default:
-                break
+            } else {
+                let result = try await product.storeKitProduct.purchase()
+                switch result {
+                case .success(let verification):
+                    let transaction = try checkVerified(verification)
+                    await syncSubscriptionWithBackendIfNeeded(transaction)
+                    await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
+                    _ = await GoMarketMe.shared.syncAllTransactions()
+                    await transaction.finish()
+                case .userCancelled, .pending:
+                    break
+                @unknown default:
+                    break
+                }
             }
         } catch {
             errorMessage = String(
@@ -520,8 +556,15 @@ class StoreService: ObservableObject {
         errorMessage = nil
         
         do {
-            try await AppStore.sync()
-            await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
+            if RevenueCatService.shared.configured {
+                let snapshot = try await RevenueCatService.shared.restorePurchases()
+                applyRevenueCatSnapshot(snapshot)
+                await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
+                await syncRevenueCatWithBackend()
+            } else {
+                try await AppStore.sync()
+                await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
+            }
             _ = await GoMarketMe.shared.syncAllTransactions()
         } catch {
             errorMessage = String(
@@ -535,6 +578,19 @@ class StoreService: ObservableObject {
 
     func refreshSubscriptionStatus() async {
         await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
+    }
+
+    func identifyRevenueCat(userID: String?) async {
+        guard let userID else { return }
+        await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
+        let shouldMigrateLegacyPurchase = currentTier == .pro
+        if let snapshot = await RevenueCatService.shared.identify(
+            userID: userID,
+            migrateLegacyPurchase: shouldMigrateLegacyPurchase
+        ) {
+            applyRevenueCatSnapshot(snapshot)
+            await syncRevenueCatWithBackend()
+        }
     }
 
     func ensureSubscriptionStatusReadyForFeatureGate() async {
@@ -566,7 +622,7 @@ class StoreService: ObservableObject {
         await fetchProducts()
     }
 
-    func subscriptionDisplayInfo(for product: Product, locale: Locale = .current) -> SubscriptionDisplayInfo {
+    func subscriptionDisplayInfo(for product: SubscriptionProduct, locale: Locale = .current) -> SubscriptionDisplayInfo {
         let billingPeriod = SubscriptionPeriodDescriptor(storeKitPeriod: product.subscription?.subscriptionPeriod)
         let introductoryOffer = IntroductoryOfferDescriptor(storeKitOffer: product.subscription?.introductoryOffer)
         return SubscriptionDisplayInfo.build(
@@ -585,7 +641,25 @@ class StoreService: ObservableObject {
         isLoadingProducts = true
         productsErrorMessage = nil
         do {
-            let products = try await Product.products(for: productIds)
+            var revenueCatTargets: [String: RevenueCatPurchaseTarget] = [:]
+            if RevenueCatService.shared.configured {
+                do {
+                    let packages = try await RevenueCatService.shared.currentOfferingPackages()
+                    for package in packages {
+                        revenueCatTargets[Self.baseProductIdentifier(package.storeProduct.productIdentifier)] = .package(package)
+                    }
+                    if revenueCatTargets.isEmpty {
+                        let storeProducts = await RevenueCatService.shared.storeProducts(identifiers: productIds)
+                        for storeProduct in storeProducts {
+                            revenueCatTargets[Self.baseProductIdentifier(storeProduct.productIdentifier)] = .product(storeProduct)
+                        }
+                    }
+                } catch {
+                    Self.logger.warning("RevenueCat offerings unavailable; keeping StoreKit fallback: \(error.localizedDescription, privacy: .public)")
+                }
+            }
+            let requestedProductIds = revenueCatTargets.isEmpty ? productIds : Array(revenueCatTargets.keys)
+            let products = try await Product.products(for: requestedProductIds)
             var eligibleProductIds: Set<String> = []
             for product in products {
                 guard let subscription = product.subscription,
@@ -596,7 +670,9 @@ class StoreService: ObservableObject {
                 eligibleProductIds.insert(product.id)
             }
             introductoryOfferEligibleProductIds = eligibleProductIds
-            availableProducts = products.sorted(by: { $0.price < $1.price })
+            availableProducts = products
+                .map { SubscriptionProduct(storeKitProduct: $0, revenueCatTarget: revenueCatTargets[$0.id]) }
+                .sorted(by: { $0.price < $1.price })
             if availableProducts.isEmpty {
                 productsErrorMessage = L10n.text("store.error.no_subscription_products")
             }
@@ -605,6 +681,44 @@ class StoreService: ObservableObject {
             productsErrorMessage = L10n.text("store.error.unable_to_load_prices")
         }
         isLoadingProducts = false
+    }
+
+    private static func baseProductIdentifier(_ identifier: String) -> String {
+        identifier.split(separator: ":", maxSplits: 1).first.map(String.init) ?? identifier
+    }
+
+    private func applyRevenueCatSnapshot(_ snapshot: RevenueCatEntitlementSnapshot) {
+        guard snapshot.isActive else { return }
+        currentTier = .pro
+        if let expirationDate = snapshot.expirationDate {
+            subscriptionExpirationDate = max(subscriptionExpirationDate ?? .distantPast, expirationDate)
+        }
+        activeSubscriptionProductId = snapshot.productIdentifier ?? activeSubscriptionProductId
+    }
+
+    private func syncRevenueCatWithBackend() async {
+        guard AuthService.shared.confirmedUserId != nil,
+              let token = await AuthService.shared.getSessionToken(),
+              !token.isEmpty else { return }
+        var request = URLRequest(url: URL(string: "\(AppConfig.backendBaseURL)/subscription/revenuecat/sync")!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else { return }
+            let decoded = try JSONDecoder().decode(BackendSubscriptionStatus.self, from: data)
+            let expiresAt = parseBackendDate(decoded.expiresAt)
+            let tier = backendTier(from: decoded.tier, expiresAt: expiresAt)
+            currentTier = tier
+            subscriptionExpirationDate = tier == .pro ? expiresAt ?? subscriptionExpirationDate : nil
+            activeSubscriptionProductId = decoded.activeProductId ?? activeSubscriptionProductId
+            if let userID = AuthService.shared.currentUserId {
+                cacheBackendStatus(tier: tier, expiresAt: decoded.expiresAt, for: userID)
+                lastFreshSubscriptionStatusUserId = userID
+            }
+        } catch {
+            Self.logger.warning("RevenueCat backend sync failed: \(error.localizedDescription, privacy: .public)")
+        }
     }
     
     private func updateSubscriptionStatus(syncActiveTransactionToBackend: Bool) async {
@@ -856,7 +970,7 @@ class StoreService: ObservableObject {
         }
     }
     
-    nonisolated private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
+    nonisolated private func checkVerified<T>(_ result: StoreKit.VerificationResult<T>) throws -> T {
         switch result {
         case .unverified:
             throw StoreError.failedVerification

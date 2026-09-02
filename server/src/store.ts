@@ -2,6 +2,7 @@ import type { NoteDTO, SyncChanges, TagDTO } from "./types.js";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "./db.js";
 import { pickLatestBySyncIdentity, syncIdentityKey } from "./syncIdentity.js";
+import { effectiveSubscription, type RevenueCatEntitlementSnapshot } from "./revenueCat.js";
 import {
   requireOwnedSyncCursor,
   resolveSyncCursor,
@@ -58,15 +59,59 @@ export async function hasActiveProSubscription(
   userId: string,
   now = new Date()
 ): Promise<boolean> {
+  return (await getEffectiveSubscription(userId, now)).tier === "pro";
+}
+
+export type EffectiveSubscriptionSnapshot = {
+  tier: "free" | "pro";
+  expiresAt: Date | null;
+  source: "legacy" | "revenuecat" | null;
+  productId: string | null;
+  store: string | null;
+};
+
+export async function getEffectiveSubscription(
+  userId: string,
+  now = new Date(),
+  entitlementId = process.env.REVENUECAT_ENTITLEMENT_ID?.trim() || "pro"
+): Promise<EffectiveSubscriptionSnapshot> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
-    select: { subscriptionTier: true, subscriptionExpiresAt: true }
+    select: {
+      subscriptionTier: true,
+      subscriptionExpiresAt: true,
+      revenueCatEntitlements: {
+        where: { entitlementId },
+        take: 1,
+        select: {
+          isActive: true,
+          expiresAt: true,
+          productId: true,
+          store: true,
+          originalTransactionId: true
+        }
+      }
+    }
   });
-  return isProSubscriptionActive(
-    user?.subscriptionTier,
-    user?.subscriptionExpiresAt,
+  const stored = user?.revenueCatEntitlements[0];
+  const revenueCat: RevenueCatEntitlementSnapshot | null = stored ? {
+    active: stored.isActive,
+    expiresAt: stored.expiresAt,
+    productId: stored.productId,
+    store: stored.store,
+    originalTransactionId: stored.originalTransactionId
+  } : null;
+  const effective = effectiveSubscription({
+    legacyTier: user?.subscriptionTier,
+    legacyExpiresAt: user?.subscriptionExpiresAt,
+    revenueCat,
     now
-  );
+  });
+  return {
+    ...effective,
+    productId: effective.source === "revenuecat" ? revenueCat?.productId ?? null : null,
+    store: effective.source === "revenuecat" ? revenueCat?.store ?? null : null
+  };
 }
 
 export async function upsertUser(userId: string, database: SyncDatabase = prisma): Promise<void> {

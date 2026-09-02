@@ -1,0 +1,30 @@
+name: Localization checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  localization:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Validate iOS localization catalog and permission descriptions
+        run: python3 scripts/i18n/lint_i18n.py
+
+      - name: Validate Android localized resources
+        run: python3 android/scripts/validate_localizations.py
+
+      - name: Run localization validator tests
+        run: python3 -m unittest discover -s android/scripts -p "test_*.py"

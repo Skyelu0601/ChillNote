@@ -1,4 +1,4 @@
-"NSMicrophoneUsageDescription" = "ChillScript necesita acceso al micrófono para grabar tus ideas y el audio de videos con teleprónter.";
+"NSMicrophoneUsageDescription" = "ChillScript necesita acceso al micrófono para grabar notas de voz, capturar el audio de videos con teleprónter y, con tu permiso, enviar audio para una transcripción segura con IA.";
 "NSSpeechRecognitionUsageDescription" = "ChillScript usa reconocimiento de voz para transcribir tu voz a texto.";
-"NSCameraUsageDescription" = "ChillScript usa la camara para grabar videos con teleprompter.";
+"NSCameraUsageDescription" = "ChillScript usa la cámara para grabar videos con teleprónter.";
 "NSPhotoLibraryAddUsageDescription" = "ChillScript guarda los videos exportados del teleprónter en tu biblioteca de fotos cuando eliges guardarlos.";

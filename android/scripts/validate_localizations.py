@@ -55,11 +55,23 @@ UNIVERSALLY_UNCHANGED = {
     "weekly_topics_report_date_range",
     "weekly_topics_topic_progress",
     "weekly_topics_preview_illustration_label",
+    "weekly_topics_count_sources",
 }
 ENGLISH_WORD = re.compile(r"[a-z]+", re.IGNORECASE)
 MARKDOWN_URL = re.compile(r"\[[^\]\n]+\]\([^)]*https?://[^)]*\)", re.IGNORECASE)
+MALFORMED_MARKDOWN_LINK = re.compile(r"\]\s+\(https?://", re.IGNORECASE)
+LEGACY_VISIBLE_BRAND = re.compile(r"\bChillNote\b")
 ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"
 RESOURCE_LOCALE_ALIASES = {"zh-rCN": "zh-Hans", "zh-rTW": "zh-Hant"}
+REQUIRED_PLURALS = {
+    "note_detail_trash_deleted_in_days",
+    "sidebar_stats_streak",
+    "subscription_onboarding_cta_try_free_days",
+    "subscription_onboarding_plan_annual_trial_days",
+    "trash_days_left",
+    "weekly_topics_count_sources",
+    "weekly_topics_count_topics",
+}
 
 # Java Formatter syntax. Literal %% and %n are recognized but do not consume an
 # argument. Date/time tokens include both the t/T prefix and suffix.
@@ -285,6 +297,10 @@ def value_format_failures(label: str, key: str, value: str) -> list[str]:
     failures = [f"{label}/{key}: {error}" for error in format_token_errors(value)]
     if key.endswith("_plain") and MARKDOWN_URL.search(value):
         failures.append(f"{label}/{key}: _plain string contains a Markdown URL")
+    if MALFORMED_MARKDOWN_LINK.search(value):
+        failures.append(f"{label}/{key}: whitespace separates a Markdown label from its URL")
+    if LEGACY_VISIBLE_BRAND.search(value):
+        failures.append(f"{label}/{key}: contains legacy user-visible brand ChillNote")
     return failures
 
 
@@ -305,6 +321,18 @@ def validate(
     source = strings(source_path)
     source_plurals = plurals(source_path)
     failures = locale_configuration_failures(res, locale_config)
+    missing_required_plurals = sorted(REQUIRED_PLURALS - set(source_plurals))
+    if missing_required_plurals:
+        failures.append(
+            "values: count-sensitive resources must be plurals: "
+            + ", ".join(missing_required_plurals)
+        )
+    wrong_resource_kind = sorted(REQUIRED_PLURALS & set(source))
+    if wrong_resource_kind:
+        failures.append(
+            "values: plural resources are still declared as strings: "
+            + ", ".join(wrong_resource_kind)
+        )
 
     for key, value in source.items():
         failures.extend(value_format_failures("values", key, value))
@@ -362,7 +390,7 @@ def validate(
                         f"{directory}/{item_label}: placeholders {dict(actual_placeholders)} "
                         f"do not match {dict(expected_placeholders)}"
                     )
-                if equivalent_to_english(expected, actual) and any(
+                if key not in UNIVERSALLY_UNCHANGED and equivalent_to_english(expected, actual) and any(
                     character.isalpha() for character in expected
                 ):
                     failures.append(

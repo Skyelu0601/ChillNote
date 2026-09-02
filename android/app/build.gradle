@@ -32,6 +32,9 @@ def firebaseApiKey = firebaseConfigValue("CHILLSCRIPT_FIREBASE_API_KEY", "chills
 def firebaseAppId = firebaseConfigValue("CHILLSCRIPT_FIREBASE_APP_ID", "chillscript.firebase.appId")
 def firebaseProjectId = firebaseConfigValue("CHILLSCRIPT_FIREBASE_PROJECT_ID", "chillscript.firebase.projectId")
 def firebaseSenderId = firebaseConfigValue("CHILLSCRIPT_FIREBASE_SENDER_ID", "chillscript.firebase.senderId")
+def revenueCatAndroidApiKey = firebaseConfigValue(
+    "CHILLSCRIPT_REVENUECAT_ANDROID_API_KEY", "chillscript.revenuecat.androidApiKey"
+).trim()
 def configuredAuthRedirectUri = firebaseConfigValue(
     "CHILLSCRIPT_ANDROID_AUTH_REDIRECT_URI", "chillscript.auth.redirectUri"
 )
@@ -84,6 +87,7 @@ android {
         buildConfigField "String", "FIREBASE_APP_ID", JsonOutput.toJson(firebaseAppId)
         buildConfigField "String", "FIREBASE_PROJECT_ID", JsonOutput.toJson(firebaseProjectId)
         buildConfigField "String", "FIREBASE_SENDER_ID", JsonOutput.toJson(firebaseSenderId)
+        buildConfigField "String", "REVENUECAT_ANDROID_API_KEY", JsonOutput.toJson(revenueCatAndroidApiKey)
         buildConfigField "boolean", "APP_REVIEW_LOGIN_ENABLED", appReviewLoginEnabled.toBoolean().toString()
         buildConfigField "String", "APP_REVIEW_WHITELIST_EMAILS", JsonOutput.toJson(appReviewWhitelistEmails)
         buildConfigField "String", "APP_REVIEW_VERIFICATION_CODE", JsonOutput.toJson(appReviewVerificationCode)
@@ -173,7 +177,7 @@ dependencies {
     implementation "androidx.credentials:credentials:1.6.0"
     implementation "androidx.credentials:credentials-play-services-auth:1.6.0"
     implementation "com.google.android.libraries.identity.googleid:googleid:1.1.1"
-    implementation "com.android.billingclient:billing:9.1.0"
+    implementation "com.revenuecat.purchases:purchases:10.19.1"
 
     def camerax_version = "1.5.3"
     implementation "androidx.camera:camera-core:${camerax_version}"

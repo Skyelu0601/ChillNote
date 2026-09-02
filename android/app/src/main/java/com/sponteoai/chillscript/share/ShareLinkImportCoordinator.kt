@@ -59,6 +59,7 @@ class ShareLinkImportCoordinator(
                         placeholderContent = placeholder(source.host.ifBlank { pending.url }),
                         source = source,
                         section = "inbox",
+                        contentLocale = appContext.resources.configuration.locales[0].toLanguageTag(),
                         mediaLinkSections = MediaLinkSectionsDto.TranscriptOnly,
                     ),
                 )

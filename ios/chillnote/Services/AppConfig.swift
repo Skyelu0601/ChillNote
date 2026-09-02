@@ -43,6 +43,17 @@ struct AppConfig {
 
     // GoMarketMe's iOS SDK uses this client key inside the distributed app.
     static let goMarketMeAPIKey = "WuTvqO8AYT5IlT6eOv4G68DKiwMJWgmZ40F8KWyA"
+
+    // RevenueCat public Apple SDK key. It is safe to ship in the app bundle.
+    // Keep the plist value empty until the RevenueCat project key is available.
+    static var revenueCatIOSAPIKey: String? {
+        guard let key = stringConfig("REVENUECAT_IOS_API_KEY"),
+              key.hasPrefix("appl_"),
+              !key.contains("REPLACE") else {
+            return nil
+        }
+        return key
+    }
     
     // MARK: - App Review Login
 

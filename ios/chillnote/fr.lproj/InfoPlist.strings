@@ -1,4 +1,4 @@
-"NSMicrophoneUsageDescription" = "ChillScript a besoin de l'accès au micro pour enregistrer vos idées et l'audio des vidéos avec prompteur.";
+"NSMicrophoneUsageDescription" = "ChillScript a besoin d’accéder au microphone pour enregistrer des notes vocales, capter le son des vidéos avec prompteur et, avec votre autorisation, envoyer l’audio pour une transcription sécurisée par l’IA.";
 "NSSpeechRecognitionUsageDescription" = "ChillScript utilise la reconnaissance vocale pour transcrire votre voix en texte.";
-"NSCameraUsageDescription" = "ChillScript utilise l'appareil photo pour enregistrer des videos avec prompteur.";
+"NSCameraUsageDescription" = "ChillScript utilise l’appareil photo pour enregistrer des vidéos avec prompteur.";
 "NSPhotoLibraryAddUsageDescription" = "ChillScript enregistre les vidéos de prompteur exportées dans votre photothèque lorsque vous choisissez de les enregistrer.";

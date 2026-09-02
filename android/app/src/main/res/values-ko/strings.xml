@@ -44,7 +44,7 @@
     <string name="auth_login_verify_button">인증 및 로그인</string>
     <string name="auth_login_resend_code">인증 코드 다시 보내기</string>
     <string name="auth_login_resend_countdown_format">%1$d초 후 다시 보내기</string>
-    <string name="auth_login_legal_markdown">계속 진행하면 당사의 [약관] (https://www.chillnoteai.com/terms) 및 [개인 정보 보호 정책] (https://www.chillnoteai.com/privacy) 에 동의하는 것으로 간주됩니다.</string>
+    <string name="auth_login_legal_markdown">계속 진행하면 당사의 [약관](https://www.chillnoteai.com/terms) 및 [개인 정보 보호 정책](https://www.chillnoteai.com/privacy)에 동의하는 것으로 간주됩니다.</string>
     <string name="auth_login_use_different_email">다른 이메일 사용</string>
     <string name="auth_login_legal_plain">계속하면 서비스 약관 및 개인정보 처리방침에 동의하게 됩니다.</string>
     <string name="auth_logout">로그아웃</string>
@@ -60,7 +60,9 @@
     <string name="note_workspace_start_recording">녹화 시작</string>
     <string name="note_workspace_record_metadata">텔레프롬프터 • 9:16 • 1080p</string>
     <string name="note_workspace_hide_keyboard">키보드 숨기기</string>
-    <string name="note_detail_trash_deleted_in_days">이 메모는 %1$d일 후에 영구적으로 삭제됩니다.</string>
+    <plurals name="note_detail_trash_deleted_in_days">
+        <item quantity="other">이 메모는 %1$d일 후에 영구적으로 삭제됩니다.</item>
+    </plurals>
     <string name="note_detail_trash_deleted_today">이 메모는 오늘 완전히 삭제됩니다.</string>
     <string name="note_header_add_topic">주제 추가</string>
     <string name="note_header_export_markdown">마크다운 내보내기</string>
@@ -96,7 +98,7 @@
     <string name="sidebar_membership_upgrade">업그레이드</string>
     <string name="sidebar_credits_locked">0 Credits 남음</string>
     <string name="sidebar_credits_remaining">%1$d Credits 남음</string>
-    <string name="sidebar_stats_streak">%1$d일 연속 창작</string>
+    <plurals name="sidebar_stats_streak"><item quantity="other">%1$d일 연속 창작</item></plurals>
     <string name="sidebar_stats_week_up">이번 주 %1$d개 · 지난주 대비 +%2$d%%</string>
     <string name="sidebar_stats_week_down">이번 주 %1$d개 · 지난주 대비 %2$d%% 감소</string>
     <string name="sidebar_stats_week_new_start">이번 주 %1$d개 · 새로운 시작</string>
@@ -296,10 +298,10 @@
     <string name="subscription_onboarding_feature_repurpose_social">TikTok, Reels 등에 맞게 재활용</string>
     <string name="subscription_onboarding_feature_organize">모든 아이디어를 한곳에 정리</string>
     <string name="subscription_onboarding_feature_teleprompter">내장 텔레프롬프터</string>
-    <string name="subscription_onboarding_plan_annual_trial_days">연간 · %1$d일 무료 체험</string>
+    <plurals name="subscription_onboarding_plan_annual_trial_days"><item quantity="other">연간 · %1$d일 무료 체험</item></plurals>
     <string name="subscription_onboarding_trust_no_payment_cancel_anytime">지금 결제 없음 · 언제든 해지 가능</string>
     <string name="subscription_onboarding_trust_cancel_anytime">언제든 해지 가능</string>
-    <string name="subscription_onboarding_cta_try_free_days">%1$d일 무료로 체험</string>
+    <plurals name="subscription_onboarding_cta_try_free_days"><item quantity="other">%1$d일 무료로 체험</item></plurals>
     <string name="subscription_onboarding_paywall_subtitle">ChillScript의 전체 크리에이터 워크플로를 잠금 해제하세요.</string>
     <string name="subscription_onboarding_no_trial_notice">무료 체험 없음 · 언제든 해지</string>
     <string name="subscription_onboarding_feature_video">영상 분석</string>
@@ -514,7 +516,7 @@
     <string name="weekly_topics_preview_title">주간 게시물 아이디어</string>
     <string name="weekly_topics_preview_headline">새 노트로 매주 게시물 아이디어 보고서를 받아보세요</string>
     <string name="weekly_topics_preview_headline_highlight">매주 게시물 아이디어</string>
-    <string name="weekly_topics_preview_message">ChillNote가 새 노트를 매주 정리해 바로 시작할 수 있는 아이디어를 드려요.</string>
+    <string name="weekly_topics_preview_message">ChillScript가 새 노트를 매주 정리해 바로 시작할 수 있는 아이디어를 드려요.</string>
     <string name="weekly_topics_preview_sources_label">저장한 노트</string>
     <string name="weekly_topics_preview_result_label">매주 새로운 주제</string>
     <string name="weekly_topics_preview_illustration_label">Post Ideas</string>
@@ -537,8 +539,9 @@
     <string name="weekly_topics_error_regenerate">이 보고서를 다시 정리하지 못했습니다.</string>
     <string name="weekly_topics_report_inspiration_label">이번 주 영감</string>
     <string name="weekly_topics_report_date_range">%1$s~%2$s</string>
-    <string name="weekly_topics_report_summary">%2$d개 자료에서 %1$d개 주제</string>
-    <string name="weekly_topics_history_summary">%2$d개 자료에서 %1$d개 주제</string>
+    <plurals name="weekly_topics_count_topics"><item quantity="other">%1$d개 주제</item></plurals>
+    <plurals name="weekly_topics_count_sources"><item quantity="other">%1$d개 자료</item></plurals>
+    <string name="weekly_topics_summary">%2$s에서 %1$s</string>
     <string name="weekly_topics_history_empty">이전 보고서가 아직 없습니다</string>
     <string name="weekly_topics_topic_progress">%1$02d</string>
     <string name="weekly_topics_topic_related_sources">관련 자료</string>

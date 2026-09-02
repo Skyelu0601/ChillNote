@@ -19,6 +19,7 @@
 		499584AF2F0C01EE0053760D /* StoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 499584AE2F0C01EE0053760D /* StoreKit.framework */; };
 		4A7E0504320A111A0031D6A4 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 4A7E0503320A111A0031D6A4 /* ZIPFoundation */; };
 		4B4D4D0132E9A10000A11F1A /* GoMarketMe in Frameworks */ = {isa = PBXBuildFile; productRef = 4B4D4D0332E9A10000A11F1A /* GoMarketMe */; };
+		4C52430132F0000000A11F1A /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 4C52430332F0000000A11F1A /* RevenueCat */; };
 		51BBCBCA3E5F5686457FE3C9 /* ShareL10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7C8A054AC616AD68350DA3 /* ShareL10n.swift */; };
 		932170DB1678D35ED224F76C /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 737E7F76A4F0D5112A54E704 /* ShareViewController.swift */; };
 		9339EBEAC205D67B1EE414EF /* ChillNoteShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CEF4C767BEF8D0B5809BF10B /* ChillNoteShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -169,6 +170,7 @@
 				49862ACE2F28AC7000ADFB08 /* RichTextKit in Frameworks */,
 				4A7E0504320A111A0031D6A4 /* ZIPFoundation in Frameworks */,
 				4B4D4D0132E9A10000A11F1A /* GoMarketMe in Frameworks */,
+				4C52430132F0000000A11F1A /* RevenueCat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -324,6 +326,7 @@
 				49862ADA2F29C5F400ADFB08 /* Supabase */,
 				4A7E0503320A111A0031D6A4 /* ZIPFoundation */,
 				4B4D4D0332E9A10000A11F1A /* GoMarketMe */,
+				4C52430332F0000000A11F1A /* RevenueCat */,
 			);
 			productName = chillnote;
 			productReference = 499583C62F0BD2740053760D /* chillnote.app */;
@@ -419,6 +422,7 @@
 				49862ACF2F29C13400ADFB08 /* XCRemoteSwiftPackageReference "supabase-swift" */,
 				4A7E0502320A111A0031D6A4 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				4B4D4D0232E9A10000A11F1A /* XCRemoteSwiftPackageReference "gomarketme-swift" */,
+				4C52430232F0000000A11F1A /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 499583C72F0BD2740053760D /* Products */;
@@ -549,7 +553,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = ChillNoteShareExtension/ChillNoteShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteShareExtension/Info.plist;
@@ -560,7 +564,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.8;
+				MARKETING_VERSION = 1.2.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -581,7 +585,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteWidget/Info.plist;
@@ -592,7 +596,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.8;
+				MARKETING_VERSION = 1.2.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ChillNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -608,7 +612,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteWidget/Info.plist;
@@ -619,7 +623,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.8;
+				MARKETING_VERSION = 1.2.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ChillNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -636,11 +640,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = chillnote/chillnote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = chillnote/Info.plist;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillScript needs microphone access to record your thoughts and capture audio for teleprompter videos.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillScript uses the microphone to record voice notes, capture teleprompter video audio, and, with your permission, send audio for secure AI transcription.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "ChillScript uses speech recognition to transcribe your voice to text.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -650,7 +654,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.8;
+				MARKETING_VERSION = 1.2.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -670,11 +674,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = chillnote/chillnote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = chillnote/Info.plist;
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillScript needs microphone access to record your thoughts and capture audio for teleprompter videos.";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "ChillScript uses the microphone to record voice notes, capture teleprompter video audio, and, with your permission, send audio for secure AI transcription.";
 				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "ChillScript uses speech recognition to transcribe your voice to text.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
@@ -684,7 +688,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.8;
+				MARKETING_VERSION = 1.2.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -823,11 +827,11 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.2.8;
+				MARKETING_VERSION = 1.2.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -842,11 +846,11 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.2.8;
+				MARKETING_VERSION = 1.2.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -860,10 +864,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2.8;
+				MARKETING_VERSION = 1.2.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -877,10 +881,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2.8;
+				MARKETING_VERSION = 1.2.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -897,7 +901,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = ChillNoteShareExtension/ChillNoteShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteShareExtension/Info.plist;
@@ -908,7 +912,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.8;
+				MARKETING_VERSION = 1.2.10;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1024,6 +1028,14 @@
 				minimumVersion = 5.0.4;
 			};
 		};
+		4C52430232F0000000A11F1A /* XCRemoteSwiftPackageReference "purchases-ios-spm" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios-spm.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1051,6 +1063,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4B4D4D0232E9A10000A11F1A /* XCRemoteSwiftPackageReference "gomarketme-swift" */;
 			productName = GoMarketMe;
+		};
+		4C52430332F0000000A11F1A /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 4C52430232F0000000A11F1A /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
+			productName = RevenueCat;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

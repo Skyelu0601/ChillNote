@@ -1,4 +1,4 @@
-"NSMicrophoneUsageDescription" = "ChillScript 需要麥克風權限來記錄你的想法，並為提詞拍攝影片收音。";
+"NSMicrophoneUsageDescription" = "ChillScript 需要麥克風權限來錄製語音筆記、為提詞拍攝影片收音，並在取得你的許可後傳送音訊以進行安全的 AI 轉寫。";
 "NSSpeechRecognitionUsageDescription" = "ChillScript 使用語音辨識將你的語音轉寫為文字。";
 "NSCameraUsageDescription" = "ChillScript 需要相機權限，用來錄製提詞拍攝影片。";
 "NSPhotoLibraryAddUsageDescription" = "當你選擇儲存時，ChillScript 會把匯出的提詞拍攝影片儲存到你的照片圖庫。";

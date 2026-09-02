@@ -26,13 +26,20 @@ cp .env.example .env
    - `WEB_APP_BASE_URL` (for checkout success redirects)
    - `CREEM_TEST_MODE=true` for Creem test mode, or set `CREEM_API_BASE_URL` directly
 
-6) Create schema
+6) Set RevenueCat config for iOS and Android subscription lifecycle sync:
+   - `REVENUECAT_API_KEY` (a server-side RevenueCat v1 secret key; never use a public SDK key here)
+   - `REVENUECAT_ENTITLEMENT_ID=pro`
+   - `REVENUECAT_WEBHOOK_AUTHORIZATION` (the complete Authorization header value configured in RevenueCat)
+   - `REVENUECAT_WEBHOOK_HMAC_SECRET` (the webhook signing secret shown when HMAC is enabled)
+   - `REVENUECAT_ALLOWED_APP_IDS` (comma-separated RevenueCat app IDs for the iOS and Android apps)
+
+7) Create schema
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-7) Run dev server
+8) Run dev server
 
 ```bash
 npm run dev
@@ -47,6 +54,8 @@ npm run dev
   - Optional query: `?since=ISO8601` to return only changes since that time
 - `POST /billing/creem/checkout` - Create a Creem checkout session for the signed-in web user
 - `POST /webhooks/creem` - Receive Creem subscription lifecycle webhooks
+- `POST /webhooks/revenuecat` - Receive authenticated, HMAC-signed RevenueCat lifecycle webhooks
+- `POST /subscription/revenuecat/sync` - Refresh the signed-in user's canonical RevenueCat entitlement
 - `POST /ai/voice-note` - Voice transcription only (no polishing)
 - `POST /ai/media-link-transcript` - TikTok / YouTube / Instagram link transcription with backend worker
 - `POST /ai/tiktok-transcript` - Backward-compatible TikTok-only alias
@@ -147,6 +156,18 @@ GOOGLE_PLAY_SERVICE_ACCOUNT_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----
 ```
 
 The service account must be invited in Google Play Console and granted permission to view orders and manage subscriptions. Never commit the private key.
+
+### RevenueCat rollout
+
+The backend stores RevenueCat's `pro` entitlement separately from the legacy
+Apple, Google Play, Creem, and invite state. Effective Pro access is the union
+of those sources and uses the furthest expiration date. A delayed or missing
+RevenueCat event therefore cannot revoke an existing user's valid access during
+the migration window.
+
+Follow [the RevenueCat rollout runbook](../docs/REVENUECAT_ROLLOUT.md) before
+deploying the client releases. Production deployment must apply Prisma
+migrations before starting the new server process.
 
 Durable token ownership, acknowledgement retries, deployment checks, and the
 current RTDN limitation are documented in [GOOGLE_PLAY_BILLING.md](./GOOGLE_PLAY_BILLING.md).

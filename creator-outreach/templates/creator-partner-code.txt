@@ -1,0 +1,22 @@
+Hi {{creator_name}},
+
+Thanks for joining the ChillScript Affiliate Program.
+
+Here’s your code for one year of Pro:
+
+{{creator_pass_code}}
+
+Redeem it here:
+
+{{redemption_url}}
+
+First sign in to the ChillScript account you want to upgrade. Then open the link on your iPhone and follow the App Store instructions. This gives you one year of Pro, then ends automatically. It does not renew and no cancellation is needed.
+
+Here’s your personal referral link:
+
+{{affiliate_link}}
+
+You’ll earn 30% commission on eligible subscriptions made through this link. Please clearly disclose your relationship with ChillScript whenever you share it.
+
+Best,
+Skye

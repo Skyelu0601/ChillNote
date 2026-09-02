@@ -687,10 +687,9 @@ private struct WeeklyTopicReportHeader: View {
     }
 
     private var summaryText: AttributedString {
-        var summary = AttributedString(L10n.text(
-            "weekly_topics.report.summary",
-            report.topics.count,
-            report.sourceNoteCount
+        var summary = AttributedString(L10n.weeklyTopicsSummary(
+            topicCount: report.topics.count,
+            sourceCount: report.sourceNoteCount
         ))
 
         let topicsCount = String(format: "%lld", report.topics.count)
@@ -924,7 +923,10 @@ private struct WeeklyTopicsHistoryView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(report.periodEnd.formatted(date: .long, time: .omitted))
                         .font(.bodyLarge.weight(.semibold))
-                    Text(L10n.text("weekly_topics.history.summary", report.topics.count, report.sourceNoteCount))
+                    Text(L10n.weeklyTopicsSummary(
+                        topicCount: report.topics.count,
+                        sourceCount: report.sourceNoteCount
+                    ))
                         .font(.bodyMedium)
                         .foregroundColor(.textSub)
                 }

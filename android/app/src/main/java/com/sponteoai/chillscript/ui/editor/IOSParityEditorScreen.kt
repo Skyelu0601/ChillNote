@@ -86,6 +86,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
@@ -824,7 +825,11 @@ private fun IOSTrashCountdown(deletedAt: String?) {
         Icon(Icons.Outlined.Delete, contentDescription = null, tint = Color.Red.copy(alpha = 0.8f), modifier = Modifier.size(16.dp))
         Text(
             if (days == 0L) stringResource(R.string.note_detail_trash_deleted_today)
-            else stringResource(R.string.note_detail_trash_deleted_in_days, days),
+            else pluralStringResource(
+                R.plurals.note_detail_trash_deleted_in_days,
+                days.coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt(),
+                days,
+            ),
             color = ChillColors.TextSub,
             fontSize = 13.sp,
             fontWeight = FontWeight.Medium,

@@ -43,6 +43,8 @@ def build_search_blob(files: list[Path]) -> str:
 
 
 def source_contains_key(blob: str, key: str) -> bool:
+    if not key:
+        return False
     if key in blob:
         return True
 
@@ -64,8 +66,23 @@ def is_empty_or_incomplete(value: dict) -> bool:
         locale_data = localizations.get(locale, {})
         if not isinstance(locale_data, dict):
             return True
-        unit = locale_data.get("stringUnit")
-        if not isinstance(unit, dict) or not unit.get("value"):
+        units: list[dict] = []
+
+        def collect_units(node: object) -> None:
+            if not isinstance(node, dict):
+                return
+            unit = node.get("stringUnit")
+            if isinstance(unit, dict):
+                units.append(unit)
+            variations = node.get("variations")
+            if isinstance(variations, dict):
+                for choices in variations.values():
+                    if isinstance(choices, dict):
+                        for child in choices.values():
+                            collect_units(child)
+
+        collect_units(locale_data)
+        if not units or any(not unit.get("value") for unit in units):
             return True
 
     return False

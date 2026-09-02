@@ -231,7 +231,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         BackgroundSyncScheduler.ensurePeriodic(this)
         credentialManager = CredentialManager.create(this)
-        billingManager = PlayBillingManager(this, viewModel::verifyGooglePlayPurchase)
+        billingManager = PlayBillingManager(
+            this,
+            viewModel::verifyGooglePlayPurchase,
+            viewModel::syncRevenueCatSubscription,
+        )
         onboardingPreferences = OnboardingPreferences(this)
         reviewManager = ReviewManagerFactory.create(this)
         billingManager.connect()
@@ -254,6 +258,11 @@ class MainActivity : ComponentActivity() {
             val pendingRecordings by viewModel.pendingRecordings.collectAsState()
             val billingState by billingManager.state.collectAsState()
             val aiConsentPrompt by viewModel.aiConsentPrompt.collectAsState()
+            val revenueCatUserId = (uiState.authState as? AuthState.SignedIn)?.session?.user?.id
+            val migrateLegacyRevenueCatPurchase = uiState.subscriptionTier == "pro"
+            LaunchedEffect(revenueCatUserId, migrateLegacyRevenueCatPurchase) {
+                billingManager.identify(revenueCatUserId, migrateLegacyRevenueCatPurchase)
+            }
             LaunchedEffect(Unit) {
                 viewModel.reviewRequests.collect { launchInAppReview() }
             }

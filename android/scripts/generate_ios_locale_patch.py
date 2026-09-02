@@ -499,8 +499,6 @@ SEMANTIC_KEY_OVERRIDES = {
     "weekly_topics_error_regenerate": "weekly_topics.error.regenerate",
     "weekly_topics_report_inspiration_label": "weekly_topics.report.inspiration_label",
     "weekly_topics_report_date_range": "weekly_topics.report.date_range",
-    "weekly_topics_report_summary": "weekly_topics.report.summary",
-    "weekly_topics_history_summary": "weekly_topics.history.summary",
     "weekly_topics_history_empty": "weekly_topics.history.empty",
     "weekly_topics_topic_progress": "weekly_topics.topic.progress",
     "weekly_topics_topic_related_sources": "weekly_topics.topic.related_sources",

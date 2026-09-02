@@ -16,6 +16,11 @@ import {
   normalizeMediaLinkSections,
   type MediaLinkSections
 } from "./mediaLinkSections.js";
+import {
+  linkImportContentStrings,
+  normalizeLinkImportContentLocale,
+  type LinkImportContentLocale
+} from "./linkImportLocalization.js";
 
 type LinkImportJobStatus = "queued" | "processing" | "completed" | "failed";
 
@@ -30,6 +35,7 @@ type LinkImportJobRow = {
   showAuthor: boolean;
   showHook: boolean;
   showTranscript: boolean;
+  contentLocale: LinkImportContentLocale;
 };
 
 type LinkImportSource = {
@@ -75,8 +81,6 @@ const JOB_PROCESSING_LEASE_MS = Number.isFinite(configuredProcessingLeaseMs)
   && configuredProcessingLeaseMs > 0
   ? configuredProcessingLeaseMs
   : 15 * 60 * 1_000;
-const UNAVAILABLE_TEXT = "Unavailable";
-
 let isWorkerRunning = false;
 let workerScheduled = false;
 
@@ -101,6 +105,7 @@ export async function enqueueLinkImportJob(params: {
   source: LinkImportSource;
   section?: string | null;
   mediaLinkSections?: MediaLinkSections;
+  contentLocale?: string | null;
   creditAuthorization: LinkImportCreditAuthorization;
 }): Promise<{
   jobId: string;
@@ -110,6 +115,7 @@ export async function enqueueLinkImportJob(params: {
 }> {
   const now = new Date();
   const mediaLinkSections = normalizeMediaLinkSections(params.mediaLinkSections);
+  const contentLocale = normalizeLinkImportContentLocale(params.contentLocale);
 
   const transactionResult = await prisma.$transaction(async (tx) => {
     await acquireUserSyncTransactionLock(params.userId, tx);
@@ -219,12 +225,14 @@ export async function enqueueLinkImportJob(params: {
       INSERT INTO "LinkImportJob" (
         "id", "userId", "noteId", "url", "status",
         "showDescription", "showAuthor", "showHook", "showTranscript",
+        "contentLocale",
         "createdAt", "updatedAt"
       )
       VALUES (
         ${jobId}, ${params.userId}, ${resolvedNoteId}, ${params.url}, 'queued',
         ${mediaLinkSections.showDescription}, ${mediaLinkSections.showAuthor},
         ${mediaLinkSections.showHook}, ${mediaLinkSections.showTranscript},
+        ${contentLocale},
         ${now}, ${now}
       )
       ON CONFLICT ("userId", "noteId") DO UPDATE SET
@@ -237,6 +245,7 @@ export async function enqueueLinkImportJob(params: {
         "showAuthor" = EXCLUDED."showAuthor",
         "showHook" = EXCLUDED."showHook",
         "showTranscript" = EXCLUDED."showTranscript",
+        "contentLocale" = EXCLUDED."contentLocale",
         "errorCode" = NULL,
         "updatedAt" = EXCLUDED."updatedAt"
       RETURNING "id", "status"
@@ -408,7 +417,8 @@ async function claimNextJob(): Promise<LinkImportJobRow | null> {
           "showDescription",
           "showAuthor",
           "showHook",
-          "showTranscript"
+          "showTranscript",
+          "contentLocale"
       `;
       return { hadCandidate: true, job: jobs[0] ?? null };
     }, {
@@ -429,7 +439,7 @@ async function processJob(job: LinkImportJobRow): Promise<void> {
       showAuthor: job.showAuthor,
       showHook: job.showHook,
       showTranscript: job.showTranscript
-    });
+    }, job.contentLocale);
     await completeJob(job, result.content, result.source);
   } catch (error) {
     const failure = await failureDetailsForError(job, error);
@@ -598,8 +608,9 @@ async function failureDetailsForError(
   const source = sourceFromTranscriptMetadata(job.url, error.metadata);
   const content = makeCreatorMediaUnavailableNote({
     description: source.title,
-    author: creatorMediaAuthorLabel(source),
-    mediaLinkSections: sectionsFromJob(job)
+    author: creatorMediaAuthorLabel(source, job.contentLocale),
+    mediaLinkSections: sectionsFromJob(job),
+    contentLocale: job.contentLocale
   });
 
   return {
@@ -611,7 +622,8 @@ async function failureDetailsForError(
 
 async function buildImportedNote(
   rawURL: string,
-  mediaLinkSections: MediaLinkSections
+  mediaLinkSections: MediaLinkSections,
+  contentLocale: LinkImportContentLocale
 ): Promise<{ content: string; source: LinkImportSource }> {
   const source = makeInitialLinkSource(rawURL);
 
@@ -621,9 +633,10 @@ async function buildImportedNote(
       const updatedSource = sourceFromTranscriptMetadata(rawURL, transcript.metadata);
       const content = await makeCreatorMediaTranscriptNote({
         description: updatedSource.title,
-        author: creatorMediaAuthorLabel(updatedSource),
+        author: creatorMediaAuthorLabel(updatedSource, contentLocale),
         transcript: transcript.text,
-        mediaLinkSections
+        mediaLinkSections,
+        contentLocale
       });
       return { content, source: updatedSource };
     }
@@ -632,8 +645,9 @@ async function buildImportedNote(
     return {
       content: makeCreatorMediaUnavailableNote({
         description: updatedSource.title,
-        author: creatorMediaAuthorLabel(updatedSource),
-        mediaLinkSections
+        author: creatorMediaAuthorLabel(updatedSource, contentLocale),
+        mediaLinkSections,
+        contentLocale
       }),
       source: updatedSource
     };
@@ -657,21 +671,23 @@ function makeCreatorMediaUnavailableNote(params: {
   description: string;
   author: string;
   mediaLinkSections: MediaLinkSections;
+  contentLocale: LinkImportContentLocale;
 }): string {
   const sections = normalizeMediaLinkSections(params.mediaLinkSections);
+  const strings = linkImportContentStrings(params.contentLocale);
   const content: string[] = [];
 
   if (sections.showDescription) {
-    content.push(markdownSection("Description", params.description.trim() || UNAVAILABLE_TEXT));
+    content.push(markdownSection(strings.descriptionHeading, params.description.trim() || strings.unavailable));
   }
   if (sections.showAuthor) {
-    content.push(markdownSection("Author", params.author.trim() || "Unknown author"));
+    content.push(markdownSection(strings.authorHeading, params.author.trim() || strings.unknownAuthor));
   }
   if (sections.showHook) {
-    content.push(markdownSection("Hook", UNAVAILABLE_TEXT));
+    content.push(markdownSection(strings.hookHeading, strings.unavailable));
   }
   if (sections.showTranscript) {
-    content.push(markdownSection("Transcript", UNAVAILABLE_TEXT));
+    content.push(markdownSection(strings.transcriptHeading, strings.unavailable));
   }
 
   return content.join("\n\n");
@@ -697,15 +713,18 @@ async function makeCreatorMediaTranscriptNote(params: {
   author: string;
   transcript: string;
   mediaLinkSections: MediaLinkSections;
+  contentLocale: LinkImportContentLocale;
 }): Promise<string> {
   const cleanedTranscript = params.transcript.trim();
   const sections = normalizeMediaLinkSections(params.mediaLinkSections);
+  const strings = linkImportContentStrings(params.contentLocale);
 
   if (!cleanedTranscript) {
     return makeCreatorMediaUnavailableNote({
       description: params.description,
       author: params.author,
-      mediaLinkSections: sections
+      mediaLinkSections: sections,
+      contentLocale: params.contentLocale
     });
   }
 
@@ -715,16 +734,16 @@ async function makeCreatorMediaTranscriptNote(params: {
   const content: string[] = [];
 
   if (sections.showDescription) {
-    content.push(markdownSection("Description", params.description.trim() || "Imported media link"));
+    content.push(markdownSection(strings.descriptionHeading, params.description.trim() || strings.unavailable));
   }
   if (sections.showAuthor) {
-    content.push(markdownSection("Author", params.author.trim() || "Unknown author"));
+    content.push(markdownSection(strings.authorHeading, params.author.trim() || strings.unknownAuthor));
   }
   if (sections.showHook) {
-    content.push(markdownSection("Hook", fallbackCreatorMediaHook(cleanedTranscript)));
+    content.push(markdownSection(strings.hookHeading, fallbackCreatorMediaHook(cleanedTranscript, strings.unavailable)));
   }
   if (sections.showTranscript) {
-    content.push(markdownSection("Transcript", polishedTranscript));
+    content.push(markdownSection(strings.transcriptHeading, polishedTranscript));
   }
 
   return content.join("\n\n");
@@ -739,15 +758,18 @@ function sectionsFromJob(job: LinkImportJobRow): MediaLinkSections {
   };
 }
 
-function creatorMediaAuthorLabel(source: LinkImportSource): string {
+function creatorMediaAuthorLabel(
+  source: LinkImportSource,
+  contentLocale: LinkImportContentLocale
+): string {
   const authorName = source.authorName?.trim();
   if (authorName) return authorName;
 
   const authorHandle = source.authorHandle?.trim().replace(/^@+/, "");
-  return authorHandle ? `@${authorHandle}` : "Unknown author";
+  return authorHandle ? `@${authorHandle}` : linkImportContentStrings(contentLocale).unknownAuthor;
 }
 
-function fallbackCreatorMediaHook(transcript: string): string {
+function fallbackCreatorMediaHook(transcript: string, unavailable: string): string {
   const source = transcript.trim();
   const firstLine = source
     .split(/\r?\n/)
@@ -759,7 +781,7 @@ function fallbackCreatorMediaHook(transcript: string): string {
   const collapsed = collapseWhitespace(firstSentence).trim();
 
   if (!collapsed) {
-    return "Hook unavailable";
+    return unavailable;
   }
 
   return collapsed.length <= 160 ? collapsed : `${collapsed.slice(0, 160).trim()}...`;

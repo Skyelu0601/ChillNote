@@ -58,11 +58,19 @@ import {
   getChangesSinceCursor,
   getLatestSyncLogId,
   hasActiveProSubscription,
+  getEffectiveSubscription,
   upsertUser,
   deleteUser,
   updateCreemSubscriptionStatus,
   updateSubscriptionStatus
 } from "./store.js";
+import {
+  revenueCatEntitlementSnapshot,
+  revenueCatWebhookUserIds,
+  verifyRevenueCatWebhookSignature,
+  type RevenueCatCustomerResponse,
+  type RevenueCatWebhook
+} from "./revenueCat.js";
 import {
   DURABLE_MUTATION_PROTOCOL_VERSION,
   AccountDeletedError,
@@ -88,6 +96,7 @@ import {
   makeInitialLinkSource,
   scheduleLinkImportWorker
 } from "./linkImportJobs.js";
+import { preferredLanguageFromHeader } from "./linkImportLocalization.js";
 import {
   deactivatePushDevice,
   registerPushDevice,
@@ -133,7 +142,7 @@ app.use((req, res, next) => {
     syncJsonParser(req, res, next);
     return;
   }
-  if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem") {
+  if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem" || req.path === "/webhooks/revenuecat") {
     next();
     return;
   }
@@ -141,7 +150,7 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem") {
+  if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem" || req.path === "/webhooks/revenuecat") {
     next();
     return;
   }
@@ -157,6 +166,16 @@ const CREEM_API_BASE_URL = process.env.CREEM_API_BASE_URL?.trim()
   || (process.env.CREEM_TEST_MODE === "true" ? "https://test-api.creem.io" : "https://api.creem.io");
 const CREEM_MONTHLY_PRODUCT_ID = process.env.CREEM_MONTHLY_PRODUCT_ID?.trim() || "";
 const CREEM_YEARLY_PRODUCT_ID = process.env.CREEM_YEARLY_PRODUCT_ID?.trim() || "";
+const REVENUECAT_API_KEY = process.env.REVENUECAT_API_KEY?.trim() || "";
+const REVENUECAT_ENTITLEMENT_ID = process.env.REVENUECAT_ENTITLEMENT_ID?.trim() || "pro";
+const REVENUECAT_WEBHOOK_AUTHORIZATION = process.env.REVENUECAT_WEBHOOK_AUTHORIZATION?.trim() || "";
+const REVENUECAT_WEBHOOK_HMAC_SECRET = process.env.REVENUECAT_WEBHOOK_HMAC_SECRET?.trim() || "";
+const REVENUECAT_ALLOWED_APP_IDS = new Set(
+  (process.env.REVENUECAT_ALLOWED_APP_IDS ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean)
+);
 const WEB_APP_BASE_URL = process.env.WEB_APP_BASE_URL?.trim() || "https://www.chillnoteai.com";
 const GOOGLE_PLAY_PACKAGE_NAME = process.env.GOOGLE_PLAY_PACKAGE_NAME?.trim() || "com.sponteoai.chillscript";
 const GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL = process.env.GOOGLE_PLAY_SERVICE_ACCOUNT_EMAIL?.trim() || "";
@@ -354,6 +373,7 @@ const linkImportJobSchema = z.object({
     authorHandle: z.string().nullish()
   }).optional(),
   section: z.enum(["inbox", "drafts", "published"]).nullish(),
+  contentLocale: z.string().trim().min(1).max(64).optional(),
   mediaLinkSections: z.object({
     showDescription: z.boolean(),
     showAuthor: z.boolean(),
@@ -404,22 +424,7 @@ async function resolveUserTier(userId?: string): Promise<UserTier> {
     return cached.tier;
   }
 
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { subscriptionTier: true, subscriptionExpiresAt: true }
-  });
-
-  let tier: UserTier = "free";
-  if (user?.subscriptionTier === "pro") {
-    if (!user.subscriptionExpiresAt || user.subscriptionExpiresAt.getTime() > now) {
-      tier = "pro";
-    } else {
-      console.warn(
-        `⚠️ Pro subscription expired for user=${userId}, ` +
-        `expiresAt=${user.subscriptionExpiresAt.toISOString()}, now=${new Date(now).toISOString()}`
-      );
-    }
-  }
+  const tier = (await getEffectiveSubscription(userId, new Date(now), REVENUECAT_ENTITLEMENT_ID)).tier;
 
   userTierCache.set(userId, {
     tier,
@@ -454,6 +459,68 @@ function verifyCreemSignature(payload: string, signature: string | string[] | un
   const receivedBuffer = Buffer.from(received, "hex");
   return computedBuffer.length === receivedBuffer.length
     && timingSafeEqual(computedBuffer, receivedBuffer);
+}
+
+function constantTimeStringEqual(left: string, right: string): boolean {
+  const leftBuffer = Buffer.from(left, "utf8");
+  const rightBuffer = Buffer.from(right, "utf8");
+  return leftBuffer.length === rightBuffer.length && timingSafeEqual(leftBuffer, rightBuffer);
+}
+
+async function fetchRevenueCatCustomer(appUserId: string): Promise<RevenueCatCustomerResponse> {
+  if (!REVENUECAT_API_KEY) throw new Error("REVENUECAT_API_KEY is not configured");
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+  try {
+    const response = await fetch(
+      `https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(appUserId)}`,
+      {
+        headers: {
+          Authorization: `Bearer ${REVENUECAT_API_KEY}`,
+          Accept: "application/json"
+        },
+        signal: controller.signal
+      }
+    );
+    if (!response.ok) {
+      throw new Error(`RevenueCat customer lookup failed with HTTP ${response.status}`);
+    }
+    return await response.json() as RevenueCatCustomerResponse;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function syncRevenueCatEntitlement(userId: string, lastEventId: string | null = null) {
+  const customer = await fetchRevenueCatCustomer(userId);
+  const snapshot = revenueCatEntitlementSnapshot(customer, REVENUECAT_ENTITLEMENT_ID);
+  await prisma.revenueCatEntitlement.upsert({
+    where: {
+      userId_entitlementId: { userId, entitlementId: REVENUECAT_ENTITLEMENT_ID }
+    },
+    create: {
+      userId,
+      entitlementId: REVENUECAT_ENTITLEMENT_ID,
+      isActive: snapshot.active,
+      expiresAt: snapshot.expiresAt,
+      productId: snapshot.productId,
+      store: snapshot.store,
+      originalTransactionId: snapshot.originalTransactionId,
+      lastEventId,
+      lastSyncedAt: new Date()
+    },
+    update: {
+      isActive: snapshot.active,
+      expiresAt: snapshot.expiresAt,
+      productId: snapshot.productId,
+      store: snapshot.store,
+      originalTransactionId: snapshot.originalTransactionId,
+      lastEventId: lastEventId ?? undefined,
+      lastSyncedAt: new Date()
+    }
+  });
+  invalidateUserTierCache(userId);
+  return snapshot;
 }
 
 function creemProductIdForPlan(plan: "monthly" | "yearly"): string {
@@ -725,6 +792,100 @@ app.post("/webhooks/creem", express.raw({ type: "application/json", limit: "1mb"
   }
 });
 
+app.post("/webhooks/revenuecat", express.raw({ type: "application/json", limit: "1mb" }), async (req, res) => {
+  const rawBody = Buffer.isBuffer(req.body) ? req.body.toString("utf8") : "";
+  if (!REVENUECAT_WEBHOOK_AUTHORIZATION) {
+    res.status(503).json({ error: "RevenueCat webhook authorization is not configured" });
+    return;
+  }
+  const authorization = typeof req.headers.authorization === "string" ? req.headers.authorization : "";
+  if (!constantTimeStringEqual(authorization, REVENUECAT_WEBHOOK_AUTHORIZATION)) {
+    res.status(401).json({ error: "Invalid authorization" });
+    return;
+  }
+  if (REVENUECAT_WEBHOOK_HMAC_SECRET && !verifyRevenueCatWebhookSignature(
+    rawBody,
+    req.headers["x-revenuecat-webhook-signature"],
+    REVENUECAT_WEBHOOK_HMAC_SECRET
+  )) {
+    res.status(401).json({ error: "Invalid signature" });
+    return;
+  }
+
+  let webhook: RevenueCatWebhook;
+  try {
+    webhook = JSON.parse(rawBody) as RevenueCatWebhook;
+  } catch {
+    res.status(400).json({ error: "Invalid JSON" });
+    return;
+  }
+  const event = webhook.event;
+  if (
+    webhook.api_version !== "1.0" ||
+    !event ||
+    typeof event.id !== "string" ||
+    typeof event.type !== "string" ||
+    !Number.isFinite(event.event_timestamp_ms)
+  ) {
+    res.status(400).json({ error: "Invalid RevenueCat webhook" });
+    return;
+  }
+  if (REVENUECAT_ALLOWED_APP_IDS.size > 0 && event.app_id && !REVENUECAT_ALLOWED_APP_IDS.has(event.app_id)) {
+    res.status(403).json({ error: "Unexpected RevenueCat app" });
+    return;
+  }
+
+  try {
+    const existing = await prisma.revenueCatWebhookEvent.findUnique({ where: { id: event.id } });
+    if (existing) {
+      res.json({ received: true, duplicate: true });
+      return;
+    }
+    if (event.type === "TEST") {
+      await prisma.revenueCatWebhookEvent.create({
+        data: {
+          id: event.id,
+          type: event.type,
+          appUserId: event.app_user_id ?? null,
+          environment: event.environment ?? null,
+          eventTimestampAt: new Date(event.event_timestamp_ms)
+        }
+      });
+      res.json({ received: true, test: true });
+      return;
+    }
+
+    const candidateUserIds = revenueCatWebhookUserIds(event);
+    const user = candidateUserIds.length > 0
+      ? await prisma.user.findFirst({ where: { id: { in: candidateUserIds } }, select: { id: true } })
+      : null;
+    if (!user) {
+      console.warn(`RevenueCat webhook has no matching ChillScript user: event=${event.id}`);
+      res.json({ received: true, ignored: true });
+      return;
+    }
+
+    await syncRevenueCatEntitlement(user.id, event.id);
+    await prisma.revenueCatWebhookEvent.create({
+      data: {
+        id: event.id,
+        type: event.type,
+        appUserId: user.id,
+        environment: event.environment ?? null,
+        eventTimestampAt: new Date(event.event_timestamp_ms)
+      }
+    });
+    res.json({ received: true });
+  } catch (error) {
+    if (isPrismaUniqueConstraintError(error)) {
+      res.json({ received: true, duplicate: true });
+      return;
+    }
+    console.error("RevenueCat webhook processing failed:", error instanceof Error ? error.message : "UnknownError");
+    res.status(503).json({ error: "RevenueCat webhook processing unavailable" });
+  }
+});
+
 app.get("/invite/me", requireAuth, async (req, res) => {
   const userId = req.userId as string;
 
@@ -934,6 +1095,8 @@ app.post("/link-import-jobs", requireAuth, async (req, res) => {
       placeholderContent: parsed.data.placeholderContent,
       source,
       section: parsed.data.section,
+      contentLocale: parsed.data.contentLocale
+        ?? preferredLanguageFromHeader(req.headers["accept-language"]),
       mediaLinkSections: parsed.data.mediaLinkSections,
       creditAuthorization: {
         tier,
@@ -1719,15 +1882,33 @@ app.post("/subscription/verify", requireAuth, async (req, res) => {
   }
 });
 
+app.post("/subscription/revenuecat/sync", requireAuth, async (req, res) => {
+  const userId = req.userId as string;
+  try {
+    await upsertUser(userId);
+    const revenueCat = await syncRevenueCatEntitlement(userId);
+    const effective = await getEffectiveSubscription(userId, new Date(), REVENUECAT_ENTITLEMENT_ID);
+    res.json({
+      success: true,
+      tier: effective.tier,
+      expiresAt: effective.expiresAt?.toISOString() ?? null,
+      activeProductId: effective.source === "revenuecat" ? revenueCat.productId : null
+    });
+  } catch (error) {
+    console.error("RevenueCat subscription sync failed:", error instanceof Error ? error.message : "UnknownError");
+    res.status(503).json({ error: "RevenueCat subscription sync unavailable" });
+  }
+});
+
 app.get("/subscription/status", requireAuth, async (req, res) => {
   const userId = req.userId as string;
   try {
     await upsertUser(userId);
-    const user = await prisma.user.findUnique({
+    const [effective, user] = await Promise.all([
+      getEffectiveSubscription(userId, new Date(), REVENUECAT_ENTITLEMENT_ID),
+      prisma.user.findUnique({
       where: { id: userId },
       select: {
-        subscriptionTier: true,
-        subscriptionExpiresAt: true,
         subscriptionProvider: true,
         googlePlayPurchases: {
           where: { status: "ENTITLED" },
@@ -1736,22 +1917,18 @@ app.get("/subscription/status", requireAuth, async (req, res) => {
           take: 1
         }
       }
-    });
-
-    const now = Date.now();
-    const expiresAt = user?.subscriptionExpiresAt ?? null;
-    const isPro =
-      user?.subscriptionTier === "pro" &&
-      (!expiresAt || expiresAt.getTime() > now);
-    const tier: UserTier = isPro ? "pro" : "free";
+      })
+    ]);
 
     res.json({
       success: true,
-      tier,
-      expiresAt: expiresAt?.toISOString() ?? null,
-      activeProductId: isPro && user?.subscriptionProvider === "google_play"
-        ? user.googlePlayPurchases[0]?.productId ?? null
-        : null
+      tier: effective.tier,
+      expiresAt: effective.expiresAt?.toISOString() ?? null,
+      activeProductId: effective.source === "revenuecat"
+        ? effective.productId
+        : effective.tier === "pro" && user?.subscriptionProvider === "google_play"
+          ? user.googlePlayPurchases[0]?.productId ?? null
+          : null
     });
   } catch (error) {
     console.error("❌ Subscription Status Error:", error);

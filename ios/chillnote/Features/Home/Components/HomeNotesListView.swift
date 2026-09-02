@@ -502,10 +502,7 @@ struct TrashNoteFooterView: View {
                 Text(
                     daysRemaining == 0
                     ? L10n.text("home.notes.trash.expires_today")
-                    : String(
-                        format: L10n.text("home.notes.trash.days_left"),
-                        Int64(daysRemaining)
-                    )
+                    : L10n.text("home.notes.trash.days_left", Int64(daysRemaining))
                 )
                     .font(.system(size: 12, weight: .medium))
                     .foregroundColor(.textSub)

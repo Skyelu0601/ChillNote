@@ -1,0 +1,24 @@
+Hi {{creator_name}},
+
+{{personalization}}
+
+I built ChillScript for creators who save TikToks, Reels, and YouTube videos for inspiration but want a calmer way to turn them into original content.
+
+You can share a video directly to ChillScript, pull out the transcript and key ideas, then turn it into a fresh script in your own voice.
+
+ChillScript has a Creator Affiliate Program that pays 30% commission on eligible subscriptions you refer. There’s no required posting schedule.
+
+Interested in trying it? You can join here:
+
+{{affiliate_signup_link}}
+
+Once you’ve registered, reply “joined” and I’ll send you a complimentary year of ChillScript Pro so you can use the product yourself.
+
+Best,
+Skye Lu
+Founder, ChillScript
+
+If you’d rather not receive future emails from me, just reply “no” and I won’t contact you again.
+
+ChillScript creator outreach
+Rm 330, 3F, Bldg 2, 588 Zixing Rd, Minhang, Shanghai, China

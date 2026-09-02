@@ -74,6 +74,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
@@ -152,6 +153,7 @@ fun IOSParitySubscriptionScreen(
     modifier: Modifier = Modifier,
 ) {
     var showContent by remember { mutableStateOf(false) }
+    var showOnboardingPaywallDetails by rememberSaveable { mutableStateOf(false) }
     val revealProgress by animateFloatAsState(
         targetValue = if (showContent) 1f else 0f,
         animationSpec = spring(dampingRatio = 0.8f, stiffness = 100f),
@@ -162,13 +164,16 @@ fun IOSParitySubscriptionScreen(
     BackHandler(onBack = onDismiss)
 
     val isOnboardingPaywall = context == SubscriptionScreenContext.OnboardingTrial
+    val isShowingOnboardingIntro = isOnboardingPaywall && !showOnboardingPaywallDetails
     val screenContent: @Composable () -> Unit = {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (applyTopInset) Modifier.statusBarsPadding() else Modifier),
         ) {
-            if (isOnboardingPaywall) {
+            if (isShowingOnboardingIntro) {
+                SubscriptionTopBar(onDismiss = onDismiss)
+            } else if (isOnboardingPaywall) {
                 OnboardingSubscriptionTopBar(
                     restoreEnabled = !billingState.restoring,
                     onDismiss = onDismiss,
@@ -187,15 +192,27 @@ fun IOSParitySubscriptionScreen(
                         onManage = onManage,
                         onRestore = onRestore,
                     )
-                    context == SubscriptionScreenContext.OnboardingTrial -> OnboardingTrialContent(
-                        billingState = billingState,
-                        isPurchasing = isPurchasing,
-                        revealProgress = revealProgress,
-                        onPurchase = onPurchase,
-                        onRetryProducts = onRetryProducts,
-                        onOpenUrl = onOpenUrl,
-                        debugPreviewPricing = debugPreviewPricing,
-                    )
+                    context == SubscriptionScreenContext.OnboardingTrial -> {
+                        if (showOnboardingPaywallDetails) {
+                            OnboardingTrialContent(
+                                billingState = billingState,
+                                isPurchasing = isPurchasing,
+                                revealProgress = revealProgress,
+                                onPurchase = onPurchase,
+                                onRetryProducts = onRetryProducts,
+                                onOpenUrl = onOpenUrl,
+                                debugPreviewPricing = debugPreviewPricing,
+                            )
+                        } else {
+                            OnboardingTrialIntroContent(
+                                restoreEnabled = !billingState.restoring,
+                                revealProgress = revealProgress,
+                                onContinue = { showOnboardingPaywallDetails = true },
+                                onRestore = onRestore,
+                                onOpenUrl = onOpenUrl,
+                            )
+                        }
+                    }
                     else -> StandardUpgradeContent(
                         billingState = billingState,
                         isPurchasing = isPurchasing,
@@ -210,7 +227,7 @@ fun IOSParitySubscriptionScreen(
         }
     }
 
-    if (isOnboardingPaywall) {
+    if (isOnboardingPaywall && !isShowingOnboardingIntro) {
         Box(
             modifier = modifier
                 .fillMaxSize()
@@ -311,6 +328,58 @@ private fun SubscriptionTopBar(onDismiss: () -> Unit) {
 }
 
 @Composable
+private fun OnboardingTrialIntroContent(
+    restoreEnabled: Boolean,
+    revealProgress: Float,
+    onContinue: () -> Unit,
+    onRestore: () -> Unit,
+    onOpenUrl: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .reveal(revealProgress, 18.dp),
+    ) {
+        OnboardingTrialIntroPage(
+            hasFreeTrial = true,
+            modifier = Modifier.weight(1f),
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0f),
+                            Color.White,
+                            Color.White,
+                        ),
+                    ),
+                )
+                .padding(horizontal = ChillSpacing.S4)
+                .padding(bottom = 18.dp)
+                .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            PrimarySubscriptionButton(
+                text = stringResource(R.string.subscription_onboarding_cta_next),
+                enabled = true,
+                showChevron = true,
+                onClick = onContinue,
+            )
+
+            OnboardingIntroLegalFooter(
+                restoreEnabled = restoreEnabled,
+                onRestore = onRestore,
+                onOpenUrl = onOpenUrl,
+            )
+        }
+    }
+}
+
+@Composable
 private fun OnboardingTrialContent(
     billingState: BillingUiState,
     isPurchasing: Boolean,
@@ -390,8 +459,9 @@ private fun OnboardingTrialContent(
 
         OnboardingPurchaseButton(
             text = when {
-                effectiveTrialDayCount != null -> stringResource(
-                    R.string.subscription_onboarding_cta_try_free_days,
+                effectiveTrialDayCount != null -> pluralStringResource(
+                    R.plurals.subscription_onboarding_cta_try_free_days,
+                    effectiveTrialDayCount,
                     effectiveTrialDayCount,
                 )
                 selectedDisplayInfo?.isAnnual == true ||
@@ -440,8 +510,9 @@ private fun OnboardingDebugPlanPicker(
         verticalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         OnboardingPlanCard(
-            title = stringResource(
-                R.string.subscription_onboarding_plan_annual_trial_days,
+            title = pluralStringResource(
+                R.plurals.subscription_onboarding_plan_annual_trial_days,
+                pricing.annualTrialDayCount,
                 pricing.annualTrialDayCount,
             ),
             billingText = stringResource(
@@ -480,7 +551,7 @@ private fun OnboardingPlanPicker(
         if (yearlyProduct != null && yearlyDisplayInfo != null) {
             OnboardingPlanCard(
                 title = yearlyDisplayInfo.trialDayCount?.let {
-                    stringResource(R.string.subscription_onboarding_plan_annual_trial_days, it)
+                    pluralStringResource(R.plurals.subscription_onboarding_plan_annual_trial_days, it, it)
                 } ?: stringResource(R.string.subscription_interval_yearly),
                 billingText = stringResource(
                     R.string.subscription_price_per_year_format,
@@ -634,7 +705,10 @@ private fun OnboardingPurchaseButton(
 }
 
 @Composable
-private fun OnboardingTrialIntroPage(hasFreeTrial: Boolean) {
+private fun OnboardingTrialIntroPage(
+    hasFreeTrial: Boolean,
+    modifier: Modifier = Modifier,
+) {
     val title = if (hasFreeTrial) {
         stringResource(R.string.subscription_onboarding_title)
     } else {
@@ -654,7 +728,7 @@ private fun OnboardingTrialIntroPage(hasFreeTrial: Boolean) {
     }
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxSize()
             .padding(horizontal = 28.dp)
             .padding(top = 50.dp, bottom = 18.dp),
@@ -927,6 +1001,35 @@ private fun OnboardingLegalFooter(
             onClick = { onOpenUrl(TermsUrl) },
         )
         OnboardingLegalLink(
+            text = stringResource(R.string.subscription_privacy_policy),
+            onClick = { onOpenUrl(PrivacyUrl) },
+        )
+    }
+}
+
+@Composable
+private fun OnboardingIntroLegalFooter(
+    restoreEnabled: Boolean,
+    onRestore: () -> Unit,
+    onOpenUrl: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(18.dp, Alignment.CenterHorizontally),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        FooterLink(
+            text = stringResource(R.string.subscription_terms_of_use),
+            onClick = { onOpenUrl(TermsUrl) },
+        )
+        FooterLink(
+            text = stringResource(R.string.subscription_restore_purchases),
+            enabled = restoreEnabled,
+            onClick = onRestore,
+        )
+        FooterLink(
             text = stringResource(R.string.subscription_privacy_policy),
             onClick = { onOpenUrl(PrivacyUrl) },
         )

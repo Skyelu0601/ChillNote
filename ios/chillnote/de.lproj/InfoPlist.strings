@@ -1,4 +1,4 @@
-"NSMicrophoneUsageDescription" = "ChillScript benötigt Mikrofonzugriff, um deine Gedanken und den Ton für Teleprompter-Videos aufzuzeichnen.";
+"NSMicrophoneUsageDescription" = "ChillScript benötigt Mikrofonzugriff, um Sprachnotizen aufzunehmen, den Ton für Teleprompter-Videos zu erfassen und – mit deiner Erlaubnis – Audio zur sicheren KI-Transkription zu senden.";
 "NSSpeechRecognitionUsageDescription" = "ChillScript verwendet Spracherkennung, um deine Stimme in Text umzuwandeln.";
 "NSCameraUsageDescription" = "ChillScript verwendet die Kamera zum Aufnehmen von Teleprompter-Videos.";
 "NSPhotoLibraryAddUsageDescription" = "ChillScript speichert exportierte Teleprompter-Videos in deiner Fotomediathek, wenn du sie speicherst.";

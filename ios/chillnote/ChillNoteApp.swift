@@ -14,6 +14,7 @@ struct ChillScriptApp: App {
     
     init() {
         GoMarketMe.shared.initialize(apiKey: AppConfig.goMarketMeAPIKey)
+        RevenueCatService.shared.configure()
         MediaLinkTranscriptSectionPreferences.syncToShareExtension()
 
         // Ensure data is seeded on launch
@@ -54,6 +55,9 @@ struct ChillScriptApp: App {
                     .environmentObject(authService)
                     .environmentObject(syncManager)
                 }
+            }
+            .task(id: authService.currentUserId) {
+                await StoreService.shared.identifyRevenueCat(userID: authService.currentUserId)
             }
         }
     }

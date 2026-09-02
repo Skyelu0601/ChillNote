@@ -84,6 +84,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
@@ -1093,11 +1094,7 @@ private fun WeeklyTopicHistoryRow(report: WeeklyTopicReport, onClick: () -> Unit
                 fontWeight = FontWeight.SemiBold,
             )
             Text(
-                stringResource(
-                    R.string.weekly_topics_history_summary,
-                    report.topics.size,
-                    report.sourceNoteCount,
-                ),
+                weeklyTopicsSummary(report.topics.size, report.sourceNoteCount),
                 color = ChillColors.TextSub,
                 fontSize = 15.sp,
             )
@@ -1183,21 +1180,24 @@ private fun WeeklyTopicReportHeader(report: WeeklyTopicReport) {
 
 @Composable
 private fun highlightedReportSummary(topicCount: Int, sourceCount: Int): AnnotatedString {
-    val summary = stringResource(R.string.weekly_topics_report_summary, topicCount, sourceCount)
+    val summary = weeklyTopicsSummary(topicCount, sourceCount)
     return buildAnnotatedString {
-        val topicText = topicCount.toString()
-        val sourceText = sourceCount.toString()
-        var cursor = 0
-        listOf(topicText, sourceText).forEach { needle ->
-            val index = summary.indexOf(needle, startIndex = cursor)
-            if (index >= 0) {
-                append(summary.substring(cursor, index))
-                withStyle(SpanStyle(color = ChillColors.BrandHoneyText)) { append(needle) }
-                cursor = index + needle.length
-            }
+        append(summary)
+        Regex("\\d+").findAll(summary).forEach { match ->
+            addStyle(
+                SpanStyle(color = ChillColors.BrandHoneyText),
+                match.range.first,
+                match.range.last + 1,
+            )
         }
-        append(summary.substring(cursor))
     }
+}
+
+@Composable
+private fun weeklyTopicsSummary(topicCount: Int, sourceCount: Int): String {
+    val topics = pluralStringResource(R.plurals.weekly_topics_count_topics, topicCount, topicCount)
+    val sources = pluralStringResource(R.plurals.weekly_topics_count_sources, sourceCount, sourceCount)
+    return stringResource(R.string.weekly_topics_summary, topics, sources)
 }
 
 @Composable

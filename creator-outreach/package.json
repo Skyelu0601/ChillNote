@@ -1,0 +1,37 @@
+{
+  "name": "chillscript-creator-outreach",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dashboard": "node scripts/dashboard.mjs",
+    "test": "node --test test/core.test.mjs",
+    "test:connection": "node scripts/test-connection.mjs",
+    "preview": "node scripts/preview.mjs",
+    "check:emails": "node scripts/check-emails.mjs",
+    "campaign:tiktok": "node scripts/campaign-tiktok.mjs",
+    "discover:tiktok-emails": "node scripts/discover-tiktok-emails.mjs",
+    "diagnose:bounces": "node scripts/diagnose-bounces.mjs",
+    "import:tiktok-emails": "node scripts/import-tiktok-emails.mjs",
+    "pause:tiktok": "node scripts/pause-tiktok-campaign.mjs",
+    "approve:tiktok": "node scripts/approve-tiktok-leads.mjs",
+    "assign:offer-code": "node scripts/assign-offer-code.mjs",
+    "mark:partner-joined": "node scripts/mark-partner-joined.mjs",
+    "send:partner-code": "node scripts/send-partner-code.mjs",
+    "send": "node scripts/send.mjs",
+    "send:monitored:tiktok": "node scripts/send-monitored-tiktok.mjs",
+    "sync": "node scripts/sync-inbox.mjs"
+  },
+  "dependencies": {
+    "apify-client": "^2.24.0",
+    "csv-parse": "^7.0.1",
+    "csv-stringify": "^6.8.1",
+    "dotenv": "^17.4.2",
+    "imapflow": "^1.6.5",
+    "mailparser": "^3.9.14",
+    "nodemailer": "^9.0.3"
+  }
+}
