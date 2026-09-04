@@ -19,24 +19,36 @@ final class SearchFTSPerformanceTests: XCTestCase {
 
         let setup = expectation(description: "setup")
         Task {
-            await index.upsert(documents: docs)
-            setup.fulfill()
+            defer { setup.fulfill() }
+            do {
+                try await index.upsert(documents: docs)
+            } catch {
+                XCTFail("Failed to prepare search index: \(error)")
+            }
         }
         wait(for: [setup], timeout: 30)
 
         measure {
             let exp = expectation(description: "search")
             Task {
-                _ = await index.searchNoteIDs(userId: userId, query: "sprint", includeDeleted: false, offset: 0, limit: 50)
-                exp.fulfill()
+                defer { exp.fulfill() }
+                do {
+                    _ = try await index.searchNoteIDs(userId: userId, query: "sprint", includeDeleted: false, offset: 0, limit: 50)
+                } catch {
+                    XCTFail("Search failed: \(error)")
+                }
             }
             wait(for: [exp], timeout: 2)
         }
 
         let cleanup = expectation(description: "cleanup")
         Task {
-            await index.remove(noteIDs: docs.map { $0.noteId })
-            cleanup.fulfill()
+            defer { cleanup.fulfill() }
+            do {
+                try await index.remove(noteIDs: docs.map { $0.noteId })
+            } catch {
+                XCTFail("Failed to clean up search index: \(error)")
+            }
         }
         wait(for: [cleanup], timeout: 30)
     }

@@ -302,7 +302,7 @@
     <plurals name="subscription_onboarding_cta_try_free_days"><item quantity="other">免费试用 %1$d 天</item></plurals>
     <string name="subscription_onboarding_paywall_subtitle">解锁完整的 ChillScript 创作者工作流。</string>
     <string name="subscription_onboarding_no_trial_notice">无试用 · 随时取消</string>
-    <string name="subscription_onboarding_feature_video">视频拆解</string>
+    <string name="subscription_onboarding_feature_video">几秒内拆解视频</string>
     <string name="subscription_onboarding_feature_capture">灵感集中管理</string>
     <string name="subscription_onboarding_feature_skills">创作者工具</string>
     <string name="subscription_onboarding_start_trial">开始免费试用</string>

@@ -9,14 +9,18 @@ import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
+@Suppress("UseKtx") // These writes need the boolean result from SharedPreferences.commit().
 class RecipeStore(context: Context) {
     private val preferences = context.getSharedPreferences("creator_skills", Context.MODE_PRIVATE)
     private val json = Json { ignoreUnknownKeys = true }
+    private var customRecipes = readCustom()
     private val mutableInstalled = MutableStateFlow(loadInstalled())
     val installed: StateFlow<List<AgentRecipe>> = mutableInstalled.asStateFlow()
 
     val available: List<AgentRecipe>
-        get() = BuiltInRecipes.all + loadCustom()
+        get() = BuiltInRecipes.all + customRecipes.getOrElse { emptyList() }
+    val customRecipesLoadFailure: Throwable?
+        get() = customRecipes.exceptionOrNull()
 
     init {
         CreatorSkillPreferences.initialize(context)
@@ -42,8 +46,8 @@ class RecipeStore(context: Context) {
             category = RecipeCategory.SHAPE,
             isCustom = true,
         )
-        val custom = loadCustom() + recipe
-        preferences.edit().putString(KEY_CUSTOM, json.encodeToString(ListSerializer(AgentRecipe.serializer()), custom)).apply()
+        val custom = customRecipes.getOrThrow() + recipe
+        saveCustom(custom)
         saveInstalledIds(mutableInstalled.value.mapTo(mutableSetOf()) { it.id } + recipe.id)
         mutableInstalled.value = loadInstalled()
         return recipe
@@ -51,14 +55,15 @@ class RecipeStore(context: Context) {
 
     fun deleteCustom(recipe: AgentRecipe) {
         if (!recipe.isCustom) return
-        val custom = loadCustom().filterNot { it.id == recipe.id }
-        preferences.edit().putString(KEY_CUSTOM, json.encodeToString(ListSerializer(AgentRecipe.serializer()), custom)).apply()
+        val custom = customRecipes.getOrThrow().filterNot { it.id == recipe.id }
+        saveCustom(custom)
         saveInstalledIds(mutableInstalled.value.mapTo(mutableSetOf()) { it.id }.apply { remove(recipe.id) })
         mutableInstalled.value = loadInstalled()
     }
 
     fun clearUserData() {
-        preferences.edit().clear().apply()
+        check(preferences.edit().clear().commit()) { "Could not clear creator skill preferences" }
+        customRecipes = Result.success(emptyList())
         saveInstalledIds(BuiltInRecipes.defaultIds)
         mutableInstalled.value = loadInstalled()
     }
@@ -71,12 +76,22 @@ class RecipeStore(context: Context) {
         }
     }
 
-    private fun loadCustom(): List<AgentRecipe> = runCatching {
+    private fun readCustom(): Result<List<AgentRecipe>> = runCatching {
         json.decodeFromString(ListSerializer(AgentRecipe.serializer()), preferences.getString(KEY_CUSTOM, "[]") ?: "[]")
-    }.getOrDefault(emptyList())
+    }
+
+    private fun saveCustom(recipes: List<AgentRecipe>) {
+        val encoded = json.encodeToString(ListSerializer(AgentRecipe.serializer()), recipes)
+        check(preferences.edit().putString(KEY_CUSTOM, encoded).commit()) {
+            "Could not save custom creator skills"
+        }
+        customRecipes = Result.success(recipes)
+    }
 
     private fun saveInstalledIds(ids: Set<String>) {
-        preferences.edit().putStringSet(KEY_INSTALLED_IDS, ids).apply()
+        check(preferences.edit().putStringSet(KEY_INSTALLED_IDS, ids).commit()) {
+            "Could not save installed creator skills"
+        }
     }
 
     private companion object {

@@ -69,13 +69,7 @@ struct SubscriptionView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                if isShowingOnboardingIntro {
-                    BrandBackground().ignoresSafeArea()
-                } else if isOnboardingPaywall {
-                    Color.white.ignoresSafeArea()
-                } else {
-                    BrandBackground().ignoresSafeArea()
-                }
+                BrandBackground().ignoresSafeArea()
                 
                 if storeService.currentTier == .pro {
                     // Member View
@@ -105,7 +99,7 @@ struct SubscriptionView: View {
                 }
             }
             .toolbar {
-                if isShowingOnboardingIntro {
+                if isOnboardingPaywall {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
                             dismiss()
@@ -118,28 +112,6 @@ struct SubscriptionView: View {
                                 .clipShape(Circle())
                         }
                         .accessibilityLabel(L10n.text("common.close"))
-                    }
-                } else if isOnboardingPaywall {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button {
-                            dismiss()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.system(size: 20, weight: .medium))
-                                .foregroundStyle(Color.textMain)
-                                .frame(width: 44, height: 44)
-                        }
-                        .accessibilityLabel(L10n.text("common.close"))
-                    }
-
-                    ToolbarItem(placement: .topBarTrailing) {
-                        Button {
-                            Task { await storeService.restorePurchases() }
-                        } label: {
-                            Text(L10n.text("subscription.action.restore"))
-                                .font(.system(size: 16, weight: .regular))
-                                .foregroundStyle(Color.textMain)
-                        }
                     }
                 } else {
                     ToolbarItem(placement: .topBarTrailing) {
@@ -157,8 +129,7 @@ struct SubscriptionView: View {
                     }
                 }
             }
-            .toolbarBackground(isOnboardingPaywall && !isShowingOnboardingIntro ? Color.white : Color.clear, for: .navigationBar)
-            .toolbarBackground(isOnboardingPaywall && !isShowingOnboardingIntro ? .visible : .automatic, for: .navigationBar)
+            .toolbarBackground(Color.clear, for: .navigationBar)
             .onAppear {
                 withAnimation(.spring(response: 0.8, dampingFraction: 0.8)) {
                     showContent = true
@@ -262,39 +233,99 @@ struct SubscriptionView: View {
     }
 
     private var onboardingTrialView: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 18) {
-                Text(L10n.text("subscription.onboarding.paywall.title"))
-                    .font(.system(size: 38, weight: .bold))
-                    .foregroundStyle(Color.textMain)
-                    .multilineTextAlignment(.leading)
-                    .lineSpacing(-2)
-                    .fixedSize(horizontal: false, vertical: true)
+        VStack(spacing: 0) {
+            onboardingTrialPricePage
+                .opacity(showContent ? 1 : 0)
+                .offset(y: showContent ? 0 : 18)
 
-                OnboardingTrialFeatureList()
-
-                onboardingPlanPicker
+            VStack(spacing: 16) {
+                if selectedProductDisplayInfo?.hasFreeTrial == true {
+                    OnboardingTrialNoPaymentView(textKey: "subscription.onboarding.no_payment_due_now")
+                }
 
                 onboardingTrialCTA
-
-                VStack(spacing: 14) {
-                    Text(onboardingTrustText)
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundStyle(Color.textMain.opacity(0.82))
-                        .multilineTextAlignment(.center)
-                        .frame(maxWidth: .infinity)
-
-                    onboardingTrialFooter
-                }
+                onboardingTrialIntroFooter
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 10)
-            .padding(.bottom, 20)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 18)
+            .background(
+                LinearGradient(
+                    colors: [.white.opacity(0.0), .white, .white],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea(edges: .bottom)
+            )
             .opacity(showContent ? 1 : 0)
-            .offset(y: showContent ? 0 : 18)
         }
-        .background(Color.white)
-        .scrollIndicators(.hidden)
+    }
+
+    @ViewBuilder
+    private var onboardingTrialPricePage: some View {
+        if let product = yearlyProduct {
+            let displayInfo = storeService.subscriptionDisplayInfo(for: product)
+
+            VStack(spacing: 0) {
+                OnboardingTrialLogo(size: 112)
+
+                VStack(spacing: 12) {
+                    Text(onboardingTrialTitle(for: displayInfo))
+                        .font(.brandTitle1)
+                        .foregroundColor(.textMain)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.78)
+
+                    VStack(spacing: 5) {
+                        if let weeklyPrice = displayInfo.equivalentWeeklyText {
+                            Text(L10n.text("subscription.onboarding.weekly_price_after_trial", weeklyPrice))
+                                .font(.brandTitle2)
+                                .foregroundColor(.textMain)
+                        }
+
+                        Text(L10n.text("subscription.onboarding.annual_billing_after_trial", product.displayPrice))
+                            .font(.brandBody)
+                            .foregroundColor(.textMain.opacity(0.78))
+                            .multilineTextAlignment(.center)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.86)
+                    }
+                }
+                .padding(.top, 20)
+
+                OnboardingTrialFeatureList()
+                    .padding(.top, 34)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 30)
+            .padding(.bottom, 18)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        } else if storeService.isLoadingProducts {
+            ProgressView(L10n.text("subscription.loading_prices"))
+                .font(.brandBodySmall)
+                .padding(.top, 16)
+        } else {
+            VStack(spacing: 12) {
+                Text(storeService.productsErrorMessage ?? L10n.text("subscription.unavailable"))
+                    .font(.brandBodySmall)
+                    .foregroundColor(storeService.productsErrorMessage == nil ? .textSub : .red)
+                    .multilineTextAlignment(.center)
+                Button(L10n.text("common.retry")) {
+                    Task { await storeService.refreshProducts() }
+                }
+                .font(.brandLabel)
+                .foregroundColor(.accentPrimaryText)
+            }
+            .padding(.top, 16)
+        }
+    }
+
+    private func onboardingTrialTitle(for displayInfo: SubscriptionDisplayInfo) -> String {
+        if let trialDurationText = displayInfo.trialDurationText {
+            return L10n.text("subscription.onboarding.trial_title", trialDurationText)
+        }
+
+        return L10n.text("subscription.onboarding.trial_title_fallback")
     }
 
     @ViewBuilder
@@ -375,46 +406,22 @@ struct SubscriptionView: View {
 
     private var onboardingTrialCTA: some View {
         Button {
-            if let product = selectedProduct {
-                Task { await storeService.purchase(product) }
+            if let product = yearlyProduct {
+                Task {
+                    await storeService.purchase(product)
+                }
             }
         } label: {
-            Text(onboardingCTAtext)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(Color.white)
+            HStack(spacing: BrandTokens.Space.s1) {
+                Text(L10n.text("subscription.onboarding.cta.start_free_week"))
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 13, weight: .bold))
+            }
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .background(
-                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                        .fill(Color.accentPrimary)
-                )
+                .brandPrimaryCTAStyle()
         }
-        .disabled(selectedProduct == nil || storeService.isPurchasing)
-    }
-
-    private var onboardingCTAtext: String {
-        if let dayCount = selectedProductDisplayInfo?.trialDayCount {
-            return L10n.text("subscription.onboarding.cta.try_free_days", Int64(dayCount))
-        }
-        return selectedProductDisplayInfo?.isAnnual == true
-            ? L10n.text("subscription.cta.continue_annual")
-            : L10n.text("subscription.cta.continue_weekly")
-    }
-
-    private var onboardingTrialFooter: some View {
-        HStack(spacing: 30) {
-            Link(L10n.text("subscription.terms_of_use"), destination: URL(string: "https://www.chillnoteai.com/terms")!)
-
-            Link(L10n.text("subscription.privacy_policy"), destination: URL(string: "https://www.chillnoteai.com/privacy")!)
-        }
-        .font(.system(size: 13, weight: .regular))
-        .foregroundStyle(Color.textMain.opacity(0.86))
-        .underline()
-        .frame(maxWidth: .infinity)
-        .lineLimit(1)
-        .minimumScaleFactor(0.72)
+        .disabled(yearlyProduct == nil || storeService.isPurchasing)
     }
 
     
@@ -928,37 +935,35 @@ private struct OnboardingTrialNoPaymentView: View {
 }
 
 private struct OnboardingTrialFeatureList: View {
-    private let features = [
-        (key: "subscription.onboarding.feature.save_ideas", icon: "play.rectangle"),
-        (key: "subscription.onboarding.feature.transcribe_extract", icon: "waveform"),
-        (key: "subscription.onboarding.feature.generate_content", icon: "sparkles"),
-        (key: "subscription.onboarding.feature.rewrite_translate", icon: "character.bubble"),
-        (key: "subscription.onboarding.feature.repurpose_social", icon: "rectangle.3.group"),
-        (key: "subscription.onboarding.feature.organize", icon: "folder"),
-        (key: "subscription.onboarding.feature.teleprompter", icon: "text.rectangle.page")
+    private let featureKeys = [
+        "subscription.onboarding.feature.video_to_text",
+        "subscription.onboarding.feature.generate_content",
+        "subscription.onboarding.feature.rewrite_translate"
     ]
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 11) {
-            ForEach(Array(features.enumerated()), id: \.offset) { _, feature in
-                HStack(spacing: 16) {
-                    Image(systemName: feature.icon)
-                        .font(.system(size: 20, weight: .regular))
-                        .foregroundStyle(Color.textMain)
-                        .frame(width: 28, height: 32)
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(featureKeys, id: \.self) { key in
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.accentSecondaryText)
+                        .padding(.top, 1)
 
-                    Text(L10n.text(feature.key))
-                        .font(.system(size: 15, weight: .regular))
-                        .foregroundStyle(Color.textMain)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.86)
-
-                    Spacer(minLength: 0)
+                    Text(L10n.text(key))
+                        .font(.brandBodySmall)
+                        .foregroundColor(.textMain)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .frame(minHeight: 32)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(18)
+        .background(
+            RoundedRectangle(cornerRadius: BrandTokens.Radius.card, style: .continuous)
+                .fill(Color.white.opacity(0.92))
+                .brandShadow(BrandTokens.Shadow.card)
+        )
     }
 }
 

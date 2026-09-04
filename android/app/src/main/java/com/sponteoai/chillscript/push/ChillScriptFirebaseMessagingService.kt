@@ -15,6 +15,12 @@ import com.sponteoai.chillscript.MainActivity
 import com.sponteoai.chillscript.R
 
 class ChillScriptFirebaseMessagingService : FirebaseMessagingService() {
+    @Suppress("OVERRIDE_DEPRECATION")
+    override fun onNewToken(token: String) {
+        PushNotificationManager.get(this).recordRegistration(token)
+    }
+
+    @Suppress("OVERRIDE_DEPRECATION")
     override fun onRegistered(installationId: String) {
         PushNotificationManager.get(this).recordRegistration(installationId)
     }

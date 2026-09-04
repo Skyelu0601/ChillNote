@@ -304,7 +304,7 @@
     <plurals name="subscription_onboarding_cta_try_free_days"><item quantity="other">%1$d일 무료로 체험</item></plurals>
     <string name="subscription_onboarding_paywall_subtitle">ChillScript의 전체 크리에이터 워크플로를 잠금 해제하세요.</string>
     <string name="subscription_onboarding_no_trial_notice">무료 체험 없음 · 언제든 해지</string>
-    <string name="subscription_onboarding_feature_video">영상 분석</string>
+    <string name="subscription_onboarding_feature_video">몇 초 만에 영상 분석</string>
     <string name="subscription_onboarding_feature_capture">아이디어를 한곳에</string>
     <string name="subscription_onboarding_feature_skills">크리에이터 도구</string>
     <string name="subscription_onboarding_start_trial">무료 체험 시작</string>

@@ -47,6 +47,7 @@ struct HomeScreenState {
     let isLoadingNotes: Bool
     let isInitialNotesSync: Bool
     let hasLoadedNotesAtLeastOnce: Bool
+    let notesLoadErrorMessage: String?
     let availableTags: [Tag]
     let translateLanguages: [TranslateLanguage]
     let recipeManager: RecipeManager
@@ -106,6 +107,7 @@ enum HomeScreenAction {
     case moveNote(Note, NoteSection)
     case deleteNote(Note)
     case loadMoreIfNeeded(Note)
+    case retryLoadNotes
     case toggleNoteSelection(Note)
 
     case handleAgentRecipeRequest(AgentRecipe)

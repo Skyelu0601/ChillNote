@@ -5,8 +5,14 @@ extension HomeView {
     func importPendingSharedNotes(navigateToLatest: Bool) {
         guard let currentUserId else { return }
 
-        let pendingFiles = SharedImportQueue.pendingImports().filter {
-            $0.importItem.belongs(to: currentUserId)
+        let pendingFiles: [SharedImportQueue.PendingImportFile]
+        do {
+            pendingFiles = try SharedImportQueue.pendingImports().filter {
+                $0.importItem.belongs(to: currentUserId)
+            }
+        } catch {
+            presentSharedImportQueueError(error)
+            return
         }
         guard !pendingFiles.isEmpty else { return }
 
@@ -26,7 +32,7 @@ extension HomeView {
                 }
 
                 didImport = true
-                SharedImportQueue.remove(pendingFile)
+                removePendingSharedImport(pendingFile)
 
             case .linkImport:
                 guard let url = URL(string: pendingFile.importItem.source.url),
@@ -38,7 +44,7 @@ extension HomeView {
                         existingJobStatus: pendingFile.importItem.importStatus,
                         shouldNavigate: shouldNavigate && !firstActionGuide.isWaitingForSharedVideo
                       ) else {
-                    SharedImportQueue.remove(pendingFile)
+                    removePendingSharedImport(pendingFile)
                     continue
                 }
 
@@ -47,12 +53,28 @@ extension HomeView {
                     await StoreService.shared.fetchCreditBalance()
                 }
                 didImport = true
-                SharedImportQueue.remove(pendingFile)
+                removePendingSharedImport(pendingFile)
             }
         }
 
         guard didImport else { return }
         requestReload(keepItemsWhileLoading: true)
         reconcileFirstActionGuideImport()
+    }
+
+    @MainActor
+    private func removePendingSharedImport(_ file: SharedImportQueue.PendingImportFile) {
+        do {
+            try SharedImportQueue.remove(file)
+        } catch {
+            presentSharedImportQueueError(error)
+        }
+    }
+
+    @MainActor
+    private func presentSharedImportQueueError(_ error: Error) {
+        PerformanceTelemetry.mark("shared_imports.queue_failed", detail: error.localizedDescription)
+        clipboardLinkImportErrorMessage = L10n.text("quick_capture.error.shared_import_queue")
+        showClipboardLinkImportErrorAlert = true
     }
 }

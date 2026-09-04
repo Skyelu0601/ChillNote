@@ -50,6 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sponteoai.chillscript.R
+import com.sponteoai.chillscript.runCatchingPreservingCancellation
 import com.sponteoai.chillscript.data.remote.extractWebUrl
 import com.sponteoai.chillscript.data.remote.sourceForUrl
 import com.sponteoai.chillscript.ui.theme.ChillColors
@@ -102,7 +103,7 @@ private fun ShareImportOverlay(
     }
 
     LaunchedEffect(sharedText) {
-        runCatching {
+        runCatchingPreservingCancellation {
             ShareLinkImportCoordinator(context).importSharedText(sharedText) { stage ->
                 state = ShareOverlayState.Working(stage)
             }

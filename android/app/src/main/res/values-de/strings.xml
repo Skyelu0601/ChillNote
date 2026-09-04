@@ -305,7 +305,7 @@
     <plurals name="subscription_onboarding_cta_try_free_days"><item quantity="one">%1$d Tag kostenlos testen</item><item quantity="other">%1$d Tage kostenlos testen</item></plurals>
     <string name="subscription_onboarding_paywall_subtitle">Schalte den kompletten ChillScript-Workflow für Creator frei.</string>
     <string name="subscription_onboarding_no_trial_notice">Keine Testphase · Jederzeit kündbar</string>
-    <string name="subscription_onboarding_feature_video">Videoanalysen</string>
+    <string name="subscription_onboarding_feature_video">Videos in Sekundenschnelle analysieren</string>
     <string name="subscription_onboarding_feature_capture">Ideen an einem Ort</string>
     <string name="subscription_onboarding_feature_skills">Creator-Tools</string>
     <string name="subscription_onboarding_start_trial">Kostenlos testen</string>

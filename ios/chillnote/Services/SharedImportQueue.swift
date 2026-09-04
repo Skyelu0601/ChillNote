@@ -63,23 +63,21 @@ enum SharedImportQueue {
         let fileURL: URL
     }
 
-    static func pendingImports() -> [PendingImportFile] {
+    static func pendingImports() throws -> [PendingImportFile] {
         guard let directory = pendingImportsDirectoryURL() else {
             logger.error("Shared imports directory is unavailable")
+            throw CocoaError(.fileNoSuchFile)
+        }
+
+        guard FileManager.default.fileExists(atPath: directory.path) else {
             return []
         }
 
-        let fileURLs: [URL]
-        do {
-            fileURLs = try FileManager.default.contentsOfDirectory(
-                at: directory,
-                includingPropertiesForKeys: [.contentModificationDateKey],
-                options: [.skipsHiddenFiles]
-            )
-        } catch {
-            logger.error("Failed to list shared imports: \(error.localizedDescription, privacy: .public)")
-            return []
-        }
+        let fileURLs = try FileManager.default.contentsOfDirectory(
+            at: directory,
+            includingPropertiesForKeys: [.contentModificationDateKey],
+            options: [.skipsHiddenFiles]
+        )
 
         return fileURLs
             .filter { $0.pathExtension == "json" }
@@ -96,12 +94,8 @@ enum SharedImportQueue {
             .sorted { $0.importItem.createdAt < $1.importItem.createdAt }
     }
 
-    static func remove(_ file: PendingImportFile) {
-        do {
-            try FileManager.default.removeItem(at: file.fileURL)
-        } catch {
-            logger.error("Failed to remove shared import \(file.fileURL.lastPathComponent, privacy: .private): \(error.localizedDescription, privacy: .public)")
-        }
+    static func remove(_ file: PendingImportFile) throws {
+        try FileManager.default.removeItem(at: file.fileURL)
     }
 
     static func sharedDefaults() -> UserDefaults? {

@@ -92,7 +92,6 @@ final class AuthService: ObservableObject {
         }
     }
     @Published var errorMessage: String?
-    @Published var isPro: Bool = false
     @Published var currentUser: User?
     
     // To prevent replay attacks with Apple Sign In

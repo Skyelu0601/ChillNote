@@ -83,8 +83,8 @@ fun OnboardingSubscriptionScreen(
                 )
                 Column(Modifier.fillMaxWidth().padding(top = 32.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
                     Text("✓ " + stringResource(R.string.subscription_onboarding_feature_video))
-                    Text("✓ " + stringResource(R.string.subscription_onboarding_feature_capture))
-                    Text("✓ " + stringResource(R.string.subscription_onboarding_feature_skills))
+                    Text("✓ " + stringResource(R.string.subscription_onboarding_feature_generate_content))
+                    Text("✓ " + stringResource(R.string.subscription_onboarding_feature_rewrite_translate))
                 }
             }
         }

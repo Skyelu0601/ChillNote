@@ -11,6 +11,17 @@ struct NoteSearchDocument: Sendable {
     let deletedAt: TimeInterval?
 }
 
+enum NotesSearchIndexError: LocalizedError {
+    case sqlite(operation: String, code: Int32, message: String)
+
+    var errorDescription: String? {
+        switch self {
+        case .sqlite(let operation, let code, let message):
+            return "Search index \(operation) failed (SQLite \(code)): \(message)"
+        }
+    }
+}
+
 enum NoteTextNormalizer {
     static func normalizeContent(_ content: String) -> String {
         var text = content
@@ -56,10 +67,12 @@ enum NoteTextNormalizer {
 actor SQLiteFTSNotesSearchIndex {
     private let schemaVersion = 2
     private var db: OpaquePointer?
-    private var dbURL: URL?
     private var requiresRebuildAfterMigration = false
+    private let databaseURLOverride: URL?
 
-    init() {}
+    init(databaseURL: URL? = nil) {
+        databaseURLOverride = databaseURL
+    }
 
     deinit {
         if let db {
@@ -67,12 +80,20 @@ actor SQLiteFTSNotesSearchIndex {
         }
     }
 
-    func upsert(documents: [NoteSearchDocument]) {
-        guard !documents.isEmpty, openIfNeeded() else { return }
-        guard let db else { return }
+    func upsert(documents: [NoteSearchDocument]) throws {
+        guard !documents.isEmpty else { return }
+        try openIfNeeded()
+        guard let db else {
+            throw NotesSearchIndexError.sqlite(operation: "open", code: SQLITE_CANTOPEN, message: "Database handle is unavailable")
+        }
 
-        sqlite3_exec(db, "BEGIN IMMEDIATE TRANSACTION;", nil, nil, nil)
-        defer { sqlite3_exec(db, "COMMIT;", nil, nil, nil) }
+        try execute("BEGIN IMMEDIATE TRANSACTION;", operation: "begin transaction", db: db)
+        var didCommit = false
+        defer {
+            if !didCommit {
+                sqlite3_exec(db, "ROLLBACK;", nil, nil, nil)
+            }
+        }
 
         let indexSQL = """
         INSERT INTO note_index (note_id, user_id, content_plain, tags_plain, content_folded, tags_folded, updated_at, deleted_at)
@@ -104,7 +125,7 @@ actor SQLiteFTSNotesSearchIndex {
             sqlite3_finalize(indexStmt)
             sqlite3_finalize(ftsDeleteStmt)
             sqlite3_finalize(ftsInsertStmt)
-            return
+            throw sqliteError(operation: "prepare upsert", db: db)
         }
 
         defer {
@@ -128,12 +149,16 @@ actor SQLiteFTSNotesSearchIndex {
             } else {
                 sqlite3_bind_null(indexStmt, 8)
             }
-            _ = sqlite3_step(indexStmt)
+            guard sqlite3_step(indexStmt) == SQLITE_DONE else {
+                throw sqliteError(operation: "upsert note", db: db)
+            }
 
             sqlite3_reset(ftsDeleteStmt)
             sqlite3_clear_bindings(ftsDeleteStmt)
             bindText(ftsDeleteStmt, index: 1, value: doc.noteId.uuidString)
-            _ = sqlite3_step(ftsDeleteStmt)
+            guard sqlite3_step(ftsDeleteStmt) == SQLITE_DONE else {
+                throw sqliteError(operation: "remove stale full-text row", db: db)
+            }
 
             sqlite3_reset(ftsInsertStmt)
             sqlite3_clear_bindings(ftsInsertStmt)
@@ -147,15 +172,22 @@ actor SQLiteFTSNotesSearchIndex {
             } else {
                 sqlite3_bind_null(ftsInsertStmt, 6)
             }
-            _ = sqlite3_step(ftsInsertStmt)
+            guard sqlite3_step(ftsInsertStmt) == SQLITE_DONE else {
+                throw sqliteError(operation: "insert full-text row", db: db)
+            }
         }
 
+        try execute("COMMIT;", operation: "commit transaction", db: db)
+        didCommit = true
         requiresRebuildAfterMigration = false
     }
 
-    func remove(noteIDs: [UUID]) {
-        guard !noteIDs.isEmpty, openIfNeeded() else { return }
-        guard let db else { return }
+    func remove(noteIDs: [UUID]) throws {
+        guard !noteIDs.isEmpty else { return }
+        try openIfNeeded()
+        guard let db else {
+            throw NotesSearchIndexError.sqlite(operation: "open", code: SQLITE_CANTOPEN, message: "Database handle is unavailable")
+        }
 
         let deleteIndexSQL = "DELETE FROM note_index WHERE note_id = ?;"
         let deleteFTSSQL = "DELETE FROM note_fts WHERE note_id = ?;"
@@ -166,15 +198,20 @@ actor SQLiteFTSNotesSearchIndex {
               sqlite3_prepare_v2(db, deleteFTSSQL, -1, &deleteFTSStmt, nil) == SQLITE_OK else {
             sqlite3_finalize(deleteIndexStmt)
             sqlite3_finalize(deleteFTSStmt)
-            return
+            throw sqliteError(operation: "prepare removal", db: db)
         }
         defer {
             sqlite3_finalize(deleteIndexStmt)
             sqlite3_finalize(deleteFTSStmt)
         }
 
-        sqlite3_exec(db, "BEGIN IMMEDIATE TRANSACTION;", nil, nil, nil)
-        defer { sqlite3_exec(db, "COMMIT;", nil, nil, nil) }
+        try execute("BEGIN IMMEDIATE TRANSACTION;", operation: "begin removal transaction", db: db)
+        var didCommit = false
+        defer {
+            if !didCommit {
+                sqlite3_exec(db, "ROLLBACK;", nil, nil, nil)
+            }
+        }
 
         for id in noteIDs {
             let idString = id.uuidString
@@ -182,18 +219,27 @@ actor SQLiteFTSNotesSearchIndex {
             sqlite3_reset(deleteIndexStmt)
             sqlite3_clear_bindings(deleteIndexStmt)
             bindText(deleteIndexStmt, index: 1, value: idString)
-            _ = sqlite3_step(deleteIndexStmt)
+            guard sqlite3_step(deleteIndexStmt) == SQLITE_DONE else {
+                throw sqliteError(operation: "remove indexed note", db: db)
+            }
 
             sqlite3_reset(deleteFTSStmt)
             sqlite3_clear_bindings(deleteFTSStmt)
             bindText(deleteFTSStmt, index: 1, value: idString)
-            _ = sqlite3_step(deleteFTSStmt)
+            guard sqlite3_step(deleteFTSStmt) == SQLITE_DONE else {
+                throw sqliteError(operation: "remove full-text note", db: db)
+            }
         }
+
+        try execute("COMMIT;", operation: "commit removal transaction", db: db)
+        didCommit = true
     }
 
-    func searchNoteIDs(userId: String, query: String, includeDeleted: Bool, offset: Int, limit: Int) -> [UUID] {
-        guard openIfNeeded(), let db, limit > 0 else {
-            return []
+    func searchNoteIDs(userId: String, query: String, includeDeleted: Bool, offset: Int, limit: Int) throws -> [UUID] {
+        guard limit > 0 else { return [] }
+        try openIfNeeded()
+        guard let db else {
+            throw NotesSearchIndexError.sqlite(operation: "open", code: SQLITE_CANTOPEN, message: "Database handle is unavailable")
         }
 
         guard let plan = SearchQueryPlan(query: query) else {
@@ -206,7 +252,7 @@ actor SQLiteFTSNotesSearchIndex {
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
             PerformanceTelemetry.mark("search_index.query_prepare_failed")
             sqlite3_finalize(stmt)
-            return []
+            throw sqliteError(operation: "prepare search", db: db)
         }
         defer { sqlite3_finalize(stmt) }
 
@@ -221,19 +267,26 @@ actor SQLiteFTSNotesSearchIndex {
 
         var ids: [UUID] = []
         ids.reserveCapacity(limit)
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            guard let cString = sqlite3_column_text(stmt, 0) else { continue }
-            let raw = String(cString: cString)
-            if let id = UUID(uuidString: raw) {
+        while true {
+            let result = sqlite3_step(stmt)
+            if result == SQLITE_DONE {
+                break
+            }
+            guard result == SQLITE_ROW else {
+                throw sqliteError(operation: "execute search", db: db)
+            }
+            if let cString = sqlite3_column_text(stmt, 0),
+               let id = UUID(uuidString: String(cString: cString)) {
                 ids.append(id)
             }
         }
         return ids
     }
 
-    func countMatches(userId: String, query: String, includeDeleted: Bool) -> Int {
-        guard openIfNeeded(), let db else {
-            return 0
+    func countMatches(userId: String, query: String, includeDeleted: Bool) throws -> Int {
+        try openIfNeeded()
+        guard let db else {
+            throw NotesSearchIndexError.sqlite(operation: "open", code: SQLITE_CANTOPEN, message: "Database handle is unavailable")
         }
         guard let plan = SearchQueryPlan(query: query) else {
             return 0
@@ -244,7 +297,7 @@ actor SQLiteFTSNotesSearchIndex {
         var stmt: OpaquePointer?
         guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
             sqlite3_finalize(stmt)
-            return 0
+            throw sqliteError(operation: "prepare result count", db: db)
         }
         defer { sqlite3_finalize(stmt) }
 
@@ -255,35 +308,49 @@ actor SQLiteFTSNotesSearchIndex {
             ftsQuery: plan.ftsQuery
         )
 
-        guard sqlite3_step(stmt) == SQLITE_ROW else { return 0 }
+        let result = sqlite3_step(stmt)
+        guard result == SQLITE_ROW else {
+            if result == SQLITE_DONE { return 0 }
+            throw sqliteError(operation: "count search results", db: db)
+        }
         return Int(sqlite3_column_int64(stmt, 0))
     }
 
-    func needsRebuild() -> Bool {
-        openIfNeeded() && requiresRebuildAfterMigration
+    func needsRebuild() throws -> Bool {
+        try openIfNeeded()
+        return requiresRebuildAfterMigration
     }
 
-    private func openIfNeeded() -> Bool {
+    private func openIfNeeded() throws {
         if db != nil {
-            return true
+            return
         }
 
         do {
-            let root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
-            let directory = root.appendingPathComponent("ChillScript", isDirectory: true)
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            let url = directory.appendingPathComponent("note_search.sqlite", isDirectory: false)
-            dbURL = url
-
+            let url: URL
+            if let databaseURLOverride {
+                url = databaseURLOverride
+            } else {
+                let root = try FileManager.default.url(for: .applicationSupportDirectory, in: .userDomainMask, appropriateFor: nil, create: true)
+                let directory = root.appendingPathComponent("ChillScript", isDirectory: true)
+                try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+                url = directory.appendingPathComponent("note_search.sqlite", isDirectory: false)
+            }
             if sqlite3_open(url.path, &db) != SQLITE_OK {
+                let error = sqliteError(operation: "open", db: db)
+                if let db {
+                    sqlite3_close(db)
+                }
                 db = nil
                 PerformanceTelemetry.mark("search_index.open_failed")
-                return false
+                throw error
             }
 
-            guard let db else { return false }
-            sqlite3_exec(db, "PRAGMA journal_mode=WAL;", nil, nil, nil)
-            sqlite3_exec(db, "PRAGMA synchronous=NORMAL;", nil, nil, nil)
+            guard let db else {
+                throw NotesSearchIndexError.sqlite(operation: "open", code: SQLITE_CANTOPEN, message: "Database handle is unavailable")
+            }
+            try execute("PRAGMA journal_mode=WAL;", operation: "configure journal mode", db: db)
+            try execute("PRAGMA synchronous=NORMAL;", operation: "configure synchronous mode", db: db)
 
             let createMeta = """
             CREATE TABLE IF NOT EXISTS index_meta (
@@ -315,30 +382,50 @@ actor SQLiteFTSNotesSearchIndex {
                 prefix = '2 3 4 5 6'
             );
             """
-            sqlite3_exec(db, createMeta, nil, nil, nil)
+            try execute(createMeta, operation: "create metadata table", db: db)
 
             let currentVersion = readSchemaVersion(db: db)
             if currentVersion != schemaVersion {
-                sqlite3_exec(db, "DROP TABLE IF EXISTS note_fts;", nil, nil, nil)
-                sqlite3_exec(db, "DROP TABLE IF EXISTS note_index;", nil, nil, nil)
+                try execute("DROP TABLE IF EXISTS note_fts;", operation: "drop old full-text table", db: db)
+                try execute("DROP TABLE IF EXISTS note_index;", operation: "drop old index table", db: db)
                 requiresRebuildAfterMigration = true
             }
 
-            sqlite3_exec(db, createIndex, nil, nil, nil)
-            sqlite3_exec(db, createFTS, nil, nil, nil)
+            try execute(createIndex, operation: "create index table", db: db)
+            try execute(createFTS, operation: "create full-text table", db: db)
 
             let setVersion = "INSERT INTO index_meta(k, v) VALUES('schema_version', ?) ON CONFLICT(k) DO UPDATE SET v=excluded.v;"
             var stmt: OpaquePointer?
-            if sqlite3_prepare_v2(db, setVersion, -1, &stmt, nil) == SQLITE_OK {
-                bindText(stmt, index: 1, value: "\(schemaVersion)")
-                _ = sqlite3_step(stmt)
+            guard sqlite3_prepare_v2(db, setVersion, -1, &stmt, nil) == SQLITE_OK else {
+                sqlite3_finalize(stmt)
+                throw sqliteError(operation: "prepare schema version", db: db)
+            }
+            bindText(stmt, index: 1, value: "\(schemaVersion)")
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                sqlite3_finalize(stmt)
+                throw sqliteError(operation: "write schema version", db: db)
             }
             sqlite3_finalize(stmt)
-            return true
         } catch {
+            if let db {
+                sqlite3_close(db)
+                self.db = nil
+            }
             PerformanceTelemetry.mark("search_index.open_exception", detail: error.localizedDescription)
-            return false
+            throw error
         }
+    }
+
+    private func execute(_ sql: String, operation: String, db: OpaquePointer) throws {
+        guard sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK else {
+            throw sqliteError(operation: operation, db: db)
+        }
+    }
+
+    private func sqliteError(operation: String, db: OpaquePointer?) -> NotesSearchIndexError {
+        let code = db.map(sqlite3_errcode) ?? SQLITE_ERROR
+        let message = db.flatMap(sqlite3_errmsg).map(String.init(cString:)) ?? "Unknown SQLite error"
+        return .sqlite(operation: operation, code: code, message: message)
     }
 
     private func readSchemaVersion(db: OpaquePointer) -> Int {
@@ -506,17 +593,21 @@ final class NotesSearchIndexer {
     private init() { }
 
     func rebuildIfNeeded(context: ModelContext, userId: String) async {
-        if await index.needsRebuild() {
+        do {
+            if try await index.needsRebuild() {
+                await rebuildAll(context: context, userId: userId)
+                return
+            }
+
+            if getLastIndexedAt(userId: userId).timeIntervalSince1970 > 0 {
+                await syncIncremental(context: context, userId: userId)
+                return
+            }
+
             await rebuildAll(context: context, userId: userId)
-            return
+        } catch {
+            PerformanceTelemetry.mark("search_index.availability_failed", detail: error.localizedDescription)
         }
-
-        if getLastIndexedAt(userId: userId).timeIntervalSince1970 > 0 {
-            await syncIncremental(context: context, userId: userId)
-            return
-        }
-
-        await rebuildAll(context: context, userId: userId)
     }
 
     private func rebuildAll(context: ModelContext, userId: String) async {
@@ -528,7 +619,7 @@ final class NotesSearchIndexer {
             }
             let notes = try context.fetch(descriptor)
             let docs = notes.map(makeDocument)
-            await index.upsert(documents: docs)
+            try await index.upsert(documents: docs)
             setLastIndexedAt(Date(), userId: userId)
             PerformanceTelemetry.end("search_index.rebuild", from: start, extra: "count=\(docs.count)")
         } catch {
@@ -554,7 +645,7 @@ final class NotesSearchIndexer {
             }
 
             if !changed.isEmpty {
-                await index.upsert(documents: changed.map(makeDocument))
+                try await index.upsert(documents: changed.map(makeDocument))
             }
             setLastIndexedAt(Date(), userId: userId)
             PerformanceTelemetry.end("search_index.incremental", from: start, extra: "count=\(changed.count)")
@@ -564,15 +655,19 @@ final class NotesSearchIndexer {
     }
 
     func remove(noteIDs: [UUID]) async {
-        await index.remove(noteIDs: noteIDs)
+        do {
+            try await index.remove(noteIDs: noteIDs)
+        } catch {
+            PerformanceTelemetry.mark("search_index.remove_failed", detail: error.localizedDescription)
+        }
     }
 
-    func searchNoteIDs(userId: String, query: String, includeDeleted: Bool, offset: Int, limit: Int) async -> [UUID] {
-        await index.searchNoteIDs(userId: userId, query: query, includeDeleted: includeDeleted, offset: offset, limit: limit)
+    func searchNoteIDs(userId: String, query: String, includeDeleted: Bool, offset: Int, limit: Int) async throws -> [UUID] {
+        try await index.searchNoteIDs(userId: userId, query: query, includeDeleted: includeDeleted, offset: offset, limit: limit)
     }
 
-    func countMatches(userId: String, query: String, includeDeleted: Bool) async -> Int {
-        await index.countMatches(userId: userId, query: query, includeDeleted: includeDeleted)
+    func countMatches(userId: String, query: String, includeDeleted: Bool) async throws -> Int {
+        try await index.countMatches(userId: userId, query: query, includeDeleted: includeDeleted)
     }
 
     private func makeDocument(note: Note) -> NoteSearchDocument {

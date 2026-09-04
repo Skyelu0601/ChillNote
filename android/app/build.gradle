@@ -65,8 +65,8 @@ android {
         applicationId "com.sponteoai.chillscript"
         minSdk 26
         targetSdk 36
-        versionCode 9
-        versionName "1.2.10"
+        versionCode 11
+        versionName "1.2.11"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "SUPABASE_URL", '"https://qsyhkpaeyzhjojdvbntq.supabase.co"'
         buildConfigField "String", "SUPABASE_ANON_KEY", '"sb_publishable_smWWadjejdbKYvmg3fidsg_41XPu70e"'

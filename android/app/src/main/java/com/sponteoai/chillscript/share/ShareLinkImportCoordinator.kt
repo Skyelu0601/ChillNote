@@ -3,6 +3,7 @@ package com.sponteoai.chillscript.share
 import android.content.Context
 import android.util.Log
 import com.sponteoai.chillscript.R
+import com.sponteoai.chillscript.runCatchingPreservingCancellation
 import com.sponteoai.chillscript.auth.AuthRepository
 import com.sponteoai.chillscript.data.remote.LinkImportApi
 import com.sponteoai.chillscript.data.remote.LinkImportRequest
@@ -50,7 +51,7 @@ class ShareLinkImportCoordinator(
         queue.save(pending)
 
         if (session != null) {
-            runCatching {
+            runCatchingPreservingCancellation {
                 val job = linkImportApi.enqueue(
                     session.accessToken,
                     LinkImportRequest(

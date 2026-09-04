@@ -304,7 +304,7 @@
     <plurals name="subscription_onboarding_cta_try_free_days"><item quantity="other">%1$d日間無料で試す</item></plurals>
     <string name="subscription_onboarding_paywall_subtitle">ChillScriptのクリエイターワークフローをすべて解放。</string>
     <string name="subscription_onboarding_no_trial_notice">無料トライアルなし・いつでも解約可能</string>
-    <string name="subscription_onboarding_feature_video">動画を分析</string>
+    <string name="subscription_onboarding_feature_video">数秒で動画を分析</string>
     <string name="subscription_onboarding_feature_capture">アイデアをひとつに</string>
     <string name="subscription_onboarding_feature_skills">クリエイターツール</string>
     <string name="subscription_onboarding_start_trial">無料トライアルを開始</string>

@@ -17381,6 +17381,112 @@
         }
       }
     },
+    "home.notes.load_failed.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Versuche es erneut. Wenn das Problem weiterhin besteht, starte ChillScript neu."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try again. If the problem continues, restart ChillScript."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Inténtalo de nuevo. Si el problema continúa, reinicia ChillScript."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réessayez. Si le problème persiste, redémarrez ChillScript."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "もう一度お試しください。問題が続く場合は、ChillScriptを再起動してください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "다시 시도해 주세요. 문제가 계속되면 ChillScript를 다시 시작하세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "请重试。如果问题持续，请重新启动 ChillScript。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請重試。如果問題持續，請重新啟動 ChillScript。"
+          }
+        }
+      }
+    },
+    "home.notes.load_failed.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notizen konnten nicht geladen werden"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Couldn't load notes"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudieron cargar las notas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible de charger les notes"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "メモを読み込めませんでした"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "노트를 불러올 수 없습니다"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法加载笔记"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法載入筆記"
+          }
+        }
+      }
+    },
     "home.notes.syncing" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -32046,6 +32152,59 @@
         }
       }
     },
+    "quick_capture.error.shared_import_queue" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Geteilte Inhalte konnten nicht vollständig importiert werden. Bitte versuche es erneut."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Your shared content couldn't be fully imported. Please try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo importar por completo el contenido compartido. Inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Le contenu partagé n’a pas pu être entièrement importé. Réessayez."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "共有したコンテンツを完全に読み込めませんでした。もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "공유한 콘텐츠를 완전히 가져오지 못했습니다. 다시 시도해 주세요."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享内容未能完整导入，请重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分享內容未能完整匯入，請重試。"
+          }
+        }
+      }
+    },
     "quick_capture.error.title" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -46136,7 +46295,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Generate hooks, captions & scripts"
+            "value" : "Create hooks, captions & scripts"
           }
         },
         "es" : {
@@ -46501,49 +46660,49 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Videoanalysen"
+            "value" : "Videos in Sekundenschnelle analysieren"
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Video breakdowns"
+            "value" : "Break down videos in seconds"
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Análisis de videos"
+            "value" : "Analiza videos en segundos"
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Analyse de vidéos"
+            "value" : "Analysez des vidéos en quelques secondes"
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "動画を分析"
+            "value" : "数秒で動画を分析"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "영상 분석"
+            "value" : "몇 초 만에 영상 분석"
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "视频拆解"
+            "value" : "几秒内拆解视频"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "影片拆解"
+            "value" : "幾秒內拆解影片"
           }
         }
       }

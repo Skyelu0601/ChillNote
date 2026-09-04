@@ -143,4 +143,21 @@ final class NotesRepositoryTests: XCTestCase {
         XCTAssertEqual(third.total, expectedTaggedCount)
         XCTAssertNil(third.nextCursor)
     }
+
+    func testMissingContextThrowsInsteadOfReturningAnEmptyPage() async {
+        let unavailableRepository = SwiftDataNotesRepository(contextProvider: { nil })
+
+        do {
+            _ = try await unavailableRepository.fetchPage(
+                userId: "u1",
+                mode: .active(section: nil),
+                tagId: nil,
+                cursor: nil,
+                limit: 50
+            )
+            XCTFail("Expected the missing context to throw")
+        } catch {
+            XCTAssertEqual(error as? NotesRepositoryError, .contextUnavailable)
+        }
+    }
 }

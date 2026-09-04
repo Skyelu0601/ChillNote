@@ -28,15 +28,12 @@ enum BrandTokens {
         static let s3: CGFloat = 16
         static let s4: CGFloat = 24
         static let s5: CGFloat = 32
-        static let s6: CGFloat = 48
     }
 
     // MARK: - Sizes
     enum Size {
         /// Primary CTA button height — same across onboarding, login, paywall.
         static let primaryButtonHeight: CGFloat = 56
-        /// Secondary / inline button height.
-        static let secondaryButtonHeight: CGFloat = 44
     }
 
     // MARK: - Elevation

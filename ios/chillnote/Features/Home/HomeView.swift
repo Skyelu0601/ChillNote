@@ -151,6 +151,7 @@ struct HomeView: View {
                 && currentUserId.map { !syncManager.hasCompletedSync(for: $0) } == true
                 && !homeViewModel.sectionCounts.values.contains(where: { $0 > 0 }),
             hasLoadedNotesAtLeastOnce: homeViewModel.hasLoadedAtLeastOnce,
+            notesLoadErrorMessage: homeViewModel.loadErrorMessage,
             availableTags: availableTagsForCurrentUser,
             translateLanguages: translateLanguages,
             recipeManager: recipeManager,
@@ -520,6 +521,8 @@ struct HomeView: View {
             deleteNote(note)
         case .loadMoreIfNeeded(let note):
             homeViewModel.loadMoreIfNeeded(currentItem: note)
+        case .retryLoadNotes:
+            Task { await homeViewModel.reload() }
         case .toggleNoteSelection(let note):
             toggleNoteSelection(note)
 

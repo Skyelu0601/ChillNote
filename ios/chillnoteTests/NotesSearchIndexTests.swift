@@ -2,14 +2,14 @@ import XCTest
 @testable import chillnote
 
 final class NotesSearchIndexTests: XCTestCase {
-    func testFTSUpsertAndSearchAndDeleteFilter() async {
+    func testFTSUpsertAndSearchAndDeleteFilter() async throws {
         let index = SQLiteFTSNotesSearchIndex()
         let userId = "test-user-\(UUID().uuidString)"
 
         let id1 = UUID()
         let id2 = UUID()
 
-        await index.upsert(documents: [
+        try await index.upsert(documents: [
             NoteSearchDocument(
                 noteId: id1,
                 userId: userId,
@@ -28,30 +28,30 @@ final class NotesSearchIndexTests: XCTestCase {
             )
         ])
 
-        let active = await index.searchNoteIDs(userId: userId, query: "apple", includeDeleted: false, offset: 0, limit: 10)
+        let active = try await index.searchNoteIDs(userId: userId, query: "apple", includeDeleted: false, offset: 0, limit: 10)
         XCTAssertTrue(active.contains(id1))
         XCTAssertFalse(active.contains(id2))
 
-        let deleted = await index.searchNoteIDs(userId: userId, query: "apple", includeDeleted: true, offset: 0, limit: 10)
+        let deleted = try await index.searchNoteIDs(userId: userId, query: "apple", includeDeleted: true, offset: 0, limit: 10)
         XCTAssertTrue(deleted.contains(id2))
 
-        let countActive = await index.countMatches(userId: userId, query: "apple", includeDeleted: false)
+        let countActive = try await index.countMatches(userId: userId, query: "apple", includeDeleted: false)
         XCTAssertGreaterThanOrEqual(countActive, 1)
 
-        await index.remove(noteIDs: [id1, id2])
-        let afterRemove = await index.searchNoteIDs(userId: userId, query: "apple", includeDeleted: true, offset: 0, limit: 10)
+        try await index.remove(noteIDs: [id1, id2])
+        let afterRemove = try await index.searchNoteIDs(userId: userId, query: "apple", includeDeleted: true, offset: 0, limit: 10)
         XCTAssertFalse(afterRemove.contains(id1))
         XCTAssertFalse(afterRemove.contains(id2))
     }
 
-    func testSearchSupportsCJKFragmentsLatinPrefixesAndAccentInsensitiveRanking() async {
+    func testSearchSupportsCJKFragmentsLatinPrefixesAndAccentInsensitiveRanking() async throws {
         let index = SQLiteFTSNotesSearchIndex()
         let userId = "search-user-\(UUID().uuidString)"
 
         let cjkID = UUID()
         let accentID = UUID()
         let prefixID = UUID()
-        await index.upsert(documents: [
+        try await index.upsert(documents: [
             NoteSearchDocument(
                 noteId: cjkID,
                 userId: userId,
@@ -78,13 +78,31 @@ final class NotesSearchIndexTests: XCTestCase {
             )
         ])
 
-        let cjkMatches = await index.searchNoteIDs(userId: userId, query: "东京", includeDeleted: false, offset: 0, limit: 10)
+        let cjkMatches = try await index.searchNoteIDs(userId: userId, query: "东京", includeDeleted: false, offset: 0, limit: 10)
         XCTAssertEqual(cjkMatches.first, cjkID)
 
-        let accentMatches = await index.searchNoteIDs(userId: userId, query: "café", includeDeleted: false, offset: 0, limit: 10)
+        let accentMatches = try await index.searchNoteIDs(userId: userId, query: "café", includeDeleted: false, offset: 0, limit: 10)
         XCTAssertEqual(accentMatches.first, accentID)
 
-        let prefixMatches = await index.searchNoteIDs(userId: userId, query: "plan", includeDeleted: false, offset: 0, limit: 10)
+        let prefixMatches = try await index.searchNoteIDs(userId: userId, query: "plan", includeDeleted: false, offset: 0, limit: 10)
         XCTAssertEqual(prefixMatches.first, prefixID)
+    }
+
+    func testIndexOpenFailureThrowsInsteadOfLookingLikeNoMatches() async {
+        let invalidDatabaseURL = URL(fileURLWithPath: "/dev/null/note_search.sqlite")
+        let index = SQLiteFTSNotesSearchIndex(databaseURL: invalidDatabaseURL)
+
+        do {
+            _ = try await index.searchNoteIDs(
+                userId: "test-user",
+                query: "anything",
+                includeDeleted: false,
+                offset: 0,
+                limit: 10
+            )
+            XCTFail("Expected an index error")
+        } catch {
+            XCTAssertTrue(error is NotesSearchIndexError)
+        }
     }
 }

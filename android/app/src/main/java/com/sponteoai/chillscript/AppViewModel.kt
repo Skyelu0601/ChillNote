@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.CancellationException
@@ -120,6 +121,12 @@ sealed interface VoiceNoteState {
     data class Failed(val message: String) : VoiceNoteState
 }
 
+private enum class VoiceCreditAuthorization {
+    Authorized,
+    Insufficient,
+    Unavailable,
+}
+
 data class AppUiState(
     val authState: AuthState = AuthState.Checking,
     val busy: Boolean = false,
@@ -181,7 +188,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val homeNoteRevealRequests = Channel<HomeNoteRevealRequest>(Channel.BUFFERED)
     val homeNoteRevealEvents = homeNoteRevealRequests.receiveAsFlow()
     val aiConsentPrompt: StateFlow<AIConsentPrompt?> = aiConsentManager.prompt
-    private val mutablePendingRecordings = MutableStateFlow(recordingFileManager.pendingRecordings())
+    private val mutablePendingRecordings = MutableStateFlow<List<PendingRecording>>(emptyList())
     val pendingRecordings: StateFlow<List<PendingRecording>> = mutablePendingRecordings
     private val mutableVoiceNoteStates = MutableStateFlow<Map<String, VoiceNoteState>>(emptyMap())
     val voiceNoteStates: StateFlow<Map<String, VoiceNoteState>> = mutableVoiceNoteStates.asStateFlow()
@@ -213,29 +220,44 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         if (userId == null) {
             flowOf(emptyList())
         } else {
-            notesRepository.observeNotes(userId).onEach {
-                // `stateIn` starts with an empty list, so the list value alone cannot tell
-                // whether Room has returned its first real snapshot. Mark loading complete
-                // here, before StateFlow can conflate an actual empty snapshot with its
-                // initial empty value.
-                if (currentUserId == userId && !mutableUiState.value.hasLoadedNotesAtLeastOnce) {
-                    mutableUiState.value = mutableUiState.value.copy(hasLoadedNotesAtLeastOnce = true)
+            notesRepository.observeNotes(userId)
+                .onEach {
+                    // `stateIn` starts with an empty list, so the list value alone cannot tell
+                    // whether Room has returned its first real snapshot. Mark loading complete
+                    // here, before StateFlow can conflate an actual empty snapshot with its
+                    // initial empty value.
+                    if (currentUserId == userId && !mutableUiState.value.hasLoadedNotesAtLeastOnce) {
+                        mutableUiState.value = mutableUiState.value.copy(hasLoadedNotesAtLeastOnce = true)
+                    }
                 }
-            }
+                .retryWhen { error, attempt ->
+                    retryLocalRead("notes", userId, error, attempt, markNotesLoaded = true)
+                }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val tags: StateFlow<List<TagEntity>> = mutableUiState.flatMapLatest { state ->
         val userId = (state.authState as? AuthState.SignedIn)?.session?.user?.id
-        if (userId == null) flowOf(emptyList()) else notesRepository.observeTags(userId)
+        if (userId == null) {
+            flowOf(emptyList())
+        } else {
+            notesRepository.observeTags(userId)
+                .retryWhen { error, attempt -> retryLocalRead("tags", userId, error, attempt) }
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     val noteTags: StateFlow<List<NoteTagCrossRef>> = notesRepository.observeNoteTags()
+        .retryWhen { error, attempt -> retryLocalRead("note tags", currentUserId, error, attempt) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
     private val searchQuery = MutableStateFlow("")
     val searchResults: StateFlow<List<NoteEntity>> = combine(mutableUiState, searchQuery) { state, query -> state to query }
         .flatMapLatest { (state, query) ->
             val userId = (state.authState as? AuthState.SignedIn)?.session?.user?.id
-            if (userId == null || query.isBlank()) flowOf(emptyList()) else notesRepository.searchNotes(userId, query)
+            if (userId == null || query.isBlank()) {
+                flowOf(emptyList())
+            } else {
+                notesRepository.searchNotes(userId, query)
+                    .retryWhen { error, attempt -> retryLocalRead("search", userId, error, attempt) }
+            }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -245,6 +267,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             authState = AuthState.SignedIn(session),
             introPaywallResolved = onboardingPreferences.hasShownIntroPaywall(session.user.id),
         )
+        refreshPendingRecordings()
+        recipeStore.customRecipesLoadFailure?.let(::reportRecipeStoreFailure)
         if (session != null) {
             viewModelScope.launch {
                 val activeSession = refreshSessionIfNeeded(session) ?: return@launch
@@ -309,13 +333,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         mutableUiState.value = mutableUiState.value.copy(busy = true, errorMessage = null)
         signOutJob = viewModelScope.launch {
             if (session != null) {
-                runCatching { pushNotifications.deactivate(session.accessToken) }
+                runCatchingPreservingCancellation { pushNotifications.deactivate(session.accessToken) }
                     .onFailure {
                         Log.w(TAG, "Push device deactivation failed during sign out", it)
-                        runCatching { pushNotifications.clearLocalRegistration() }
+                        runCatchingPreservingCancellation { pushNotifications.clearLocalRegistration() }
                     }
             } else {
-                runCatching { pushNotifications.clearLocalRegistration() }
+                runCatchingPreservingCancellation { pushNotifications.clearLocalRegistration() }
             }
             authRepository.signOut()
             mutableVoiceNoteStates.value = emptyMap()
@@ -379,7 +403,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun refreshCredits() {
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
         viewModelScope.launch {
-            runCatching { accountApi.creditBalance(session.accessToken) }
+            runCatchingPreservingCancellation { accountApi.creditBalance(session.accessToken) }
                 .onSuccess { response ->
                     if (currentUserId == session.user.id) {
                         mutableUiState.value = mutableUiState.value.copy(
@@ -412,7 +436,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 mutableVoiceNoteStates.value = emptyMap()
                 mutableAISkillState.value = AISkillUiState()
                 mutableContextChatState.value = ContextChatUiState()
-                runCatching { pushNotifications.clearLocalRegistration() }
+                runCatchingPreservingCancellation { pushNotifications.clearLocalRegistration() }
             } finally {
                 // The remote account is already deleted, so never retain its session locally.
                 authRepository.signOut()
@@ -488,39 +512,23 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             if (!aiConsentManager.ensureConsent(AIConsentTrigger.Audio)) return@launch
             ensureVoiceSessionActive(session.user.id)
             if (recording.ownerUserId == null) {
-                recordingFileManager.setOwnerUserId(recording.file, session.user.id)
+                try {
+                    recordingFileManager.setOwnerUserId(recording.file, session.user.id)
+                } catch (error: Throwable) {
+                    Log.w(TAG, "Could not persist shared-video owner", error)
+                    mutableUiState.value = mutableUiState.value.copy(
+                        errorMessage = getApplication<Application>().getString(R.string.common_request_failed),
+                    )
+                    return@launch
+                }
                 refreshPendingRecordings()
             }
-            val authorized = try {
-                val creditState = accountApi.consumeVoiceCredits(session.accessToken)
-                ensureVoiceSessionActive(session.user.id)
-                mutableUiState.value = mutableUiState.value.copy(
-                    creditBalance = creditState.balance,
-                    hasFetchedCreditBalance = true,
-                    subscriptionTier = creditState.tier ?: mutableUiState.value.subscriptionTier,
-                )
-                true
-            } catch (error: SyncHttpException) {
-                ensureVoiceSessionActive(session.user.id)
-                if (error.statusCode == 402) {
-                    mutableUiState.value = mutableUiState.value.copy(
-                        creditBalance = 0,
-                        hasFetchedCreditBalance = true,
-                    )
-                }
-                false
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Throwable) {
-                // Match the microphone path: temporary connectivity failures do not destroy capture.
-                Log.w(TAG, "Shared video credit preflight unavailable; allowing transcription", error)
-                true
-            }
+            val authorization = authorizeVoiceCredit(session, "Shared video")
             ensureVoiceSessionActive(session.user.id)
-            if (authorized) {
-                processVoiceRecording(recording.file, section, tagIds, onNoteReady)
-            } else {
-                onInsufficientCredits()
+            when (authorization) {
+                VoiceCreditAuthorization.Authorized -> processVoiceRecording(recording.file, section, tagIds, onNoteReady)
+                VoiceCreditAuthorization.Insufficient -> onInsufficientCredits()
+                VoiceCreditAuthorization.Unavailable -> Unit
             }
         }
         if (sharedVideoAuthorizationJobs.putIfAbsent(recordingKey, job) == null) {
@@ -672,34 +680,52 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         voiceStartAuthorizationJob = viewModelScope.launch {
             if (!aiConsentManager.ensureConsent(AIConsentTrigger.Audio)) return@launch
             ensureVoiceSessionActive(session.user.id)
-            val authorized = try {
-                val creditState = accountApi.consumeVoiceCredits(session.accessToken)
-                ensureVoiceSessionActive(session.user.id)
-                mutableUiState.value = mutableUiState.value.copy(
-                    creditBalance = creditState.balance,
-                    hasFetchedCreditBalance = true,
-                    subscriptionTier = creditState.tier ?: mutableUiState.value.subscriptionTier,
-                )
-                true
-            } catch (error: SyncHttpException) {
-                ensureVoiceSessionActive(session.user.id)
-                if (error.statusCode == 402) {
-                    mutableUiState.value = mutableUiState.value.copy(
-                        creditBalance = 0,
-                        hasFetchedCreditBalance = true,
-                    )
-                }
-                false
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Throwable) {
-                // iOS intentionally fails open for connection errors so recording remains usable.
-                Log.w(TAG, "Voice recording preflight unavailable; allowing recording", error)
-                true
-            }
+            val authorization = authorizeVoiceCredit(session, "Voice recording")
             ensureVoiceSessionActive(session.user.id)
-            if (authorized) onAuthorized() else onInsufficientCredits()
+            when (authorization) {
+                VoiceCreditAuthorization.Authorized -> onAuthorized()
+                VoiceCreditAuthorization.Insufficient -> onInsufficientCredits()
+                VoiceCreditAuthorization.Unavailable -> Unit
+            }
         }
+    }
+
+    private suspend fun authorizeVoiceCredit(
+        session: AuthSession,
+        operation: String,
+    ): VoiceCreditAuthorization = try {
+        val creditState = accountApi.consumeVoiceCredits(session.accessToken)
+        ensureVoiceSessionActive(session.user.id)
+        mutableUiState.value = mutableUiState.value.copy(
+            creditBalance = creditState.balance,
+            hasFetchedCreditBalance = true,
+            subscriptionTier = creditState.tier ?: mutableUiState.value.subscriptionTier,
+        )
+        VoiceCreditAuthorization.Authorized
+    } catch (error: SyncHttpException) {
+        ensureVoiceSessionActive(session.user.id)
+        if (error.statusCode == 402) {
+            mutableUiState.value = mutableUiState.value.copy(
+                creditBalance = 0,
+                hasFetchedCreditBalance = true,
+            )
+            VoiceCreditAuthorization.Insufficient
+        } else {
+            reportVoiceCreditUnavailable(operation, error)
+            VoiceCreditAuthorization.Unavailable
+        }
+    } catch (cancelled: CancellationException) {
+        throw cancelled
+    } catch (error: Throwable) {
+        reportVoiceCreditUnavailable(operation, error)
+        VoiceCreditAuthorization.Unavailable
+    }
+
+    private fun reportVoiceCreditUnavailable(operation: String, error: Throwable) {
+        Log.w(TAG, "$operation credit preflight unavailable; request can be retried", error)
+        mutableUiState.value = mutableUiState.value.copy(
+            errorMessage = getApplication<Application>().getString(R.string.common_request_failed),
+        )
     }
 
     fun retryPendingRecording(
@@ -717,7 +743,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun deletePendingRecording(recording: PendingRecording) {
         sharedVideoAuthorizationJobs.remove(recording.file.absolutePath)?.cancel()
         voiceProcessingJobs.remove(recording.file.absolutePath)?.cancel()
-        recordingFileManager.cancel(recording.file)
+        try {
+            recordingFileManager.cancel(recording.file)
+        } catch (error: Throwable) {
+            Log.w(TAG, "Could not delete pending recording", error)
+            mutableUiState.value = mutableUiState.value.copy(
+                errorMessage = getApplication<Application>().getString(R.string.common_request_failed),
+            )
+        }
         refreshPendingRecordings()
     }
 
@@ -748,7 +781,33 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun refreshPendingRecordings() {
-        mutablePendingRecordings.value = recordingFileManager.pendingRecordings()
+        try {
+            mutablePendingRecordings.value = recordingFileManager.pendingRecordings()
+        } catch (error: Throwable) {
+            Log.w(TAG, "Could not read pending recordings", error)
+            mutableUiState.value = mutableUiState.value.copy(
+                errorMessage = getApplication<Application>().getString(R.string.common_request_failed),
+            )
+        }
+    }
+
+    private suspend fun retryLocalRead(
+        source: String,
+        expectedUserId: String?,
+        error: Throwable,
+        attempt: Long,
+        markNotesLoaded: Boolean = false,
+    ): Boolean {
+        if (error is CancellationException) throw error
+        Log.e(TAG, "Local $source observation failed", error)
+        if (expectedUserId != null && currentUserId == expectedUserId) {
+            mutableUiState.value = mutableUiState.value.copy(
+                hasLoadedNotesAtLeastOnce = mutableUiState.value.hasLoadedNotesAtLeastOnce || markNotesLoaded,
+                errorMessage = getApplication<Application>().getString(R.string.common_request_failed),
+            )
+        }
+        delay(((attempt + 1L).coerceAtMost(5L)) * 1_000L)
+        return true
     }
 
     private suspend fun ensureVoiceSessionActive(expectedUserId: String) {
@@ -787,7 +846,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 return@launch
             }
             mutableAISkillState.value = AISkillUiState(processingRecipeId = recipe.id)
-            runCatching {
+            runCatchingPreservingCancellation {
                 val (prompt, systemPrompt) = recipe.requestPrompts(content, instruction)
                 creatorSkillsApi.generate(session.accessToken, prompt, systemPrompt)
             }.onSuccess { result ->
@@ -815,14 +874,30 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         mutableAISkillState.value = AISkillUiState()
     }
 
-    fun toggleRecipe(recipe: AgentRecipe) = recipeStore.toggle(recipe)
+    fun toggleRecipe(recipe: AgentRecipe) {
+        runCatching { recipeStore.toggle(recipe) }
+            .onFailure { reportRecipeStoreFailure(it) }
+    }
 
     fun createCustomRecipe(name: String, prompt: String) {
         if (name.isBlank() || prompt.isBlank()) return
-        recipeStore.addCustom(name, prompt)
+        runCatching { recipeStore.addCustom(name, prompt) }
+            .onFailure { reportRecipeStoreFailure(it) }
     }
 
-    fun deleteCustomRecipe(recipe: AgentRecipe) = recipeStore.deleteCustom(recipe)
+    fun deleteCustomRecipe(recipe: AgentRecipe) {
+        runCatching { recipeStore.deleteCustom(recipe) }
+            .onFailure { reportRecipeStoreFailure(it) }
+    }
+
+    private fun reportRecipeStoreFailure(error: Throwable) {
+        Log.w(TAG, "Creator skill storage failed", error)
+        val message = getApplication<Application>().getString(R.string.common_request_failed)
+        mutableAISkillState.value = mutableAISkillState.value.copy(
+            errorMessage = message,
+        )
+        mutableUiState.value = mutableUiState.value.copy(errorMessage = message)
+    }
 
     fun openContextChat(noteIds: Set<String>) {
         val selected = notes.value.filter { it.id in noteIds && it.deletedAt == null }
@@ -854,7 +929,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 processing = true,
                 errorMessage = null,
             )
-            runCatching {
+            runCatchingPreservingCancellation {
                 val (prompt, systemPrompt) = ContextChatPrompt.build(
                     notes = before.contextNotes,
                     history = before.messages,
@@ -934,7 +1009,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             return
         }
         viewModelScope.launch {
-            runCatching {
+            runCatchingPreservingCancellation {
                 noteMutationMutex.withLock {
                     val created = notesRepository.createNote(session.user.id, content, section)
                     if (tagIds.isEmpty()) created else notesRepository.setNoteTags(created, tagIds)
@@ -1054,7 +1129,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         val userId = currentUserId ?: return
         if (name.isBlank()) return
         viewModelScope.launch {
-            runCatching {
+            runCatchingPreservingCancellation {
                 noteMutationMutex.withLock {
                     val tag = notesRepository.findOrCreateTag(userId, name, colorHex, parentId)
                     check(notesRepository.addTagToNote(userId, noteId, tag))
@@ -1075,7 +1150,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun removeTagFromNote(noteId: String, tagId: String) {
         val userId = currentUserId ?: return
         viewModelScope.launch {
-            runCatching {
+            runCatchingPreservingCancellation {
                 noteMutationMutex.withLock {
                     check(notesRepository.removeTagFromNote(userId, noteId, tagId))
                 }
@@ -1124,7 +1199,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     R.string.quick_capture_link_import_placeholder_format,
                     sourceHost,
                 )
-                runCatching {
+                runCatchingPreservingCancellation {
                     val creditState = accountApi.consumeImportCredits(session.accessToken)
                     mutableUiState.value = mutableUiState.value.copy(
                         creditBalance = creditState.balance,
@@ -1219,7 +1294,16 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun consumePendingShareImports(session: AuthSession) = pendingShareImportMutex.withLock {
-        pendingShareImportQueue.pending().forEach { pending ->
+        val pendingItems = try {
+            pendingShareImportQueue.pending()
+        } catch (error: Throwable) {
+            Log.w(TAG, "Could not read pending shared links", error)
+            mutableUiState.value = mutableUiState.value.copy(
+                errorMessage = getApplication<Application>().getString(R.string.link_import_failed),
+            )
+            return@withLock
+        }
+        pendingItems.forEach { pending ->
             if (pending.ownerUserId != null && pending.ownerUserId != session.user.id) return@forEach
             if (notesRepository.note(session.user.id, pending.id) != null) {
                 // A background sync can download the server-created note before
@@ -1232,7 +1316,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         noteId = pending.id,
                     ),
                 )
-                pendingShareImportQueue.remove(pending.id)
+                removePendingShareImport(pending.id)
                 return@forEach
             }
 
@@ -1247,7 +1331,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     ),
                 )
             }
-            runCatching {
+            runCatchingPreservingCancellation {
                 val jobId = pending.importJobId
                 if (jobId != null) {
                     notesRepository.adoptPendingLinkImport(
@@ -1280,7 +1364,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         noteId = pending.id,
                     ),
                 )
-                pendingShareImportQueue.remove(pending.id)
+                removePendingShareImport(pending.id)
                 BackgroundSyncScheduler.enqueueLinkImportRecovery(getApplication())
             }.onFailure { error ->
                 Log.w(TAG, "Pending shared link hand-off failed", error)
@@ -1289,16 +1373,27 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 // not enqueue the same paid import again on every foreground event.
                 if (notesRepository.note(session.user.id, pending.id) != null) {
                     homeNoteRevealRequests.trySend(HomeNoteRevealRequest(session.user.id, pending.id))
-                    pendingShareImportQueue.remove(pending.id)
+                    removePendingShareImport(pending.id)
                 }
             }
+        }
+    }
+
+    private fun removePendingShareImport(id: String) {
+        try {
+            pendingShareImportQueue.remove(id)
+        } catch (error: Throwable) {
+            Log.w(TAG, "Could not remove completed pending share $id", error)
+            mutableUiState.value = mutableUiState.value.copy(
+                errorMessage = getApplication<Application>().getString(R.string.link_import_failed),
+            )
         }
     }
 
     suspend fun syncForPushDestination() {
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
         val activeSession = refreshSessionIfNeeded(session) ?: return
-        runCatching {
+        runCatchingPreservingCancellation {
             notesRepository.purgeExpiredTrash(activeSession.user.id)
             notesRepository.sync(activeSession.user.id, activeSession.accessToken)
         }.onFailure {
@@ -1315,7 +1410,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
         viewModelScope.launch {
             try {
-                runCatching {
+                runCatchingPreservingCancellation {
                     notesRepository.sync(session.user.id, session.accessToken)
                     notesRepository.purgeExpiredTrash(session.user.id)
                 }.onFailure {
@@ -1346,7 +1441,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private suspend fun registerPushForSession(session: AuthSession) {
-        runCatching {
+        runCatchingPreservingCancellation {
             pushNotifications.refreshRegistration(
                 userId = session.user.id,
                 accessToken = session.accessToken,
@@ -1383,7 +1478,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             val expiresAt = current.expiresAt ?: (nowSeconds + current.expiresIn)
             if (!force && expiresAt - nowSeconds > SESSION_REFRESH_LEEWAY_SECONDS) return@withLock current
 
-            runCatching { authRepository.refresh(current) }
+            runCatchingPreservingCancellation { authRepository.refresh(current) }
                 .onSuccess { refreshed ->
                     mutableUiState.value = mutableUiState.value.copy(authState = AuthState.SignedIn(refreshed))
                 }
@@ -1418,7 +1513,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     if (notes.value.none { it.importStatus == "queued" || it.importStatus == "processing" }) return@launch
                     delay(3_000)
                     val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return@launch
-                    runCatching { notesRepository.sync(session.user.id, session.accessToken) }
+                    runCatchingPreservingCancellation { notesRepository.sync(session.user.id, session.accessToken) }
+                        .onFailure { Log.w(TAG, "Pending import poll failed", it) }
+                }
+                if (notes.value.any { it.importStatus == "queued" || it.importStatus == "processing" }) {
+                    BackgroundSyncScheduler.enqueueLinkImportRecovery(getApplication())
+                    mutableUiState.value = mutableUiState.value.copy(
+                        errorMessage = getApplication<Application>().getString(R.string.sync_error),
+                    )
                 }
             } finally {
                 pendingImportMonitor = null
@@ -1429,7 +1531,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private fun launchBusy(block: suspend () -> Unit) {
         viewModelScope.launch {
             mutableUiState.value = mutableUiState.value.copy(busy = true, errorMessage = null)
-            runCatching { block() }
+            runCatchingPreservingCancellation { block() }
                 .onFailure {
                     Log.w(TAG, "App request failed", it)
                     mutableUiState.value = mutableUiState.value.copy(
@@ -1443,7 +1545,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private fun launchAuthBusy(operation: AuthOperation, block: suspend () -> Unit) {
         viewModelScope.launch {
             mutableUiState.value = mutableUiState.value.copy(busy = true, errorMessage = null)
-            runCatching { block() }
+            runCatchingPreservingCancellation { block() }
                 .onFailure { error ->
                     Log.w(TAG, "Authentication request failed", error)
                     val messageResource = when (classifyAuthFailure(operation, error)) {

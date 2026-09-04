@@ -247,13 +247,17 @@ final class NoteDetailViewModel: ObservableObject {
     }
 
     @discardableResult
-    func persistAndSync() -> Bool {
+    func persistAndSync(hardDeletedNoteIDs: [UUID] = []) -> Bool {
         guard let modelContext else { return false }
         do {
             try modelContext.save()
         } catch {
             Self.logger.error("Failed to save note detail changes before sync: \(error.localizedDescription, privacy: .public)")
             return false
+        }
+        if !hardDeletedNoteIDs.isEmpty {
+            HardDeleteQueueStore.enqueue(noteIDs: hardDeletedNoteIDs, for: note.userId)
+            Task { await NotesSearchIndexer.shared.remove(noteIDs: hardDeletedNoteIDs) }
         }
         if let syncManager {
             Task { await syncManager.syncNow(context: modelContext) }
@@ -297,10 +301,9 @@ final class NoteDetailViewModel: ObservableObject {
     private func deleteNotePermanently(shouldDismiss: Bool = true) -> Bool {
         guard !hasPermanentlyDeletedNote, let modelContext else { return false }
         let candidateTags = Array(note.tags)
-        HardDeleteQueueStore.enqueue(noteIDs: [note.id], for: note.userId)
         modelContext.delete(note)
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: candidateTags)
-        guard persistAndSync() else { return false }
+        guard persistAndSync(hardDeletedNoteIDs: [note.id]) else { return false }
         hasPermanentlyDeletedNote = true
         if shouldDismiss {
             dismissAction?()

@@ -13,7 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.sponteoai.chillscript.ContextChatUiState
 import com.sponteoai.chillscript.R
-import com.sponteoai.chillscript.onboarding.OnboardingScreen
+import com.sponteoai.chillscript.onboarding.IOSParityOnboardingScreen
 import com.sponteoai.chillscript.ui.chat.ContextChatScreen
 import com.sponteoai.chillscript.ui.theme.ChillScriptTheme
 import org.junit.Assert.assertEquals
@@ -29,39 +29,25 @@ class CoreComposeFlowTest {
     private val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
 
     @Test
-    fun onboarding_walksThroughEveryPageAndFinishes() {
-        var finishCount = 0
+    fun onboarding_showsCurrentHeroAndLoginAction() {
+        var loginCount = 0
         composeRule.setContent {
             ChillScriptTheme {
-                OnboardingScreen(onFinish = { finishCount += 1 })
+                IOSParityOnboardingScreen(
+                    onFinish = {},
+                    onLogIn = { loginCount += 1 },
+                )
             }
         }
         composeRule.enableAccessibilityChecks()
 
-        val titles = listOf(
-            R.string.onboarding_page_hero_title,
-            R.string.onboarding_page_save_video_title,
-            R.string.onboarding_page_extract_title,
-            R.string.onboarding_page_capture_title,
-            R.string.onboarding_page_hooks_title,
-            R.string.onboarding_page_skills_title,
-        ).map(resources::getString)
-
-        composeRule.onNodeWithText(titles.first()).assertIsDisplayed()
+        composeRule.onNodeWithText(resources.getString(R.string.onboarding_page_hero_body)).assertIsDisplayed()
+        composeRule.onNodeWithText(resources.getString(R.string.onboarding_action_get_started)).assertIsDisplayed()
         composeRule.onAllNodes(isRoot()).tryPerformAccessibilityChecks()
-        composeRule.onNodeWithText(resources.getString(R.string.onboarding_action_get_started)).performClick()
-        titles.drop(1).forEachIndexed { index, title ->
-            composeRule.onNodeWithText(title).assertIsDisplayed()
-            composeRule.onAllNodes(isRoot()).tryPerformAccessibilityChecks()
-            val action = if (index == titles.size - 2) {
-                resources.getString(R.string.onboarding_action_start_creating)
-            } else {
-                resources.getString(R.string.common_next)
-            }
-            composeRule.onNodeWithText(action).performClick()
-        }
+        val loginLabel = "${resources.getString(R.string.onboarding_login_prompt)} ${resources.getString(R.string.onboarding_login_action)}"
+        composeRule.onNodeWithContentDescription(loginLabel).performClick()
 
-        composeRule.runOnIdle { assertEquals(1, finishCount) }
+        composeRule.runOnIdle { assertEquals(1, loginCount) }
     }
 
     @Test

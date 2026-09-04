@@ -55,7 +55,6 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     @Published var permissionGranted: Bool = false
     @Published var recordingState: RecordingState = .idle
     @Published var recordingStartTime: Date?
-    @Published var shouldStop: Bool = false
     @Published private(set) var completedTranscriptions: [TranscriptionEvent] = []
     @Published private(set) var processingQueueCount: Int = 0
     @Published private(set) var activeTranscriptionFilePaths: Set<String> = []

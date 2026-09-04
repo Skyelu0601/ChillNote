@@ -27,13 +27,14 @@ struct TrashPolicy {
             guard !notes.isEmpty else { return }
             let noteIDsByUser = Dictionary(grouping: notes, by: \Note.userId)
                 .mapValues { $0.map(\.id) }
-            for (userId, noteIDs) in noteIDsByUser {
-                HardDeleteQueueStore.enqueue(noteIDs: noteIDs, for: userId)
-            }
             for note in notes {
                 context.delete(note)
             }
             try context.save()
+            for (userId, noteIDs) in noteIDsByUser {
+                HardDeleteQueueStore.enqueue(noteIDs: noteIDs, for: userId)
+            }
+            scheduleSearchIndexRemoval(noteIDsByUser.values.flatMap { $0 })
             logger.info("Purged \(notes.count, privacy: .public) expired notes")
         } catch {
             logger.error("Failed to purge expired notes: \(error.localizedDescription, privacy: .public)")
@@ -59,11 +60,17 @@ struct TrashPolicy {
             for tag in tags {
                 context.delete(tag)
             }
-            HardDeleteQueueStore.enqueue(tagIDs: ids, for: userId)
             try context.save()
+            HardDeleteQueueStore.enqueue(tagIDs: ids, for: userId)
             logger.info("Purged \(tags.count, privacy: .public) expired tags")
         } catch {
             logger.error("Failed to purge expired tags: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    private static func scheduleSearchIndexRemoval(_ noteIDs: [UUID]) {
+        Task {
+            await NotesSearchIndexer.shared.remove(noteIDs: noteIDs)
         }
     }
 }

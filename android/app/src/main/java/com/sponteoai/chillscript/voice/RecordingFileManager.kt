@@ -3,6 +3,7 @@ package com.sponteoai.chillscript.voice
 import android.content.Context
 import android.media.MediaMetadataRetriever
 import java.io.File
+import java.io.IOException
 import java.time.Duration
 import java.time.Instant
 import java.util.UUID
@@ -17,7 +18,6 @@ data class PendingRecording(
     val originalVideoMimeType: String? = null,
     val sourcePackage: String? = null,
     val ownerUserId: String? = null,
-    val creditAuthorized: Boolean = false,
 ) {
     val durationText: String
         get() {
@@ -43,29 +43,30 @@ enum class PendingRecordingSaveOutcome {
     Error,
 }
 
+@Suppress("UseKtx") // These writes need the boolean result from SharedPreferences.commit().
 class RecordingFileManager(context: Context) {
     private val directory = File(context.filesDir, "PendingRecordings")
     private val noteLinks = context.getSharedPreferences("pending_recording_note_links", Context.MODE_PRIVATE)
     private val mediaMetadata = context.getSharedPreferences("pending_recording_media_metadata", Context.MODE_PRIVATE)
 
     fun createRecordingFile(): File {
-        directory.mkdirs()
+        ensureDirectory()
         return File(directory, "${UUID.randomUUID()}_${System.currentTimeMillis()}.m4a")
     }
 
     fun pendingRecordings(now: Instant = Instant.now()): List<PendingRecording> {
-        directory.mkdirs()
+        ensureDirectory()
         val cutoff = now.minus(Duration.ofDays(7))
-        directory.listFiles { file -> file.isFile && file.extension.equals("m4a", ignoreCase = true) }
-            .orEmpty()
+        val files = directory.listFiles { file -> file.isFile && file.extension.equals("m4a", ignoreCase = true) }
+            ?: throw IOException("Could not list pending recordings directory")
+        files
             .forEach { file ->
                 if (Instant.ofEpochMilli(file.lastModified()).isBefore(cutoff)) {
-                    file.delete()
-                    clearMetadata(file)
+                    if (file.delete() || !file.exists()) clearMetadata(file)
                 }
             }
-        return directory.listFiles { file -> file.isFile && file.length() > 0 && file.extension.equals("m4a", ignoreCase = true) }
-            .orEmpty()
+        return files
+            .filter { file -> file.isFile && file.length() > 0L }
             .map { file -> pendingRecording(file) }
             .sortedByDescending { it.createdAt }
     }
@@ -79,17 +80,21 @@ class RecordingFileManager(context: Context) {
         ownerUserId: String?,
     ): PendingRecording {
         check(stagedAudio.isFile && stagedAudio.length() > 0L) { "Extracted audio was empty" }
-        directory.mkdirs()
+        ensureDirectory()
         val destination = File(directory, "${UUID.randomUUID()}_${System.currentTimeMillis()}.m4a")
         if (!stagedAudio.renameTo(destination)) {
             stagedAudio.inputStream().buffered().use { input ->
                 destination.outputStream().buffered().use { output -> input.copyTo(output) }
             }
-            stagedAudio.delete()
+            if (!stagedAudio.delete() && stagedAudio.exists()) {
+                throw IOException("Could not remove staged shared-video audio")
+            }
         }
         val now = System.currentTimeMillis()
-        destination.setLastModified(now)
-        mediaMetadata.edit()
+        if (!destination.setLastModified(now)) {
+            throw IOException("Could not timestamp pending recording")
+        }
+        val metadataSaved = mediaMetadata.edit()
             .putString(metadataKey(destination, KEY_ORIGIN), PendingRecordingOrigin.SharedVideo.persistedValue)
             .putString(metadataKey(destination, KEY_MIME_TYPE), "audio/mp4")
             .putString(metadataKey(destination, KEY_ORIGINAL_NAME), originalDisplayName?.take(240))
@@ -98,40 +103,51 @@ class RecordingFileManager(context: Context) {
             .putString(metadataKey(destination, KEY_OWNER_USER_ID), ownerUserId)
             .putLong(metadataKey(destination, KEY_DURATION_MILLIS), durationMillis.coerceAtLeast(0L))
             .commit()
+        if (!metadataSaved) throw IOException("Could not save pending recording metadata")
         return pendingRecording(destination)
     }
 
     fun setOwnerUserId(file: File, userId: String) {
-        mediaMetadata.edit().putString(metadataKey(file, KEY_OWNER_USER_ID), userId).commit()
-    }
-
-    fun setCreditAuthorized(file: File, authorized: Boolean) {
-        mediaMetadata.edit().putBoolean(metadataKey(file, KEY_CREDIT_AUTHORIZED), authorized).commit()
+        val saved = mediaMetadata.edit().putString(metadataKey(file, KEY_OWNER_USER_ID), userId).commit()
+        if (!saved) throw IOException("Could not save pending recording owner")
     }
 
     fun mimeType(file: File): String =
         mediaMetadata.getString(metadataKey(file, KEY_MIME_TYPE), null) ?: "audio/mp4"
 
     fun setNoteId(file: File, noteId: String) {
-        noteLinks.edit().putString(file.name, noteId).apply()
+        if (!noteLinks.edit().putString(file.name, noteId).commit()) {
+            throw IOException("Could not save pending recording note link")
+        }
     }
 
     fun noteId(file: File): String? = noteLinks.getString(file.name, null)
 
     fun complete(file: File) {
-        file.delete()
-        clearMetadata(file)
+        deleteFileAndMetadata(file)
     }
 
     fun cancel(file: File) {
-        file.delete()
-        clearMetadata(file)
+        deleteFileAndMetadata(file)
     }
 
     fun clearAll() {
-        directory.listFiles().orEmpty().forEach(File::delete)
-        noteLinks.edit().clear().apply()
-        mediaMetadata.edit().clear().apply()
+        ensureDirectory()
+        val files = directory.listFiles() ?: throw IOException("Could not list pending recordings directory")
+        var firstFailure: IOException? = null
+        files.forEach { file ->
+            try {
+                deleteFileAndMetadata(file)
+            } catch (error: IOException) {
+                if (firstFailure == null) firstFailure = error
+            }
+        }
+        firstFailure?.let { throw it }
+        val noteLinksCleared = noteLinks.edit().clear().commit()
+        val mediaMetadataCleared = mediaMetadata.edit().clear().commit()
+        if (!noteLinksCleared || !mediaMetadataCleared) {
+            throw IOException("Could not clear pending recording metadata")
+        }
     }
 
     private fun pendingRecording(file: File): PendingRecording {
@@ -148,13 +164,19 @@ class RecordingFileManager(context: Context) {
             originalVideoMimeType = mediaMetadata.getString(metadataKey(file, KEY_ORIGINAL_VIDEO_MIME), null),
             sourcePackage = mediaMetadata.getString(metadataKey(file, KEY_SOURCE_PACKAGE), null),
             ownerUserId = mediaMetadata.getString(metadataKey(file, KEY_OWNER_USER_ID), null),
-            creditAuthorized = mediaMetadata.getBoolean(metadataKey(file, KEY_CREDIT_AUTHORIZED), false),
         )
     }
 
+    private fun deleteFileAndMetadata(file: File) {
+        if (file.exists() && !file.delete()) {
+            throw IOException("Could not remove pending recording ${file.name}")
+        }
+        clearMetadata(file)
+    }
+
     private fun clearMetadata(file: File) {
-        noteLinks.edit().remove(file.name).apply()
-        mediaMetadata.edit()
+        val noteLinkCleared = noteLinks.edit().remove(file.name).commit()
+        val mediaMetadataCleared = mediaMetadata.edit()
             .remove(metadataKey(file, KEY_ORIGIN))
             .remove(metadataKey(file, KEY_MIME_TYPE))
             .remove(metadataKey(file, KEY_ORIGINAL_NAME))
@@ -162,11 +184,20 @@ class RecordingFileManager(context: Context) {
             .remove(metadataKey(file, KEY_SOURCE_PACKAGE))
             .remove(metadataKey(file, KEY_OWNER_USER_ID))
             .remove(metadataKey(file, KEY_DURATION_MILLIS))
-            .remove(metadataKey(file, KEY_CREDIT_AUTHORIZED))
-            .apply()
+            .commit()
+        if (!noteLinkCleared || !mediaMetadataCleared) {
+            throw IOException("Could not clear pending recording metadata")
+        }
     }
 
     private fun metadataKey(file: File, field: String) = "${file.name}:$field"
+
+    private fun ensureDirectory() {
+        if (directory.isDirectory) return
+        if (!directory.mkdirs() && !directory.isDirectory) {
+            throw IOException("Could not create pending recordings directory")
+        }
+    }
 
     private fun durationMillis(file: File): Long {
         val retriever = MediaMetadataRetriever()
@@ -188,6 +219,5 @@ class RecordingFileManager(context: Context) {
         const val KEY_SOURCE_PACKAGE = "source_package"
         const val KEY_OWNER_USER_ID = "owner_user_id"
         const val KEY_DURATION_MILLIS = "duration_millis"
-        const val KEY_CREDIT_AUTHORIZED = "credit_authorized"
     }
 }

@@ -9,6 +9,7 @@ final class HomeViewModel: ObservableObject {
     @Published private(set) var hasMore: Bool = true
     @Published private(set) var totalCount: Int = 0
     @Published private(set) var sectionCounts: [NoteSection: Int] = [:]
+    @Published private(set) var loadErrorMessage: String?
 
     @Published var query: String = ""
     @Published var mode: NotesFeedMode = .active(section: .inbox)
@@ -20,7 +21,7 @@ final class HomeViewModel: ObservableObject {
     private var repository: NotesRepository?
     private var reloadTask: Task<Void, Never>?
 
-    init(pageSize: Int = FeatureFlags.usePagedHomeFeed ? 50 : 5_000) {
+    init(pageSize: Int = 50) {
         self.pageSize = pageSize
     }
 
@@ -32,6 +33,7 @@ final class HomeViewModel: ObservableObject {
         if shouldReset {
             resetPagination()
             sectionCounts = [:]
+            loadErrorMessage = nil
         }
     }
 
@@ -73,6 +75,7 @@ final class HomeViewModel: ObservableObject {
 
         let startedAt = PerformanceTelemetry.begin(query.isEmpty ? "home_feed.reload" : "home_feed.search_reload")
         isLoading = true
+        loadErrorMessage = nil
         defer { isLoading = false }
 
         resetPagination(keepItems: keepItemsWhileLoading)
@@ -102,14 +105,20 @@ final class HomeViewModel: ObservableObject {
             hasMore = page.nextCursor != nil
             totalCount = page.total
             hasLoadedAtLeastOnce = true
+            loadErrorMessage = nil
             PerformanceTelemetry.end(query.isEmpty ? "home_feed.reload" : "home_feed.search_reload", from: startedAt, extra: "count=\(items.count)")
         } catch {
             PerformanceTelemetry.mark("home_feed.reload_failed", detail: error.localizedDescription)
-            items = []
+            if !keepItemsWhileLoading {
+                items = []
+            }
             cursor = nil
             hasMore = false
-            totalCount = 0
+            if items.isEmpty {
+                totalCount = 0
+            }
             hasLoadedAtLeastOnce = true
+            loadErrorMessage = L10n.text("home.notes.load_failed.message")
         }
 
         await refreshSectionCounts()
@@ -124,6 +133,7 @@ final class HomeViewModel: ObservableObject {
         guard let repository, let userId, hasMore, !isLoading else { return }
 
         isLoading = true
+        loadErrorMessage = nil
         defer { isLoading = false }
 
         let startedAt = PerformanceTelemetry.begin("home_feed.load_more")
@@ -153,9 +163,11 @@ final class HomeViewModel: ObservableObject {
             hasMore = page.nextCursor != nil
             totalCount = page.total
             items.append(contentsOf: page.items)
+            loadErrorMessage = nil
             PerformanceTelemetry.end("home_feed.load_more", from: startedAt, extra: "append=\(page.items.count)")
         } catch {
             hasMore = false
+            loadErrorMessage = L10n.text("home.notes.load_failed.message")
             PerformanceTelemetry.mark("home_feed.load_more_failed", detail: error.localizedDescription)
         }
     }
@@ -184,15 +196,18 @@ final class HomeViewModel: ObservableObject {
 
     private func refreshSectionCounts() async {
         guard let repository, let userId else { return }
-        var counts: [NoteSection: Int] = [:]
+        var counts = sectionCounts
         for section in NoteSection.allCases {
-            let value = (try? await repository.count(
-                userId: userId,
-                mode: .active(section: section),
-                tagId: nil,
-                query: nil
-            )) ?? 0
-            counts[section] = value
+            do {
+                counts[section] = try await repository.count(
+                    userId: userId,
+                    mode: .active(section: section),
+                    tagId: nil,
+                    query: nil
+                )
+            } catch {
+                PerformanceTelemetry.mark("home_feed.section_count_failed", detail: error.localizedDescription)
+            }
         }
         sectionCounts = counts
     }
@@ -200,8 +215,8 @@ final class HomeViewModel: ObservableObject {
     private func resetPagination(keepItems: Bool = false) {
         cursor = nil
         hasMore = true
-        totalCount = 0
         if !keepItems {
+            totalCount = 0
             items = []
         }
     }

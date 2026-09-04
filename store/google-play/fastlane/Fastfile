@@ -214,7 +214,7 @@ platform :android do
       track: "production",
       version_code: version_code,
       release_status: "completed",
-      rollout: 1.0,
+      rollout: "1.0",
       changes_not_sent_for_review: false,
       rescue_changes_not_sent_for_review: false,
       skip_upload_apk: true,

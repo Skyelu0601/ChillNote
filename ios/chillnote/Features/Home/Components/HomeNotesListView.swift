@@ -8,12 +8,14 @@ struct HomeNotesListView: View {
     let isLoading: Bool
     let isInitialSyncing: Bool
     let hasLoadedAtLeastOnce: Bool
+    let loadErrorMessage: String?
     let isTrashSelected: Bool
     let selectedSection: NoteSection
     let isSelectionMode: Bool
     let selectedNotes: Set<UUID>
     let showDefaultEmptyStateMessage: Bool
     let onReachBottom: (Note) -> Void
+    let onRetryLoad: () -> Void
     let onToggleNoteSelection: (Note) -> Void
     let onEnterSelectionMode: () -> Void
     let onRestoreNote: (Note) -> Void
@@ -71,6 +73,8 @@ struct HomeNotesListView: View {
         if cachedVisibleNotes.isEmpty {
             if shouldShowInitialLoadingState {
                 HomeNotesLoadingView()
+            } else if let loadErrorMessage {
+                HomeNotesLoadFailureView(message: loadErrorMessage, onRetry: onRetryLoad)
             } else if shouldShowSyncingState {
                 HomeNotesSyncingView()
             } else if !isTrashSelected && !showDefaultEmptyStateMessage {
@@ -220,11 +224,50 @@ struct HomeNotesListView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top, 6)
+                } else if let loadErrorMessage {
+                    HomeNotesLoadFailureFooter(message: loadErrorMessage, onRetry: onRetryLoad)
                 }
             }
             .padding(.horizontal, 24)
             .padding(.bottom, isTrashSelected ? 24 : 100)
         }
+    }
+}
+
+private struct HomeNotesLoadFailureFooter: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        VStack(spacing: BrandTokens.Space.s2) {
+            Text(message)
+                .font(.chillCaption)
+                .foregroundColor(.textSub)
+                .multilineTextAlignment(.center)
+
+            Button(L10n.text("common.retry"), action: onRetry)
+                .buttonStyle(.bordered)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, BrandTokens.Space.s2)
+    }
+}
+
+private struct HomeNotesLoadFailureView: View {
+    let message: String
+    let onRetry: () -> Void
+
+    var body: some View {
+        ContentUnavailableView {
+            Label(L10n.text("home.notes.load_failed.title"), systemImage: "exclamationmark.triangle")
+        } description: {
+            Text(message)
+        } actions: {
+            Button(L10n.text("common.retry"), action: onRetry)
+                .buttonStyle(.borderedProminent)
+        }
+        .padding(.horizontal, BrandTokens.Space.s4)
+        .padding(.top, 72)
     }
 }
 
@@ -356,6 +399,7 @@ struct HomeEmptyStateDesignPreview: View {
                             isLoading: false,
                             isInitialSyncing: false,
                             hasLoadedAtLeastOnce: true,
+                            loadErrorMessage: nil,
                             isTrashSelected: false,
                             selectedSection: selectedSection,
                             isSelectionMode: false,
@@ -363,6 +407,7 @@ struct HomeEmptyStateDesignPreview: View {
                             showDefaultEmptyStateMessage: !showsFirstActionPrompt
                                 || isFirstActionPromptDismissed,
                             onReachBottom: { _ in },
+                            onRetryLoad: {},
                             onToggleNoteSelection: { _ in },
                             onEnterSelectionMode: {},
                             onRestoreNote: { _ in },

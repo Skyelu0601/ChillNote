@@ -4,6 +4,7 @@ import com.sponteoai.chillscript.data.remote.sourceForUrl
 import java.nio.file.Files
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -35,6 +36,23 @@ class PendingShareImportQueueTest {
         assertEquals(listOf("later"), queue.pending().map { it.id })
         assertFalse(directory.resolve("earlier.json").exists())
         assertTrue(directory.resolve("later.json").exists())
+    }
+
+    @Test fun refusesToTreatAnUnreadableQueueAsEmpty() {
+        val directory = Files.createTempDirectory("pending-share-corrupt").toFile()
+        directory.resolve("broken.json").writeText("not-json")
+
+        assertThrows(java.io.IOException::class.java) {
+            PendingShareImportQueue(directory).pending()
+        }
+    }
+
+    @Test fun refusesToTreatAFileAsAQueueDirectory() {
+        val notDirectory = Files.createTempFile("pending-share", ".tmp").toFile()
+
+        assertThrows(java.io.IOException::class.java) {
+            PendingShareImportQueue(notDirectory).save(item("blocked", "2026-08-24T01:00:00Z"))
+        }
     }
 
     private fun item(id: String, createdAt: String) = PendingShareImport(

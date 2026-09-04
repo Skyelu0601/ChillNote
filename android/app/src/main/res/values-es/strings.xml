@@ -305,7 +305,7 @@
     <plurals name="subscription_onboarding_cta_try_free_days"><item quantity="one">Prueba gratis durante %1$d día</item><item quantity="other">Prueba gratis durante %1$d días</item></plurals>
     <string name="subscription_onboarding_paywall_subtitle">Desbloquea todo el flujo de creación de ChillScript.</string>
     <string name="subscription_onboarding_no_trial_notice">Sin prueba · Cancela cuando quieras</string>
-    <string name="subscription_onboarding_feature_video">Análisis de videos</string>
+    <string name="subscription_onboarding_feature_video">Analiza videos en segundos</string>
     <string name="subscription_onboarding_feature_capture">Ideas en un solo lugar</string>
     <string name="subscription_onboarding_feature_skills">Herramientas para creadores</string>
     <string name="subscription_onboarding_start_trial">Iniciar prueba gratuita</string>

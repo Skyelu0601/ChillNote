@@ -164,21 +164,14 @@ fun IOSParitySubscriptionScreen(
     BackHandler(onBack = onDismiss)
 
     val isOnboardingPaywall = context == SubscriptionScreenContext.OnboardingTrial
-    val isShowingOnboardingIntro = isOnboardingPaywall && !showOnboardingPaywallDetails
     val screenContent: @Composable () -> Unit = {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .then(if (applyTopInset) Modifier.statusBarsPadding() else Modifier),
         ) {
-            if (isShowingOnboardingIntro) {
+            if (isOnboardingPaywall) {
                 SubscriptionTopBar(onDismiss = onDismiss)
-            } else if (isOnboardingPaywall) {
-                OnboardingSubscriptionTopBar(
-                    restoreEnabled = !billingState.restoring,
-                    onDismiss = onDismiss,
-                    onRestore = onRestore,
-                )
             } else {
                 SubscriptionTopBar(onDismiss = onDismiss)
             }
@@ -194,11 +187,12 @@ fun IOSParitySubscriptionScreen(
                     )
                     context == SubscriptionScreenContext.OnboardingTrial -> {
                         if (showOnboardingPaywallDetails) {
-                            OnboardingTrialContent(
+                            LegacyOnboardingTrialPriceContent(
                                 billingState = billingState,
                                 isPurchasing = isPurchasing,
                                 revealProgress = revealProgress,
                                 onPurchase = onPurchase,
+                                onRestore = onRestore,
                                 onRetryProducts = onRetryProducts,
                                 onOpenUrl = onOpenUrl,
                                 debugPreviewPricing = debugPreviewPricing,
@@ -227,25 +221,11 @@ fun IOSParitySubscriptionScreen(
         }
     }
 
-    if (isOnboardingPaywall && !isShowingOnboardingIntro) {
-        Box(
-            modifier = modifier
-                .fillMaxSize()
-                .background(Color.White),
-        ) {
-            screenContent()
+    BrandBackground(modifier = modifier.fillMaxSize()) {
+        screenContent()
 
-            if (isPurchasing || billingState.restoring) {
-                SubscriptionLoadingOverlay()
-            }
-        }
-    } else {
-        BrandBackground(modifier = modifier.fillMaxSize()) {
-            screenContent()
-
-            if (isPurchasing || billingState.restoring) {
-                SubscriptionLoadingOverlay()
-            }
+        if (isPurchasing || billingState.restoring) {
+            SubscriptionLoadingOverlay()
         }
     }
 }
@@ -372,6 +352,79 @@ private fun OnboardingTrialIntroContent(
 
             OnboardingIntroLegalFooter(
                 restoreEnabled = restoreEnabled,
+                onRestore = onRestore,
+                onOpenUrl = onOpenUrl,
+            )
+        }
+    }
+}
+
+@Composable
+private fun LegacyOnboardingTrialPriceContent(
+    billingState: BillingUiState,
+    isPurchasing: Boolean,
+    revealProgress: Float,
+    onPurchase: (BillingProduct) -> Unit,
+    onRestore: () -> Unit,
+    onRetryProducts: () -> Unit,
+    onOpenUrl: (String) -> Unit,
+    debugPreviewPricing: SubscriptionDebugPreviewPricing?,
+) {
+    val yearlyProduct = remember(billingState.products) {
+        billingState.products.firstOrNull { it.googlePlaySubscriptionFacts().isAnnual }
+            ?: billingState.products.firstOrNull { it.id.contains("year", ignoreCase = true) }
+    }
+    val displayInfo = yearlyProduct?.let { rememberGooglePlaySubscriptionDisplayInfo(it) }
+    val restoreError = billingState.error.takeIf { billingState.products.isNotEmpty() }
+
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .reveal(revealProgress, 18.dp),
+    ) {
+        OnboardingTrialPricePage(
+            yearlyProduct = yearlyProduct,
+            displayInfo = displayInfo,
+            billingState = billingState,
+            onRetryProducts = onRetryProducts,
+            debugPreviewPricing = debugPreviewPricing,
+            modifier = Modifier.weight(1f),
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0f),
+                            Color.White,
+                            Color.White,
+                        ),
+                    ),
+                )
+                .padding(horizontal = ChillSpacing.S4)
+                .padding(bottom = 18.dp)
+                .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            restoreError?.let { InlineBillingError(it) }
+
+            if (displayInfo?.hasFreeTrial == true || debugPreviewPricing != null) {
+                NoPaymentDueNow()
+            }
+
+            PrimarySubscriptionButton(
+                text = displayInfo?.ctaText
+                    ?: stringResource(R.string.subscription_onboarding_start_trial),
+                enabled = (yearlyProduct != null || debugPreviewPricing != null) && !isPurchasing,
+                showChevron = true,
+                onClick = { yearlyProduct?.let(onPurchase) },
+            )
+
+            OnboardingIntroLegalFooter(
+                restoreEnabled = !billingState.restoring,
                 onRestore = onRestore,
                 onOpenUrl = onOpenUrl,
             )
@@ -771,10 +824,25 @@ private fun OnboardingTrialPricePage(
     displayInfo: GooglePlaySubscriptionDisplayInfo?,
     billingState: BillingUiState,
     onRetryProducts: () -> Unit,
+    debugPreviewPricing: SubscriptionDebugPreviewPricing? = null,
+    modifier: Modifier = Modifier,
 ) {
-    if (yearlyProduct != null && displayInfo != null) {
+    if ((yearlyProduct != null && displayInfo != null) || debugPreviewPricing != null) {
+        val hasFreeTrial = displayInfo?.hasFreeTrial == true || debugPreviewPricing != null
+        val annualPrice = displayInfo?.displayPrice ?: debugPreviewPricing?.annualPrice.orEmpty()
+        val weeklyPrice = displayInfo?.equivalentWeeklyText ?: debugPreviewPricing?.annualWeeklyPrice
+        val trialTitle = displayInfo?.trialDurationText?.let {
+            stringResource(R.string.subscription_onboarding_trial_title_format, it)
+        } ?: debugPreviewPricing?.let {
+            pluralStringResource(
+                R.plurals.subscription_onboarding_cta_try_free_days,
+                it.annualTrialDayCount,
+                it.annualTrialDayCount,
+            )
+        } ?: stringResource(R.string.subscription_plan_annual)
+
         Column(
-            modifier = Modifier
+            modifier = modifier
                 .fillMaxSize()
                 .padding(horizontal = 28.dp)
                 .padding(top = 30.dp, bottom = 18.dp),
@@ -788,9 +856,7 @@ private fun OnboardingTrialPricePage(
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = displayInfo.trialDurationText?.let {
-                        stringResource(R.string.subscription_onboarding_trial_title_format, it)
-                    } ?: stringResource(R.string.subscription_plan_annual),
+                    text = trialTitle,
                     color = ChillColors.TextMain,
                     style = ChillTypography.headlineLarge,
                     textAlign = TextAlign.Center,
@@ -802,12 +868,12 @@ private fun OnboardingTrialPricePage(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(5.dp),
                 ) {
-                    if (displayInfo.hasFreeTrial) {
-                        displayInfo.equivalentWeeklyText?.let { weeklyPrice ->
+                    if (hasFreeTrial) {
+                        weeklyPrice?.let {
                             Text(
                                 text = stringResource(
                                     R.string.subscription_onboarding_weekly_price_after_trial_format,
-                                    weeklyPrice,
+                                    it,
                                 ),
                                 color = ChillColors.TextMain,
                                 style = ChillTypography.headlineMedium,
@@ -818,12 +884,12 @@ private fun OnboardingTrialPricePage(
 
                     Text(
                         text = stringResource(
-                            if (displayInfo.hasFreeTrial) {
+                            if (hasFreeTrial) {
                                 R.string.subscription_onboarding_annual_price
                             } else {
                                 R.string.subscription_onboarding_annual_price_no_trial
                             },
-                            displayInfo.displayPrice,
+                            annualPrice,
                         ),
                         color = ChillColors.TextMain.copy(alpha = 0.78f),
                         style = ChillTypography.bodyLarge,
@@ -843,7 +909,7 @@ private fun OnboardingTrialPricePage(
             loading = billingState.loading,
             error = billingState.error,
             onRetryProducts = onRetryProducts,
-            modifier = Modifier.fillMaxSize(),
+            modifier = modifier.fillMaxSize(),
             compact = false,
         )
     }
@@ -948,39 +1014,41 @@ private fun NoPaymentDueNow() {
 @Composable
 private fun OnboardingTrialFeatureList(modifier: Modifier = Modifier) {
     val features = listOf(
-        stringResource(R.string.subscription_onboarding_feature_save_ideas) to Icons.Filled.VideoLibrary,
-        stringResource(R.string.subscription_onboarding_feature_transcribe_extract) to Icons.Filled.GraphicEq,
-        stringResource(R.string.subscription_onboarding_feature_generate_content) to Icons.Filled.AutoAwesome,
-        stringResource(R.string.subscription_onboarding_feature_rewrite_translate) to Icons.Filled.Translate,
-        stringResource(R.string.subscription_onboarding_feature_repurpose_social) to Icons.Filled.ViewCarousel,
-        stringResource(R.string.subscription_onboarding_feature_organize) to Icons.Filled.Folder,
-        stringResource(R.string.subscription_onboarding_feature_teleprompter) to Icons.AutoMirrored.Filled.Article,
+        stringResource(R.string.subscription_onboarding_feature_video),
+        stringResource(R.string.subscription_onboarding_feature_generate_content),
+        stringResource(R.string.subscription_onboarding_feature_rewrite_translate),
     )
     Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(11.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(ChillRadius.Card),
+                ambientColor = ChillColors.Shadow,
+                spotColor = ChillColors.Shadow,
+            )
+            .clip(RoundedCornerShape(ChillRadius.Card))
+            .background(Color.White.copy(alpha = 0.92f))
+            .padding(18.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         features.forEach { feature ->
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 32.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.Top,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
                 Icon(
-                    imageVector = feature.second,
+                    imageVector = Icons.Filled.CheckCircle,
                     contentDescription = null,
-                    tint = ChillColors.TextMain,
-                    modifier = Modifier.size(24.dp),
+                    tint = ChillColors.BrandTealText,
+                    modifier = Modifier
+                        .padding(top = 1.dp)
+                        .size(17.dp),
                 )
                 Text(
-                    text = feature.first,
+                    text = feature,
                     color = ChillColors.TextMain,
-                    fontSize = 15.sp,
-                    lineHeight = 19.sp,
-                    fontWeight = FontWeight.Normal,
-                    modifier = Modifier.weight(1f),
+                    style = ChillTypography.bodyMedium,
                 )
             }
         }

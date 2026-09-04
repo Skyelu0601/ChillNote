@@ -195,14 +195,12 @@ extension HomeView {
     func deleteNotePermanently(_ note: Note) {
         let noteId = note.id
         let candidateTags = Array(note.tags)
-        enqueueHardDeleteNoteIDs([noteId])
         withAnimation {
             homeViewModel.removeNoteLocally(id: noteId)
             modelContext.delete(note)
         }
-        Task { await NotesSearchIndexer.shared.remove(noteIDs: [noteId]) }
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: candidateTags)
-        persistAndSync()
+        persistAndSync(hardDeletedNoteIDs: [noteId])
     }
 
     func emptyTrash() {
@@ -210,16 +208,14 @@ extension HomeView {
         guard !deleted.isEmpty else { return }
         let affectedTags = deleted.flatMap { $0.tags }
         let deletedIds = deleted.map { $0.id }
-        enqueueHardDeleteNoteIDs(deletedIds)
         withAnimation {
             homeViewModel.removeNotesLocally(ids: deletedIds)
             for note in deleted {
                 modelContext.delete(note)
             }
         }
-        Task { await NotesSearchIndexer.shared.remove(noteIDs: deletedIds) }
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: affectedTags)
-        persistAndSync()
+        persistAndSync(hardDeletedNoteIDs: deletedIds)
     }
 
     func fetchDeletedNotesForCurrentUser() -> [Note] {
@@ -301,15 +297,11 @@ extension HomeView {
             }
         }
 
-        if !deletedIds.isEmpty {
-            enqueueHardDeleteNoteIDs(deletedIds)
-            Task { await NotesSearchIndexer.shared.remove(noteIDs: deletedIds) }
-        }
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: affectedTags)
-        persistAndSync()
+        persistAndSync(hardDeletedNoteIDs: deletedIds)
     }
 
-    func persistAndSync() {
+    func persistAndSync(hardDeletedNoteIDs: [UUID] = []) {
         Task { @MainActor in
             // Let SwiftUI render local list changes first, then persist/sync.
             await Task.yield()
@@ -318,6 +310,10 @@ extension HomeView {
             } catch {
                 homeSelectionLogger.error("Failed to save home changes before sync: \(error.localizedDescription, privacy: .public)")
                 return
+            }
+            if !hardDeletedNoteIDs.isEmpty {
+                enqueueHardDeleteNoteIDs(hardDeletedNoteIDs)
+                await NotesSearchIndexer.shared.remove(noteIDs: hardDeletedNoteIDs)
             }
             if let userId = currentUserId, FeatureFlags.useLocalFTSSearch {
                 await NotesSearchIndexer.shared.syncIncremental(context: modelContext, userId: userId)

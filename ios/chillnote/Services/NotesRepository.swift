@@ -17,6 +17,17 @@ struct NotesPage {
     let total: Int
 }
 
+enum NotesRepositoryError: LocalizedError, Equatable {
+    case contextUnavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .contextUnavailable:
+            return "The notes database is unavailable."
+        }
+    }
+}
+
 @MainActor
 protocol NotesRepository {
     func fetchPage(userId: String, mode: NotesFeedMode, tagId: UUID?, cursor: Int?, limit: Int) async throws -> NotesPage
@@ -35,7 +46,7 @@ final class SwiftDataNotesRepository: NotesRepository {
 
     func fetchPage(userId: String, mode: NotesFeedMode, tagId: UUID?, cursor: Int?, limit: Int) async throws -> NotesPage {
         guard let context = contextProvider() else {
-            return NotesPage(items: [], nextCursor: nil, total: 0)
+            throw NotesRepositoryError.contextUnavailable
         }
 
         let startOffset = cursor ?? 0
@@ -68,7 +79,7 @@ final class SwiftDataNotesRepository: NotesRepository {
 
     func searchPage(userId: String, query: String, mode: NotesFeedMode, tagId: UUID?, cursor: Int?, limit: Int) async throws -> NotesPage {
         guard let context = contextProvider() else {
-            return NotesPage(items: [], nextCursor: nil, total: 0)
+            throw NotesRepositoryError.contextUnavailable
         }
 
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -80,43 +91,47 @@ final class SwiftDataNotesRepository: NotesRepository {
         let startOffset = cursor ?? 0
 
         if FeatureFlags.useLocalFTSSearch, mode.section == nil {
-            var collected: [Note] = []
-            var searchOffset = startOffset
-            let chunkSize = max(limit * 2, 50)
-            let total = await NotesSearchIndexer.shared.countMatches(userId: userId, query: trimmed, includeDeleted: includeDeleted)
+            do {
+                var collected: [Note] = []
+                var searchOffset = startOffset
+                let chunkSize = max(limit * 2, 50)
+                let total = try await NotesSearchIndexer.shared.countMatches(userId: userId, query: trimmed, includeDeleted: includeDeleted)
 
-            while collected.count < limit {
-                let ids = await NotesSearchIndexer.shared.searchNoteIDs(
-                    userId: userId,
-                    query: trimmed,
-                    includeDeleted: includeDeleted,
-                    offset: searchOffset,
-                    limit: chunkSize
-                )
-                if ids.isEmpty {
-                    break
-                }
-
-                let fetched = try await fetchByIDs(userId: userId, ids: ids)
-                let filtered: [Note]
-                if let tagId {
-                    filtered = fetched.filter { note in
-                        note.tags.contains(where: { $0.id == tagId })
+                while collected.count < limit {
+                    let ids = try await NotesSearchIndexer.shared.searchNoteIDs(
+                        userId: userId,
+                        query: trimmed,
+                        includeDeleted: includeDeleted,
+                        offset: searchOffset,
+                        limit: chunkSize
+                    )
+                    if ids.isEmpty {
+                        break
                     }
-                } else {
-                    filtered = fetched
-                }
-                collected.append(contentsOf: filtered)
-                searchOffset += ids.count
 
-                if ids.count < chunkSize {
-                    break
+                    let fetched = try await fetchByIDs(userId: userId, ids: ids)
+                    let filtered: [Note]
+                    if let tagId {
+                        filtered = fetched.filter { note in
+                            note.tags.contains(where: { $0.id == tagId })
+                        }
+                    } else {
+                        filtered = fetched
+                    }
+                    collected.append(contentsOf: filtered)
+                    searchOffset += ids.count
+
+                    if ids.count < chunkSize {
+                        break
+                    }
                 }
+
+                let finalItems = Array(collected.prefix(limit))
+                let nextCursor = searchOffset < max(total, startOffset + finalItems.count) ? searchOffset : nil
+                return NotesPage(items: finalItems, nextCursor: nextCursor, total: max(total, finalItems.count))
+            } catch {
+                PerformanceTelemetry.mark("search.fts_failed", detail: error.localizedDescription)
             }
-
-            let finalItems = Array(collected.prefix(limit))
-            let nextCursor = searchOffset < max(total, startOffset + finalItems.count) ? searchOffset : nil
-            return NotesPage(items: finalItems, nextCursor: nextCursor, total: max(total, finalItems.count))
         }
 
         PerformanceTelemetry.mark("search.fts_fallback")
@@ -124,14 +139,20 @@ final class SwiftDataNotesRepository: NotesRepository {
     }
 
     func count(userId: String, mode: NotesFeedMode, tagId: UUID?, query: String?) async throws -> Int {
-        guard let context = contextProvider() else { return 0 }
+        guard let context = contextProvider() else {
+            throw NotesRepositoryError.contextUnavailable
+        }
 
         if let query, !query.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, FeatureFlags.useLocalFTSSearch, tagId == nil {
-            return await NotesSearchIndexer.shared.countMatches(
-                userId: userId,
-                query: query,
-                includeDeleted: mode == .trash
-            )
+            do {
+                return try await NotesSearchIndexer.shared.countMatches(
+                    userId: userId,
+                    query: query,
+                    includeDeleted: mode == .trash
+                )
+            } catch {
+                PerformanceTelemetry.mark("search.fts_count_failed", detail: error.localizedDescription)
+            }
         }
 
         var descriptor = FetchDescriptor<Note>()
@@ -161,7 +182,10 @@ final class SwiftDataNotesRepository: NotesRepository {
     }
 
     func fetchByIDs(userId: String, ids: [UUID]) async throws -> [Note] {
-        guard let context = contextProvider(), !ids.isEmpty else { return [] }
+        guard !ids.isEmpty else { return [] }
+        guard let context = contextProvider() else {
+            throw NotesRepositoryError.contextUnavailable
+        }
 
         var descriptor = FetchDescriptor<Note>()
         descriptor.predicate = #Predicate<Note> { note in
