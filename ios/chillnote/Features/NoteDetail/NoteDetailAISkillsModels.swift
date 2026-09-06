@@ -27,6 +27,7 @@ enum NoteAISkillApplyMode: String, CaseIterable, Identifiable {
 
 struct NoteAISkillPreview: Identifiable {
     let id = UUID()
+    let analyticsRunID: String
     let recipe: AgentRecipe
     let result: String
     let sourceContent: String

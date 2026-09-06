@@ -116,6 +116,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.isVisible
 import com.sponteoai.chillscript.R
+import com.sponteoai.chillscript.analytics.ProductAnalytics
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 
@@ -131,7 +132,7 @@ private val ONBOARDING_PHONE_SCREEN_CORNER = 14.dp
  * its marketing layout, colors, type scale, or component shapes.
  */
 @Composable
-fun IOSParityOnboardingScreen(
+fun OnboardingScreen(
     onFinish: () -> Unit,
     onLogIn: () -> Unit,
     modifier: Modifier = Modifier,
@@ -179,7 +180,24 @@ fun IOSParityOnboardingScreen(
             return
         }
         showLockedHint = false
+        if (requestedPage > pageIndex) {
+            ProductAnalytics.capture(
+                "onboarding_step_completed",
+                mapOf(
+                    "step_id" to onboardingStepId(pageIndex),
+                    "step_index" to pageIndex,
+                    "surface" to "main_app",
+                ),
+            )
+        }
         pageIndex = requestedPage
+    }
+
+    LaunchedEffect(Unit) {
+        ProductAnalytics.capture(
+            "onboarding_started",
+            mapOf("step_id" to onboardingStepId(pageIndex), "surface" to "main_app"),
+        )
     }
 
     LaunchedEffect(lockedHintRequest) {
@@ -271,7 +289,14 @@ fun IOSParityOnboardingScreen(
                     haptics.performHapticFeedback(
                         if (pageIndex == 5) HapticFeedbackType.LongPress else HapticFeedbackType.TextHandleMove,
                     )
-                    if (pageIndex == 5) onFinish() else requestPage(pageIndex + 1)
+                    if (pageIndex == 5) {
+                        ProductAnalytics.capture(
+                            "onboarding_step_completed",
+                            mapOf("step_id" to onboardingStepId(pageIndex), "step_index" to pageIndex),
+                        )
+                        ProductAnalytics.capture("onboarding_completed", mapOf("surface" to "main_app"))
+                        onFinish()
+                    } else requestPage(pageIndex + 1)
                 },
                 onLogin = {
                     haptics.performHapticFeedback(HapticFeedbackType.TextHandleMove)
@@ -300,6 +325,15 @@ fun IOSParityOnboardingScreen(
             )
         }
     }
+}
+
+private fun onboardingStepId(index: Int): String = when (index) {
+    0 -> "hero"
+    1 -> "save_video"
+    2 -> "extract_ideas"
+    3 -> "capture_showcase"
+    4 -> "generate_hooks"
+    else -> "ai_skills"
 }
 
 private fun Modifier.detectOnboardingSwipe(

@@ -24,6 +24,17 @@ enum ShareImportError: LocalizedError {
             return ShareL10n.text("share_extension.failed")
         }
     }
+
+    var analyticsCode: String {
+        switch self {
+        case .missingLink: return "missing_link"
+        case .missingAuthToken: return "not_authenticated"
+        case .invalidBackendURL: return "invalid_backend"
+        case .backendError: return "backend_error"
+        case .emptyTranscript: return "empty_transcript"
+        case .sharedContainerUnavailable: return "shared_container_unavailable"
+        }
+    }
 }
 
 enum ShareImportStage {

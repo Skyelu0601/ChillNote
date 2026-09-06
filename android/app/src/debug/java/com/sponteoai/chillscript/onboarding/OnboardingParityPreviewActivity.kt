@@ -9,7 +9,7 @@ class OnboardingParityPreviewActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            IOSParityOnboardingScreen(
+            OnboardingScreen(
                 onFinish = ::finish,
                 onLogIn = ::finish,
                 initialPage = intent.getIntExtra("initial_page", 0),

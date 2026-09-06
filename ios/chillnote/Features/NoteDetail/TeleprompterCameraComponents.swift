@@ -219,6 +219,7 @@ struct TeleprompterScriptEditorView: View {
 
 struct TeleprompterExportPreviewView: View {
     let videoURL: URL
+    let analyticsOperationID: String
     @Environment(\.dismiss) private var dismiss
     @State private var saveMessage: String?
     @State private var videoAspectRatio: CGFloat = 9.0 / 16.0
@@ -291,6 +292,10 @@ struct TeleprompterExportPreviewView: View {
         PHPhotoLibrary.requestAuthorization(for: .addOnly) { status in
             guard status == .authorized || status == .limited else {
                 DispatchQueue.main.async {
+                    ProductAnalytics.shared.capture("teleprompter_failed", properties: [
+                        "operation_id": analyticsOperationID,
+                        "error_code": "photo_permission"
+                    ])
                     saveMessage = L10n.text("teleprompter.preview.save_permission_denied")
                 }
                 return
@@ -299,6 +304,21 @@ struct TeleprompterExportPreviewView: View {
                 PHAssetChangeRequest.creationRequestForAssetFromVideo(atFileURL: videoURL)
             } completionHandler: { success, _ in
                 DispatchQueue.main.async {
+                    if success {
+                        ProductAnalytics.shared.capture("teleprompter_video_saved", properties: [
+                            "operation_id": analyticsOperationID
+                        ])
+                        ProductAnalytics.shared.captureCreationCompleted(
+                            operationID: analyticsOperationID,
+                            type: "teleprompter_video",
+                            entryPoint: "teleprompter"
+                        )
+                    } else {
+                        ProductAnalytics.shared.capture("teleprompter_failed", properties: [
+                            "operation_id": analyticsOperationID,
+                            "error_code": "photo_save_failed"
+                        ])
+                    }
                     saveMessage = success
                         ? L10n.text("teleprompter.preview.save_success")
                         : L10n.text("teleprompter.preview.save_failed")

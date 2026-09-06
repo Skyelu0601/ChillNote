@@ -120,6 +120,12 @@ struct OnboardingFlowView: View {
                 showsLockedSwipeHint = false
             }
         }
+        .onAppear {
+            ProductAnalytics.shared.capture("onboarding_started", properties: [
+                "step_id": pages[currentPage].analyticsID,
+                "surface": "main_app"
+            ])
+        }
     }
 
     @ViewBuilder
@@ -222,6 +228,13 @@ struct OnboardingFlowView: View {
         guard let firstIncompleteDemoPageIndex,
               requestedPage > firstIncompleteDemoPageIndex else {
             showsLockedSwipeHint = false
+            if requestedPage > currentPage {
+                ProductAnalytics.shared.capture("onboarding_step_completed", properties: [
+                    "step_id": pages[currentPage].analyticsID,
+                    "step_index": currentPage,
+                    "surface": "main_app"
+                ])
+            }
             currentPage = requestedPage
             return
         }
@@ -236,6 +249,12 @@ struct OnboardingFlowView: View {
     private func handlePrimaryAction() {
         guard !isDemoLocked else { return }
         if isLastPage {
+            ProductAnalytics.shared.capture("onboarding_step_completed", properties: [
+                "step_id": pages[currentPage].analyticsID,
+                "step_index": currentPage,
+                "surface": "main_app"
+            ])
+            ProductAnalytics.shared.capture("onboarding_completed", properties: ["surface": "main_app"])
             onFinish()
             return
         }
@@ -254,6 +273,17 @@ private enum OnboardingPage: Int {
     case aiSkills
 
     var id: Int { rawValue }
+
+    var analyticsID: String {
+        switch self {
+        case .hero: return "hero"
+        case .saveVideo: return "save_video"
+        case .extractIdeas: return "extract_ideas"
+        case .captureShowcase: return "capture_showcase"
+        case .generateHooks: return "generate_hooks"
+        case .aiSkills: return "ai_skills"
+        }
+    }
 }
 
 private struct OnboardingPressButtonStyle: ButtonStyle {

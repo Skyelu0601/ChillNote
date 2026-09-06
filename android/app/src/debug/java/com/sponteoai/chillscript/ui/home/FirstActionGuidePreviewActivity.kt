@@ -33,7 +33,7 @@ class FirstActionGuidePreviewActivity : ComponentActivity() {
         val previewNotes = if (stage == HomeFirstActionStage.OpenImportedNote) listOf(note) else emptyList()
         setContent {
             ChillScriptTheme {
-                IOSParityHomeScreen(
+                HomeScreenContent(
                     notes = previewNotes,
                     allNotes = previewNotes,
                     tags = emptyList(),

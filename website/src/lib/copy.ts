@@ -1,6 +1,9 @@
 export const copy = {
   productName: "ChillScript",
   nav: {
+    tools: "Free tools",
+    how: "How it works",
+    getApp: "Get the app",
     pricing: "Pricing",
     privacy: "Privacy",
     terms: "Terms",

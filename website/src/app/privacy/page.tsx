@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       <article className="legal-document">
         <p className="eyebrow">Legal</p>
         <h1>Privacy Policy</h1>
-        <p><strong>Last Updated:</strong> March 20, 2026</p>
+        <p><strong>Last Updated:</strong> September 6, 2026</p>
 
         <p>
           <strong>Sponteoai</strong> respects your privacy and is committed to protecting it. This policy describes the
@@ -44,12 +44,21 @@ export default function PrivacyPage() {
           advertising platforms.
         </p>
 
+        <h3>Product Analytics</h3>
+        <p>
+          Our iOS and Android apps use PostHog to measure app launches, foreground and background activity,
+          app versions, and general device information. A randomly generated identifier is used before sign-in;
+          after sign-in, an internal account identifier links activity across your devices. We do not send
+          note content, recordings, email addresses, or login links to PostHog. Session recording is disabled.
+        </p>
+
         <h2>2. How We Use Information</h2>
         <ul>
           <li>Authenticate your account and keep you signed in.</li>
           <li>Sync notes and topics across devices.</li>
           <li>Process AI features you intentionally request.</li>
           <li>Maintain performance, security, and compatibility.</li>
+          <li>Understand app usage and improve the mobile experience.</li>
         </ul>
         <p><strong>No Model Training:</strong> We and our third-party partners do not use your notes or recordings to train models.</p>
 
@@ -64,6 +73,10 @@ export default function PrivacyPage() {
         <p>
           ChillScript may send the minimum data needed for an active request to secure AI processors, including Google
           Gemini via Google Cloud, for transcription, summarization, note improvement, translation, and related AI tasks.
+        </p>
+
+        <p>
+          PostHog processes product analytics data in the United States. See the <a className="inline-link" href="https://posthog.com/privacy">PostHog privacy policy</a>.
         </p>
 
         <h2>5. Data Retention and Security</h2>

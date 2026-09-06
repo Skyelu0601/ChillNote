@@ -88,6 +88,11 @@ final class AuthService: ObservableObject {
         didSet {
             if oldValue != state {
                 syncSessionGeneration &+= 1
+                switch state {
+                case .signedIn(let userId): ProductAnalytics.shared.synchronizeUser(userId)
+                case .signedOut: ProductAnalytics.shared.synchronizeUser(nil)
+                case .checking, .signingIn: break
+                }
             }
         }
     }
@@ -250,6 +255,7 @@ final class AuthService: ObservableObject {
     }
 
     func signInWithApple(_ credential: ASAuthorizationAppleIDCredential) async -> Bool {
+        ProductAnalytics.shared.capture("login_started", properties: ["provider": "apple"])
         errorMessage = nil
         state = .signingIn
         
@@ -268,8 +274,16 @@ final class AuthService: ObservableObject {
                 nonce: nonce
             ))
             await checkSession()
+            ProductAnalytics.shared.capture(
+                isSignedIn ? "login_completed" : "login_failed",
+                properties: ["provider": "apple", "error_code": isSignedIn ? "none" : "session_missing"]
+            )
             return isSignedIn
         } catch {
+            ProductAnalytics.shared.capture("login_failed", properties: [
+                "provider": "apple",
+                "error_code": "provider_error"
+            ])
             Self.logger.error("Apple sign in failed: \(error.localizedDescription, privacy: .public)")
             errorMessage = error.localizedDescription
             state = .signedOut
@@ -279,6 +293,7 @@ final class AuthService: ObservableObject {
     
     // MARK: - Google Sign In
     func signInWithGoogle() async -> Bool {
+        ProductAnalytics.shared.capture("login_started", properties: ["provider": "google"])
         errorMessage = nil
         state = .signingIn
         
@@ -302,8 +317,16 @@ final class AuthService: ObservableObject {
                 idToken: idToken
             ))
             await checkSession()
+            ProductAnalytics.shared.capture(
+                isSignedIn ? "login_completed" : "login_failed",
+                properties: ["provider": "google", "error_code": isSignedIn ? "none" : "session_missing"]
+            )
             return isSignedIn
         } catch {
+            ProductAnalytics.shared.capture("login_failed", properties: [
+                "provider": "google",
+                "error_code": "provider_error"
+            ])
             Self.logger.error("Google sign in failed: \(error.localizedDescription, privacy: .public)")
             errorMessage = error.localizedDescription
             state = .signedOut
@@ -525,12 +548,18 @@ final class AuthService: ObservableObject {
     }
     
     func verifyEmailOTP(email: String, code: String) async -> Bool {
+        ProductAnalytics.shared.capture("login_started", properties: ["provider": "email_otp"])
         errorMessage = nil
         let normalizedEmail = normalizeEmail(email)
         let normalizedCode = normalizeCode(code)
 
         if isAppReviewQuickCredential(email: normalizedEmail, code: normalizedCode) {
-            return await signInWithAppReviewCredential(email: normalizedEmail, code: normalizedCode)
+            let signedIn = await signInWithAppReviewCredential(email: normalizedEmail, code: normalizedCode)
+            ProductAnalytics.shared.capture(signedIn ? "login_completed" : "login_failed", properties: [
+                "provider": "email_otp",
+                "error_code": signedIn ? "none" : "verification_failed"
+            ])
+            return signedIn
         }
         
         do {
@@ -542,8 +571,16 @@ final class AuthService: ObservableObject {
                 )
             }
             await checkSession()
+            ProductAnalytics.shared.capture(
+                isSignedIn ? "login_completed" : "login_failed",
+                properties: ["provider": "email_otp", "error_code": isSignedIn ? "none" : "session_missing"]
+            )
             return isSignedIn
         } catch {
+            ProductAnalytics.shared.capture("login_failed", properties: [
+                "provider": "email_otp",
+                "error_code": "verification_failed"
+            ])
             Self.logger.error("Email OTP verification failed: \(error.localizedDescription, privacy: .public)")
             errorMessage = userFacingEmailOTPErrorMessage(for: error)
             return false

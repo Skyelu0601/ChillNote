@@ -18,14 +18,14 @@ ChillScript 是一款面向创作者的 AI 笔记应用。本仓库同时包含 
 - `store/google-play/`：Google Play 文案、截图、源素材与生成脚本，由主仓库管理。
 - `store/Gemfile`：Fastlane 等 Ruby 发布工具的依赖入口。
 
-具体目录和常用命令见 `store/README.md`。本地依赖、构建输出、审查截图和工具状态（例如 `node_modules/`、`dist/`、`.next/`、`.venv*/`、`audit/`、`.codex-audits/`、`.claude/`）均可重新生成，不属于项目源码，完成检查后可以删除。
+具体目录和常用命令见 `store/README.md`。清理本地文件前确认内容与重建方式；`audit/`、`.codex-audits/`、`.claude/` 等目录可能包含人工记录或指令，不能仅凭目录名视为可删除缓存。
 
 ## 常用命令
 
 ### iOS
 
 ```bash
-xcodebuild -project ios/chillnote.xcodeproj -scheme chillnote -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.6' build
+xcodebuild -project ios/chillnote.xcodeproj -scheme chillnote -destination 'generic/platform=iOS Simulator' build
 ```
 
 ### Android

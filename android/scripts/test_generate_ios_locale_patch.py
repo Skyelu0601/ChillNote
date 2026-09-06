@@ -126,9 +126,6 @@ class GeneratorSafetyTests(unittest.TestCase):
             "transcription_failure_title",
             "creator_skills_no_notes",
             "creator_skills_translate_title",
-            "creator_skills_category_think",
-            "creator_skills_category_shape",
-            "creator_skills_category_publish",
             "creator_skills_installed",
             "creator_skills_available",
             "creator_skills_add",
@@ -149,9 +146,7 @@ class GeneratorSafetyTests(unittest.TestCase):
             "recipe_timed_script_description",
             "recipe_repurpose_pack_description",
             "ai_chat_thinking",
-            "settings_account_section",
             "settings_terms",
-            "settings_permissions",
             "settings_delete_account_confirm_title",
             "settings_delete_account_confirm_message",
             "note_export_markdown",
@@ -164,7 +159,6 @@ class GeneratorSafetyTests(unittest.TestCase):
             "export_success_summary",
             "export_progress_cancelled",
             "export_progress_complete",
-            "settings_voice_language",
             "settings_voice_title",
             "settings_voice_auto",
             "settings_voice_prefer",
@@ -172,9 +166,6 @@ class GeneratorSafetyTests(unittest.TestCase):
             "settings_voice_preferred_help",
             "settings_voice_search",
             "settings_voice_not_set",
-            "settings_media_sections",
-            "settings_media_sections_title",
-            "settings_media_sections_help",
         }
         active_resources.update(
             name

@@ -166,6 +166,7 @@ final class NoteDetailViewModel: ObservableObject {
         case .exportTapped:
             exportMarkdown()
         case .aiSkillsTapped:
+            ProductAnalytics.shared.capture("skill_picker_viewed", properties: ["entry_point": "note_detail"])
             showAISkillsSheet = true
         case .teleprompterTapped:
             showTeleprompterCamera = true

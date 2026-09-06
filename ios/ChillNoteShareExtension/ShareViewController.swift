@@ -2,6 +2,26 @@ import SwiftUI
 import UIKit
 import UniformTypeIdentifiers
 
+private enum ShareAnalyticsQueue {
+    private static let key = "analytics.posthog.shareEventQueue"
+    private static let appGroupIdentifier = "group.com.sponteoai.chillnote"
+
+    private struct Event: Codable {
+        let name: String
+        let properties: [String: String]
+        let occurredAt: Date
+    }
+
+    static func capture(_ name: String, properties: [String: String]) {
+        guard let defaults = UserDefaults(suiteName: appGroupIdentifier) else { return }
+        let existing = defaults.data(forKey: key)
+            .flatMap { try? JSONDecoder().decode([Event].self, from: $0) } ?? []
+        let updated = Array((existing + [Event(name: name, properties: properties, occurredAt: Date())]).suffix(100))
+        guard let data = try? JSONEncoder().encode(updated) else { return }
+        defaults.set(data, forKey: key)
+    }
+}
+
 @MainActor
 final class ShareViewModel: ObservableObject {
     @Published var sourceName = ShareL10n.text("share_extension.unknown_source")
@@ -18,6 +38,7 @@ final class ShareViewModel: ObservableObject {
     private var visualProgressCeiling = 0.12
     private var visualProgressTask: Task<Void, Never>?
     private let service = ShareImportService()
+    private let operationID = UUID().uuidString.lowercased()
 
     init(extensionContext: NSExtensionContext?) {
         self.extensionContext = extensionContext
@@ -36,10 +57,21 @@ final class ShareViewModel: ObservableObject {
             let platform = SharePlatformResolver.platform(for: url)
             sourceName = platform.displayName
             sourcePlatformID = platform.id
+            ShareAnalyticsQueue.capture("share_import_opened", properties: [
+                "operation_id": operationID,
+                "source_platform": platform.id,
+                "entry_point": "system_share_sheet"
+            ])
 
             _ = try await service.importSharedURL(url) { [weak self] stage in
                 self?.apply(stage)
             }
+
+            ShareAnalyticsQueue.capture("share_import_accepted", properties: [
+                "operation_id": operationID,
+                "source_platform": platform.id,
+                "entry_point": "system_share_sheet"
+            ])
 
             statusText = ShareL10n.text("share_extension.saved")
             progress = 1.0
@@ -51,6 +83,12 @@ final class ShareViewModel: ObservableObject {
             extensionContext?.completeRequest(returningItems: nil)
         } catch {
             stopVisualProgress()
+            ShareAnalyticsQueue.capture("share_import_blocked", properties: [
+                "operation_id": operationID,
+                "source_platform": sourcePlatformID,
+                "entry_point": "system_share_sheet",
+                "error_code": (error as? ShareImportError)?.analyticsCode ?? "unknown"
+            ])
             errorMessage = (error as? LocalizedError)?.errorDescription ?? ShareL10n.text("share_extension.failed")
             statusText = ShareL10n.text("share_extension.failed")
         }

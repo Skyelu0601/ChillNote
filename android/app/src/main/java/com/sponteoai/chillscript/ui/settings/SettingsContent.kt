@@ -50,7 +50,7 @@ import com.sponteoai.chillscript.ui.theme.ChillColors
 
 /** Exact Compose shell for the current iOS SettingsView. */
 @Composable
-fun IOSParitySettingsContent(
+fun SettingsContent(
     accountEmail: String,
     isPro: Boolean,
     voiceLanguageSummary: String,

@@ -75,11 +75,13 @@ import com.sponteoai.chillscript.rating.AppRatingTracker
 import com.sponteoai.chillscript.sync.BackgroundSyncScheduler
 import com.sponteoai.chillscript.push.PushNotificationManager
 import com.sponteoai.chillscript.share.PendingShareImportQueue
+import com.sponteoai.chillscript.analytics.ProductAnalytics
 
 data class AISkillPreviewState(
     val recipe: AgentRecipe,
     val result: String,
     val instruction: String? = null,
+    val analyticsRunId: String,
 )
 
 data class AISkillUiState(
@@ -526,7 +528,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             val authorization = authorizeVoiceCredit(session, "Shared video")
             ensureVoiceSessionActive(session.user.id)
             when (authorization) {
-                VoiceCreditAuthorization.Authorized -> processVoiceRecording(recording.file, section, tagIds, onNoteReady)
+                VoiceCreditAuthorization.Authorized -> processVoiceRecording(
+                    recording.file,
+                    section,
+                    tagIds,
+                    onNoteReady,
+                    creationType = "video_transcript",
+                )
                 VoiceCreditAuthorization.Insufficient -> onInsufficientCredits()
                 VoiceCreditAuthorization.Unavailable -> Unit
             }
@@ -555,6 +563,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         tagIds: List<String> = emptyList(),
         onNoteReady: (NoteEntity) -> Unit = {},
         onOutcome: (PendingRecordingSaveOutcome) -> Unit = {},
+        creationType: String = "audio_transcript",
+        analyticsOperationId: String? = null,
     ) {
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: run {
             onOutcome(PendingRecordingSaveOutcome.Error)
@@ -589,6 +599,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 }
                 ensureVoiceSessionActive(session.user.id)
                 val note = requireNotNull(voiceNote)
+                val operationId = analyticsOperationId ?: note.id
+                val attemptId = UUID.randomUUID().toString()
+                val transcriptionStartedAt = android.os.SystemClock.elapsedRealtime()
+                val transcriptionPrefix = if (creationType == "video_transcript") "video" else "audio"
+                ProductAnalytics.capture(
+                    "${transcriptionPrefix}_transcription_started",
+                    mapOf("operation_id" to operationId, "attempt_id" to attemptId),
+                )
                 recordingFileManager.setNoteId(file, note.id)
                 setVoiceNoteState(
                     note.id,
@@ -604,6 +622,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 ensureVoiceSessionActive(session.user.id)
                 require(raw.isNotBlank()) { "Voice transcription was empty" }
+                ProductAnalytics.capture(
+                    "${transcriptionPrefix}_transcription_completed",
+                    mapOf(
+                        "operation_id" to operationId,
+                        "attempt_id" to attemptId,
+                        "latency_ms" to (android.os.SystemClock.elapsedRealtime() - transcriptionStartedAt),
+                    ),
+                )
                 setVoiceNoteState(
                     note.id,
                     VoiceNoteState.Processing(VoiceNoteProcessingStage.Refining),
@@ -630,6 +656,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 )
                 setVoiceNoteState(note.id, completedState)
                 appRatingTracker.registerVoiceNote()
+                ProductAnalytics.captureCreationCompleted(
+                    operationId = operationId,
+                    type = creationType,
+                    entryPoint = if (creationType == "video_transcript") "shared_video" else "home_voice",
+                )
                 refreshCredits()
                 sync()
                 outcome = PendingRecordingSaveOutcome.Saved
@@ -646,6 +677,17 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 throw cancelled
             } catch (error: Throwable) {
                 Log.w(TAG, "Voice transcription failed", error)
+                ProductAnalytics.capture(
+                    if (creationType == "video_transcript") "video_transcription_failed" else "audio_transcription_failed",
+                    mapOf(
+                        "operation_id" to (voiceNote?.id ?: "unknown"),
+                        "error_code" to if (error is SyncHttpException && error.statusCode == 402) {
+                            "insufficient_credits"
+                        } else {
+                            "transcription_failed"
+                        },
+                    ),
+                )
                 if (currentUserId == session.user.id) {
                     val message = getApplication<Application>().getString(R.string.voice_processing_error)
                     val noteId = voiceNote?.id
@@ -845,17 +887,38 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 onFlowEndedWithoutResult()
                 return@launch
             }
+            val runId = UUID.randomUUID().toString()
+            val startedAt = android.os.SystemClock.elapsedRealtime()
+            val analyticsProperties = mapOf(
+                "skill_key" to if (recipe.isCustom) "custom" else recipe.id,
+                "skill_origin" to if (recipe.isCustom) "custom" else "built_in",
+                "run_id" to runId,
+            )
+            ProductAnalytics.capture("skill_selected", analyticsProperties)
+            ProductAnalytics.capture("skill_run_started", analyticsProperties)
             mutableAISkillState.value = AISkillUiState(processingRecipeId = recipe.id)
             runCatchingPreservingCancellation {
                 val (prompt, systemPrompt) = recipe.requestPrompts(content, instruction)
                 creatorSkillsApi.generate(session.accessToken, prompt, systemPrompt)
             }.onSuccess { result ->
+                ProductAnalytics.capture(
+                    "skill_run_completed",
+                    analyticsProperties + ("latency_ms" to (android.os.SystemClock.elapsedRealtime() - startedAt)),
+                )
                 mutableAISkillState.value = AISkillUiState(
-                    preview = AISkillPreviewState(recipe, result, instruction),
+                    preview = AISkillPreviewState(recipe, result, instruction, runId),
                 )
                 refreshCredits()
             }.onFailure { error ->
                 Log.w(TAG, "AI skill request failed", error)
+                ProductAnalytics.capture(
+                    "skill_run_failed",
+                    analyticsProperties + ("error_code" to if (error is SyncHttpException && error.statusCode == 402) {
+                        "insufficient_credits"
+                    } else {
+                        "generation_failed"
+                    }),
+                )
                 if (error is SyncHttpException && error.statusCode == 402) {
                     mutableAISkillState.value = AISkillUiState()
                     mutablePaywallRequests.tryEmit(Unit)
@@ -1544,11 +1607,29 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun launchAuthBusy(operation: AuthOperation, block: suspend () -> Unit) {
         viewModelScope.launch {
+            val tracksLogin = operation != AuthOperation.SendEmailCode
+            val provider = when (operation) {
+                AuthOperation.VerifyEmailCode -> "email_otp"
+                AuthOperation.GoogleSignIn -> "google"
+                AuthOperation.AppleSignIn -> "apple"
+                AuthOperation.SendEmailCode -> "email_otp"
+            }
+            if (tracksLogin) ProductAnalytics.capture("login_started", mapOf("provider" to provider))
             mutableUiState.value = mutableUiState.value.copy(busy = true, errorMessage = null)
             runCatchingPreservingCancellation { block() }
+                .onSuccess {
+                    if (tracksLogin) ProductAnalytics.capture("login_completed", mapOf("provider" to provider))
+                }
                 .onFailure { error ->
                     Log.w(TAG, "Authentication request failed", error)
-                    val messageResource = when (classifyAuthFailure(operation, error)) {
+                    val failure = classifyAuthFailure(operation, error)
+                    if (tracksLogin && failure != AuthFailure.Cancelled) {
+                        ProductAnalytics.capture(
+                            "login_failed",
+                            mapOf("provider" to provider, "error_code" to failure.name.lowercase(Locale.ROOT)),
+                        )
+                    }
+                    val messageResource = when (failure) {
                         AuthFailure.Cancelled -> null
                         AuthFailure.Network -> R.string.auth_login_error_network
                         AuthFailure.TooManyRequests -> R.string.auth_login_error_too_many_requests

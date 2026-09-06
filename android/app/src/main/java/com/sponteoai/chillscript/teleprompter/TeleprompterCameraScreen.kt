@@ -137,8 +137,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.sponteoai.chillscript.R
+import com.sponteoai.chillscript.analytics.ProductAnalytics
 import com.sponteoai.chillscript.ui.theme.ChillColors
 import java.io.File
+import java.util.UUID
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import kotlinx.coroutines.CoroutineStart
@@ -181,6 +183,7 @@ fun TeleprompterCameraScreen(initialScript: String, onClose: () -> Unit) {
     var previewFile by remember { mutableStateOf<File?>(null) }
     var saveMessage by remember { mutableStateOf<String?>(null) }
     var pendingSaveFile by remember { mutableStateOf<File?>(null) }
+    val analyticsOperationId = remember { UUID.randomUUID().toString() }
 
     val savedText = stringResource(R.string.teleprompter_preview_saved)
     val saveFailedText = stringResource(R.string.teleprompter_preview_save_failed)
@@ -195,7 +198,21 @@ fun TeleprompterCameraScreen(initialScript: String, onClose: () -> Unit) {
         ) {
             pendingSaveFile = file
         } else {
-            saveMessage = if (TeleprompterVideoFiles.saveToGallery(context, file)) savedText else saveFailedText
+            val saved = TeleprompterVideoFiles.saveToGallery(context, file)
+            if (saved) {
+                ProductAnalytics.capture("teleprompter_video_saved", mapOf("operation_id" to analyticsOperationId))
+                ProductAnalytics.captureCreationCompleted(
+                    operationId = analyticsOperationId,
+                    type = "teleprompter_video",
+                    entryPoint = "teleprompter",
+                )
+            } else {
+                ProductAnalytics.capture(
+                    "teleprompter_failed",
+                    mapOf("operation_id" to analyticsOperationId, "error_code" to "gallery_save_failed"),
+                )
+            }
+            saveMessage = if (saved) savedText else saveFailedText
         }
     }
 
@@ -207,13 +224,28 @@ fun TeleprompterCameraScreen(initialScript: String, onClose: () -> Unit) {
         val file = pendingSaveFile
         pendingSaveFile = null
         saveMessage = when {
-            !granted -> savePermissionDeniedText
-            file != null && TeleprompterVideoFiles.saveToGallery(context, file) -> savedText
+            !granted -> {
+                ProductAnalytics.capture("teleprompter_failed", mapOf("error_code" to "gallery_permission"))
+                savePermissionDeniedText
+            }
+            file != null && TeleprompterVideoFiles.saveToGallery(context, file) -> {
+                ProductAnalytics.capture("teleprompter_video_saved", mapOf("operation_id" to analyticsOperationId))
+                ProductAnalytics.captureCreationCompleted(
+                    operationId = analyticsOperationId,
+                    type = "teleprompter_video",
+                    entryPoint = "teleprompter",
+                )
+                savedText
+            }
             else -> saveFailedText
         }
     }
 
     LaunchedEffect(Unit) {
+        ProductAnalytics.capture(
+            "teleprompter_opened",
+            mapOf("script_source_type" to "note", "surface" to "main_app"),
+        )
         if (permissions.any { ContextCompat.checkSelfPermission(context, it) != PackageManager.PERMISSION_GRANTED }) {
             permissionLauncher.launch(permissions)
         }
@@ -401,7 +433,13 @@ fun TeleprompterCameraScreen(initialScript: String, onClose: () -> Unit) {
                             countdownJob = null
                             countdownValue = null
                         }
-                        controller.isRecording -> controller.stopRecording()
+                        controller.isRecording -> {
+                            ProductAnalytics.capture(
+                                "teleprompter_recording_stopped",
+                                mapOf("operation_id" to analyticsOperationId),
+                            )
+                            controller.stopRecording()
+                        }
                         else -> {
                             val job = scope.launch(start = CoroutineStart.LAZY) {
                                 try {
@@ -414,6 +452,16 @@ fun TeleprompterCameraScreen(initialScript: String, onClose: () -> Unit) {
                                     countdownValue = null
                                     scriptScrollState.scrollTo(0)
                                     controller.startRecording()
+                                    if (controller.isRecording) {
+                                        ProductAnalytics.capture(
+                                            "teleprompter_playback_started",
+                                            mapOf("operation_id" to analyticsOperationId),
+                                        )
+                                        ProductAnalytics.capture(
+                                            "teleprompter_recording_started",
+                                            mapOf("operation_id" to analyticsOperationId),
+                                        )
+                                    }
                                 } finally {
                                     countdownValue = null
                                     countdownJob = null

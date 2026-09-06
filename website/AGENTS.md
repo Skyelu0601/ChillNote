@@ -2,6 +2,7 @@
 
 - `website/` 是公开营销官网，不提供登录后的 Web App。
 - 允许维护的页面包括首页、价格、隐私政策、服务条款和账号删除说明。
+- 允许公开、无需登录的 SEO 免费工具页（视频转录预览，以及引导到 App 的 Hook、灵感、脚本与笔记入口）；实现与运行约束见 `FREE_TOOLS.md`，不扩展为登录后的 Web App。
 - 不要新增账号登录、笔记同步、网页编辑器、录音、AI Skills 或网页订阅购买流程。
 - 下载入口应跳转到 App Store 或 Google Play，不应链接到 `/app`。
 - 合规页面被 iOS、Google Play 和应用内链接使用，删除或改路径前必须检查移动端引用。
@@ -9,8 +10,8 @@
 
 ## Verification
 
-```bash
-cd website
-npm run typecheck
-npm run build
-```
+以下命令从 `website/` 运行：
+
+- TypeScript 变更：`npm run typecheck`。
+- 页面、资源、路由或构建配置变更：`npm run build`。
+- 布局和交互变更按需在浏览器检查相关页面与移动端宽度；纯文案修改检查展示及链接，不默认新增测试。

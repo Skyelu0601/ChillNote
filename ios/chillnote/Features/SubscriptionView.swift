@@ -3,6 +3,7 @@ import StoreKit
 
 enum SubscriptionViewContext: Equatable {
     case standard
+    case settings
     case onboardingTrial
 }
 
@@ -16,6 +17,7 @@ struct SubscriptionView: View {
     @State private var showContent = false
     @State private var isAnnual: Bool = true // Default to Annual
     @State private var showOnboardingPaywallDetails = false
+    @State private var paywallViewID = UUID().uuidString.lowercased()
 
     init(context: SubscriptionViewContext = .standard) {
         self.context = context
@@ -65,6 +67,14 @@ struct SubscriptionView: View {
     private var isShowingOnboardingIntro: Bool {
         isOnboardingPaywall && !showOnboardingPaywallDetails
     }
+
+    private var analyticsPlacement: String {
+        switch context {
+        case .onboardingTrial: return "post_login"
+        case .settings: return "settings"
+        case .standard: return "feature_gate"
+        }
+    }
     
     var body: some View {
         NavigationStack {
@@ -102,7 +112,7 @@ struct SubscriptionView: View {
                 if isOnboardingPaywall {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
-                            dismiss()
+                            dismissPaywall()
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 14, weight: .bold))
@@ -116,7 +126,7 @@ struct SubscriptionView: View {
                 } else {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
-                            dismiss()
+                            dismissPaywall()
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 14, weight: .bold))
@@ -131,6 +141,12 @@ struct SubscriptionView: View {
             }
             .toolbarBackground(Color.clear, for: .navigationBar)
             .onAppear {
+                if storeService.currentTier != .pro {
+                    ProductAnalytics.shared.capture(
+                        isShowingOnboardingIntro ? "paywall_intro_viewed" : "paywall_viewed",
+                        properties: paywallProperties()
+                    )
+                }
                 withAnimation(.spring(response: 0.8, dampingFraction: 0.8)) {
                     showContent = true
                 }
@@ -141,6 +157,28 @@ struct SubscriptionView: View {
                 await storeService.refreshSubscriptionStatus()
             }
         }
+    }
+
+    private func paywallProperties() -> [String: Any] {
+        [
+            "paywall_placement": analyticsPlacement,
+            "paywall_view_id": paywallViewID,
+            "surface": "main_app"
+        ]
+    }
+
+    private func trackPlanSelection(_ product: SubscriptionProduct) {
+        ProductAnalytics.shared.capture(
+            "paywall_plan_selected",
+            properties: paywallProperties().merging(["plan_id": product.id]) { current, _ in current }
+        )
+    }
+
+    private func dismissPaywall() {
+        if storeService.currentTier != .pro {
+            ProductAnalytics.shared.capture("paywall_dismissed", properties: paywallProperties())
+        }
+        dismiss()
     }
 
     // MARK: - Views
@@ -176,6 +214,7 @@ struct SubscriptionView: View {
                     withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
                         showOnboardingPaywallDetails = true
                     }
+                    ProductAnalytics.shared.capture("paywall_viewed", properties: paywallProperties())
                 } label: {
                     HStack(spacing: BrandTokens.Space.s1) {
                         Text(L10n.text("subscription.onboarding.cta.next"))
@@ -347,6 +386,7 @@ struct SubscriptionView: View {
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
                             isAnnual = true
                         }
+                        trackPlanSelection(yearlyProduct)
                     }
                 }
 
@@ -361,6 +401,7 @@ struct SubscriptionView: View {
                         withAnimation(.spring(response: 0.32, dampingFraction: 0.86)) {
                             isAnnual = false
                         }
+                        trackPlanSelection(weeklyProduct)
                     }
                 }
             }
@@ -408,7 +449,11 @@ struct SubscriptionView: View {
         Button {
             if let product = yearlyProduct {
                 Task {
-                    await storeService.purchase(product)
+                    await storeService.purchase(
+                        product,
+                        analyticsPlacement: analyticsPlacement,
+                        paywallViewID: paywallViewID
+                    )
                 }
             }
         } label: {
@@ -460,7 +505,13 @@ struct SubscriptionView: View {
                 Spacer()
                 if let product = selectedProduct {
                     Button {
-                        Task { await storeService.purchase(product) }
+                        Task {
+                            await storeService.purchase(
+                                product,
+                                analyticsPlacement: analyticsPlacement,
+                                paywallViewID: paywallViewID
+                            )
+                        }
                     } label: {
                         Text(selectedProductDisplayInfo?.ctaText ?? (isAnnual ? L10n.text("subscription.cta.start_annual") : L10n.text("subscription.cta.start_weekly")))
                             .brandPrimaryCTAStyle()
@@ -606,9 +657,11 @@ struct SubscriptionView: View {
             HStack(spacing: 0) {
                 pricingToggleButton(title: L10n.text("subscription.interval.weekly"), isSelected: !isAnnual) {
                     withAnimation(.spring()) { isAnnual = false }
+                    if let weeklyProduct { trackPlanSelection(weeklyProduct) }
                 }
                 pricingToggleButton(title: L10n.text("subscription.interval.yearly"), isSelected: isAnnual, discountTag: yearlySavingsTag) {
                     withAnimation(.spring()) { isAnnual = true }
+                    if let yearlyProduct { trackPlanSelection(yearlyProduct) }
                 }
             }
             .padding(4)

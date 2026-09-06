@@ -50,12 +50,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sponteoai.chillscript.R
+import com.sponteoai.chillscript.analytics.ProductAnalytics
 import com.sponteoai.chillscript.runCatchingPreservingCancellation
 import com.sponteoai.chillscript.data.remote.extractWebUrl
 import com.sponteoai.chillscript.data.remote.sourceForUrl
 import com.sponteoai.chillscript.ui.theme.ChillColors
 import com.sponteoai.chillscript.ui.theme.ChillScriptTheme
 import kotlinx.coroutines.delay
+import java.util.UUID
 
 /**
  * Android's visual counterpart to the iOS Share Extension.
@@ -98,22 +100,40 @@ private fun ShareImportOverlay(
             runCatching { sourceForUrl(url).platformName.ifBlank { sourceForUrl(url).host } }.getOrNull()
         }.orEmpty()
     }
+    val operationId = remember { UUID.randomUUID().toString() }
+    val sourcePlatform = remember(sharedText) {
+        extractWebUrl(sharedText)?.let { url ->
+            runCatching { sourceForUrl(url).platformID }.getOrNull()
+        } ?: "unknown"
+    }
     var state: ShareOverlayState by remember {
         mutableStateOf(ShareOverlayState.Working(ShareLinkImportStage.ReadingContent))
     }
 
     LaunchedEffect(sharedText) {
+        val commonProperties = mapOf(
+            "operation_id" to operationId,
+            "source_platform" to sourcePlatform,
+            "entry_point" to "system_share_sheet",
+            "surface" to "android_share_activity",
+        )
+        ProductAnalytics.capture("share_import_opened", commonProperties)
         runCatchingPreservingCancellation {
             ShareLinkImportCoordinator(context).importSharedText(sharedText) { stage ->
                 state = ShareOverlayState.Working(stage)
             }
         }.onSuccess { pending ->
+            ProductAnalytics.capture("share_import_accepted", commonProperties)
             state = ShareOverlayState.Success(
                 pending.source.platformName.ifBlank { pending.source.host.ifBlank { initialSourceName } },
             )
             delay(SUCCESS_VISIBILITY_MILLIS)
             onComplete()
-        }.onFailure {
+        }.onFailure { error ->
+            ProductAnalytics.capture(
+                "share_import_blocked",
+                commonProperties + ("error_code" to error.analyticsCode()),
+            )
             state = ShareOverlayState.Failure
         }
     }
@@ -165,6 +185,12 @@ private fun ShareImportOverlay(
             }
         }
     }
+}
+
+private fun Throwable.analyticsCode(): String = when (this) {
+    is IllegalArgumentException -> "invalid_share_content"
+    is SecurityException -> "not_authorized"
+    else -> "unknown"
 }
 
 @Composable

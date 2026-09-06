@@ -144,6 +144,10 @@ struct TeleprompterCameraView: View {
         }
         .preferredColorScheme(.dark)
         .task {
+            ProductAnalytics.shared.capture("teleprompter_opened", properties: [
+                "script_source_type": "note",
+                "surface": "main_app"
+            ])
             await camera.configureIfNeeded(resolution: resolution, flashMode: .off)
         }
         .onChange(of: resolution) { _, newValue in
@@ -168,7 +172,10 @@ struct TeleprompterCameraView: View {
             TeleprompterScriptEditorView(scriptText: $scriptText)
         }
         .sheet(item: $previewRoute) { route in
-            TeleprompterExportPreviewView(videoURL: route.url)
+            TeleprompterExportPreviewView(
+                videoURL: route.url,
+                analyticsOperationID: route.id.uuidString.lowercased()
+            )
         }
         .onChange(of: camera.exportedVideoURL) { _, newValue in
             if let newValue {
@@ -641,11 +648,18 @@ private final class TeleprompterCameraManager: NSObject, ObservableObject {
             countdownTask = nil
             guard !Task.isCancelled else { return }
             beginRecordingNow()
+            if isRecording {
+                ProductAnalytics.shared.capture("teleprompter_playback_started")
+                ProductAnalytics.shared.capture("teleprompter_recording_started", properties: [
+                    "camera_position": currentCameraPosition == .front ? "front" : "back"
+                ])
+            }
         }
     }
 
     func stopRecording() {
         guard isRecording else { return }
+        ProductAnalytics.shared.capture("teleprompter_recording_stopped")
         movieOutput.stopRecording()
     }
 

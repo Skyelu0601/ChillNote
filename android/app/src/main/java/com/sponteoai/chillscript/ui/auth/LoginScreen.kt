@@ -118,7 +118,7 @@ private enum class LoginFocusTarget {
  * validation, countdown and focus state that the SwiftUI view owns.
  */
 @Composable
-fun IOSParityLoginScreen(
+fun LoginScreen(
     state: AppUiState,
     onGoogleSignIn: () -> Unit,
     onAppleSignIn: () -> Unit,

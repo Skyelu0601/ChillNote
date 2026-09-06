@@ -124,8 +124,10 @@ import {
   weeklyTopicSettingsInputSchema
 } from "./weeklyTopics.js";
 import fetch from "node-fetch";
+import { createFreeToolsRouter } from "./freeTools.js";
 
 const app = express();
+app.use("/free-tools", express.json({ limit: "8kb" }), createFreeToolsRouter());
 app.use(compression());
 app.use(cors());
 

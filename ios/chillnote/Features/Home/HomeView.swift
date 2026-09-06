@@ -336,6 +336,7 @@ struct HomeView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .sharedImportsRequested)) { _ in
+            ProductAnalytics.shared.flushPendingShareExtensionEvents()
             configureFirstActionGuide()
             importPendingSharedNotes(navigateToLatest: true)
         }
@@ -344,6 +345,7 @@ struct HomeView: View {
         }
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
+            ProductAnalytics.shared.flushPendingShareExtensionEvents()
             importPendingSharedNotes(navigateToLatest: false)
             scheduleMaintenance(reason: .foreground)
             Task {

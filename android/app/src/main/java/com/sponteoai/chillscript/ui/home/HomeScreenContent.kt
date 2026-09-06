@@ -169,7 +169,7 @@ import kotlin.math.max
  * leak Material defaults back into the visible product.
  */
 @Composable
-fun IOSParityHomeScreen(
+fun HomeScreenContent(
     notes: List<NoteEntity>,
     allNotes: List<NoteEntity>,
     tags: List<TagEntity>,

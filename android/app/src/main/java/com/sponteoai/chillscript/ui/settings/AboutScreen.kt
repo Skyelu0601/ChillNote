@@ -42,7 +42,7 @@ import com.sponteoai.chillscript.ui.theme.ChillColors
 
 /** One-to-one Compose rendering of the current iOS `AboutView`. */
 @Composable
-fun IOSParityAboutScreen(
+fun AboutScreen(
     onClose: () -> Unit,
     applyTopInset: Boolean = true,
     modifier: Modifier = Modifier,

@@ -64,6 +64,8 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     private var audioRecorder: AVAudioRecorder?
     private var audioFileURL: URL?
     private var transcriptionCountUsageByFilePath: [String: Bool] = [:]
+    private var analyticsOperationIDsByFilePath: [String: String] = [:]
+    private var analyticsTranscriptionStartedAt: [UUID: Date] = [:]
     private var isStopping = false
     private var activeTranscriptionJobIDs: Set<UUID> = []
     private var maxDurationTask: Task<Void, Never>?
@@ -82,6 +84,10 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     
     func getCurrentAudioFileURL() -> URL? {
         return audioFileURL
+    }
+
+    func analyticsOperationID(for fileURL: URL) -> String? {
+        analyticsOperationIDsByFilePath[fileURL.path]
     }
     
     // MARK: - Initialization
@@ -147,6 +153,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     func completeRecording(fileURL: URL) {
         fileManager.completeRecording(fileURL: fileURL)
         transcriptionCountUsageByFilePath.removeValue(forKey: fileURL.path)
+        analyticsOperationIDsByFilePath.removeValue(forKey: fileURL.path)
         if audioFileURL?.path == fileURL.path {
             audioFileURL = nil
         }
@@ -158,9 +165,11 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     
     func startRecording(countsTowardQuota: Bool = true) {
         Self.logger.debug("Starting recording")
+        ProductAnalytics.shared.capture("recording_requested", properties: ["entry_point": "home_voice"])
         
         // Validation
         guard permissionGranted else {
+            ProductAnalytics.shared.capture("recording_blocked", properties: ["error_code": "microphone_permission"])
             checkPermissions()
             setError(L10n.text("speech_recognizer.error.microphone_permission_required"))
             return
@@ -178,6 +187,12 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             try startRecordingInternal()
             if let path = audioFileURL?.path {
                 transcriptionCountUsageByFilePath[path] = countsTowardQuota
+                let operationID = UUID().uuidString.lowercased()
+                analyticsOperationIDsByFilePath[path] = operationID
+                ProductAnalytics.shared.capture("recording_started", properties: [
+                    "operation_id": operationID,
+                    "entry_point": "home_voice"
+                ])
             }
             recordingState = .recording
             recordingStartTime = Date()
@@ -192,6 +207,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             }
             Self.logger.debug("Recording started successfully")
         } catch {
+            ProductAnalytics.shared.capture("recording_blocked", properties: ["error_code": "recorder_start_failed"])
             Self.logger.error("Recording failed: \(self.describeError(error), privacy: .public)")
             Self.logger.debug("Audio session snapshot: \(self.debugAudioSessionSnapshot(), privacy: .private)")
             cleanupRecordingSession()
@@ -251,6 +267,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         isStopping = true
         
         let fileURL = audioFileURL
+        let recordedDuration = recordingStartTime.map { Date().timeIntervalSince($0) }
 
         maxDurationTask?.cancel()
         maxDurationTask = nil
@@ -269,6 +286,11 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         // Handle different stop reasons
         switch reason {
         case .cancelled:
+            if let fileURL {
+                ProductAnalytics.shared.capture("recording_cancelled", properties: [
+                    "operation_id": analyticsOperationIDsByFilePath[fileURL.path] ?? "unknown"
+                ])
+            }
             // Clean up the cancelled recording
             if let fileURL = fileURL {
                 fileManager.cancelRecording(fileURL: fileURL)
@@ -302,6 +324,14 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             return
             
         case .user, .finished:
+            if let fileURL {
+                var properties: [String: Any] = [
+                    "operation_id": analyticsOperationIDsByFilePath[fileURL.path] ?? "unknown",
+                    "stop_reason": reason == .user ? "user" : "max_duration"
+                ]
+                if let recordedDuration { properties["duration_seconds"] = Int(recordedDuration) }
+                ProductAnalytics.shared.capture("recording_stopped", properties: properties)
+            }
             break
         }
         
@@ -365,6 +395,14 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             }
             
             Self.logger.debug("Transcription complete")
+            var analyticsProperties: [String: Any] = [
+                "operation_id": analyticsOperationIDsByFilePath[fileURL.path] ?? "unknown",
+                "attempt_id": jobID.uuidString.lowercased()
+            ]
+            if let startedAt = analyticsTranscriptionStartedAt[jobID] {
+                analyticsProperties["latency_ms"] = Int(Date().timeIntervalSince(startedAt) * 1_000)
+            }
+            ProductAnalytics.shared.capture("audio_transcription_completed", properties: analyticsProperties)
             
             transcript = text.trimmingCharacters(in: .whitespacesAndNewlines)
             completedTranscriptions.append(
@@ -433,6 +471,10 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     }
 
     private func publishFailureEvent(fileURL: URL, reason: TranscriptionFailureReason, message: String) {
+        ProductAnalytics.shared.capture("audio_transcription_failed", properties: [
+            "operation_id": analyticsOperationIDsByFilePath[fileURL.path] ?? "unknown",
+            "error_code": reason.analyticsCode
+        ])
         completedTranscriptions.append(
             TranscriptionEvent(
                 id: UUID(),
@@ -503,6 +545,11 @@ final class SpeechRecognizer: NSObject, ObservableObject {
 
     private func scheduleTranscription(for fileURL: URL, initialDelayNanoseconds: UInt64 = 0) {
         let jobID = UUID()
+        analyticsTranscriptionStartedAt[jobID] = Date()
+        ProductAnalytics.shared.capture("audio_transcription_started", properties: [
+            "operation_id": analyticsOperationIDsByFilePath[fileURL.path] ?? "unknown",
+            "attempt_id": jobID.uuidString.lowercased()
+        ])
         activeTranscriptionJobIDs.insert(jobID)
         activeTranscriptionFilePaths.insert(fileURL.path)
         processingQueueCount = activeTranscriptionJobIDs.count
@@ -520,6 +567,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     }
 
     private func finishTranscriptionJob(_ jobID: UUID, filePath: String) {
+        analyticsTranscriptionStartedAt.removeValue(forKey: jobID)
         activeTranscriptionJobIDs.remove(jobID)
         activeTranscriptionFilePaths.remove(filePath)
         processingQueueCount = activeTranscriptionJobIDs.count
@@ -576,6 +624,22 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     
     @objc private func handleAppDidBecomeActive() {
         checkPermissions()
+    }
+}
+
+private extension TranscriptionFailureReason {
+    var analyticsCode: String {
+        switch self {
+        case .networkUnavailable: return "network_unavailable"
+        case .timeout: return "timeout"
+        case .authenticationRequired: return "authentication_required"
+        case .serviceUnavailable: return "service_unavailable"
+        case .serviceConfiguration: return "service_configuration"
+        case .quotaReached: return "quota_reached"
+        case .audioEmpty: return "audio_empty"
+        case .localFileIssue: return "local_file_issue"
+        case .unknown: return "unknown"
+        }
     }
 }
 

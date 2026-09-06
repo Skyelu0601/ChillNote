@@ -30,6 +30,7 @@ extension NoteDetailViewModel {
     }
 
     func startAISkill(_ recipe: AgentRecipe) {
+        ProductAnalytics.shared.capture("skill_selected", properties: recipe.analyticsProperties)
         if recipe.id == "translate" {
             pendingAISkillRecipe = recipe
             showAISkillTranslateSheet = true
@@ -52,6 +53,12 @@ extension NoteDetailViewModel {
     }
 
     func generateAISkillPreview(recipe: AgentRecipe, instruction: String? = nil) async {
+        let runID = UUID().uuidString.lowercased()
+        let startedAt = Date()
+        ProductAnalytics.shared.capture(
+            "skill_run_started",
+            properties: recipe.analyticsProperties.merging(["run_id": runID]) { current, _ in current }
+        )
         let sourceContent = note.content
         let sourceSelection = normalizedSelection(editorSelection, in: sourceContent)
         let inputContent = sourceSelection.isCollapsed ? sourceContent : sourceSelection.selectedText
@@ -63,7 +70,15 @@ extension NoteDetailViewModel {
         do {
             let result = try await recipe.generateResult(from: inputContent, userInstruction: instruction)
             await StoreService.shared.fetchCreditBalance()
+            ProductAnalytics.shared.capture(
+                "skill_run_completed",
+                properties: recipe.analyticsProperties.merging([
+                    "run_id": runID,
+                    "latency_ms": Int(Date().timeIntervalSince(startedAt) * 1_000)
+                ]) { current, _ in current }
+            )
             aiSkillPreview = NoteAISkillPreview(
+                analyticsRunID: runID,
                 recipe: recipe,
                 result: result,
                 sourceContent: sourceContent,
@@ -74,6 +89,14 @@ extension NoteDetailViewModel {
         } catch {
             isProcessing = false
             let message = error.localizedDescription
+            ProductAnalytics.shared.capture(
+                "skill_run_failed",
+                properties: recipe.analyticsProperties.merging([
+                    "run_id": runID,
+                    "error_code": message.localizedCaseInsensitiveContains("insufficient credits")
+                        ? "insufficient_credits" : "generation_failed"
+                ]) { current, _ in current }
+            )
             if message.localizedCaseInsensitiveContains("insufficient credits") {
                 showSubscription = true
             } else {
@@ -95,6 +118,19 @@ extension NoteDetailViewModel {
         }
         note.updatedAt = dependencies.now()
         persistAndSync()
+        ProductAnalytics.shared.capture(
+            "skill_result_used",
+            properties: preview.recipe.analyticsProperties.merging([
+                "run_id": preview.analyticsRunID,
+                "action": mode.rawValue
+            ]) { current, _ in current }
+        )
+        ProductAnalytics.shared.captureCreationCompleted(
+            operationID: preview.analyticsRunID,
+            type: "ai_applied",
+            entryPoint: "note_detail",
+            properties: preview.recipe.analyticsProperties
+        )
         aiSkillPreview = nil
 
         withAnimation {
@@ -129,6 +165,7 @@ extension NoteDetailViewModel {
                 )
                 await StoreService.shared.fetchCreditBalance()
                 let nextPreview = NoteAISkillPreview(
+                    analyticsRunID: UUID().uuidString.lowercased(),
                     recipe: preview.recipe,
                     result: result,
                     sourceContent: preview.sourceContent,
@@ -185,5 +222,14 @@ extension NoteDetailViewModel {
             return nil
         }
         return start..<end
+    }
+}
+
+private extension AgentRecipe {
+    var analyticsProperties: [String: Any] {
+        [
+            "skill_key": isCustom ? "custom" : id,
+            "skill_origin": isCustom ? "custom" : "built_in"
+        ]
     }
 }

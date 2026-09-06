@@ -60,6 +60,8 @@ extension HomeView {
 
             switch event.result {
             case .success(let rawText):
+                let analyticsOperationID = speechRecognizer.analyticsOperationID(for: event.fileURL)
+                    ?? noteID.uuidString.lowercased()
                 pendingVoiceNoteByPath.removeValue(forKey: event.fileURL.path)
                 speechRecognizer.completeRecording(fileURL: event.fileURL)
 
@@ -82,6 +84,11 @@ extension HomeView {
                     persistAndSync()
                     await MainActor.run {
                         guard didFinishProcessing else { return }
+                        ProductAnalytics.shared.captureCreationCompleted(
+                            operationID: analyticsOperationID,
+                            type: "audio_transcript",
+                            entryPoint: "home_voice"
+                        )
                         if AppRatingService.shared.registerSuccessfulVoiceNoteSave() {
                             requestAppRating()
                         }
@@ -181,6 +188,13 @@ extension HomeView {
                     return saveHomeVoiceContext(reason: "saving link import job")
                 }
                 guard didSaveJob else { return }
+                await MainActor.run {
+                    ProductAnalytics.shared.capture("video_transcription_started", properties: [
+                        "operation_id": note.id.uuidString.lowercased(),
+                        "source_platform": note.sourcePlatformID ?? "unknown",
+                        "attempt_id": job.jobId
+                    ])
+                }
             } catch {
                 await MainActor.run {
                     note.importStatus = .failed

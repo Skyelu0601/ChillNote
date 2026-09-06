@@ -27,6 +27,7 @@
 		A9DB9CC5162604B8BD1A6343 /* ShareImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848A4B6DBF955B10631AC303 /* ShareImportService.swift */; };
 		DEBEC0C3C895D347A75F8B73 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 497C0A602F21DB9900A00001 /* Localizable.xcstrings */; };
 		F38C205AC1D86771C0A0921A /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05334515EB91675E72A377E2 /* ShareView.swift */; };
+		4D50480132F0000000A11F1A /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 4D50480332F0000000A11F1A /* PostHog */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -171,6 +172,7 @@
 				4A7E0504320A111A0031D6A4 /* ZIPFoundation in Frameworks */,
 				4B4D4D0132E9A10000A11F1A /* GoMarketMe in Frameworks */,
 				4C52430132F0000000A11F1A /* RevenueCat in Frameworks */,
+				4D50480132F0000000A11F1A /* PostHog in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -327,6 +329,7 @@
 				4A7E0503320A111A0031D6A4 /* ZIPFoundation */,
 				4B4D4D0332E9A10000A11F1A /* GoMarketMe */,
 				4C52430332F0000000A11F1A /* RevenueCat */,
+				4D50480332F0000000A11F1A /* PostHog */,
 			);
 			productName = chillnote;
 			productReference = 499583C62F0BD2740053760D /* chillnote.app */;
@@ -417,6 +420,7 @@
 			mainGroup = 499583BD2F0BD2730053760D;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				4D50480232F0000000A11F1A /* XCRemoteSwiftPackageReference "posthog-ios" */,
 				49862A292F28A9D800ADFB08 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 				49862ACC2F28AC6100ADFB08 /* XCRemoteSwiftPackageReference "RichTextKit" */,
 				49862ACF2F29C13400ADFB08 /* XCRemoteSwiftPackageReference "supabase-swift" */,
@@ -1036,6 +1040,11 @@
 				minimumVersion = 5.0.0;
 			};
 		};
+		4D50480232F0000000A11F1A /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://github.com/PostHog/posthog-ios.git";
+            requirement = { kind = exactVersion; version = 3.56.0; };
+        };
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1069,6 +1078,11 @@
 			package = 4C52430232F0000000A11F1A /* XCRemoteSwiftPackageReference "purchases-ios-spm" */;
 			productName = RevenueCat;
 		};
+		4D50480332F0000000A11F1A /* PostHog */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = 4D50480232F0000000A11F1A /* XCRemoteSwiftPackageReference "posthog-ios" */;
+            productName = PostHog;
+        };
 /* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 499583BE2F0BD2730053760D /* Project object */;

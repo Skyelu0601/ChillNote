@@ -13,6 +13,7 @@ struct ChillScriptApp: App {
 
     
     init() {
+        ProductAnalytics.shared.configure(userID: AuthService.shared.currentUserId)
         GoMarketMe.shared.initialize(apiKey: AppConfig.goMarketMeAPIKey)
         RevenueCatService.shared.configure()
         MediaLinkTranscriptSectionPreferences.syncToShareExtension()

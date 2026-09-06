@@ -90,6 +90,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sponteoai.chillscript.R
+import com.sponteoai.chillscript.analytics.ProductAnalytics
 import com.sponteoai.chillscript.billing.BillingProduct
 import com.sponteoai.chillscript.billing.BillingUiState
 import com.sponteoai.chillscript.ui.theme.BrandBackground
@@ -105,6 +106,7 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
+import java.util.UUID
 import kotlinx.coroutines.launch
 
 private const val TermsUrl = "https://www.chillnoteai.com/terms"
@@ -117,6 +119,7 @@ private val IOSChatPurple = Color(0xFF6E70C7)
 
 enum class SubscriptionScreenContext {
     Standard,
+    Settings,
     OnboardingTrial,
 }
 
@@ -135,7 +138,7 @@ data class SubscriptionDebugPreviewPricing(
  * and entrance animation.
  */
 @Composable
-fun IOSParitySubscriptionScreen(
+fun SubscriptionScreen(
     context: SubscriptionScreenContext = SubscriptionScreenContext.Standard,
     isPro: Boolean,
     subscriptionExpiresAt: String?,
@@ -154,14 +157,41 @@ fun IOSParitySubscriptionScreen(
 ) {
     var showContent by remember { mutableStateOf(false) }
     var showOnboardingPaywallDetails by rememberSaveable { mutableStateOf(false) }
+    val paywallViewId = rememberSaveable { UUID.randomUUID().toString() }
+    val paywallPlacement = when (context) {
+        SubscriptionScreenContext.OnboardingTrial -> "post_login"
+        SubscriptionScreenContext.Settings -> "settings"
+        SubscriptionScreenContext.Standard -> "feature_gate"
+    }
+    val paywallProperties = mapOf(
+        "paywall_placement" to paywallPlacement,
+        "paywall_view_id" to paywallViewId,
+        "surface" to "main_app",
+    )
+    val dismissPaywall = {
+        if (!isPro) ProductAnalytics.capture("paywall_dismissed", paywallProperties)
+        onDismiss()
+    }
+    val trackedPurchase: (BillingProduct) -> Unit = { product ->
+        ProductAnalytics.beginPurchase(paywallPlacement, paywallViewId, product.id)
+        onPurchase(product)
+    }
     val revealProgress by animateFloatAsState(
         targetValue = if (showContent) 1f else 0f,
         animationSpec = spring(dampingRatio = 0.8f, stiffness = 100f),
         label = "subscription content entrance",
     )
 
-    LaunchedEffect(Unit) { showContent = true }
-    BackHandler(onBack = onDismiss)
+    LaunchedEffect(Unit) {
+        showContent = true
+        if (!isPro) {
+            ProductAnalytics.capture(
+                if (context == SubscriptionScreenContext.OnboardingTrial) "paywall_intro_viewed" else "paywall_viewed",
+                paywallProperties,
+            )
+        }
+    }
+    BackHandler(onBack = dismissPaywall)
 
     val isOnboardingPaywall = context == SubscriptionScreenContext.OnboardingTrial
     val screenContent: @Composable () -> Unit = {
@@ -171,9 +201,9 @@ fun IOSParitySubscriptionScreen(
                 .then(if (applyTopInset) Modifier.statusBarsPadding() else Modifier),
         ) {
             if (isOnboardingPaywall) {
-                SubscriptionTopBar(onDismiss = onDismiss)
+                SubscriptionTopBar(onDismiss = dismissPaywall)
             } else {
-                SubscriptionTopBar(onDismiss = onDismiss)
+                SubscriptionTopBar(onDismiss = dismissPaywall)
             }
 
             Box(modifier = Modifier.weight(1f)) {
@@ -191,7 +221,7 @@ fun IOSParitySubscriptionScreen(
                                 billingState = billingState,
                                 isPurchasing = isPurchasing,
                                 revealProgress = revealProgress,
-                                onPurchase = onPurchase,
+                                onPurchase = trackedPurchase,
                                 onRestore = onRestore,
                                 onRetryProducts = onRetryProducts,
                                 onOpenUrl = onOpenUrl,
@@ -201,7 +231,10 @@ fun IOSParitySubscriptionScreen(
                             OnboardingTrialIntroContent(
                                 restoreEnabled = !billingState.restoring,
                                 revealProgress = revealProgress,
-                                onContinue = { showOnboardingPaywallDetails = true },
+                                onContinue = {
+                                    showOnboardingPaywallDetails = true
+                                    ProductAnalytics.capture("paywall_viewed", paywallProperties)
+                                },
                                 onRestore = onRestore,
                                 onOpenUrl = onOpenUrl,
                             )
@@ -211,7 +244,7 @@ fun IOSParitySubscriptionScreen(
                         billingState = billingState,
                         isPurchasing = isPurchasing,
                         revealProgress = revealProgress,
-                        onPurchase = onPurchase,
+                        onPurchase = trackedPurchase,
                         onRestore = onRestore,
                         onRetryProducts = onRetryProducts,
                         onOpenUrl = onOpenUrl,
@@ -227,54 +260,6 @@ fun IOSParitySubscriptionScreen(
         if (isPurchasing || billingState.restoring) {
             SubscriptionLoadingOverlay()
         }
-    }
-}
-
-@Composable
-private fun OnboardingSubscriptionTopBar(
-    restoreEnabled: Boolean,
-    onDismiss: () -> Unit,
-    onRestore: () -> Unit,
-) {
-    val closeLabel = stringResource(R.string.common_close)
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(52.dp)
-            .padding(horizontal = 8.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterStart)
-                .size(44.dp)
-                .clip(CircleShape)
-                .clickable(role = Role.Button, onClick = onDismiss)
-                .semantics { contentDescription = closeLabel },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = null,
-                tint = ChillColors.TextMain,
-                modifier = Modifier.size(23.dp),
-            )
-        }
-
-        Text(
-            text = stringResource(R.string.subscription_restore_purchases),
-            color = ChillColors.TextMain.copy(alpha = if (restoreEnabled) 1f else 0.5f),
-            fontSize = 16.sp,
-            lineHeight = 20.sp,
-            fontWeight = FontWeight.Normal,
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .clickable(
-                    enabled = restoreEnabled,
-                    role = Role.Button,
-                    onClick = onRestore,
-                )
-                .padding(horizontal = 8.dp, vertical = 10.dp),
-        )
     }
 }
 
@@ -428,126 +413,6 @@ private fun LegacyOnboardingTrialPriceContent(
                 onRestore = onRestore,
                 onOpenUrl = onOpenUrl,
             )
-        }
-    }
-}
-
-@Composable
-private fun OnboardingTrialContent(
-    billingState: BillingUiState,
-    isPurchasing: Boolean,
-    revealProgress: Float,
-    onPurchase: (BillingProduct) -> Unit,
-    onRetryProducts: () -> Unit,
-    onOpenUrl: (String) -> Unit,
-    debugPreviewPricing: SubscriptionDebugPreviewPricing?,
-) {
-    var isAnnual by rememberSaveable { mutableStateOf(true) }
-    val yearlyProduct = remember(billingState.products) {
-        billingState.products.firstOrNull { it.googlePlaySubscriptionFacts().isAnnual }
-            ?: billingState.products.firstOrNull { it.id.contains("year", ignoreCase = true) }
-    }
-    val weeklyProduct = remember(billingState.products) {
-        billingState.products.firstOrNull { it.googlePlaySubscriptionFacts().isWeekly }
-            ?: billingState.products.firstOrNull { it.id.contains("week", ignoreCase = true) }
-    }
-    val selectedProduct = if (isAnnual) yearlyProduct ?: weeklyProduct else weeklyProduct ?: yearlyProduct
-    val selectedDisplayInfo = selectedProduct?.let { rememberGooglePlaySubscriptionDisplayInfo(it) }
-    val yearlyDisplayInfo = yearlyProduct?.let { rememberGooglePlaySubscriptionDisplayInfo(it) }
-    val weeklyDisplayInfo = weeklyProduct?.let { rememberGooglePlaySubscriptionDisplayInfo(it) }
-    val restoreError = billingState.error.takeIf { billingState.products.isNotEmpty() }
-    val effectiveTrialDayCount = selectedDisplayInfo?.trialDayCount
-        ?: debugPreviewPricing?.annualTrialDayCount?.takeIf { isAnnual }
-    val hasSelectedPlan = selectedProduct != null || debugPreviewPricing != null
-
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = 20.dp)
-            .padding(top = 8.dp, bottom = 20.dp)
-            .navigationBarsPadding()
-            .reveal(revealProgress, 18.dp),
-        horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(18.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.subscription_onboarding_paywall_title),
-            color = ChillColors.TextMain,
-            fontSize = 38.sp,
-            lineHeight = 41.sp,
-            fontWeight = FontWeight.Bold,
-            textAlign = TextAlign.Start,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        OnboardingTrialFeatureList()
-
-        if (debugPreviewPricing != null) {
-            OnboardingDebugPlanPicker(
-                isAnnual = isAnnual,
-                pricing = debugPreviewPricing,
-                onAnnualChange = { isAnnual = it },
-            )
-        } else if (yearlyProduct != null || weeklyProduct != null) {
-            OnboardingPlanPicker(
-                isAnnual = isAnnual,
-                yearlyProduct = yearlyProduct,
-                weeklyProduct = weeklyProduct,
-                yearlyDisplayInfo = yearlyDisplayInfo,
-                weeklyDisplayInfo = weeklyDisplayInfo,
-                onAnnualChange = { isAnnual = it },
-            )
-        } else {
-            PaywallProductState(
-                loading = billingState.loading,
-                error = billingState.error,
-                onRetryProducts = onRetryProducts,
-                compact = false,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-
-        restoreError?.let { InlineBillingError(it) }
-
-        OnboardingPurchaseButton(
-            text = when {
-                effectiveTrialDayCount != null -> pluralStringResource(
-                    R.plurals.subscription_onboarding_cta_try_free_days,
-                    effectiveTrialDayCount,
-                    effectiveTrialDayCount,
-                )
-                selectedDisplayInfo?.isAnnual == true ||
-                    (selectedDisplayInfo == null && debugPreviewPricing != null && isAnnual) -> stringResource(
-                    R.string.subscription_cta_continue_annual,
-                )
-                else -> stringResource(R.string.subscription_cta_continue_weekly)
-            },
-            enabled = hasSelectedPlan && !isPurchasing,
-            onClick = { selectedProduct?.let(onPurchase) },
-        )
-
-        Column(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp),
-        ) {
-            Text(
-                text = stringResource(
-                    if (selectedDisplayInfo?.hasFreeTrial == true || effectiveTrialDayCount != null) {
-                        R.string.subscription_onboarding_trust_no_payment_cancel_anytime
-                    } else {
-                        R.string.subscription_onboarding_trust_cancel_anytime
-                    },
-                ),
-                color = ChillColors.TextMain.copy(alpha = 0.82f),
-                fontSize = 14.sp,
-                lineHeight = 19.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-
-            OnboardingLegalFooter(onOpenUrl = onOpenUrl)
         }
     }
 }

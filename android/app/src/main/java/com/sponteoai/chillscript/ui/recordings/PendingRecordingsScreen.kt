@@ -110,7 +110,7 @@ private data class PendingRecordingToast(
  * iOS allows each pending recording to show its own saving/saved lifecycle independently.
  */
 @Composable
-fun IOSParityPendingRecordingsScreen(
+fun PendingRecordingsScreen(
     recordings: List<PendingRecording>,
     onBack: () -> Unit,
     onSave: (PendingRecording, (PendingRecordingSaveOutcome) -> Unit) -> Unit,

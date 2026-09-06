@@ -72,7 +72,7 @@ import java.util.Locale
 
 /** One-to-one Compose rendering of iOS `ExportAllNotesSheet`. */
 @Composable
-fun IOSParityExportAllNotesSheet(
+fun ExportAllNotesSheet(
     noteCount: Int,
     exporting: Boolean,
     progress: NotesExportProgress?,
@@ -438,7 +438,7 @@ private fun ExportBenefitRow(icon: ImageVector, title: String, body: String) {
 
 /** One-to-one Compose rendering of iOS `VoiceLanguagePreferenceSheet`. */
 @Composable
-fun IOSParityVoiceLanguageSheet(
+fun VoiceLanguageSheet(
     settings: VoiceLanguageSettings,
     onUpdate: (mode: String, languageHint: String) -> Unit,
     onClose: () -> Unit,

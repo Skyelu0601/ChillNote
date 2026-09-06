@@ -22,6 +22,17 @@ extension HomeView {
         guard let notes = try? modelContext.fetch(descriptor) else { return }
 
         for note in notes where isRateableCompletedLinkImport(note) {
+            let operationID = note.id.uuidString.lowercased()
+            let properties: [String: Any] = [
+                "operation_id": operationID,
+                "source_platform": note.sourcePlatformID ?? "unknown"
+            ]
+            ProductAnalytics.shared.captureCreationCompleted(
+                operationID: operationID,
+                type: "video_transcript",
+                entryPoint: "shared_link",
+                properties: properties
+            )
             if AppRatingService.shared.registerSuccessfulLinkImportCompletion(noteID: note.id) {
                 requestAppRating()
                 break

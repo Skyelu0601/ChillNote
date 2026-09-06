@@ -13,7 +13,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.sponteoai.chillscript.ContextChatUiState
 import com.sponteoai.chillscript.R
-import com.sponteoai.chillscript.onboarding.IOSParityOnboardingScreen
+import com.sponteoai.chillscript.onboarding.OnboardingScreen
 import com.sponteoai.chillscript.ui.chat.ContextChatScreen
 import com.sponteoai.chillscript.ui.theme.ChillScriptTheme
 import org.junit.Assert.assertEquals
@@ -33,7 +33,7 @@ class CoreComposeFlowTest {
         var loginCount = 0
         composeRule.setContent {
             ChillScriptTheme {
-                IOSParityOnboardingScreen(
+                OnboardingScreen(
                     onFinish = {},
                     onLogIn = { loginCount += 1 },
                 )

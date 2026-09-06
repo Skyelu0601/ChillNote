@@ -61,6 +61,9 @@ final class RevenueCatService {
             } else {
                 customerInfo = try await Purchases.shared.logIn(userID).customerInfo
             }
+            // RevenueCat uses this reserved attribute as the distinct ID when it
+            // forwards server-side subscription lifecycle events to PostHog.
+            Purchases.shared.attribution.setPostHogUserID(userID.lowercased())
             var snapshot = Self.snapshot(from: customerInfo)
 
             // Existing iOS subscribers stay protected by the legacy backend while
@@ -79,6 +82,22 @@ final class RevenueCatService {
             Self.logger.error("RevenueCat user identification failed: \(error.localizedDescription, privacy: .public)")
             return nil
         }
+    }
+
+    func setPurchaseAttribution(
+        placement: String,
+        paywallViewID: String?,
+        purchaseAttemptID: String
+    ) {
+        guard isConfigured else { return }
+        var attributes = [
+            "paywall_placement": placement,
+            "purchase_attempt_id": purchaseAttemptID
+        ]
+        if let paywallViewID { attributes["paywall_view_id"] = paywallViewID }
+        // Purchases syncs pending customer attributes before sending the receipt,
+        // so RevenueCat lifecycle events retain the initiating paywall context.
+        Purchases.shared.attribution.setAttributes(attributes)
     }
 
     func currentOfferingPackages() async throws -> [Package] {

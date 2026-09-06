@@ -503,7 +503,24 @@ class StoreService: ObservableObject {
     
     // MARK: - Purchasing
     
-    func purchase(_ product: SubscriptionProduct) async {
+    func purchase(
+        _ product: SubscriptionProduct,
+        analyticsPlacement: String = "unknown",
+        paywallViewID: String? = nil
+    ) async {
+        let attemptID = UUID().uuidString.lowercased()
+        var analyticsProperties: [String: Any] = [
+            "paywall_placement": analyticsPlacement,
+            "purchase_attempt_id": attemptID,
+            "plan_id": product.id
+        ]
+        if let paywallViewID { analyticsProperties["paywall_view_id"] = paywallViewID }
+        ProductAnalytics.shared.capture("purchase_started", properties: analyticsProperties)
+        RevenueCatService.shared.setPurchaseAttribution(
+            placement: analyticsPlacement,
+            paywallViewID: paywallViewID,
+            purchaseAttemptID: attemptID
+        )
         isPurchasing = true
         errorMessage = nil
 
@@ -517,6 +534,7 @@ class StoreService: ObservableObject {
                     result = try await RevenueCatService.shared.purchase(product: storeProduct)
                 }
                 guard !result.userCancelled else {
+                    ProductAnalytics.shared.capture("purchase_cancelled", properties: analyticsProperties)
                     isPurchasing = false
                     return
                 }
@@ -526,6 +544,7 @@ class StoreService: ObservableObject {
                 await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
                 await syncRevenueCatWithBackend()
                 _ = await GoMarketMe.shared.syncAllTransactions()
+                ProductAnalytics.shared.capture("subscription_started", properties: analyticsProperties)
             } else {
                 let result = try await product.storeKitProduct.purchase()
                 switch result {
@@ -535,13 +554,20 @@ class StoreService: ObservableObject {
                     await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
                     _ = await GoMarketMe.shared.syncAllTransactions()
                     await transaction.finish()
-                case .userCancelled, .pending:
+                    ProductAnalytics.shared.capture("subscription_started", properties: analyticsProperties)
+                case .userCancelled:
+                    ProductAnalytics.shared.capture("purchase_cancelled", properties: analyticsProperties)
+                case .pending:
                     break
                 @unknown default:
                     break
                 }
             }
         } catch {
+            ProductAnalytics.shared.capture(
+                "purchase_failed",
+                properties: analyticsProperties.merging(["error_code": "store_error"]) { current, _ in current }
+            )
             errorMessage = String(
                 format: L10n.text("store.error.purchase_failed"),
                 error.localizedDescription

@@ -8,8 +8,8 @@
 
 ## Verification
 
-```bash
-cd server
-npm test
-npm run build
-```
+以下命令从 `server/` 运行：
+
+- TypeScript 或构建配置变更：`npm run build`。
+- 行为变更：`npm test`；范围明确时可用 `npx --no-install tsx --test src/相关文件.test.ts` 运行对应测试。
+- 接口与同步协议变更：补充成功、失败及旧客户端兼容用例，并检查两个移动端调用方；本地构建不代表生产迁移或部署已完成。

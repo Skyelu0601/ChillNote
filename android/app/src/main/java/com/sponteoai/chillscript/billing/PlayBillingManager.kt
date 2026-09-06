@@ -26,9 +26,11 @@ import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.syncPurchasesWith
 import com.revenuecat.purchases.models.StoreProduct
 import com.sponteoai.chillscript.R
+import com.sponteoai.chillscript.analytics.ProductAnalytics
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.security.MessageDigest
+import java.util.Locale
 
 data class BillingPricingPhase(
     val formattedPrice: String,
@@ -136,6 +138,7 @@ private class RevenueCatBillingManager(
 
     override fun launchPurchase(activity: Activity, product: BillingProduct, userId: String) {
         ensureIdentity(userId) {
+            Purchases.sharedInstance.setAttributes(ProductAnalytics.currentRevenueCatPurchaseAttributes())
             val params = when (val target = product.purchaseTarget) {
                 is BillingPurchaseTarget.RevenueCatPackage -> PurchaseParams.Builder(activity, target.value).build()
                 is BillingPurchaseTarget.RevenueCatProduct -> PurchaseParams.Builder(activity, target.value).build()
@@ -147,7 +150,12 @@ private class RevenueCatBillingManager(
             Purchases.sharedInstance.purchaseWith(
                 purchaseParams = params,
                 onError = { error, userCancelled ->
-                    if (!userCancelled) reportError("RevenueCat purchase failed: ${error.code}")
+                    if (userCancelled) {
+                        ProductAnalytics.completePurchase("purchase_cancelled")
+                    } else {
+                        ProductAnalytics.completePurchase("purchase_failed", "store_error")
+                        reportError("RevenueCat purchase failed: ${error.code}")
+                    }
                 },
                 onSuccess = { transaction, _ ->
                     val purchaseToken = transaction?.purchaseToken
@@ -161,6 +169,7 @@ private class RevenueCatBillingManager(
                         mutableState.value = mutableState.value.copy(error = null)
                         onPurchased(purchasedProductId, purchaseToken)
                         onRestoreComplete()
+                        ProductAnalytics.completePurchase("subscription_started")
                     }
                 },
             )
@@ -188,13 +197,17 @@ private class RevenueCatBillingManager(
     private fun ensureIdentity(userId: String, onReady: () -> Unit) {
         val purchases = Purchases.sharedInstance
         if (purchases.appUserID == userId) {
+            purchases.setPostHogUserId(userId.lowercase(Locale.ROOT))
             onReady()
             return
         }
         purchases.logInWith(
             appUserID = userId,
             onError = { error -> reportError("RevenueCat user identification failed: ${error.code}") },
-            onSuccess = { _, _ -> onReady() },
+            onSuccess = { _, _ ->
+                purchases.setPostHogUserId(userId.lowercase(Locale.ROOT))
+                onReady()
+            },
         )
     }
 
@@ -323,7 +336,10 @@ private class LegacyPlayBillingManager(
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                 purchases.orEmpty().filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
                     .forEach(::processPurchase)
-            } else if (result.responseCode != BillingClient.BillingResponseCode.USER_CANCELED) {
+            } else if (result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
+                ProductAnalytics.completePurchase("purchase_cancelled")
+            } else {
+                ProductAnalytics.completePurchase("purchase_failed", "store_error")
                 reportBillingError("Purchase update failed", result)
             }
         }
@@ -369,6 +385,7 @@ private class LegacyPlayBillingManager(
             .build()
         val result = billingClient.launchBillingFlow(activity, params)
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+            ProductAnalytics.completePurchase("purchase_failed", "flow_launch_failed")
             reportBillingError("Billing flow failed to launch", result)
         }
     }
@@ -461,7 +478,10 @@ private class LegacyPlayBillingManager(
 
     private fun processPurchase(purchase: Purchase) {
         purchase.products.firstOrNull { it in PlayBillingManager.RECOGNIZED_PRODUCT_IDS }
-            ?.let { onPurchased(it, purchase.purchaseToken) }
+            ?.let {
+                onPurchased(it, purchase.purchaseToken)
+                ProductAnalytics.completePurchase("subscription_started")
+            }
     }
 
     private fun reportBillingError(operation: String, result: BillingResult) {

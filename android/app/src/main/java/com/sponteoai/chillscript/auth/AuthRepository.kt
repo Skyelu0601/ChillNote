@@ -183,11 +183,13 @@ class AuthRepository(context: Context) {
     fun signOut() {
         sessionGeneration.incrementAndGet()
         sessionStorage.clear()
+        com.sponteoai.chillscript.analytics.ProductAnalytics.synchronizeUser(null)
         synchronized(oauthLock) { oauthStorage.clear() }
     }
 
     private fun saveSession(session: AuthSession) {
         sessionStorage.write(json.encodeToString(AuthSession.serializer(), session))
+        com.sponteoai.chillscript.analytics.ProductAnalytics.synchronizeUser(session.user.id)
     }
 
     private suspend fun <T> request(path: String, body: String, decode: (String) -> T): T = withContext(Dispatchers.IO) {

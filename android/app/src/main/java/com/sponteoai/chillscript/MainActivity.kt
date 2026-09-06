@@ -49,7 +49,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.Label
-import androidx.compose.material.icons.automirrored.outlined.OpenInNew
 import androidx.compose.material.icons.automirrored.outlined.Undo
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Logout
@@ -57,7 +56,6 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.Restore
 import androidx.compose.material.icons.outlined.Search
-import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Stop
@@ -112,18 +110,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.Role
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalResources
 import com.sponteoai.chillscript.auth.AuthState
+import com.sponteoai.chillscript.analytics.ProductAnalytics
 import com.sponteoai.chillscript.data.local.NoteEntity
 import com.sponteoai.chillscript.data.local.NoteTagCrossRef
 import com.sponteoai.chillscript.data.local.TagEntity
@@ -151,19 +148,19 @@ import com.sponteoai.chillscript.domain.shouldPersistEditorContentOnClose
 import com.sponteoai.chillscript.domain.sourceMetadata
 import com.sponteoai.chillscript.ui.markdown.MarkdownText
 import com.sponteoai.chillscript.ui.source.NoteSourceCard
-import com.sponteoai.chillscript.ui.home.IOSParityHomeScreen
+import com.sponteoai.chillscript.ui.home.HomeScreenContent
 import com.sponteoai.chillscript.ui.home.HomeFirstActionGuideStore
 import com.sponteoai.chillscript.ui.home.HomeFirstActionStage
-import com.sponteoai.chillscript.ui.editor.IOSParityEditorScreen
-import com.sponteoai.chillscript.ui.settings.IOSParitySettingsContent
-import com.sponteoai.chillscript.ui.settings.IOSParityAboutScreen
-import com.sponteoai.chillscript.ui.settings.IOSParityExportAllNotesSheet
-import com.sponteoai.chillscript.ui.settings.IOSParityVoiceLanguageSheet
-import com.sponteoai.chillscript.ui.recordings.IOSParityPendingRecordingsScreen
+import com.sponteoai.chillscript.ui.editor.EditorScreen
+import com.sponteoai.chillscript.ui.settings.SettingsContent
+import com.sponteoai.chillscript.ui.settings.AboutScreen
+import com.sponteoai.chillscript.ui.settings.ExportAllNotesSheet
+import com.sponteoai.chillscript.ui.settings.VoiceLanguageSheet
+import com.sponteoai.chillscript.ui.recordings.PendingRecordingsScreen
 import com.sponteoai.chillscript.onboarding.OnboardingPreferences
-import com.sponteoai.chillscript.onboarding.IOSParityOnboardingScreen
-import com.sponteoai.chillscript.ui.auth.IOSParityLoginScreen
-import com.sponteoai.chillscript.ui.subscription.IOSParitySubscriptionScreen
+import com.sponteoai.chillscript.onboarding.OnboardingScreen
+import com.sponteoai.chillscript.ui.auth.LoginScreen
+import com.sponteoai.chillscript.ui.subscription.SubscriptionScreen
 import com.sponteoai.chillscript.ui.subscription.SubscriptionDebugPreviewPricing
 import com.sponteoai.chillscript.ui.subscription.SubscriptionScreenContext
 import com.sponteoai.chillscript.ai.AIConsentDialog
@@ -190,6 +187,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import java.util.Locale
+import java.util.UUID
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -269,7 +267,7 @@ class MainActivity : ComponentActivity() {
             var hasViewedIntro by remember { mutableStateOf(onboardingPreferences.hasViewedIntroOnDevice()) }
             ChillScriptTheme {
                 if (showSubscriptionPreview) {
-                    IOSParitySubscriptionScreen(
+                    SubscriptionScreen(
                         context = SubscriptionScreenContext.OnboardingTrial,
                         isPro = false,
                         subscriptionExpiresAt = null,
@@ -289,7 +287,7 @@ class MainActivity : ComponentActivity() {
                 } else when (uiState.authState) {
                     AuthState.Checking -> LoadingScreen()
                     AuthState.SignedOut -> if (hasViewedIntro) {
-                        IOSParityLoginScreen(
+                        LoginScreen(
                             state = uiState,
                             onGoogleSignIn = ::startGoogleSignIn,
                             onAppleSignIn = ::startAppleSignIn,
@@ -300,7 +298,7 @@ class MainActivity : ComponentActivity() {
                             onOpenUrl = ::openExternalTarget,
                         )
                     } else {
-                        IOSParityOnboardingScreen(
+                        OnboardingScreen(
                             onFinish = {
                                 onboardingPreferences.setIntroViewedOnDevice()
                                 hasViewedIntro = true
@@ -312,7 +310,7 @@ class MainActivity : ComponentActivity() {
                         )
                     }
                     is AuthState.SignedIn -> if (!uiState.introPaywallResolved) LoadingScreen() else if (uiState.introPaywallRequired) {
-                        IOSParitySubscriptionScreen(
+                        SubscriptionScreen(
                             context = SubscriptionScreenContext.OnboardingTrial,
                             isPro = false,
                             subscriptionExpiresAt = null,
@@ -581,89 +579,6 @@ private fun LoadingScreen() = BrandBackground {
     )
 }
 
-@Composable
-private fun LoginScreen(
-    state: AppUiState,
-    viewModel: AppViewModel,
-    onGoogleSignIn: () -> Unit,
-    onAppleSignIn: () -> Unit,
-    onOpenUrl: (String) -> Unit,
-) {
-    var email by remember { mutableStateOf("") }
-    var code by remember { mutableStateOf("") }
-    Column(
-        Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).padding(horizontal = 28.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(stringResource(R.string.app_name), style = MaterialTheme.typography.displaySmall, fontWeight = FontWeight.Bold)
-        Text(stringResource(R.string.auth_login_subtitle), modifier = Modifier.padding(top = 8.dp, bottom = 32.dp))
-        Button(
-            onClick = onGoogleSignIn,
-            enabled = !state.busy,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
-        ) {
-            Icon(Icons.Outlined.AccountCircle, null)
-            Text(stringResource(R.string.auth_login_google_button), modifier = Modifier.padding(start = 10.dp))
-        }
-        Button(
-            onClick = onAppleSignIn,
-            enabled = !state.busy,
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp).height(52.dp),
-        ) { Text(stringResource(R.string.auth_login_apple_button)) }
-        Text(stringResource(R.string.auth_login_or), modifier = Modifier.padding(vertical = 16.dp))
-        if (state.codeSentTo == null) {
-            OutlinedTextField(
-                value = email,
-                onValueChange = { email = it; viewModel.clearError() },
-                label = { Text(stringResource(R.string.auth_login_email_placeholder)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Button(
-                onClick = { viewModel.sendCode(email) },
-                enabled = email.isNotBlank() && !state.busy,
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(52.dp),
-            ) { if (state.busy) CircularProgressIndicator() else Text(stringResource(R.string.auth_login_send_code)) }
-        } else {
-            Text(stringResource(R.string.auth_login_code_sent_to_format, state.codeSentTo))
-            OutlinedTextField(
-                value = code,
-                onValueChange = { code = it.filter(Char::isDigit); viewModel.clearError() },
-                label = { Text(stringResource(R.string.auth_login_verification_code_placeholder)) },
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            )
-            Button(
-                onClick = { viewModel.verifyCode(code) },
-                enabled = code.isNotBlank() && !state.busy,
-                modifier = Modifier.fillMaxWidth().padding(top = 16.dp).height(52.dp),
-            ) { if (state.busy) CircularProgressIndicator() else Text(stringResource(R.string.auth_login_verify_button)) }
-            Text(
-                stringResource(R.string.auth_login_use_different_email),
-                modifier = Modifier.padding(top = 16.dp).clickable { viewModel.backToEmail() },
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-        state.errorMessage?.let { Text(it, color = MaterialTheme.colorScheme.error, modifier = Modifier.padding(top = 14.dp)) }
-        Text(
-            stringResource(R.string.auth_login_legal_plain),
-            style = MaterialTheme.typography.bodySmall,
-            modifier = Modifier.padding(top = 28.dp),
-        )
-        Row(horizontalArrangement = Arrangement.Center) {
-            TextButton(onClick = { onOpenUrl("https://www.chillnoteai.com/terms") }) {
-                Text(stringResource(R.string.settings_terms))
-            }
-            TextButton(onClick = { onOpenUrl("https://www.chillnoteai.com/privacy") }) {
-                Text(stringResource(R.string.settings_privacy_policy))
-            }
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun HomeScreen(
@@ -798,10 +713,25 @@ private fun HomeScreen(
     val voiceEmptyError = stringResource(R.string.voice_error_empty)
     val voiceRecorder = remember { VoiceRecorder(context) }
     var isRecording by remember { mutableStateOf(false) }
+    var recordingAnalyticsOperationId by remember { mutableStateOf<String?>(null) }
+    var recordingAnalyticsStartedAt by remember { mutableStateOf<Long?>(null) }
     val microphonePermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted) runCatching { voiceRecorder.start(); isRecording = true }
-            .onFailure { viewModel.reportAuthError(voiceStartError) }
-        else viewModel.reportAuthError(voicePermissionError)
+        if (granted) runCatching {
+            voiceRecorder.start()
+            isRecording = true
+            recordingAnalyticsStartedAt = android.os.SystemClock.elapsedRealtime()
+            ProductAnalytics.capture(
+                "recording_started",
+                mapOf("operation_id" to recordingAnalyticsOperationId.orEmpty(), "entry_point" to "home_voice"),
+            )
+        }.onFailure {
+            ProductAnalytics.capture("recording_blocked", mapOf("error_code" to "recorder_start_failed"))
+            viewModel.reportAuthError(voiceStartError)
+        }
+        else {
+            ProductAnalytics.capture("recording_blocked", mapOf("error_code" to "microphone_permission"))
+            viewModel.reportAuthError(voicePermissionError)
+        }
     }
     val notificationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) viewModel.refreshPushRegistration()
@@ -822,12 +752,27 @@ private fun HomeScreen(
     }
     val beginVoiceCapture: () -> Unit = {
         if (!isRecording && ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-            runCatching { voiceRecorder.start(); isRecording = true }
-                .onFailure { viewModel.reportAuthError(voiceStartError) }
+            runCatching {
+                voiceRecorder.start()
+                isRecording = true
+                recordingAnalyticsStartedAt = android.os.SystemClock.elapsedRealtime()
+                ProductAnalytics.capture(
+                    "recording_started",
+                    mapOf("operation_id" to recordingAnalyticsOperationId.orEmpty(), "entry_point" to "home_voice"),
+                )
+            }.onFailure {
+                ProductAnalytics.capture("recording_blocked", mapOf("error_code" to "recorder_start_failed"))
+                viewModel.reportAuthError(voiceStartError)
+            }
         } else if (!isRecording) microphonePermission.launch(Manifest.permission.RECORD_AUDIO)
     }
     val startVoiceRecording = {
         if (!isRecording) {
+            recordingAnalyticsOperationId = UUID.randomUUID().toString()
+            ProductAnalytics.capture(
+                "recording_requested",
+                mapOf("operation_id" to recordingAnalyticsOperationId.orEmpty(), "entry_point" to "home_voice"),
+            )
             viewModel.authorizeVoiceRecordingStart(
                 onAuthorized = beginVoiceCapture,
                 onInsufficientCredits = { showSubscription = true },
@@ -1281,7 +1226,7 @@ private fun HomeScreen(
     }
     if (showPendingRecordings) {
         BackHandler { showPendingRecordings = false }
-        IOSParityPendingRecordingsScreen(
+        PendingRecordingsScreen(
             recordings = pendingRecordings,
             onBack = { showPendingRecordings = false },
             onSave = { recording, onOutcome ->
@@ -1323,7 +1268,7 @@ private fun HomeScreen(
     val closeEditor = saveAndCloseEditor
     BackHandler(enabled = editorOpen, onBack = closeEditor)
     if (editorOpen) {
-        IOSParityEditorScreen(
+        EditorScreen(
             note = editingNote,
             text = editorText,
             selectedTags = tags.filter { it.id in selectedEditorTagIds },
@@ -1683,7 +1628,18 @@ private fun HomeScreen(
                     if (isRecording) {
                         val file = voiceRecorder.stop()
                         isRecording = false
-                        if (file != null) viewModel.processVoiceRecording(file, selectedSection)
+                        ProductAnalytics.capture(
+                            "recording_stopped",
+                            mapOf(
+                                "operation_id" to recordingAnalyticsOperationId.orEmpty(),
+                                "duration_seconds" to ((android.os.SystemClock.elapsedRealtime() - (recordingAnalyticsStartedAt ?: android.os.SystemClock.elapsedRealtime())) / 1_000L),
+                            ),
+                        )
+                        if (file != null) viewModel.processVoiceRecording(
+                            file,
+                            selectedSection,
+                            analyticsOperationId = recordingAnalyticsOperationId,
+                        )
                         else viewModel.reportAuthError(voiceEmptyError)
                     } else startVoiceRecording()
                 }) {
@@ -1927,7 +1883,7 @@ private fun HomeScreen(
             selectedTagId != null -> tags.firstOrNull { it.id == selectedTagId }?.name ?: stringResource(R.string.app_name)
             else -> stringResource(R.string.app_name)
         }
-        IOSParityHomeScreen(
+        HomeScreenContent(
             notes = visibleNotes,
             allNotes = notes,
             tags = tags,
@@ -2005,10 +1961,21 @@ private fun HomeScreen(
             onCancelVoiceRecording = {
                 voiceRecorder.cancel()
                 isRecording = false
+                ProductAnalytics.capture(
+                    "recording_cancelled",
+                    mapOf("operation_id" to recordingAnalyticsOperationId.orEmpty()),
+                )
             },
             onConfirmVoiceRecording = {
                 val file = voiceRecorder.stop()
                 isRecording = false
+                ProductAnalytics.capture(
+                    "recording_stopped",
+                    mapOf(
+                        "operation_id" to recordingAnalyticsOperationId.orEmpty(),
+                        "duration_seconds" to ((android.os.SystemClock.elapsedRealtime() - (recordingAnalyticsStartedAt ?: android.os.SystemClock.elapsedRealtime())) / 1_000L),
+                    ),
+                )
                 if (file != null) viewModel.processVoiceRecording(
                     file,
                     activeCaptureSection,
@@ -2018,6 +1985,7 @@ private fun HomeScreen(
                         selectedEditorTagIds = activeCaptureTagIds
                         editorTagSelectionTouched = true
                     },
+                    analyticsOperationId = recordingAnalyticsOperationId,
                 )
                 else viewModel.reportAuthError(voiceEmptyError)
             },
@@ -2322,6 +2290,19 @@ private fun HomeScreen(
                 } else if (homeNote != null) {
                     viewModel.replaceNoteContent(homeNote.id, applied)
                 }
+                val skillProperties = mapOf(
+                    "run_id" to preview.analyticsRunId,
+                    "skill_key" to if (preview.recipe.isCustom) "custom" else preview.recipe.id,
+                    "skill_origin" to if (preview.recipe.isCustom) "custom" else "built_in",
+                    "action" to mode.name.lowercase(Locale.ROOT),
+                )
+                ProductAnalytics.capture("skill_result_used", skillProperties)
+                ProductAnalytics.captureCreationCompleted(
+                    operationId = preview.analyticsRunId,
+                    type = "ai_applied",
+                    entryPoint = if (homeNote == null) "editor" else "note_picker",
+                    properties = skillProperties,
+                )
                 viewModel.dismissCreatorSkillResult(); aiSourceText = null; aiHomeNote = null
                 completeFirstActionAISkillFlow()
             },
@@ -2533,7 +2514,7 @@ private fun SettingsScreen(
         }
     }
 
-    IOSParitySettingsContent(
+    SettingsContent(
         accountEmail = accountEmail,
         isPro = uiState.subscriptionTier == "pro",
         voiceLanguageSummary = voiceLanguageSummary,
@@ -2598,7 +2579,7 @@ private fun SettingsScreen(
         onDismiss = { if (!exporting) showExportSheet = false },
         dismissEnabled = !exporting,
     ) {
-        IOSParityExportAllNotesSheet(
+        ExportAllNotesSheet(
             noteCount = notes.count { it.deletedAt == null },
             exporting = exporting,
             progress = exportProgress,
@@ -2618,6 +2599,7 @@ private fun SettingsScreen(
         onRetryProducts = onRetryBilling,
         onManage = { onOpenUrl("https://play.google.com/store/account/subscriptions?package=com.sponteoai.chillscript") },
         onOpenUrl = onOpenUrl,
+        context = SubscriptionScreenContext.Settings,
     )
     exportError?.let { message ->
         AlertDialog(
@@ -2638,7 +2620,7 @@ private fun SettingsScreen(
         )
     }
     if (showVoiceSettings) IOSLargeModalSheet(onDismiss = { showVoiceSettings = false }) {
-        IOSParityVoiceLanguageSheet(
+        VoiceLanguageSheet(
             settings = voiceSettings,
             onUpdate = onUpdateVoice,
             onClose = { showVoiceSettings = false },
@@ -2646,7 +2628,7 @@ private fun SettingsScreen(
         )
     }
     if (showAbout) IOSLargeModalSheet(onDismiss = { showAbout = false }) {
-        IOSParityAboutScreen(
+        AboutScreen(
             onClose = { showAbout = false },
             applyTopInset = false,
         )
@@ -2676,59 +2658,6 @@ private fun IOSLargeModalSheet(
 }
 
 @Composable
-private fun VoiceLanguageDialog(
-    settings: VoiceLanguageSettings,
-    onDismiss: () -> Unit,
-    onSave: (String, String) -> Unit,
-) {
-    var mode by remember(settings) { mutableStateOf(settings.mode) }
-    var hint by remember(settings) { mutableStateOf(settings.languageHint) }
-    var search by remember { mutableStateOf("") }
-    val languageCodes = remember { listOf(
-        "en", "zh-Hans", "zh-Hant", "ja", "ko", "fr", "de", "es", "ar", "bn", "bg", "hr", "cs", "da",
-        "nl", "et", "fi", "el", "he", "hi", "hu", "id", "it", "lv", "lt", "no", "pl", "pt", "ro", "ru",
-        "sr", "sk", "sl", "sw", "sv", "th", "tr", "uk", "vi",
-    ) }
-    val locale = LocalConfiguration.current.locales[0]
-    val filtered = languageCodes.filter { code ->
-        val name = Locale.forLanguageTag(code).getDisplayName(locale)
-        search.isBlank() || code.contains(search, true) || name.contains(search, true)
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.settings_voice_title)) },
-        text = { Column {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                FilterChip(mode == "auto", { mode = "auto" }, { Text(stringResource(R.string.settings_voice_auto)) })
-                FilterChip(mode == "prefer", { mode = "prefer" }, { Text(stringResource(R.string.settings_voice_prefer)) })
-            }
-            Text(
-                stringResource(if (mode == "auto") R.string.settings_voice_auto_help else R.string.settings_voice_preferred_help),
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.padding(vertical = 8.dp),
-            )
-            if (mode == "prefer") {
-                OutlinedTextField(search, { search = it }, label = { Text(stringResource(R.string.settings_voice_search)) }, modifier = Modifier.fillMaxWidth())
-                LazyColumn(Modifier.height(280.dp)) {
-                    items(filtered, key = { it }) { code ->
-                        val name = Locale.forLanguageTag(code).getDisplayName(locale).ifBlank { code }
-                        Row(
-                            Modifier.fillMaxWidth().clickable { hint = code }.padding(vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(name, modifier = Modifier.weight(1f))
-                            Text(code, color = if (hint == code) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant)
-                        }
-                    }
-                }
-            }
-        } },
-        confirmButton = { TextButton(onClick = { onSave(mode, hint) }, enabled = mode == "auto" || hint.isNotBlank()) { Text(stringResource(R.string.common_save)) } },
-        dismissButton = { TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) } },
-    )
-}
-
-@Composable
 private fun SubscriptionDialog(
     uiState: AppUiState,
     billingState: BillingUiState,
@@ -2738,10 +2667,11 @@ private fun SubscriptionDialog(
     onRetryProducts: () -> Unit,
     onManage: () -> Unit,
     onOpenUrl: (String) -> Unit,
+    context: SubscriptionScreenContext = SubscriptionScreenContext.Standard,
 ) {
     IOSLargeModalSheet(onDismiss = onDismiss) {
-        IOSParitySubscriptionScreen(
-            context = SubscriptionScreenContext.Standard,
+        SubscriptionScreen(
+            context = context,
             isPro = uiState.subscriptionTier == "pro",
             subscriptionExpiresAt = uiState.subscriptionExpiresAt,
             activeProductId = uiState.activeSubscriptionProductId,
@@ -2755,18 +2685,6 @@ private fun SubscriptionDialog(
             onOpenUrl = onOpenUrl,
             applyTopInset = false,
         )
-    }
-}
-
-@Composable
-private fun SettingsRow(label: String, value: String? = null, onClick: () -> Unit) {
-    Row(
-        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(label, modifier = Modifier.weight(1f))
-        value?.let { Text(it, color = MaterialTheme.colorScheme.primary) }
-        Icon(Icons.AutoMirrored.Outlined.OpenInNew, null, modifier = Modifier.padding(start = 8.dp))
     }
 }
 

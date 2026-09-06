@@ -13,10 +13,11 @@ export function MarketingHeader() {
           <Wordmark />
         </a>
         <nav aria-label="Main navigation">
-          <a href="/#how-it-works">How it works</a>
+          <a href="/#how-it-works">{copy.nav.how}</a>
+          <a className="nav-tools" href="/tools">{copy.nav.tools}</a>
           <a href="/pricing">{copy.nav.pricing}</a>
           <a className="nav-pill" href={storeLinks.appStore}>
-            Get the app
+            {copy.nav.getApp}
             <ArrowRight aria-hidden size={14} />
           </a>
         </nav>
@@ -36,6 +37,7 @@ export function MarketingFooter() {
         <p>Save inspiration. Extract ideas. Create with AI.</p>
       </div>
       <nav>
+        <a href="/tools">{copy.nav.tools}</a>
         <a href="/pricing">Pricing</a>
         <a href="/privacy">Privacy</a>
         <a href="/delete-account">Delete account</a>

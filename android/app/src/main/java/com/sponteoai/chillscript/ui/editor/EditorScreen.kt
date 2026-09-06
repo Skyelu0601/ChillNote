@@ -120,7 +120,7 @@ enum class IOSNoteWorkspace { NOTE, CREATE, RECORD }
 /** Mirrors the current iOS NoteDetailView rather than embedding an editor in Home. */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun IOSParityEditorScreen(
+fun EditorScreen(
     note: NoteEntity?,
     text: TextFieldValue,
     selectedTags: List<TagEntity>,
@@ -408,7 +408,7 @@ fun IOSParityEditorScreen(
         }
 
         snackbarHostState?.let { hostState ->
-            IOSParityEditorSnackbarHost(
+            EditorSnackbarHost(
                 hostState = hostState,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
@@ -628,7 +628,7 @@ private fun IOSVoiceRefinedOverlay(
 }
 
 @Composable
-private fun IOSParityEditorSnackbarHost(
+private fun EditorSnackbarHost(
     hostState: SnackbarHostState,
     modifier: Modifier = Modifier,
 ) {

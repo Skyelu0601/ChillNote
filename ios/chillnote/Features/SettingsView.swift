@@ -74,7 +74,7 @@ struct SettingsView: View {
                 AboutView()
             }
             .sheet(isPresented: $showSubscription) {
-                SubscriptionView()
+                SubscriptionView(context: .settings)
             }
             .sheet(isPresented: $showExportAllSheet, onDismiss: {
                 exportViewModel.resetEstimate()
