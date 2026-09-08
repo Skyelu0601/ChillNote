@@ -580,7 +580,7 @@ const CREDIT_COSTS: Record<CreditFeature, number> = {
   chat: positiveIntegerFromEnv("CREDIT_COST_CHAT", 2)
 };
 
-const INITIAL_CREDITS = positiveIntegerFromEnv("INITIAL_FREE_CREDITS", 30);
+const INITIAL_CREDITS = positiveIntegerFromEnv("INITIAL_FREE_CREDITS", 50);
 
 const creditFeatureSchema = z.object({
   feature: z.enum(["voice", "agent_recipe", "chat", "import"])
