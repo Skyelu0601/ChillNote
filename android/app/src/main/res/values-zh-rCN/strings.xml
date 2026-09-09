@@ -78,6 +78,10 @@
     <string name="quick_capture_link_import_placeholder_format">ChillScript 正在把 %1$s 整理成笔记。你可以继续使用 App，也可以先关闭它。</string>
     <string name="link_import_processing">正在准备你的笔记。</string>
     <string name="link_import_failed">这个链接导入失败了。你可以稍后再试。</string>
+    <string name="link_import_insufficient_credits">升级会员后即可创建这条笔记。</string>
+    <string name="link_import_saved_source_title">%1$s 视频</string>
+    <string name="link_import_saved_in_inbox">已保存到灵感</string>
+    <string name="link_import_upgrade_message">升级会员后即可创建笔记。</string>
     <string name="home_section_trash">回收站</string>
     <string name="home_search_placeholder">搜索笔记...</string>
     <string name="home_search_clear_accessibility">清除搜索</string>
@@ -678,6 +682,20 @@
     <string name="share_extension_saving">正在保存到 ChillScript</string>
     <string name="share_extension_saved">已保存到 ChillScript</string>
     <string name="share_extension_failed">无法保存到 ChillScript</string>
+    <string name="share_extension_credits_required_title">需要升级会员</string>
+    <string name="share_extension_insufficient_credits">链接已保存。打开 ChillScript 升级会员后即可创建笔记。</string>
     <string name="share_extension_no_link">这次分享里没有找到链接。</string>
     <string name="share_extension_source_format">来源：%1$s</string>
+
+    <string name="notifications_title">通知</string>
+    <string name="notifications_accessibility_unread">通知，有未读消息</string>
+    <string name="notifications_credits_title">送你的 %1$d credits 已到账</string>
+    <string name="notifications_credits_body">用它导入视频、整理笔记，留住创作灵感。</string>
+    <string name="notifications_pro_title">欢迎使用 ChillScript</string>
+    <string name="notifications_pro_body">你的会员权益已生效。导入一个视频，开始你的第一次创作。</string>
+    <string name="notifications_footer">重要消息会在这里通知你。</string>
+    <string name="notifications_empty">暂时没有通知</string>
+    <string name="notifications_error">通知暂时无法同步，请重试。</string>
+    <string name="notifications_retry">重试</string>
+    <string name="share_extension_open_app">打开 ChillScript</string>
 </resources>

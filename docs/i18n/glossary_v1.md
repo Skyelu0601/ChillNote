@@ -19,3 +19,23 @@
 - 日语：按钮尽量简短，避免英文夹杂。
 - 法/德/西/韩：保持操作文案统一敬语和语气。
 - 错误提示：先说问题，再给动作建议。
+
+## Portuguese
+
+葡萄牙语保持直接、自然的操作文案；巴西和葡萄牙分别维护，品牌与技术标识保持原样。
+
+| 概念 | pt-BR | pt-PT |
+| --- | --- | --- |
+| 笔记 | Nota | Nota |
+| 主题 | Tema | Tema |
+| 脚本 | Roteiro | Guião |
+| 开场钩子 | Gancho | Gancho |
+| 转录 | Transcrição | Transcrição |
+| AI Skills | Ferramentas de IA | Ferramentas de IA |
+| 保存 | Salvar | Guardar |
+| 分享 | Compartilhar | Partilhar |
+| 文件 | Arquivo | Ficheiro |
+| 订阅 | Assinatura | Subscrição |
+| 设置 | Configurações | Definições |
+| 回收站 | Lixeira | Lixo |
+| 提词器 | Teleprompter | Teleponto |

@@ -67,9 +67,11 @@ extension HomeView {
             await MainActor.run {
                 isExecutingAction = false
                 actionProgress = nil
-                let message = error.localizedDescription
-                if message.localizedCaseInsensitiveContains("insufficient credits") {
+                if (error as? GeminiError)?.isInsufficientCredits == true {
                     showSubscription = true
+                } else {
+                    clipboardLinkImportErrorMessage = error.localizedDescription
+                    showClipboardLinkImportErrorAlert = true
                 }
             }
         }

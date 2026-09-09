@@ -434,6 +434,10 @@ final class SpeechRecognizer: NSObject, ObservableObject {
                 reason = classifyAPIErrorMessage(apiMessage)
             case .consentDeclined:
                 reason = .unknown
+            case .insufficientCredits:
+                reason = .quotaReached
+            case .rateLimited:
+                reason = .serviceUnavailable
             }
             publishFailureEvent(fileURL: fileURL, reason: reason, message: message(for: error))
             
@@ -462,6 +466,10 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             return L10n.text("speech_recognizer.error.invalid_configuration_url")
         case .consentDeclined:
             return L10n.text("speech_recognizer.error.ai_permission_not_granted")
+        case .insufficientCredits:
+            return L10n.text("error.recording.pending.quota_reached")
+        case .rateLimited:
+            return L10n.text("common.error.unknown")
         }
     }
     

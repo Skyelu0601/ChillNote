@@ -18,7 +18,9 @@ LOCALE_CONFIG = RES / "xml/locales_config.xml"
 LOCALES = {
     "values-de": {"share_extension_unknown_source", "note_tags_title", "note_workspace_record_metadata", "onboarding_capture_links_title", "onboarding_capture_text_title", "onboarding_extract_link", "onboarding_highlight_save_video", "repurpose_pack_format_newsletter", "teleprompter_camera_countdown", "teleprompter_clip_format", "teleprompter_text_color_cyan", "teleprompter_text_color_pink", "settings_ui_upgrade", "settings_version_format"},
     "values-es": {"note_detail_add_tag_color_label", "onboarding_capture_links_title", "subscription_badge_flexible", "tags_color_title", "tags_color_option_format", "teleprompter_clip_format"},
-    "values-fr": {"share_extension_source_format", "brand_voice_settings_audience_label", "creator_skills_custom_instruction", "export_success_summary", "note_workspace_note", "onboarding_extract_description", "repurpose_pack_format_newsletter", "repurpose_pack_settings_formats", "repurpose_pack_thread_length_long", "settings_media_description", "subscription_badge_flexible", "teleprompter_clip_format", "teleprompter_text_color_cyan", "settings_version_format"},
+    "values-fr": {"notifications_title", "share_extension_source_format", "brand_voice_settings_audience_label", "creator_skills_custom_instruction", "export_success_summary", "note_workspace_note", "onboarding_extract_description", "repurpose_pack_format_newsletter", "repurpose_pack_settings_formats", "repurpose_pack_thread_length_long", "settings_media_description", "subscription_badge_flexible", "teleprompter_clip_format", "teleprompter_text_color_cyan", "settings_version_format"},
+    "values-pt": {"onboarding_capture_links_title", "onboarding_extract_link", "note_workspace_record_metadata", "teleprompter_countdown_five", "teleprompter_countdown_three"},
+    "values-pt-rPT": {"onboarding_capture_links_title", "onboarding_extract_link", "note_workspace_record_metadata", "teleprompter_countdown_five", "teleprompter_countdown_three"},
     "values-ja": set(),
     "values-ko": set(),
     "values-zh-rCN": set(),
@@ -62,7 +64,7 @@ MARKDOWN_URL = re.compile(r"\[[^\]\n]+\]\([^)]*https?://[^)]*\)", re.IGNORECASE)
 MALFORMED_MARKDOWN_LINK = re.compile(r"\]\s+\(https?://", re.IGNORECASE)
 LEGACY_VISIBLE_BRAND = re.compile(r"\bChillNote\b")
 ANDROID_NAMESPACE = "http://schemas.android.com/apk/res/android"
-RESOURCE_LOCALE_ALIASES = {"zh-rCN": "zh-Hans", "zh-rTW": "zh-Hant"}
+RESOURCE_LOCALE_ALIASES = {"zh-rCN": "zh-Hans", "zh-rTW": "zh-Hant", "pt-rPT": "pt-PT"}
 REQUIRED_PLURALS = {
     "note_detail_trash_deleted_in_days",
     "sidebar_stats_streak",

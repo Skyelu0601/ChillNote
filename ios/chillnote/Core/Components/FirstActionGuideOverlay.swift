@@ -58,7 +58,6 @@ extension View {
 }
 
 struct FirstActionSharePromptView: View {
-    let onStart: () -> Void
     let onSkip: () -> Void
 
     var body: some View {
@@ -88,22 +87,6 @@ struct FirstActionSharePromptView: View {
             }
 
             shareInstructions
-
-            Button(action: onStart) {
-                HStack(spacing: 7) {
-                    Text(L10n.text("onboarding.first_action.share.action"))
-                        .font(.bodySmall.weight(.bold))
-
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 12, weight: .bold))
-                }
-                .foregroundStyle(Color.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .background(Color.accentPrimary)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-            .buttonStyle(.tactile)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)

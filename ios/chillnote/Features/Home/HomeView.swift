@@ -8,6 +8,7 @@ struct HomeView: View {
     @Environment(\.scenePhase) var scenePhase
     @StateObject var homeViewModel = HomeViewModel()
     @StateObject private var storeService = StoreService.shared
+    @StateObject var notificationInbox = NotificationInboxStore()
     @StateObject var weeklyTopicsStore = WeeklyTopicsStore()
     @StateObject var firstActionGuide = FirstActionGuideService.shared
 
@@ -60,6 +61,7 @@ struct HomeView: View {
     @State var pendingRecipeForConfirmation: AgentRecipe?
 
     @State var showSubscription = false
+    @State var pendingLinkImportUpgradeNoteID: UUID?
     @State private var showWeeklyTopicsPreview = false
 
     let translateLanguages: [TranslateLanguage] = TranslateLanguage.defaultLanguages
@@ -144,6 +146,7 @@ struct HomeView: View {
             selectedSection: selectedSection,
             selectedNotes: selectedNotes,
             isVoiceMode: isVoiceMode,
+            isProMember: storeService.currentTier == .pro,
             cachedVisibleNotes: homeViewModel.items,
             sectionCounts: homeViewModel.sectionCounts,
             isLoadingNotes: homeViewModel.isLoading,
@@ -184,13 +187,17 @@ struct HomeView: View {
             dispatch: dispatch,
             isSearchFocused: $isSearchFocused,
             searchBar: AnyView(searchBar),
-            firstActionGuide: firstActionGuide
+            firstActionGuide: firstActionGuide,
+            notificationInbox: notificationInbox
         )
     }
 
     private var homeViewLifecyclePhaseOne: AnyView {
         AnyView(
             homeRootView
+        .task(id: "\(currentUserId ?? "signed-out")-\(storeService.currentTier)-\(scenePhase == .active)") {
+            await notificationInbox.reload()
+        }
         .onChange(of: speechRecognizer.recordingState) { _, newState in
             if case .error = newState, isVoiceMode {
                 isVoiceMode = false
@@ -316,10 +323,15 @@ struct HomeView: View {
                 let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
                 guard hasConsent else { return }
 
-                let authorized = await StoreService.shared.authorizeVoiceRecordingStart()
-                guard authorized else {
+                let authorization = await StoreService.shared.authorizeVoiceRecordingStart()
+                guard authorization == .authorized else {
                     await MainActor.run {
-                        showSubscription = true
+                        if authorization == .insufficientCredits {
+                            showSubscription = true
+                        } else {
+                            clipboardLinkImportErrorMessage = L10n.text("common.error.unknown")
+                            showClipboardLinkImportErrorAlert = true
+                        }
                     }
                     return
                 }
@@ -346,13 +358,18 @@ struct HomeView: View {
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             ProductAnalytics.shared.flushPendingShareExtensionEvents()
-            importPendingSharedNotes(navigateToLatest: false)
+            importPendingSharedNotes(navigateToLatest: true)
             scheduleMaintenance(reason: .foreground)
             Task {
                 await PushNotificationManager.shared.refreshRegistration()
                 await weeklyTopicsStore.reload()
                 await checkForClipboardLinkImport()
             }
+        }
+        .onChange(of: storeService.currentTier) { _, newTier in
+            guard newTier == .pro, let noteID = pendingLinkImportUpgradeNoteID else { return }
+            pendingLinkImportUpgradeNoteID = nil
+            retryInsufficientCreditsLinkImport(noteID: noteID)
         }
         .task {
             await checkForPendingRecordingsAsync()
@@ -361,7 +378,7 @@ struct HomeView: View {
             await bootstrapHome(for: userId, source: .initialTask)
             configureFirstActionGuide()
             await weeklyTopicsStore.reload()
-            importPendingSharedNotes(navigateToLatest: false)
+            importPendingSharedNotes(navigateToLatest: true)
             await checkForClipboardLinkImport()
             await evaluateImportNotificationPermissionPrompt()
             handlePendingPushNotificationDestination()
@@ -583,6 +600,15 @@ struct HomeView: View {
                 } else {
                     showWeeklyTopicsPreview = true
                 }
+            }
+        case .openSubscription:
+            showSubscription = true
+        case .resolveLinkImportCredits(let note):
+            if storeService.currentTier == .pro {
+                retryInsufficientCreditsLinkImport(noteID: note.id)
+            } else {
+                pendingLinkImportUpgradeNoteID = note.id
+                showSubscription = true
             }
         case .openWeeklyTopicSource(let noteID):
             Task { @MainActor in

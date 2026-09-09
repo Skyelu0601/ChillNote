@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 CATALOG_PATH = Path("ios/chillnote/Resources/Localizable.xcstrings")
-REQUIRED_LOCALES = ("en", "zh-Hans", "zh-Hant", "ja", "fr", "de", "es", "ko")
+REQUIRED_LOCALES = ("en", "zh-Hans", "zh-Hant", "ja", "fr", "de", "es", "ko", "pt-BR", "pt-PT")
 SWIFT_ROOTS = (Path("ios/chillnote"), Path("ios/ChillNoteWidget"), Path("ios/ChillNoteShareExtension"))
 PLURAL_KEYS = {
     "home.notes.trash.days_left", "note_detail.trash.deleted_in_days",

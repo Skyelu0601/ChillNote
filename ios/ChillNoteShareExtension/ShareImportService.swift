@@ -5,6 +5,7 @@ enum ShareImportError: LocalizedError {
     case missingAuthToken
     case invalidBackendURL
     case backendError(String)
+    case insufficientCredits
     case emptyTranscript
     case sharedContainerUnavailable
 
@@ -18,6 +19,8 @@ enum ShareImportError: LocalizedError {
             return ShareL10n.text("share_extension.failed")
         case .backendError(let message):
             return message.isEmpty ? ShareL10n.text("share_extension.failed") : message
+        case .insufficientCredits:
+            return ShareL10n.text("share_extension.insufficient_credits")
         case .emptyTranscript:
             return ShareL10n.text("share_extension.failed")
         case .sharedContainerUnavailable:
@@ -31,6 +34,7 @@ enum ShareImportError: LocalizedError {
         case .missingAuthToken: return "not_authenticated"
         case .invalidBackendURL: return "invalid_backend"
         case .backendError: return "backend_error"
+        case .insufficientCredits: return "insufficient_credits"
         case .emptyTranscript: return "empty_transcript"
         case .sharedContainerUnavailable: return "shared_container_unavailable"
         }
@@ -144,8 +148,16 @@ struct ShareImportService {
         let pendingImport = await makePendingLinkImport(url: url)
         await progress(.saving)
         try save(pendingImport)
-        if let remoteImport = try? await startRemoteLinkImport(pendingImport) {
+        do {
+            let remoteImport = try await startRemoteLinkImport(pendingImport)
             try? save(remoteImport)
+        } catch ShareImportError.insufficientCredits {
+            // The link is already durable. Surface the paid boundary truthfully
+            // instead of presenting a successful conversion that never started.
+            throw ShareImportError.insufficientCredits
+        } catch {
+            // Network/auth failures remain recoverable from the containing app.
+            // The durable queue item is intentionally kept for the next foreground.
         }
         await progress(.completed)
         return pendingImport
@@ -221,6 +233,9 @@ struct ShareImportService {
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ShareImportError.backendError("")
+        }
+        if httpResponse.statusCode == 402 {
+            throw ShareImportError.insufficientCredits
         }
         guard (200...299).contains(httpResponse.statusCode) else {
             throw ShareImportError.backendError("Status code: \(httpResponse.statusCode)")

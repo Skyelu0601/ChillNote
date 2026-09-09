@@ -170,7 +170,7 @@ fun TeleprompterCameraScreen(initialScript: String, onClose: () -> Unit) {
     val scriptScrollState = rememberScrollState()
 
     var script by remember { mutableStateOf(initialScript.trim()) }
-    var speed by remember { mutableFloatStateOf(24f) }
+    var speed by remember { mutableFloatStateOf(16f) }
     var fontSize by remember { mutableFloatStateOf(24f) }
     var textColor by remember { mutableStateOf(Color.White) }
     var showCameraSettings by remember { mutableStateOf(false) }

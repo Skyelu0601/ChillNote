@@ -172,7 +172,7 @@ struct OnboardingFlowView: View {
                     onFinish()
                 } label: {
                     (Text(L10n.text("onboarding.flow.login.prompt")) +
-                     Text(" ") +
+                     Text(verbatim: " ") +
                      Text(L10n.text("onboarding.flow.login.action")).fontWeight(.bold))
                     .font(.brandBody)
                     .foregroundStyle(Color.textSub)
@@ -180,7 +180,7 @@ struct OnboardingFlowView: View {
                     .padding(.vertical, BrandTokens.Space.s1)
                 }
                 .buttonStyle(OnboardingPressButtonStyle(scale: 0.97))
-                .accessibilityLabel(Text("\(L10n.text("onboarding.flow.login.prompt")) \(L10n.text("onboarding.flow.login.action"))"))
+                .accessibilityLabel(Text(L10n.text("onboarding.flow.login.accessibility")))
             }
         }
         .animation(.spring(response: 0.28, dampingFraction: 0.86), value: primaryActionTitleKey)

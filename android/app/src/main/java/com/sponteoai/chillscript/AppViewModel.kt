@@ -46,6 +46,8 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import java.io.File
+import java.time.Duration
+import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 import java.util.Locale
@@ -71,6 +73,7 @@ import com.sponteoai.chillscript.ai.ContextChatPrompt
 import com.sponteoai.chillscript.preferences.CapturePreferences
 import com.sponteoai.chillscript.preferences.VoiceLanguageSettings
 import com.sponteoai.chillscript.data.remote.MediaLinkSectionsDto
+import com.sponteoai.chillscript.data.remote.LinkSourceDto
 import com.sponteoai.chillscript.rating.AppRatingTracker
 import com.sponteoai.chillscript.sync.BackgroundSyncScheduler
 import com.sponteoai.chillscript.push.PushNotificationManager
@@ -145,6 +148,9 @@ data class AppUiState(
     val introPaywallRequired: Boolean = false,
     val creditBalance: Int? = null,
     val hasFetchedCreditBalance: Boolean = false,
+    val notifications: List<com.sponteoai.chillscript.data.remote.InboxNotification> = emptyList(),
+    val notificationsLoading: Boolean = false,
+    val notificationsFailed: Boolean = false,
 )
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
@@ -169,6 +175,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var signOutJob: Job? = null
     private var voiceStartAuthorizationJob: Job? = null
     private var foregroundPollSyncJob: Job? = null
+    private var pendingLinkImportCreditNoteId: String? = null
     @Volatile private var editorActive: Boolean = false
     private val voiceProcessingJobs = ConcurrentHashMap<String, Job>()
     private val sharedVideoCaptureJobs = ConcurrentHashMap<String, Job>()
@@ -370,6 +377,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     introPaywallRequired = status.tier != "pro" && !onboardingPreferences.hasShownIntroPaywall(session.user.id),
                 ).also {
                     if (status.tier == "pro") onboardingPreferences.setIntroPaywallShown(session.user.id)
+                    resumePendingLinkImportAfterUpgrade(status.tier)
                 } }
                 .onFailure {
                     mutableUiState.value = mutableUiState.value.copy(
@@ -395,10 +403,58 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                                 !onboardingPreferences.hasShownIntroPaywall(session.user.id),
                         )
                         if (status.tier == "pro") onboardingPreferences.setIntroPaywallShown(session.user.id)
+                        resumePendingLinkImportAfterUpgrade(status.tier)
                         refreshCredits()
                     }
                 }
                 .onFailure { refreshSubscription() }
+        }
+    }
+
+    private var inboxRevision = 0
+    private val readingNotifications = mutableSetOf<String>()
+
+    fun refreshNotifications() {
+        val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
+        val revision = ++inboxRevision
+        mutableUiState.value = mutableUiState.value.copy(notificationsLoading = true, notificationsFailed = false)
+        viewModelScope.launch {
+            runCatchingPreservingCancellation { accountApi.notifications(session.accessToken) }
+                .onSuccess { response ->
+                    if (revision == inboxRevision && currentUserId == session.user.id) {
+                        val readIds = mutableUiState.value.notifications.filter { it.readAt != null }.map { it.id }.toSet()
+                        mutableUiState.value = mutableUiState.value.copy(
+                            notifications = response.notifications.filter {
+                                it.supported && !(mutableUiState.value.subscriptionTier == "pro" && it.kind == "welcome_credits")
+                            }.map { if (it.id in readIds) it.copy(readAt = it.readAt ?: "read") else it },
+                            notificationsLoading = false,
+                        )
+                    }
+                }
+                .onFailure {
+                    if (revision == inboxRevision && currentUserId == session.user.id) {
+                        mutableUiState.value = mutableUiState.value.copy(notificationsLoading = false, notificationsFailed = true)
+                    }
+                }
+        }
+    }
+
+    fun markNotificationRead(id: String) {
+        val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
+        if (mutableUiState.value.notifications.none { it.id == id && it.readAt == null }) return
+        if (!readingNotifications.add(id)) return
+        viewModelScope.launch {
+            try {
+                runCatchingPreservingCancellation { accountApi.markNotificationsRead(session.accessToken, listOf(id)) }
+                    .onSuccess {
+                        if (currentUserId == session.user.id) mutableUiState.value = mutableUiState.value.copy(
+                            notifications = mutableUiState.value.notifications.map { if (it.id == id) it.copy(readAt = "read") else it },
+                        )
+                    }
+                    .onFailure {
+                        if (currentUserId == session.user.id) mutableUiState.value = mutableUiState.value.copy(notificationsFailed = true)
+                    }
+            } finally { readingNotifications.remove(id) }
         }
     }
 
@@ -458,6 +514,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             introPaywallRequired = false,
         )
         onboardingPreferences.setIntroPaywallShown(session.user.id)
+        resumePendingLinkImportAfterUpgrade(status.tier)
         refreshCredits()
     }
 
@@ -1262,14 +1319,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     R.string.quick_capture_link_import_placeholder_format,
                     sourceHost,
                 )
+                val noteId = UUID.randomUUID().toString()
                 runCatchingPreservingCancellation {
-                    val creditState = accountApi.consumeImportCredits(session.accessToken)
-                    mutableUiState.value = mutableUiState.value.copy(
-                        creditBalance = creditState.balance,
-                        hasFetchedCreditBalance = true,
-                        subscriptionTier = creditState.tier ?: mutableUiState.value.subscriptionTier,
-                    )
-                    val noteId = UUID.randomUUID().toString()
                     homeNoteRevealRequests.trySend(HomeNoteRevealRequest(session.user.id, noteId))
                     notesRepository.importLink(
                         session.user.id,
@@ -1290,6 +1341,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     }
                     .onFailure { error ->
                         if (error is SyncHttpException && error.statusCode == 402) {
+                            pendingLinkImportCreditNoteId = noteId
                             onInsufficientCredits()
                             refreshCredits()
                         } else {
@@ -1299,6 +1351,68 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                             )
                         }
                     }
+            }
+        }
+    }
+
+    fun requestLinkImportCreditAction(noteId: String) {
+        if (mutableUiState.value.subscriptionTier.equals("pro", ignoreCase = true)) {
+            retryInsufficientCreditsLinkImport(noteId)
+        } else {
+            pendingLinkImportCreditNoteId = noteId
+            mutablePaywallRequests.tryEmit(Unit)
+        }
+    }
+
+    private fun resumePendingLinkImportAfterUpgrade(tier: String) {
+        if (!tier.equals("pro", ignoreCase = true)) return
+        val noteId = pendingLinkImportCreditNoteId ?: return
+        pendingLinkImportCreditNoteId = null
+        retryInsufficientCreditsLinkImport(noteId)
+    }
+
+    private fun retryInsufficientCreditsLinkImport(noteId: String) {
+        val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
+        viewModelScope.launch {
+            val note = notes.value.firstOrNull { it.id == noteId } ?: return@launch
+            if (note.importStatus != "failed" || note.importErrorCode != "insufficient_credits") return@launch
+            val url = note.sourceUrl ?: return@launch
+            val host = note.sourceHost
+                ?: runCatching { java.net.URI(url).host.orEmpty() }.getOrDefault(url)
+            val source = LinkSourceDto(
+                url = url,
+                title = note.sourceTitle ?: host,
+                platformID = note.sourcePlatformId ?: "web",
+                platformName = note.sourcePlatformName ?: host,
+                host = host,
+                authorName = note.sourceAuthorName,
+                authorHandle = note.sourceAuthorHandle,
+            )
+            runCatchingPreservingCancellation {
+                notesRepository.importLink(
+                    userId = session.user.id,
+                    accessToken = session.accessToken,
+                    url = url,
+                    section = note.section,
+                    placeholder = note.content,
+                    mediaLinkSections = mediaLinkSections.value,
+                    noteId = note.id,
+                    source = source,
+                    contentLocale = configuredAppLanguageTag(),
+                )
+            }.onSuccess {
+                BackgroundSyncScheduler.enqueueLinkImportRecovery(getApplication())
+                refreshCredits()
+                sync()
+            }.onFailure { error ->
+                if (error is SyncHttpException && error.statusCode == 402) {
+                    refreshCredits()
+                } else {
+                    Log.w(TAG, "Retrying saved link import failed", error)
+                    mutableUiState.value = mutableUiState.value.copy(
+                        errorMessage = getApplication<Application>().getString(R.string.link_import_failed),
+                    )
+                }
             }
         }
     }
@@ -1431,6 +1545,10 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 BackgroundSyncScheduler.enqueueLinkImportRecovery(getApplication())
             }.onFailure { error ->
                 Log.w(TAG, "Pending shared link hand-off failed", error)
+                if (error is SyncHttpException && error.statusCode == 402) {
+                    mutablePaywallRequests.tryEmit(Unit)
+                    refreshCredits()
+                }
                 // `importLink` writes a visible failed placeholder before throwing.
                 // Once that row exists, the durable hand-off has completed and must
                 // not enqueue the same paid import again on every foreground event.
@@ -1576,6 +1694,25 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     if (notes.value.none { it.importStatus == "queued" || it.importStatus == "processing" }) return@launch
                     delay(3_000)
                     val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return@launch
+                    notes.value
+                        .filter { note -> note.isRecoverableOrphanedLinkImport() }
+                        .forEach { note ->
+                            val url = note.sourceUrl ?: return@forEach
+                            runCatchingPreservingCancellation {
+                                notesRepository.importLink(
+                                    userId = session.user.id,
+                                    accessToken = session.accessToken,
+                                    url = url,
+                                    section = note.section,
+                                    placeholder = note.content,
+                                    noteId = note.id,
+                                    contentLocale = configuredAppLanguageTag(),
+                                )
+                            }.onFailure { error ->
+                                Log.w(TAG, "Orphaned link import recovery failed", error)
+                                if (error is SyncHttpException && error.statusCode == 402) refreshCredits()
+                            }
+                        }
                     runCatchingPreservingCancellation { notesRepository.sync(session.user.id, session.accessToken) }
                         .onFailure { Log.w(TAG, "Pending import poll failed", it) }
                 }
@@ -1589,6 +1726,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 pendingImportMonitor = null
             }
         }
+    }
+
+    private fun NoteEntity.isRecoverableOrphanedLinkImport(): Boolean {
+        if (importStatus !in setOf("queued", "processing") || !importJobId.isNullOrBlank() || sourceUrl == null) {
+            return false
+        }
+        val lastUpdated = runCatching { Instant.parse(updatedAt) }.getOrNull() ?: return true
+        return Duration.between(lastUpdated, Instant.now()).seconds >= 30
     }
 
     private fun launchBusy(block: suspend () -> Unit) {

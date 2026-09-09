@@ -415,12 +415,6 @@ struct ChatInputBar: View {
                 return
             }
 
-            let hasCredits = await storeService.consumeCredits(feature: .import)
-            guard hasCredits else {
-                presentQuickCaptureUpgrade()
-                return
-            }
-
             onPasteLink(url)
         }
     }
@@ -463,10 +457,14 @@ struct ChatInputBar: View {
             let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
             guard hasConsent else { return }
 
-            let authorized = await storeService.authorizeVoiceRecordingStart()
-            guard authorized else {
+            let authorization = await storeService.authorizeVoiceRecordingStart()
+            guard authorization == .authorized else {
                 await MainActor.run {
-                    showSubscription = true
+                    if authorization == .insufficientCredits {
+                        showSubscription = true
+                    } else {
+                        captureErrorMessage = L10n.text("common.error.unknown")
+                    }
                 }
                 return
             }
@@ -480,11 +478,6 @@ struct ChatInputBar: View {
         quickCaptureProgressState != nil
     }
 
-    private func presentQuickCaptureUpgrade() {
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            showSubscription = true
-        }
-    }
 }
 
 private struct QuickCaptureDockSurface: ViewModifier {

@@ -27,6 +27,8 @@ ANDROID_STRINGS = ROOT / "android/app/src/main/res/values/strings.xml"
 IOS_STRINGS = ROOT / "ios/chillnote/Resources/Localizable.xcstrings"
 
 LOCALES = {
+    "pt-BR": ("pt-BR", "values-pt"),
+    "pt-PT": ("pt-PT", "values-pt-rPT"),
     "de": ("de", "values-de"),
     "es": ("es", "values-es"),
     "fr": ("fr", "values-fr"),

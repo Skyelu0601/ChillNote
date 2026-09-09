@@ -81,6 +81,10 @@
     <string name="quick_capture_link_import_placeholder_format">ChillScript transforme %1$s en note. Vous pouvez continuer à utiliser l’app ou la fermer.</string>
     <string name="link_import_processing">Préparation de votre note.</string>
     <string name="link_import_failed">Ce lien n’a pas pu être importé. Réessayez plus tard.</string>
+    <string name="link_import_insufficient_credits">Passez à l’offre supérieure pour créer cette note.</string>
+    <string name="link_import_saved_source_title">Vidéo %1$s</string>
+    <string name="link_import_saved_in_inbox">Enregistré dans la boîte de réception</string>
+    <string name="link_import_upgrade_message">Passez à l’offre supérieure pour créer la note.</string>
     <string name="home_section_trash">Corbeille</string>
     <string name="home_search_placeholder">Rechercher des notes...</string>
     <string name="home_search_clear_accessibility">Effacer la recherche</string>
@@ -687,6 +691,20 @@
     <string name="share_extension_saving">Enregistrement dans ChillScript</string>
     <string name="share_extension_saved">Enregistré dans ChillScript</string>
     <string name="share_extension_failed">Impossible d’enregistrer dans ChillScript</string>
+    <string name="share_extension_credits_required_title">Mise à niveau requise</string>
+    <string name="share_extension_insufficient_credits">Lien enregistré. Ouvrez ChillScript pour changer d’offre et créer la note.</string>
     <string name="share_extension_no_link">Aucun lien trouvé dans ce partage.</string>
     <string name="share_extension_source_format">Source : %1$s</string>
+
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_accessibility_unread">Notifications, messages non lus</string>
+    <string name="notifications_credits_title">Vos %1$d crédits sont disponibles</string>
+    <string name="notifications_credits_body">Utilisez-les pour importer des vidéos et organiser vos notes.</string>
+    <string name="notifications_pro_title">Bienvenue sur ChillScript</string>
+    <string name="notifications_pro_body">Votre abonnement est actif. Importez une vidéo et transformez vos idées en contenu.</string>
+    <string name="notifications_footer">Les informations importantes apparaîtront ici.</string>
+    <string name="notifications_empty">Aucune notification pour le moment.</string>
+    <string name="notifications_error">Impossible de synchroniser les notifications. Veuillez réessayer.</string>
+    <string name="notifications_retry">Réessayer</string>
+    <string name="share_extension_open_app">Ouvrir ChillScript</string>
 </resources>

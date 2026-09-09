@@ -21,13 +21,6 @@ extension HomeView {
             return
         }
 
-        // consumeCredits internally calls ensureSubscriptionStatusReadyForFeatureGate.
-        let hasCredits = await StoreService.shared.consumeCredits(feature: .import)
-        guard hasCredits else {
-            showSubscription = true
-            return
-        }
-
         await importClipboardLink(url)
     }
 

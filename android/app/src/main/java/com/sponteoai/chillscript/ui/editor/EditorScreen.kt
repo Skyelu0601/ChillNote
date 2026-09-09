@@ -53,6 +53,7 @@ import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -136,6 +137,8 @@ fun EditorScreen(
     onExport: () -> Unit,
     onDelete: () -> Unit,
     onOpenSource: (String) -> Unit,
+    isProMember: Boolean,
+    onResolveImportCredits: () -> Unit,
     onRemoveTag: (TagEntity) -> Unit,
     onSelectRecipe: (AgentRecipe) -> Unit,
     onManageSkills: () -> Unit,
@@ -289,6 +292,8 @@ fun EditorScreen(
                             tags = selectedTags,
                             isDeleted = isDeleted,
                             onOpenSource = onOpenSource,
+                            isProMember = isProMember,
+                            onResolveImportCredits = onResolveImportCredits,
                             onRemoveTag = onRemoveTag,
                         )
                     }
@@ -843,6 +848,8 @@ private fun IOSNoteContext(
     tags: List<TagEntity>,
     isDeleted: Boolean,
     onOpenSource: (String) -> Unit,
+    isProMember: Boolean,
+    onResolveImportCredits: () -> Unit,
     onRemoveTag: (TagEntity) -> Unit,
 ) {
     if (note == null || (note.sourceUrl == null && tags.isEmpty() && note.importStatus == null)) return
@@ -857,7 +864,21 @@ private fun IOSNoteContext(
         }
         when (note.importStatus) {
             "queued", "processing" -> IOSImportBanner(R.string.link_import_processing, Icons.Outlined.AddLink)
-            "failed" -> IOSImportBanner(R.string.link_import_failed, Icons.Outlined.Warning)
+            "failed" -> {
+                val insufficientCredits = note.importErrorCode == "insufficient_credits"
+                IOSImportBanner(
+                    if (insufficientCredits) R.string.link_import_insufficient_credits
+                    else R.string.link_import_failed,
+                    Icons.Outlined.Warning,
+                    actionLabel = if (insufficientCredits) {
+                        stringResource(
+                            if (isProMember) R.string.common_retry
+                            else R.string.sidebar_membership_upgrade,
+                        )
+                    } else null,
+                    onAction = onResolveImportCredits,
+                )
+            }
         }
         if (tags.isNotEmpty()) {
             Row(
@@ -884,14 +905,29 @@ private fun IOSNoteContext(
 }
 
 @Composable
-private fun IOSImportBanner(textResource: Int, icon: ImageVector) {
+private fun IOSImportBanner(
+    textResource: Int,
+    icon: ImageVector,
+    actionLabel: String? = null,
+    onAction: () -> Unit = {},
+) {
     Row(
         Modifier.fillMaxWidth().background(ChillColors.BrandBlue.copy(alpha = 0.08f), RoundedCornerShape(8.dp)).padding(12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         Icon(icon, contentDescription = null, tint = ChillColors.BrandBlue, modifier = Modifier.size(15.dp))
-        Text(stringResource(textResource), color = ChillColors.TextSub, fontSize = 13.sp)
+        Text(
+            stringResource(textResource),
+            modifier = Modifier.weight(1f),
+            color = ChillColors.TextSub,
+            fontSize = 13.sp,
+        )
+        actionLabel?.let {
+            Button(onClick = onAction, shape = RoundedCornerShape(12.dp)) {
+                Text(it, fontWeight = FontWeight.SemiBold)
+            }
+        }
     }
 }
 

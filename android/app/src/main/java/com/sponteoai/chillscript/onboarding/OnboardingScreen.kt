@@ -873,7 +873,6 @@ private fun IOSPhoneVideo(
     autoplay: Boolean,
     showPlaybackControl: Boolean,
     modifier: Modifier = Modifier,
-    phoneAspectRatio: Float = ONBOARDING_VIDEO_ASPECT_RATIO,
     onComplete: () -> Unit = {},
 ) {
     val context = LocalContext.current
@@ -991,7 +990,6 @@ private fun IOSPhoneVideo(
 
     Box(
         modifier = modifier
-            .aspectRatio(phoneAspectRatio)
             .shadow(
                 elevation = 20.dp,
                 shape = RoundedCornerShape(ONBOARDING_PHONE_OUTER_CORNER),
@@ -1012,7 +1010,9 @@ private fun IOSPhoneVideo(
                 ),
                 RoundedCornerShape(ONBOARDING_PHONE_OUTER_CORNER),
             )
-            .padding(horizontal = 6.dp, vertical = 7.dp)
+            .padding(6.dp)
+            // Keep the screen at the source ratio; the bezel adds to its outer size.
+            .aspectRatio(ONBOARDING_VIDEO_ASPECT_RATIO)
             .semantics(mergeDescendants = true) {
                 if (showPlaybackControl) {
                     role = Role.Button
@@ -1152,8 +1152,7 @@ private fun IOSExtractedSectionsCard(visibleCount: Int, modifier: Modifier = Mod
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(16.dp, RoundedCornerShape(20.dp))
-            .background(Color.White.copy(alpha = 0.72f), RoundedCornerShape(20.dp))
+            .background(Color.White, RoundedCornerShape(20.dp))
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -1179,11 +1178,6 @@ private fun IOSExtractedSectionsCard(visibleCount: Int, modifier: Modifier = Mod
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .background(Color.White.copy(alpha = 0.88f), RoundedCornerShape(14.dp))
-                                .border(
-                                    BorderStroke(1.dp, IOSOnboardingColors.Accent.copy(alpha = 0.12f)),
-                                    RoundedCornerShape(14.dp),
-                                )
                                 .padding(horizontal = 11.dp, vertical = 11.dp),
                             horizontalArrangement = Arrangement.spacedBy(7.dp),
                             verticalAlignment = Alignment.CenterVertically,

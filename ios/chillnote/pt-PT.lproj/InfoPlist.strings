@@ -1,0 +1,4 @@
+"NSMicrophoneUsageDescription" = "O ChillScript usa o microfone para gravar notas de voz, capturar o áudio de vídeos com teleponto e, com sua permissão, enviar áudio para transcrição segura com IA.";
+"NSSpeechRecognitionUsageDescription" = "O ChillScript usa o reconhecimento de fala para transcrever sua voz em texto.";
+"NSCameraUsageDescription" = "O ChillScript usa a câmara para gravar vídeos com teleponto.";
+"NSPhotoLibraryAddUsageDescription" = "O ChillScript guarda os vídeos exportados do teleponto na sua fototeca quando você escolhe guardá-los.";

@@ -10,7 +10,7 @@ from PIL import Image
 
 GOOGLE_PLAY_ROOT = Path(__file__).resolve().parents[1]
 FASTLANE_ROOT = GOOGLE_PLAY_ROOT / "fastlane"
-LISTING_ROOT = FASTLANE_ROOT / "metadata" / "listing" / "en-US"
+LISTING_ROOT = FASTLANE_ROOT / "metadata" / "listing"
 SCREENSHOTS_ROOT = FASTLANE_ROOT / "metadata" / "screenshots"
 
 EXPECTED_LOCALES = (
@@ -37,14 +37,15 @@ def validate_listing() -> None:
         "short_description.txt": 80,
         "full_description.txt": 4000,
     }
-    for filename, limit in limits.items():
-        path = LISTING_ROOT / filename
-        require(path.is_file(), f"Missing listing file: {path}")
-        content = path.read_text(encoding="utf-8").strip()
-        require(content, f"Listing file is empty: {path}")
-        require(len(content) <= limit, f"{filename} exceeds Google Play's {limit}-character limit")
+    for locale in ("en-US", "pt-BR", "pt-PT"):
+        for filename, limit in limits.items():
+            path = LISTING_ROOT / locale / filename
+            require(path.is_file(), f"Missing listing file: {path}")
+            content = path.read_text(encoding="utf-8").strip()
+            require(content, f"Listing file is empty: {path}")
+            require(len(content) <= limit, f"{locale}/{filename} exceeds the {limit}-character limit")
 
-    images = LISTING_ROOT / "images"
+    images = LISTING_ROOT / "en-US" / "images"
     require((images / "icon.png").is_file(), "Missing Fastlane icon link")
     require((images / "featureGraphic.png").is_file(), "Missing Fastlane feature graphic link")
 
@@ -65,7 +66,7 @@ def validate_screenshots() -> None:
 def main() -> None:
     validate_listing()
     validate_screenshots()
-    print("Fastlane metadata valid: English listing and 9 localized screenshot sets")
+    print("Fastlane metadata valid: 3 listings and 9 localized screenshot sets (Portuguese artwork remains draft)")
 
 
 if __name__ == "__main__":

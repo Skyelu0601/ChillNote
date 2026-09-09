@@ -2,6 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <application>
         <activity
+            android:name="com.sponteoai.chillscript.share.ShareSheetPreviewActivity"
+            android:exported="true"
+            android:theme="@style/Theme.ChillScript.Share" />
+        <activity
             android:name="com.sponteoai.chillscript.onboarding.OnboardingParityPreviewActivity"
             android:exported="true">
             <intent-filter>

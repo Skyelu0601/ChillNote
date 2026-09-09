@@ -15,6 +15,7 @@ struct NoteDetailView: View {
     @EnvironmentObject private var syncManager: SyncManager
     @ObservedObject private var firstActionGuide = FirstActionGuideService.shared
     @StateObject private var recipeManager = RecipeManager.shared
+    @StateObject private var storeService = StoreService.shared
 
     @StateObject private var viewModel: NoteDetailViewModel
     @State private var activeVoiceAlert: VoiceAlertState?
@@ -22,6 +23,7 @@ struct NoteDetailView: View {
     @State private var workspacePage: NoteDetailWorkspacePage = .script
     @State private var isEditorActive = false
     @State private var isSkillManagerPresented = false
+    @State private var pendingLinkImportUpgrade = false
 
     private var noteContentBinding: Binding<String> {
         Binding(
@@ -108,6 +110,12 @@ struct NoteDetailView: View {
                                 NoteDetailContextSectionView(
                                     note: note,
                                     isDeleted: viewModel.isDeleted,
+                                    creditActionTitle: L10n.text(
+                                        storeService.currentTier == .pro
+                                            ? "common.try_again"
+                                            : "sidebar.membership.upgrade"
+                                    ),
+                                    onResolveImportCredits: resolveImportCredits,
                                     onRemoveTag: { viewModel.send(.removeTagTapped($0)) }
                                 )
                                 .padding(.horizontal, 20)
@@ -226,6 +234,11 @@ struct NoteDetailView: View {
         .onChange(of: viewModel.isProcessing) { _, _ in
             advanceFirstActionGuideAfterAISkillsIfReady()
         }
+        .onChange(of: storeService.currentTier) { _, tier in
+            guard tier == .pro, pendingLinkImportUpgrade else { return }
+            pendingLinkImportUpgrade = false
+            viewModel.retryInsufficientCreditsLinkImport()
+        }
         .onChange(of: scenePhase) { _, newPhase in
             if newPhase != .active {
                 editorController.flush()
@@ -264,6 +277,15 @@ struct NoteDetailView: View {
     private func sendAfterFlushing(_ action: NoteDetailViewModel.NoteDetailAction) {
         editorController.flush()
         viewModel.send(action)
+    }
+
+    private func resolveImportCredits() {
+        if storeService.currentTier == .pro {
+            viewModel.retryInsufficientCreditsLinkImport()
+        } else {
+            pendingLinkImportUpgrade = true
+            viewModel.showSubscription = true
+        }
     }
 
     private func selectWorkspacePage(_ page: NoteDetailWorkspacePage) {

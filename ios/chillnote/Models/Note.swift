@@ -262,6 +262,7 @@ final class Note {
             "Unknown author",
             "Unbekannter Autor",
             "Autor desconocido",
+            "Autor desconhecido",
             "Auteur inconnu",
             "不明な作者",
             "알 수 없는 작성자",

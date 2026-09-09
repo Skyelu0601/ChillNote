@@ -17,10 +17,32 @@ import java.net.URL
 @Serializable data class CreditBalanceResponse(val balance: Int? = null, val tier: String? = null)
 @Serializable data class CreditConsumeResponse(val balance: Int? = null, val tier: String? = null)
 
+@Serializable data class InboxNotification(
+    val id: String,
+    val kind: String,
+    val amount: Int? = null,
+    val createdAt: String,
+    val readAt: String? = null,
+) {
+    val supported: Boolean get() = kind == "welcome_pro" || (kind == "welcome_credits" && (amount ?: 0) > 0)
+}
+@Serializable data class NotificationInboxResponse(val notifications: List<InboxNotification>)
+@Serializable private data class ReadNotificationsRequest(val ids: List<String>)
+
 class AccountApi(
     private val baseUrl: String = "https://api.chillnoteai.com",
     private val json: Json = Json { ignoreUnknownKeys = true },
 ) {
+    suspend fun notifications(accessToken: String): NotificationInboxResponse =
+        request("GET", "/notifications", accessToken) {
+            json.decodeFromString(NotificationInboxResponse.serializer(), it)
+        }
+
+    suspend fun markNotificationsRead(accessToken: String, ids: List<String>) {
+        request("POST", "/notifications/read", accessToken,
+            json.encodeToString(ReadNotificationsRequest.serializer(), ReadNotificationsRequest(ids))) { Unit }
+    }
+
     suspend fun subscriptionStatus(accessToken: String): SubscriptionStatusResponse =
         request("GET", "/subscription/status", accessToken) {
             json.decodeFromString(SubscriptionStatusResponse.serializer(), it)

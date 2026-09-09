@@ -81,6 +81,10 @@
     <string name="quick_capture_link_import_placeholder_format">ChillScript is turning %1$s into a note. You can keep using the app or close it.</string>
     <string name="link_import_processing">Preparing your note.</string>
     <string name="link_import_failed">This link could not be imported. Try again later.</string>
+    <string name="link_import_insufficient_credits">Upgrade your plan to create this note.</string>
+    <string name="link_import_saved_source_title">%1$s video</string>
+    <string name="link_import_saved_in_inbox">Saved in Inbox</string>
+    <string name="link_import_upgrade_message">Upgrade your plan to create the note.</string>
     <string name="home_section_trash">Recycle Bin</string>
     <string name="home_search_placeholder">Search notes...</string>
     <string name="home_search_clear_accessibility">Clear search</string>
@@ -696,6 +700,20 @@
     <string name="share_extension_saving">Saving to ChillScript...</string>
     <string name="share_extension_saved">Saved to ChillScript</string>
     <string name="share_extension_failed">Couldn’t save to ChillScript</string>
+    <string name="share_extension_credits_required_title">Upgrade required</string>
+    <string name="share_extension_insufficient_credits">Link saved. Open ChillScript to upgrade your plan and create the note.</string>
     <string name="share_extension_no_link">No link found in this share.</string>
     <string name="share_extension_source_format">Source: %1$s</string>
+
+    <string name="notifications_title">Notifications</string>
+    <string name="notifications_accessibility_unread">Notifications, unread messages</string>
+    <string name="notifications_credits_title">Your %1$d credits have arrived</string>
+    <string name="notifications_credits_body">Use them to import videos and organize notes.</string>
+    <string name="notifications_pro_title">Welcome to ChillScript</string>
+    <string name="notifications_pro_body">Your membership is active. Import a video and turn your inspiration into content.</string>
+    <string name="notifications_footer">Important updates will appear here.</string>
+    <string name="notifications_empty">No notifications yet.</string>
+    <string name="notifications_error">Notifications could not be synced. Please try again.</string>
+    <string name="notifications_retry">Try again</string>
+    <string name="share_extension_open_app">Open ChillScript</string>
 </resources>

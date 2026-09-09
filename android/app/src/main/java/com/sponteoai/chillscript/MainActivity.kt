@@ -1319,6 +1319,10 @@ private fun HomeScreen(
                 clearEditorState()
             },
             onOpenSource = onOpenUrl,
+            isProMember = uiState.subscriptionTier.equals("pro", ignoreCase = true),
+            onResolveImportCredits = {
+                editingNote?.let { viewModel.requestLinkImportCreditAction(it.id) }
+            },
             onRemoveTag = { tag ->
                 editorTagSelectionTouched = true
                 selectedEditorTagIds = selectedEditorTagIds - tag.id
@@ -1687,7 +1691,10 @@ private fun HomeScreen(
                             modifier = Modifier.padding(bottom = 12.dp),
                         )
                         "failed" -> Text(
-                            stringResource(R.string.link_import_failed),
+                            stringResource(
+                                if (note.importErrorCode == "insufficient_credits") R.string.link_import_insufficient_credits
+                                else R.string.link_import_failed,
+                            ),
                             color = MaterialTheme.colorScheme.error,
                             modifier = Modifier.padding(bottom = 12.dp),
                         )
@@ -1903,6 +1910,11 @@ private fun HomeScreen(
             pendingRecordingsCount = pendingRecordings.size,
             subscriptionTier = uiState.subscriptionTier,
             creditBalance = uiState.creditBalance,
+            notifications = uiState.notifications,
+            notificationsLoading = uiState.notificationsLoading,
+            notificationsFailed = uiState.notificationsFailed,
+            onRefreshNotifications = viewModel::refreshNotifications,
+            onReadNotification = viewModel::markNotificationRead,
             snackbarHostState = snackbarHost,
             onSelectSection = { section ->
                 selectedSection = section
@@ -2006,6 +2018,7 @@ private fun HomeScreen(
                 } else onResult(false)
             },
             onOpenSubscription = { showSubscription = true },
+            onResolveImportCredits = { viewModel.requestLinkImportCreditAction(it.id) },
             onOpenWeeklyTopics = {
                 if (uiState.subscriptionTier == "pro") showWeeklyTopics = true
                 else showWeeklyTopicsPreview = true
@@ -2029,11 +2042,6 @@ private fun HomeScreen(
                 viewModel.deleteTag(tag)
             },
             firstActionGuideState = firstActionGuideState,
-            onAcknowledgeFirstActionShare = {
-                signedInUser?.id?.let { userId ->
-                    firstActionGuideState = firstActionGuideStore.acknowledgeShare(userId, firstActionGuideState)
-                }
-            },
             onDismissFirstActionGuide = {
                 signedInUser?.id?.let { userId ->
                     firstActionGuideState = firstActionGuideStore.dismiss(userId)
@@ -2957,6 +2965,12 @@ private fun TagColorDot(hex: String, selected: Boolean, modifier: Modifier = Mod
         if (isSelectionMode) Checkbox(checked = isSelected, onCheckedChange = { onClick() })
         if (note.importStatus == "queued" || note.importStatus == "processing") {
             Text(stringResource(R.string.link_import_processing), modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.primary)
+        } else if (note.importStatus == "failed" && note.importErrorCode == "insufficient_credits") {
+            Text(
+                stringResource(R.string.link_import_insufficient_credits),
+                modifier = Modifier.weight(1f),
+                color = MaterialTheme.colorScheme.error,
+            )
         } else {
             MarkdownText(note.content, maxLines = 4, modifier = Modifier.weight(1f))
         }
@@ -2981,8 +2995,12 @@ private fun TagColorDot(hex: String, selected: Boolean, modifier: Modifier = Mod
     note.sourceMetadata()?.let { source ->
         NoteSourceCard(source = source, compact = true, onOpen = { onOpenSource(source.url) })
     }
-    if (note.importStatus == "failed") {
-        Text(stringResource(R.string.link_import_failed), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.error)
+    if (note.importStatus == "failed" && note.importErrorCode != "insufficient_credits") {
+        Text(
+            stringResource(R.string.link_import_failed),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.error,
+        )
     }
     Text(localizedRelativeTime(note.updatedAt), style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
     if (isTrash) note.deletedAt?.let { deletedAt ->

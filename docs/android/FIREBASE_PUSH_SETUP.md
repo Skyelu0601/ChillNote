@@ -57,3 +57,19 @@ Firebase 权限，也可省略两项 `FCM_SERVICE_ACCOUNT_*`，代码会回退�
 4. 发送 `weekly_topics_ready`，确认后台通知使用本机语言，点击后打开周选题。
 5. 发送带 `route=note` 和 `noteId` 的导入完成通知，确认同步后打开对应笔记。
 6. 登出后确认当前安装已从服务端注销，并且不会继续收到该账号的通知。
+
+## 5. 生产修复记录（2026-09-09）
+
+- 已确认故障原因：生产缺少 FCM 配置，过去 7 天有 135 条通知因
+  `fcm_not_configured` 失败；安卓设备注册本身已成功。
+- 经用户明确授权，为现有 `chillscript-fastlane` 服务账号添加目标项目的
+  `Firebase Cloud Messaging API Admin` 角色，并将四项 FCM 配置写入
+  `/root/chillnote-api/shared/.env`（权限 `600`）。私钥不写入仓库。
+- 修改前配置备份：`/root/chillnote-api/shared/.env.before-fcm-20260909T085604Z`。
+- 已重启并保存 PM2 的 `chillnote` 进程；公网 `/health` 返回 HTTP 200。
+- 使用生产发送代码和现有安卓设备执行 `validate_only`：两个返回 HTTP 200，
+  另一个返回 `404 NotRegistered`，说明该设备登记已失效。验证没有投递通知，
+  尚未完成真机接收及点击验证，也未批量补发历史失败通知。
+- 后续部署须保留共享环境文件中的 FCM 配置。特别是使用
+  `scripts/ops/deploy.sh` 的 `PUSH_ENV=1` 时，该脚本会替换共享环境文件，
+  必须先确认待上传配置包含完整的 FCM 配置，避免再次关闭安卓推送。

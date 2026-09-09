@@ -192,7 +192,6 @@ class HomeFirstActionGuideStore(context: Context) {
 
 @Composable
 internal fun IOSFirstActionSharePrompt(
-    onAcknowledge: () -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -252,29 +251,6 @@ internal fun IOSFirstActionSharePrompt(
                 iconTint = ChillColors.TextMain,
                 iconBackground = ChillColors.BackgroundPrimary,
                 text = stringResource(R.string.onboarding_first_action_share_instruction_choose),
-            )
-        }
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .height(48.dp)
-                .background(ChillColors.BrandBlue, RoundedCornerShape(12.dp))
-                .clickable(onClick = onAcknowledge),
-            horizontalArrangement = Arrangement.Center,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                stringResource(R.string.onboarding_first_action_share_action),
-                color = Color.White,
-                fontSize = 15.sp,
-                fontWeight = FontWeight.Bold,
-            )
-            Spacer(Modifier.width(7.dp))
-            Icon(
-                Icons.AutoMirrored.Outlined.ArrowForward,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(15.dp),
             )
         }
     }

@@ -8,6 +8,7 @@ import com.sponteoai.chillscript.auth.AuthRepository
 import com.sponteoai.chillscript.data.remote.LinkImportApi
 import com.sponteoai.chillscript.data.remote.LinkImportRequest
 import com.sponteoai.chillscript.data.remote.MediaLinkSectionsDto
+import com.sponteoai.chillscript.data.remote.SyncHttpException
 import com.sponteoai.chillscript.data.remote.extractWebUrl
 import com.sponteoai.chillscript.data.remote.sourceForUrl
 import com.sponteoai.chillscript.sync.BackgroundSyncScheduler
@@ -21,6 +22,7 @@ enum class ShareLinkImportStage {
 }
 
 class ShareLinkImportException : Exception("No web link was found in the shared content")
+class ShareLinkInsufficientCreditsException : Exception("Insufficient credits")
 
 /** Mirrors iOS ShareImportService: persist first, then best-effort remote enqueue. */
 class ShareLinkImportCoordinator(
@@ -71,6 +73,9 @@ class ShareLinkImportCoordinator(
                 // iOS deliberately treats remote enqueue as best effort. The durable queue is
                 // consumed after the app next signs in or enters the foreground.
                 Log.w(TAG, "Remote share enqueue failed; keeping the local queue item", error)
+                if (error is SyncHttpException && error.statusCode == 402) {
+                    throw ShareLinkInsufficientCreditsException()
+                }
             }
         }
 

@@ -4,7 +4,7 @@ import json
 from pathlib import Path
 
 CATALOG = Path('ios/chillnote/Resources/Localizable.xcstrings')
-REQUIRED_LOCALES = ['en', 'zh-Hans', 'zh-Hant', 'ja', 'fr', 'de', 'es', 'ko']
+REQUIRED_LOCALES = ['en', 'zh-Hans', 'zh-Hant', 'ja', 'fr', 'de', 'es', 'ko', 'pt-BR', 'pt-PT']
 
 
 def fallback_entry(key: str, localizations: dict) -> dict:

@@ -8,6 +8,7 @@ struct HomeBodyView: View {
     @FocusState.Binding var isSearchFocused: Bool
     let searchBar: AnyView
     @ObservedObject var firstActionGuide: FirstActionGuideService
+    @ObservedObject var notificationInbox: NotificationInboxStore
 
     @State private var sectionSlideDirection: Edge = .trailing
 
@@ -175,7 +176,6 @@ struct HomeBodyView: View {
         .overlay(alignment: .bottom) {
             if firstActionGuide.stage == .sharePrompt {
                 FirstActionSharePromptView(
-                    onStart: { firstActionGuide.acknowledgeSharePrompt() },
                     onSkip: { firstActionGuide.dismiss() }
                 )
                 .padding(.horizontal, BrandTokens.Space.s3)
@@ -354,6 +354,12 @@ struct HomeBodyView: View {
                 visibleNotesCount: state.cachedVisibleNotes.count,
                 hasPendingRecordings: state.hasPendingRecordings,
                 highlightSelectionEntry: false,
+                hasUnreadNotifications: notificationInbox.hasUnread,
+                onOpenNotifications: {
+                    var path = state.navigationPath
+                    path.append(NotificationInboxRoute.inbox)
+                    dispatch(.setNavigationPath(path))
+                },
                 onToggleSidebar: { dispatch(.toggleSidebar) },
                 onCreateBlankNote: { dispatch(.createBlankNote) },
                 onToggleSearch: { dispatch(.toggleSearch) },
@@ -394,6 +400,8 @@ struct HomeBodyView: View {
                         onManageTags: { dispatch(.setTaggingNote($0)) },
                         onMoveNote: { dispatch(.moveNote($0, $1)) },
                         onDeleteNote: { dispatch(.deleteNote($0)) },
+                        isProMember: state.isProMember,
+                        onResolveCredits: { dispatch(.resolveLinkImportCredits($0)) },
                         guideTargetNoteID: firstActionGuide.stage == .openImportedNote
                             ? firstActionGuide.targetNoteID
                             : nil,
@@ -424,6 +432,9 @@ struct HomeBodyView: View {
                     .onDisappear {
                         dispatch(.noteDetailDisappear(note))
                     }
+            }
+            .navigationDestination(for: NotificationInboxRoute.self) { _ in
+                NotificationInboxView(store: notificationInbox)
             }
             .navigationDestination(for: WeeklyTopicsRoute.self) { route in
                 switch route {

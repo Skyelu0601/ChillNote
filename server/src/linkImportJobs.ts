@@ -275,8 +275,8 @@ export async function enqueueLinkImportJob(params: {
 
     if (params.creditAuthorization.tier === "free") {
       await tx.$executeRaw`
-        INSERT INTO "UserCredits" ("userId", "balance", "createdAt", "updatedAt")
-        VALUES (${params.userId}, ${params.creditAuthorization.initialCredits}, NOW(), NOW())
+        INSERT INTO "UserCredits" ("userId", "balance", "initialGrantAmount", "createdAt", "updatedAt")
+        VALUES (${params.userId}, ${params.creditAuthorization.initialCredits}, ${params.creditAuthorization.initialCredits}, NOW(), NOW())
         ON CONFLICT ("userId") DO NOTHING
       `;
 

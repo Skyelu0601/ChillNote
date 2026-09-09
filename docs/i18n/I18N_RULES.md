@@ -17,12 +17,14 @@
 - SwiftUI API 确实要求 `LocalizedStringKey` 时传稳定 key；不新增 `String(localized: "Upgrade to Pro")`、`NSLocalizedString("Network Error", ...)` 或 `Text("Delete Permanently")` 这类英文原文用法。
 - 模板示例：`L10n.text("export.progress.summary", processedCount, totalCount, percentText)`。不要拼接 `"SAVE \(percent)%"` 等英文句子。
 - 权限描述同时维护对应的 `InfoPlist.strings`。
+- 葡萄牙语同时维护 `pt-BR`（巴西）与 `pt-PT`（葡萄牙），不要只补其中一种。
 - 校验器：[lint_i18n.py](../../scripts/i18n/lint_i18n.py)；仅在词条整理任务需要时使用 [normalize_xcstrings.py](../../scripts/i18n/normalize_xcstrings.py)，避免顺带批量重写词条。
 
 ## Android
 
 - 词条位于 `android/app/src/main/res/values*/strings.xml`，使用稳定的资源名及 `stringResource` / `getString`，不把 iOS 的 Swift 入口用于 Android。
 - 修改基础词条时检查全部现有语言资源；数量文案使用对应复数资源。
+- 葡萄牙语通用资源 `values-pt` 使用巴西葡语，`values-pt-rPT` 使用葡萄牙葡语；系统语言声明分别为 `pt`、`pt-PT`，商店分别为 `pt-BR`、`pt-PT`。
 - 语言完整性、占位符和声明检查由 [validate_localizations.py](../../android/scripts/validate_localizations.py) 维护。
 
 其他平台沿用自身已有文案与本地化机制；不因本规范引入 iOS 依赖。术语选择参考 [glossary_v1.md](glossary_v1.md)。

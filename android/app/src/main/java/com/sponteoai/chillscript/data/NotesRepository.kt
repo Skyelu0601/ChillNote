@@ -20,6 +20,7 @@ import com.sponteoai.chillscript.data.remote.LinkSourceDto
 import com.sponteoai.chillscript.data.remote.sourceForUrl
 import com.sponteoai.chillscript.data.remote.SyncPayload
 import com.sponteoai.chillscript.data.remote.SyncResponse
+import com.sponteoai.chillscript.data.remote.SyncHttpException
 import com.sponteoai.chillscript.data.remote.TagDto
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.sync.Mutex
@@ -354,9 +355,17 @@ class NotesRepository(
         source: LinkSourceDto = sourceForUrl(url),
         contentLocale: String,
     ): NoteEntity {
-        dao.note(userId, noteId)?.let { return it }
-        val created = createNote(userId, placeholder, section, noteId)
-        val tagged = if (tagIds.isEmpty()) created else setNoteTags(created, tagIds)
+        val existing = dao.note(userId, noteId)
+        val canResumeOrphanedPlaceholder = existing != null &&
+            existing.importStatus in setOf("queued", "processing") &&
+            existing.importJobId.isNullOrBlank()
+        val canRetryInsufficientCredits = existing != null &&
+            existing.importStatus == "failed" &&
+            existing.importErrorCode == "insufficient_credits"
+        if (existing != null && !canResumeOrphanedPlaceholder && !canRetryInsufficientCredits) return existing
+
+        val created = existing ?: createNote(userId, placeholder, section, noteId)
+        val tagged = if (existing != null || tagIds.isEmpty()) created else setNoteTags(created, tagIds)
         val note = tagged.copy(
             sourceUrl = source.url,
             sourceTitle = source.title,
@@ -367,6 +376,12 @@ class NotesRepository(
             sourceAuthorHandle = source.authorHandle,
             sourceCapturedAt = Instant.now().toString(),
             importStatus = "queued",
+            importErrorCode = null,
+            updatedAt = if (canResumeOrphanedPlaceholder || canRetryInsufficientCredits) {
+                Instant.now().toString()
+            } else {
+                tagged.updatedAt
+            },
         )
         dao.upsertNote(note)
         return try {
@@ -392,7 +407,12 @@ class NotesRepository(
             note.copy(importJobId = job.jobId, importStatus = job.status, needsSync = tagIds.isNotEmpty())
                 .also { dao.upsertNote(it) }
         } catch (error: Throwable) {
-            note.copy(importStatus = "failed", importErrorCode = error.message, needsSync = true)
+            val errorCode = if (error is SyncHttpException && error.statusCode == 402) {
+                "insufficient_credits"
+            } else {
+                error.message
+            }
+            note.copy(importStatus = "failed", importErrorCode = errorCode, needsSync = true)
                 .also { dao.upsertNote(it) }
             throw error
         }

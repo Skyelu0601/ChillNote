@@ -48,6 +48,8 @@ import com.sponteoai.chillscript.ui.theme.ChillColors
 fun NoteSourceCard(
     source: NoteSourceMetadata,
     compact: Boolean = false,
+    compactTitle: String? = null,
+    compactSubtitle: String? = null,
     onOpen: () -> Unit,
 ) {
     val author = source.authorDisplayName?.takeIf { it.isNotBlank() }
@@ -90,7 +92,17 @@ fun NoteSourceCard(
             verticalArrangement = Arrangement.spacedBy(if (compact) 1.dp else 4.dp),
         ) {
             if (compact) {
-                if (author != null) {
+                if (compactTitle != null) {
+                    Text(
+                        text = compactTitle,
+                        color = ChillColors.TextMain,
+                        fontSize = 15.sp,
+                        lineHeight = 19.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else if (author != null) {
                     Text(
                         text = author,
                         color = ChillColors.TextSub,
@@ -101,7 +113,16 @@ fun NoteSourceCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                if (showsDescription) {
+                if (compactSubtitle != null) {
+                    Text(
+                        text = compactSubtitle,
+                        color = ChillColors.TextSub,
+                        fontSize = 13.sp,
+                        lineHeight = 17.sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                } else if (showsDescription) {
                     Text(
                         text = source.title,
                         color = ChillColors.TextMain,

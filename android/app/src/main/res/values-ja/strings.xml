@@ -80,6 +80,10 @@
     <string name="quick_capture_link_import_placeholder_format">ChillScript が %1$s をノートにしています。アプリを使い続けても、閉じても大丈夫です。</string>
     <string name="link_import_processing">ノートを準備しています。</string>
     <string name="link_import_failed">このリンクを取り込めませんでした。あとでもう一度お試しください。</string>
+    <string name="link_import_insufficient_credits">このノートを作成するにはプランをアップグレードしてください。</string>
+    <string name="link_import_saved_source_title">%1$s動画</string>
+    <string name="link_import_saved_in_inbox">受信箱に保存済み</string>
+    <string name="link_import_upgrade_message">ノートを作成するにはプランをアップグレードしてください。</string>
     <string name="home_section_trash">ゴミ箱</string>
     <string name="home_search_placeholder">ノートを検索...</string>
     <string name="home_search_clear_accessibility">検索をクリア</string>
@@ -680,6 +684,20 @@
     <string name="share_extension_saving">ChillScript に保存中</string>
     <string name="share_extension_saved">ChillScript に保存しました</string>
     <string name="share_extension_failed">ChillScript に保存できませんでした</string>
+    <string name="share_extension_credits_required_title">アップグレードが必要です</string>
+    <string name="share_extension_insufficient_credits">リンクを保存しました。ChillScript を開いてプランをアップグレードし、ノートを作成してください。</string>
     <string name="share_extension_no_link">この共有にはリンクが見つかりません。</string>
     <string name="share_extension_source_format">ソース：%1$s</string>
+
+    <string name="notifications_title">通知</string>
+    <string name="notifications_accessibility_unread">通知、未読メッセージあり</string>
+    <string name="notifications_credits_title">%1$d クレジットをプレゼントしました</string>
+    <string name="notifications_credits_body">動画の取り込みやノートの整理に使えます。</string>
+    <string name="notifications_pro_title">ChillScript へようこそ</string>
+    <string name="notifications_pro_body">メンバーシップが有効になりました。動画を取り込んで、最初の作品づくりを始めましょう。</string>
+    <string name="notifications_footer">大切なお知らせをここにお届けします。</string>
+    <string name="notifications_empty">まだ通知はありません。</string>
+    <string name="notifications_error">通知を同期できませんでした。もう一度お試しください。</string>
+    <string name="notifications_retry">再試行</string>
+    <string name="share_extension_open_app">ChillScript を開く</string>
 </resources>

@@ -32,6 +32,7 @@ final class ShareViewModel: ObservableObject {
     @Published var visualProgress = 0.05
     @Published var isCompleted = false
     @Published var errorMessage: String?
+    @Published var isCreditsRequired = false
 
     private weak var extensionContext: NSExtensionContext?
     private var sharedURL: URL?
@@ -83,6 +84,7 @@ final class ShareViewModel: ObservableObject {
             extensionContext?.completeRequest(returningItems: nil)
         } catch {
             stopVisualProgress()
+            isCreditsRequired = (error as? ShareImportError)?.analyticsCode == "insufficient_credits"
             ShareAnalyticsQueue.capture("share_import_blocked", properties: [
                 "operation_id": operationID,
                 "source_platform": sourcePlatformID,
@@ -91,6 +93,22 @@ final class ShareViewModel: ObservableObject {
             ])
             errorMessage = (error as? LocalizedError)?.errorDescription ?? ShareL10n.text("share_extension.failed")
             statusText = ShareL10n.text("share_extension.failed")
+        }
+    }
+
+    func dismiss() {
+        extensionContext?.completeRequest(returningItems: nil)
+    }
+
+    func openApp() {
+        guard let url = URL(string: "chillnote://shared-imports") else {
+            dismiss()
+            return
+        }
+        extensionContext?.open(url) { [weak self] _ in
+            Task { @MainActor in
+                self?.dismiss()
+            }
         }
     }
 

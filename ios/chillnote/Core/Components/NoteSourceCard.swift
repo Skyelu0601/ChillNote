@@ -3,6 +3,8 @@ import SwiftUI
 struct NoteSourceCard: View {
     let source: NoteSourceMetadata
     var compact: Bool = false
+    var compactTitle: String? = nil
+    var compactSubtitle: String? = nil
 
     @Environment(\.openURL) private var openURL
 
@@ -57,14 +59,24 @@ struct NoteSourceCard: View {
             sourceBadge
 
             VStack(alignment: .leading, spacing: 1) {
-                if let authorDisplayName = source.authorDisplayName {
+                if let compactTitle {
+                    Text(compactTitle)
+                        .font(.bodyMedium.weight(.semibold))
+                        .foregroundColor(.textMain)
+                        .lineLimit(1)
+                } else if let authorDisplayName = source.authorDisplayName {
                     Text(authorDisplayName)
                         .font(.chillCaption.weight(.semibold))
                         .foregroundColor(.textSub)
                         .lineLimit(1)
                 }
 
-                if showsDescription {
+                if let compactSubtitle {
+                    Text(compactSubtitle)
+                        .font(.bodySmall)
+                        .foregroundColor(.textSub)
+                        .lineLimit(1)
+                } else if showsDescription {
                     Text(source.title)
                         .font(.bodySmall)
                         .foregroundColor(.textMain)

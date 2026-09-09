@@ -12,6 +12,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  welcomeNotificationEligible Boolean @default(true)
+  appNotifications AppNotification[]
+
   // Subscription Info
   subscriptionTier      String    @default("free") // "free" or "pro"
   subscriptionExpiresAt DateTime?
@@ -306,6 +309,7 @@ model MembershipGrantLedger {
 model UserCredits {
   userId    String   @id
   balance   Int      @default(50)
+  initialGrantAmount Int?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -386,4 +390,19 @@ model WeeklyTopicReport {
 
   @@unique([userId, periodEnd])
   @@index([userId, periodEnd])
+}
+
+// Separate from push delivery: this is the account's persistent in-app inbox.
+model AppNotification {
+  id String @id @default(uuid())
+  userId String
+  dedupeKey String
+  kind String
+  amount Int?
+  createdAt DateTime @default(now())
+  readAt DateTime?
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, dedupeKey])
+  @@index([userId, createdAt])
 }

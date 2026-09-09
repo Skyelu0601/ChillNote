@@ -16,6 +16,12 @@ enum CreditFeature: String {
     case `import` = "import"
 }
 
+enum CreditAuthorizationResult: Equatable {
+    case authorized
+    case insufficientCredits
+    case unavailable
+}
+
 struct SubscriptionPeriodDescriptor: Equatable {
     enum Unit: Equatable {
         case day
@@ -369,15 +375,14 @@ class StoreService: ObservableObject {
         UserDefaults.standard.set(balance, forKey: Self.creditBalanceCacheKey)
     }
 
-    /// Consume credits for a feature. Returns `true` if the action is allowed, `false` if credits are exhausted.
-    /// Pro users always return `true`. Network failures fail open.
-    func consumeCredits(feature: CreditFeature) async -> Bool {
+    /// Authorizes a metered feature without confusing service failures with exhausted credits.
+    func consumeCredits(feature: CreditFeature) async -> CreditAuthorizationResult {
         await ensureSubscriptionStatusReadyForFeatureGate()
 
-        if currentTier == .pro { return true }
+        if currentTier == .pro { return .authorized }
 
-        guard AuthService.shared.confirmedUserId != nil else { return true }
-        guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else { return true }
+        guard AuthService.shared.confirmedUserId != nil else { return .unavailable }
+        guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else { return .unavailable }
 
         let url = URL(string: "\(AppConfig.backendBaseURL)/credits/consume")!
         var request = URLRequest(url: url)
@@ -390,7 +395,7 @@ class StoreService: ObservableObject {
 
         do {
             let (data, response) = try await URLSession.shared.data(for: request)
-            guard let http = response as? HTTPURLResponse else { return true }
+            guard let http = response as? HTTPURLResponse else { return .unavailable }
 
             if http.statusCode == 402 {
                 // Insufficient credits.
@@ -400,7 +405,7 @@ class StoreService: ObservableObject {
                    let message = json["error"] as? String {
                     self.errorMessage = message
                 }
-                return false
+                return .insufficientCredits
             }
 
             if (200...299).contains(http.statusCode),
@@ -410,14 +415,13 @@ class StoreService: ObservableObject {
                 UserDefaults.standard.set(newBalance, forKey: Self.creditBalanceCacheKey)
             }
 
-            return (200...299).contains(http.statusCode)
+            return (200...299).contains(http.statusCode) ? .authorized : .unavailable
         } catch {
-            // Network failure: fail open.
-            return true
+            return .unavailable
         }
     }
 
-    func authorizeVoiceRecordingStart() async -> Bool {
+    func authorizeVoiceRecordingStart() async -> CreditAuthorizationResult {
         await consumeCredits(feature: .voice)
     }
     

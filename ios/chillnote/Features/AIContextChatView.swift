@@ -205,9 +205,8 @@ struct AIContextChatView: View {
     private let summaryMessageLimit = 12
     private let summarySnippetLimit = 160
 
-    private func shouldPresentSubscription(for errorMessage: String) -> Bool {
-        let lowered = errorMessage.lowercased()
-        return lowered.contains("insufficient credits")
+    private func shouldPresentSubscription(for error: Error) -> Bool {
+        (error as? GeminiError)?.isInsufficientCredits == true
     }
     
     var body: some View {
@@ -499,7 +498,7 @@ struct AIContextChatView: View {
                     }
                     isLoading = false
                     let message = error.localizedDescription
-                    if shouldPresentSubscription(for: message) {
+                    if shouldPresentSubscription(for: error) {
                         errorMessage = nil
                         showSubscription = true
                     } else {
@@ -1161,7 +1160,7 @@ private struct SlashSkillsPanel: View {
                                 HStack(spacing: 12) {
                                     SlashSkillIcon(recipe: recipe)
                                     VStack(alignment: .leading, spacing: 2) {
-                                        Text("/\(recipe.id)")
+                                        Text(verbatim: "/\(recipe.id)")
                                             .font(.subheadline.weight(.semibold))
                                             .foregroundColor(.textMain)
                                         Text(recipe.localizedDescription)

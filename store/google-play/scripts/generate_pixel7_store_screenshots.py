@@ -38,6 +38,20 @@ CAPTURES = {
 }
 
 LOCALE_HEADLINES: dict[str, dict[str, tuple[str, str]]] = {
+    "pt-BR": {
+        "home": ("Nunca perca uma", "ideia de conteúdo."),
+        "transcript": ("Do vídeo viral", "à transcrição."),
+        "skills": ("Reescreva, adapte", "e crie mais."),
+        "weekly": ("Novas ideias.", "Toda semana."),
+        "record": ("Grave com", "teleprompter."),
+    },
+    "pt-PT": {
+        "home": ("Guarde todas as", "ideias de conteúdo."),
+        "transcript": ("Do vídeo viral", "à transcrição."),
+        "skills": ("Reescreva, adapte", "e crie mais."),
+        "weekly": ("Novas ideias.", "Todas as semanas."),
+        "record": ("Grave com", "teleponto."),
+    },
     "en-US": {
         "home": ("Never Lose a", "Content Idea Again."),
         "transcript": ("Viral Video In.", "Transcript Out."),

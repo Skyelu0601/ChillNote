@@ -46,6 +46,7 @@ if (typeof globalThis.Headers === 'undefined') {
 }
 
 import "dotenv/config";
+import { registerAppNotificationRoutes } from "./appNotifications.js";
 import express from "express";
 import compression from "compression";
 import cors from "cors";
@@ -591,10 +592,9 @@ function isCreditFeature(value: unknown): value is CreditFeature {
 }
 
 async function getOrCreateCredits(userId: string): Promise<{ balance: number }> {
-  const existing = await prisma.userCredits.findUnique({ where: { userId } });
-  if (existing) return existing;
-  return prisma.userCredits.create({
-    data: { userId, balance: INITIAL_CREDITS }
+  return prisma.userCredits.upsert({
+    where: { userId }, update: {},
+    create: { userId, balance: INITIAL_CREDITS, initialGrantAmount: INITIAL_CREDITS }
   });
 }
 
@@ -609,8 +609,8 @@ async function consumeCreditsForUser(userId: string, feature: CreditFeature): Pr
 
   const result = await prisma.$transaction(async (tx) => {
     await tx.$executeRaw`
-      INSERT INTO "UserCredits" ("userId", "balance", "createdAt", "updatedAt")
-      VALUES (${userId}, ${INITIAL_CREDITS}, NOW(), NOW())
+      INSERT INTO "UserCredits" ("userId", "balance", "initialGrantAmount", "createdAt", "updatedAt")
+      VALUES (${userId}, ${INITIAL_CREDITS}, ${INITIAL_CREDITS}, NOW(), NOW())
       ON CONFLICT ("userId") DO NOTHING
     `;
 
@@ -2017,6 +2017,14 @@ app.post("/ai/gemini", aiJsonParser, requireAuth, async (req, res) => {
     console.error("❌ Gemini Error:", error);
     res.status(500).json({ error: "Internal Server Error" });
   }
+});
+
+registerAppNotificationRoutes(app, requireAuth, {
+  prisma,
+  upsertUser,
+  // Do not use the AI tier cache when deciding whether to announce a free gift.
+  resolveTier: async (userId) => (await getEffectiveSubscription(userId, new Date(), REVENUECAT_ENTITLEMENT_ID)).tier,
+  initialCredits: INITIAL_CREDITS
 });
 
 app.get("/credits/balance", requireAuth, async (req, res) => {

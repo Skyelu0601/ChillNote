@@ -144,22 +144,40 @@ extension HomeView {
 
         let service = QuickCaptureImportService.shared
         let source = sharedSource ?? service.initialSourceMetadata(for: url)
-        guard !shouldSkipDuplicateLinkImport(sourceURL: source.url, userId: userId) else { return nil }
+        let existingNote = noteID
+            .flatMap(resolveNote)
+            .flatMap { $0.userId == userId ? $0 : nil }
+        if existingNote == nil {
+            guard !shouldSkipDuplicateLinkImport(sourceURL: source.url, userId: userId) else { return nil }
+        }
         rememberRecentLinkImport(sourceURL: source.url)
 
         let placeholder = service.placeholderNoteText(for: url)
-        let note = Note(content: placeholder, userId: userId)
-        if let noteID {
-            note.id = noteID
+        let note: Note
+        if let existingNote {
+            note = existingNote
+        } else {
+            note = Note(content: placeholder, userId: userId)
+            if let noteID {
+                note.id = noteID
+            }
         }
         note.applySourceMetadata(source)
-        note.importStatus = importStatus(from: existingJobStatus) ?? .queued
-        note.importJobId = existingJobId
-        note.importStartedAt = Date()
-        applyCurrentTagContext(to: note)
+        if let existingJobStatus = importStatus(from: existingJobStatus) {
+            note.importStatus = existingJobStatus
+        } else if existingNote == nil {
+            note.importStatus = .queued
+        }
+        if let existingJobId {
+            note.importJobId = existingJobId
+        }
 
-        withAnimation {
-            modelContext.insert(note)
+        if existingNote == nil {
+            note.importStartedAt = Date()
+            applyCurrentTagContext(to: note)
+            withAnimation {
+                modelContext.insert(note)
+            }
         }
         guard saveHomeVoiceContext(reason: "creating link import note") else { return nil }
         if shouldNavigate {
@@ -167,9 +185,16 @@ extension HomeView {
         }
         requestReload(delayNanoseconds: 60_000_000, keepItemsWhileLoading: true)
 
-        if existingJobId != nil {
+        let shouldStartJob = existingJobId == nil
+            && note.importJobId == nil
+            && (note.importStatus == .queued || note.importStatus == .processing)
+        if !shouldStartJob {
             return note
         }
+
+        note.importStartedAt = Date()
+        note.updatedAt = Date()
+        guard saveHomeVoiceContext(reason: "starting link import job") else { return nil }
 
         Task {
             do {
@@ -198,12 +223,13 @@ extension HomeView {
             } catch {
                 await MainActor.run {
                     note.importStatus = .failed
-                    note.importErrorCode = "job_start_failed"
+                    note.importErrorCode = ifInsufficientCredits(error) ? "insufficient_credits" : "job_start_failed"
                     note.importCompletedAt = Date()
                     note.updatedAt = Date()
                     _ = saveHomeVoiceContext(reason: "saving failed link import")
                     if case QuickCaptureImportError.insufficientCredits(let balance) = error {
                         StoreService.shared.applyBackendCreditBalance(balance, tier: SubscriptionTier.free.rawValue)
+                        pendingLinkImportUpgradeNoteID = note.id
                         showSubscription = true
                     } else {
                         clipboardLinkImportErrorMessage = error.localizedDescription
@@ -215,6 +241,31 @@ extension HomeView {
         }
 
         return note
+    }
+
+    private func ifInsufficientCredits(_ error: Error) -> Bool {
+        if case QuickCaptureImportError.insufficientCredits = error {
+            return true
+        }
+        return false
+    }
+
+    @MainActor
+    func retryInsufficientCreditsLinkImport(noteID: UUID) {
+        guard let note = resolveNote(noteID),
+              note.importStatus == .failed,
+              note.importErrorCode == "insufficient_credits",
+              let source = note.sourceMetadata,
+              let url = URL(string: source.url) else { return }
+
+        note.importStatus = .queued
+        note.importErrorCode = nil
+        note.importJobId = nil
+        note.importStartedAt = Date()
+        note.importCompletedAt = nil
+        note.updatedAt = Date()
+        guard saveHomeVoiceContext(reason: "retrying link import after credit recovery") else { return }
+        _ = createLinkImportNote(url, noteID: note.id, source: source)
     }
 
     private func importStatus(from rawValue: String?) -> NoteImportStatus? {
@@ -269,6 +320,8 @@ extension HomeView {
                 continue
             }
 
+            resumeOrphanedLinkImportsIfNeeded()
+
             // Sync before sleeping so opening/foregrounding Home can consume a
             // completion that has already produced a push notification.
             let didSync = await syncManager.syncNow(context: modelContext)
@@ -286,6 +339,27 @@ extension HomeView {
                 return
             }
             delayNanoseconds = min(delayNanoseconds * 2, 10_000_000_000)
+        }
+    }
+
+    func resumeOrphanedLinkImportsIfNeeded() {
+        let recoveryCutoff = Date().addingTimeInterval(-30)
+        let orphanedNotes = homeViewModel.items.filter { note in
+            note.isLinkImportInProgress
+                && note.importJobId?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false
+                && (note.importStartedAt ?? note.updatedAt) <= recoveryCutoff
+                && note.sourceMetadata != nil
+        }
+
+        for note in orphanedNotes {
+            guard let source = note.sourceMetadata,
+                  let url = URL(string: source.url) else { continue }
+            _ = createLinkImportNote(
+                url,
+                noteID: note.id,
+                source: source,
+                shouldNavigate: false
+            )
         }
     }
 

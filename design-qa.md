@@ -49,6 +49,58 @@ final result: passed
 
 ---
 
+# Insufficient-credits saved-link card QA — 2026-09-09
+
+**Source visual truth**
+
+- Path: `/Users/luwenting/.codex/generated_images/01a0848d-ae92-7692-b3ca-2ee9d04f9a21/exec-bb9ce8d1-60ae-4d0d-99d9-00c0b97420a5.png`.
+- State: Inbox note created from a TikTok share, import stopped by insufficient credits, saved-link confirmation visible, English locale.
+- Pixel size: 853 × 1844.
+
+**Rendered implementation**
+
+- Path: `/private/tmp/chillscript-upgrade-card-final.png`.
+- Device: physical Pixel 7 (`29221FDH200N4Y`).
+- State: the real saved TikTok record is failed with `insufficient_credits`; the Inbox card is visible after a fresh debug APK install with app data preserved.
+- Pixel size: 1080 × 2400 at the device's native density.
+- Density normalization: both full-height screenshots were inspected together; the app screenshot was visually normalized to the reference height by the comparison viewer while preserving aspect ratio.
+
+**Comparison evidence**
+
+- The source and rendered screenshots were opened in one simultaneous comparison input.
+- The source is the first image and the physical-device render is the second image.
+- A separate composite file was not needed because the source row, saved state, explanatory copy, and CTA remain legible in the paired full-screen comparison.
+
+**Findings**
+
+- Fonts and hierarchy: `TikTok video`, `Saved in Inbox`, the explanatory sentence, and `Upgrade` form the same clear hierarchy as the selected design.
+- Spacing and layout rhythm: the card stays compact, aligns with the existing Inbox cards, and does not include the removed green confirmation block.
+- Colors and visual tokens: existing ChillScript white card, gray secondary copy, black TikTok badge, and blue primary action are preserved.
+- Saved-link clarity: the source row explicitly says `Saved in Inbox`; the real TikTok icon and external-link affordance are both visible.
+- Upgrade path: tapping `Upgrade` on the physical Pixel 7 opened the membership purchase sheet and displayed the live Weekly and Annual options.
+- Import recovery: Android and iOS now resume an orphaned queued/processing shared-link placeholder that has no job ID; an insufficient-credit response becomes the terminal upgrade card instead of an endless creating/preparing state.
+- iOS parity: the equivalent SwiftUI card, upgrade sheet action, saved-source copy, and orphan recovery path compile successfully in the iOS scheme.
+- No actionable P0, P1, or P2 visual issues remain.
+
+**Implementation Checklist**
+
+- [x] Replace the ambiguous failed-import message with the compact saved-link upgrade card.
+- [x] Remove the separate green `link saved` area.
+- [x] Make the saved source legible instead of showing an icon without text.
+- [x] Route `Upgrade` to the existing membership purchase flow.
+- [x] Recover orphaned shared-link records on both Android and iOS.
+- [x] Install and visually verify the Android build on a physical Pixel 7.
+- [x] Build the iOS app successfully.
+
+**Follow-up Polish**
+
+- The Pixel screenshot includes Android system bars and the app's bottom quick-capture control; the generated source omitted system chrome. These do not affect the card itself.
+- iOS was compile-verified in this pass; the physical-device interaction and visual comparison evidence are from Android.
+
+final result: passed
+
+---
+
 # Onboarding paywall redesign QA — 2026-08-28
 
 **Source visual truth**

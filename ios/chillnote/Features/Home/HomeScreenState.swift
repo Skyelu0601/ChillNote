@@ -15,6 +15,8 @@ struct TranslateLanguage: Identifiable {
         TranslateLanguage(id: "de", name: "German", displayName: "Deutsch", flag: "🇩🇪"),
         TranslateLanguage(id: "ja", name: "Japanese", displayName: "日本語", flag: "🇯🇵"),
         TranslateLanguage(id: "es", name: "Spanish", displayName: "Español", flag: "🇪🇸"),
+        TranslateLanguage(id: "pt-BR", name: "Brazilian Portuguese", displayName: "Português (Brasil)", flag: "🇧🇷"),
+        TranslateLanguage(id: "pt-PT", name: "European Portuguese", displayName: "Português (Portugal)", flag: "🇵🇹"),
         TranslateLanguage(id: "ko", name: "Korean", displayName: "한국어", flag: "🇰🇷")
     ]
 }
@@ -41,6 +43,7 @@ struct HomeScreenState {
     let selectedSection: NoteSection?
     let selectedNotes: Set<UUID>
     let isVoiceMode: Bool
+    let isProMember: Bool
 
     let cachedVisibleNotes: [Note]
     let sectionCounts: [NoteSection: Int]
@@ -130,6 +133,8 @@ enum HomeScreenAction {
     case showSettings
     case aiChatDisappear
     case openWeeklyTopics
+    case openSubscription
+    case resolveLinkImportCredits(Note)
     case openWeeklyTopicSource(UUID)
 
     case confirmAskSoftLimit

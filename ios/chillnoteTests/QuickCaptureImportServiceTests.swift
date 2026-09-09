@@ -7,6 +7,12 @@ final class QuickCaptureImportServiceTests: XCTestCase {
     private var hookHeading: String { L10n.text("quick_capture.media_link.hook_heading") }
     private var transcriptHeading: String { L10n.text("quick_capture.media_link.transcript_heading") }
 
+    func testGeminiMeteringErrorsKeepRateLimitSeparateFromCredits() {
+        XCTAssertTrue(GeminiError.meteringError(forHTTPStatus: 402)?.isInsufficientCredits == true)
+        XCTAssertFalse(GeminiError.meteringError(forHTTPStatus: 429)?.isInsufficientCredits == true)
+        XCTAssertNil(GeminiError.meteringError(forHTTPStatus: 500))
+    }
+
     func testSanitizedTikTokTitleRemovesHashtagsAndCollapsesWhitespace() {
         let service = QuickCaptureImportService.shared
 
@@ -203,6 +209,28 @@ final class QuickCaptureImportServiceTests: XCTestCase {
         )
 
         XCTAssertNil(note.sourceMetadata?.authorDisplayName)
+    }
+
+    func testPortugueseLegacyAuthorFallbackPreservesRealNamesAndHidesUnknownPlaceholder() {
+        for author in ["Autor desconhecido", "Mariana Costa"] {
+            let note = Note(
+                content: "## Autor\n\(author)\n## Transcrição\nOlá",
+                userId: "user"
+            )
+            note.applySourceMetadata(
+                NoteSourceMetadata(
+                    url: "https://www.youtube.com/watch?v=123",
+                    title: "Vídeo",
+                    platformID: "youtube",
+                    platformName: "YouTube",
+                    host: "youtube.com"
+                )
+            )
+            XCTAssertEqual(
+                note.sourceMetadata?.authorDisplayName,
+                author == "Autor desconhecido" ? nil : author
+            )
+        }
     }
 
     func testSyncKeepsLocallyResolvedAuthorWhenServerDoesNotYetProvideIt() {

@@ -318,4 +318,51 @@ final class NoteDetailViewModel: ObservableObject {
             aiOriginalContent = nil
         }
     }
+
+    func retryInsufficientCreditsLinkImport() {
+        guard note.importStatus == .failed,
+              note.importErrorCode == "insufficient_credits",
+              let source = note.sourceMetadata,
+              let url = URL(string: source.url) else { return }
+
+        note.importStatus = .queued
+        note.importErrorCode = nil
+        note.importJobId = nil
+        note.importStartedAt = dependencies.now()
+        note.importCompletedAt = nil
+        note.updatedAt = dependencies.now()
+        guard persistAndSync() else { return }
+
+        Task {
+            do {
+                let job = try await QuickCaptureImportService.shared.startAsyncWebLinkImport(
+                    url: url,
+                    noteID: note.id,
+                    placeholderContent: note.content,
+                    source: source,
+                    section: note.section
+                )
+                StoreService.shared.applyBackendCreditBalance(job.balance, tier: job.tier)
+                note.importJobId = job.jobId
+                note.importStatus = job.status == "processing" ? .processing : .queued
+                note.updatedAt = dependencies.now()
+                _ = persistAndSync()
+            } catch {
+                note.importStatus = .failed
+                note.importErrorCode = if case QuickCaptureImportError.insufficientCredits = error {
+                    "insufficient_credits"
+                } else {
+                    "job_start_failed"
+                }
+                note.importCompletedAt = dependencies.now()
+                note.updatedAt = dependencies.now()
+                _ = persistAndSync()
+                if case QuickCaptureImportError.insufficientCredits = error {
+                    showSubscription = true
+                } else {
+                    aiSkillErrorMessage = error.localizedDescription
+                }
+            }
+        }
+    }
 }

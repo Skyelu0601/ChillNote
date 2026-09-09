@@ -116,6 +116,10 @@ class ContentGuardTests(unittest.TestCase):
         self.assertEqual(validator.resource_locale_tag("values-zh-rTW"), "zh-Hant")
         self.assertEqual(validator.resource_locale_tag("values-b+zh+Hans"), "zh-Hans")
 
+    def test_portuguese_region_resource_tags_match_language_picker(self) -> None:
+        self.assertEqual(validator.resource_locale_tag("values-pt"), "pt")
+        self.assertEqual(validator.resource_locale_tag("values-pt-rPT"), "pt-PT")
+
 
 if __name__ == "__main__":
     unittest.main()

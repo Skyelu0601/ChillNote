@@ -191,6 +191,7 @@ final class NoteDetailViewModelTests: XCTestCase {
             RichTextEditorSelection(location: 0, length: 4, selectedText: "Text")
         ] {
             let preview = NoteAISkillPreview(
+                analyticsRunID: "test-run",
                 recipe: recipe,
                 result: "Result",
                 sourceContent: "Text",

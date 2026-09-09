@@ -10,7 +10,7 @@ struct TeleprompterCameraView: View {
     @StateObject private var camera = TeleprompterCameraManager()
 
     @State private var scriptText: String
-    @State private var scrollSpeed: Double = 24
+    @State private var scrollSpeed: Double = 16
     @State private var fontSize: Double = 24
     @State private var textColor: TeleprompterTextColor = .white
     @State private var teleprompterOffset: CGSize = .zero

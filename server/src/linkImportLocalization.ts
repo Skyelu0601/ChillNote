@@ -5,6 +5,8 @@ export const supportedLinkImportContentLocales = [
   "fr",
   "ja",
   "ko",
+  "pt-BR",
+  "pt-PT",
   "zh-Hans",
   "zh-Hant"
 ] as const;
@@ -69,6 +71,22 @@ const stringsByLocale: Record<LinkImportContentLocale, LinkImportContentStrings>
     unavailable: "가져올 수 없음",
     unknownAuthor: "알 수 없는 작성자"
   },
+  "pt-BR": {
+    descriptionHeading: "Descrição",
+    authorHeading: "Autor",
+    hookHeading: "Gancho",
+    transcriptHeading: "Transcrição",
+    unavailable: "Indisponível",
+    unknownAuthor: "Autor desconhecido"
+  },
+  "pt-PT": {
+    descriptionHeading: "Descrição",
+    authorHeading: "Autor",
+    hookHeading: "Gancho",
+    transcriptHeading: "Transcrição",
+    unavailable: "Indisponível",
+    unknownAuthor: "Autor desconhecido"
+  },
   "zh-Hans": {
     descriptionHeading: "描述",
     authorHeading: "作者",
@@ -98,6 +116,13 @@ export function normalizeLinkImportContentLocale(locale?: string | null): LinkIm
       return "zh-Hant";
     }
     return "zh-Hans";
+  }
+
+  if (lowercased === "pt" || lowercased.startsWith("pt-")) {
+    const subtags = lowercased.split("-");
+    return subtags.slice(1).some((item) => ["pt", "ao", "mz", "cv", "gw", "st", "tl"].includes(item))
+      ? "pt-PT"
+      : "pt-BR";
   }
 
   const baseLanguage = lowercased.split("-")[0];

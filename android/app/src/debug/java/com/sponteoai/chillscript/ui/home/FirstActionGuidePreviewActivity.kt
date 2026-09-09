@@ -78,6 +78,7 @@ class FirstActionGuidePreviewActivity : ComponentActivity() {
                     onConfirmVoiceRecording = {},
                     onPasteLink = { done -> done(false) },
                     onOpenSubscription = {},
+                    onResolveImportCredits = {},
                     onOpenWeeklyTopics = {},
                     onOpenPendingRecordings = {},
                     onOpenSettings = {},
@@ -88,7 +89,6 @@ class FirstActionGuidePreviewActivity : ComponentActivity() {
                         stage = stage,
                         targetNoteId = if (stage == HomeFirstActionStage.OpenImportedNote) targetNoteId else null,
                     ),
-                    onAcknowledgeFirstActionShare = {},
                     onDismissFirstActionGuide = {},
                     onOpenFirstActionTarget = {},
                 )

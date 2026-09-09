@@ -9,6 +9,21 @@ enum GeminiError: LocalizedError {
     case apiError(String)
     case invalidResponse
     case consentDeclined
+    case insufficientCredits
+    case rateLimited
+
+    var isInsufficientCredits: Bool {
+        if case .insufficientCredits = self { return true }
+        return false
+    }
+
+    static func meteringError(forHTTPStatus statusCode: Int) -> GeminiError? {
+        switch statusCode {
+        case 402: return .insufficientCredits
+        case 429: return .rateLimited
+        default: return nil
+        }
+    }
     
     var errorDescription: String? {
         switch self {
@@ -24,6 +39,10 @@ enum GeminiError: LocalizedError {
             return AppErrorCode.geminiInvalidResponse.message
         case .consentDeclined:
             return L10n.text("speech_recognizer.error.ai_permission_not_granted")
+        case .insufficientCredits:
+            return L10n.text("quick_capture.link_import.status.insufficient_credits")
+        case .rateLimited:
+            return L10n.text("common.error.unknown")
         }
     }
 }
@@ -164,9 +183,8 @@ struct GeminiService {
             }
             
             if !(200...299).contains(httpResponse.statusCode) {
-                // Fast-path: credits exhausted (402) or rate-limited (429).
-                if httpResponse.statusCode == 402 || httpResponse.statusCode == 429 {
-                    throw GeminiError.apiError("Insufficient credits")
+                if let meteringError = GeminiError.meteringError(forHTTPStatus: httpResponse.statusCode) {
+                    throw meteringError
                 }
                 if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
                     if let message = errorJson["error"] as? String {
@@ -394,8 +412,10 @@ struct GeminiService {
                     
                     guard (200...299).contains(httpResponse.statusCode) else {
                         Self.logger.error("Streaming request failed with status \(httpResponse.statusCode, privacy: .public)")
-                        if httpResponse.statusCode == 429 || httpResponse.statusCode == 402 {
-                            throw GeminiError.apiError("Insufficient credits")
+                        if let meteringError = GeminiError.meteringError(
+                            forHTTPStatus: httpResponse.statusCode
+                        ) {
+                            throw meteringError
                         }
                         throw GeminiError.apiError("Status code: \(httpResponse.statusCode)")
                     }

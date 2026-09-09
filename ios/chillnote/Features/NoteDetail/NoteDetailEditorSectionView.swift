@@ -31,6 +31,8 @@ struct NoteDetailEditorSectionView: View {
 struct NoteDetailContextSectionView: View {
     let note: Note
     let isDeleted: Bool
+    let creditActionTitle: String
+    let onResolveImportCredits: () -> Void
     let onRemoveTag: (Tag) -> Void
 
     var body: some View {
@@ -49,7 +51,15 @@ struct NoteDetailContextSectionView: View {
             } else if note.importStatus == .failed {
                 NoteDetailImportStatusBanner(
                     iconName: "exclamationmark.triangle.fill",
-                    text: L10n.text("quick_capture.link_import.status.failed")
+                    text: L10n.text(
+                        note.importErrorCode == "insufficient_credits"
+                            ? "quick_capture.link_import.status.insufficient_credits"
+                            : "quick_capture.link_import.status.failed"
+                    ),
+                    actionTitle: note.importErrorCode == "insufficient_credits"
+                        ? creditActionTitle
+                        : nil,
+                    onAction: onResolveImportCredits
                 )
             }
 
@@ -68,6 +78,8 @@ struct NoteDetailContextSectionView: View {
 private struct NoteDetailImportStatusBanner: View {
     let iconName: String
     let text: String
+    var actionTitle: String? = nil
+    var onAction: () -> Void = {}
 
     var body: some View {
         HStack(spacing: 10) {
@@ -78,6 +90,13 @@ private struct NoteDetailImportStatusBanner: View {
                 .font(.chillCaption)
                 .foregroundColor(.textSub)
                 .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 4)
+            if let actionTitle {
+                Button(actionTitle, action: onAction)
+                    .font(.chillCaption.weight(.semibold))
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+            }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 10)

@@ -10,6 +10,8 @@ struct HomeHeaderView: View {
     let visibleNotesCount: Int
     let hasPendingRecordings: Bool
     let highlightSelectionEntry: Bool
+    var hasUnreadNotifications: Bool = false
+    var onOpenNotifications: () -> Void = {}
 
     let onToggleSidebar: () -> Void
     let onCreateBlankNote: () -> Void
@@ -59,28 +61,31 @@ struct HomeHeaderView: View {
                 .padding(.vertical, 8)
             } else {
                 ZStack {
-                    HStack {
+                    // Reserve equal space on both sides so the title stays at screen center.
+                    headerTitleView
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.65)
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, 92)
+                    HStack(spacing: 0) {
                         sidebarButton
-
-                        Spacer()
-
+                        Spacer(minLength: 0)
                         trailingTools
                     }
-
-                    headerTitleView
                 }
             }
         }
-        .padding(.horizontal, 24)
+        .padding(.horizontal, isSelectionMode ? 24 : 14)
         .padding(.top, 20)
     }
 
     private var sidebarButton: some View {
         Button(action: onToggleSidebar) {
             Image(systemName: "line.3.horizontal")
-                .font(.system(size: 24, weight: .medium))
+                .font(.system(size: 20, weight: .regular))
                 .foregroundColor(.textMain)
                 .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
                 .overlay(alignment: .topTrailing) {
                     if hasPendingRecordings {
                         Circle()
@@ -91,7 +96,6 @@ struct HomeHeaderView: View {
                 }
         }
         .buttonStyle(.bouncy)
-        .padding(.leading, -10)
     }
 
     private var headerTitleView: some View {
@@ -107,22 +111,41 @@ struct HomeHeaderView: View {
                 + Text(verbatim: "Script")
                     .foregroundColor(.brandBlue)
             )
-            .font(.system(size: 24, weight: .semibold, design: .serif))
+            .font(.system(size: 22, weight: .semibold, design: .serif))
         } else {
             Text(headerTitle)
-                .font(.system(size: 24, weight: .semibold, design: .serif))
+                .font(.system(size: 22, weight: .semibold, design: .serif))
                 .foregroundColor(.black)
                 .lineLimit(1)
         }
     }
 
     private var trailingTools: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: 0) {
+            if !isTrashSelected {
+                Button(action: onOpenNotifications) {
+                    Image(systemName: "bell")
+                        .font(.system(size: 20, weight: .regular))
+                        .foregroundColor(.textMain)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                        .overlay(alignment: .topTrailing) {
+                            if hasUnreadNotifications {
+                                Circle().fill(Color.red).frame(width: 7, height: 7).offset(x: -9, y: 9)
+                            }
+                        }
+                }
+                .buttonStyle(.bouncy)
+                .disabled(isRecording)
+                .accessibilityLabel(L10n.text(hasUnreadNotifications ? "notifications.accessibility_unread" : "notifications.title"))
+            }
+
             Button(action: onToggleSearch) {
                 Image(systemName: "magnifyingglass")
-                    .font(.system(size: 24, weight: .medium))
+                    .font(.system(size: 20, weight: .regular))
                     .foregroundColor(isSearchVisible ? .brandBlue : .textMain)
                     .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.bouncy)
             .disabled(isRecording)

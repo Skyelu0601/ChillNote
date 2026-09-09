@@ -8,4 +8,6 @@
     <locale android:name="ko" />
     <locale android:name="zh-Hans" />
     <locale android:name="zh-Hant" />
+    <locale android:name="pt" />
+    <locale android:name="pt-PT" />
 </locale-config>

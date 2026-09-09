@@ -65,12 +65,15 @@ import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.PushPin
 import androidx.compose.material.icons.outlined.RadioButtonUnchecked
 import androidx.compose.material.icons.outlined.Restore
+import androidx.compose.material.icons.outlined.NotificationsNone
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material.icons.outlined.Tag
 import androidx.compose.material.icons.outlined.DeleteSweep
 import androidx.compose.material.icons.outlined.WorkspacePremium
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -114,6 +117,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.input.pointer.pointerInput
@@ -214,6 +218,7 @@ fun HomeScreenContent(
     onConfirmVoiceRecording: () -> Unit,
     onPasteLink: (((Boolean) -> Unit) -> Unit),
     onOpenSubscription: () -> Unit,
+    onResolveImportCredits: (NoteEntity) -> Unit,
     onOpenWeeklyTopics: () -> Unit,
     onOpenPendingRecordings: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -221,13 +226,29 @@ fun HomeScreenContent(
     onMoveTag: (TagEntity, String?) -> Unit,
     onDeleteTag: (TagEntity) -> Unit,
     firstActionGuideState: HomeFirstActionGuideState,
-    onAcknowledgeFirstActionShare: () -> Unit,
     onDismissFirstActionGuide: () -> Unit,
     onOpenFirstActionTarget: () -> Unit,
+    notifications: List<com.sponteoai.chillscript.data.remote.InboxNotification> = emptyList(),
+    notificationsLoading: Boolean = false,
+    notificationsFailed: Boolean = false,
+    onRefreshNotifications: () -> Unit = {},
+    onReadNotification: (String) -> Unit = {},
     noteRevealTargetId: String? = null,
     onNoteRevealed: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    var notificationsOpen by androidx.compose.runtime.saveable.rememberSaveable { mutableStateOf(false) }
+    val visibleNotifications = notifications.filter { subscriptionTier != "pro" || it.kind != "welcome_credits" }
+    LaunchedEffect(subscriptionTier) { onRefreshNotifications() }
+    if (notificationsOpen) {
+        NotificationInboxScreen(
+            visibleNotifications, notificationsLoading, notificationsFailed,
+            onBack = { notificationsOpen = false },
+            onRefresh = onRefreshNotifications,
+            onRead = onReadNotification,
+        )
+        return
+    }
     var sidebarOpen by remember { mutableStateOf(false) }
     var guideTargetBounds by remember(firstActionGuideState.targetNoteId) { mutableStateOf<Rect?>(null) }
     val isTrash = selectedSection == "trash"
@@ -239,6 +260,14 @@ fun HomeScreenContent(
     val sidebarOpenMinTranslationPx = with(density) { 36.dp.toPx() }
     val sidebarHorizontalBiasPx = with(density) { 12.dp.toPx() }
     val notesListState = rememberLazyListState()
+    val showQuickCaptureDock = !isTrash && !isSelectionMode && !searchVisible
+    var quickCaptureDockHeightPx by remember { mutableStateOf(0) }
+    var selectionActionHeightPx by remember { mutableStateOf(0) }
+    val emptyStateBottomInset = when {
+        isSelectionMode -> with(density) { selectionActionHeightPx.toDp() }
+        showQuickCaptureDock -> with(density) { quickCaptureDockHeightPx.toDp() }
+        else -> WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    }
 
     LaunchedEffect(noteRevealTargetId, notes.map { it.id }) {
         val noteId = noteRevealTargetId ?: return@LaunchedEffect
@@ -279,6 +308,8 @@ fun HomeScreenContent(
                 hasPendingRecordings = pendingRecordingsCount > 0,
                 onSidebar = { sidebarOpen = true },
                 onToggleSearch = onToggleSearch,
+                hasUnreadNotifications = visibleNotifications.any { it.readAt == null },
+                onOpenNotifications = { notificationsOpen = true },
                 onExitSelection = onExitSelectionMode,
                 onSelectAll = onSelectAll,
                 onDeleteSelection = onDeleteSelection,
@@ -331,7 +362,8 @@ fun HomeScreenContent(
                     IOSHomeEmptyState(
                         section = selectedSection,
                         hasActiveSearch = searchQuery.isNotBlank(),
-                        modifier = Modifier.fillMaxSize(),
+                        // Center within the visible space above the floating bottom controls.
+                        modifier = Modifier.fillMaxSize().padding(bottom = emptyStateBottomInset),
                     )
                 } else {
                     LazyColumn(
@@ -375,6 +407,12 @@ fun HomeScreenContent(
                                 onRestore = { onRestore(note) },
                                 onPermanentDelete = { onPermanentDelete(note) },
                                 onOpenSource = onOpenSource,
+                                creditActionLabel = if (subscriptionTier.equals("pro", ignoreCase = true)) {
+                                    stringResource(R.string.common_retry)
+                                } else {
+                                    stringResource(R.string.sidebar_membership_upgrade)
+                                },
+                                onResolveImportCredits = { onResolveImportCredits(note) },
                                 modifier = if (note.id == firstActionGuideState.targetNoteId) {
                                     Modifier.onGloballyPositioned { guideTargetBounds = it.boundsInRoot() }
                                 } else Modifier,
@@ -385,7 +423,7 @@ fun HomeScreenContent(
             }
         }
 
-        if (!isTrash && !isSelectionMode && !searchVisible) {
+        if (showQuickCaptureDock) {
             IOSQuickCaptureDock(
                 isRecording = isRecording,
                 isVoiceProcessing = isVoiceProcessing,
@@ -399,6 +437,7 @@ fun HomeScreenContent(
                 onCreateText = onCreateBlankNote,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .onSizeChanged { quickCaptureDockHeightPx = it.height }
                     .imePadding()
                     .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 4.dp),
             )
@@ -410,6 +449,7 @@ fun HomeScreenContent(
                 onClick = onStartAIChat,
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
+                    .onSizeChanged { selectionActionHeightPx = it.height }
                     .padding(horizontal = 24.dp)
                     .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 12.dp),
             )
@@ -478,7 +518,6 @@ fun HomeScreenContent(
             ) + fadeOut(animationSpec = spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow)),
         ) {
             IOSFirstActionSharePrompt(
-                onAcknowledge = onAcknowledgeFirstActionShare,
                 onDismiss = onDismissFirstActionGuide,
                 modifier = Modifier.padding(
                     bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 104.dp,
@@ -747,6 +786,8 @@ private fun IOSHomeHeader(
     hasPendingRecordings: Boolean,
     onSidebar: () -> Unit,
     onToggleSearch: () -> Unit,
+    hasUnreadNotifications: Boolean,
+    onOpenNotifications: () -> Unit,
     onExitSelection: () -> Unit,
     onSelectAll: () -> Unit,
     onDeleteSelection: () -> Unit,
@@ -760,7 +801,8 @@ private fun IOSHomeHeader(
         Modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 2.dp)
+            .padding(horizontal = if (isSelectionMode) 24.dp else 14.dp)
+            .padding(top = 20.dp, bottom = 2.dp)
             .height(44.dp),
         contentAlignment = Alignment.Center,
     ) {
@@ -790,35 +832,49 @@ private fun IOSHomeHeader(
                 }
             }
         } else {
-            IOSRoundHeaderButton(
-                icon = Icons.Outlined.Menu,
-                contentDescription = sidebarDescription,
-                onClick = onSidebar,
-                modifier = Modifier.align(Alignment.CenterStart),
-                badge = hasPendingRecordings,
+            // Equal title insets keep the wordmark centered on the screen, independently of tools.
+            IOSHomeWordmark(
+                headerTitle,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 92.dp),
             )
-
-            IOSHomeWordmark(headerTitle)
-
-            Row(
-                modifier = Modifier.align(Alignment.CenterEnd),
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-            ) {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                 IOSRoundHeaderButton(
-                    icon = Icons.Outlined.Search,
-                    contentDescription = searchDescription,
-                    onClick = onToggleSearch,
-                    tint = if (isSearchVisible) ChillColors.BrandBlue else ChillColors.TextMain,
-                    enabled = !isRecording,
+                    icon = Icons.Outlined.Menu,
+                    contentDescription = sidebarDescription,
+                    onClick = onSidebar,
+                    badge = hasPendingRecordings,
                 )
-                if (isTrash) {
+
+                Spacer(Modifier.weight(1f))
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(0.dp),
+                ) {
+                    if (!isTrash) {
+                        IOSRoundHeaderButton(
+                            icon = Icons.Outlined.NotificationsNone,
+                            contentDescription = stringResource(if (hasUnreadNotifications) R.string.notifications_accessibility_unread else R.string.notifications_title),
+                            onClick = onOpenNotifications,
+                            badge = hasUnreadNotifications,
+                            enabled = !isRecording,
+                        )
+                    }
                     IOSRoundHeaderButton(
-                        icon = Icons.Outlined.DeleteSweep,
-                        contentDescription = emptyTrashDescription,
-                        onClick = onEmptyTrash,
-                        tint = Color(0xFFD14343),
-                        bordered = true,
+                        icon = Icons.Outlined.Search,
+                        contentDescription = searchDescription,
+                        onClick = onToggleSearch,
+                        tint = if (isSearchVisible) ChillColors.BrandBlue else ChillColors.TextMain,
+                        enabled = !isRecording,
                     )
+                    if (isTrash) {
+                        IOSRoundHeaderButton(
+                            icon = Icons.Outlined.DeleteSweep,
+                            contentDescription = emptyTrashDescription,
+                            onClick = onEmptyTrash,
+                            tint = Color(0xFFD14343),
+                            bordered = true,
+                        )
+                    }
                 }
             }
         }
@@ -842,7 +898,7 @@ private fun IOSRoundHeaderButton(
                 icon,
                 contentDescription,
                 tint = tint.copy(alpha = if (enabled) 1f else 0.3f),
-                modifier = Modifier.size(if (bordered) 18.dp else 24.dp),
+                modifier = Modifier.size(if (bordered) 18.dp else 22.dp),
             )
         }
         if (bordered) {
@@ -857,8 +913,8 @@ private fun IOSRoundHeaderButton(
             Box(
                 Modifier
                     .align(Alignment.TopEnd)
-                    .padding(top = 6.dp, end = 5.dp)
-                    .size(8.dp)
+                    .padding(top = 9.dp, end = 9.dp)
+                    .size(7.dp)
                     .background(Color.Red, CircleShape),
             )
         }
@@ -866,35 +922,26 @@ private fun IOSRoundHeaderButton(
 }
 
 @Composable
-private fun IOSHomeWordmark(title: String) {
-    if (title == "ChillScript") {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = "Chill",
-                color = Color.Black,
-                fontFamily = FontFamily.Serif,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-            Text(
-                text = "Script",
-                color = ChillColors.BrandBlue,
-                fontFamily = FontFamily.Serif,
-                fontSize = 24.sp,
-                fontWeight = FontWeight.SemiBold,
-            )
-        }
-    } else {
-        Text(
-            text = title,
-            color = Color.Black,
-            fontFamily = FontFamily.Serif,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.SemiBold,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-    }
+private fun IOSHomeWordmark(title: String, modifier: Modifier = Modifier) {
+    val label = if (title == "ChillScript") buildAnnotatedString {
+        pushStyle(SpanStyle(color = Color.Black))
+        append("Chill")
+        pop()
+        pushStyle(SpanStyle(color = ChillColors.BrandBlue))
+        append("Script")
+        pop()
+    } else AnnotatedString(title)
+    Text(
+        text = label,
+        modifier = modifier,
+        textAlign = TextAlign.Center,
+        color = ChillColors.TextMain,
+        fontFamily = FontFamily.Serif,
+        fontSize = 22.sp,
+        fontWeight = FontWeight.SemiBold,
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis,
+    )
 }
 
 @Composable
@@ -1028,6 +1075,8 @@ private fun IOSNoteCard(
     onRestore: () -> Unit,
     onPermanentDelete: () -> Unit,
     onOpenSource: (String) -> Unit,
+    creditActionLabel: String,
+    onResolveImportCredits: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var menuOpen by remember { mutableStateOf(false) }
@@ -1074,9 +1123,54 @@ private fun IOSNoteCard(
                         if (!isSelectionMode) Spacer(Modifier.width(28.dp))
                     }
 
-                    when (note.importStatus) {
-                        "queued", "processing" -> IOSLinkImportPreparingView()
-                        else -> if (note.content.isNotBlank()) {
+                    val needsUpgrade = note.importStatus == "failed" &&
+                        note.importErrorCode == "insufficient_credits"
+                    when {
+                        note.importStatus == "queued" || note.importStatus == "processing" -> IOSLinkImportPreparingView()
+                        needsUpgrade -> {
+                            note.sourceMetadata()?.let { source ->
+                                NoteSourceCard(
+                                    source = source,
+                                    compact = true,
+                                    compactTitle = stringResource(
+                                        R.string.link_import_saved_source_title,
+                                        source.platformName,
+                                    ),
+                                    compactSubtitle = stringResource(R.string.link_import_saved_in_inbox),
+                                    onOpen = { onOpenSource(source.url) },
+                                )
+                            }
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            ) {
+                                Text(
+                                    stringResource(R.string.link_import_upgrade_message),
+                                    modifier = Modifier.weight(1f),
+                                    color = ChillColors.TextMain,
+                                    fontSize = 13.sp,
+                                    lineHeight = 18.sp,
+                                )
+                                Button(
+                                    onClick = onResolveImportCredits,
+                                    modifier = Modifier.height(44.dp).widthIn(min = 104.dp),
+                                    shape = RoundedCornerShape(14.dp),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = ChillColors.BrandBlue,
+                                        contentColor = Color.White,
+                                    ),
+                                    contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 20.dp),
+                                ) {
+                                    Text(
+                                        creditActionLabel,
+                                        fontSize = 15.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                    )
+                                }
+                            }
+                        }
+                        note.content.isNotBlank() -> {
                             if (searchQuery.isBlank()) {
                                 MarkdownText(
                                     markdown = note.content,
@@ -1096,7 +1190,7 @@ private fun IOSNoteCard(
                         }
                     }
 
-                    if (tags.isNotEmpty()) {
+                    if (!needsUpgrade && tags.isNotEmpty()) {
                         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                             tags.take(3).forEach { tag -> IOSTagPill(tag, searchQuery) }
                             if (tags.size > 3) {
@@ -1110,11 +1204,13 @@ private fun IOSNoteCard(
                         }
                     }
 
-                    note.sourceMetadata()?.let { source ->
-                        NoteSourceCard(source = source, compact = true, onOpen = { onOpenSource(source.url) })
+                    if (!needsUpgrade) {
+                        note.sourceMetadata()?.let { source ->
+                            NoteSourceCard(source = source, compact = true, onOpen = { onOpenSource(source.url) })
+                        }
                     }
 
-                    if (note.importStatus == "failed") {
+                    if (note.importStatus == "failed" && note.importErrorCode != "insufficient_credits") {
                         Text(
                             stringResource(R.string.link_import_failed),
                             color = MaterialTheme.colorScheme.error,
@@ -2412,7 +2508,8 @@ private fun IOSHomeEmptyState(section: String, hasActiveSearch: Boolean, modifie
     Column(
         modifier.padding(horizontal = 36.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
+        // Leave 40% of spare space above the group for visual balance with the tall header.
+        verticalArrangement = Arrangement.spacedBy(0.dp, androidx.compose.ui.BiasAlignment.Vertical(-0.2f)),
     ) {
         Box(
             Modifier

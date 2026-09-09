@@ -24,6 +24,8 @@ struct HomeNotesListView: View {
     let onManageTags: (Note) -> Void
     let onMoveNote: (Note, NoteSection) -> Void
     let onDeleteNote: (Note) -> Void
+    let isProMember: Bool
+    let onResolveCredits: (Note) -> Void
     var guideTargetNoteID: UUID? = nil
     var onGuideTargetNoteOpened: (UUID) -> Void = { _ in }
 
@@ -141,6 +143,40 @@ struct HomeNotesListView: View {
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 onToggleNoteSelection(note)
+                            }
+                        } else if note.importStatus == .failed
+                                    && note.importErrorCode == "insufficient_credits" {
+                            ZStack(alignment: .topTrailing) {
+                                NoteCard(
+                                    item: item,
+                                    creditActionTitle: L10n.text(
+                                        isProMember ? "common.try_again" : "sidebar.membership.upgrade"
+                                    ),
+                                    onResolveCredits: { onResolveCredits(note) }
+                                )
+
+                                NoteOverflowMenu {
+                                    Button(action: onEnterSelectionMode) {
+                                        Label(
+                                            L10n.text("home.header.title_menu.select_notes"),
+                                            systemImage: "checkmark.circle"
+                                        )
+                                    }
+
+                                    Button {
+                                        onManageTags(note)
+                                    } label: {
+                                        Label(L10n.text("note_detail.tag.add"), systemImage: "tag")
+                                    }
+
+                                    Button(role: .destructive) {
+                                        onDeleteNote(note)
+                                    } label: {
+                                        Label(L10n.text("common.delete"), systemImage: "trash")
+                                    }
+                                }
+                                .padding(.top, 10)
+                                .padding(.trailing, 10)
                             }
                         } else {
                             ZStack(alignment: .topTrailing) {
@@ -415,7 +451,9 @@ struct HomeEmptyStateDesignPreview: View {
                             onTogglePin: { _ in },
                             onManageTags: { _ in },
                             onMoveNote: { _, _ in },
-                            onDeleteNote: { _ in }
+                            onDeleteNote: { _ in },
+                            isProMember: false,
+                            onResolveCredits: { _ in }
                         )
                     }
                 }
@@ -435,7 +473,6 @@ struct HomeEmptyStateDesignPreview: View {
         .overlay(alignment: .bottom) {
             if showsFirstActionPrompt && !isFirstActionPromptDismissed {
                 FirstActionSharePromptView(
-                    onStart: { isFirstActionPromptDismissed = true },
                     onSkip: { isFirstActionPromptDismissed = true }
                 )
                     .padding(.horizontal, BrandTokens.Space.s3)
@@ -580,6 +617,7 @@ struct NoteListItemViewData: Identifiable {
     let hiddenTagCount: Int
     let source: NoteSourceMetadata?
     let importStatus: NoteImportStatus
+    let importErrorCode: String?
 
     init(note: Note, searchQuery: String, usePlainPreview: Bool = true) {
         id = note.id
@@ -626,6 +664,7 @@ struct NoteListItemViewData: Identifiable {
         hiddenTagCount = max(0, note.tags.count - prefixTags.count)
         source = note.sourceMetadata
         importStatus = note.importStatus
+        importErrorCode = note.importErrorCode
     }
 }
 
@@ -634,6 +673,8 @@ struct NoteCard: View {
     var isSelectionMode: Bool = false
     var isSelected: Bool = false
     var onSelectionToggle: (() -> Void)? = nil
+    var creditActionTitle: String? = nil
+    var onResolveCredits: (() -> Void)? = nil
 
     private var processingStage: VoiceProcessingStage? {
         guard let state = VoiceProcessingService.shared.processingStates[item.id],
@@ -684,6 +725,40 @@ struct NoteCard: View {
                 if item.importStatus == .queued || item.importStatus == .processing {
                     LinkImportPreparingView()
                         .padding(.top, 2)
+                } else if item.importStatus == .failed && item.importErrorCode == "insufficient_credits" {
+                    if let source = item.source {
+                        NoteSourceCard(
+                            source: source,
+                            compact: true,
+                            compactTitle: L10n.text(
+                                "quick_capture.link_import.saved_source.title",
+                                source.platformName
+                            ),
+                            compactSubtitle: L10n.text("quick_capture.link_import.saved_in_inbox")
+                        )
+                    }
+
+                    HStack(alignment: .center, spacing: 12) {
+                        Text(L10n.text("quick_capture.link_import.upgrade.message"))
+                            .font(.bodySmall)
+                            .foregroundColor(.textMain)
+                            .multilineTextAlignment(.leading)
+
+                        Spacer(minLength: 4)
+
+                        Button {
+                            onResolveCredits?()
+                        } label: {
+                            Text(creditActionTitle ?? L10n.text("sidebar.membership.upgrade"))
+                                .font(.bodyMedium.weight(.semibold))
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 20)
+                                .frame(minWidth: 104, minHeight: 44)
+                                .background(Color.accentPrimary)
+                                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 } else {
                     if let stage = processingStage {
                         VoiceProcessingWorkflowView(currentStage: stage, style: .compact)
@@ -735,7 +810,7 @@ struct NoteCard: View {
                                         .clipShape(Capsule())
                                 }
                                 if item.hiddenTagCount > 0 {
-                                    Text("+\(item.hiddenTagCount)")
+                                    Text(verbatim: "+\(item.hiddenTagCount)")
                                         .font(.chillCaption)
                                         .foregroundColor(.textSub)
                                 }

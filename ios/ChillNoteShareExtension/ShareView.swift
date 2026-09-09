@@ -41,7 +41,10 @@ private struct ShareBottomSheetContent: View {
                 progress: viewModel.visualProgress,
                 platformID: viewModel.sourcePlatformID,
                 isCompleted: viewModel.isCompleted,
-                errorMessage: viewModel.errorMessage
+                errorMessage: viewModel.errorMessage,
+                isCreditsRequired: viewModel.isCreditsRequired,
+                onOpenApp: viewModel.openApp,
+                onDismiss: viewModel.dismiss
             )
         }
         .padding(.horizontal, 24)
@@ -134,11 +137,19 @@ private struct ShareStatusView: View {
     let platformID: String
     let isCompleted: Bool
     let errorMessage: String?
+    let isCreditsRequired: Bool
+    let onOpenApp: () -> Void
+    let onDismiss: () -> Void
 
     var body: some View {
         VStack(spacing: 16) {
             if let errorMessage {
-                ShareErrorView(message: errorMessage)
+                ShareErrorView(
+                    message: errorMessage,
+                    isCreditsRequired: isCreditsRequired,
+                    onOpenApp: onOpenApp,
+                    onDismiss: onDismiss
+                )
                     .frame(maxWidth: .infinity, minHeight: 170, alignment: .center)
             } else if isCompleted {
                 VStack(spacing: 14) {
@@ -495,6 +506,9 @@ private struct MovingHighlight: View {
 
 private struct ShareErrorView: View {
     let message: String
+    let isCreditsRequired: Bool
+    let onOpenApp: () -> Void
+    let onDismiss: () -> Void
 
     @State private var appeared = false
 
@@ -502,19 +516,19 @@ private struct ShareErrorView: View {
         VStack(spacing: 20) {
             ZStack {
                 Circle()
-                    .fill(Color.red.opacity(0.1))
+                    .fill((isCreditsRequired ? Color.orange : Color.red).opacity(0.1))
                     .frame(width: 72, height: 72)
 
                 Image(systemName: "exclamationmark.triangle.fill")
                     .font(.system(size: 32, weight: .semibold))
-                    .foregroundStyle(.red)
+                    .foregroundStyle(isCreditsRequired ? .orange : .red)
                     .symbolRenderingMode(.hierarchical)
             }
             .scaleEffect(appeared ? 1 : 0.6)
             .opacity(appeared ? 1 : 0)
 
             VStack(spacing: 8) {
-                Text(ShareL10n.text("share_extension.failed"))
+                Text(ShareL10n.text(isCreditsRequired ? "share_extension.credits_required_title" : "share_extension.failed"))
                     .font(.system(size: 18, weight: .semibold, design: .rounded))
                     .foregroundStyle(.primary)
 
@@ -527,6 +541,15 @@ private struct ShareErrorView: View {
             }
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared ? 0 : 6)
+
+            Button(
+                ShareL10n.text(
+                    isCreditsRequired ? "sidebar.membership.upgrade" : "common.done"
+                ),
+                action: isCreditsRequired ? onOpenApp : onDismiss
+            )
+                .buttonStyle(.borderedProminent)
+                .tint(isCreditsRequired ? .orange : .accentColor)
         }
         .onAppear {
             withAnimation(.spring(response: 0.42, dampingFraction: 0.72).delay(0.05)) {

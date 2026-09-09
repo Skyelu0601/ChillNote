@@ -15,6 +15,8 @@ test("provides a localized transcript heading for every supported app language",
     ["fr", "Transcription"],
     ["ja", "文字起こし"],
     ["ko", "녹취록"],
+    ["pt-BR", "Transcrição"],
+    ["pt-PT", "Transcrição"],
     ["zh-Hans", "转写文字"],
     ["zh-Hant", "轉寫文字"]
   ]);
@@ -38,4 +40,15 @@ test("extracts the preferred locale from an Accept-Language header", () => {
   assert.equal(preferredLanguageFromHeader("zh-Hant-TW,zh-Hant;q=0.9,en;q=0.8"), "zh-Hant-TW");
   assert.equal(preferredLanguageFromHeader(["fr-CA,fr;q=0.9"]), "fr-CA");
   assert.equal(preferredLanguageFromHeader(undefined), undefined);
+});
+
+test("Portuguese system tags preserve the regional variant and never fall back to English", () => {
+  for (const locale of ["pt", "pt-BR", " PT_br ", "pt-Latn-BR"]) {
+    assert.equal(normalizeLinkImportContentLocale(locale), "pt-BR");
+  }
+  for (const locale of ["pt-PT", "pt_PT", "pt-AO", "pt-MZ", "pt-Latn-PT"]) {
+    assert.equal(normalizeLinkImportContentLocale(locale), "pt-PT");
+  }
+  assert.equal(linkImportContentStrings("pt-BR").unknownAuthor, "Autor desconhecido");
+  assert.equal(linkImportContentStrings("pt-PT").descriptionHeading, "Descrição");
 });

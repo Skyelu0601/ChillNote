@@ -93,11 +93,11 @@ extension NoteDetailViewModel {
                 "skill_run_failed",
                 properties: recipe.analyticsProperties.merging([
                     "run_id": runID,
-                    "error_code": message.localizedCaseInsensitiveContains("insufficient credits")
+                    "error_code": (error as? GeminiError)?.isInsufficientCredits == true
                         ? "insufficient_credits" : "generation_failed"
                 ]) { current, _ in current }
             )
-            if message.localizedCaseInsensitiveContains("insufficient credits") {
+            if (error as? GeminiError)?.isInsufficientCredits == true {
                 showSubscription = true
             } else {
                 aiSkillErrorMessage = message
@@ -182,7 +182,11 @@ extension NoteDetailViewModel {
                 isProcessing = false
             } catch {
                 isProcessing = false
-                aiSkillErrorMessage = error.localizedDescription
+                if (error as? GeminiError)?.isInsufficientCredits == true {
+                    showSubscription = true
+                } else {
+                    aiSkillErrorMessage = error.localizedDescription
+                }
             }
         }
     }
