@@ -1,0 +1,58 @@
+{
+  "verified_at_utc": "2026-09-12T04:49:07Z",
+  "status": "deployed_and_verified",
+  "source_commit": "92194d9e19ccf513572625dd52d441bbc6496663",
+  "production_api": "https://api.chillnoteai.com",
+  "release": "/root/chillnote-api/releases/mobile-20260912-pt-localization",
+  "previous_release_retained": "/root/chillnote-api/releases/notifications-20260909",
+  "runtime_files_changed": [
+    "dist/linkImportLocalization.js"
+  ],
+  "test_files_changed": [
+    "dist/linkImportLocalization.test.js"
+  ],
+  "module_sha256": "2716095f004e54eb940a9559a3db8e8a0e00a534b2f08f6320f3ba34ee6858e5",
+  "environment_changes": false,
+  "database_mutations": false,
+  "database": {
+    "project_id": "qsyhkpaeyzhjojdvbntq",
+    "status": "ACTIVE_HEALTHY",
+    "successful_prisma_migrations": 29,
+    "unresolved_prisma_migrations": 0,
+    "latest_migration": "20260909090000_app_notifications",
+    "migration_status": "Database schema is up to date!",
+    "notification_rls_enabled": true,
+    "notification_anon_select": false,
+    "notification_authenticated_select": false,
+    "edge_functions": 0
+  },
+  "verification": {
+    "local_build": "passed",
+    "local_server_tests": {
+      "passed": 84,
+      "failed": 0
+    },
+    "production_node_localization_tests": {
+      "passed": 4,
+      "failed": 0
+    },
+    "localization_smoke": {
+      "pt-BR": "Transcrição",
+      "pt-PT": "Transcrição",
+      "en": "Transcript",
+      "zh-Hans": "转写文字"
+    },
+    "public_health": {
+      "ok": true
+    },
+    "unauthenticated_notifications_http": 401,
+    "unauthenticated_credits_http": 401,
+    "pm2_status": "online",
+    "pm2_started_at_utc": "2026-09-12T04:48:05.471Z",
+    "remote_diff": "Only linkImportLocalization.js changed among the 25 runtime modules",
+    "server_git_diff_check": "passed; no tracked server edits"
+  },
+  "limitations": [
+    "No real signed-in account or paid video transcription was used for an end-to-end import."
+  ]
+}

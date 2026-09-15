@@ -29,7 +29,7 @@
 - 录音转写：请求、实际开始、停止/取消/阻碍、转写结果和成果保存。
 - 创作：用 `creation_completed` 和 `creation_type` 统一统计分享转写、录音转写、AI 采用与提词器视频；按业务操作持久去重。
 - 付费：介绍页、价格页、套餐选择、购买开始/取消/失败和订阅成功，使用 `paywall_placement` 区分 `post_login`、`settings` 与 `feature_gate`。
-- AI Skill：选择、生成开始/成功/失败、实际采用；自定义 Skill 只上报 `custom`。
+- AI Skill：选择、授权决定、生成开始/成功/阻碍/取消/失败、实际采用；自定义 Skill 只上报 `custom`。
 - 提词器：打开、滚动/拍摄开始、停止、视频保存和固定错误类别。
 - RevenueCat 服务端：`rc_initial_purchase_event`、`rc_trial_started_event`、`rc_trial_converted_event`、`rc_trial_cancelled_event`、`rc_renewal_event`、`rc_cancellation_event`、`rc_uncancellation_event`、`rc_subscription_paused_event`、`rc_expiration_event`、`rc_billing_issue_event` 与 `rc_product_change_event`。
 
@@ -44,7 +44,7 @@ PostHog 已建立并置顶 [ChillScript 产品增长总览](https://us.posthog.c
 ## 数据边界
 
 - 不上传笔记、标题、录音、转写、提示词、邮箱、OAuth URL、推送 token 或原始错误信息。
-- 禁用自动页面、点击内容、深链和录屏采集；不启用自动错误采集、问卷或功能旗标预加载。
+- 禁用自动页面、点击内容、深链和录屏采集；不启用问卷或功能旗标预加载。2026-09-11 起源码启用自动崩溃采集，异常经过字段白名单脱敏，仅保留异常类型、调用栈、符号匹配标识和设备/版本元数据；移除异常原文、breadcrumbs 和局部变量。
 - 事件设置 `$geoip_disable = true`，不使用 IP 推断地理位置；PostHog 仍会接收并在事件中保留连接来源 IP；此配置不等于 IP 匿名化。
 - iOS PrivacyInfo 已增加分析用途与产品交互声明；官网隐私政策源码已补充 PostHog。发布应用前需同步发布官网政策，并在 App Store / Google Play 隐私表单声明账号/安装标识、产品交互与设备信息的分析用途。
 - 账号删除流程不会自动删除 PostHog 历史记录；处理删除请求时须在 PostHog 按内部账号 ID 删除对应用户数据。
@@ -59,6 +59,40 @@ PostHog 已建立并置顶 [ChillScript 产品增长总览](https://us.posthog.c
 5. 查看事件属性，确认没有笔记内容、邮箱、登录链接或录屏。
 
 参考：[iOS SDK](https://posthog.com/docs/libraries/ios)、[Android SDK](https://posthog.com/docs/libraries/android)。
+
+## 崩溃监测与错误诊断（2026-09-11）
+
+- 两端新增 `$exception` 自动捕获；Android 同时开启系统原生崩溃读取。仅主应用初始化 SDK，iOS 分享扩展与 Widget 不在本次覆盖范围内。
+- 崩溃事件带 `crash_reporting_schema = 1`，正式监测必须筛选 `environment = production`。测试崩溃会进入 development，不能计入正式事故。
+- Android `purchase_failed` 保留原有 `error_code`，新增 `billing_provider`、`billing_error_code`、`billing_stage`，只记录 SDK 枚举或数值代码。用户取消仍单独记录；这次未改商品、支付流程或权益。
+- Android 分享入口把 `ShareLinkInsufficientCreditsException` 分类为 `insufficient_credits`，无有效链接为 `invalid_share_content`。1.2.14 历史 `unknown` 可能混入额度限制，不能全部解释为程序 bug，也不能追溯补齐。
+- 新代码必须随下一版发布后才会产生正式崩溃数据；不能补收旧版本未记录的崩溃。iOS PrivacyInfo 和官网隐私政策源码已补充崩溃数据声明，发布时同步检查商店隐私表单。
+- 符号上传、验收及覆盖边界见 [CRASH_MONITORING.md](CRASH_MONITORING.md)。
+
+## AI 与登录错误分类（2026-09-12 源码修复）
+
+以下口径以事件 `diagnostic_schema = 2` 为准，必须随包含修复的客户端版本发布后验证正式收数。历史 `generation_failed` / `provider_error` 无法追溯重分类，不能用新版比例回填历史。
+
+| 事件／属性 | 统计口径 |
+| --- | --- |
+| `ai_consent_prompted` / `ai_consent_accepted` / `ai_consent_declined` | 每个授权弹窗记录一次决定，附 `trigger`、`consent_version`；拒绝不是生成失败 |
+| `skill_run_started` | 同意当前版本 AI 数据使用说明后才开始；每次重试使用新的 `run_id` |
+| `skill_run_completed` | 已得到可用结果；不代表用户已采用结果 |
+| `skill_run_blocked` | 额度不足 `insufficient_credits`、限流 `rate_limited`、登录失效 `authentication_required`、访问被拒 `access_denied`；防御性授权拒绝为 `ai_consent_required` |
+| `skill_run_cancelled` | 请求被取消，不能作为技术故障统计 |
+| `skill_run_failed` | 网络 `network_error` / `network_timeout`、HTTP `server_error` / `http_error`、响应 `invalid_response`、配置 `invalid_configuration`、未分类 `unknown_error` 等技术错误 |
+| iOS `login_cancelled` | Google SDK 的明确取消单独记录 `user_cancelled`；任务取消为 `request_cancelled`，均不再显示登录失败提示 |
+| iOS `login_failed` | 区分凭证、展示、Google SDK `provider`、后端 `token_exchange` 与会话阶段；不能将所有旧 `provider_error` 解释为 Google 服务故障 |
+
+AI 新诊断字段包括 `error_category`、`error_stage`、有明确响应时的 `http_status`，以及适用的固定 `sdk_error_domain` 和数值 `sdk_error_code`。不上传 SDK 错误原文、HTTP 响应正文、请求 URL、提示词或笔记。HTTP 403 只表明访问被拒，不等同于用户未同意 AI 数据使用说明；网络错误也不应触发重新授权。
+
+Google 取消判断同时检查 SDK 错误域、返回代码和登录阶段，依据 [Google 官方错误定义](https://developers.google.com/identity/sign-in/ios/reference/Enums/GIDSignInErrorCode)。其他错误域中的同一个数值不能推断为用户取消。
+
+监测时把成功、阻碍、取消、技术失败分列。生成的可比操作分母按同一端／版本／时间范围、`diagnostic_schema = 2` 的 `run_id` 关联开始与终态并去重；仍未结束或跨窗口的操作列为未知，不计为失败。授权拒绝率另用弹窗事件统计，不能并入生成失败率。新旧口径不要直接混算。
+
+客户端行为：拒绝不持久化为永久禁止，下次明确使用 AI 时重新提示；接受当前 `v1` 后跨启动保留，后续网络或额度问题按真实原因处理。连续请求共用一个提示，被取消的请求会移除；旧弹窗的关闭回调不能拒绝后来出现的新弹窗。iOS 翻译在语言选择弹窗真正关闭后才请求 AI 授权。
+
+编辑器修复针对已观测的 `dismantleUIView → flushPendingChanges → publishSelection` 崩溃路径：销毁时取消延迟任务、断开 delegate／工具栏回调，不再访问 SwiftUI 绑定；最后一笔未提交文字交由保留的视图模型暂存，再保存。尚未初始化的编辑器不能清空笔记，过期编辑器也不能覆盖更新后的内容。需在新版本正式使用后继续观察原崩溃问题是否复现，不能仅凭本地测试宣布线上崩溃归零。
 
 ## 本次验证（2026-09-06）
 

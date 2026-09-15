@@ -1,0 +1,8 @@
+{
+  "name": "chillscript-crash-symbol-tools",
+  "private": true,
+  "version": "1.0.0",
+  "devDependencies": {
+    "@posthog/cli": "0.18.1"
+  }
+}

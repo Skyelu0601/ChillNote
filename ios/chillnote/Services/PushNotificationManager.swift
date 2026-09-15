@@ -21,6 +21,7 @@ final class ChillScriptAppDelegate: NSObject, UIApplicationDelegate, UNUserNotif
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         UNUserNotificationCenter.current().delegate = self
+        AppsFlyerService.shared.configure(launchOptions: launchOptions)
         return true
     }
 

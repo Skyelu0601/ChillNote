@@ -1,0 +1,3157 @@
+{
+  "window": {
+    "date_from": "2026-09-11T11:45:58Z",
+    "date_to": "2026-09-12T11:45:58Z"
+  },
+  "project": {
+    "id": 596105,
+    "name": "ChillScript",
+    "organization": "sponteoai",
+    "timezone": "UTC"
+  },
+  "issues": [
+    {
+      "id": "01a0931c-98ba-7600-b634-ebf357a78d2f",
+      "type": "SIGABRT",
+      "source": "RichTextEditorView.swift",
+      "status": "active",
+      "first_seen": "2026-09-12T00:54:14.521000Z",
+      "last_seen": "2026-09-12T00:54:14.521000Z",
+      "occurrences": 1,
+      "users": 1,
+      "url": "https://us.posthog.com/project/596105/error_tracking/01a0931c-98ba-7600-b634-ebf357a78d2f"
+    }
+  ],
+  "current": [
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 1357
+    },
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 628
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 453
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 178
+    },
+    {
+      "event": "purchase_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 144
+    },
+    {
+      "event": "purchase_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 66
+    },
+    {
+      "event": "purchase_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 125
+    },
+    {
+      "event": "purchase_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 60
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 9
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 3
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 9
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 3
+    },
+    {
+      "event": "purchase_cancelled",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 107
+    },
+    {
+      "event": "purchase_cancelled",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 42
+    },
+    {
+      "event": "purchase_cancelled",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 93
+    },
+    {
+      "event": "purchase_cancelled",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 37
+    },
+    {
+      "event": "subscription_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 19
+    },
+    {
+      "event": "subscription_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 18
+    },
+    {
+      "event": "subscription_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 19
+    },
+    {
+      "event": "subscription_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 17
+    },
+    {
+      "event": "share_import_opened",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 374
+    },
+    {
+      "event": "share_import_opened",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 243
+    },
+    {
+      "event": "share_import_opened",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 237
+    },
+    {
+      "event": "share_import_opened",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 86
+    },
+    {
+      "event": "share_import_accepted",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 357
+    },
+    {
+      "event": "share_import_accepted",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 240
+    },
+    {
+      "event": "share_import_accepted",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 235
+    },
+    {
+      "event": "share_import_accepted",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 86
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 14
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 3
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 8
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 3
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 369
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 174
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 350
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 147
+    },
+    {
+      "event": "login_completed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 368
+    },
+    {
+      "event": "login_completed",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 133
+    },
+    {
+      "event": "login_completed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 349
+    },
+    {
+      "event": "login_completed",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 133
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 19
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 1
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 16
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 1
+    },
+    {
+      "event": "recording_requested",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 45
+    },
+    {
+      "event": "recording_requested",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 17
+    },
+    {
+      "event": "recording_requested",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 36
+    },
+    {
+      "event": "recording_requested",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 11
+    },
+    {
+      "event": "recording_blocked",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 4
+    },
+    {
+      "event": "recording_blocked",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 4
+    },
+    {
+      "event": "recording_blocked",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 3
+    },
+    {
+      "event": "recording_blocked",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 2
+    },
+    {
+      "event": "audio_transcription_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 6
+    },
+    {
+      "event": "audio_transcription_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 6
+    },
+    {
+      "event": "audio_transcription_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 6
+    },
+    {
+      "event": "audio_transcription_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 4
+    },
+    {
+      "event": "audio_transcription_completed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 6
+    },
+    {
+      "event": "audio_transcription_completed",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 6
+    },
+    {
+      "event": "audio_transcription_completed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 6
+    },
+    {
+      "event": "audio_transcription_completed",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 4
+    },
+    {
+      "event": "skill_run_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 346
+    },
+    {
+      "event": "skill_run_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 152
+    },
+    {
+      "event": "skill_run_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 114
+    },
+    {
+      "event": "skill_run_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 54
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 32
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 31
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 17
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 9
+    },
+    {
+      "event": "video_transcription_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 41
+    },
+    {
+      "event": "video_transcription_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 2
+    },
+    {
+      "event": "video_transcription_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 21
+    },
+    {
+      "event": "video_transcription_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 2
+    },
+    {
+      "event": "video_transcription_completed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 2
+    },
+    {
+      "event": "video_transcription_completed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 2
+    },
+    {
+      "event": "teleprompter_recording_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 28
+    },
+    {
+      "event": "teleprompter_recording_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 10
+    },
+    {
+      "event": "teleprompter_video_saved",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 50
+    },
+    {
+      "event": "teleprompter_video_saved",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 43
+    },
+    {
+      "event": "teleprompter_video_saved",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 17
+    },
+    {
+      "event": "teleprompter_video_saved",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 5
+    },
+    {
+      "event": "$exception",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 1
+    },
+    {
+      "event": "$exception",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 1
+    }
+  ],
+  "prior7Days": [
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 1156
+    },
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 410
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 286
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 109
+    },
+    {
+      "event": "purchase_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 120
+    },
+    {
+      "event": "purchase_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 38
+    },
+    {
+      "event": "purchase_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 93
+    },
+    {
+      "event": "purchase_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 32
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 7
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 4
+    },
+    {
+      "event": "purchase_cancelled",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 88
+    },
+    {
+      "event": "purchase_cancelled",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 23
+    },
+    {
+      "event": "purchase_cancelled",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 74
+    },
+    {
+      "event": "purchase_cancelled",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 20
+    },
+    {
+      "event": "subscription_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 13
+    },
+    {
+      "event": "subscription_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 11
+    },
+    {
+      "event": "subscription_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 13
+    },
+    {
+      "event": "subscription_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 9
+    },
+    {
+      "event": "share_import_opened",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 326
+    },
+    {
+      "event": "share_import_opened",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 103
+    },
+    {
+      "event": "share_import_opened",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 128
+    },
+    {
+      "event": "share_import_opened",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 39
+    },
+    {
+      "event": "share_import_accepted",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 307
+    },
+    {
+      "event": "share_import_accepted",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 103
+    },
+    {
+      "event": "share_import_accepted",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 128
+    },
+    {
+      "event": "share_import_accepted",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 39
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 16
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 7
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 255
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 123
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 231
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 92
+    },
+    {
+      "event": "login_completed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 241
+    },
+    {
+      "event": "login_completed",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 86
+    },
+    {
+      "event": "login_completed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 228
+    },
+    {
+      "event": "login_completed",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 86
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 12
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 6
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 6
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 5
+    },
+    {
+      "event": "recording_requested",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 28
+    },
+    {
+      "event": "recording_requested",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 9
+    },
+    {
+      "event": "recording_requested",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 19
+    },
+    {
+      "event": "recording_requested",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 6
+    },
+    {
+      "event": "recording_blocked",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 5
+    },
+    {
+      "event": "recording_blocked",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 2
+    },
+    {
+      "event": "recording_blocked",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 3
+    },
+    {
+      "event": "recording_blocked",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 2
+    },
+    {
+      "event": "audio_transcription_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 8
+    },
+    {
+      "event": "audio_transcription_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 1
+    },
+    {
+      "event": "audio_transcription_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 6
+    },
+    {
+      "event": "audio_transcription_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 1
+    },
+    {
+      "event": "audio_transcription_completed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 6
+    },
+    {
+      "event": "audio_transcription_completed",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 1
+    },
+    {
+      "event": "audio_transcription_completed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 5
+    },
+    {
+      "event": "audio_transcription_completed",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 1
+    },
+    {
+      "event": "audio_transcription_failed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 2
+    },
+    {
+      "event": "audio_transcription_failed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 1
+    },
+    {
+      "event": "skill_run_started",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 205
+    },
+    {
+      "event": "skill_run_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 60
+    },
+    {
+      "event": "skill_run_started",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 70
+    },
+    {
+      "event": "skill_run_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 20
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 22
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 7
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 9
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 4
+    },
+    {
+      "event": "video_transcription_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 42
+    },
+    {
+      "event": "video_transcription_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 15
+    },
+    {
+      "event": "teleprompter_recording_started",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 3
+    },
+    {
+      "event": "teleprompter_recording_started",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 2
+    },
+    {
+      "event": "teleprompter_video_saved",
+      "math": "total",
+      "group": [
+        "android"
+      ],
+      "n": 5
+    },
+    {
+      "event": "teleprompter_video_saved",
+      "math": "dau",
+      "group": [
+        "android"
+      ],
+      "n": 3
+    }
+  ],
+  "completeDailyBaseline": [
+    {
+      "from": "2026-09-06T11:45:58Z",
+      "to": "2026-09-07T11:45:58Z",
+      "rows": [
+        {
+          "event": "Application Opened",
+          "math": "dau",
+          "group": [
+            "android"
+          ],
+          "n": 21
+        },
+        {
+          "event": "login_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 19
+        },
+        {
+          "event": "skill_run_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 10
+        },
+        {
+          "event": "purchase_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 7
+        },
+        {
+          "event": "share_import_opened",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 57
+        }
+      ]
+    },
+    {
+      "from": "2026-09-07T11:45:58Z",
+      "to": "2026-09-08T11:45:58Z",
+      "rows": [
+        {
+          "event": "Application Opened",
+          "math": "dau",
+          "group": [
+            "android"
+          ],
+          "n": 47
+        },
+        {
+          "event": "Application Opened",
+          "math": "dau",
+          "group": [
+            "ios"
+          ],
+          "n": 12
+        },
+        {
+          "event": "login_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 36
+        },
+        {
+          "event": "login_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 19
+        },
+        {
+          "event": "login_failed",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 1
+        },
+        {
+          "event": "skill_run_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 20
+        },
+        {
+          "event": "skill_run_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 2
+        },
+        {
+          "event": "purchase_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 13
+        },
+        {
+          "event": "purchase_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 6
+        },
+        {
+          "event": "share_import_opened",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 28
+        },
+        {
+          "event": "share_import_opened",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 11
+        },
+        {
+          "event": "skill_run_failed",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 1
+        }
+      ]
+    },
+    {
+      "from": "2026-09-08T11:45:58Z",
+      "to": "2026-09-09T11:45:58Z",
+      "rows": [
+        {
+          "event": "Application Opened",
+          "math": "dau",
+          "group": [
+            "android"
+          ],
+          "n": 39
+        },
+        {
+          "event": "Application Opened",
+          "math": "dau",
+          "group": [
+            "ios"
+          ],
+          "n": 11
+        },
+        {
+          "event": "login_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 21
+        },
+        {
+          "event": "login_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 6
+        },
+        {
+          "event": "skill_run_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 6
+        },
+        {
+          "event": "skill_run_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 4
+        },
+        {
+          "event": "purchase_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 8
+        },
+        {
+          "event": "purchase_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 2
+        },
+        {
+          "event": "share_import_opened",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 40
+        },
+        {
+          "event": "share_import_opened",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 9
+        }
+      ]
+    },
+    {
+      "from": "2026-09-09T11:45:58Z",
+      "to": "2026-09-10T11:45:58Z",
+      "rows": [
+        {
+          "event": "Application Opened",
+          "math": "dau",
+          "group": [
+            "android"
+          ],
+          "n": 47
+        },
+        {
+          "event": "Application Opened",
+          "math": "dau",
+          "group": [
+            "ios"
+          ],
+          "n": 30
+        },
+        {
+          "event": "login_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 30
+        },
+        {
+          "event": "login_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 29
+        },
+        {
+          "event": "login_failed",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 3
+        },
+        {
+          "event": "login_failed",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 1
+        },
+        {
+          "event": "skill_run_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 17
+        },
+        {
+          "event": "skill_run_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 15
+        },
+        {
+          "event": "purchase_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 13
+        },
+        {
+          "event": "purchase_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 6
+        },
+        {
+          "event": "share_import_opened",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 70
+        },
+        {
+          "event": "share_import_opened",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 38
+        },
+        {
+          "event": "share_import_blocked",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 1
+        }
+      ]
+    },
+    {
+      "from": "2026-09-10T11:45:58Z",
+      "to": "2026-09-11T11:45:58Z",
+      "rows": [
+        {
+          "event": "Application Opened",
+          "math": "dau",
+          "group": [
+            "android"
+          ],
+          "n": 167
+        },
+        {
+          "event": "Application Opened",
+          "math": "dau",
+          "group": [
+            "ios"
+          ],
+          "n": 67
+        },
+        {
+          "event": "login_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 144
+        },
+        {
+          "event": "login_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 62
+        },
+        {
+          "event": "login_failed",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 6
+        },
+        {
+          "event": "login_failed",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 2
+        },
+        {
+          "event": "skill_run_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 152
+        },
+        {
+          "event": "skill_run_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 39
+        },
+        {
+          "event": "purchase_started",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 79
+        },
+        {
+          "event": "purchase_started",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 24
+        },
+        {
+          "event": "purchase_failed",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 7
+        },
+        {
+          "event": "share_import_opened",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 131
+        },
+        {
+          "event": "share_import_opened",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 45
+        },
+        {
+          "event": "share_import_blocked",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 15
+        },
+        {
+          "event": "skill_run_failed",
+          "math": "total",
+          "group": [
+            "android"
+          ],
+          "n": 4
+        },
+        {
+          "event": "skill_run_failed",
+          "math": "total",
+          "group": [
+            "ios"
+          ],
+          "n": 4
+        }
+      ]
+    }
+  ],
+  "failureDetails": [
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15",
+        "store_error"
+      ],
+      "n": 6
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.16",
+        "store_error"
+      ],
+      "n": 2
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14",
+        "store_error"
+      ],
+      "n": 2
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.14",
+        "store_error"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15",
+        "store_error"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15",
+        "store_error"
+      ],
+      "n": 6
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.16",
+        "store_error"
+      ],
+      "n": 2
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14",
+        "store_error"
+      ],
+      "n": 2
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.14",
+        "store_error"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15",
+        "store_error"
+      ],
+      "n": 1
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15",
+        "insufficient_credits"
+      ],
+      "n": 10
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.14",
+        "unknown"
+      ],
+      "n": 4
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14",
+        "insufficient_credits"
+      ],
+      "n": 2
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15",
+        "insufficient_credits"
+      ],
+      "n": 1
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15",
+        "insufficient_credits"
+      ],
+      "n": 6
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.14",
+        "unknown"
+      ],
+      "n": 2
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14",
+        "insufficient_credits"
+      ],
+      "n": 2
+    },
+    {
+      "event": "share_import_blocked",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15",
+        "insufficient_credits"
+      ],
+      "n": 1
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15",
+        "insufficient_credits"
+      ],
+      "n": 22
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15",
+        "generation_failed"
+      ],
+      "n": 15
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.16",
+        "insufficient_credits"
+      ],
+      "n": 6
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14",
+        "generation_failed"
+      ],
+      "n": 6
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14",
+        "insufficient_credits"
+      ],
+      "n": 6
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.14",
+        "insufficient_credits"
+      ],
+      "n": 4
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15",
+        "insufficient_credits"
+      ],
+      "n": 4
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15",
+        "generation_failed"
+      ],
+      "n": 10
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15",
+        "insufficient_credits"
+      ],
+      "n": 6
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14",
+        "generation_failed"
+      ],
+      "n": 5
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14",
+        "insufficient_credits"
+      ],
+      "n": 4
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.14",
+        "insufficient_credits"
+      ],
+      "n": 2
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.16",
+        "insufficient_credits"
+      ],
+      "n": 2
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15",
+        "insufficient_credits"
+      ],
+      "n": 1
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15",
+        "provider_error"
+      ],
+      "n": 13
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14",
+        "provider_error"
+      ],
+      "n": 6
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.16",
+        "network"
+      ],
+      "n": 1
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15",
+        "provider_error"
+      ],
+      "n": 11
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14",
+        "provider_error"
+      ],
+      "n": 5
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.16",
+        "network"
+      ],
+      "n": 1
+    },
+    {
+      "event": "recording_blocked",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14",
+        "microphone_permission"
+      ],
+      "n": 3
+    },
+    {
+      "event": "recording_blocked",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.14",
+        "microphone_permission"
+      ],
+      "n": 2
+    },
+    {
+      "event": "recording_blocked",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15",
+        "microphone_permission"
+      ],
+      "n": 2
+    },
+    {
+      "event": "recording_blocked",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15",
+        "microphone_permission"
+      ],
+      "n": 1
+    },
+    {
+      "event": "recording_blocked",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15",
+        "microphone_permission"
+      ],
+      "n": 2
+    },
+    {
+      "event": "recording_blocked",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.14",
+        "microphone_permission"
+      ],
+      "n": 1
+    },
+    {
+      "event": "recording_blocked",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14",
+        "microphone_permission"
+      ],
+      "n": 1
+    },
+    {
+      "event": "recording_blocked",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15",
+        "microphone_permission"
+      ],
+      "n": 1
+    }
+  ],
+  "versions": [
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15"
+      ],
+      "n": 805
+    },
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15"
+      ],
+      "n": 380
+    },
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.16"
+      ],
+      "n": 349
+    },
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14"
+      ],
+      "n": 247
+    },
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.14"
+      ],
+      "n": 197
+    },
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.13"
+      ],
+      "n": 6
+    },
+    {
+      "event": "Application Opened",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.16"
+      ],
+      "n": 1
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15"
+      ],
+      "n": 245
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.16"
+      ],
+      "n": 136
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15"
+      ],
+      "n": 106
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.14"
+      ],
+      "n": 73
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14"
+      ],
+      "n": 71
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.13"
+      ],
+      "n": 3
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.16"
+      ],
+      "n": 1
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15"
+      ],
+      "n": 212
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.16"
+      ],
+      "n": 123
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15"
+      ],
+      "n": 105
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14"
+      ],
+      "n": 61
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.14"
+      ],
+      "n": 34
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.16"
+      ],
+      "n": 8
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15"
+      ],
+      "n": 201
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.16"
+      ],
+      "n": 118
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15"
+      ],
+      "n": 92
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14"
+      ],
+      "n": 54
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.14"
+      ],
+      "n": 31
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.16"
+      ],
+      "n": 1
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15"
+      ],
+      "n": 13
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14"
+      ],
+      "n": 6
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.16"
+      ],
+      "n": 1
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15"
+      ],
+      "n": 11
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14"
+      ],
+      "n": 5
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.16"
+      ],
+      "n": 1
+    },
+    {
+      "event": "skill_run_started",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15"
+      ],
+      "n": 197
+    },
+    {
+      "event": "skill_run_started",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.16"
+      ],
+      "n": 98
+    },
+    {
+      "event": "skill_run_started",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15"
+      ],
+      "n": 78
+    },
+    {
+      "event": "skill_run_started",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14"
+      ],
+      "n": 74
+    },
+    {
+      "event": "skill_run_started",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.14"
+      ],
+      "n": 50
+    },
+    {
+      "event": "skill_run_started",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.13"
+      ],
+      "n": 1
+    },
+    {
+      "event": "skill_run_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15"
+      ],
+      "n": 67
+    },
+    {
+      "event": "skill_run_started",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15"
+      ],
+      "n": 30
+    },
+    {
+      "event": "skill_run_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.16"
+      ],
+      "n": 29
+    },
+    {
+      "event": "skill_run_started",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14"
+      ],
+      "n": 24
+    },
+    {
+      "event": "skill_run_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.14"
+      ],
+      "n": 18
+    },
+    {
+      "event": "skill_run_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.13"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_started",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15"
+      ],
+      "n": 84
+    },
+    {
+      "event": "purchase_started",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.16"
+      ],
+      "n": 49
+    },
+    {
+      "event": "purchase_started",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15"
+      ],
+      "n": 48
+    },
+    {
+      "event": "purchase_started",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14"
+      ],
+      "n": 18
+    },
+    {
+      "event": "purchase_started",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.14"
+      ],
+      "n": 11
+    },
+    {
+      "event": "purchase_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15"
+      ],
+      "n": 72
+    },
+    {
+      "event": "purchase_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.16"
+      ],
+      "n": 43
+    },
+    {
+      "event": "purchase_started",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15"
+      ],
+      "n": 42
+    },
+    {
+      "event": "purchase_started",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14"
+      ],
+      "n": 18
+    },
+    {
+      "event": "purchase_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.14"
+      ],
+      "n": 10
+    }
+  ],
+  "generation": [
+    {
+      "event": "skill_run_failed",
+      "math": "total",
+      "group": [
+        "ios"
+      ],
+      "n": 21
+    },
+    {
+      "event": "skill_run_failed",
+      "math": "dau",
+      "group": [
+        "ios"
+      ],
+      "n": 15
+    }
+  ],
+  "login": [
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "android",
+        "google"
+      ],
+      "n": 331
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "ios",
+        "google"
+      ],
+      "n": 128
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "ios",
+        "apple"
+      ],
+      "n": 39
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "android",
+        "email_otp"
+      ],
+      "n": 38
+    },
+    {
+      "event": "login_started",
+      "math": "total",
+      "group": [
+        "ios",
+        "email_otp"
+      ],
+      "n": 7
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "google"
+      ],
+      "n": 312
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "ios",
+        "google"
+      ],
+      "n": 111
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "android",
+        "email_otp"
+      ],
+      "n": 38
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "ios",
+        "apple"
+      ],
+      "n": 37
+    },
+    {
+      "event": "login_started",
+      "math": "dau",
+      "group": [
+        "ios",
+        "email_otp"
+      ],
+      "n": 7
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "google"
+      ],
+      "n": 17
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "apple"
+      ],
+      "n": 2
+    },
+    {
+      "event": "login_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "google"
+      ],
+      "n": 1
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "google"
+      ],
+      "n": 14
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "apple"
+      ],
+      "n": 2
+    },
+    {
+      "event": "login_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "google"
+      ],
+      "n": 1
+    },
+    {
+      "event": "login_completed",
+      "math": "total",
+      "group": [
+        "android",
+        "google"
+      ],
+      "n": 330
+    },
+    {
+      "event": "login_completed",
+      "math": "total",
+      "group": [
+        "ios",
+        "google"
+      ],
+      "n": 91
+    },
+    {
+      "event": "login_completed",
+      "math": "total",
+      "group": [
+        "android",
+        "email_otp"
+      ],
+      "n": 38
+    },
+    {
+      "event": "login_completed",
+      "math": "total",
+      "group": [
+        "ios",
+        "apple"
+      ],
+      "n": 35
+    },
+    {
+      "event": "login_completed",
+      "math": "total",
+      "group": [
+        "ios",
+        "email_otp"
+      ],
+      "n": 7
+    },
+    {
+      "event": "login_completed",
+      "math": "dau",
+      "group": [
+        "android",
+        "google"
+      ],
+      "n": 311
+    },
+    {
+      "event": "login_completed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "google"
+      ],
+      "n": 91
+    },
+    {
+      "event": "login_completed",
+      "math": "dau",
+      "group": [
+        "android",
+        "email_otp"
+      ],
+      "n": 38
+    },
+    {
+      "event": "login_completed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "apple"
+      ],
+      "n": 35
+    },
+    {
+      "event": "login_completed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "email_otp"
+      ],
+      "n": 7
+    }
+  ],
+  "billing": [
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15",
+        "PurchaseNotAllowedError"
+      ],
+      "n": 4
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.16",
+        "PurchaseNotAllowedError"
+      ],
+      "n": 2
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15",
+        "ProductAlreadyPurchasedError"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.15",
+        "StoreProblemError"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.14",
+        "$$_posthog_breakdown_null_$$"
+      ],
+      "n": 2
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "android",
+        "1.2.14",
+        "$$_posthog_breakdown_null_$$"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_failed",
+      "math": "total",
+      "group": [
+        "ios",
+        "1.2.15",
+        "$$_posthog_breakdown_null_$$"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15",
+        "PurchaseNotAllowedError"
+      ],
+      "n": 4
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.16",
+        "PurchaseNotAllowedError"
+      ],
+      "n": 2
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15",
+        "ProductAlreadyPurchasedError"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.15",
+        "StoreProblemError"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.14",
+        "$$_posthog_breakdown_null_$$"
+      ],
+      "n": 2
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "android",
+        "1.2.14",
+        "$$_posthog_breakdown_null_$$"
+      ],
+      "n": 1
+    },
+    {
+      "event": "purchase_failed",
+      "math": "dau",
+      "group": [
+        "ios",
+        "1.2.15",
+        "$$_posthog_breakdown_null_$$"
+      ],
+      "n": 1
+    }
+  ],
+  "releaseIndicators": [
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "1.2.15",
+        "false",
+        "false"
+      ],
+      "n": 106
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "1.2.14",
+        "false",
+        "false"
+      ],
+      "n": 71
+    },
+    {
+      "event": "Application Opened",
+      "math": "dau",
+      "group": [
+        "1.2.16",
+        "false",
+        "false"
+      ],
+      "n": 1
+    }
+  ],
+  "revenuecat": {
+    "rows": [
+      {
+        "event": "rc_trial_started_event",
+        "math": "total",
+        "n": 39
+      },
+      {
+        "event": "rc_trial_cancelled_event",
+        "math": "total",
+        "n": 11
+      },
+      {
+        "event": "rc_expiration_event",
+        "math": "total",
+        "n": 0
+      }
+    ],
+    "billingIssueEventObserved": false,
+    "productionEnvironmentReverified": false,
+    "note": "No rc_billing_issue_event definition or observations found. Existing RevenueCat event schema has no environment property; these server totals are project-wide and are not asserted as independently reverified production totals."
+  },
+  "limitations": [
+    "SDK coverage begins 2026-09-06; earlier empty periods excluded from daily comparison.",
+    "Operation counts are event denominators, not paired and deduplicated operation failure rates.",
+    "iOS provider_error can include Google sign-in cancellation.",
+    "iOS standalone video transcription outcomes remain missing; unknown outcomes are not failures.",
+    "No guarantee of all OOM, ANR, system termination, or iOS extension coverage."
+  ],
+  "queryLinks": {
+    "audit_totals": "https://us.posthog.com/project/596105/insights/new#q=%7B%22kind%22%3A%22InsightVizNode%22%2C%22source%22%3A%7B%22breakdownFilter%22%3A%7B%22breakdown_limit%22%3A5%2C%22breakdowns%22%3A%5B%7B%22property%22%3A%22platform%22%2C%22type%22%3A%22event%22%7D%5D%7D%2C%22dateRange%22%3A%7B%22date_from%22%3A%222026-09-11T11%3A45%3A58Z%22%2C%22date_to%22%3A%222026-09-12T11%3A45%3A58Z%22%7D%2C%22filterTestAccounts%22%3Afalse%2C%22interval%22%3A%22day%22%2C%22kind%22%3A%22TrendsQuery%22%2C%22properties%22%3A%5B%7B%22key%22%3A%22environment%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%22production%22%7D%2C%7B%22key%22%3A%22platform%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%5B%22ios%22%2C%22android%22%5D%7D%5D%2C%22series%22%3A%5B%7B%22event%22%3A%22Application%20Opened%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22Application%20Opened%22%7D%2C%7B%22event%22%3A%22Application%20Opened%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22Application%20Opened%22%7D%2C%7B%22event%22%3A%22purchase_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22purchase_started%22%7D%2C%7B%22event%22%3A%22purchase_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22purchase_started%22%7D%2C%7B%22event%22%3A%22purchase_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22purchase_failed%22%7D%2C%7B%22event%22%3A%22purchase_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22purchase_failed%22%7D%2C%7B%22event%22%3A%22purchase_cancelled%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22purchase_cancelled%22%7D%2C%7B%22event%22%3A%22purchase_cancelled%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22purchase_cancelled%22%7D%2C%7B%22event%22%3A%22subscription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22subscription_started%22%7D%2C%7B%22event%22%3A%22subscription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22subscription_started%22%7D%2C%7B%22event%22%3A%22share_import_opened%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22share_import_opened%22%7D%2C%7B%22event%22%3A%22share_import_opened%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22share_import_opened%22%7D%2C%7B%22event%22%3A%22share_import_accepted%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22share_import_accepted%22%7D%2C%7B%22event%22%3A%22share_import_accepted%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22share_import_accepted%22%7D%2C%7B%22event%22%3A%22share_import_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22share_import_blocked%22%7D%2C%7B%22event%22%3A%22share_import_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22share_import_blocked%22%7D%2C%7B%22event%22%3A%22login_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22login_started%22%7D%2C%7B%22event%22%3A%22login_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22login_started%22%7D%2C%7B%22event%22%3A%22login_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22login_completed%22%7D%2C%7B%22event%22%3A%22login_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22login_completed%22%7D%2C%7B%22event%22%3A%22login_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22login_failed%22%7D%2C%7B%22event%22%3A%22login_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22login_failed%22%7D%2C%7B%22event%22%3A%22recording_requested%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22recording_requested%22%7D%2C%7B%22event%22%3A%22recording_requested%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22recording_requested%22%7D%2C%7B%22event%22%3A%22recording_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22recording_blocked%22%7D%2C%7B%22event%22%3A%22recording_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22recording_blocked%22%7D%2C%7B%22event%22%3A%22audio_transcription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22audio_transcription_started%22%7D%2C%7B%22event%22%3A%22audio_transcription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22audio_transcription_started%22%7D%2C%7B%22event%22%3A%22audio_transcription_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22audio_transcription_completed%22%7D%2C%7B%22event%22%3A%22audio_transcription_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22audio_transcription_completed%22%7D%2C%7B%22event%22%3A%22audio_transcription_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22audio_transcription_failed%22%7D%2C%7B%22event%22%3A%22audio_transcription_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22audio_transcription_failed%22%7D%2C%7B%22event%22%3A%22skill_run_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22skill_run_started%22%7D%2C%7B%22event%22%3A%22skill_run_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22skill_run_started%22%7D%2C%7B%22event%22%3A%22skill_run_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22skill_run_failed%22%7D%2C%7B%22event%22%3A%22skill_run_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22skill_run_failed%22%7D%2C%7B%22event%22%3A%22video_transcription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22video_transcription_started%22%7D%2C%7B%22event%22%3A%22video_transcription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22video_transcription_started%22%7D%2C%7B%22event%22%3A%22video_transcription_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22video_transcription_completed%22%7D%2C%7B%22event%22%3A%22video_transcription_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22video_transcription_completed%22%7D%2C%7B%22event%22%3A%22teleprompter_recording_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22teleprompter_recording_started%22%7D%2C%7B%22event%22%3A%22teleprompter_recording_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22teleprompter_recording_started%22%7D%2C%7B%22event%22%3A%22teleprompter_video_saved%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22teleprompter_video_saved%22%7D%2C%7B%22event%22%3A%22teleprompter_video_saved%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22teleprompter_video_saved%22%7D%2C%7B%22event%22%3A%22%24exception%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22%24exception%22%7D%2C%7B%22event%22%3A%22%24exception%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22%24exception%22%7D%5D%2C%22trendsFilter%22%3A%7B%22aggregationAxisFormat%22%3A%22numeric%22%2C%22display%22%3A%22ActionsTable%22%2C%22metricColorByDirection%22%3Afalse%2C%22metricShowChange%22%3Atrue%2C%22metricSummary%22%3A%22total%22%2C%22showAlertThresholdLines%22%3Afalse%2C%22showLabelsOnSeries%22%3Afalse%2C%22showLegend%22%3Afalse%2C%22showMultipleYAxes%22%3Afalse%2C%22showPercentStackView%22%3Afalse%2C%22showValuesOnSeries%22%3Afalse%2C%22smoothingIntervals%22%3A1%2C%22yAxisScaleType%22%3A%22linear%22%7D%7D%7D",
+    "audit_previous": "https://us.posthog.com/project/596105/insights/new#q=%7B%22kind%22%3A%22InsightVizNode%22%2C%22source%22%3A%7B%22breakdownFilter%22%3A%7B%22breakdown_limit%22%3A5%2C%22breakdowns%22%3A%5B%7B%22property%22%3A%22platform%22%2C%22type%22%3A%22event%22%7D%5D%7D%2C%22dateRange%22%3A%7B%22date_from%22%3A%222026-09-04T11%3A45%3A58Z%22%2C%22date_to%22%3A%222026-09-11T11%3A45%3A58Z%22%7D%2C%22filterTestAccounts%22%3Afalse%2C%22interval%22%3A%22day%22%2C%22kind%22%3A%22TrendsQuery%22%2C%22properties%22%3A%5B%7B%22key%22%3A%22environment%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%22production%22%7D%2C%7B%22key%22%3A%22platform%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%5B%22ios%22%2C%22android%22%5D%7D%5D%2C%22series%22%3A%5B%7B%22event%22%3A%22Application%20Opened%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22Application%20Opened%22%7D%2C%7B%22event%22%3A%22Application%20Opened%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22Application%20Opened%22%7D%2C%7B%22event%22%3A%22purchase_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22purchase_started%22%7D%2C%7B%22event%22%3A%22purchase_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22purchase_started%22%7D%2C%7B%22event%22%3A%22purchase_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22purchase_failed%22%7D%2C%7B%22event%22%3A%22purchase_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22purchase_failed%22%7D%2C%7B%22event%22%3A%22purchase_cancelled%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22purchase_cancelled%22%7D%2C%7B%22event%22%3A%22purchase_cancelled%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22purchase_cancelled%22%7D%2C%7B%22event%22%3A%22subscription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22subscription_started%22%7D%2C%7B%22event%22%3A%22subscription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22subscription_started%22%7D%2C%7B%22event%22%3A%22share_import_opened%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22share_import_opened%22%7D%2C%7B%22event%22%3A%22share_import_opened%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22share_import_opened%22%7D%2C%7B%22event%22%3A%22share_import_accepted%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22share_import_accepted%22%7D%2C%7B%22event%22%3A%22share_import_accepted%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22share_import_accepted%22%7D%2C%7B%22event%22%3A%22share_import_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22share_import_blocked%22%7D%2C%7B%22event%22%3A%22share_import_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22share_import_blocked%22%7D%2C%7B%22event%22%3A%22login_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22login_started%22%7D%2C%7B%22event%22%3A%22login_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22login_started%22%7D%2C%7B%22event%22%3A%22login_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22login_completed%22%7D%2C%7B%22event%22%3A%22login_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22login_completed%22%7D%2C%7B%22event%22%3A%22login_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22login_failed%22%7D%2C%7B%22event%22%3A%22login_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22login_failed%22%7D%2C%7B%22event%22%3A%22recording_requested%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22recording_requested%22%7D%2C%7B%22event%22%3A%22recording_requested%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22recording_requested%22%7D%2C%7B%22event%22%3A%22recording_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22recording_blocked%22%7D%2C%7B%22event%22%3A%22recording_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22recording_blocked%22%7D%2C%7B%22event%22%3A%22audio_transcription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22audio_transcription_started%22%7D%2C%7B%22event%22%3A%22audio_transcription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22audio_transcription_started%22%7D%2C%7B%22event%22%3A%22audio_transcription_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22audio_transcription_completed%22%7D%2C%7B%22event%22%3A%22audio_transcription_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22audio_transcription_completed%22%7D%2C%7B%22event%22%3A%22audio_transcription_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22audio_transcription_failed%22%7D%2C%7B%22event%22%3A%22audio_transcription_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22audio_transcription_failed%22%7D%2C%7B%22event%22%3A%22skill_run_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22skill_run_started%22%7D%2C%7B%22event%22%3A%22skill_run_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22skill_run_started%22%7D%2C%7B%22event%22%3A%22skill_run_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22skill_run_failed%22%7D%2C%7B%22event%22%3A%22skill_run_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22skill_run_failed%22%7D%2C%7B%22event%22%3A%22video_transcription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22video_transcription_started%22%7D%2C%7B%22event%22%3A%22video_transcription_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22video_transcription_started%22%7D%2C%7B%22event%22%3A%22video_transcription_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22video_transcription_completed%22%7D%2C%7B%22event%22%3A%22video_transcription_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22video_transcription_completed%22%7D%2C%7B%22event%22%3A%22teleprompter_recording_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22teleprompter_recording_started%22%7D%2C%7B%22event%22%3A%22teleprompter_recording_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22teleprompter_recording_started%22%7D%2C%7B%22event%22%3A%22teleprompter_video_saved%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22teleprompter_video_saved%22%7D%2C%7B%22event%22%3A%22teleprompter_video_saved%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22teleprompter_video_saved%22%7D%2C%7B%22event%22%3A%22%24exception%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22%24exception%22%7D%2C%7B%22event%22%3A%22%24exception%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22%24exception%22%7D%5D%2C%22trendsFilter%22%3A%7B%22aggregationAxisFormat%22%3A%22numeric%22%2C%22display%22%3A%22ActionsTable%22%2C%22metricColorByDirection%22%3Afalse%2C%22metricShowChange%22%3Atrue%2C%22metricSummary%22%3A%22total%22%2C%22showAlertThresholdLines%22%3Afalse%2C%22showLabelsOnSeries%22%3Afalse%2C%22showLegend%22%3Afalse%2C%22showMultipleYAxes%22%3Afalse%2C%22showPercentStackView%22%3Afalse%2C%22showValuesOnSeries%22%3Afalse%2C%22smoothingIntervals%22%3A1%2C%22yAxisScaleType%22%3A%22linear%22%7D%7D%7D",
+    "audit_failure_details": "https://us.posthog.com/project/596105/insights/new#q=%7B%22kind%22%3A%22InsightVizNode%22%2C%22source%22%3A%7B%22breakdownFilter%22%3A%7B%22breakdown_limit%22%3A100%2C%22breakdowns%22%3A%5B%7B%22property%22%3A%22platform%22%2C%22type%22%3A%22event%22%7D%2C%7B%22property%22%3A%22%24app_version%22%2C%22type%22%3A%22event%22%7D%2C%7B%22property%22%3A%22error_code%22%2C%22type%22%3A%22event%22%7D%5D%7D%2C%22dateRange%22%3A%7B%22date_from%22%3A%222026-09-11T11%3A45%3A58Z%22%2C%22date_to%22%3A%222026-09-12T11%3A45%3A58Z%22%7D%2C%22filterTestAccounts%22%3Afalse%2C%22interval%22%3A%22day%22%2C%22kind%22%3A%22TrendsQuery%22%2C%22properties%22%3A%5B%7B%22key%22%3A%22environment%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%22production%22%7D%2C%7B%22key%22%3A%22platform%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%5B%22ios%22%2C%22android%22%5D%7D%5D%2C%22series%22%3A%5B%7B%22event%22%3A%22purchase_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22purchase_failed%22%7D%2C%7B%22event%22%3A%22purchase_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22purchase_failed%22%7D%2C%7B%22event%22%3A%22share_import_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22share_import_blocked%22%7D%2C%7B%22event%22%3A%22share_import_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22share_import_blocked%22%7D%2C%7B%22event%22%3A%22skill_run_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22skill_run_failed%22%7D%2C%7B%22event%22%3A%22skill_run_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22skill_run_failed%22%7D%2C%7B%22event%22%3A%22login_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22login_failed%22%7D%2C%7B%22event%22%3A%22login_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22login_failed%22%7D%2C%7B%22event%22%3A%22recording_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22recording_blocked%22%7D%2C%7B%22event%22%3A%22recording_blocked%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22recording_blocked%22%7D%5D%2C%22trendsFilter%22%3A%7B%22aggregationAxisFormat%22%3A%22numeric%22%2C%22display%22%3A%22ActionsTable%22%2C%22metricColorByDirection%22%3Afalse%2C%22metricShowChange%22%3Atrue%2C%22metricSummary%22%3A%22total%22%2C%22showAlertThresholdLines%22%3Afalse%2C%22showLabelsOnSeries%22%3Afalse%2C%22showLegend%22%3Afalse%2C%22showMultipleYAxes%22%3Afalse%2C%22showPercentStackView%22%3Afalse%2C%22showValuesOnSeries%22%3Afalse%2C%22smoothingIntervals%22%3A1%2C%22yAxisScaleType%22%3A%22linear%22%7D%7D%7D",
+    "audit_generation": "https://us.posthog.com/project/596105/insights/new#q=%7B%22kind%22%3A%22InsightVizNode%22%2C%22source%22%3A%7B%22breakdownFilter%22%3A%7B%22breakdown_limit%22%3A5%2C%22breakdowns%22%3A%5B%7B%22property%22%3A%22platform%22%2C%22type%22%3A%22event%22%7D%5D%7D%2C%22dateRange%22%3A%7B%22date_from%22%3A%222026-09-11T11%3A45%3A58Z%22%2C%22date_to%22%3A%222026-09-12T11%3A45%3A58Z%22%7D%2C%22filterTestAccounts%22%3Afalse%2C%22interval%22%3A%22day%22%2C%22kind%22%3A%22TrendsQuery%22%2C%22properties%22%3A%5B%7B%22key%22%3A%22environment%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%22production%22%7D%2C%7B%22key%22%3A%22platform%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%5B%22ios%22%2C%22android%22%5D%7D%5D%2C%22series%22%3A%5B%7B%22event%22%3A%22skill_run_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22properties%22%3A%5B%7B%22key%22%3A%22error_code%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%22generation_failed%22%7D%5D%7D%2C%7B%22event%22%3A%22skill_run_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22properties%22%3A%5B%7B%22key%22%3A%22error_code%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%22generation_failed%22%7D%5D%7D%5D%2C%22trendsFilter%22%3A%7B%22aggregationAxisFormat%22%3A%22numeric%22%2C%22display%22%3A%22ActionsTable%22%2C%22metricColorByDirection%22%3Afalse%2C%22metricShowChange%22%3Atrue%2C%22metricSummary%22%3A%22total%22%2C%22showAlertThresholdLines%22%3Afalse%2C%22showLabelsOnSeries%22%3Afalse%2C%22showLegend%22%3Afalse%2C%22showMultipleYAxes%22%3Afalse%2C%22showPercentStackView%22%3Afalse%2C%22showValuesOnSeries%22%3Afalse%2C%22smoothingIntervals%22%3A1%2C%22yAxisScaleType%22%3A%22linear%22%7D%7D%7D",
+    "audit_login": "https://us.posthog.com/project/596105/insights/new#q=%7B%22kind%22%3A%22InsightVizNode%22%2C%22source%22%3A%7B%22breakdownFilter%22%3A%7B%22breakdown_limit%22%3A10%2C%22breakdowns%22%3A%5B%7B%22property%22%3A%22platform%22%2C%22type%22%3A%22event%22%7D%2C%7B%22property%22%3A%22provider%22%2C%22type%22%3A%22event%22%7D%5D%7D%2C%22dateRange%22%3A%7B%22date_from%22%3A%222026-09-11T11%3A45%3A58Z%22%2C%22date_to%22%3A%222026-09-12T11%3A45%3A58Z%22%7D%2C%22filterTestAccounts%22%3Afalse%2C%22interval%22%3A%22day%22%2C%22kind%22%3A%22TrendsQuery%22%2C%22properties%22%3A%5B%7B%22key%22%3A%22environment%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%22production%22%7D%2C%7B%22key%22%3A%22platform%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%5B%22ios%22%2C%22android%22%5D%7D%5D%2C%22series%22%3A%5B%7B%22event%22%3A%22login_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22login_started%22%7D%2C%7B%22event%22%3A%22login_started%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22login_started%22%7D%2C%7B%22event%22%3A%22login_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22login_failed%22%7D%2C%7B%22event%22%3A%22login_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22login_failed%22%7D%2C%7B%22event%22%3A%22login_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%2C%22name%22%3A%22login_completed%22%7D%2C%7B%22event%22%3A%22login_completed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%2C%22name%22%3A%22login_completed%22%7D%5D%2C%22trendsFilter%22%3A%7B%22aggregationAxisFormat%22%3A%22numeric%22%2C%22display%22%3A%22ActionsTable%22%2C%22metricColorByDirection%22%3Afalse%2C%22metricShowChange%22%3Atrue%2C%22metricSummary%22%3A%22total%22%2C%22showAlertThresholdLines%22%3Afalse%2C%22showLabelsOnSeries%22%3Afalse%2C%22showLegend%22%3Afalse%2C%22showMultipleYAxes%22%3Afalse%2C%22showPercentStackView%22%3Afalse%2C%22showValuesOnSeries%22%3Afalse%2C%22smoothingIntervals%22%3A1%2C%22yAxisScaleType%22%3A%22linear%22%7D%7D%7D",
+    "audit_billing_versions": "https://us.posthog.com/project/596105/insights/new#q=%7B%22kind%22%3A%22InsightVizNode%22%2C%22source%22%3A%7B%22breakdownFilter%22%3A%7B%22breakdown_limit%22%3A30%2C%22breakdowns%22%3A%5B%7B%22property%22%3A%22platform%22%2C%22type%22%3A%22event%22%7D%2C%7B%22property%22%3A%22%24app_version%22%2C%22type%22%3A%22event%22%7D%2C%7B%22property%22%3A%22billing_error_code%22%2C%22type%22%3A%22event%22%7D%5D%7D%2C%22dateRange%22%3A%7B%22date_from%22%3A%222026-09-11T11%3A45%3A58Z%22%2C%22date_to%22%3A%222026-09-12T11%3A45%3A58Z%22%7D%2C%22filterTestAccounts%22%3Afalse%2C%22interval%22%3A%22day%22%2C%22kind%22%3A%22TrendsQuery%22%2C%22properties%22%3A%5B%7B%22key%22%3A%22environment%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%22production%22%7D%2C%7B%22key%22%3A%22platform%22%2C%22operator%22%3A%22exact%22%2C%22type%22%3A%22event%22%2C%22value%22%3A%5B%22ios%22%2C%22android%22%5D%7D%5D%2C%22series%22%3A%5B%7B%22event%22%3A%22purchase_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22total%22%7D%2C%7B%22event%22%3A%22purchase_failed%22%2C%22kind%22%3A%22EventsNode%22%2C%22math%22%3A%22dau%22%7D%5D%2C%22trendsFilter%22%3A%7B%22aggregationAxisFormat%22%3A%22numeric%22%2C%22display%22%3A%22ActionsTable%22%2C%22metricColorByDirection%22%3Afalse%2C%22metricShowChange%22%3Atrue%2C%22metricSummary%22%3A%22total%22%2C%22showAlertThresholdLines%22%3Afalse%2C%22showLabelsOnSeries%22%3Afalse%2C%22showLegend%22%3Afalse%2C%22showMultipleYAxes%22%3Afalse%2C%22showPercentStackView%22%3Afalse%2C%22showValuesOnSeries%22%3Afalse%2C%22smoothingIntervals%22%3A1%2C%22yAxisScaleType%22%3A%22linear%22%7D%7D%7D"
+  }
+}
+

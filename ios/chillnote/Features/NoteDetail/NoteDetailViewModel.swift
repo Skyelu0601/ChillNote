@@ -12,6 +12,14 @@ final class NoteDetailViewModel: ObservableObject {
         var writeFile: (_ content: String, _ url: URL) throws -> Void = { content, url in
             try content.write(to: url, atomically: true, encoding: .utf8)
         }
+        var ensureAIConsent: () async -> Bool = {
+            await AIConsentManager.shared.ensureConsentIfNeeded(for: .text)
+        }
+        var generateAISkill: (AgentRecipe, String, String?) async throws -> String = {
+            try await $0.generateResult(from: $1, userInstruction: $2)
+        }
+        var refreshCredits: () async -> Void = { await StoreService.shared.fetchCreditBalance() }
+        var capture: @MainActor (String, [String: Any]) -> Void = { ProductAnalytics.shared.capture($0, properties: $1) }
     }
 
     enum NoteDetailAction {
@@ -31,6 +39,8 @@ final class NoteDetailViewModel: ObservableObject {
 
     @Published var showDeleteConfirmation = false
     @Published var isProcessing = false
+    @Published var isAwaitingAIConsent = false
+    var queuedAISkill: (recipe: AgentRecipe, instruction: String?)?
 
     @Published var showAIToolbar = false
     @Published var aiOriginalContent: String?
@@ -65,11 +75,14 @@ final class NoteDetailViewModel: ObservableObject {
 
     private var dismissAction: (() -> Void)?
     private var hasPermanentlyDeletedNote = false
+    private var canDiscardEmptyDraft: Bool
+    private var finalEditorText: (markdown: String, previousMarkdown: String)?
 
     let dependencies: Dependencies
 
-    init(note: Note, dependencies: Dependencies = Dependencies()) {
+    init(note: Note, isNewBlankDraft: Bool = false, dependencies: Dependencies = Dependencies()) {
         self.note = note
+        self.canDiscardEmptyDraft = isNewBlankDraft && note.isEmptyNote
         self.dependencies = dependencies
     }
 
@@ -104,7 +117,7 @@ final class NoteDetailViewModel: ObservableObject {
     }
 
     var isDeleted: Bool {
-        note.deletedAt != nil
+        hasPermanentlyDeletedNote || note.deletedAt != nil
     }
 
     var isVoiceProcessing: Bool {
@@ -148,7 +161,7 @@ final class NoteDetailViewModel: ObservableObject {
     }
 
     var isInteractionEnabled: Bool {
-        !isDeleted && !isProcessing && !isVoiceProcessing
+        !isDeleted && !isProcessing && !isAwaitingAIConsent && !isVoiceProcessing
     }
 
     var isAISkillsEnabled: Bool {
@@ -210,22 +223,39 @@ final class NoteDetailViewModel: ObservableObject {
             return
         }
 
-        _ = commitPendingEdits()
+        _ = commitPendingEdits(discardEmptyDraft: true)
         dismissAction?()
     }
 
     /// Commits editor mutations without requiring a particular navigation path.
     /// The baseline advances only after the local save succeeds, which makes the
     /// background, disappearance and explicit-back hooks safe to call together.
+    /// Only explicit back navigation may discard a newly created blank draft.
     @discardableResult
-    func commitPendingEdits() -> Bool {
-        guard !isDeleted, !hasPermanentlyDeletedNote else { return false }
+    func commitPendingEdits(discardEmptyDraft: Bool = false) -> Bool {
+        guard !isDeleted else { return false }
 
-        if note.isEmptyNote && !isVoiceProcessing {
-            return deleteNotePermanently(shouldDismiss: false)
+        if let finalEditorText {
+            self.finalEditorText = nil
+            // A newer external change wins over an editor that already detached.
+            if note.content == finalEditorText.previousMarkdown {
+                note.updateContent(finalEditorText.markdown)
+            }
         }
 
         let currentTags = Set(note.tags.map { $0.id })
+        // Eligibility only moves from disposable to retained. A later blank
+        // autosave must never make a previously saved note disposable again.
+        if !note.isEmptyNote || note.sourceURL != nil || note.importStatus != .none
+            || note.importJobId != nil || voiceService.processingStates[note.id] != nil
+            || currentTags != initialTags {
+            canDiscardEmptyDraft = false
+        }
+
+        if discardEmptyDraft && canDiscardEmptyDraft && note.isEmptyNote {
+            return deleteNotePermanently(shouldDismiss: false)
+        }
+
         let hasChanged = note.content != initialContent || currentTags != initialTags
         guard hasChanged else { return false }
 
@@ -245,6 +275,20 @@ final class NoteDetailViewModel: ObservableObject {
 
     func confirmDeleteNote() {
         deleteNote()
+    }
+
+    /// Called during UIKit teardown. Stage plain data only; do not publish view
+    /// state here. onDisappear can drain this before deciding an empty note is
+    /// disposable, and the queued save also covers workspace-page replacement.
+    func stageFinalEditorText(_ markdown: String, _ previousMarkdown: String) {
+        guard !hasPermanentlyDeletedNote else { return }
+        finalEditorText = (markdown, previousMarkdown)
+        DispatchQueue.main.async {
+            // onDisappear may already have saved (or deleted) the model. Do not
+            // touch its SwiftData backing after the staged edit has been drained.
+            guard self.finalEditorText != nil else { return }
+            self.commitPendingEdits()
+        }
     }
 
     @discardableResult

@@ -259,12 +259,6 @@ private fun CreditsRequiredContent(onComplete: () -> Unit) {
     }
 }
 
-private fun Throwable.analyticsCode(): String = when (this) {
-    is IllegalArgumentException -> "invalid_share_content"
-    is SecurityException -> "not_authorized"
-    else -> "unknown"
-}
-
 @Composable
 private fun SourcePill(sourceName: String) {
     if (sourceName.isBlank()) return

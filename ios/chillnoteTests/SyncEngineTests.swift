@@ -912,6 +912,92 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertNil(preserved.acknowledgedFingerprint)
     }
 
+    func testPendingImportVersionConflictDoesNotCreateDraft() throws {
+        try applyPendingImportConflict(edited: false)
+    }
+
+    func testEditedPendingImportConflictPreservesTextWithoutCopyingJob() throws {
+        try applyPendingImportConflict(edited: true)
+    }
+
+    func testPendingImportSyncBeforeEnqueueResponseDoesNotCreateDraft() throws {
+        try applyPendingImportConflict(edited: false, hasJobId: false)
+    }
+
+    private func applyPendingImportConflict(edited: Bool, hasJobId: Bool = true) throws {
+        let note = Note(content: edited ? "My added idea" : "placeholder", userId: "u1")
+        note.importStatus = .queued
+        note.importJobId = hasJobId ? "job-1" : nil
+        note.sourceURL = "https://www.tiktok.com/@creator/video/123"
+        context.insert(note)
+        _ = try engine.makePayload(
+            context: context, since: nil, userId: "u1", cursor: "1", deviceId: "device",
+            hardDeletedNoteIds: [], hardDeletedTagIds: []
+        )
+        let dto = NoteDTO(
+            id: note.id.uuidString, content: "placeholder", createdAt: iso(Date()),
+            updatedAt: iso(Date()), deletedAt: nil, pinnedAt: nil, tagIds: [], version: 2,
+            baseVersion: nil, clientUpdatedAt: nil, lastModifiedByDeviceId: nil,
+            mutationId: "enqueue-mutation", sourceURL: note.sourceURL, section: "inbox",
+            importStatus: "processing", importJobId: "job-1"
+        )
+        let response = SyncResponse(
+            cursor: "2", changes: SyncChanges(notes: [dto], tags: nil, hardDeletedNoteIds: nil,
+                                               hardDeletedTagIds: nil, preferences: nil),
+            conflicts: [ConflictDTO(entityType: "note", id: note.id.uuidString,
+                                    serverVersion: 2, serverContent: "placeholder", clientContent: note.content,
+                                    message: "sync.conflict.version")],
+            forcedNoteIds: [note.id.uuidString], serverTime: iso(Date())
+        )
+        try engine.apply(remote: response, context: context, userId: "u1")
+        try context.save()
+        let notes = try context.fetch(FetchDescriptor<Note>())
+        XCTAssertEqual(notes.count, edited ? 2 : 1)
+        XCTAssertEqual(note.content, "placeholder")
+        XCTAssertEqual(note.importStatus, .processing)
+        XCTAssertEqual(note.section, .inbox)
+        if edited {
+            let draft = try XCTUnwrap(notes.first { $0.id != note.id })
+            XCTAssertEqual(draft.content, "My added idea")
+            XCTAssertEqual(draft.section, .drafts)
+            XCTAssertEqual(draft.importStatus, .none)
+            XCTAssertNil(draft.importJobId)
+            XCTAssertNil(draft.importStartedAt)
+            XCTAssertNil(draft.importCompletedAt)
+        }
+    }
+
+    func testLegacySpinningDraftIsDetachedOnlyWhenItsJobHasFinishedOnAnotherNote() throws {
+        let original = Note(content: "transcript", userId: "u1")
+        original.importStatus = .completed
+        original.importJobId = "finished-job"
+        let draft = Note(content: "Preserve this idea", userId: "u1")
+        draft.section = .drafts
+        draft.importStatus = .processing
+        draft.importJobId = "finished-job"
+        let active = Note(content: "Another real import", userId: "u1")
+        active.section = .drafts
+        active.importStatus = .queued
+        active.importJobId = "active-job"
+        let otherUser = Note(content: "Other account", userId: "u2")
+        otherUser.section = .drafts
+        otherUser.importStatus = .queued
+        otherUser.importJobId = "finished-job"
+        for note in [original, draft, active, otherUser] { context.insert(note) }
+        draft.acknowledgedFingerprint = SyncEntityFingerprint.note(draft)
+        let payload = try engine.makePayload(
+            context: context, since: nil, userId: "u1", cursor: "1", deviceId: "device",
+            hardDeletedNoteIds: [], hardDeletedTagIds: []
+        )
+        XCTAssertEqual(draft.content, "Preserve this idea")
+        XCTAssertEqual(draft.importStatus, .none)
+        XCTAssertNil(draft.importJobId)
+        XCTAssertTrue(payload.notes.contains { UUID(uuidString: $0.id) == draft.id && $0.importStatus == nil })
+        XCTAssertTrue(active.isLinkImportInProgress)
+        XCTAssertTrue(otherUser.isLinkImportInProgress)
+        XCTAssertEqual(original.importStatus, .completed)
+    }
+
     func testFinishedImportForcedResponseDoesNotCreateConflictCopy() throws {
         let userId = "u1"
         let jobId = "job-1"

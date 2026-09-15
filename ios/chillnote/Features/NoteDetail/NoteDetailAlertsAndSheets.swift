@@ -12,13 +12,13 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
                     viewModel.confirmTag(name, preferredColorHex: colorHex)
                 }
             }
-            .sheet(isPresented: $viewModel.showAISkillsSheet) {
+            .sheet(isPresented: $viewModel.showAISkillsSheet, onDismiss: viewModel.aiSkillsSheetDidDismiss) {
                 NoteDetailAISkillsSheet(
                     recipes: recipeManager.savedRecipes,
                     onSelect: { viewModel.startAISkill($0) }
                 )
             }
-            .sheet(isPresented: $viewModel.showAISkillTranslateSheet) {
+            .sheet(isPresented: $viewModel.showAISkillTranslateSheet, onDismiss: viewModel.aiSkillTranslateSheetDidDismiss) {
                 TranslateSheetView(
                     translateLanguages: TranslateLanguage.defaultLanguages,
                     onSelect: { viewModel.startPendingTranslateAISkill(targetLanguage: $0) },

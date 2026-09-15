@@ -8,6 +8,12 @@ struct RevenueCatEntitlementSnapshot: Equatable {
     let productIdentifier: String?
 }
 
+enum RevenueCatIdentity {
+    static func canonicalUserID(_ userID: String) -> String {
+        UUID(uuidString: userID)?.uuidString.lowercased() ?? userID
+    }
+}
+
 @MainActor
 final class RevenueCatService {
     static let shared = RevenueCatService()
@@ -52,7 +58,8 @@ final class RevenueCatService {
 
     func identify(userID: String?, migrateLegacyPurchase: Bool) async -> RevenueCatEntitlementSnapshot? {
         configure()
-        guard isConfigured, let userID, !userID.isEmpty else { return nil }
+        guard isConfigured, let suppliedUserID = userID, !suppliedUserID.isEmpty else { return nil }
+        let userID = RevenueCatIdentity.canonicalUserID(suppliedUserID)
 
         do {
             let customerInfo: CustomerInfo
@@ -66,15 +73,19 @@ final class RevenueCatService {
             Purchases.shared.attribution.setPostHogUserID(userID.lowercased())
             var snapshot = Self.snapshot(from: customerInfo)
 
-            // Existing iOS subscribers stay protected by the legacy backend while
-            // their receipt is associated with the stable Supabase user exactly once.
+            // Use one lowercase identity for login, attribution and migration.
+            // The server separately reads the old uppercase identity for old apps.
             let migrationKey = Self.migrationKeyPrefix + userID
             if migrateLegacyPurchase,
                !snapshot.isActive,
                !UserDefaults.standard.bool(forKey: migrationKey) {
                 let synced = try await Purchases.shared.syncPurchases()
                 snapshot = Self.snapshot(from: synced)
-                UserDefaults.standard.set(true, forKey: migrationKey)
+                // A successful request with no entitlement is not a successful
+                // migration; allow a later retry instead of permanently skipping it.
+                if snapshot.isActive {
+                    UserDefaults.standard.set(true, forKey: migrationKey)
+                }
             }
             customerInfoObserver?(snapshot)
             return snapshot
@@ -98,6 +109,30 @@ final class RevenueCatService {
         // Purchases syncs pending customer attributes before sending the receipt,
         // so RevenueCat lifecycle events retain the initiating paywall context.
         Purchases.shared.attribution.setAttributes(attributes)
+    }
+
+    func setAppsFlyerAttribution(
+        appsFlyerID: String?,
+        attribution: AppsFlyerInstallAttribution?
+    ) {
+        guard isConfigured else { return }
+
+        Purchases.shared.attribution.collectDeviceIdentifiers()
+        if let appsFlyerID, !appsFlyerID.isEmpty {
+            Purchases.shared.attribution.setAppsflyerID(appsFlyerID)
+        }
+        if let mediaSource = attribution?.mediaSource {
+            Purchases.shared.attribution.setMediaSource(mediaSource)
+        }
+        if let campaign = attribution?.campaign {
+            Purchases.shared.attribution.setCampaign(campaign)
+        }
+        if let adGroup = attribution?.adGroup {
+            Purchases.shared.attribution.setAdGroup(adGroup)
+        }
+        if let ad = attribution?.ad {
+            Purchases.shared.attribution.setAd(ad)
+        }
     }
 
     func currentOfferingPackages() async throws -> [Package] {

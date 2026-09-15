@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       <article className="legal-document">
         <p className="eyebrow">Legal</p>
         <h1>Privacy Policy</h1>
-        <p><strong>Last Updated:</strong> September 6, 2026</p>
+        <p><strong>Last Updated:</strong> September 14, 2026</p>
 
         <p>
           <strong>Sponteoai</strong> respects your privacy and is committed to protecting it. This policy describes the
@@ -39,8 +39,10 @@ export default function PrivacyPage() {
 
         <h3>Device and Diagnostic Data</h3>
         <p>
-          We may collect generic device and compatibility information. Limited diagnostic events may be stored locally
-          for debugging. We do not sell personal data or upload detailed behavioral tracking data to third-party
+          We collect device and compatibility information, and send sanitized crash reports to PostHog to find and
+          fix stability problems. Reports include exception types, code call stacks, and app and operating system
+          versions. Raw exception messages are removed before transmission. Limited diagnostic events may also be
+          stored locally for debugging. We do not sell personal data or upload detailed behavioral tracking data to third-party
           advertising platforms.
         </p>
 
@@ -48,8 +50,19 @@ export default function PrivacyPage() {
         <p>
           Our iOS and Android apps use PostHog to measure app launches, foreground and background activity,
           app versions, and general device information. A randomly generated identifier is used before sign-in;
-          after sign-in, an internal account identifier links activity across your devices. We do not send
+          after sign-in, an internal account identifier links activity across your devices. Crash reports use these
+          same identifiers so we can measure how many users are affected. We do not send
           note content, recordings, email addresses, or login links to PostHog. Session recording is disabled.
+        </p>
+
+        <h3>Advertising Attribution</h3>
+        <p>
+          Our iOS and Android apps use AppsFlyer to measure which advertising campaigns lead to app installs and
+          subscriptions. AppsFlyer may process an AppsFlyer-generated identifier, device and app information, IP
+          address, install or referral data, and campaign details. RevenueCat sends subscription lifecycle and revenue
+          events to AppsFlyer so we can measure campaign performance. We do not send note content, recordings, email
+          addresses, or login links for advertising attribution. The iOS app uses AppsFlyer&apos;s no-IDFA SDK variant and
+          does not request App Tracking Transparency permission for this integration.
         </p>
 
         <h2>2. How We Use Information</h2>
@@ -59,6 +72,7 @@ export default function PrivacyPage() {
           <li>Process AI features you intentionally request.</li>
           <li>Maintain performance, security, and compatibility.</li>
           <li>Understand app usage and improve the mobile experience.</li>
+          <li>Measure app-install and subscription performance by advertising campaign.</li>
         </ul>
         <p><strong>No Model Training:</strong> We and our third-party partners do not use your notes or recordings to train models.</p>
 
@@ -76,7 +90,12 @@ export default function PrivacyPage() {
         </p>
 
         <p>
-          PostHog processes product analytics data in the United States. See the <a className="inline-link" href="https://posthog.com/privacy">PostHog privacy policy</a>.
+          PostHog processes product analytics and crash diagnostic data in the United States. See the <a className="inline-link" href="https://posthog.com/privacy">PostHog privacy policy</a>.
+        </p>
+
+        <p>
+          AppsFlyer processes mobile attribution data and receives subscription events from RevenueCat for campaign
+          measurement. See the <a className="inline-link" href="https://www.appsflyer.com/legal/privacy-policy/">AppsFlyer privacy policy</a> and <a className="inline-link" href="https://www.revenuecat.com/privacy/">RevenueCat privacy policy</a>.
         </p>
 
         <h2>5. Data Retention and Security</h2>

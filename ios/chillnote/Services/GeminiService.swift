@@ -7,6 +7,8 @@ enum GeminiError: LocalizedError {
     case invalidURL
     case networkError(Error)
     case apiError(String)
+    case authenticationRequired
+    case httpError(Int)
     case invalidResponse
     case consentDeclined
     case insufficientCredits
@@ -35,6 +37,11 @@ enum GeminiError: LocalizedError {
             return AppErrorCode.geminiNetworkError.message(error.localizedDescription)
         case .apiError(let message):
             return AppErrorCode.geminiServiceError.message(message)
+        case .authenticationRequired:
+            return AppErrorCode.geminiSignInRequired.message
+        case .httpError(let status):
+            if status == 401 { return AppErrorCode.geminiSignInRequired.message }
+            return AppErrorCode.geminiServiceError.message(L10n.text("common.error.unknown"))
         case .invalidResponse:
             return AppErrorCode.geminiInvalidResponse.message
         case .consentDeclined:
@@ -42,7 +49,7 @@ enum GeminiError: LocalizedError {
         case .insufficientCredits:
             return L10n.text("quick_capture.link_import.status.insufficient_credits")
         case .rateLimited:
-            return L10n.text("common.error.unknown")
+            return L10n.text("auth.login.error.too_many_requests")
         }
     }
 }
@@ -113,7 +120,7 @@ struct GeminiService {
         request.timeoutInterval = timeout
 
         guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else {
-            throw GeminiError.apiError(AppErrorCode.geminiSignInRequired.message)
+            throw GeminiError.authenticationRequired
         }
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         return request
@@ -138,6 +145,7 @@ struct GeminiService {
         guard hasConsent else {
             throw GeminiError.consentDeclined
         }
+        try Task.checkCancellation()
 
         _ = countUsage // Reserved for backward compatibility at call sites.
         let serverURL = AppConfig.backendBaseURL + "/ai/gemini"
@@ -186,19 +194,7 @@ struct GeminiService {
                 if let meteringError = GeminiError.meteringError(forHTTPStatus: httpResponse.statusCode) {
                     throw meteringError
                 }
-                if let errorJson = try? JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                    if let message = errorJson["error"] as? String {
-                        throw GeminiError.apiError(message)
-                    }
-                    if let errorDict = errorJson["error"] as? [String: Any],
-                       let message = errorDict["message"] as? String {
-                        throw GeminiError.apiError(message)
-                    }
-                    if let message = errorJson["message"] as? String {
-                        throw GeminiError.apiError(message)
-                    }
-                }
-                throw GeminiError.apiError("Status code: \(httpResponse.statusCode)")
+                throw GeminiError.httpError(httpResponse.statusCode)
             }
 
             // Parse response from our backend (it returns { "content": "..." })
@@ -225,6 +221,7 @@ struct GeminiService {
         guard hasConsent else {
             throw GeminiError.consentDeclined
         }
+        try Task.checkCancellation()
 
         let serverURL = AppConfig.backendBaseURL + "/ai/voice-note"
         guard let url = URL(string: serverURL) else {

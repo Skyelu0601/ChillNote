@@ -1,0 +1,70 @@
+[
+  {
+    "dsym": "chillnote.app.dSYM",
+    "binary": "/Users/luwenting/Library/Developer/Xcode/Archives/2026-09-12/ChillScript-1.2.16 2026-09-12 12.45.06.xcarchive/Products/Applications/chillnote.app/chillnote",
+    "dsym_uuids": [
+      [
+        "0728AD46-652B-33D4-91C9-70A56F1C3F23",
+        "arm64"
+      ]
+    ],
+    "binary_uuids": [
+      [
+        "0728AD46-652B-33D4-91C9-70A56F1C3F23",
+        "arm64"
+      ]
+    ],
+    "match": true
+  },
+  {
+    "dsym": "ChillNoteShareExtension.appex.dSYM",
+    "binary": "/Users/luwenting/Library/Developer/Xcode/Archives/2026-09-12/ChillScript-1.2.16 2026-09-12 12.45.06.xcarchive/Products/Applications/chillnote.app/PlugIns/ChillNoteShareExtension.appex/ChillNoteShareExtension",
+    "dsym_uuids": [
+      [
+        "59B90873-1BC5-313E-9B56-6940BCC92916",
+        "arm64"
+      ]
+    ],
+    "binary_uuids": [
+      [
+        "59B90873-1BC5-313E-9B56-6940BCC92916",
+        "arm64"
+      ]
+    ],
+    "match": true
+  },
+  {
+    "dsym": "ChillNoteWidgetExtension.appex.dSYM",
+    "binary": "/Users/luwenting/Library/Developer/Xcode/Archives/2026-09-12/ChillScript-1.2.16 2026-09-12 12.45.06.xcarchive/Products/Applications/chillnote.app/PlugIns/ChillNoteWidgetExtension.appex/ChillNoteWidgetExtension",
+    "dsym_uuids": [
+      [
+        "0F8D82F9-9F6F-349F-9912-F1D01CA3F521",
+        "arm64"
+      ]
+    ],
+    "binary_uuids": [
+      [
+        "0F8D82F9-9F6F-349F-9912-F1D01CA3F521",
+        "arm64"
+      ]
+    ],
+    "match": true
+  },
+  {
+    "dsym": "GoMarketMeAppleCoreKit.framework.dSYM",
+    "binary": "/Users/luwenting/Library/Developer/Xcode/Archives/2026-09-12/ChillScript-1.2.16 2026-09-12 12.45.06.xcarchive/Products/Applications/chillnote.app/Frameworks/GoMarketMeAppleCoreKit.framework/GoMarketMeAppleCoreKit",
+    "dsym_uuids": [
+      [
+        "44C45C4D-2B5F-34A7-AD1D-E5AA164FDA71",
+        "arm64"
+      ]
+    ],
+    "binary_uuids": [
+      [
+        "44C45C4D-2B5F-34A7-AD1D-E5AA164FDA71",
+        "arm64"
+      ]
+    ],
+    "match": true
+  }
+]

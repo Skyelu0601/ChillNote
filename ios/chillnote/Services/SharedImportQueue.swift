@@ -1,5 +1,6 @@
 import Foundation
 import OSLog
+import SwiftData
 
 enum SharedImportQueue {
     static let appGroupIdentifier = "group.com.sponteoai.chillnote"
@@ -61,6 +62,39 @@ enum SharedImportQueue {
     struct PendingImportFile: Sendable {
         let importItem: PendingImport
         let fileURL: URL
+    }
+
+    /// A share extension has already created this identity on the server. Its
+    /// local placeholder is a download target, not a new local mutation.
+    @MainActor
+    static func adoptStartedLinkImport(_ item: PendingImport, context: ModelContext) throws -> Note {
+        guard let userId = item.userId, let url = URL(string: item.source.url),
+              let jobId = item.importJobId, !jobId.isEmpty else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        let noteId = item.id
+        let descriptor = FetchDescriptor<Note>(predicate: #Predicate {
+            $0.id == noteId && $0.userId == userId
+        })
+        // Sync may have downloaded a newer state before the queue is consumed.
+        if let existing = try context.fetch(descriptor).first { return existing }
+
+        let note = Note(content: QuickCaptureImportService.shared.placeholderNoteText(for: url), userId: userId)
+        note.id = noteId
+        note.createdAt = item.createdAt
+        note.updatedAt = item.createdAt
+        note.section = .inbox
+        note.applySourceMetadata(item.noteSourceMetadata)
+        note.sourceCapturedAt = item.createdAt
+        note.importJobId = jobId
+        // Even a completed enqueue response contains no transcript. Keep polling
+        // until sync supplies the actual content and terminal error details.
+        note.importStatus = .queued
+        note.importStartedAt = item.createdAt
+        note.acknowledgedFingerprint = SyncEntityFingerprint.note(note)
+        context.insert(note)
+        try context.save()
+        return note
     }
 
     static func pendingImports() throws -> [PendingImportFile] {

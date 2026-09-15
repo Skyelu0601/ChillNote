@@ -432,7 +432,6 @@ class NotesRepository(
         importStatus: String,
         createdAt: String,
     ): NoteEntity {
-        dao.note(userId, noteId)?.let { return it }
         return NoteEntity(
             id = noteId,
             userId = userId,
@@ -449,11 +448,13 @@ class NotesRepository(
             sourceAuthorHandle = source.authorHandle,
             sourceCapturedAt = createdAt,
             section = "inbox",
-            importStatus = importStatus,
+            // An enqueue acknowledgement has no content or failure details.
+            // Continue recovery until sync downloads the authoritative note.
+            importStatus = "queued",
             importJobId = importJobId,
             importStartedAt = createdAt,
             needsSync = false,
-        ).also { dao.upsertNote(it) }
+        ).let { dao.adoptPendingImportPlaceholder(it) }
     }
 
     suspend fun sync(userId: String, accessToken: String) = syncMutex.withLock {
@@ -464,6 +465,7 @@ class NotesRepository(
         // and relationships before preparing durable mutations.
         dao.collapseCaseVariantNotes(userId)
         dao.collapseCaseVariantTags(userId)
+        dao.repairDetachedImportDrafts(userId)
         var state = dao.syncState(userId) ?: SyncStateEntity(userId, deviceId = UUID.randomUUID().toString())
         val initialNotes = dao.pendingNotes(userId)
         val initialTags = dao.pendingTags(userId)

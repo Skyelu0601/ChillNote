@@ -26,6 +26,7 @@ import com.revenuecat.purchases.restorePurchasesWith
 import com.revenuecat.purchases.syncPurchasesWith
 import com.revenuecat.purchases.models.StoreProduct
 import com.sponteoai.chillscript.R
+import com.sponteoai.chillscript.analytics.AppsFlyerService
 import com.sponteoai.chillscript.analytics.ProductAnalytics
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -130,6 +131,7 @@ private class RevenueCatBillingManager(
 
     override fun identify(userId: String?, migrateLegacyPurchase: Boolean) {
         if (userId.isNullOrBlank()) return
+        AppsFlyerService.identify(appContext, userId)
         ensureIdentity(userId) {
             if (migrateLegacyPurchase) syncLegacyPurchasesOnce(userId)
             queryProducts()
@@ -153,7 +155,12 @@ private class RevenueCatBillingManager(
                     if (userCancelled) {
                         ProductAnalytics.completePurchase("purchase_cancelled")
                     } else {
-                        ProductAnalytics.completePurchase("purchase_failed", "store_error")
+                        ProductAnalytics.completePurchase(
+                            "purchase_failed", "store_error",
+                            billingProvider = "revenuecat",
+                            billingErrorCode = error.code.name,
+                            billingStage = "purchase",
+                        )
                         reportError("RevenueCat purchase failed: ${error.code}")
                     }
                 },
@@ -339,7 +346,12 @@ private class LegacyPlayBillingManager(
             } else if (result.responseCode == BillingClient.BillingResponseCode.USER_CANCELED) {
                 ProductAnalytics.completePurchase("purchase_cancelled")
             } else {
-                ProductAnalytics.completePurchase("purchase_failed", "store_error")
+                ProductAnalytics.completePurchase(
+                    "purchase_failed", "store_error",
+                    billingProvider = "google_play",
+                    billingErrorCode = result.responseCode.toString(),
+                    billingStage = "purchase_update",
+                )
                 reportBillingError("Purchase update failed", result)
             }
         }
@@ -385,7 +397,12 @@ private class LegacyPlayBillingManager(
             .build()
         val result = billingClient.launchBillingFlow(activity, params)
         if (result.responseCode != BillingClient.BillingResponseCode.OK) {
-            ProductAnalytics.completePurchase("purchase_failed", "flow_launch_failed")
+            ProductAnalytics.completePurchase(
+                "purchase_failed", "flow_launch_failed",
+                billingProvider = "google_play",
+                billingErrorCode = result.responseCode.toString(),
+                billingStage = "flow_launch",
+            )
             reportBillingError("Billing flow failed to launch", result)
         }
     }

@@ -32,6 +32,20 @@ struct SyncEngine {
             Self.logger.error("makePayload notes fetch failed: \(error.localizedDescription, privacy: .public)")
             throw SyncError.localStoreUnavailable
         }
+        // Repair copies made by older clients without deleting any saved text.
+        // A finished sibling proves that this job belongs to another note ID.
+        let finishedJobs = Set(allNotes.filter {
+            $0.section != .drafts && $0.importStatus == .completed
+        }.compactMap(\.importJobId).filter { !$0.isEmpty })
+        for note in allNotes where note.section == .drafts && note.deletedAt == nil && note.isLinkImportInProgress {
+            guard let jobId = note.importJobId, finishedJobs.contains(jobId) else { continue }
+            note.importStatus = .none
+            note.importJobId = nil
+            note.importErrorCode = nil
+            note.importStartedAt = nil
+            note.importCompletedAt = nil
+            note.updatedAt = Date()
+        }
         
         // 2. Tags - same durable fingerprint rule as notes.
         var tagDescriptor = FetchDescriptor<Tag>()
@@ -414,12 +428,12 @@ struct SyncEngine {
                 }
 
                 if forcedNoteIds.contains(id) {
-                    let isFinishedImportAuthority = shouldAcceptFinishedImportAuthority(local: existing, remote: dto)
-                    if isDirty, versionConflictNoteIds.contains(id), !isFinishedImportAuthority {
+                    let isImportAuthority = shouldAcceptImportAuthority(local: existing, remote: dto)
+                    if isDirty, versionConflictNoteIds.contains(id), !isImportAuthority {
                         preserveLocalNoteConflict(existing, context: context)
                     } else if isDirty,
                               currentFingerprint != existing.lastSubmittedFingerprint,
-                              !isFinishedImportAuthority {
+                              !isImportAuthority {
                         rebase(note: existing, from: dto, remoteUpdatedAt: remoteUpdatedAt)
                         existing.lastSubmittedMutationId = nil
                         existing.lastSubmittedFingerprint = nil
@@ -516,16 +530,32 @@ struct SyncEngine {
         }
     }
 
-    private func shouldAcceptFinishedImportAuthority(local: Note, remote: NoteDTO) -> Bool {
+    private func shouldAcceptImportAuthority(local: Note, remote: NoteDTO) -> Bool {
         guard local.importStatus == .queued || local.importStatus == .processing,
-              let localJobId = local.importJobId,
-              !localJobId.isEmpty,
-              localJobId == remote.importJobId,
               let remoteStatus = remote.importStatus else {
             return false
         }
-        return remoteStatus == NoteImportStatus.completed.rawValue
-            || remoteStatus == NoteImportStatus.failed.rawValue
+        if remoteStatus == NoteImportStatus.completed.rawValue
+            || remoteStatus == NoteImportStatus.failed.rawValue {
+            return local.importJobId?.isEmpty == false && local.importJobId == remote.importJobId
+        }
+
+        guard let remoteJobId = remote.importJobId, !remoteJobId.isEmpty,
+              local.importJobId?.isEmpty != false || local.importJobId == remoteJobId,
+              local.sourceURL?.isEmpty == false else { return false }
+
+        // The enqueue endpoint and the device independently persist the same
+        // placeholder, possibly before the enqueue response supplies its job ID.
+        // Different versions/timestamps are not an editing conflict.
+        // Preserve real edits to content, organization, or deletion as usual.
+        return (remoteStatus == "queued" || remoteStatus == "processing")
+            && local.content == remote.content
+            && local.sourceURL == remote.sourceURL
+            && local.section.rawValue == (remote.section ?? "inbox")
+            && local.deletedAt == nil && remote.deletedAt == nil
+            && local.pinnedAt == nil && remote.pinnedAt == nil
+            && Set(local.tags.filter { $0.deletedAt == nil }.map(\.id))
+                == Set((remote.tagIds ?? []).compactMap(UUID.init(uuidString:)))
     }
 
     @discardableResult
@@ -552,11 +582,8 @@ struct SyncEngine {
         clone.sourceAuthorHandle = source.sourceAuthorHandle
         clone.sourceCapturedAt = source.sourceCapturedAt
         clone.section = .drafts
-        clone.importStatusRaw = source.importStatusRaw
-        clone.importJobId = source.importJobId
-        clone.importErrorCode = source.importErrorCode
-        clone.importStartedAt = source.importStartedAt
-        clone.importCompletedAt = source.importCompletedAt
+        // Jobs belong to the original note ID. A conflict copy has no worker
+        // and must remain an ordinary editable draft.
         clone.tags = source.tags
         clone.serverMutationId = nil
         clone.lastSubmittedMutationId = nil

@@ -54,6 +54,15 @@ struct AppConfig {
         }
         return key
     }
+
+    // AppsFlyer's developer key is a client SDK key and is safe to ship in the app bundle.
+    static var appsFlyerDevKey: String? {
+        guard let key = stringConfig("APPSFLYER_DEV_KEY"),
+              !key.contains("REPLACE") else {
+            return nil
+        }
+        return key
+    }
     
     // MARK: - App Review Login
 

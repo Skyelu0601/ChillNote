@@ -144,7 +144,8 @@ import com.sponteoai.chillscript.domain.MarkdownEditing
 import com.sponteoai.chillscript.domain.TagColors
 import com.sponteoai.chillscript.domain.TagHierarchy
 import com.sponteoai.chillscript.domain.TrashPolicy
-import com.sponteoai.chillscript.domain.shouldPersistEditorContentOnClose
+import com.sponteoai.chillscript.domain.NoteEditorCloseAction
+import com.sponteoai.chillscript.domain.NoteEditorDraftSession
 import com.sponteoai.chillscript.domain.sourceMetadata
 import com.sponteoai.chillscript.ui.markdown.MarkdownText
 import com.sponteoai.chillscript.ui.source.NoteSourceCard
@@ -261,6 +262,15 @@ class MainActivity : ComponentActivity() {
             LaunchedEffect(revenueCatUserId, migrateLegacyRevenueCatPurchase) {
                 billingManager.identify(revenueCatUserId, migrateLegacyRevenueCatPurchase)
             }
+            LaunchedEffect(revenueCatUserId) {
+                // Cold-start session restoration can finish after onResume.
+                if (revenueCatUserId != null &&
+                    lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.RESUMED)
+                ) {
+                    viewModel.refreshPushRegistration()
+                    if (intent.action != Intent.ACTION_SEND) importNewClipboardCreatorLink()
+                }
+            }
             LaunchedEffect(Unit) {
                 viewModel.reviewRequests.collect { launchInAppReview() }
             }
@@ -336,14 +346,16 @@ class MainActivity : ComponentActivity() {
                         onRestorePurchases = billingManager::restorePurchases,
                         onRetryBilling = billingManager::connect,
                         onOpenUrl = ::openExternalTarget,
-                        onRequestReview = ::launchInAppReview,
+                        onOpenStoreReview = {
+                            openExternalTarget("https://play.google.com/store/apps/details?id=com.sponteoai.chillscript")
+                        },
                     )
                 }
                 aiConsentPrompt?.let { prompt ->
                     AIConsentDialog(
                         prompt = prompt,
-                        onAccept = viewModel::acceptAIDataConsent,
-                        onDecline = viewModel::declineAIDataConsent,
+                        onAccept = { viewModel.acceptAIDataConsent(prompt.id) },
+                        onDecline = { viewModel.declineAIDataConsent(prompt.id) },
                         onOpenPrivacyPolicy = { openExternalTarget("https://www.chillnoteai.com/privacy") },
                     )
                 }
@@ -461,8 +473,16 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun launchInAppReview() {
+        ProductAnalytics.capture("rating_prompt_requested")
         reviewManager.requestReviewFlow().addOnCompleteListener { request ->
-            if (request.isSuccessful) reviewManager.launchReviewFlow(this, request.result)
+            if (request.isSuccessful) {
+                reviewManager.launchReviewFlow(this, request.result).addOnCompleteListener {
+                    ProductAnalytics.capture("rating_prompt_flow_completed")
+                }
+            } else {
+                Log.w(TAG, "Could not request the in-app review flow", request.exception)
+                ProductAnalytics.capture("rating_prompt_request_failed")
+            }
         }
     }
 
@@ -591,7 +611,7 @@ private fun HomeScreen(
     notificationNoteId: String?, onNotificationNoteConsumed: () -> Unit,
     billingState: BillingUiState, onPurchase: (BillingProduct) -> Unit, onRestorePurchases: () -> Unit,
     onRetryBilling: () -> Unit,
-    onRequestReview: () -> Unit,
+    onOpenStoreReview: () -> Unit,
 ) {
     val sections = listOf("inbox", "drafts", "published", "trash")
     var selectedSection by remember { mutableStateOf("inbox") }
@@ -625,6 +645,7 @@ private fun HomeScreen(
     var pendingPermanentDeleteNote by remember { mutableStateOf<NoteEntity?>(null) }
     var selectedEditorTagIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var editorPersistedContent by remember { mutableStateOf("") }
+    var editorDraftSession by remember { mutableStateOf(NoteEditorDraftSession()) }
     var editorTagSelectionTouched by remember { mutableStateOf(false) }
     var showSettings by remember { mutableStateOf(false) }
     var showPendingRecordings by remember { mutableStateOf(false) }
@@ -791,6 +812,7 @@ private fun HomeScreen(
         checklistDraft = null
         selectedEditorTagIds = emptySet()
         editorPersistedContent = ""
+        editorDraftSession = NoteEditorDraftSession()
         editorTagSelectionTouched = false
         undoStack = emptyList()
         redoStack = emptyList()
@@ -807,6 +829,7 @@ private fun HomeScreen(
         checklistDraft = ChecklistMarkdown.parse(note.content)
         selectedEditorTagIds = loadedTagIds
         editorPersistedContent = currentEditorContent()
+        editorDraftSession = NoteEditorDraftSession(note)
         editorTagSelectionTouched = false
         undoStack = emptyList()
         redoStack = emptyList()
@@ -816,23 +839,21 @@ private fun HomeScreen(
         editorOpen = true
     }
     val saveAndCloseEditor: () -> Unit = {
-        val note = editingNote
+        // A source/import may arrive while the editor is open; check the latest metadata.
+        val note = editingNote?.let { original -> notes.firstOrNull { it.id == original.id } ?: original }
         val content = currentEditorContent()
         val isVoiceProcessing = activeVoiceNoteState is VoiceNoteState.Processing
-        when {
-            note?.deletedAt != null -> Unit
-            note != null && content.isBlank() && activeVoiceNoteState != null -> Unit
-            note != null && content.isBlank() && !isVoiceProcessing -> viewModel.permanentlyDelete(note)
-            note != null || content.isNotBlank() -> {
-                if (shouldPersistEditorContentOnClose(
-                        hasExistingNote = note != null,
-                        currentContent = content,
-                        persistedContent = editorPersistedContent,
-                        isVoiceProcessing = isVoiceProcessing,
-                    )
-                ) {
-                    viewModel.saveNote(note, content, note?.section ?: activeCaptureSection)
-                }
+        when (editorDraftSession.closeAction(
+            note = note,
+            currentContent = content,
+            persistedContent = editorPersistedContent,
+            hasVoiceState = activeVoiceNoteState != null,
+            isVoiceProcessing = isVoiceProcessing,
+        )) {
+            NoteEditorCloseAction.None -> Unit
+            NoteEditorCloseAction.DiscardEmptyDraft -> note?.let(viewModel::permanentlyDelete)
+            NoteEditorCloseAction.Save -> {
+                viewModel.saveNote(note, content, note?.section ?: activeCaptureSection)
             }
         }
         clearEditorState()
@@ -851,6 +872,7 @@ private fun HomeScreen(
                 creatingEditorNote = false
                 if (created != null) {
                     openNoteInEditor(created)
+                    editorDraftSession = NoteEditorDraftSession(created, isNewBlankDraft = initialContent.isBlank())
                     // noteTags is a database Flow and may publish one frame after
                     // the note callback, so retain the persisted capture context.
                     selectedEditorTagIds = targetTagIds
@@ -1096,7 +1118,7 @@ private fun HomeScreen(
             onRestorePurchases = onRestorePurchases,
             onRetryBilling = onRetryBilling,
             onUpdateVoice = viewModel::updateVoiceLanguage,
-            onRequestReview = onRequestReview,
+            onOpenStoreReview = onOpenStoreReview,
         )
         return
     }
@@ -1258,6 +1280,7 @@ private fun HomeScreen(
     ) {
         val note = editingNote ?: return@LaunchedEffect
         if (!editorOpen || note.deletedAt != null) return@LaunchedEffect
+        editorDraftSession.recordContent(currentEditorContent())
         val hasContentChange = currentEditorContent() != editorPersistedContent
         if (!hasContentChange) return@LaunchedEffect
         delay(500)
@@ -1278,6 +1301,7 @@ private fun HomeScreen(
             canUndo = undoStack.isNotEmpty(),
             canRedo = redoStack.isNotEmpty(),
             onTextChange = { value ->
+                editorDraftSession.recordContent(value.text)
                 if (value.text != editorText.text) {
                     undoStack = (undoStack + editorText).takeLast(100)
                     redoStack = emptyList()
@@ -1428,6 +1452,7 @@ private fun HomeScreen(
             },
             onAISave = {
                 val content = currentEditorContent()
+                editorDraftSession.recordContent(content)
                 editingNote?.takeIf { it.deletedAt == null }?.let { note ->
                     editorPersistedContent = content
                     viewModel.saveNote(note, content, note.section)
@@ -2443,7 +2468,7 @@ private fun SettingsScreen(
     onRestorePurchases: () -> Unit,
     onRetryBilling: () -> Unit,
     onUpdateVoice: (String, String) -> Unit,
-    onRequestReview: () -> Unit,
+    onOpenStoreReview: () -> Unit,
 ) {
     var confirmDelete by remember { mutableStateOf(false) }
     var deleteInProgress by remember { mutableStateOf(false) }
@@ -2534,7 +2559,7 @@ private fun SettingsScreen(
         onVoiceLanguage = { showVoiceSettings = true },
         onPermissions = { onOpenUrl("package:com.sponteoai.chillscript") },
         onFeedback = { onOpenUrl("mailto:support@chillnoteai.com?subject=ChillScript%20Feedback") },
-        onRate = onRequestReview,
+        onRate = onOpenStoreReview,
         onPrivacy = { onOpenUrl("https://www.chillnoteai.com/privacy") },
         onAgreement = { onOpenUrl("https://www.chillnoteai.com/terms") },
         onAbout = { showAbout = true },

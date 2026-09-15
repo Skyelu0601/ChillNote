@@ -16,6 +16,12 @@ LOCAL_SERVER_DIR="./server"
 LOCAL_ENV_FILE="${LOCAL_ENV_FILE:-$LOCAL_SERVER_DIR/.env}"
 PUSH_ENV="${PUSH_ENV:-0}"
 RESOLVE_ROLLED_BACK="${RESOLVE_ROLLED_BACK:-}"
+RELEASE_NAME="${RELEASE_NAME:-mobile-$(date -u +%Y%m%d%H%M%S)}"
+
+if [[ ! "$RELEASE_NAME" =~ ^[A-Za-z0-9._-]+$ ]]; then
+    echo "❌ 错误: RELEASE_NAME 只能包含字母、数字、点、下划线和短横线"
+    exit 1
+fi
 
 echo "🚀 开始部署 ChillScript 后端..."
 
@@ -59,17 +65,40 @@ scp server-deploy.tar.gz ${SERVER_USER}@${SERVER_IP}:/tmp/
 
 # 4. 服务器端部署
 echo "🔧 在服务器上安装和启动..."
-ssh ${SERVER_USER}@${SERVER_IP} "RESOLVE_ROLLED_BACK='${RESOLVE_ROLLED_BACK}' bash -s" << 'ENDSSH'
-set -euo pipefail
+ssh ${SERVER_USER}@${SERVER_IP} "RELEASE_NAME='${RELEASE_NAME}' RESOLVE_ROLLED_BACK='${RESOLVE_ROLLED_BACK}' bash -s" << 'ENDSSH'
+set -Eeuo pipefail
 
 BASE_DIR="/root/chillnote-api"
-APP_DIR="$BASE_DIR/current"
+CURRENT_LINK="$BASE_DIR/current"
+NEXT_LINK="$BASE_DIR/current.next"
+RELEASES_DIR="$BASE_DIR/releases"
+APP_DIR="$RELEASES_DIR/$RELEASE_NAME"
 SHARED_DIR="$BASE_DIR/shared"
 SHARED_ENV_FILE="$SHARED_DIR/.env"
 RESOLVE_ROLLED_BACK="${RESOLVE_ROLLED_BACK:-}"
+PREVIOUS_RELEASE="$(readlink -f "$CURRENT_LINK" 2>/dev/null || true)"
+APP_STOPPED=0
 
-mkdir -p "$APP_DIR"
-mkdir -p "$SHARED_DIR"
+rollback() {
+  trap - ERR
+  if [ "$APP_STOPPED" = "1" ] && [ -n "$PREVIOUS_RELEASE" ] && [ -d "$PREVIOUS_RELEASE" ]; then
+    echo "↩️ 发布失败，恢复上一版本: $PREVIOUS_RELEASE"
+    ln -sfn "$PREVIOUS_RELEASE" "$NEXT_LINK"
+    mv -Tf "$NEXT_LINK" "$CURRENT_LINK"
+    cd "$CURRENT_LINK"
+    pm2 restart chillnote --update-env >/dev/null 2>&1 || \
+      pm2 start "$CURRENT_LINK/ecosystem.config.cjs" --only chillnote --update-env >/dev/null 2>&1 || true
+  fi
+}
+
+trap rollback ERR
+
+mkdir -p "$SHARED_DIR" "$RELEASES_DIR"
+if [ -e "$APP_DIR" ]; then
+  echo "❌ 错误: 发布目录已存在: $APP_DIR"
+  exit 1
+fi
+mkdir "$APP_DIR"
 cd "$BASE_DIR"
 
 # 写入 .env（如果推送了）
@@ -80,9 +109,9 @@ if [ -f "/tmp/chillnote-api.env" ]; then
 fi
 
 # 首次迁移到 shared/.env 时，从当前发布目录复制现有配置。
-if [ ! -f "$SHARED_ENV_FILE" ] && [ -f "$APP_DIR/.env" ]; then
-  echo "ℹ️ 初始化 $SHARED_ENV_FILE（来源：$APP_DIR/.env）..."
-  install -m 600 "$APP_DIR/.env" "$SHARED_ENV_FILE"
+if [ ! -f "$SHARED_ENV_FILE" ] && [ -n "$PREVIOUS_RELEASE" ] && [ -f "$PREVIOUS_RELEASE/.env" ]; then
+  echo "ℹ️ 初始化 $SHARED_ENV_FILE（来源：上一发布版本）..."
+  install -m 600 "$PREVIOUS_RELEASE/.env" "$SHARED_ENV_FILE"
 fi
 
 if [ ! -f "$SHARED_ENV_FILE" ]; then
@@ -91,12 +120,10 @@ if [ ! -f "$SHARED_ENV_FILE" ]; then
 fi
 
 echo "📦 解压代码..."
-rm -rf "$APP_DIR/dist" "$APP_DIR/prisma"
 tar -xzf /tmp/server-deploy.tar.gz -C "$APP_DIR"
 rm /tmp/server-deploy.tar.gz
 
-echo "🔐 将当前发布目录 .env 链接到共享环境文件..."
-rm -f "$APP_DIR/.env"
+echo "🔐 将新发布目录 .env 链接到共享环境文件..."
 ln -s "$SHARED_ENV_FILE" "$APP_DIR/.env"
 
 cd "$APP_DIR"
@@ -117,6 +144,7 @@ fi
 echo "🛑 暂停旧应用，进入短暂维护窗口..."
 pm2 stop chillnote 2>/dev/null || true
 pm2 stop chillnote-api 2>/dev/null || true
+APP_STOPPED=1
 
 echo "🔧 应用 Prisma 迁移并生成客户端..."
 if [ -n "$RESOLVE_ROLLED_BACK" ]; then
@@ -133,19 +161,36 @@ npx prisma generate
 # npx prisma db push --accept-data-loss
 
 echo "🚀 重启应用..."
-# 停止旧进程（ID 0 是 chillnote，以及我们之前误创建的 chillnote-api）
-pm2 delete chillnote 2>/dev/null || true
+# 先原子切换 current，再重启进程；失败时 trap 会恢复上一版本。
+ln -sfn "$APP_DIR" "$NEXT_LINK"
+mv -Tf "$NEXT_LINK" "$CURRENT_LINK"
+
+# 清理之前误创建的 chillnote-api 进程。
 pm2 delete chillnote-api 2>/dev/null || true
 
-# 启动新进程（名字现在是 chillnote）
-pm2 start "$APP_DIR/ecosystem.config.cjs" --only chillnote --update-env
-pm2 save
+# 启动或重启正式进程（名字是 chillnote）。
+pm2 restart chillnote --update-env 2>/dev/null || \
+  pm2 start "$CURRENT_LINK/ecosystem.config.cjs" --only chillnote --update-env
 
 echo "🩺 健康检查..."
-sleep 2
-curl -fsS "http://127.0.0.1:4000/health" >/dev/null
+HEALTHY=0
+for attempt in 1 2 3 4 5 6 7 8 9 10; do
+  if curl -fsS "http://127.0.0.1:4000/health" >/dev/null; then
+    HEALTHY=1
+    break
+  fi
+  sleep 2
+done
 
-echo "✅ 部署完成！"
+if [ "$HEALTHY" != "1" ]; then
+  echo "❌ 新版本健康检查失败"
+  false
+fi
+
+trap - ERR
+pm2 save
+
+echo "✅ 部署完成: $APP_DIR"
 ENDSSH
 
 # 5. 清理本地临时文件

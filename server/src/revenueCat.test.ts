@@ -25,7 +25,8 @@ test("parses an active RevenueCat entitlement and matching subscription", () => 
     expiresAt: new Date("2026-10-01T00:00:00Z"),
     productId: "com.chillnote.pro.yearly",
     store: "app_store",
-    originalTransactionId: "original-1"
+    originalTransactionId: "original-1",
+    storeTransactionId: null
   });
 });
 
@@ -77,4 +78,39 @@ test("verifies RevenueCat webhook HMAC and rejects stale timestamps", () => {
   const header = `t=${timestamp},v1=${signature}`;
   assert.equal(verifyRevenueCatWebhookSignature(raw, header, secret, timestamp * 1_000), true);
   assert.equal(verifyRevenueCatWebhookSignature(raw, header, secret, timestamp * 1_000 + 600_000), false);
+});
+
+test("Apple metadata cannot keep Pro after a transfer, expiry or fabricated unlimited grant", () => {
+  for (const expiresAt of [null, new Date("2099-01-01")]) {
+    assert.equal(effectiveSubscription({
+      legacyTier: "pro", legacyExpiresAt: expiresAt, legacyProvider: "apple",
+      revenueCat: revenueCatEntitlementSnapshot({}, "pro")
+    }).tier, "free");
+  }
+});
+
+test("revoking Apple does not revoke another payment provider", () => {
+  for (const provider of ["google_play", "creem"]) {
+    assert.equal(effectiveSubscription({
+      legacyTier: "pro", legacyExpiresAt: new Date("2099-01-01"), legacyProvider: provider,
+      revenueCat: revenueCatEntitlementSnapshot({}, "pro")
+    }).tier, "pro");
+  }
+});
+
+test("a TRANSFER without app_user_id refreshes both sides and every alias", () => {
+  assert.deepEqual(revenueCatWebhookUserIds({
+    id: "transfer", type: "TRANSFER", event_timestamp_ms: 1,
+    transferred_from: ["old-user", "old-alias"],
+    transferred_to: ["new-user", "new-alias", "new-user"]
+  }), ["old-user", "old-alias", "new-user", "new-alias"]);
+});
+
+test("reads RevenueCat v1 store transaction IDs without confusing them with original IDs", () => {
+  const snapshot = revenueCatEntitlementSnapshot({ subscriber: {
+    entitlements: { pro: { product_identifier: "yearly", expires_date: "2099-01-01" } },
+    subscriptions: { yearly: { store: "app_store", store_transaction_id: "current-renewal" } }
+  } }, "pro");
+  assert.equal(snapshot.storeTransactionId, "current-renewal");
+  assert.equal(snapshot.originalTransactionId, null);
 });

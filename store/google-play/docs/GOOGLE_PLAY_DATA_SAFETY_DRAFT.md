@@ -23,19 +23,19 @@ Google 将“离开设备传输”视为收集。语音即使只为一次请求�
 | 个人信息 → 电子邮件地址 | 是 | 否* | 必需 | App 功能、账号管理 | 邮箱验证码、Google/Apple 登录、Supabase Auth |
 | 个人信息 → 姓名 | 可能 | 否* | 可选 | App 功能、账号管理 | Google/Apple 登录可能返回显示名称；提交前确认生产端是否保存 |
 | 个人信息 → 用户 ID | 是 | 否* | 必需 | App 功能、分析、账号管理 | Supabase 用户 ID 与同步数据关联；登录后用于关联 PostHog 产品事件和 RevenueCat 订阅事件 |
-| 财务信息 → 购买记录 | 是 | 否* | 可选 | App 功能、分析、账号管理 | Google Play Billing 与 RevenueCat 的商品、订阅状态、续费及收入事件 |
+| 财务信息 → 购买记录 | 是 | 是 | 可选 | App 功能、分析、广告或营销、账号管理 | Google Play Billing 与 RevenueCat 的商品、订阅状态、续费及收入事件；RevenueCat 向 AppsFlyer 回传订阅生命周期和收入事件 |
 | 用户内容 → 其他用户生成的内容 | 是 | 否* | 可选 | App 功能 | 笔记、标签、AI 指令、导入链接产生的文本同步到服务器 |
 | 音频文件 → 语音或声音录音 | 是，临时处理 | 否* | 可选 | App 功能 | 用户主动录音后发送至 ChillScript 服务器和 Gemini 转写；服务器不保留原始音频 |
 | 应用活动 → 应用互动 | 是 | 否* | 必需 | 分析 | PostHog 记录启动、引导、分享导入、录音转写、AI Skill、提词器及付费入口等产品事件 |
 | 应用信息和性能 → 其他应用性能数据 | 是 | 否* | 必需 | 分析 | PostHog 事件包含转写和 AI 操作的响应耗时 |
-| 设备或其他 ID | 是 | 否* | 必需 | App 功能、分析、安全与防欺诈 | App 生成的同步设备 ID、PostHog 匿名标识，以及用于消息推送的 Firebase Installation ID |
+| 设备或其他 ID | 是 | 是 | 必需 | App 功能、分析、广告或营销、安全与防欺诈 | App 生成的同步设备 ID、PostHog 匿名标识、Firebase Installation ID，以及 AppsFlyer 广告归因标识 |
 
 `否*` 的前提是 Supabase、Google Cloud/Gemini 等以 ChillScript 的服务提供商身份代表开发者处理数据，且不会将数据用于自身独立目的。Google 对“共享”的定义排除第一方服务提供商，但最终答案必须与合同和生产配置一致。
 
 ## 当前不建议申报为收集
 
 - 照片和视频：提词器相机视频仅保存在 App 私有目录，用户主动保存到相册或分享；当前没有上传接口。
-- 崩溃日志和诊断：PostHog 的自动错误追踪、自动点击/页面采集及会话回放均已关闭，当前也未接入 Firebase Analytics、Crashlytics 或广告 SDK；产品互动和响应耗时已在上表单独申报。
+- 崩溃日志和诊断：PostHog 的自动点击/页面采集及会话回放均已关闭；崩溃信息按上表的应用性能数据申报。AppsFlyer 仅用于安装与订阅广告归因。
 - 位置信息、联系人、短信、通话记录、健康信息：Manifest 没有对应权限，也没有相关功能。
 - 麦克风和相机权限本身不等于数据收集；是否申报取决于数据是否离开设备。相机视频不上传，语音录音会上传处理。
 
@@ -57,7 +57,7 @@ Google 将“离开设备传输”视为收集。语音即使只为一次请求�
 - [ ] Firebase/Google Cloud 项目关闭不需要的 Analytics，并确认 Firebase Cloud Messaging 的数据处理条款与本表一致
 - [ ] Play Console 开发者实体名称与隐私政策里的 `Sponteoai` 一致
 - [ ] `https://www.chillnoteai.com/delete-account` 已部署并可从未登录浏览器正常访问
-- [ ] 以后改变 PostHog/RevenueCat 数据范围，或新增崩溃、广告 SDK、改变推送用途时重新审核本表
+- [ ] 确认 AppsFlyer、RevenueCat 与已启用广告合作伙伴的数据处理范围，并在改变归因或回传设置时重新审核本表
 
 ## Google 官方参考
 

@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
+import android.util.Log
 import com.sponteoai.chillscript.BuildConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
@@ -78,9 +79,12 @@ class AuthRepository(context: Context) {
     private fun isAppReviewEmail(email: String): Boolean =
         BuildConfig.APP_REVIEW_LOGIN_ENABLED && email.trim().lowercase() in appReviewEmails
 
-    fun restoreSession(): AuthSession? {
-        val raw = sessionStorage.read() ?: return null
-        return runCatching { json.decodeFromString(AuthSession.serializer(), raw) }.getOrNull()
+    suspend fun restoreSession(): AuthSession? = withContext(Dispatchers.IO) {
+        // Keystore access and legacy migration can block on device services or storage.
+        // A migration failure must leave the original session intact for a later retry.
+        runCatching {
+            sessionStorage.read()?.let { json.decodeFromString(AuthSession.serializer(), it) }
+        }.onFailure { Log.w("AuthRepository", "Could not restore stored session", it) }.getOrNull()
     }
 
     suspend fun sendEmailCode(email: String) {

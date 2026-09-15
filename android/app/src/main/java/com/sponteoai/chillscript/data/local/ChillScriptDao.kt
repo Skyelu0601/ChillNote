@@ -343,6 +343,35 @@ interface ChillScriptDao {
     }
 
     @Transaction
+    suspend fun adoptPendingImportPlaceholder(placeholder: NoteEntity): NoteEntity {
+        // Serialize with sync so a completion downloaded between lookup and
+        // insertion cannot be replaced by the older share queue snapshot.
+        notesMatchingSyncIdentity(placeholder.userId, placeholder.id).maxByOrNull { it.version }
+            ?.let { return it }
+        upsertNote(placeholder)
+        return placeholder
+    }
+
+    @Transaction
+    suspend fun repairDetachedImportDrafts(userId: String) {
+        val notes = notesForSyncIdentityCleanup(userId)
+        val finishedJobs = notes.filter { it.section != "drafts" && it.importStatus == "completed" }
+            .mapNotNull { it.importJobId?.takeIf(String::isNotBlank) }.toSet()
+        notes.filter {
+            it.section == "drafts" && it.deletedAt == null && it.importStatus in setOf("queued", "processing") &&
+                it.importJobId in finishedJobs
+        }.forEach { draft ->
+            // Keep text and relationships, but detach a legacy conflict copy
+            // from the job that has already finished on its original note.
+            upsertNote(draft.copy(
+                importStatus = null, importJobId = null, importErrorCode = null,
+                importStartedAt = null, importCompletedAt = null,
+                updatedAt = Instant.now().toString(), version = draft.version + 1, needsSync = true,
+            ))
+        }
+    }
+
+    @Transaction
     suspend fun collapseCaseVariantNotes(userId: String) {
         notesForSyncIdentityCleanup(userId)
             .groupBy { canonicalSyncIdentity(it.id) }
@@ -455,6 +484,12 @@ interface ChillScriptDao {
                 lastSubmittedMutationId = null,
                 lastSubmittedFingerprint = null,
                 section = "drafts",
+                // The worker only updates the original note identity.
+                importStatus = null,
+                importJobId = null,
+                importErrorCode = null,
+                importStartedAt = null,
+                importCompletedAt = null,
                 needsSync = true,
             ),
         )
@@ -534,7 +569,19 @@ interface ChillScriptDao {
         // original identity. Server-forced values (for example finished imports)
         // deliberately do not create conflict copies.
         conflictedTagIds.distinctBy(::canonicalSyncIdentity).forEach { preserveConflictedTag(userId, it) }
-        conflictedNoteIds.distinctBy(::canonicalSyncIdentity).forEach { preserveConflictedNote(userId, it) }
+        val remoteNotesByIdentity = notes.associateBy { canonicalSyncIdentity(it.note.id) }
+        conflictedNoteIds.distinctBy(::canonicalSyncIdentity).forEach { noteId ->
+            val local = notesMatchingSyncIdentity(userId, noteId).maxWithOrNull(
+                compareBy<NoteEntity> { it.needsSync }.thenBy { it.version }
+                    .thenComparator { left, right -> compareSyncTimestamps(left.updatedAt, right.updatedAt) },
+            )
+            val remote = remoteNotesByIdentity[canonicalSyncIdentity(noteId)]
+            val samePlaceholder = local != null && remote != null &&
+                isSamePendingImport(local, remote.note) &&
+                activeTagIdsForNote(userId, local.id).map(::canonicalSyncIdentity).toSet() ==
+                remote.tagIds.map(::canonicalSyncIdentity).toSet()
+            if (!samePlaceholder) preserveConflictedNote(userId, noteId)
+        }
 
         tags.forEach { change ->
             if (canonicalSyncIdentity(change.tag.id) in blockedTagIdentities) return@forEach

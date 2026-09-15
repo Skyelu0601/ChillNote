@@ -433,6 +433,13 @@ struct HomeBodyView: View {
                         dispatch(.noteDetailDisappear(note))
                     }
             }
+            .navigationDestination(for: NewBlankNoteRoute.self) { route in
+                NoteDetailView(note: route.note, isNewBlankDraft: true)
+                    .environmentObject(state.speechRecognizer)
+                    .onDisappear {
+                        dispatch(.noteDetailDisappear(route.note))
+                    }
+            }
             .navigationDestination(for: NotificationInboxRoute.self) { _ in
                 NotificationInboxView(store: notificationInbox)
             }

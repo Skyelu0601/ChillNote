@@ -16,6 +16,7 @@ import {
   SyncReferenceError
 } from "./syncPolicy.js";
 import { sanitizeTagParentChanges } from "./tagHierarchyPolicy.js";
+import { clearImportMetadata, isDetachedImportReplay, shouldPreservePendingImport } from "./importSyncPolicy.js";
 
 function syncIdWhere(id: string): string | { equals: string; mode: "insensitive" } {
   return isUUIDSyncIdentity(id) ? { equals: id, mode: "insensitive" } : id;
@@ -407,10 +408,15 @@ export async function applySync(
   }
 
   const dedupedNotes = pickLatestByClientTime<NoteDTO>(payload.notes);
-  for (const note of dedupedNotes.values()) {
+  const importJobs = new Map<string, { noteId: string } | null>();
+  for (const uploadedNote of dedupedNotes.values()) {
+    let note = uploadedNote;
     const resolvedId = await resolveNoteId(database, userId, note.id);
     const tombstone = await findTombstone(database, userId, "note", note.id);
-    const existing = await database.note.findFirst({ where: { id: resolvedId, userId } });
+    const existing = await database.note.findFirst({
+      where: { id: resolvedId, userId },
+      include: { tags: { select: { id: true } } }
+    });
     const decision = decideSyncMutation({
       protocolVersion: payload.protocolVersion,
       hardDeleteRequested: hardDeletedNoteKeys.has(syncIdentityKey(note.id)),
@@ -436,7 +442,28 @@ export async function applySync(
       continue;
     }
 
-    if (shouldPreserveFinishedImport(existing, note)) {
+    // A job is created atomically with its owning note. Conflict copies made by
+    // old clients inherit its ID, but the worker can only finish the original.
+    // Keep their content and detach the invalid processing state on upload.
+    let detachedImport = false;
+    if (note.importJobId) {
+      const key = syncIdentityKey(note.importJobId);
+      if (!importJobs.has(key)) {
+        importJobs.set(key, await database.linkImportJob.findFirst({
+          where: { userId, id: syncIdWhere(note.importJobId) },
+          select: { noteId: true }
+        }));
+      }
+      const job = importJobs.get(key);
+      if (!job || syncIdentityKey(job.noteId) !== syncIdentityKey(resolvedId)) {
+        note = clearImportMetadata(note);
+        detachedImport = true;
+      }
+    }
+
+    if (shouldPreserveFinishedImport(existing, note)
+      || shouldPreservePendingImport(existing, note)
+      || (detachedImport && isDetachedImportReplay(existing, note))) {
       forcedNoteIds.add(existing!.id);
       continue;
     }
@@ -477,6 +504,7 @@ export async function applySync(
       mutationId: note.mutationId ?? randomUUID()
     };
     await upsertNote(userId, upsertPayload, database);
+    if (detachedImport) forcedNoteIds.add(resolvedId);
     await logSyncChange({
       userId,
       entityType: "note",

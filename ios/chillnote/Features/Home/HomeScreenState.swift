@@ -1,6 +1,12 @@
 import SwiftUI
 import SwiftData
 
+/// Only the blank-note creation action uses this route. Reopened notes,
+/// imports and voice notes must never inherit automatic draft cleanup.
+struct NewBlankNoteRoute: Hashable {
+    let note: Note
+}
+
 struct TranslateLanguage: Identifiable {
     let id: String
     let name: String

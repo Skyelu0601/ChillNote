@@ -55,6 +55,9 @@ struct RichTextEditorView: UIViewRepresentable {
     var bottomInset: CGFloat = 8
     var isScrollEnabled: Bool = true
     var isEditing: Binding<Bool>?
+    /// Persist the last edit through a retained model, without accessing SwiftUI
+    /// bindings after the representable has left the view hierarchy.
+    var onFinalTextCommit: (_ markdown: String, _ previousMarkdown: String) -> Void = { _, _ in }
     
     func makeUIView(context: Context) -> InteractiveTextView {
         let textView = InteractiveTextView(usingTextLayoutManager: true)
@@ -97,17 +100,20 @@ struct RichTextEditorView: UIViewRepresentable {
         
         // Setup Toolbar
         let toolbar = EditorFormattingToolbar(textView: textView)
-        toolbar.onAction = { action in
-            context.coordinator.handleToolbarAction(action, in: textView)
+        toolbar.onAction = { [weak coordinator = context.coordinator, weak textView] action in
+            guard let textView else { return }
+            coordinator?.handleToolbarAction(action, in: textView)
         }
-        toolbar.onSelectionChange = { action in
-            context.coordinator.handleToolbarAction(action, in: textView)
+        toolbar.onSelectionChange = { [weak coordinator = context.coordinator, weak textView] action in
+            guard let textView else { return }
+            coordinator?.handleToolbarAction(action, in: textView)
         }
         textView.inputAccessoryView = toolbar
         
         // Tap handler for checkboxes
-        textView.onCheckboxTap = { lineIndex, range in
-            context.coordinator.toggleCheckbox(at: range, in: textView)
+        textView.onCheckboxTap = { [weak coordinator = context.coordinator, weak textView] _, range in
+            guard let textView else { return }
+            coordinator?.toggleCheckbox(at: range, in: textView)
         }
         context.coordinator.textView = textView
         controller.connect(context.coordinator)
@@ -157,8 +163,7 @@ struct RichTextEditorView: UIViewRepresentable {
     }
 
     static func dismantleUIView(_ uiView: InteractiveTextView, coordinator: Coordinator) {
-        coordinator.flushPendingChanges()
-        coordinator.parent.controller.disconnect(coordinator)
+        coordinator.dismantle(uiView)
     }
     
     func makeCoordinator() -> Coordinator {
@@ -174,6 +179,7 @@ struct RichTextEditorView: UIViewRepresentable {
         var lastKnownMarkdown: String = ""
         private var latestSnapshot: RichTextSerializationSnapshot?
         private var hasUncommittedText = false
+        private var isDismantled = false
         private var commitWorkItem: DispatchWorkItem?
         private var selectionWorkItem: DispatchWorkItem?
         private var pendingInputStyle: PendingInputStyle?
@@ -202,16 +208,18 @@ struct RichTextEditorView: UIViewRepresentable {
         }
 
         func textViewDidBeginEditing(_ textView: UITextView) {
+            guard !isDismantled else { return }
             parent.isEditing?.wrappedValue = true
             normalizeTypingAttributesForListPrefixIfNeeded(in: textView)
             scheduleCaretVisibilityUpdate(in: textView)
         }
         
         func textViewDidChange(_ textView: UITextView) {
+            guard !isDismantled else { return }
             applyPendingInputStyleIfNeeded(in: textView)
+            hasUncommittedText = true
             guard textView.markedTextRange == nil else { return }
             textView.setNeedsLayout()
-            hasUncommittedText = true
             scheduleCommit()
             scheduleCaretVisibilityUpdate(in: textView)
             if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
@@ -220,6 +228,7 @@ struct RichTextEditorView: UIViewRepresentable {
         }
 
         func textViewDidChangeSelection(_ textView: UITextView) {
+            guard !isDismantled else { return }
             normalizeTypingAttributesForListPrefixIfNeeded(in: textView)
             guard textView.markedTextRange == nil else { return }
             if !hasUncommittedText {
@@ -232,18 +241,47 @@ struct RichTextEditorView: UIViewRepresentable {
         }
 
         func textViewDidEndEditing(_ textView: UITextView) {
+            guard !isDismantled else { return }
             parent.isEditing?.wrappedValue = false
             flushPendingChanges()
         }
 
         func endEditing() {
+            guard !isDismantled else { return }
             textView?.resignFirstResponder()
+        }
+
+        func dismantle(_ textView: InteractiveTextView) {
+            guard !isDismantled else { return }
+            isDismantled = true
+            cancelScheduledWork()
+            parent.controller.disconnect(self)
+            textView.delegate = nil
+            textView.onCheckboxTap = nil
+            if let toolbar = textView.inputAccessoryView as? EditorFormattingToolbar {
+                toolbar.onAction = nil
+                toolbar.onSelectionChange = nil
+            }
+            // Commit an in-progress IME composition before serializing. Delegate
+            // callbacks and delayed selection updates must not touch dead bindings.
+            textView.unmarkText()
+            textView.resignFirstResponder()
+            if hasUncommittedText {
+                let markdown = RichTextConverter.serializationSnapshot(from: textView.attributedText).markdown
+                let previousMarkdown = lastKnownMarkdown
+                let commit = parent.onFinalTextCommit
+                commit(markdown, previousMarkdown)
+            }
+            hasUncommittedText = false
+            pendingInputStyle = nil
+            self.textView = nil
         }
 
         func acceptExternalMarkdown(
             _ markdown: String,
             snapshot: RichTextSerializationSnapshot
         ) {
+            guard !isDismantled else { return }
             cancelScheduledWork()
             lastKnownMarkdown = markdown
             latestSnapshot = snapshot
@@ -253,9 +291,9 @@ struct RichTextEditorView: UIViewRepresentable {
 
         func flushPendingChanges() {
             cancelScheduledWork()
-            guard let textView, textView.markedTextRange == nil else { return }
+            guard !isDismantled, let textView, textView.markedTextRange == nil else { return }
 
-            if hasUncommittedText || latestSnapshot == nil {
+            if hasUncommittedText {
                 let snapshot = RichTextConverter.serializationSnapshot(from: textView.attributedText)
                 latestSnapshot = snapshot
                 hasUncommittedText = false
@@ -301,7 +339,8 @@ struct RichTextEditorView: UIViewRepresentable {
 
         private func scheduleCaretVisibilityUpdate(in textView: UITextView) {
             guard !parent.isScrollEnabled else { return }
-            DispatchQueue.main.async { [weak textView] in
+            DispatchQueue.main.async { [weak self, weak textView] in
+                guard let self, !self.isDismantled else { return }
                 (textView as? InteractiveTextView)?.scrollCaretToVisibleInEnclosingScrollView()
             }
         }
@@ -310,7 +349,7 @@ struct RichTextEditorView: UIViewRepresentable {
             from textView: UITextView,
             snapshot: RichTextSerializationSnapshot? = nil
         ) {
-            guard let selection = parent.selection else { return }
+            guard !isDismantled, let selection = parent.selection else { return }
             let selectedRange = textView.selectedRange
             guard let currentSnapshot = snapshot ?? latestSnapshot else { return }
             let nextSelection = currentSnapshot.markdownSelection(for: selectedRange)
@@ -322,6 +361,7 @@ struct RichTextEditorView: UIViewRepresentable {
         // MARK: - Smart Enter Logic
         
         func textView(_ textView: UITextView, shouldChangeTextIn range: NSRange, replacementText text: String) -> Bool {
+            guard !isDismantled else { return false }
             // Check for "Enter" key
             if text == "\n" {
                 return handleReturnKey(textView, range: range)
@@ -679,6 +719,7 @@ struct RichTextEditorView: UIViewRepresentable {
         // MARK: - Toolbar Actions
         
         func handleToolbarAction(_ action: EditorAction, in textView: UITextView) {
+            guard !isDismantled else { return }
             let selectedRange = textView.selectedRange
             
             switch action {
@@ -899,6 +940,7 @@ struct RichTextEditorView: UIViewRepresentable {
         
         // Existing toggleCheckbox from previous turn, updated for range
         func toggleCheckbox(at range: NSRange, in textView: InteractiveTextView) {
+            guard !isDismantled else { return }
             guard let checkboxState = textView.textStorage.attribute(RichTextConverter.Key.checkbox, at: range.location, effectiveRange: nil) as? Bool else {
                 return
             }

@@ -80,6 +80,8 @@ export async function getEffectiveSubscription(
     select: {
       subscriptionTier: true,
       subscriptionExpiresAt: true,
+      subscriptionProvider: true,
+      originalTransactionId: true,
       revenueCatEntitlements: {
         where: { entitlementId },
         take: 1,
@@ -104,6 +106,7 @@ export async function getEffectiveSubscription(
   const effective = effectiveSubscription({
     legacyTier: user?.subscriptionTier,
     legacyExpiresAt: user?.subscriptionExpiresAt,
+    legacyProvider: user?.subscriptionProvider ?? (user?.originalTransactionId ? "apple" : null),
     revenueCat,
     now
   });
@@ -128,24 +131,6 @@ export async function upsertUser(userId: string, database: SyncDatabase = prisma
     VALUES (${userId}, NOW(), NOW())
     ON CONFLICT ("id") DO NOTHING
   `;
-}
-
-export async function updateSubscriptionStatus(
-  userId: string,
-  tier: string,
-  expiresAt: Date | null,
-  originalTransactionId: string | null,
-  provider?: string | null
-): Promise<void> {
-  await prisma.user.update({
-    where: { id: userId },
-    data: {
-      subscriptionTier: tier,
-      subscriptionExpiresAt: expiresAt,
-      originalTransactionId: originalTransactionId,
-      ...(provider !== undefined ? { subscriptionProvider: provider } : {})
-    }
-  });
 }
 
 export async function updateCreemSubscriptionStatus(params: {

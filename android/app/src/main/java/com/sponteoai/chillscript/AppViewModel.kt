@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
@@ -175,6 +176,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var signOutJob: Job? = null
     private var voiceStartAuthorizationJob: Job? = null
     private var foregroundPollSyncJob: Job? = null
+    private var pendingRecordingsRefreshJob: Job? = null
+    private val pendingRecordingsRefreshMutex = Mutex()
     private var pendingLinkImportCreditNoteId: String? = null
     @Volatile private var editorActive: Boolean = false
     private val voiceProcessingJobs = ConcurrentHashMap<String, Job>()
@@ -271,15 +274,21 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     init {
-        val session = authRepository.restoreSession()
-        mutableUiState.value = if (session == null) AppUiState(authState = AuthState.SignedOut) else AppUiState(
-            authState = AuthState.SignedIn(session),
-            introPaywallResolved = onboardingPreferences.hasShownIntroPaywall(session.user.id),
-        )
         refreshPendingRecordings()
         recipeStore.customRecipesLoadFailure?.let(::reportRecipeStoreFailure)
-        if (session != null) {
-            viewModelScope.launch {
+        viewModelScope.launch {
+            val session = authRepository.restoreSession()
+            // An OAuth callback may finish while storage is being read. Never replace
+            // that newer login (or a sign-out) with an older restored session.
+            if (mutableUiState.value.authState != AuthState.Checking) return@launch
+            ProductAnalytics.synchronizeUser(session?.user?.id)
+            mutableUiState.value = mutableUiState.value.copy(
+                authState = session?.let { AuthState.SignedIn(it) } ?: AuthState.SignedOut,
+                introPaywallResolved = session?.let {
+                    onboardingPreferences.hasShownIntroPaywall(it.user.id)
+                } ?: false,
+            )
+            if (session != null) {
                 val activeSession = refreshSessionIfNeeded(session) ?: return@launch
                 consumePendingShareImports(activeSession)
                 syncInitialNotes(activeSession)
@@ -485,11 +494,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 sessionRefreshJob?.cancel()
                 sessionRefreshJob = null
                 pendingImportMonitor?.cancel()
+                pendingRecordingsRefreshJob?.cancel()
                 notesRepository.clearLocalUserData(session.user.id)
                 recordingFileManager.clearAll()
                 recipeStore.clearUserData()
                 onboardingPreferences.clearUserData(session.user.id)
-                appRatingTracker.clearUserData()
                 mutablePendingRecordings.value = emptyList()
                 mutableVoiceNoteStates.value = emptyMap()
                 mutableAISkillState.value = AISkillUiState()
@@ -525,10 +534,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun captureSharedVideo(uri: Uri, declaredMimeType: String?, sourcePackage: String?) {
         val captureKey = uri.toString()
         if (sharedVideoCaptureJobs.containsKey(captureKey)) return
-        val ownerUserId = currentUserId
         val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
             mutableUiState.value = mutableUiState.value.copy(sharedVideoPreparing = true, errorMessage = null)
             try {
+                val state = uiState.first { it.authState != AuthState.Checking }
+                val ownerUserId = (state.authState as? AuthState.SignedIn)?.session?.user?.id
                 sharedVideoImporter.import(
                     SharedVideoImportSource(uri, declaredMimeType, sourcePackage),
                     ownerUserId = ownerUserId,
@@ -880,13 +890,23 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun refreshPendingRecordings() {
-        try {
-            mutablePendingRecordings.value = recordingFileManager.pendingRecordings()
-        } catch (error: Throwable) {
-            Log.w(TAG, "Could not read pending recordings", error)
-            mutableUiState.value = mutableUiState.value.copy(
-                errorMessage = getApplication<Application>().getString(R.string.common_request_failed),
-            )
+        pendingRecordingsRefreshJob?.cancel()
+        pendingRecordingsRefreshJob = viewModelScope.launch {
+            try {
+                // Serialize scans because they also remove expired files. Cancellation
+                // prevents an older scan from publishing stale rows after a newer request.
+                val recordings = pendingRecordingsRefreshMutex.withLock {
+                    recordingFileManager.pendingRecordings()
+                }
+                mutablePendingRecordings.value = recordings
+            } catch (cancelled: CancellationException) {
+                throw cancelled
+            } catch (error: Exception) {
+                Log.w(TAG, "Could not read pending recordings", error)
+                mutableUiState.value = mutableUiState.value.copy(
+                    errorMessage = getApplication<Application>().getString(R.string.common_request_failed),
+                )
+            }
         }
     }
 
@@ -927,9 +947,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         mutableUiState.value = mutableUiState.value.copy(voiceProcessing = false)
     }
 
-    fun acceptAIDataConsent() = aiConsentManager.accept()
+    fun acceptAIDataConsent(promptId: UUID) = aiConsentManager.accept(promptId)
 
-    fun declineAIDataConsent() = aiConsentManager.decline()
+    fun declineAIDataConsent(promptId: UUID) = aiConsentManager.decline(promptId)
 
     fun runCreatorSkill(
         recipe: AgentRecipe,
@@ -944,19 +964,30 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 onFlowEndedWithoutResult()
                 return@launch
             }
+            // Several taps can wait on the same consent prompt. Only the first
+            // resumed action may start a generation.
+            if (mutableAISkillState.value.processingRecipeId != null) return@launch
             val runId = UUID.randomUUID().toString()
             val startedAt = android.os.SystemClock.elapsedRealtime()
             val analyticsProperties = mapOf(
                 "skill_key" to if (recipe.isCustom) "custom" else recipe.id,
                 "skill_origin" to if (recipe.isCustom) "custom" else "built_in",
                 "run_id" to runId,
+                "diagnostic_schema" to 2,
             )
             ProductAnalytics.capture("skill_selected", analyticsProperties)
             ProductAnalytics.capture("skill_run_started", analyticsProperties)
             mutableAISkillState.value = AISkillUiState(processingRecipeId = recipe.id)
             runCatchingPreservingCancellation {
                 val (prompt, systemPrompt) = recipe.requestPrompts(content, instruction)
-                creatorSkillsApi.generate(session.accessToken, prompt, systemPrompt)
+                try {
+                    creatorSkillsApi.generate(session.accessToken, prompt, systemPrompt)
+                } catch (cancelled: CancellationException) {
+                    val failure = com.sponteoai.chillscript.analytics.AIFailureAnalytics.classify(cancelled)
+                    ProductAnalytics.capture("skill_run_cancelled", analyticsProperties + failure.properties)
+                    mutableAISkillState.value = AISkillUiState()
+                    throw cancelled
+                }
             }.onSuccess { result ->
                 ProductAnalytics.capture(
                     "skill_run_completed",
@@ -968,13 +999,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 refreshCredits()
             }.onFailure { error ->
                 Log.w(TAG, "AI skill request failed", error)
+                val failure = com.sponteoai.chillscript.analytics.AIFailureAnalytics.classify(error)
                 ProductAnalytics.capture(
-                    "skill_run_failed",
-                    analyticsProperties + ("error_code" to if (error is SyncHttpException && error.statusCode == 402) {
-                        "insufficient_credits"
-                    } else {
-                        "generation_failed"
-                    }),
+                    "skill_run_${failure.outcome}",
+                    analyticsProperties + failure.properties +
+                        ("latency_ms" to (android.os.SystemClock.elapsedRealtime() - startedAt)),
                 )
                 if (error is SyncHttpException && error.statusCode == 402) {
                     mutableAISkillState.value = AISkillUiState()

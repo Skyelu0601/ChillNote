@@ -35,16 +35,26 @@ extension HomeView {
                 removePendingSharedImport(pendingFile)
 
             case .linkImport:
-                guard let url = URL(string: pendingFile.importItem.source.url),
-                      let importedNote = createLinkImportNote(
+                let item = pendingFile.importItem
+                let importedNote: Note
+                let shouldOpen = shouldNavigate && !firstActionGuide.isWaitingForSharedVideo
+                if item.importJobId?.isEmpty == false {
+                    do {
+                        importedNote = try SharedImportQueue.adoptStartedLinkImport(item, context: modelContext)
+                    } catch {
+                        presentSharedImportQueueError(error)
+                        continue
+                    }
+                    if shouldOpen { navigationPath.append(importedNote) }
+                } else if let url = URL(string: item.source.url),
+                          let note = createLinkImportNote(
                         url,
-                        noteID: pendingFile.importItem.id,
-                        source: pendingFile.importItem.noteSourceMetadata,
-                        existingJobId: pendingFile.importItem.importJobId,
-                        existingJobStatus: pendingFile.importItem.importStatus,
-                        shouldNavigate: shouldNavigate && !firstActionGuide.isWaitingForSharedVideo
-                      ) else {
-                    removePendingSharedImport(pendingFile)
+                        noteID: item.id,
+                        source: item.noteSourceMetadata,
+                        shouldNavigate: shouldOpen
+                      ) {
+                    importedNote = note
+                } else {
                     continue
                 }
 

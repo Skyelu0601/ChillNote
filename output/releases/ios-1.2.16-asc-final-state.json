@@ -1,0 +1,35 @@
+{
+  "verified_at_utc": "2026-09-12T05:12:17Z",
+  "app_id": "6758427839",
+  "version": "1.2.16",
+  "version_id": "2d0c1c0f-75f0-4ea3-ac95-fd5c855fd3ec",
+  "app_store_state": "WAITING_FOR_REVIEW",
+  "app_version_state": "WAITING_FOR_REVIEW",
+  "release_type": "AFTER_APPROVAL",
+  "build_id": "cb75d39a-935b-4ecb-9028-78a27d9cad1e",
+  "build_number": "2",
+  "build_processing_state": "VALID",
+  "uses_non_exempt_encryption": false,
+  "selected_build_id": "cb75d39a-935b-4ecb-9028-78a27d9cad1e",
+  "release_notes": "fix known issues",
+  "verified_release_notes_locales": [
+    "de-DE",
+    "en-AU",
+    "en-CA",
+    "en-GB",
+    "en-US",
+    "es-ES",
+    "es-MX",
+    "fr-FR",
+    "ja",
+    "ko",
+    "pt-BR",
+    "pt-PT",
+    "zh-Hans",
+    "zh-Hant"
+  ],
+  "review_submission": {
+    "id": "f3689161-3856-4cb7-a55b-51e6df50a1c6",
+    "state": "WAITING_FOR_REVIEW"
+  }
+}

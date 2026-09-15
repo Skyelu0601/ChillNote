@@ -1,0 +1,91 @@
+{
+  "recorded_at_utc": "2026-09-12T05:13:22.438414+00:00",
+  "target_version": "1.2.16",
+  "previous_version": "1.2.15",
+  "ios": {
+    "build_number": "2",
+    "simulator_build": "passed",
+    "release_build": "passed",
+    "temp_dir": "/tmp/chillscript-simple-release-1.2.16",
+    "archive_path": "/Users/luwenting/Library/Developer/Xcode/Archives/2026-09-12/ChillScript-1.2.16 2026-09-12 12.45.06.xcarchive",
+    "release_notes": "fix known issues",
+    "binary_uploaded": true,
+    "ipa_path": "/tmp/chillscript-simple-release-1.2.16/ChillScript-1.2.16.ipa",
+    "ipa_sha256": "8eef4739d964d8650c6e8bc9704c59c51c975a56296deb7edff8c3502ddb3fe9",
+    "release_notes_uploaded": true,
+    "release_notes_locales": 14,
+    "binary_upload_status": "accepted_by_app_store_connect",
+    "posthog_symbols_verified": true,
+    "posthog_symbol_refs": [
+      "0728AD46-652B-33D4-91C9-70A56F1C3F23",
+      "59B90873-1BC5-313E-9B56-6940BCC92916",
+      "0F8D82F9-9F6F-349F-9912-F1D01CA3F521",
+      "44C45C4D-2B5F-34A7-AD1D-E5AA164FDA71"
+    ],
+    "signing_recovery": "Exported the same archive using existing API credentials and automatic provisioning for the unchanged team.",
+    "review_submission_status": "submitted",
+    "app_store_state": "WAITING_FOR_REVIEW",
+    "build_processing_state": "VALID",
+    "export_compliance": "None",
+    "uses_non_exempt_encryption": false,
+    "build_id": "cb75d39a-935b-4ecb-9028-78a27d9cad1e",
+    "review_submission_id": "f3689161-3856-4cb7-a55b-51e6df50a1c6",
+    "release_type": "AFTER_APPROVAL",
+    "automatic_release_settings_changed": false,
+    "verified_release_notes_locales": 14
+  },
+  "android": {
+    "version_code": 16,
+    "release_build": "passed",
+    "signature_verification": "jar verified",
+    "aab_path": "/Users/luwenting/development/chillnote/android/app/build/outputs/bundle/release/app-release.aab",
+    "aab_sha256": "fcd53a14f6875c6e4127332386070745376ddb0387b0d5f46bfe4f8e942d33f0",
+    "mapping_id": "9e3253f1-e8f9-3017-a31a-c911b40cba71",
+    "mapping_uploaded_to_posthog": true,
+    "store_status": "production_submitted_for_review",
+    "release_status": "completed",
+    "rollout": 1.0,
+    "changes_not_sent_for_review": false,
+    "submission_confirmed_at_local": "2026-09-12 12:56:47 Asia/Shanghai",
+    "symbol_set_id": "01a093ff-c9fa-0000-ae45-2e8b75f006ee",
+    "symbol_set_has_uploaded_file": true,
+    "symbol_set_failure_reason": null
+  },
+  "website": {
+    "status": "production_ready_verified",
+    "deployment_id": "dpl_C4cFeasdTpgHfzTmG9oqDjuyTxnD",
+    "privacy_url": "https://www.chillnoteai.com/privacy",
+    "typecheck": "passed",
+    "local_build": "passed",
+    "remote_build": "passed",
+    "runtime_errors_since_deployment": 0
+  },
+  "backend": {
+    "status": "deployed_and_verified",
+    "receipt": "output/releases/backend-20260912-pt-localization.json"
+  },
+  "database": {
+    "status": "up_to_date",
+    "migrations": 29,
+    "mutations": false
+  },
+  "pending_user_input": null,
+  "symbol_upload_authorization": "Explicitly approved by user in continuation.",
+  "status": "completed",
+  "validation": {
+    "ios_simulator_build": "passed",
+    "ios_release_archive_export": "passed after automatic provisioning for unchanged team",
+    "ios_single_version_and_diff_check": "passed",
+    "android_release_signing_R8_lintVital": "passed",
+    "android_jarsigner": "jar verified",
+    "android_existing_AAB_mapping_match": "exact byte match",
+    "backend_local_build": "passed",
+    "backend_local_tests": 84,
+    "backend_production_localization_tests": 4,
+    "website_typecheck_build": "passed",
+    "website_production_privacy_smoke": "passed",
+    "mobile_unit_tests": "not run",
+    "mobile_device_or_simulator_runtime_tests": "not run",
+    "android_full_lint_debug_build_localization_check": "not run"
+  }
+}

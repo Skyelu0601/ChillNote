@@ -2,6 +2,8 @@ package com.sponteoai.chillscript.voice
 
 import android.content.Context
 import android.media.MediaMetadataRetriever
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.IOException
 import java.time.Duration
@@ -54,7 +56,7 @@ class RecordingFileManager(context: Context) {
         return File(directory, "${UUID.randomUUID()}_${System.currentTimeMillis()}.m4a")
     }
 
-    fun pendingRecordings(now: Instant = Instant.now()): List<PendingRecording> {
+    suspend fun pendingRecordings(now: Instant = Instant.now()): List<PendingRecording> = withContext(Dispatchers.IO) {
         ensureDirectory()
         val cutoff = now.minus(Duration.ofDays(7))
         val files = directory.listFiles { file -> file.isFile && file.extension.equals("m4a", ignoreCase = true) }
@@ -65,7 +67,7 @@ class RecordingFileManager(context: Context) {
                     if (file.delete() || !file.exists()) clearMetadata(file)
                 }
             }
-        return files
+        files
             .filter { file -> file.isFile && file.length() > 0L }
             .map { file -> pendingRecording(file) }
             .sortedByDescending { it.createdAt }

@@ -33,7 +33,7 @@ final class ProductAnalytics {
         config.captureElementInteractions = false
         config.enableSwizzling = false
         config.sessionReplay = false
-        config.errorTrackingConfig.autoCapture = false
+        config.errorTrackingConfig.autoCapture = true
         config.surveys = false
         config.preloadFeatureFlags = false
         config.setBeforeSend { event in
@@ -45,6 +45,9 @@ final class ProductAnalytics {
 #else
             event.properties["environment"] = "production"
 #endif
+            if event.event == "$exception" {
+                event.properties = CrashEventSanitizer.sanitize(event.properties)
+            }
             return event
         }
         PostHogSDK.shared.setup(config)
@@ -60,6 +63,14 @@ final class ProductAnalytics {
             UserDefaults.standard.set(true, forKey: firstOpenKey)
         }
         drainShareExtensionEvents()
+#if DEBUG
+        // Opt-in simulator smoke test. Launch without a debugger, then relaunch without this argument.
+        if ProcessInfo.processInfo.arguments.contains("--posthog-crash-smoke-test") {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 10) {
+                fatalError("PostHog crash smoke test")
+            }
+        }
+#endif
     }
 
     func synchronizeUser(_ userID: String?) {

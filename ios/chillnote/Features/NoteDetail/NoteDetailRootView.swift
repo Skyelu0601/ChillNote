@@ -65,9 +65,9 @@ struct NoteDetailView: View {
         }
     }
 
-    init(note: Note) {
+    init(note: Note, isNewBlankDraft: Bool = false) {
         self.note = note
-        _viewModel = StateObject(wrappedValue: NoteDetailViewModel(note: note))
+        _viewModel = StateObject(wrappedValue: NoteDetailViewModel(note: note, isNewBlankDraft: isNewBlankDraft))
     }
 
     var body: some View {
@@ -77,7 +77,10 @@ struct NoteDetailView: View {
             VStack(alignment: .leading, spacing: 0) {
                 NoteDetailHeaderView(
                     isDeleted: viewModel.isDeleted,
-                    onBack: { sendAfterFlushing(.backTapped) },
+                    onBack: {
+                        editorController.endEditing()
+                        sendAfterFlushing(.backTapped)
+                    },
                     onRestore: { viewModel.send(.restoreTapped) },
                     onAddTopic: { viewModel.resetNewTagInput() },
                     onExport: { sendAfterFlushing(.exportTapped) },
@@ -140,7 +143,8 @@ struct NoteDetailView: View {
                                         isProcessing: viewModel.isProcessing,
                                         isVoiceProcessing: viewModel.isVoiceProcessing,
                                         minimumHeight: minimumContentHeight,
-                                        isEditing: $isEditorActive
+                                        isEditing: $isEditorActive,
+                                        onFinalTextCommit: viewModel.stageFinalEditorText
                                     )
                                 case .create:
                                     NoteDetailCreatePageView(

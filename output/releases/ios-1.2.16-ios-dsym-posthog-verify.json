@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-09-12T05:05:56.546Z",
+  "archive": "/Users/luwenting/Library/Developer/Xcode/Archives/2026-09-12/ChillScript-1.2.16 2026-09-12 12.45.06.xcarchive",
+  "posthog_project_id": 596105,
+  "posthog_host": "https://us.posthog.com",
+  "read_method": "PostHog connected tools: error_tracking_symbol_sets_list, exact ref, status=all",
+  "main": {
+    "content": [
+      {
+        "type": "text",
+        "text": "count: 1\nnext: null\nprevious: null\nresults[1]{id,ref,created_at,last_used,failure_reason,has_uploaded_file,release}:\n  01a093fe-be91-0000-ca3a-dce585425bb3,0728AD46-652B-33D4-91C9-70A56F1C3F23,\"2026-09-12T05:02:20.817940Z\",\"2026-09-12T05:02:20.818769Z\",null,true,null\n_posthogUrl: \"https://us.posthog.com/project/596105/error_tracking\""
+      }
+    ],
+    "isError": false
+  },
+  "share": {
+    "content": [
+      {
+        "type": "text",
+        "text": "count: 1\nnext: null\nprevious: null\nresults[1]:\n  - id: 01a08fcf-ba68-0001-45bb-b8cff8a67a98\n    ref: 59B90873-1BC5-313E-9B56-6940BCC92916\n    created_at: \"2026-09-11T09:32:30.697515Z\"\n    last_used: \"2026-09-12T05:02:20.818769Z\"\n    failure_reason: null\n    has_uploaded_file: true\n    release:\n      id: 01a08fcf-b7f9-0000-da9f-8487f403cc3d\n      hash_id: 65e59c5c31956f098a86cd99926957278233ea949b8579ff2915443a16975f5ac2f6a1388f6ee4a4e472262e5028df3f223b24859374c7aa85c773cbba45e6c4\n      team_id: 596105\n      created_at: \"2026-09-11T09:32:30.075188Z\"\n      metadata: null\n      version: 1.2.15+2\n      project: com.sponteoai.chillnote\n_posthogUrl: \"https://us.posthog.com/project/596105/error_tracking\""
+      }
+    ],
+    "isError": false
+  },
+  "widget": {
+    "content": [
+      {
+        "type": "text",
+        "text": "count: 1\nnext: null\nprevious: null\nresults[1]:\n  - id: 01a08fcf-ba68-0000-1844-88fe2e8c0748\n    ref: 0F8D82F9-9F6F-349F-9912-F1D01CA3F521\n    created_at: \"2026-09-11T09:32:30.697486Z\"\n    last_used: \"2026-09-12T05:02:20.818769Z\"\n    failure_reason: null\n    has_uploaded_file: true\n    release:\n      id: 01a08fcf-b7f9-0000-da9f-8487f403cc3d\n      hash_id: 65e59c5c31956f098a86cd99926957278233ea949b8579ff2915443a16975f5ac2f6a1388f6ee4a4e472262e5028df3f223b24859374c7aa85c773cbba45e6c4\n      team_id: 596105\n      created_at: \"2026-09-11T09:32:30.075188Z\"\n      metadata: null\n      version: 1.2.15+2\n      project: com.sponteoai.chillnote\n_posthogUrl: \"https://us.posthog.com/project/596105/error_tracking\""
+      }
+    ],
+    "isError": false
+  },
+  "gomarketme": {
+    "content": [
+      {
+        "type": "text",
+        "text": "count: 1\nnext: null\nprevious: null\nresults[1]:\n  - id: 01a08fcf-ba69-0000-418b-0d963b6c1ce9\n    ref: 44C45C4D-2B5F-34A7-AD1D-E5AA164FDA71\n    created_at: \"2026-09-11T09:32:30.697545Z\"\n    last_used: \"2026-09-12T05:02:20.818769Z\"\n    failure_reason: null\n    has_uploaded_file: true\n    release:\n      id: 01a08fcf-b7f9-0000-da9f-8487f403cc3d\n      hash_id: 65e59c5c31956f098a86cd99926957278233ea949b8579ff2915443a16975f5ac2f6a1388f6ee4a4e472262e5028df3f223b24859374c7aa85c773cbba45e6c4\n      team_id: 596105\n      created_at: \"2026-09-11T09:32:30.075188Z\"\n      metadata: null\n      version: 1.2.15+2\n      project: com.sponteoai.chillnote\n_posthogUrl: \"https://us.posthog.com/project/596105/error_tracking\""
+      }
+    ],
+    "isError": false
+  }
+}

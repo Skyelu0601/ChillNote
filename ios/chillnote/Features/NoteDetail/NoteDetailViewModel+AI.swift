@@ -30,54 +30,105 @@ extension NoteDetailViewModel {
     }
 
     func startAISkill(_ recipe: AgentRecipe) {
+        guard isAISkillsEnabled else { return }
         ProductAnalytics.shared.capture("skill_selected", properties: recipe.analyticsProperties)
         if recipe.id == "translate" {
             pendingAISkillRecipe = recipe
-            showAISkillTranslateSheet = true
+            if showAISkillsSheet {
+                showAISkillsSheet = false
+            } else {
+                showAISkillTranslateSheet = true
+            }
             return
         }
+        if showAISkillsSheet {
+            queuedAISkill = (recipe, nil)
+            showAISkillsSheet = false
+        } else {
+            Task { await generateAISkillPreview(recipe: recipe) }
+        }
+    }
 
-        Task { await generateAISkillPreview(recipe: recipe) }
+    func aiSkillsSheetDidDismiss() {
+        if pendingAISkillRecipe != nil {
+            showAISkillTranslateSheet = true
+        } else {
+            runQueuedAISkill()
+        }
+    }
+
+    func runQueuedAISkill() {
+        guard let request = queuedAISkill else { return }
+        queuedAISkill = nil
+        Task { await generateAISkillPreview(recipe: request.recipe, instruction: request.instruction) }
+    }
+
+    func aiSkillTranslateSheetDidDismiss() {
+        // Swiping the language sheet away does not call its Cancel button.
+        pendingAISkillRecipe = nil
+        runQueuedAISkill()
     }
 
     func startPendingTranslateAISkill(targetLanguage: String) {
         guard let recipe = pendingAISkillRecipe else { return }
         pendingAISkillRecipe = nil
+        queuedAISkill = (recipe, targetLanguage)
         showAISkillTranslateSheet = false
-        Task { await generateAISkillPreview(recipe: recipe, instruction: targetLanguage) }
     }
 
     func cancelPendingTranslateAISkill() {
         pendingAISkillRecipe = nil
+        queuedAISkill = nil
         showAISkillTranslateSheet = false
     }
 
     func generateAISkillPreview(recipe: AgentRecipe, instruction: String? = nil) async {
-        let runID = UUID().uuidString.lowercased()
-        let startedAt = Date()
-        ProductAnalytics.shared.capture(
-            "skill_run_started",
-            properties: recipe.analyticsProperties.merging(["run_id": runID]) { current, _ in current }
-        )
         let sourceContent = note.content
         let sourceSelection = normalizedSelection(editorSelection, in: sourceContent)
+        if let preview = await requestAISkillPreview(
+            recipe: recipe, sourceContent: sourceContent,
+            sourceSelection: sourceSelection, instruction: instruction
+        ) {
+            aiSkillPreview = preview
+        }
+    }
+
+    private func requestAISkillPreview(
+        recipe: AgentRecipe, sourceContent: String,
+        sourceSelection: RichTextEditorSelection, instruction: String?
+    ) async -> NoteAISkillPreview? {
+        guard isAISkillsEnabled, !Task.isCancelled else { return nil }
+        aiSkillErrorMessage = nil
+        isAwaitingAIConsent = true
+        let accepted = await dependencies.ensureAIConsent()
+        isAwaitingAIConsent = false
+        // Refusal is a consent decision, not an attempted generation or an error.
+        guard accepted, !Task.isCancelled, !isDeleted else { return nil }
+        isProcessing = true
+        defer { isProcessing = false }
+        let runID = UUID().uuidString.lowercased()
+        let startedAt = dependencies.now()
+        let properties = recipe.analyticsProperties.merging([
+            "run_id": runID, "diagnostic_schema": 2
+        ]) { current, _ in current }
+        dependencies.capture("skill_run_started", properties)
         let inputContent = sourceSelection.isCollapsed ? sourceContent : sourceSelection.selectedText
 
-        showAISkillsSheet = false
-        isProcessing = true
-        aiSkillErrorMessage = nil
-
         do {
-            let result = try await recipe.generateResult(from: inputContent, userInstruction: instruction)
-            await StoreService.shared.fetchCreditBalance()
-            ProductAnalytics.shared.capture(
+            let result = try await dependencies.generateAISkill(recipe, inputContent, instruction)
+            try Task.checkCancellation()
+            guard !result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw GeminiError.invalidResponse
+            }
+            await dependencies.refreshCredits()
+            try Task.checkCancellation()
+            dependencies.capture(
                 "skill_run_completed",
-                properties: recipe.analyticsProperties.merging([
-                    "run_id": runID,
-                    "latency_ms": Int(Date().timeIntervalSince(startedAt) * 1_000)
+                properties.merging([
+                    "latency_ms": Int(dependencies.now().timeIntervalSince(startedAt) * 1_000)
                 ]) { current, _ in current }
             )
-            aiSkillPreview = NoteAISkillPreview(
+            return NoteAISkillPreview(
                 analyticsRunID: runID,
                 recipe: recipe,
                 result: result,
@@ -85,23 +136,20 @@ extension NoteDetailViewModel {
                 sourceSelection: sourceSelection,
                 instruction: instruction
             )
-            isProcessing = false
         } catch {
-            isProcessing = false
-            let message = error.localizedDescription
-            ProductAnalytics.shared.capture(
-                "skill_run_failed",
-                properties: recipe.analyticsProperties.merging([
-                    "run_id": runID,
-                    "error_code": (error as? GeminiError)?.isInsufficientCredits == true
-                        ? "insufficient_credits" : "generation_failed"
-                ]) { current, _ in current }
+            let failure = ClientFailureAnalytics.ai(error)
+            dependencies.capture(
+                "skill_run_\(failure.outcome)",
+                properties.merging(failure.properties) { _, new in new }.merging([
+                    "latency_ms": Int(dependencies.now().timeIntervalSince(startedAt) * 1_000)
+                ]) { _, new in new }
             )
             if (error as? GeminiError)?.isInsufficientCredits == true {
                 showSubscription = true
-            } else {
-                aiSkillErrorMessage = message
+            } else if failure.outcome != "cancelled" && failure.code != "ai_consent_required" {
+                aiSkillErrorMessage = error.localizedDescription
             }
+            return nil
         }
     }
 
@@ -147,46 +195,20 @@ extension NoteDetailViewModel {
 
         switch transformation {
         case .aiSkill(let preview, let mode):
-            isProcessing = true
+            guard let nextPreview = await requestAISkillPreview(
+                recipe: preview.recipe, sourceContent: preview.sourceContent,
+                sourceSelection: preview.sourceSelection, instruction: preview.instruction
+            ) else { return }
             isProgrammaticContentUpdate = true
-            note.updateContent(preview.sourceContent)
+            note.updateContent(contentByApplying(nextPreview.result, mode: mode, to: preview.sourceContent))
             if let modelContext {
                 note.syncContentStructure(with: modelContext)
             }
+            note.updatedAt = dependencies.now()
             persistAndSync()
+            lastAITransformation = .aiSkill(nextPreview, mode)
             DispatchQueue.main.async {
                 self.isProgrammaticContentUpdate = false
-            }
-
-            do {
-                let result = try await preview.recipe.generateResult(
-                    from: preview.inputContent,
-                    userInstruction: preview.instruction
-                )
-                await StoreService.shared.fetchCreditBalance()
-                let nextPreview = NoteAISkillPreview(
-                    analyticsRunID: UUID().uuidString.lowercased(),
-                    recipe: preview.recipe,
-                    result: result,
-                    sourceContent: preview.sourceContent,
-                    sourceSelection: preview.sourceSelection,
-                    instruction: preview.instruction
-                )
-                note.updateContent(contentByApplying(result, mode: mode, to: preview.sourceContent))
-                if let modelContext {
-                    note.syncContentStructure(with: modelContext)
-                }
-                note.updatedAt = dependencies.now()
-                persistAndSync()
-                lastAITransformation = .aiSkill(nextPreview, mode)
-                isProcessing = false
-            } catch {
-                isProcessing = false
-                if (error as? GeminiError)?.isInsufficientCredits == true {
-                    showSubscription = true
-                } else {
-                    aiSkillErrorMessage = error.localizedDescription
-                }
             }
         }
     }

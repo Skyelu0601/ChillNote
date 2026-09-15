@@ -220,7 +220,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
     @discardableResult
     func startRecordingIfPermitted(countsTowardQuota: Bool = true) async -> Bool {
         let hasConsent = await AIConsentManager.shared.ensureConsentIfNeeded(for: .audio)
-        guard hasConsent else { return false }
+        guard hasConsent, !Task.isCancelled else { return false }
         startRecording(countsTowardQuota: countsTowardQuota)
         return true
     }
@@ -422,6 +422,7 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             )
             
         } catch let error as GeminiError {
+            guard ClientFailureAnalytics.ai(error).outcome != "cancelled" else { return }
             let reason: TranscriptionFailureReason
             switch error {
             case .networkError:
@@ -433,7 +434,12 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             case .apiError(let apiMessage):
                 reason = classifyAPIErrorMessage(apiMessage)
             case .consentDeclined:
-                reason = .unknown
+                // Keep the recording available for a later consented retry.
+                return
+            case .authenticationRequired:
+                reason = .authenticationRequired
+            case .httpError(let status):
+                reason = status == 401 ? .authenticationRequired : .serviceUnavailable
             case .insufficientCredits:
                 reason = .quotaReached
             case .rateLimited:
@@ -441,6 +447,8 @@ final class SpeechRecognizer: NSObject, ObservableObject {
             }
             publishFailureEvent(fileURL: fileURL, reason: reason, message: message(for: error))
             
+        } catch is CancellationError {
+            return
         } catch {
             publishFailureEvent(
                 fileURL: fileURL,
@@ -469,7 +477,9 @@ final class SpeechRecognizer: NSObject, ObservableObject {
         case .insufficientCredits:
             return L10n.text("error.recording.pending.quota_reached")
         case .rateLimited:
-            return L10n.text("common.error.unknown")
+            return L10n.text("auth.login.error.too_many_requests")
+        case .authenticationRequired, .httpError:
+            return error.localizedDescription
         }
     }
     

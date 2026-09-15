@@ -128,7 +128,7 @@ extension HomeView {
         applyCurrentTagContext(to: note)
         modelContext.insert(note)
         persistAndSync()
-        navigationPath.append(note)
+        navigationPath.append(NewBlankNoteRoute(note: note))
     }
 
     @discardableResult
@@ -136,8 +136,6 @@ extension HomeView {
         _ url: URL,
         noteID: UUID? = nil,
         source sharedSource: NoteSourceMetadata? = nil,
-        existingJobId: String? = nil,
-        existingJobStatus: String? = nil,
         shouldNavigate: Bool = false
     ) -> Note? {
         guard let userId = currentUserId else { return nil }
@@ -147,6 +145,10 @@ extension HomeView {
         let existingNote = noteID
             .flatMap(resolveNote)
             .flatMap { $0.userId == userId ? $0 : nil }
+        if let existingNote, !existingNote.isLinkImportInProgress || existingNote.importJobId != nil {
+            if shouldNavigate { navigationPath.append(existingNote) }
+            return existingNote
+        }
         if existingNote == nil {
             guard !shouldSkipDuplicateLinkImport(sourceURL: source.url, userId: userId) else { return nil }
         }
@@ -163,13 +165,8 @@ extension HomeView {
             }
         }
         note.applySourceMetadata(source)
-        if let existingJobStatus = importStatus(from: existingJobStatus) {
-            note.importStatus = existingJobStatus
-        } else if existingNote == nil {
+        if existingNote == nil {
             note.importStatus = .queued
-        }
-        if let existingJobId {
-            note.importJobId = existingJobId
         }
 
         if existingNote == nil {
@@ -185,8 +182,7 @@ extension HomeView {
         }
         requestReload(delayNanoseconds: 60_000_000, keepItemsWhileLoading: true)
 
-        let shouldStartJob = existingJobId == nil
-            && note.importJobId == nil
+        let shouldStartJob = note.importJobId == nil
             && (note.importStatus == .queued || note.importStatus == .processing)
         if !shouldStartJob {
             return note
@@ -207,6 +203,7 @@ extension HomeView {
                 )
                 let didSaveJob = await MainActor.run {
                     StoreService.shared.applyBackendCreditBalance(job.balance, tier: job.tier)
+                    guard note.isLinkImportInProgress else { return true }
                     note.importJobId = job.jobId
                     note.importStatus = job.status == "processing" ? .processing : .queued
                     note.updatedAt = Date()
@@ -222,6 +219,7 @@ extension HomeView {
                 }
             } catch {
                 await MainActor.run {
+                    guard note.isLinkImportInProgress else { return }
                     note.importStatus = .failed
                     note.importErrorCode = ifInsufficientCredits(error) ? "insufficient_credits" : "job_start_failed"
                     note.importCompletedAt = Date()
@@ -266,14 +264,6 @@ extension HomeView {
         note.updatedAt = Date()
         guard saveHomeVoiceContext(reason: "retrying link import after credit recovery") else { return }
         _ = createLinkImportNote(url, noteID: note.id, source: source)
-    }
-
-    private func importStatus(from rawValue: String?) -> NoteImportStatus? {
-        guard let rawValue else { return nil }
-        if rawValue == "processing" {
-            return .processing
-        }
-        return NoteImportStatus(rawValue: rawValue)
     }
 
     func shouldSkipDuplicateLinkImport(sourceURL: String, userId: String) -> Bool {

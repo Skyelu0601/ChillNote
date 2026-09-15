@@ -9,6 +9,7 @@ struct NoteDetailEditorSectionView: View {
     let isVoiceProcessing: Bool
     let minimumHeight: CGFloat
     @Binding var isEditing: Bool
+    let onFinalTextCommit: (String, String) -> Void
 
     var body: some View {
         RichTextEditorView(
@@ -20,7 +21,8 @@ struct NoteDetailEditorSectionView: View {
             textColor: UIColor(Color.textMain),
             bottomInset: 40,
             isScrollEnabled: false,
-            isEditing: $isEditing
+            isEditing: $isEditing,
+            onFinalTextCommit: onFinalTextCommit
         )
         .opacity(isProcessing ? 0.6 : 1)
         .frame(minHeight: max(120, minimumHeight), alignment: .topLeading)

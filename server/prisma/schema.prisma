@@ -50,6 +50,7 @@ model RevenueCatEntitlement {
   productId             String?
   store                 String?
   originalTransactionId String?
+  storeTransactionId    String?
   lastEventId           String?
   lastSyncedAt          DateTime   @default(now())
   createdAt             DateTime   @default(now())
@@ -59,6 +60,7 @@ model RevenueCatEntitlement {
 
   @@id([userId, entitlementId])
   @@index([userId, isActive, expiresAt])
+  @@unique([store, storeTransactionId])
 }
 
 model RevenueCatWebhookEvent {

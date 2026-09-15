@@ -1,0 +1,42 @@
+{
+  "lastRun": "2026-09-12T11:45:58.869Z",
+  "lastWindow": {
+    "date_from": "2026-09-11T11:45:58Z",
+    "date_to": "2026-09-12T11:45:58Z"
+  },
+  "notifiedIssues": [
+    {
+      "id": "01a0931c-98ba-7600-b634-ebf357a78d2f",
+      "occurrences": 1,
+      "users": 1,
+      "lastSeen": "2026-09-12T00:54:14.521Z",
+      "version": "ios 1.2.15"
+    }
+  ],
+  "notifiedSignals": [
+    {
+      "key": "ios_generation_failed",
+      "events": 21,
+      "users": 15,
+      "starts": 152,
+      "classification": "mixed_includes_consent_rejection_technical_cause_counts_unknown"
+    },
+    {
+      "key": "ios_login_provider_error",
+      "events": 19,
+      "users": 16,
+      "starts": 174,
+      "classification": "increased_event_ratio_cancellation_not_separated"
+    }
+  ],
+  "connectionBlocked": false,
+  "report": "output/posthog-health-2026-09-12/report.md",
+  "notes": "Keep unchanged conditions quiet. Compare equivalent windows and operation volume; do not notify solely for higher raw counts with more traffic. Do not treat a missing crash event as crash-free coverage. RevenueCat production segregation not independently reverified this run.",
+  "investigation": "output/posthog-health-2026-09-12/investigation.md",
+  "classificationNotes": {
+    "ios_generation_failed": "Includes consentDeclined, missing authentication, and request errors. Android waits for consent before counting; platform comparisons are not equivalent. Historical causes unknown.",
+    "ios_google_provider_error": "Includes Google SDK user cancellation (-5) and token exchange failures; do not label all as technical failures.",
+    "ios_apple_provider_error": "The observed catch occurs after receiving Apple credential; do not assume Google cancellation explanation applies.",
+    "editor_crash": "Dismantle -> flush -> selection @Published -> Combine/SwiftUI -> abort; exact runtime cause unconfirmed; source path still present in 1.2.16."
+  }
+}

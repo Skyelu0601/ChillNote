@@ -32,7 +32,7 @@ struct AIConsentSheet: View {
             }
 
             HStack(spacing: 12) {
-                Button(action: consentManager.declineAIDataConsent) {
+                Button(action: { consentManager.declineAIDataConsent(promptID: prompt.id) }) {
                     Text(L10n.text("ai_consent.not_now"))
                         .font(.bodySmall)
                         .foregroundColor(.textMain)
@@ -47,7 +47,7 @@ struct AIConsentSheet: View {
                 }
                 .buttonStyle(.plain)
 
-                Button(action: consentManager.acceptAIDataConsent) {
+                Button(action: { consentManager.acceptAIDataConsent(promptID: prompt.id) }) {
                     Text(L10n.text("ai_consent.agree_and_continue"))
                         .font(.bodySmall)
                         .foregroundColor(.white)

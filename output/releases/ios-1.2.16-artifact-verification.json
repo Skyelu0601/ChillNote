@@ -1,0 +1,23 @@
+{
+  "ipa": "/tmp/chillscript-simple-release-1.2.16/ChillScript-1.2.16.ipa",
+  "bytes": 53774822,
+  "sha256": "8eef4739d964d8650c6e8bc9704c59c51c975a56296deb7edff8c3502ddb3fe9",
+  "bundles": [
+    {
+      "CFBundleIdentifier": "com.sponteoai.chillnote.ShareExtension",
+      "CFBundleShortVersionString": "1.2.16",
+      "CFBundleVersion": "2"
+    },
+    {
+      "CFBundleIdentifier": "com.sponteoai.chillnote.ChillNoteWidget",
+      "CFBundleShortVersionString": "1.2.16",
+      "CFBundleVersion": "2"
+    },
+    {
+      "CFBundleIdentifier": "com.sponteoai.chillnote",
+      "CFBundleShortVersionString": "1.2.16",
+      "CFBundleVersion": "2"
+    }
+  ],
+  "release_notes_locales": 14
+}

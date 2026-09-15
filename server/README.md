@@ -56,6 +56,7 @@ npm run dev
 - `POST /webhooks/creem` - Receive Creem subscription lifecycle webhooks
 - `POST /webhooks/revenuecat` - Receive authenticated, HMAC-signed RevenueCat lifecycle webhooks
 - `POST /subscription/revenuecat/sync` - Refresh the signed-in user's canonical RevenueCat entitlement
+- `POST /subscription/verify` - Compatibility alias for the same server-side verification; client Apple metadata never grants Pro
 - `POST /ai/voice-note` - Voice transcription only (no polishing)
 - `POST /ai/media-link-transcript` - TikTok / YouTube / Instagram link transcription with backend worker
 - `POST /ai/tiktok-transcript` - Backward-compatible TikTok-only alias
@@ -159,11 +160,11 @@ The service account must be invited in Google Play Console and granted permissio
 
 ### RevenueCat rollout
 
-The backend stores RevenueCat's `pro` entitlement separately from the legacy
-Apple, Google Play, Creem, and invite state. Effective Pro access is the union
-of those sources and uses the furthest expiration date. A delayed or missing
-RevenueCat event therefore cannot revoke an existing user's valid access during
-the migration window.
+The backend stores RevenueCat's `pro` entitlement separately from historical
+subscription fields. Apple membership must be verified through RevenueCat;
+historical Apple metadata is no longer an independent authorization source.
+Google Play and Creem grants remain independently supported. Invitation reward
+endpoints have been retired; their historical database records are retained.
 
 Follow [the RevenueCat rollout runbook](../docs/REVENUECAT_ROLLOUT.md) before
 deploying the client releases. Production deployment must apply Prisma

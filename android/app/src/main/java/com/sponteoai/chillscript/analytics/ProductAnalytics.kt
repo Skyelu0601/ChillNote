@@ -35,9 +35,12 @@ object ProductAnalytics {
     private var pendingPurchase: PurchaseAttribution? = null
 
     @Synchronized
-    fun configure(context: Context, userId: String?) {
+    fun configure(context: Context) {
         if (configured) return
         preferences = context.getSharedPreferences("product_analytics", Context.MODE_PRIVATE)
+        // Reuse the analytics identity until background session restoration completes.
+        // Reading AndroidKeyStore here would block Application.onCreate before the first frame.
+        val userId = preferences?.getString("user_id", null)
         // Public ingestion token, not a personal/admin API key.
         val config = PostHogAndroidConfig(
             apiKey = "phc_pYcofJNTakcLUaB2pC6jAEDyiz53CVkoULFu6SpAeWkM",
@@ -51,12 +54,20 @@ object ProductAnalytics {
             sessionReplay = false
             preloadFeatureFlags = false
             surveys = false
-            errorTrackingConfig.autoCapture = false
+            errorTrackingConfig.autoCapture = true
+            errorTrackingConfig.captureNativeCrashes = true
+            // Breadcrumbs can contain business-event properties; keep crash reports to stack metadata.
+            errorTrackingConfig.exceptionSteps.enabled = false
             addBeforeSend(com.posthog.PostHogBeforeSend { event ->
                 event.properties?.put("platform", "android")
                 event.properties?.put("schema_version", 1)
                 event.properties?.put("environment", if (BuildConfig.DEBUG) "development" else "production")
                 event.properties?.put("\$geoip_disable", true)
+                if (event.event == "\$exception") {
+                    val sanitized = CrashEventSanitizer.sanitize(event.properties.orEmpty())
+                    event.properties?.clear()
+                    event.properties?.putAll(sanitized)
+                }
                 event
             })
         }
@@ -130,11 +141,23 @@ object ProductAnalytics {
     }
 
     @Synchronized
-    fun completePurchase(event: String, errorCode: String? = null) {
+    fun completePurchase(
+        event: String,
+        errorCode: String? = null,
+        billingProvider: String? = null,
+        billingErrorCode: String? = null,
+        billingStage: String? = null,
+    ) {
         val attempt = pendingPurchase ?: return
         val properties = attempt.analyticsProperties() +
             if (errorCode == null) emptyMap() else mapOf("error_code" to errorCode)
-        capture(event, properties)
+        // Only SDK enum names/numeric codes, never debug messages, receipts or purchase tokens.
+        val diagnostics = mapOf(
+            "billing_provider" to billingProvider,
+            "billing_error_code" to billingErrorCode,
+            "billing_stage" to billingStage,
+        ).mapNotNull { (key, value) -> value?.let { key to it } }.toMap()
+        capture(event, properties + diagnostics)
         pendingPurchase = null
     }
 }

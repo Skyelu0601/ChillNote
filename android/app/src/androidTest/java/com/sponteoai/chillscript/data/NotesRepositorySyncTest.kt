@@ -16,6 +16,7 @@ import com.sponteoai.chillscript.data.remote.SyncClient
 import com.sponteoai.chillscript.data.remote.SyncPayload
 import com.sponteoai.chillscript.data.remote.SyncResponse
 import com.sponteoai.chillscript.data.remote.TagDto
+import com.sponteoai.chillscript.data.remote.sourceForUrl
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
@@ -1280,6 +1281,119 @@ class NotesRepositorySyncTest {
         assertEquals("drafts", localCopy.section)
         assertNull(localCopy.serverVersion)
         assertTrue(localCopy.needsSync)
+    }
+
+    @Test
+    fun pendingImportConflictDoesNotCreateDraft() = runBlocking {
+        checkPendingImportConflict(edited = false)
+    }
+
+    @Test
+    fun editedPendingImportConflictPreservesTextWithoutCopyingJob() = runBlocking {
+        checkPendingImportConflict(edited = true)
+    }
+
+    @Test
+    fun pendingImportSyncBeforeEnqueueResponseDoesNotCreateDraft() = runBlocking {
+        checkPendingImportConflict(edited = false, hasJobId = false)
+    }
+
+    private suspend fun checkPendingImportConflict(edited: Boolean, hasJobId: Boolean = true) {
+        val dao = database.dao()
+        val userId = "share-user"
+        val timestamp = "2026-09-12T00:00:00Z"
+        val local = NoteEntity(
+            id = "share-note", userId = userId,
+            content = if (edited) "My added idea" else "placeholder",
+            createdAt = timestamp, updatedAt = timestamp,
+            sourceUrl = "https://www.tiktok.com/@creator/video/123",
+            importStatus = "queued", importJobId = if (hasJobId) "job-1" else null, serverVersion = 0,
+        )
+        dao.upsertNote(local)
+        dao.upsertSyncState(SyncStateEntity(userId, cursor = "1", deviceId = "device"))
+        val client = SyncClient { _, _ ->
+            SyncResponse(
+                cursor = "2", changes = SyncChanges(notes = listOf(NoteDto(
+                    id = local.id, content = "placeholder", createdAt = timestamp,
+                    updatedAt = timestamp, version = 2, mutationId = "enqueue-mutation",
+                    sourceURL = local.sourceUrl, section = "inbox", tagIds = emptyList(),
+                    importStatus = "processing", importJobId = "job-1",
+                ))),
+                conflicts = listOf(ConflictDto(
+                    entityType = "note", id = local.id, serverVersion = 2,
+                    serverContent = "placeholder", clientContent = local.content,
+                    message = "sync.conflict.version",
+                )),
+                forcedNoteIds = listOf(local.id), serverTime = timestamp,
+            )
+        }
+        NotesRepository(dao, client).sync(userId, "token")
+        val notes = dao.notesForSyncIdentityCleanup(userId)
+        assertEquals(if (edited) 2 else 1, notes.size)
+        val original = requireNotNull(dao.note(userId, local.id))
+        assertEquals("processing", original.importStatus)
+        assertEquals("placeholder", original.content)
+        assertFalse(original.needsSync)
+        if (edited) {
+            val draft = notes.single { it.id != local.id }
+            assertEquals("My added idea", draft.content)
+            assertEquals("drafts", draft.section)
+            assertNull(draft.importStatus)
+            assertNull(draft.importJobId)
+            assertNull(draft.importStartedAt)
+            assertNull(draft.importCompletedAt)
+            assertTrue(draft.needsSync)
+        }
+    }
+
+    @Test
+    fun legacySpinningDraftRepairPreservesTextAndActiveImports() = runBlocking {
+        val dao = database.dao()
+        val timestamp = "2026-09-12T00:00:00Z"
+        val original = NoteEntity(
+            id = "original", userId = "share-user", content = "transcript",
+            createdAt = timestamp, updatedAt = timestamp,
+            importStatus = "completed", importJobId = "finished-job", needsSync = false,
+        )
+        val draft = original.copy(id = "draft", section = "drafts", content = "Preserve this idea", importStatus = "processing")
+        val active = draft.copy(id = "active", importJobId = "active-job")
+        val otherUser = draft.copy(id = "other-user", userId = "another-user")
+        dao.upsertNotes(listOf(original, draft, active, otherUser))
+        dao.repairDetachedImportDrafts(original.userId)
+        val repaired = requireNotNull(dao.note(draft.userId, draft.id))
+        assertEquals("Preserve this idea", repaired.content)
+        assertNull(repaired.importStatus)
+        assertNull(repaired.importJobId)
+        assertTrue(repaired.needsSync)
+        assertEquals("processing", dao.note(active.userId, active.id)?.importStatus)
+        assertEquals("processing", dao.note(otherUser.userId, otherUser.id)?.importStatus)
+        assertEquals("completed", dao.note(original.userId, original.id)?.importStatus)
+    }
+
+    @Test
+    fun sharedImportAdoptionPollsForContentAndPreservesDownloadedCompletion() = runBlocking {
+        val dao = database.dao()
+        val timestamp = "2026-09-12T00:00:00Z"
+        val repository = NotesRepository(dao, SyncClient { _, _ -> error("No enqueue or sync during adoption") })
+        for (status in listOf("queued", "processing", "completed", "failed")) {
+            val adopted = repository.adoptPendingLinkImport(
+                userId = "share-user", noteId = status, placeholder = "placeholder",
+                source = sourceForUrl("https://www.tiktok.com/@creator/video/123"),
+                importJobId = "job-$status", importStatus = status, createdAt = timestamp,
+            )
+            assertEquals("queued", adopted.importStatus)
+            assertFalse(adopted.needsSync)
+            dao.upsertNote(adopted.copy(content = "Finished transcript", importStatus = "completed", section = "drafts"))
+            val again = repository.adoptPendingLinkImport(
+                userId = "share-user", noteId = status, placeholder = "placeholder",
+                source = sourceForUrl("https://www.tiktok.com/@creator/video/123"),
+                importJobId = "job-$status", importStatus = "queued", createdAt = timestamp,
+            )
+            assertEquals("Finished transcript", again.content)
+            assertEquals("completed", again.importStatus)
+            assertEquals("drafts", again.section)
+        }
+        assertEquals(4, dao.notesForSyncIdentityCleanup("share-user").size)
     }
 
     @Test

@@ -262,6 +262,10 @@ final class AuthService: ObservableObject {
         guard let idTokenData = credential.identityToken,
               let idToken = String(data: idTokenData, encoding: .utf8),
               let nonce = currentNonce else {
+            ProductAnalytics.shared.capture("login_failed", properties: [
+                "provider": "apple", "error_code": "credential_missing",
+                "error_stage": "credential", "error_category": "authentication", "diagnostic_schema": 2
+            ])
             errorMessage = AppErrorCode.authInvalidAppleCredential.message
             state = .signedOut
             return false
@@ -280,12 +284,11 @@ final class AuthService: ObservableObject {
             )
             return isSignedIn
         } catch {
-            ProductAnalytics.shared.capture("login_failed", properties: [
-                "provider": "apple",
-                "error_code": "provider_error"
-            ])
+            let failure = ClientFailureAnalytics.login(error, stage: "token_exchange")
+            ProductAnalytics.shared.capture("login_\(failure.outcome)", properties:
+                failure.properties.merging(["provider": "apple"]) { _, new in new })
             Self.logger.error("Apple sign in failed: \(error.localizedDescription, privacy: .public)")
-            errorMessage = error.localizedDescription
+            errorMessage = failure.outcome == "cancelled" ? nil : error.localizedDescription
             state = .signedOut
             return false
         }
@@ -299,19 +302,29 @@ final class AuthService: ObservableObject {
         
         guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
               let rootViewController = windowScene.windows.first?.rootViewController else {
+            ProductAnalytics.shared.capture("login_failed", properties: [
+                "provider": "google", "error_code": "presentation_unavailable",
+                "error_stage": "presentation", "error_category": "configuration", "diagnostic_schema": 2
+            ])
             errorMessage = AppErrorCode.authRootViewControllerMissing.message
             state = .signedOut
             return false
         }
         
+        var stage = "provider"
         do {
             let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: rootViewController)
             guard let idToken = result.user.idToken?.tokenString else {
+                ProductAnalytics.shared.capture("login_failed", properties: [
+                    "provider": "google", "error_code": "credential_missing",
+                    "error_stage": "credential", "error_category": "authentication", "diagnostic_schema": 2
+                ])
                 errorMessage = AppErrorCode.authGoogleTokenMissing.message
                 state = .signedOut
                 return false
             }
             
+            stage = "token_exchange"
             try await supabase.auth.signInWithIdToken(credentials: .init(
                 provider: .google,
                 idToken: idToken
@@ -323,10 +336,14 @@ final class AuthService: ObservableObject {
             )
             return isSignedIn
         } catch {
-            ProductAnalytics.shared.capture("login_failed", properties: [
-                "provider": "google",
-                "error_code": "provider_error"
-            ])
+            let failure = ClientFailureAnalytics.login(error, stage: stage)
+            ProductAnalytics.shared.capture("login_\(failure.outcome)", properties:
+                failure.properties.merging(["provider": "google"]) { _, new in new })
+            if failure.outcome == "cancelled" {
+                errorMessage = nil
+                state = .signedOut
+                return false
+            }
             Self.logger.error("Google sign in failed: \(error.localizedDescription, privacy: .public)")
             errorMessage = error.localizedDescription
             state = .signedOut

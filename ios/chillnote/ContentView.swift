@@ -5,7 +5,6 @@ struct ContentView: View {
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var aiConsentManager: AIConsentManager
     @StateObject private var storeService = StoreService.shared
-    @State private var consentSheetHeight: CGFloat = 360
     @State private var showPostOnboardingPaywall = false
     @State private var hasCompletedOnboarding = false
     @State private var hasViewedIntroOnDevice = OnboardingStateStore.hasViewedIntroOnDevice()
@@ -45,14 +44,7 @@ struct ContentView: View {
                     await resolvePostOnboardingDestination(for: userId)
                 }
             }
-            .sheet(item: consentPromptBinding) { prompt in
-                AIConsentSheet(
-                    consentManager: aiConsentManager,
-                    prompt: prompt,
-                    measuredHeight: $consentSheetHeight
-                )
-                .presentationDetents([.height(consentSheetDetentHeight)])
-            }
+            .modifier(AIConsentPresentation(manager: aiConsentManager))
             .fullScreenCover(isPresented: $showPostOnboardingPaywall, onDismiss: markIntroPaywallSeen) {
                 SubscriptionView(context: .onboardingTrial)
             }
@@ -138,21 +130,6 @@ struct ContentView: View {
                 .scaleEffect(1.2)
         }
         .ignoresSafeArea()
-    }
-
-    private var consentSheetDetentHeight: CGFloat {
-        min(max(consentSheetHeight, 300), 560)
-    }
-
-    private var consentPromptBinding: Binding<AIConsentManager.Prompt?> {
-        Binding(
-            get: { aiConsentManager.activePrompt },
-            set: { newValue in
-                if newValue == nil {
-                    aiConsentManager.declineAIDataConsent()
-                }
-            }
-        )
     }
 
     private func markIntroPaywallSeen() {

@@ -15,6 +15,8 @@ import java.net.URL
 
 @Serializable private data class CreatorSkillResponse(val content: String = "")
 
+class AIInvalidResponseException : Exception("AI returned an empty result")
+
 class CreatorSkillsApi(
     private val baseUrl: String = "https://api.chillnoteai.com",
     private val json: Json = Json { ignoreUnknownKeys = true },
@@ -42,7 +44,7 @@ class CreatorSkillsApi(
             val body = stream?.bufferedReader()?.use { it.readText() }.orEmpty()
             if (status !in 200..299) throw SyncHttpException(status, body)
             json.decodeFromString(CreatorSkillResponse.serializer(), body).content.trim()
-                .also { require(it.isNotBlank()) { "AI returned an empty result" } }
+                .also { if (it.isBlank()) throw AIInvalidResponseException() }
         } finally {
             connection.disconnect()
         }

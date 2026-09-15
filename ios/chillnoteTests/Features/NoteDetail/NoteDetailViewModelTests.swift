@@ -91,7 +91,7 @@ final class NoteDetailViewModelTests: XCTestCase {
         XCTAssertEqual(note.checklistItems.sorted { $0.sortOrder < $1.sortOrder }.map(\.isDone), [false, true])
     }
 
-    func testUpdateTimestampAndDismissDeletesWhenContentEmpty() {
+    func testUpdateTimestampAndDismissPreservesExistingNoteWhenContentEmpty() throws {
         let note = Note(content: "text", userId: "u1")
         context.insert(note)
 
@@ -104,8 +104,10 @@ final class NoteDetailViewModelTests: XCTestCase {
         note.content = "   \n"
         viewModel.updateTimestampAndDismiss()
 
-        let notes = (try? context.fetch(FetchDescriptor<Note>())) ?? []
-        XCTAssertEqual(notes.count, 0)
+        let notes = try context.fetch(FetchDescriptor<Note>())
+        XCTAssertEqual(notes.count, 1)
+        XCTAssertEqual(notes.first?.content, "   \n")
+        XCTAssertNil(notes.first?.deletedAt)
         XCTAssertTrue(didDismiss)
     }
 

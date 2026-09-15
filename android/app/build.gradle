@@ -7,6 +7,20 @@ plugins {
     id "org.jetbrains.kotlin.kapt"
     id "org.jetbrains.kotlin.plugin.serialization"
     id "androidx.room"
+    id "com.posthog.android"
+}
+
+// Inject a mapping ID into minified builds and upload the matching R8/ProGuard mapping.
+// Native symbol upload stays disabled: this app has no first-party NDK libraries, while
+// packaged third-party .so files are already stripped and cannot provide usable symbols.
+// Authenticate the CLI before a release; personal API keys must never enter BuildConfig.
+tasks.withType(com.posthog.android.PostHogCliExecTask).configureEach {
+    postHogHost = "https://us.posthog.com"
+    postHogProjectId = "596105"
+    postHogExecutable = rootProject.file("../scripts/analytics/posthog-cli.sh").absolutePath
+}
+posthog {
+    uploadNativeSymbols.set(false)
 }
 
 def uploadKeystoreProperties = new Properties()
@@ -35,6 +49,11 @@ def firebaseSenderId = firebaseConfigValue("CHILLSCRIPT_FIREBASE_SENDER_ID", "ch
 def revenueCatAndroidApiKey = firebaseConfigValue(
     "CHILLSCRIPT_REVENUECAT_ANDROID_API_KEY", "chillscript.revenuecat.androidApiKey"
 ).trim()
+// AppsFlyer's developer key is a public client SDK key and is safe to ship in the app.
+def appsFlyerDevKey = firebaseConfigValue(
+    "CHILLSCRIPT_APPSFLYER_DEV_KEY", "chillscript.appsflyer.devKey"
+).trim()
+if (!appsFlyerDevKey) appsFlyerDevKey = "zgZpPsE5HK7YBMDALjs2fe"
 def configuredAuthRedirectUri = firebaseConfigValue(
     "CHILLSCRIPT_ANDROID_AUTH_REDIRECT_URI", "chillscript.auth.redirectUri"
 )
@@ -65,8 +84,8 @@ android {
         applicationId "com.sponteoai.chillscript"
         minSdk 26
         targetSdk 36
-        versionCode 14
-        versionName "1.2.14"
+        versionCode 18
+        versionName "1.2.18"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "SUPABASE_URL", '"https://qsyhkpaeyzhjojdvbntq.supabase.co"'
         buildConfigField "String", "SUPABASE_ANON_KEY", '"sb_publishable_smWWadjejdbKYvmg3fidsg_41XPu70e"'
@@ -77,6 +96,7 @@ android {
         buildConfigField "String", "FIREBASE_PROJECT_ID", JsonOutput.toJson(firebaseProjectId)
         buildConfigField "String", "FIREBASE_SENDER_ID", JsonOutput.toJson(firebaseSenderId)
         buildConfigField "String", "REVENUECAT_ANDROID_API_KEY", JsonOutput.toJson(revenueCatAndroidApiKey)
+        buildConfigField "String", "APPSFLYER_DEV_KEY", JsonOutput.toJson(appsFlyerDevKey)
         buildConfigField "boolean", "APP_REVIEW_LOGIN_ENABLED", appReviewLoginEnabled.toBoolean().toString()
         buildConfigField "String", "APP_REVIEW_WHITELIST_EMAILS", JsonOutput.toJson(appReviewWhitelistEmails)
         buildConfigField "String", "APP_REVIEW_VERIFICATION_CODE", JsonOutput.toJson(appReviewVerificationCode)
@@ -139,6 +159,7 @@ tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.co
 }
 
 dependencies {
+    implementation "com.appsflyer:af-android-sdk:7.0.1"
     implementation "com.posthog:posthog-android:3.61.1"
     def composeBom = platform("androidx.compose:compose-bom:2026.06.00")
     implementation composeBom
