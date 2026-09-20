@@ -20,7 +20,9 @@ object RevenueCatService {
 
         if (BuildConfig.DEBUG) Purchases.logLevel = LogLevel.DEBUG
         Purchases.configure(
-            PurchasesConfiguration.Builder(context.applicationContext, apiKey).build(),
+            PurchasesConfiguration.Builder(context.applicationContext, apiKey)
+                .showInAppMessagesAutomatically(false)
+                .build(),
         )
     }
 

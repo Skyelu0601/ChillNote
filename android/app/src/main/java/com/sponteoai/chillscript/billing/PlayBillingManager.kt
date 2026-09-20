@@ -7,29 +7,32 @@ import com.android.billingclient.api.BillingClient
 import com.android.billingclient.api.BillingClientStateListener
 import com.android.billingclient.api.BillingFlowParams
 import com.android.billingclient.api.BillingResult
+import com.android.billingclient.api.InAppMessageParams
+import com.android.billingclient.api.InAppMessageResult
 import com.android.billingclient.api.PendingPurchasesParams
 import com.android.billingclient.api.ProductDetails
 import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.Package
-import com.revenuecat.purchases.ProductType
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.getCustomerInfoWith
-import com.revenuecat.purchases.getProductsWith
 import com.revenuecat.purchases.logInWith
 import com.revenuecat.purchases.purchaseWith
 import com.revenuecat.purchases.restorePurchasesWith
+import com.revenuecat.purchases.syncAttributesAndOfferingsIfNeededWith
 import com.revenuecat.purchases.syncPurchasesWith
 import com.revenuecat.purchases.models.StoreProduct
+import com.revenuecat.purchases.models.InAppMessageType
 import com.sponteoai.chillscript.R
 import com.sponteoai.chillscript.analytics.AppsFlyerService
 import com.sponteoai.chillscript.analytics.ProductAnalytics
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import java.lang.ref.WeakReference
 import java.security.MessageDigest
 import java.util.Locale
 
@@ -88,15 +91,17 @@ class PlayBillingManager(
     val state: StateFlow<BillingUiState> = delegate.state
 
     fun connect() = delegate.connect()
-    fun identify(userId: String?, migrateLegacyPurchase: Boolean) =
+    fun identify(userId: String?, migrateLegacyPurchase: Boolean) {
         delegate.identify(userId, migrateLegacyPurchase)
+    }
     fun launchPurchase(activity: Activity, product: BillingProduct, userId: String) =
         delegate.launchPurchase(activity, product, userId)
     fun restorePurchases() = delegate.restorePurchases()
+    fun showInAppMessages(activity: Activity) = delegate.showInAppMessages(activity)
     fun close() = delegate.close()
 
     companion object {
-        private const val ANNUAL_PRODUCT_ID = "com.chillnote.pro.yearly"
+        const val ANNUAL_PRODUCT_ID = "com.chillnote.pro.yearly"
         val PRODUCT_IDS = listOf("com.chillnote.pro.weekly", ANNUAL_PRODUCT_ID)
         val RECOGNIZED_PRODUCT_IDS = PRODUCT_IDS.toSet() + "com.chillnote.pro.monthly"
     }
@@ -108,6 +113,7 @@ private interface BillingManagerDelegate {
     fun identify(userId: String?, migrateLegacyPurchase: Boolean)
     fun launchPurchase(activity: Activity, product: BillingProduct, userId: String)
     fun restorePurchases()
+    fun showInAppMessages(activity: Activity)
     fun close()
 }
 
@@ -120,21 +126,59 @@ private class RevenueCatBillingManager(
     private val migrationPreferences = appContext.getSharedPreferences(MIGRATION_PREFERENCES, Context.MODE_PRIVATE)
     private val mutableState = MutableStateFlow(BillingUiState())
     override val state: StateFlow<BillingUiState> = mutableState
+    private var assignedOfferingIdentifier: String? = null
+    private var assignedAnnualBasePlanId: String? = null
 
     override fun connect() {
         Purchases.sharedInstance.updatedCustomerInfoListener = UpdatedCustomerInfoListener {
             onRestoreComplete()
         }
-        mutableState.value = mutableState.value.copy(connected = true, loading = true, error = null)
-        queryProducts()
+        mutableState.value = mutableState.value.copy(
+            connected = true,
+            loading = true,
+            products = emptyList(),
+            error = null,
+        )
+        val offeringIdentifier = assignedOfferingIdentifier
+        val annualBasePlanId = assignedAnnualBasePlanId
+        if (offeringIdentifier != null && annualBasePlanId != null) {
+            queryProducts(offeringIdentifier, annualBasePlanId)
+        }
     }
 
     override fun identify(userId: String?, migrateLegacyPurchase: Boolean) {
-        if (userId.isNullOrBlank()) return
+        if (userId.isNullOrBlank()) {
+            assignedOfferingIdentifier = null
+            assignedAnnualBasePlanId = null
+            mutableState.value = mutableState.value.copy(
+                loading = false,
+                products = emptyList(),
+                error = null,
+            )
+            return
+        }
         AppsFlyerService.identify(appContext, userId)
+        val offeringIdentifier = AnnualPriceExperiment.offeringIdentifierFor(userId)
+        val annualBasePlanId = AnnualPriceExperiment.annualBasePlanIdFor(userId)
+        assignedOfferingIdentifier = offeringIdentifier
+        assignedAnnualBasePlanId = annualBasePlanId
+        mutableState.value = mutableState.value.copy(
+            loading = true,
+            products = emptyList(),
+            error = null,
+        )
         ensureIdentity(userId) {
+            Purchases.sharedInstance.setAttributes(
+                mapOf("annual_price_variant" to AnnualPriceExperiment.variantFor(userId)),
+            )
             if (migrateLegacyPurchase) syncLegacyPurchasesOnce(userId)
-            queryProducts()
+            Purchases.sharedInstance.syncAttributesAndOfferingsIfNeededWith(
+                onError = { error ->
+                    Log.w(TAG, "RevenueCat price variant sync failed: ${error.code}")
+                    queryProducts(offeringIdentifier, annualBasePlanId)
+                },
+                onSuccess = { queryProducts(offeringIdentifier, annualBasePlanId) },
+            )
         }
     }
 
@@ -176,7 +220,7 @@ private class RevenueCatBillingManager(
                         mutableState.value = mutableState.value.copy(error = null)
                         onPurchased(purchasedProductId, purchaseToken)
                         onRestoreComplete()
-                        ProductAnalytics.completePurchase("subscription_started")
+                        ProductAnalytics.clearPurchaseAttribution()
                     }
                 },
             )
@@ -194,6 +238,13 @@ private class RevenueCatBillingManager(
                 mutableState.value = mutableState.value.copy(restoring = false, error = null)
                 onRestoreComplete()
             },
+        )
+    }
+
+    override fun showInAppMessages(activity: Activity) {
+        Purchases.sharedInstance.showInAppMessagesIfNeeded(
+            activity,
+            listOf(InAppMessageType.BILLING_ISSUES),
         )
     }
 
@@ -240,39 +291,44 @@ private class RevenueCatBillingManager(
         )
     }
 
-    private fun queryProducts() {
+    private fun queryProducts(offeringIdentifier: String, annualBasePlanId: String) {
         Purchases.sharedInstance.getOfferingsWith(
             onError = {
-                Log.w(TAG, "RevenueCat offerings unavailable: ${it.code}")
-                queryStoreProducts()
+                if (assignedOfferingIdentifier == offeringIdentifier) {
+                    reportError("RevenueCat assigned offering unavailable: ${it.code}")
+                }
             },
             onSuccess = { offerings ->
-                val products = offerings.current?.availablePackages
+                if (assignedOfferingIdentifier != offeringIdentifier ||
+                    assignedAnnualBasePlanId != annualBasePlanId
+                ) return@getOfferingsWith
+                val products = offerings.getOffering(offeringIdentifier)?.availablePackages
                     .orEmpty()
-                    .mapNotNull(::billingProduct)
+                    .mapNotNull { billingProduct(it, annualBasePlanId) }
                     .distinctBy(BillingProduct::id)
                     .sortedByProductOrder()
-                if (products.isEmpty()) queryStoreProducts() else publishProducts(products)
+                publishProducts(products)
             },
         )
     }
 
-    private fun queryStoreProducts() {
-        Purchases.sharedInstance.getProductsWith(
-            productIds = PlayBillingManager.PRODUCT_IDS,
-            type = ProductType.SUBS,
-            onError = { reportError("RevenueCat product query failed: ${it.code}") },
-            onGetStoreProducts = { storeProducts ->
-                publishProducts(storeProducts.mapNotNull(::billingProduct).sortedByProductOrder())
-            },
-        )
-    }
-
-    private fun billingProduct(packageToPurchase: Package): BillingProduct? =
-        billingProduct(
+    private fun billingProduct(
+        packageToPurchase: Package,
+        annualBasePlanId: String,
+    ): BillingProduct? {
+        val storeProduct = packageToPurchase.product
+        val productId = storeProduct.id.baseProductId()
+        if (productId == PlayBillingManager.ANNUAL_PRODUCT_ID &&
+            storeProduct.defaultOption?.id?.substringBefore(':') != annualBasePlanId
+        ) {
+            Log.w(TAG, "Ignoring annual product from mismatched base plan")
+            return null
+        }
+        return billingProduct(
             storeProduct = packageToPurchase.product,
             target = BillingPurchaseTarget.RevenueCatPackage(packageToPurchase),
         )
+    }
 
     private fun billingProduct(storeProduct: StoreProduct): BillingProduct? =
         billingProduct(
@@ -318,7 +374,11 @@ private class RevenueCatBillingManager(
 
     private fun reportError(detail: String) {
         Log.w(TAG, detail)
-        mutableState.value = mutableState.value.copy(loading = false, error = userFacingError())
+        mutableState.value = mutableState.value.copy(
+            loading = false,
+            products = emptyList(),
+            error = userFacingError(),
+        )
     }
 
     private fun userFacingError(): String = appContext.getString(R.string.subscription_billing_error)
@@ -337,6 +397,9 @@ private class LegacyPlayBillingManager(
     private val appContext = context.applicationContext
     private val mutableState = MutableStateFlow(BillingUiState())
     override val state: StateFlow<BillingUiState> = mutableState
+    private var pendingInAppMessageActivity: WeakReference<Activity>? = null
+    private var connectionInProgress = false
+    private var assignedAnnualBasePlanId: String? = null
 
     private val billingClient = BillingClient.newBuilder(context.applicationContext)
         .setListener { result, purchases ->
@@ -361,16 +424,21 @@ private class LegacyPlayBillingManager(
 
     override fun connect() {
         if (billingClient.isReady) {
-            queryProducts()
+            assignedAnnualBasePlanId?.let { queryProducts() }
             queryExistingPurchases()
+            showPendingInAppMessages()
             return
         }
+        if (connectionInProgress) return
+        connectionInProgress = true
         billingClient.startConnection(object : BillingClientStateListener {
             override fun onBillingSetupFinished(result: BillingResult) {
+                connectionInProgress = false
                 if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                     mutableState.value = mutableState.value.copy(connected = true, loading = true, error = null)
-                    queryProducts()
+                    assignedAnnualBasePlanId?.let { queryProducts() }
                     queryExistingPurchases()
+                    showPendingInAppMessages()
                 } else {
                     logBillingResult("Billing setup failed", result)
                     mutableState.value = BillingUiState(error = userFacingError(), loading = false)
@@ -378,12 +446,30 @@ private class LegacyPlayBillingManager(
             }
 
             override fun onBillingServiceDisconnected() {
+                connectionInProgress = false
                 mutableState.value = mutableState.value.copy(connected = false)
             }
         })
     }
 
-    override fun identify(userId: String?, migrateLegacyPurchase: Boolean) = Unit
+    override fun identify(userId: String?, migrateLegacyPurchase: Boolean) {
+        if (userId.isNullOrBlank()) {
+            assignedAnnualBasePlanId = null
+            mutableState.value = mutableState.value.copy(
+                loading = false,
+                products = emptyList(),
+                error = null,
+            )
+            return
+        }
+        assignedAnnualBasePlanId = AnnualPriceExperiment.annualBasePlanIdFor(userId)
+        mutableState.value = mutableState.value.copy(
+            loading = true,
+            products = emptyList(),
+            error = null,
+        )
+        if (billingClient.isReady) queryProducts() else connect()
+    }
 
     override fun launchPurchase(activity: Activity, product: BillingProduct, userId: String) {
         val target = product.purchaseTarget as? BillingPurchaseTarget.GooglePlay ?: return
@@ -416,9 +502,42 @@ private class LegacyPlayBillingManager(
         }
     }
 
-    override fun close() = billingClient.endConnection()
+    override fun showInAppMessages(activity: Activity) {
+        pendingInAppMessageActivity = WeakReference(activity)
+        if (billingClient.isReady) showPendingInAppMessages() else connect()
+    }
+
+    override fun close() {
+        pendingInAppMessageActivity = null
+        billingClient.endConnection()
+    }
+
+    private fun showPendingInAppMessages() {
+        val activity = pendingInAppMessageActivity?.get() ?: return
+        pendingInAppMessageActivity = null
+        if (activity.isFinishing || activity.isDestroyed) return
+        val supported = billingClient.isFeatureSupported(BillingClient.FeatureType.IN_APP_MESSAGING)
+        if (supported.responseCode != BillingClient.BillingResponseCode.OK) {
+            logBillingResult("Google Play in-app messaging is unavailable", supported)
+            return
+        }
+        val params = InAppMessageParams.newBuilder()
+            .addInAppMessageCategoryToShow(InAppMessageParams.InAppMessageCategoryId.TRANSACTIONAL)
+            .build()
+        val result = billingClient.showInAppMessages(activity, params) { messageResult ->
+            if (messageResult.responseCode ==
+                InAppMessageResult.InAppMessageResponseCode.SUBSCRIPTION_STATUS_UPDATED
+            ) {
+                queryExistingPurchases()
+            }
+        }
+        if (result.responseCode != BillingClient.BillingResponseCode.OK) {
+            logBillingResult("Google Play in-app messaging failed to launch", result)
+        }
+    }
 
     private fun queryProducts() {
+        val annualBasePlanId = assignedAnnualBasePlanId ?: return
         val products = PlayBillingManager.PRODUCT_IDS.map {
             QueryProductDetailsParams.Product.newBuilder()
                 .setProductId(it)
@@ -439,8 +558,13 @@ private class LegacyPlayBillingManager(
                     details.productId.contains("year", ignoreCase = true)
                 val offer = if (isAnnualProduct) {
                     offers.firstOrNull { candidate ->
-                        candidate.pricingPhases.pricingPhaseList.any { it.priceAmountMicros == 0L }
-                    } ?: offers.firstOrNull { it.offerId == null }
+                        candidate.basePlanId == annualBasePlanId &&
+                            candidate.pricingPhases.pricingPhaseList.any { it.priceAmountMicros == 0L }
+                    } ?: offers.firstOrNull { candidate ->
+                        candidate.basePlanId == annualBasePlanId && candidate.offerId == null
+                    } ?: offers.firstOrNull { candidate ->
+                        candidate.basePlanId == annualBasePlanId
+                    }
                 } else {
                     offers.firstOrNull { candidate ->
                         candidate.offerId == null &&
@@ -497,7 +621,7 @@ private class LegacyPlayBillingManager(
         purchase.products.firstOrNull { it in PlayBillingManager.RECOGNIZED_PRODUCT_IDS }
             ?.let {
                 onPurchased(it, purchase.purchaseToken)
-                ProductAnalytics.completePurchase("subscription_started")
+                ProductAnalytics.clearPurchaseAttribution()
             }
     }
 

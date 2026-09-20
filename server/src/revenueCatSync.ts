@@ -23,9 +23,24 @@ export async function syncRevenueCatUsers(params: {
       SELECT 1::int AS locked
       FROM pg_advisory_xact_lock(hashtextextended('revenuecat-entitlement-sync', 0))
     `;
+    const legacyAppleUsers = new Set((await tx.user.findMany({
+      where: {
+        id: { in: userIds },
+        OR: [
+          { subscriptionProvider: "apple" },
+          { originalTransactionId: { not: null } }
+        ]
+      },
+      select: { id: true }
+    })).map((user) => canonicalRevenueCatUserId(user.id)));
     const entries = await Promise.all(userIds.map(async (userId) => [
       userId,
-      await accountRevenueCatSnapshot(userId, params.entitlementId, params.fetchCustomer)
+      await accountRevenueCatSnapshot(
+        userId,
+        params.entitlementId,
+        params.fetchCustomer,
+        legacyAppleUsers.has(userId)
+      )
     ] as const));
 
     // Write inactive participants first so a transfer releases its unique key

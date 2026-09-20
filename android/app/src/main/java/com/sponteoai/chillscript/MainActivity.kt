@@ -176,7 +176,6 @@ import com.sponteoai.chillscript.ui.skills.CreatorSkillPickerDialog
 import com.sponteoai.chillscript.ui.skills.CreatorSkillsLibrary
 import com.sponteoai.chillscript.ui.skills.CreatorSkillsRail
 import com.sponteoai.chillscript.ui.skills.TranslateTargetDialog
-import com.sponteoai.chillscript.ui.chat.ContextChatScreen
 import com.sponteoai.chillscript.teleprompter.TeleprompterCameraScreen
 import com.sponteoai.chillscript.export.NoteExportFormat
 import com.sponteoai.chillscript.export.NotesExporter
@@ -198,11 +197,6 @@ import com.sponteoai.chillscript.preferences.VoiceLanguageSettings
 import com.sponteoai.chillscript.data.remote.extractWebUrl
 import com.sponteoai.chillscript.data.remote.extractCreatorMediaUrl
 import com.sponteoai.chillscript.data.remote.sourceForUrl
-import com.sponteoai.chillscript.weekly.WeeklyTopicsController
-import com.sponteoai.chillscript.weekly.WeeklyTopicsPreviewScreen
-import com.sponteoai.chillscript.weekly.WeeklyTopicsRoute
-import com.sponteoai.chillscript.weekly.WeeklyTopicsSettingsOverlay
-import com.sponteoai.chillscript.weekly.WeeklyTopicsTokenProvider
 import com.google.android.play.core.review.ReviewManager
 import com.google.android.play.core.review.ReviewManagerFactory
 import com.sponteoai.chillscript.sync.BackgroundSyncScheduler
@@ -398,6 +392,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
+        billingManager.showInAppMessages(this)
         BackgroundSyncScheduler.enqueueForegroundSync(this)
         viewModel.consumePendingShareImports()
         viewModel.refreshPushRegistration()
@@ -639,8 +634,6 @@ private fun HomeScreen(
     var selectedNoteIds by remember { mutableStateOf<Set<String>>(emptySet()) }
     var showBatchTagDialog by remember { mutableStateOf(false) }
     var showBatchDeleteConfirmation by remember { mutableStateOf(false) }
-    var showAskSoftLimitAlert by remember { mutableStateOf(false) }
-    var showAskHardLimitAlert by remember { mutableStateOf(false) }
     var showEmptyTrashConfirmation by remember { mutableStateOf(false) }
     var pendingPermanentDeleteNote by remember { mutableStateOf<NoteEntity?>(null) }
     var selectedEditorTagIds by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -661,16 +654,16 @@ private fun HomeScreen(
     var showNoteExport by remember { mutableStateOf(false) }
     var noteExportFailed by remember { mutableStateOf(false) }
     var showSubscription by remember { mutableStateOf(false) }
-    var showWeeklyTopics by remember { mutableStateOf(false) }
-    var showWeeklyTopicsPreview by remember { mutableStateOf(false) }
-    var showWeeklyTopicsSettings by remember { mutableStateOf(false) }
+    var showChillo by remember(viewModel.currentUserId) { mutableStateOf(false) }
+    val chilloController = remember(viewModel.currentUserId) {
+        com.sponteoai.chillscript.chillo.ChilloController(com.sponteoai.chillscript.chillo.ChilloApi(tokenProvider = { viewModel.chilloAccessToken() }))
+    }
     var creatingEditorNote by remember { mutableStateOf(false) }
     var appliedAITransformation by remember { mutableStateOf<AppliedAISkillTransformation?>(null) }
     var retryingAITransformation by remember { mutableStateOf<AppliedAISkillTransformation?>(null) }
     var returnToNoteRequest by remember { mutableLongStateOf(0L) }
     val installedRecipes by viewModel.installedRecipes.collectAsState()
     val aiSkillState by viewModel.aiSkillState.collectAsState()
-    val contextChatState by viewModel.contextChatState.collectAsState()
     val voiceNoteStates by viewModel.voiceNoteStates.collectAsState()
     val activeVoiceNoteState = editingNote?.id?.let(voiceNoteStates::get)
     val voiceLanguageSettings by viewModel.voiceLanguageSettings.collectAsState()
@@ -678,12 +671,6 @@ private fun HomeScreen(
     LaunchedEffect(viewModel) {
         viewModel.paywallRequests.collect { showSubscription = true }
     }
-    val weeklyTopicsController = remember(viewModel.currentUserId) {
-        WeeklyTopicsController(
-            tokenProvider = WeeklyTopicsTokenProvider { viewModel.weeklyTopicsAccessToken() },
-        )
-    }
-    val weeklyTopicsState by weeklyTopicsController.state.collectAsState()
     val context = LocalContext.current
     val signedInUser = (uiState.authState as? AuthState.SignedIn)?.session?.user
     var homeNoteRevealTargetId by remember(signedInUser?.id) { mutableStateOf<String?>(null) }
@@ -1033,9 +1020,7 @@ private fun HomeScreen(
     LaunchedEffect(weeklyTopicsRequest) {
         if (weeklyTopicsRequest != 0L) {
             showSettings = false
-            showWeeklyTopicsSettings = false
-            if (uiState.subscriptionTier == "pro") showWeeklyTopics = true
-            else showWeeklyTopicsPreview = true
+            showChillo = true
             onWeeklyTopicsRequestConsumed()
         }
     }
@@ -1072,9 +1057,7 @@ private fun HomeScreen(
         if (note != null) {
             notePushSyncRequestedFor = null
             showSettings = false
-            showWeeklyTopicsSettings = false
-            showWeeklyTopics = false
-            showWeeklyTopicsPreview = false
+            showChillo = false
             openNoteInEditor(note)
             onNotificationNoteConsumed()
         } else if (notePushSyncRequestedFor != noteId) {
@@ -1122,69 +1105,21 @@ private fun HomeScreen(
         )
         return
     }
-    if (showWeeklyTopicsPreview) {
-        WeeklyTopicsPreviewScreen(
-            onBack = { showWeeklyTopicsPreview = false },
-            onTry = {
-                showWeeklyTopicsPreview = false
+    if (showChillo && editingNote == null) {
+        com.sponteoai.chillscript.chillo.ChilloScreen(
+            controller = chilloController,
+            onBack = { showChillo = false },
+            onOpenNote = { id ->
+                viewModel.syncForPushDestination()
+                val source = viewModel.notes.value.firstOrNull { it.id.equals(id, ignoreCase = true) && it.deletedAt == null }
+                if (source != null) openNoteInEditor(source)
+                source != null
+            },
+            onInsufficientCredits = {
+                showChillo = false
                 showSubscription = true
             },
         )
-        return
-    }
-    if (showWeeklyTopics) {
-        WeeklyTopicsRoute(
-            controller = weeklyTopicsController,
-            onBack = {
-                showWeeklyTopicsSettings = false
-                showWeeklyTopics = false
-            },
-            onConfigureWeeklyTopics = { showWeeklyTopicsSettings = true },
-            onOpenSource = { source ->
-                val localNote = notes.firstOrNull { it.id == source.noteId }
-                if (localNote != null) {
-                    showWeeklyTopics = false
-                    openNoteInEditor(localNote)
-                } else {
-                    // Match iOS: a report can reference a note that has not yet
-                    // reached this device. Sync once, then resolve the source again.
-                    coroutineScope.launch {
-                        viewModel.syncForPushDestination()
-                        viewModel.notes.value.firstOrNull { it.id == source.noteId }?.let { syncedNote ->
-                            showWeeklyTopics = false
-                            openNoteInEditor(syncedNote)
-                        }
-                    }
-                }
-            },
-        )
-        if (showWeeklyTopicsSettings) {
-            val settingsContent: @Composable (Boolean) -> Unit = { applyTopInset ->
-                WeeklyTopicsSettingsOverlay(
-                    settings = weeklyTopicsState.dashboard?.settings,
-                    isSaving = weeklyTopicsState.isSavingSettings,
-                    onDismiss = { showWeeklyTopicsSettings = false },
-                    onSave = { enabled, weekday, hour, minute ->
-                        coroutineScope.launch {
-                            if (enabled && !viewModel.ensureWeeklyTopicsConsent()) return@launch
-                            if (weeklyTopicsController.saveSettings(enabled, weekday, hour, minute)) {
-                                weeklyTopicsController.loadDashboard(forceRefresh = true)
-                                showWeeklyTopicsSettings = false
-                                if (enabled) requestPushRegistration()
-                            }
-                        }
-                    },
-                    applyTopInset = applyTopInset,
-                )
-            }
-            if (weeklyTopicsState.dashboard?.settings?.enabled == true) {
-                IOSLargeModalSheet(onDismiss = { showWeeklyTopicsSettings = false }) {
-                    settingsContent(false)
-                }
-            } else {
-                settingsContent(true)
-            }
-        }
         return
     }
     if (teleprompterOpen) {
@@ -1203,36 +1138,6 @@ private fun HomeScreen(
             onCreateCustom = viewModel::createCustomRecipe,
             onDeleteCustom = viewModel::deleteCustomRecipe,
             onRequestCustomUpgrade = { showSubscription = true },
-        )
-        if (showSubscription) SubscriptionDialog(
-            uiState = uiState,
-            billingState = billingState,
-            onDismiss = { showSubscription = false },
-            onPurchase = onPurchase,
-            onRestore = onRestorePurchases,
-            onRetryProducts = onRetryBilling,
-            onManage = { onOpenUrl("https://play.google.com/store/account/subscriptions?package=com.sponteoai.chillscript") },
-            onOpenUrl = onOpenUrl,
-        )
-        return
-    }
-    if (contextChatState.isOpen) {
-        BackHandler {
-            viewModel.closeContextChat()
-            isSelectionMode = false
-            selectedNoteIds = emptySet()
-        }
-        ContextChatScreen(
-            state = contextChatState,
-            onClose = {
-                viewModel.closeContextChat()
-                isSelectionMode = false
-                selectedNoteIds = emptySet()
-            },
-            onClear = viewModel::clearContextChat,
-            onSend = viewModel::sendContextChatMessage,
-            onSave = viewModel::saveChatMessageAsNote,
-            onDismissError = viewModel::dismissContextChatError,
         )
         if (showSubscription) SubscriptionDialog(
             uiState = uiState,
@@ -1569,9 +1474,6 @@ private fun HomeScreen(
                     },
                     actions = {
                         if (isSelectionMode) {
-                            TextButton(onClick = { viewModel.openContextChat(selectedNoteIds) }, enabled = selectedNoteIds.isNotEmpty()) {
-                                Text(stringResource(R.string.ai_chat_start))
-                            }
                             TextButton(onClick = {
                                 selectedNoteIds = if (selectedNoteIds.size == visibleNotes.size) emptySet()
                                 else visibleNotes.mapTo(mutableSetOf()) { it.id }
@@ -1634,14 +1536,6 @@ private fun HomeScreen(
                     }
                 }
                 if (selectedSection != "trash" && selectedTagId == null && !isSelectionMode) {
-                    FilledTonalButton(
-                        onClick = { showWeeklyTopics = true },
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-                    ) {
-                        Icon(Icons.Outlined.AutoAwesome, contentDescription = null)
-                        Spacer(Modifier.size(8.dp))
-                        Text(stringResource(R.string.weekly_topics_title))
-                    }
                     CreatorSkillsRail(
                         recipes = installedRecipes,
                         onRecipe = { pendingHomeRecipe = it },
@@ -1975,13 +1869,6 @@ private fun HomeScreen(
                 else visibleNotes.mapTo(mutableSetOf()) { it.id }
             },
             onDeleteSelection = { showBatchDeleteConfirmation = true },
-            onStartAIChat = {
-                when {
-                    selectedNoteIds.size > 20 -> showAskHardLimitAlert = true
-                    selectedNoteIds.size > 10 -> showAskSoftLimitAlert = true
-                    else -> viewModel.openContextChat(selectedNoteIds)
-                }
-            },
             onPin = viewModel::togglePin,
             onManageTags = { note ->
                 taggingNoteId = note.id
@@ -2044,10 +1931,7 @@ private fun HomeScreen(
             },
             onOpenSubscription = { showSubscription = true },
             onResolveImportCredits = { viewModel.requestLinkImportCreditAction(it.id) },
-            onOpenWeeklyTopics = {
-                if (uiState.subscriptionTier == "pro") showWeeklyTopics = true
-                else showWeeklyTopicsPreview = true
-            },
+            onOpenChillo = { showChillo = true },
             onOpenPendingRecordings = { showPendingRecordings = true },
             onOpenSettings = { showSettings = true },
             onSelectTag = { tag ->
@@ -2156,34 +2040,6 @@ private fun HomeScreen(
             selectedNoteIds = emptySet()
         }) { Text(stringResource(R.string.home_batch_delete_action), color = MaterialTheme.colorScheme.error) } },
         dismissButton = { TextButton(onClick = { showBatchDeleteConfirmation = false }) { Text(stringResource(R.string.common_cancel)) } },
-    )
-    if (showAskSoftLimitAlert) AlertDialog(
-        onDismissRequest = { showAskSoftLimitAlert = false },
-        title = { Text(stringResource(R.string.home_ask_large_selection_title)) },
-        text = {
-            Text(stringResource(R.string.home_ask_soft_limit_message, selectedNoteIds.size))
-        },
-        confirmButton = {
-            TextButton(onClick = {
-                showAskSoftLimitAlert = false
-                viewModel.openContextChat(selectedNoteIds)
-            }) { Text(stringResource(R.string.common_continue)) }
-        },
-        dismissButton = {
-            TextButton(onClick = { showAskSoftLimitAlert = false }) {
-                Text(stringResource(R.string.common_cancel))
-            }
-        },
-    )
-    if (showAskHardLimitAlert) AlertDialog(
-        onDismissRequest = { showAskHardLimitAlert = false },
-        title = { Text(stringResource(R.string.home_ask_too_many_notes_title)) },
-        text = { Text(stringResource(R.string.home_ask_hard_limit_message, 20)) },
-        confirmButton = {
-            TextButton(onClick = { showAskHardLimitAlert = false }) {
-                Text(stringResource(R.string.common_ok))
-            }
-        },
     )
     if (showEmptyTrashConfirmation) AlertDialog(
         onDismissRequest = { showEmptyTrashConfirmation = false },
@@ -2673,6 +2529,7 @@ private fun SettingsScreen(
 private fun IOSLargeModalSheet(
     onDismiss: () -> Unit,
     dismissEnabled: Boolean = true,
+    showDragHandle: Boolean = true,
     content: @Composable () -> Unit,
 ) {
     val sheetState = rememberModalBottomSheetState(
@@ -2684,7 +2541,11 @@ private fun IOSLargeModalSheet(
         onDismissRequest = { if (dismissEnabled) onDismiss() },
         sheetState = sheetState,
         containerColor = com.sponteoai.chillscript.ui.theme.ChillColors.BackgroundPrimary,
-        dragHandle = { BottomSheetDefaults.DragHandle() },
+        dragHandle = if (showDragHandle) {
+            { BottomSheetDefaults.DragHandle() }
+        } else {
+            null
+        },
     ) {
         Box(Modifier.fillMaxWidth().height(sheetHeight)) { content() }
     }
@@ -2702,7 +2563,10 @@ private fun SubscriptionDialog(
     onOpenUrl: (String) -> Unit,
     context: SubscriptionScreenContext = SubscriptionScreenContext.Standard,
 ) {
-    IOSLargeModalSheet(onDismiss = onDismiss) {
+    IOSLargeModalSheet(
+        onDismiss = onDismiss,
+        showDragHandle = false,
+    ) {
         SubscriptionScreen(
             context = context,
             isPro = uiState.subscriptionTier == "pro",

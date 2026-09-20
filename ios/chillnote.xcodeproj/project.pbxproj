@@ -20,6 +20,8 @@
 		4A7E0504320A111A0031D6A4 /* ZIPFoundation in Frameworks */ = {isa = PBXBuildFile; productRef = 4A7E0503320A111A0031D6A4 /* ZIPFoundation */; };
 		4B4D4D0132E9A10000A11F1A /* GoMarketMe in Frameworks */ = {isa = PBXBuildFile; productRef = 4B4D4D0332E9A10000A11F1A /* GoMarketMe */; };
 		4C52430132F0000000A11F1A /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 4C52430332F0000000A11F1A /* RevenueCat */; };
+		4D50480132F0000000A11F1A /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 4D50480332F0000000A11F1A /* PostHog */; };
+		4E41500132F1000000A11F1A /* AppsFlyerLib-Strict in Frameworks */ = {isa = PBXBuildFile; productRef = 4E41500332F1000000A11F1A /* AppsFlyerLib-Strict */; };
 		51BBCBCA3E5F5686457FE3C9 /* ShareL10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7C8A054AC616AD68350DA3 /* ShareL10n.swift */; };
 		932170DB1678D35ED224F76C /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 737E7F76A4F0D5112A54E704 /* ShareViewController.swift */; };
 		9339EBEAC205D67B1EE414EF /* ChillNoteShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CEF4C767BEF8D0B5809BF10B /* ChillNoteShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -27,8 +29,6 @@
 		A9DB9CC5162604B8BD1A6343 /* ShareImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848A4B6DBF955B10631AC303 /* ShareImportService.swift */; };
 		DEBEC0C3C895D347A75F8B73 /* Localizable.xcstrings in Resources */ = {isa = PBXBuildFile; fileRef = 497C0A602F21DB9900A00001 /* Localizable.xcstrings */; };
 		F38C205AC1D86771C0A0921A /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05334515EB91675E72A377E2 /* ShareView.swift */; };
-		4D50480132F0000000A11F1A /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 4D50480332F0000000A11F1A /* PostHog */; };
-		4E41500132F1000000A11F1A /* AppsFlyerLib-Strict in Frameworks */ = {isa = PBXBuildFile; productRef = 4E41500332F1000000A11F1A /* AppsFlyerLib-Strict */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -574,7 +574,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.18;
+				MARKETING_VERSION = 1.2.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -606,7 +606,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.18;
+				MARKETING_VERSION = 1.2.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ChillNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -633,7 +633,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.18;
+				MARKETING_VERSION = 1.2.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ChillNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -664,7 +664,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.18;
+				MARKETING_VERSION = 1.2.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -698,7 +698,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.18;
+				MARKETING_VERSION = 1.2.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -841,7 +841,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.2.18;
+				MARKETING_VERSION = 1.2.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -860,7 +860,7 @@
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.2.18;
+				MARKETING_VERSION = 1.2.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -877,7 +877,7 @@
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2.18;
+				MARKETING_VERSION = 1.2.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -894,7 +894,7 @@
 				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2.18;
+				MARKETING_VERSION = 1.2.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -922,7 +922,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.18;
+				MARKETING_VERSION = 1.2.19;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1047,14 +1047,20 @@
 			};
 		};
 		4D50480232F0000000A11F1A /* XCRemoteSwiftPackageReference "posthog-ios" */ = {
-            isa = XCRemoteSwiftPackageReference;
-            repositoryURL = "https://github.com/PostHog/posthog-ios.git";
-            requirement = { kind = exactVersion; version = 3.56.0; };
-        };
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/PostHog/posthog-ios.git";
+			requirement = {
+				kind = exactVersion;
+				version = 3.56.0;
+			};
+		};
 		4E41500232F1000000A11F1A /* XCRemoteSwiftPackageReference "AppsFlyerFramework-Strict" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/AppsFlyerSDK/AppsFlyerFramework-Strict";
-			requirement = { kind = exactVersion; version = 7.0.1; };
+			requirement = {
+				kind = exactVersion;
+				version = 7.0.1;
+			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
@@ -1090,10 +1096,10 @@
 			productName = RevenueCat;
 		};
 		4D50480332F0000000A11F1A /* PostHog */ = {
-            isa = XCSwiftPackageProductDependency;
-            package = 4D50480232F0000000A11F1A /* XCRemoteSwiftPackageReference "posthog-ios" */;
-            productName = PostHog;
-        };
+			isa = XCSwiftPackageProductDependency;
+			package = 4D50480232F0000000A11F1A /* XCRemoteSwiftPackageReference "posthog-ios" */;
+			productName = PostHog;
+		};
 		4E41500332F1000000A11F1A /* AppsFlyerLib-Strict */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 4E41500232F1000000A11F1A /* XCRemoteSwiftPackageReference "AppsFlyerFramework-Strict" */;

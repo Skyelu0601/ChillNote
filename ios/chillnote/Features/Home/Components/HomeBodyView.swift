@@ -34,12 +34,6 @@ struct HomeBodyView: View {
         )
     }
 
-    private var showAIChatBinding: Binding<Bool> {
-        Binding(
-            get: { state.showAIChat },
-            set: { dispatch(.setShowAIChat($0)) }
-        )
-    }
 
     private var showPendingRecordingsBinding: Binding<Bool> {
         Binding(
@@ -148,7 +142,6 @@ struct HomeBodyView: View {
         ZStack(alignment: .bottom) {
             mainContent
             floatingVoiceInput
-            selectionModeOverlay
             agentProgressOverlay
         }
         .simultaneousGesture(sidebarOpenGesture)
@@ -162,9 +155,8 @@ struct HomeBodyView: View {
                 isTrashSelected: trashSelectedBinding,
                 hasPendingRecordings: state.hasPendingRecordings,
                 pendingRecordingsCount: state.pendingRecordingsCount,
-                hasUnreadWeeklyTopicsReport: state.weeklyTopicsStore.hasUnreadReport,
                 onSettingsTap: { dispatch(.showSettings) },
-                onWeeklyTopicsTap: { dispatch(.openWeeklyTopics) },
+                onChilloTap: { openChillo() },
                 onPendingRecordingsTap: { dispatch(.setShowPendingRecordings(true)) }
             )
         }
@@ -201,13 +193,6 @@ struct HomeBodyView: View {
                     }
             }
         }
-        .fullScreenCover(isPresented: showAIChatBinding) {
-            AIContextChatView(contextNotes: state.cachedContextNotes)
-                .environmentObject(state.syncManager)
-                .onDisappear {
-                    dispatch(.aiChatDisappear)
-                }
-        }
         .alert(L10n.text("home.ask_agent.title"), isPresented: customActionInputPresentedBinding) {
             TextField(L10n.text("home.ask_agent.prompt"), text: customActionPromptBinding)
             Button(L10n.text("common.cancel"), role: .cancel) {
@@ -219,25 +204,6 @@ struct HomeBodyView: View {
             }
         } message: {
             Text(L10n.text("home.ask_agent.message"))
-        }
-        .alert(L10n.text("home.alert.large_selection.title"), isPresented: Binding(
-            get: { state.showAskSoftLimitAlert },
-            set: { _ in }
-        )) {
-            Button(L10n.text("common.cancel"), role: .cancel) { }
-            Button(L10n.text("common.continue")) {
-                dispatch(.confirmAskSoftLimit)
-            }
-        } message: {
-            Text(L10n.text("home.alert.ask_soft_limit.message", state.selectedNotes.count))
-        }
-        .alert(L10n.text("home.alert.too_many_notes.title"), isPresented: Binding(
-            get: { state.showAskHardLimitAlert },
-            set: { _ in }
-        )) {
-            Button(L10n.text("common.ok"), role: .cancel) { }
-        } message: {
-            Text(L10n.text("home.alert.ask_hard_limit.message", state.askHardLimit))
         }
         .alert(L10n.text("home.alert.large_selection.title"), isPresented: Binding(
             get: { state.showRecipeSoftLimitAlert },
@@ -355,11 +321,7 @@ struct HomeBodyView: View {
                 hasPendingRecordings: state.hasPendingRecordings,
                 highlightSelectionEntry: false,
                 hasUnreadNotifications: notificationInbox.hasUnread,
-                onOpenNotifications: {
-                    var path = state.navigationPath
-                    path.append(NotificationInboxRoute.inbox)
-                    dispatch(.setNavigationPath(path))
-                },
+                onOpenNotifications: { openNotifications() },
                 onToggleSidebar: { dispatch(.toggleSidebar) },
                 onCreateBlankNote: { dispatch(.createBlankNote) },
                 onToggleSearch: { dispatch(.toggleSearch) },
@@ -443,14 +405,8 @@ struct HomeBodyView: View {
             .navigationDestination(for: NotificationInboxRoute.self) { _ in
                 NotificationInboxView(store: notificationInbox)
             }
-            .navigationDestination(for: WeeklyTopicsRoute.self) { route in
-                switch route {
-                case .dashboard:
-                    WeeklyTopicsView(
-                        store: state.weeklyTopicsStore,
-                        onOpenSource: { dispatch(.openWeeklyTopicSource($0)) }
-                    )
-                }
+            .navigationDestination(for: ChilloRoute.self) { _ in
+                ChilloView().environmentObject(state.speechRecognizer)
             }
         }
     }
@@ -524,12 +480,16 @@ struct HomeBodyView: View {
         }
     }
 
-    private var selectionModeOverlay: some View {
-        HomeSelectionOverlayView(
-            isSelectionMode: state.isSelectionMode,
-            selectedNotesCount: state.selectedNotes.count,
-            onStartAIChat: { dispatch(.startAIChat) }
-        )
+    private func openChillo() {
+        var path = state.navigationPath
+        path.append(ChilloRoute())
+        dispatch(.setNavigationPath(path))
+    }
+
+    private func openNotifications() {
+        var path = state.navigationPath
+        path.append(NotificationInboxRoute.inbox)
+        dispatch(.setNavigationPath(path))
     }
 
     private var agentProgressOverlay: some View {

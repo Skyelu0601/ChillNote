@@ -193,3 +193,31 @@ final result: blocked
 - Material icon silhouettes differ slightly from the iOS/source icon set while preserving meaning and Android-native rendering.
 
 final result: passed
+
+---
+
+# Native subscription flow and Superwall removal QA — 2026-09-20
+
+**Scope**
+
+- Preserve the existing native intro and upgrade/price pages.
+- Insert the native reminder page with the purple ringing-bell animation.
+- Present the weekly-plan retention prompt when the final onboarding paywall is closed.
+- Remove the Superwall SDK and runtime overlays from iOS and Android.
+
+**References and rendered evidence**
+
+- User-provided native upgrade screenshot: `/Users/luwenting/Downloads/IMG_1975.PNG`.
+- Reminder page and weekly retention prompt inspected in the former dashboard template.
+- iPhone 16 Pro Simulator capture after SDK removal confirms the existing first native page renders without the Superwall test-mode overlay.
+- iOS and Android production builds compile the reminder and retention states with localized copy and live store pricing.
+
+**Findings**
+
+- Existing intro and upgrade designs remain native and unchanged.
+- Reminder animation uses three expanding/fading purple rings and a small repeated bell rotation; iOS respects Reduce Motion.
+- Weekly retention prompt preserves the reference information hierarchy while using ChillScript's native design system.
+- No remaining Superwall source, manifest declaration, API key, package dependency, or runtime reference was found.
+- No actionable P0, P1, or P2 issues remain.
+
+final result: passed

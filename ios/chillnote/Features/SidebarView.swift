@@ -21,9 +21,8 @@ struct SidebarView: View {
     @State private var showSubscription = false
     var hasPendingRecordings: Bool = false
     var pendingRecordingsCount: Int = 0
-    var hasUnreadWeeklyTopicsReport: Bool = false
     var onSettingsTap: (() -> Void)?
-    var onWeeklyTopicsTap: (() -> Void)?
+    var onChilloTap: (() -> Void)?
     var onPendingRecordingsTap: (() -> Void)?
     
     private let sidebarCloseMinTranslation: CGFloat = 30
@@ -108,19 +107,13 @@ struct SidebarView: View {
                         }
 
                         SidebarItem(
-                            icon: "lightbulb",
-                            title: L10n.text("weekly_topics.home.button"),
+                            icon: "bubble.left",
+                            title: L10n.text("chillo.title"),
                             isSelected: false
                         ) {
                             isPresented = false
-                            onWeeklyTopicsTap?()
+                            onChilloTap?()
                         }
-                        .accessibilityHint(
-                            hasUnreadWeeklyTopicsReport
-                                ? L10n.text("weekly_topics.home.unread_hint")
-                                : L10n.text("weekly_topics.home.hint")
-                        )
-
                         SidebarItem(icon: "trash", title: L10n.text("sidebar.nav.recycle_bin"), isSelected: isTrashSelected) {
                             selectedTag = nil
                             selectedSection = nil

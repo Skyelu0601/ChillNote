@@ -36,7 +36,6 @@ struct HomeScreenState {
     let isAgentMenuOpen: Bool
     let showingSettings: Bool
     let autoOpenPendingRecordings: Bool
-    let showAIChat: Bool
     let isCustomActionInputPresented: Bool
     let customActionPrompt: String
     let isTranslateInputPresented: Bool
@@ -60,20 +59,15 @@ struct HomeScreenState {
     let availableTags: [Tag]
     let translateLanguages: [TranslateLanguage]
     let recipeManager: RecipeManager
-    let weeklyTopicsStore: WeeklyTopicsStore
     let speechRecognizer: SpeechRecognizer
     let syncManager: SyncManager
     let headerTitle: String
     let actionProgress: String?
     let isExecutingAction: Bool
 
-    let cachedContextNotes: [Note]
 
-    let showAskSoftLimitAlert: Bool
-    let showAskHardLimitAlert: Bool
     let showRecipeSoftLimitAlert: Bool
     let showRecipeHardLimitAlert: Bool
-    let askHardLimit: Int
     let recipeHardLimit: Int
 
     let hasPendingRecordings: Bool
@@ -88,7 +82,6 @@ enum HomeScreenAction {
     case setShowingSettings(Bool)
     case setAutoOpenPendingRecordings(Bool)
     case setShowPendingRecordings(Bool)
-    case setShowAIChat(Bool)
     case setCustomActionInputPresented(Bool)
     case setCustomActionPrompt(String)
     case setTranslateInputPresented(Bool)
@@ -121,7 +114,6 @@ enum HomeScreenAction {
 
     case handleAgentRecipeRequest(AgentRecipe)
     case prepareHomeRecipe(AgentRecipe)
-    case startAIChat
     case cancelVoice
     case confirmVoice
     case pasteLink(URL)
@@ -137,13 +129,9 @@ enum HomeScreenAction {
     case closeTranslate
 
     case showSettings
-    case aiChatDisappear
-    case openWeeklyTopics
     case openSubscription
     case resolveLinkImportCredits(Note)
-    case openWeeklyTopicSource(UUID)
 
-    case confirmAskSoftLimit
     case confirmRecipeSoftLimit
     case cancelRecipeSoftLimit
 

@@ -68,9 +68,6 @@ import com.sponteoai.chillscript.ai.AgentRecipe
 import com.sponteoai.chillscript.ai.RecipeStore
 import com.sponteoai.chillscript.ai.requestPrompts
 import com.sponteoai.chillscript.data.remote.CreatorSkillsApi
-import com.sponteoai.chillscript.ai.ChatMessage
-import com.sponteoai.chillscript.ai.ChatRole
-import com.sponteoai.chillscript.ai.ContextChatPrompt
 import com.sponteoai.chillscript.preferences.CapturePreferences
 import com.sponteoai.chillscript.preferences.VoiceLanguageSettings
 import com.sponteoai.chillscript.data.remote.MediaLinkSectionsDto
@@ -94,14 +91,6 @@ data class AISkillUiState(
     val errorMessage: String? = null,
 )
 
-data class ContextChatUiState(
-    val isOpen: Boolean = false,
-    val contextNotes: List<NoteEntity> = emptyList(),
-    val messages: List<ChatMessage> = emptyList(),
-    val processing: Boolean = false,
-    val errorMessage: String? = null,
-    val savedMessageId: String? = null,
-)
 
 data class PendingShareImportAdoption(
     val userId: String,
@@ -208,8 +197,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val availableRecipes: List<AgentRecipe> get() = recipeStore.available
     private val mutableAISkillState = MutableStateFlow(AISkillUiState())
     val aiSkillState: StateFlow<AISkillUiState> = mutableAISkillState
-    private val mutableContextChatState = MutableStateFlow(ContextChatUiState())
-    val contextChatState: StateFlow<ContextChatUiState> = mutableContextChatState
     val voiceLanguageSettings: StateFlow<VoiceLanguageSettings> = capturePreferences.voice
     val mediaLinkSections: StateFlow<MediaLinkSectionsDto> = capturePreferences.mediaSections
     val reviewRequests = appRatingTracker.requests
@@ -219,13 +206,11 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val isEditorActive: Boolean
         get() = editorActive
 
-    suspend fun weeklyTopicsAccessToken(): String? {
+    suspend fun chilloAccessToken(): String? {
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return null
         return refreshSessionIfNeeded(session)?.accessToken
     }
 
-    suspend fun ensureWeeklyTopicsConsent(): Boolean =
-        aiConsentManager.ensureConsent(AIConsentTrigger.Text)
 
     val notes: StateFlow<List<NoteEntity>> = mutableUiState.flatMapLatest { state ->
         val userId = (state.authState as? AuthState.SignedIn)?.session?.user?.id
@@ -502,7 +487,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 mutablePendingRecordings.value = emptyList()
                 mutableVoiceNoteStates.value = emptyMap()
                 mutableAISkillState.value = AISkillUiState()
-                mutableContextChatState.value = ContextChatUiState()
                 runCatchingPreservingCancellation { pushNotifications.clearLocalRegistration() }
             } finally {
                 // The remote account is already deleted, so never retain its session locally.
@@ -1048,87 +1032,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         mutableUiState.value = mutableUiState.value.copy(errorMessage = message)
     }
 
-    fun openContextChat(noteIds: Set<String>) {
-        val selected = notes.value.filter { it.id in noteIds && it.deletedAt == null }
-        if (selected.isEmpty()) return
-        mutableContextChatState.value = ContextChatUiState(isOpen = true, contextNotes = selected)
-    }
-
-    fun closeContextChat() {
-        mutableContextChatState.value = ContextChatUiState()
-    }
-
-    fun clearContextChat() {
-        mutableContextChatState.value = mutableContextChatState.value.copy(
-            messages = emptyList(), errorMessage = null, savedMessageId = null,
-        )
-    }
-
-    fun sendContextChatMessage(content: String) {
-        val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
-        val trimmed = content.trim()
-        val state = mutableContextChatState.value
-        if (!state.isOpen || state.processing || trimmed.isEmpty()) return
-        viewModelScope.launch {
-            if (!aiConsentManager.ensureConsent(AIConsentTrigger.Text)) return@launch
-            val before = mutableContextChatState.value
-            val userMessage = ChatMessage(role = ChatRole.USER, content = trimmed)
-            mutableContextChatState.value = before.copy(
-                messages = before.messages + userMessage,
-                processing = true,
-                errorMessage = null,
-            )
-            runCatchingPreservingCancellation {
-                val (prompt, systemPrompt) = ContextChatPrompt.build(
-                    notes = before.contextNotes,
-                    history = before.messages,
-                    userMessage = trimmed,
-                    installedRecipes = installedRecipes.value,
-                )
-                creatorSkillsApi.generate(session.accessToken, prompt, systemPrompt, usageType = "chat")
-            }.onSuccess { response ->
-                val current = mutableContextChatState.value
-                mutableContextChatState.value = current.copy(
-                    messages = current.messages + ChatMessage(role = ChatRole.ASSISTANT, content = ContextChatPrompt.sanitize(response)),
-                    processing = false,
-                )
-                refreshCredits()
-            }.onFailure { error ->
-                Log.w(TAG, "AI context chat request failed", error)
-                if (error is SyncHttpException && error.statusCode == 402) {
-                    mutableContextChatState.value = mutableContextChatState.value.copy(
-                        processing = false,
-                        errorMessage = null,
-                    )
-                    mutablePaywallRequests.tryEmit(Unit)
-                    refreshCredits()
-                } else {
-                    mutableContextChatState.value = mutableContextChatState.value.copy(
-                        processing = false,
-                        errorMessage = getApplication<Application>().getString(R.string.ai_request_error),
-                    )
-                }
-            }
-        }
-    }
-
-    fun saveChatMessageAsNote(message: ChatMessage) {
-        if (message.role != ChatRole.ASSISTANT || message.content.isBlank()) return
-        val userId = currentUserId ?: return
-        viewModelScope.launch {
-            notesRepository.createNote(userId, ContextChatPrompt.sanitize(message.content))
-            sync()
-            mutableContextChatState.value = mutableContextChatState.value.copy(savedMessageId = message.id)
-            delay(2_000)
-            if (mutableContextChatState.value.savedMessageId == message.id) {
-                mutableContextChatState.value = mutableContextChatState.value.copy(savedMessageId = null)
-            }
-        }
-    }
-
-    fun dismissContextChatError() {
-        mutableContextChatState.value = mutableContextChatState.value.copy(errorMessage = null)
-    }
 
     fun updateVoiceLanguage(mode: String, languageHint: String) = capturePreferences.updateVoice(mode, languageHint)
 

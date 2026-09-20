@@ -9,7 +9,6 @@ struct HomeView: View {
     @StateObject var homeViewModel = HomeViewModel()
     @StateObject private var storeService = StoreService.shared
     @StateObject var notificationInbox = NotificationInboxStore()
-    @StateObject var weeklyTopicsStore = WeeklyTopicsStore()
     @StateObject var firstActionGuide = FirstActionGuideService.shared
 
     var currentUserId: String? {
@@ -29,8 +28,6 @@ struct HomeView: View {
 
     @State var isSelectionMode = false
     @State var selectedNotes: Set<UUID> = []
-    @State var showAIChat = false
-    @State var cachedContextNotes: [Note] = []
     @State var showDeleteConfirmation = false
 
     @State var isAgentMenuOpen = false
@@ -50,19 +47,14 @@ struct HomeView: View {
     @State var translateTargetLanguage = ""
     @StateObject var recipeManager = RecipeManager.shared
 
-    let askSoftLimit = 10
-    let askHardLimit = 20
     let recipeSoftLimit = 5
     let recipeHardLimit = 8
-    @State var showAskSoftLimitAlert = false
-    @State var showAskHardLimitAlert = false
     @State var showRecipeSoftLimitAlert = false
     @State var showRecipeHardLimitAlert = false
     @State var pendingRecipeForConfirmation: AgentRecipe?
 
     @State var showSubscription = false
     @State var pendingLinkImportUpgradeNoteID: UUID?
-    @State private var showWeeklyTopicsPreview = false
 
     let translateLanguages: [TranslateLanguage] = TranslateLanguage.defaultLanguages
 
@@ -133,7 +125,6 @@ struct HomeView: View {
             isAgentMenuOpen: isAgentMenuOpen,
             showingSettings: showingSettings,
             autoOpenPendingRecordings: autoOpenPendingRecordings,
-            showAIChat: showAIChat,
             isCustomActionInputPresented: isCustomActionInputPresented,
             customActionPrompt: customActionPrompt,
             isTranslateInputPresented: isTranslateInputPresented,
@@ -158,18 +149,13 @@ struct HomeView: View {
             availableTags: availableTagsForCurrentUser,
             translateLanguages: translateLanguages,
             recipeManager: recipeManager,
-            weeklyTopicsStore: weeklyTopicsStore,
             speechRecognizer: speechRecognizer,
             syncManager: syncManager,
             headerTitle: headerTitle,
             actionProgress: actionProgress,
             isExecutingAction: isExecutingAction,
-            cachedContextNotes: cachedContextNotes,
-            showAskSoftLimitAlert: showAskSoftLimitAlert,
-            showAskHardLimitAlert: showAskHardLimitAlert,
             showRecipeSoftLimitAlert: showRecipeSoftLimitAlert,
             showRecipeHardLimitAlert: showRecipeHardLimitAlert,
-            askHardLimit: askHardLimit,
             recipeHardLimit: recipeHardLimit,
             hasPendingRecordings: hasPendingRecordings,
             pendingRecordingsCount: pendingRecordings.count,
@@ -285,7 +271,6 @@ struct HomeView: View {
                 await PushNotificationManager.shared.refreshRegistration()
                 await bootstrapHome(for: userId, source: .authChanged)
                 configureFirstActionGuide()
-                await weeklyTopicsStore.reload()
                 await checkForClipboardLinkImport()
                 await evaluateImportNotificationPermissionPrompt()
             }
@@ -362,7 +347,6 @@ struct HomeView: View {
             scheduleMaintenance(reason: .foreground)
             Task {
                 await PushNotificationManager.shared.refreshRegistration()
-                await weeklyTopicsStore.reload()
                 await checkForClipboardLinkImport()
             }
         }
@@ -377,7 +361,6 @@ struct HomeView: View {
             await PushNotificationManager.shared.refreshRegistration()
             await bootstrapHome(for: userId, source: .initialTask)
             configureFirstActionGuide()
-            await weeklyTopicsStore.reload()
             importPendingSharedNotes(navigateToLatest: true)
             await checkForClipboardLinkImport()
             await evaluateImportNotificationPermissionPrompt()
@@ -398,14 +381,6 @@ struct HomeView: View {
         homeViewWithLifecycleHandlers
         .sheet(isPresented: $showSubscription) {
             SubscriptionView()
-        }
-        .fullScreenCover(isPresented: $showWeeklyTopicsPreview) {
-            WeeklyTopicsPreviewView {
-                showWeeklyTopicsPreview = false
-                DispatchQueue.main.async {
-                    showSubscription = true
-                }
-            }
         }
         .alert(VoiceErrorPresentation.transcriptionFailedTitle, isPresented: $showTranscriptionFailureAlert) {
             Button(L10n.text("sidebar.nav.pending_records")) {
@@ -472,8 +447,6 @@ struct HomeView: View {
             autoOpenPendingRecordings = value
         case .setShowPendingRecordings(let value):
             showPendingRecordings = value
-        case .setShowAIChat(let value):
-            showAIChat = value
         case .setCustomActionInputPresented(let value):
             isCustomActionInputPresented = value
         case .setCustomActionPrompt(let value):
@@ -549,8 +522,6 @@ struct HomeView: View {
             handleAgentActionRequest(recipe)
         case .prepareHomeRecipe(let recipe):
             prepareHomeRecipe(recipe)
-        case .startAIChat:
-            startAIChat()
         case .cancelVoice:
             speechRecognizer.stopRecording(reason: .cancelled)
         case .confirmVoice:
@@ -590,17 +561,6 @@ struct HomeView: View {
 
         case .showSettings:
             showingSettings = true
-        case .aiChatDisappear:
-            exitSelectionMode()
-        case .openWeeklyTopics:
-            Task { @MainActor in
-                await storeService.ensureSubscriptionStatusReadyForFeatureGate()
-                if storeService.currentTier == .pro {
-                    navigationPath.append(WeeklyTopicsRoute.dashboard)
-                } else {
-                    showWeeklyTopicsPreview = true
-                }
-            }
         case .openSubscription:
             showSubscription = true
         case .resolveLinkImportCredits(let note):
@@ -610,23 +570,6 @@ struct HomeView: View {
                 pendingLinkImportUpgradeNoteID = note.id
                 showSubscription = true
             }
-        case .openWeeklyTopicSource(let noteID):
-            Task { @MainActor in
-                if let note = resolveNote(noteID) {
-                    navigationPath.append(note)
-                    return
-                }
-                _ = await syncManager.syncNow(context: modelContext)
-                await homeViewModel.reload(keepItemsWhileLoading: true)
-                if let note = resolveNote(noteID) {
-                    navigationPath.append(note)
-                }
-            }
-
-        case .confirmAskSoftLimit:
-            cachedContextNotes = getSelectedNotes()
-            showAIChat = true
-            showAskSoftLimitAlert = false
         case .confirmRecipeSoftLimit:
             showRecipeSoftLimitAlert = false
             confirmPendingRecipeOverSoftLimit()

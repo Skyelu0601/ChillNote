@@ -44,6 +44,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.ChatBubbleOutline
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete as FilledDelete
@@ -203,7 +204,6 @@ fun HomeScreenContent(
     onExitSelectionMode: () -> Unit,
     onSelectAll: () -> Unit,
     onDeleteSelection: () -> Unit,
-    onStartAIChat: () -> Unit,
     onPin: (NoteEntity) -> Unit,
     onManageTags: (NoteEntity) -> Unit,
     onMove: (NoteEntity, String) -> Unit,
@@ -219,7 +219,7 @@ fun HomeScreenContent(
     onPasteLink: (((Boolean) -> Unit) -> Unit),
     onOpenSubscription: () -> Unit,
     onResolveImportCredits: (NoteEntity) -> Unit,
-    onOpenWeeklyTopics: () -> Unit,
+    onOpenChillo: () -> Unit,
     onOpenPendingRecordings: () -> Unit,
     onOpenSettings: () -> Unit,
     onSelectTag: (TagEntity) -> Unit,
@@ -262,9 +262,8 @@ fun HomeScreenContent(
     val notesListState = rememberLazyListState()
     val showQuickCaptureDock = !isTrash && !isSelectionMode && !searchVisible
     var quickCaptureDockHeightPx by remember { mutableStateOf(0) }
-    var selectionActionHeightPx by remember { mutableStateOf(0) }
     val emptyStateBottomInset = when {
-        isSelectionMode -> with(density) { selectionActionHeightPx.toDp() }
+        isSelectionMode -> 0.dp
         showQuickCaptureDock -> with(density) { quickCaptureDockHeightPx.toDp() }
         else -> WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     }
@@ -443,17 +442,6 @@ fun HomeScreenContent(
             )
         }
 
-        if (isSelectionMode) {
-            IOSSelectionAIAction(
-                hasSelection = selectedNoteIds.isNotEmpty(),
-                onClick = onStartAIChat,
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .onSizeChanged { selectionActionHeightPx = it.height }
-                    .padding(horizontal = 24.dp)
-                    .padding(bottom = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding() + 12.dp),
-            )
-        }
 
         SnackbarHost(
             hostState = snackbarHostState,
@@ -485,9 +473,9 @@ fun HomeScreenContent(
                 sidebarOpen = false
                 onOpenSubscription()
             },
-            onOpenWeeklyTopics = {
+            onOpenChillo = {
                 sidebarOpen = false
-                onOpenWeeklyTopics()
+                onOpenChillo()
             },
             onOpenPendingRecordings = {
                 sidebarOpen = false
@@ -697,82 +685,6 @@ private fun IOSHomeSnackbar(data: SnackbarData) {
     }
 }
 
-@Composable
-private fun IOSSelectionAIAction(
-    hasSelection: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    var shouldShowSelectionHint by remember(hasSelection) { mutableStateOf(false) }
-    val warningOrange = Color(0xFFFF9500)
-
-    Column(
-        modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
-    ) {
-        AnimatedVisibility(
-            visible = shouldShowSelectionHint && !hasSelection,
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    .background(warningOrange.copy(alpha = 0.12f), RoundedCornerShape(16.dp))
-                    .border(1.dp, warningOrange.copy(alpha = 0.22f), RoundedCornerShape(16.dp))
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    Icons.Outlined.Error,
-                    contentDescription = null,
-                    tint = warningOrange,
-                    modifier = Modifier.size(16.dp),
-                )
-                Text(
-                    stringResource(R.string.home_selection_overlay_select_notes_hint),
-                    color = ChillColors.TextMain,
-                    fontSize = 13.sp,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .shadow(
-                    elevation = 10.dp,
-                    shape = CircleShape,
-                    ambientColor = ChillColors.BrandBlue.copy(alpha = 0.22f),
-                    spotColor = ChillColors.BrandBlue.copy(alpha = 0.35f),
-                )
-                .clip(CircleShape)
-                .background(
-                    Brush.linearGradient(
-                        listOf(
-                            ChillColors.BrandBlue,
-                            ChillColors.BrandBlue.copy(alpha = 0.90f),
-                        ),
-                    ),
-                )
-                .clickable(role = Role.Button) {
-                    if (hasSelection) onClick() else shouldShowSelectionHint = true
-                },
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                stringResource(R.string.ai_chat_start),
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-            )
-        }
-    }
-}
 
 @Composable
 private fun IOSHomeHeader(
@@ -853,7 +765,7 @@ private fun IOSHomeHeader(
                     if (!isTrash) {
                         IOSRoundHeaderButton(
                             icon = Icons.Outlined.NotificationsNone,
-                            contentDescription = stringResource(if (hasUnreadNotifications) R.string.notifications_accessibility_unread else R.string.notifications_title),
+                            contentDescription = stringResource(R.string.notifications_title),
                             onClick = onOpenNotifications,
                             badge = hasUnreadNotifications,
                             enabled = !isRecording,
@@ -1701,7 +1613,7 @@ private fun IOSHomeSidebar(
     onDismiss: () -> Unit,
     onSelectSection: (String) -> Unit,
     onOpenSubscription: () -> Unit,
-    onOpenWeeklyTopics: () -> Unit,
+    onOpenChillo: () -> Unit,
     onOpenPendingRecordings: () -> Unit,
     onOpenSettings: () -> Unit,
     onSelectTag: (TagEntity) -> Unit,
@@ -1871,10 +1783,10 @@ private fun IOSHomeSidebar(
                         selectedSection == "inbox",
                     ) { onSelectSection("inbox") }
                     IOSSidebarItem(
-                        Icons.Outlined.Lightbulb,
-                        stringResource(R.string.weekly_topics_title),
+                        Icons.Outlined.ChatBubbleOutline,
+                        stringResource(R.string.chillo_title),
                         false,
-                        onClick = onOpenWeeklyTopics,
+                        onClick = onOpenChillo,
                     )
                     IOSSidebarItem(
                         Icons.Outlined.Delete,

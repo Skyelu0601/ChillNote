@@ -27,6 +27,7 @@ LOCALES = {
     "values-zh-rTW": set(),
 }
 UNIVERSALLY_UNCHANGED = {
+    "chillo_title",  # Product name; deliberately unchanged in every locale.
     "app_name",
     "about_brand",
     "export_progress_summary_format",
@@ -58,7 +59,9 @@ UNIVERSALLY_UNCHANGED = {
     "weekly_topics_topic_progress",
     "weekly_topics_preview_illustration_label",
     "weekly_topics_count_sources",
+    "chillo_source_reference",  # Citation marker format; the note title is localized content.
 }
+LOCALES["values-fr"].update({"chillo_history", "chillo_sources"})  # Valid French cognates.
 ENGLISH_WORD = re.compile(r"[a-z]+", re.IGNORECASE)
 MARKDOWN_URL = re.compile(r"\[[^\]\n]+\]\([^)]*https?://[^)]*\)", re.IGNORECASE)
 MALFORMED_MARKDOWN_LINK = re.compile(r"\]\s+\(https?://", re.IGNORECASE)

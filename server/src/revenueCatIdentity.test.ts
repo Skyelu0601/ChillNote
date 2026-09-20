@@ -34,23 +34,31 @@ test("legacy uppercase Apple entitlement supports old apps without receipt trans
   const calls: string[] = [];
   const result = await accountRevenueCatSnapshot(lower, "pro", async id => {
     calls.push(id); return id === upper ? active() : inactive;
-  });
+  }, true);
   assert.equal(result.active, true);
   assert.equal(result.storeTransactionId, "verified-transaction");
   assert.deepEqual(calls, [lower, upper]);
 });
 
 test("expired/absent identities remain free and other stores cannot use Apple fallback", async () => {
-  assert.equal((await accountRevenueCatSnapshot(lower, "pro", async () => inactive)).active, false);
-  assert.equal((await accountRevenueCatSnapshot(lower, "pro", async id => id === upper ? active("play_store") : inactive)).active, false);
+  const ordinaryCalls: string[] = [];
+  assert.equal((await accountRevenueCatSnapshot(lower, "pro", async id => {
+    ordinaryCalls.push(id); return inactive;
+  })).active, false);
+  assert.deepEqual(ordinaryCalls, [lower]);
+  assert.equal((await accountRevenueCatSnapshot(
+    lower, "pro", async id => id === upper ? active("play_store") : inactive, true
+  )).active, false);
   const expired = active(); expired.subscriber!.entitlements!.pro.expires_date = "2000-01-01";
-  assert.equal((await accountRevenueCatSnapshot(lower, "pro", async id => id === upper ? expired : inactive)).active, false);
+  assert.equal((await accountRevenueCatSnapshot(
+    lower, "pro", async id => id === upper ? expired : inactive, true
+  )).active, false);
 });
 
 test("provider errors propagate instead of revoking membership or trusting metadata", async () => {
   await assert.rejects(accountRevenueCatSnapshot(lower, "pro", async id => {
     if (id === upper) throw Error("provider unavailable"); return inactive;
-  }), /provider unavailable/);
+  }, true), /provider unavailable/);
 });
 
 test("custom non-UUID accounts never trigger uppercase lookup", async () => {

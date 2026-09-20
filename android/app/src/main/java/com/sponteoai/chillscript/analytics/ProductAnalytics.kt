@@ -74,7 +74,6 @@ object ProductAnalytics {
         PostHogAndroid.setup(context.applicationContext, config)
         configured = true
         synchronizeUser(userId)
-        capture("app_session_started", mapOf("surface" to "main_app"))
         if (preferences?.getBoolean(FirstOpenKey, false) != true) {
             val existingInstall = context.getSharedPreferences("onboarding_state", Context.MODE_PRIVATE)
                 .getBoolean("intro_viewed_on_device", false) || userId != null
@@ -158,6 +157,11 @@ object ProductAnalytics {
             "billing_stage" to billingStage,
         ).mapNotNull { (key, value) -> value?.let { key to it } }.toMap()
         capture(event, properties + diagnostics)
+        pendingPurchase = null
+    }
+
+    @Synchronized
+    fun clearPurchaseAttribution() {
         pendingPurchase = null
     }
 }

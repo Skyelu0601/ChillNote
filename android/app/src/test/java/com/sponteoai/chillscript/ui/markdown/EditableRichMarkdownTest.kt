@@ -50,4 +50,24 @@ class EditableRichMarkdownTest {
         assertTrue(emptySecondLine.displayText.paragraphStyles.isEmpty())
         assertTrue(filledSecondLine.displayText.paragraphStyles.isEmpty())
     }
+
+    @Test(timeout = 3_000)
+    fun longDocumentScansRawLinksWithoutRepeatedSuffixSearches() {
+        val rawUrl = "https://example.com/creator"
+        val markdown = buildString {
+            repeat(2_000) { line ->
+                append("A plain content idea without a link on line ")
+                append(line)
+                append('\n')
+            }
+            append("Reference: ")
+            append(rawUrl)
+            append('.')
+        }
+
+        val rendered = renderEditableMarkdown(markdown, palette)
+
+        assertEquals(markdown.length, rendered.displayText.length)
+        assertEquals(listOf(rawUrl), rendered.links.map { it.url })
+    }
 }

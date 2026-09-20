@@ -3,6 +3,7 @@ import OSLog
 import RevenueCat
 
 struct RevenueCatEntitlementSnapshot: Equatable {
+    let appUserID: String
     let isActive: Bool
     let expirationDate: Date?
     let productIdentifier: String?
@@ -11,6 +12,11 @@ struct RevenueCatEntitlementSnapshot: Equatable {
 enum RevenueCatIdentity {
     static func canonicalUserID(_ userID: String) -> String {
         UUID(uuidString: userID)?.uuidString.lowercased() ?? userID
+    }
+
+    static func matches(_ lhs: String?, _ rhs: String?) -> Bool {
+        guard let lhs, let rhs else { return false }
+        return canonicalUserID(lhs).caseInsensitiveCompare(canonicalUserID(rhs)) == .orderedSame
     }
 }
 
@@ -68,10 +74,20 @@ final class RevenueCatService {
             } else {
                 customerInfo = try await Purchases.shared.logIn(userID).customerInfo
             }
+            Purchases.shared.attribution.setAttributes([
+                "annual_price_variant": AnnualPriceExperiment.variant(for: userID).rawValue
+            ])
+            do {
+                _ = try await Purchases.shared.syncAttributesAndOfferingsIfNeeded()
+            } catch {
+                // Keep sign-in and entitlement refresh working even when the
+                // targeted offering cannot be refreshed temporarily.
+                Self.logger.warning("RevenueCat price variant sync failed: \(error.localizedDescription, privacy: .public)")
+            }
             // RevenueCat uses this reserved attribute as the distinct ID when it
             // forwards server-side subscription lifecycle events to PostHog.
             Purchases.shared.attribution.setPostHogUserID(userID.lowercased())
-            var snapshot = Self.snapshot(from: customerInfo)
+            var snapshot = Self.snapshot(from: customerInfo, appUserID: userID)
 
             // Use one lowercase identity for login, attribution and migration.
             // The server separately reads the old uppercase identity for old apps.
@@ -80,7 +96,7 @@ final class RevenueCatService {
                !snapshot.isActive,
                !UserDefaults.standard.bool(forKey: migrationKey) {
                 let synced = try await Purchases.shared.syncPurchases()
-                snapshot = Self.snapshot(from: synced)
+                snapshot = Self.snapshot(from: synced, appUserID: userID)
                 // A successful request with no entitlement is not a successful
                 // migration; allow a later retry instead of permanently skipping it.
                 if snapshot.isActive {
@@ -135,9 +151,16 @@ final class RevenueCatService {
         }
     }
 
-    func currentOfferingPackages() async throws -> [Package] {
+    func packages(offeringIdentifier: String) async throws -> [Package] {
         guard isConfigured else { return [] }
-        return try await Purchases.shared.offerings().current?.availablePackages ?? []
+        return try await Purchases.shared.offerings()
+            .offering(identifier: offeringIdentifier)?
+            .availablePackages ?? []
+    }
+
+    func offering(identifier: String) async throws -> Offering? {
+        guard isConfigured else { return nil }
+        return try await Purchases.shared.offerings().offering(identifier: identifier)
     }
 
     func storeProducts(identifiers: [String]) async -> [RevenueCat.StoreProduct] {
@@ -147,21 +170,21 @@ final class RevenueCatService {
 
     func purchase(package: Package) async throws -> (snapshot: RevenueCatEntitlementSnapshot, userCancelled: Bool) {
         let result = try await Purchases.shared.purchase(package: package)
-        let snapshot = Self.snapshot(from: result.customerInfo)
+        let snapshot = Self.snapshot(from: result.customerInfo, appUserID: Purchases.shared.appUserID)
         customerInfoObserver?(snapshot)
         return (snapshot, result.userCancelled)
     }
 
     func purchase(product: RevenueCat.StoreProduct) async throws -> (snapshot: RevenueCatEntitlementSnapshot, userCancelled: Bool) {
         let result = try await Purchases.shared.purchase(product: product)
-        let snapshot = Self.snapshot(from: result.customerInfo)
+        let snapshot = Self.snapshot(from: result.customerInfo, appUserID: Purchases.shared.appUserID)
         customerInfoObserver?(snapshot)
         return (snapshot, result.userCancelled)
     }
 
     func restorePurchases() async throws -> RevenueCatEntitlementSnapshot {
         let customerInfo = try await Purchases.shared.restorePurchases()
-        let snapshot = Self.snapshot(from: customerInfo)
+        let snapshot = Self.snapshot(from: customerInfo, appUserID: Purchases.shared.appUserID)
         customerInfoObserver?(snapshot)
         return snapshot
     }
@@ -169,7 +192,10 @@ final class RevenueCatService {
     func refreshCustomerInfo() async -> RevenueCatEntitlementSnapshot? {
         guard isConfigured else { return nil }
         do {
-            let snapshot = Self.snapshot(from: try await Purchases.shared.customerInfo())
+            let snapshot = Self.snapshot(
+                from: try await Purchases.shared.customerInfo(),
+                appUserID: Purchases.shared.appUserID
+            )
             customerInfoObserver?(snapshot)
             return snapshot
         } catch {
@@ -184,14 +210,20 @@ final class RevenueCatService {
             guard let self else { return }
             for await customerInfo in Purchases.shared.customerInfoStream {
                 guard !Task.isCancelled else { return }
-                self.customerInfoObserver?(Self.snapshot(from: customerInfo))
+                self.customerInfoObserver?(
+                    Self.snapshot(from: customerInfo, appUserID: Purchases.shared.appUserID)
+                )
             }
         }
     }
 
-    private static func snapshot(from customerInfo: CustomerInfo) -> RevenueCatEntitlementSnapshot {
+    private static func snapshot(
+        from customerInfo: CustomerInfo,
+        appUserID: String
+    ) -> RevenueCatEntitlementSnapshot {
         let entitlement = customerInfo.entitlements[Self.entitlementIdentifier]
         return RevenueCatEntitlementSnapshot(
+            appUserID: RevenueCatIdentity.canonicalUserID(appUserID),
             isActive: entitlement?.isActive == true,
             expirationDate: entitlement?.expirationDate,
             productIdentifier: entitlement?.productIdentifier

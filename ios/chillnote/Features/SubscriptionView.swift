@@ -7,6 +7,12 @@ enum SubscriptionViewContext: Equatable {
     case onboardingTrial
 }
 
+private enum OnboardingTrialPage {
+    case intro
+    case reminder
+    case offer
+}
+
 struct SubscriptionView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
@@ -16,7 +22,8 @@ struct SubscriptionView: View {
     // Animation States
     @State private var showContent = false
     @State private var isAnnual: Bool = true // Default to Annual
-    @State private var showOnboardingPaywallDetails = false
+    @State private var onboardingTrialPage: OnboardingTrialPage = .intro
+    @State private var showWeeklyOffer = false
     @State private var paywallViewID = UUID().uuidString.lowercased()
 
     init(context: SubscriptionViewContext = .standard) {
@@ -57,6 +64,15 @@ struct SubscriptionView: View {
         return storeService.subscriptionDisplayInfo(for: selectedProduct)
     }
 
+    private var yearlyProductDisplayInfo: SubscriptionDisplayInfo? {
+        guard let yearlyProduct else { return nil }
+        return storeService.subscriptionDisplayInfo(for: yearlyProduct)
+    }
+
+    private var hasEligibleAnnualFreeTrial: Bool {
+        yearlyProductDisplayInfo?.hasFreeTrial == true
+    }
+
     private var isOnboardingPaywall: Bool {
         if case .onboardingTrial = context {
             return true
@@ -65,7 +81,7 @@ struct SubscriptionView: View {
     }
 
     private var isShowingOnboardingIntro: Bool {
-        isOnboardingPaywall && !showOnboardingPaywallDetails
+        isOnboardingPaywall && onboardingTrialPage == .intro
     }
 
     private var analyticsPlacement: String {
@@ -93,10 +109,13 @@ struct SubscriptionView: View {
                 } else {
                     // Upgrade View
                     if context == .onboardingTrial {
-                        if showOnboardingPaywallDetails {
-                            onboardingTrialView
-                        } else {
+                        switch onboardingTrialPage {
+                        case .intro:
                             onboardingTrialIntroView
+                        case .reminder:
+                            onboardingTrialReminderView
+                        case .offer:
+                            onboardingTrialView
                         }
                     } else {
                         upgradeView
@@ -107,12 +126,32 @@ struct SubscriptionView: View {
                 if storeService.isPurchasing {
                     loadingOverlay
                 }
+
+                if showWeeklyOffer, let weeklyProduct {
+                    weeklyOfferOverlay(product: weeklyProduct)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                        .zIndex(3)
+                }
             }
             .toolbar {
-                if isOnboardingPaywall {
+                if isOnboardingPaywall, onboardingTrialPage == .reminder {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.9)) {
+                                onboardingTrialPage = .intro
+                            }
+                        } label: {
+                            Image(systemName: "chevron.left")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.textMain.opacity(0.58))
+                                .frame(width: 36, height: 36)
+                        }
+                        .accessibilityLabel(L10n.text("common.back"))
+                    }
+                } else if isOnboardingPaywall {
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
-                            dismissPaywall()
+                            handleDismissRequest()
                         } label: {
                             Image(systemName: "xmark")
                                 .font(.system(size: 14, weight: .bold))
@@ -181,6 +220,20 @@ struct SubscriptionView: View {
         dismiss()
     }
 
+    private func handleDismissRequest() {
+        guard isOnboardingPaywall,
+              onboardingTrialPage == .offer,
+              weeklyProduct != nil else {
+            dismissPaywall()
+            return
+        }
+
+        ProductAnalytics.shared.capture("paywall_weekly_offer_viewed", properties: paywallProperties())
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.9)) {
+            showWeeklyOffer = true
+        }
+    }
+
     // MARK: - Views
 
     private var onboardingTrialIntroView: some View {
@@ -200,7 +253,9 @@ struct SubscriptionView: View {
 
                 Spacer(minLength: 18)
 
-                OnboardingTrialNoPaymentView(textKey: "subscription.onboarding.no_payment_due_now")
+                if hasEligibleAnnualFreeTrial {
+                    OnboardingTrialNoPaymentView(textKey: "subscription.onboarding.no_payment_due_now")
+                }
 
                 Spacer(minLength: 22)
             }
@@ -212,12 +267,69 @@ struct SubscriptionView: View {
             VStack(spacing: 16) {
                 Button {
                     withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
-                        showOnboardingPaywallDetails = true
+                        onboardingTrialPage = hasEligibleAnnualFreeTrial ? .reminder : .offer
+                    }
+                    if !hasEligibleAnnualFreeTrial {
+                        ProductAnalytics.shared.capture("paywall_viewed", properties: paywallProperties())
+                    }
+                } label: {
+                    HStack(spacing: BrandTokens.Space.s1) {
+                        Text(L10n.text("subscription.onboarding.cta.next"))
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .bold))
+                    }
+                    .brandPrimaryCTAStyle()
+                }
+                .disabled(storeService.isLoadingProducts)
+
+                onboardingTrialIntroFooter
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 18)
+            .background(
+                LinearGradient(
+                    colors: [.white.opacity(0.0), .white, .white],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .ignoresSafeArea(edges: .bottom)
+            )
+        }
+        .opacity(showContent ? 1 : 0)
+        .offset(y: showContent ? 0 : 18)
+    }
+
+    private var onboardingTrialReminderView: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 34) {
+                Text(L10n.text("subscription.onboarding.reminder.title"))
+                    .font(.brandDisplay)
+                    .foregroundColor(.textMain)
+                    .multilineTextAlignment(.center)
+                    .lineSpacing(3)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.horizontal, 4)
+
+                Spacer(minLength: 10)
+
+                TrialReminderBellAnimation()
+
+                Spacer(minLength: 22)
+            }
+            .padding(.horizontal, 28)
+            .padding(.top, 50)
+            .padding(.bottom, 18)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+            VStack(spacing: 16) {
+                Button {
+                    withAnimation(.spring(response: 0.45, dampingFraction: 0.9)) {
+                        onboardingTrialPage = .offer
                     }
                     ProductAnalytics.shared.capture("paywall_viewed", properties: paywallProperties())
                 } label: {
                     HStack(spacing: BrandTokens.Space.s1) {
-                        Text(L10n.text("subscription.onboarding.cta.next"))
+                        Text(L10n.text("subscription.onboarding.reminder.cta"))
                         Image(systemName: "chevron.right")
                             .font(.system(size: 13, weight: .bold))
                     }
@@ -237,8 +349,128 @@ struct SubscriptionView: View {
                 .ignoresSafeArea(edges: .bottom)
             )
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.white.ignoresSafeArea())
         .opacity(showContent ? 1 : 0)
         .offset(y: showContent ? 0 : 18)
+    }
+
+    private func weeklyOfferOverlay(product: SubscriptionProduct) -> some View {
+        ZStack(alignment: .bottom) {
+            Color.black.opacity(0.32)
+                .ignoresSafeArea()
+                .onTapGesture { }
+
+            VStack(spacing: 0) {
+                HStack {
+                    Spacer()
+                    Button {
+                        dismissPaywall()
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .semibold))
+                            .foregroundColor(.textMain.opacity(0.65))
+                            .frame(width: 36, height: 36)
+                    }
+                    .accessibilityLabel(L10n.text("common.close"))
+                }
+
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundColor(Color(red: 0.55, green: 0.17, blue: 0.91))
+                    .frame(width: 58, height: 58)
+                    .background(Color(red: 0.94, green: 0.86, blue: 1.0))
+                    .clipShape(Circle())
+                    .padding(.top, 2)
+
+                Text(L10n.text("subscription.onboarding.weekly_offer.title"))
+                    .font(.brandTitle2)
+                    .foregroundColor(.textMain)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 18)
+
+                Text(L10n.text("subscription.onboarding.weekly_offer.subtitle"))
+                    .font(.brandBody)
+                    .foregroundColor(.textSub)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 6)
+
+                HStack(spacing: 12) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(L10n.text("subscription.plan.weekly"))
+                            .font(.brandBody.weight(.semibold))
+                            .foregroundColor(.textMain)
+                        Text(L10n.text("subscription.onboarding.weekly_offer.flexible"))
+                            .font(.brandLabel)
+                            .foregroundColor(.textSub)
+                    }
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(product.displayPrice)
+                            .font(.brandBody.weight(.semibold))
+                            .foregroundColor(.textMain)
+                        Text(L10n.text("subscription.billing_period.weekly"))
+                            .font(.brandLabel)
+                            .foregroundColor(.textSub)
+                    }
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 14)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.white)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.textMain.opacity(0.16), lineWidth: 1)
+                )
+                .padding(.top, 20)
+
+                Button {
+                    showWeeklyOffer = false
+                    isAnnual = false
+                    trackPlanSelection(product)
+                    Task {
+                        await storeService.purchase(
+                            product,
+                            analyticsPlacement: analyticsPlacement,
+                            paywallViewID: paywallViewID
+                        )
+                    }
+                } label: {
+                    Text(L10n.text("subscription.cta.start_weekly"))
+                        .brandPrimaryCTAStyle()
+                }
+                .padding(.top, 18)
+
+                Button {
+                    dismissPaywall()
+                } label: {
+                    Text(L10n.text("subscription.onboarding.weekly_offer.decline"))
+                        .font(.brandBody)
+                        .foregroundColor(.textSub)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 13)
+                }
+            }
+            .padding(.horizontal, 22)
+            .padding(.top, 8)
+            .padding(.bottom, 10)
+            .background(
+                UnevenRoundedRectangle(
+                    topLeadingRadius: 28,
+                    bottomLeadingRadius: 0,
+                    bottomTrailingRadius: 0,
+                    topTrailingRadius: 28,
+                    style: .continuous
+                )
+                .fill(Color.white)
+                .brandShadow(BrandTokens.Shadow.card)
+                .ignoresSafeArea(edges: .bottom)
+            )
+        }
     }
 
     private var onboardingTrialIntroFooter: some View {
@@ -261,7 +493,10 @@ struct SubscriptionView: View {
     }
 
     private var onboardingTrialIntroTitle: AttributedString {
-        var title = AttributedString(L10n.text("subscription.onboarding.title"))
+        let titleKey = hasEligibleAnnualFreeTrial
+            ? "subscription.onboarding.title"
+            : "subscription.upgrade_title"
+        var title = AttributedString(L10n.text(titleKey))
         title.foregroundColor = Color.textMain
 
         if let brandRange = title.range(of: "ChillScript") {
@@ -316,13 +551,18 @@ struct SubscriptionView: View {
                         .minimumScaleFactor(0.78)
 
                     VStack(spacing: 5) {
-                        if let weeklyPrice = displayInfo.equivalentWeeklyText {
+                        if displayInfo.hasFreeTrial,
+                           let weeklyPrice = displayInfo.equivalentWeeklyText {
                             Text(L10n.text("subscription.onboarding.weekly_price_after_trial", weeklyPrice))
                                 .font(.brandTitle2)
                                 .foregroundColor(.textMain)
                         }
 
-                        Text(L10n.text("subscription.onboarding.annual_billing_after_trial", product.displayPrice))
+                        Text(
+                            displayInfo.hasFreeTrial
+                                ? L10n.text("subscription.onboarding.annual_billing_after_trial", product.displayPrice)
+                                : L10n.text("subscription.price_per_year", product.displayPrice)
+                        )
                             .font(.brandBody)
                             .foregroundColor(.textMain.opacity(0.78))
                             .multilineTextAlignment(.center)
@@ -458,7 +698,7 @@ struct SubscriptionView: View {
             }
         } label: {
             HStack(spacing: BrandTokens.Space.s1) {
-                Text(L10n.text("subscription.onboarding.cta.start_free_week"))
+                Text(yearlyProductDisplayInfo?.ctaText ?? L10n.text("subscription.cta.start_annual"))
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .bold))
             }
@@ -641,7 +881,7 @@ struct SubscriptionView: View {
             BenefitRow(icon: "slider.horizontal.3", iconColor: .teal, title: L10n.text("subscription.benefit.custom_skills.title"), subtitle: L10n.text("subscription.benefit.custom_skills.subtitle"))
             BenefitRow(icon: "plus.app.fill", iconColor: .green, title: L10n.text("subscription.benefit.flexible_capture.title"), subtitle: L10n.text("subscription.benefit.flexible_capture.subtitle"))
             BenefitRow(icon: "bubble.left.and.bubble.right.fill", iconColor: Color(red: 0.43, green: 0.44, blue: 0.78), title: L10n.text("subscription.benefit.unlimited_chat.title"), subtitle: L10n.text("subscription.benefit.unlimited_chat.subtitle"))
-            BenefitRow(icon: "lightbulb.max.fill", iconColor: .orange, title: L10n.text("subscription.benefit.deep_dives.title"), subtitle: L10n.text("subscription.benefit.deep_dives.subtitle"))
+            BenefitRow(icon: "video.fill", iconColor: .orange, title: L10n.text("subscription.benefit.deep_dives.title"), subtitle: L10n.text("subscription.benefit.deep_dives.subtitle"))
         }
         .padding(BrandTokens.Space.s4)
         .background(
@@ -1017,6 +1257,47 @@ private struct OnboardingTrialFeatureList: View {
                 .fill(Color.white.opacity(0.92))
                 .brandShadow(BrandTokens.Shadow.card)
         )
+    }
+}
+
+private struct TrialReminderBellAnimation: View {
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    private let green = Color(red: 0.11, green: 0.72, blue: 0.39)
+    private let lightGreen = Color(red: 0.86, green: 0.97, blue: 0.90)
+
+    var body: some View {
+        TimelineView(.animation(minimumInterval: reduceMotion ? 1 : 1.0 / 60.0)) { context in
+            let seconds = context.date.timeIntervalSinceReferenceDate
+
+            ZStack {
+                ForEach(0..<3, id: \.self) { index in
+                    let phase = reduceMotion
+                        ? Double(index) * 0.28
+                        : (seconds / 1.8 + Double(index) / 3.0).truncatingRemainder(dividingBy: 1)
+
+                    Circle()
+                        .stroke(green.opacity(max(0, 0.42 * (1 - phase))), lineWidth: 3)
+                        .frame(width: 156, height: 156)
+                        .scaleEffect(0.72 + phase * 0.86)
+                }
+
+                Circle()
+                    .fill(lightGreen)
+                    .frame(width: 148, height: 148)
+                    .shadow(color: green.opacity(0.14), radius: 18, y: 8)
+
+                Image(systemName: "bell.fill")
+                    .font(.system(size: 58, weight: .semibold))
+                    .foregroundColor(green)
+                    .rotationEffect(
+                        .degrees(reduceMotion ? 0 : sin(seconds * .pi * 3.2) * 7.5),
+                        anchor: .top
+                    )
+            }
+            .frame(width: 272, height: 272)
+        }
+        .accessibilityHidden(true)
     }
 }
 

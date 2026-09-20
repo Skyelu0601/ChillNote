@@ -7,6 +7,12 @@ type PushEnvironment = "sandbox" | "production";
 type PushPlatform = "ios" | "android";
 type NotificationKind = "import_ready" | "first_creation" | "weekly_topics_ready";
 
+// New clients retire the old entry points; installed clients keep their service
+// until a separate, explicit retirement decision is made.
+export function legacyWeeklyTopicsEnabled(environment: NodeJS.ProcessEnv = process.env): boolean {
+  return environment.LEGACY_WEEKLY_TOPICS_ENABLED !== "false";
+}
+
 type DeliveryRow = {
   id: string;
   userId: string;
@@ -199,6 +205,10 @@ async function claimNextDelivery(): Promise<DeliveryRow | null> {
 
 async function processDelivery(delivery: DeliveryRow): Promise<void> {
   try {
+    if (delivery.kind === "weekly_topics_ready" && !legacyWeeklyTopicsEnabled()) {
+      await markDelivery(delivery.id, "cancelled");
+      return;
+    }
     if (delivery.kind === "first_creation" && await userHasCreatedDraft(delivery.userId)) {
       await markDelivery(delivery.id, "cancelled");
       return;

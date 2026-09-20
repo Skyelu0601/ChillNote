@@ -84,8 +84,8 @@ android {
         applicationId "com.sponteoai.chillscript"
         minSdk 26
         targetSdk 36
-        versionCode 18
-        versionName "1.2.18"
+        versionCode 22
+        versionName "1.2.22"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "SUPABASE_URL", '"https://qsyhkpaeyzhjojdvbntq.supabase.co"'
         buildConfigField "String", "SUPABASE_ANON_KEY", '"sb_publishable_smWWadjejdbKYvmg3fidsg_41XPu70e"'
@@ -196,6 +196,9 @@ dependencies {
     implementation "androidx.camera:camera-lifecycle:${camerax_version}"
     implementation "androidx.camera:camera-video:${camerax_version}"
     implementation "androidx.camera:camera-view:${camerax_version}"
+    // CameraX exposes ListenableFuture from Guava. This used to arrive only
+    // transitively through RevenueCatUI, which is no longer part of the app.
+    implementation "com.google.guava:guava:33.4.8-android"
     implementation "com.google.android.play:review-ktx:2.0.2"
 
     testImplementation "junit:junit:4.13.2"

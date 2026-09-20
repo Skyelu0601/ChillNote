@@ -100,6 +100,7 @@ import {
 import { preferredLanguageFromHeader } from "./linkImportLocalization.js";
 import {
   deactivatePushDevice,
+  legacyWeeklyTopicsEnabled,
   registerPushDevice,
   scheduleNotificationWorker
 } from "./pushNotifications.js";
@@ -126,6 +127,7 @@ import {
 } from "./weeklyTopics.js";
 import fetch from "node-fetch";
 import { createFreeToolsRouter } from "./freeTools.js";
+import { registerChillo } from "./chillo.js";
 
 const app = express();
 app.use("/free-tools", express.json({ limit: "8kb" }), createFreeToolsRouter());
@@ -1783,11 +1785,14 @@ app.post("/credits/consume", requireAuth, async (req, res) => {
   }
 });
 
+registerChillo(app, requireAuth, { credits: userId => checkCreditsForUser(userId, "chat") });
+
 app.listen(PORT, () => {
   console.log(`ChillScript backend listening on :${PORT}`);
   scheduleLinkImportWorker();
   scheduleNotificationWorker();
-  scheduleWeeklyTopicWorker();
+  // Keep older installed clients working during the Chillo rollout.
+  if (legacyWeeklyTopicsEnabled()) scheduleWeeklyTopicWorker();
   scheduleGooglePlayBillingWorker(googlePlayBillingDependencies);
 });
 

@@ -1,8 +1,16 @@
 package com.sponteoai.chillscript.ui.subscription
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.StartOffset
+import androidx.compose.animation.core.StartOffsetType
+import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -32,6 +40,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.Article
 import androidx.compose.material.icons.filled.AddBox
@@ -43,7 +52,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.Forum
 import androidx.compose.material.icons.filled.GraphicEq
-import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Verified
@@ -123,6 +132,12 @@ enum class SubscriptionScreenContext {
     OnboardingTrial,
 }
 
+private enum class OnboardingTrialPage {
+    Intro,
+    Reminder,
+    Offer,
+}
+
 data class SubscriptionDebugPreviewPricing(
     val annualPrice: String,
     val annualWeeklyPrice: String,
@@ -156,7 +171,8 @@ fun SubscriptionScreen(
     modifier: Modifier = Modifier,
 ) {
     var showContent by remember { mutableStateOf(false) }
-    var showOnboardingPaywallDetails by rememberSaveable { mutableStateOf(false) }
+    var onboardingTrialPage by rememberSaveable { mutableStateOf(OnboardingTrialPage.Intro) }
+    var showWeeklyOffer by rememberSaveable { mutableStateOf(false) }
     val paywallViewId = rememberSaveable { UUID.randomUUID().toString() }
     val paywallPlacement = when (context) {
         SubscriptionScreenContext.OnboardingTrial -> "post_login"
@@ -171,6 +187,27 @@ fun SubscriptionScreen(
     val dismissPaywall = {
         if (!isPro) ProductAnalytics.capture("paywall_dismissed", paywallProperties)
         onDismiss()
+    }
+    val weeklyProduct = remember(billingState.products) {
+        billingState.products.firstOrNull { it.googlePlaySubscriptionFacts().isWeekly }
+            ?: billingState.products.firstOrNull { it.id.contains("week", ignoreCase = true) }
+    }
+    val yearlyProduct = remember(billingState.products) {
+        billingState.products.firstOrNull { it.googlePlaySubscriptionFacts().isAnnual }
+            ?: billingState.products.firstOrNull { it.id.contains("year", ignoreCase = true) }
+    }
+    val yearlyDisplayInfo = yearlyProduct?.let { rememberGooglePlaySubscriptionDisplayInfo(it) }
+    val hasEligibleAnnualFreeTrial = yearlyDisplayInfo?.hasFreeTrial == true || debugPreviewPricing != null
+    val requestDismiss = {
+        if (context == SubscriptionScreenContext.OnboardingTrial &&
+            onboardingTrialPage == OnboardingTrialPage.Offer &&
+            weeklyProduct != null
+        ) {
+            ProductAnalytics.capture("paywall_weekly_offer_viewed", paywallProperties)
+            showWeeklyOffer = true
+        } else {
+            dismissPaywall()
+        }
     }
     val trackedPurchase: (BillingProduct) -> Unit = { product ->
         ProductAnalytics.beginPurchase(paywallPlacement, paywallViewId, product.id)
@@ -191,19 +228,39 @@ fun SubscriptionScreen(
             )
         }
     }
-    BackHandler(onBack = dismissPaywall)
+    BackHandler {
+        when {
+            showWeeklyOffer -> showWeeklyOffer = false
+            context == SubscriptionScreenContext.OnboardingTrial &&
+                onboardingTrialPage == OnboardingTrialPage.Reminder -> {
+                onboardingTrialPage = OnboardingTrialPage.Intro
+            }
+            else -> requestDismiss()
+        }
+    }
 
     val isOnboardingPaywall = context == SubscriptionScreenContext.OnboardingTrial
+    val usesPlainWhiteBackground = isOnboardingPaywall &&
+        onboardingTrialPage == OnboardingTrialPage.Reminder
     val screenContent: @Composable () -> Unit = {
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .then(if (usesPlainWhiteBackground) Modifier.background(Color.White) else Modifier)
                 .then(if (applyTopInset) Modifier.statusBarsPadding() else Modifier),
         ) {
             if (isOnboardingPaywall) {
-                SubscriptionTopBar(onDismiss = dismissPaywall)
+                SubscriptionTopBar(
+                    onDismiss = requestDismiss,
+                    onBack = if (onboardingTrialPage == OnboardingTrialPage.Reminder) {
+                        { onboardingTrialPage = OnboardingTrialPage.Intro }
+                    } else {
+                        null
+                    },
+                    showDismiss = onboardingTrialPage != OnboardingTrialPage.Reminder,
+                )
             } else {
-                SubscriptionTopBar(onDismiss = dismissPaywall)
+                SubscriptionTopBar(onDismiss = requestDismiss)
             }
 
             Box(modifier = Modifier.weight(1f)) {
@@ -216,8 +273,34 @@ fun SubscriptionScreen(
                         onRestore = onRestore,
                     )
                     context == SubscriptionScreenContext.OnboardingTrial -> {
-                        if (showOnboardingPaywallDetails) {
-                            LegacyOnboardingTrialPriceContent(
+                        when (onboardingTrialPage) {
+                            OnboardingTrialPage.Intro -> OnboardingTrialIntroContent(
+                                hasFreeTrial = hasEligibleAnnualFreeTrial,
+                                continueEnabled = !billingState.loading,
+                                restoreEnabled = !billingState.restoring,
+                                revealProgress = revealProgress,
+                                onContinue = {
+                                    onboardingTrialPage = if (hasEligibleAnnualFreeTrial) {
+                                        OnboardingTrialPage.Reminder
+                                    } else {
+                                        ProductAnalytics.capture("paywall_viewed", paywallProperties)
+                                        OnboardingTrialPage.Offer
+                                    }
+                                },
+                                onRestore = onRestore,
+                                onOpenUrl = onOpenUrl,
+                            )
+                            OnboardingTrialPage.Reminder -> OnboardingTrialReminderContent(
+                                restoreEnabled = !billingState.restoring,
+                                revealProgress = revealProgress,
+                                onContinue = {
+                                    onboardingTrialPage = OnboardingTrialPage.Offer
+                                    ProductAnalytics.capture("paywall_viewed", paywallProperties)
+                                },
+                                onRestore = onRestore,
+                                onOpenUrl = onOpenUrl,
+                            )
+                            OnboardingTrialPage.Offer -> LegacyOnboardingTrialPriceContent(
                                 billingState = billingState,
                                 isPurchasing = isPurchasing,
                                 revealProgress = revealProgress,
@@ -226,17 +309,6 @@ fun SubscriptionScreen(
                                 onRetryProducts = onRetryProducts,
                                 onOpenUrl = onOpenUrl,
                                 debugPreviewPricing = debugPreviewPricing,
-                            )
-                        } else {
-                            OnboardingTrialIntroContent(
-                                restoreEnabled = !billingState.restoring,
-                                revealProgress = revealProgress,
-                                onContinue = {
-                                    showOnboardingPaywallDetails = true
-                                    ProductAnalytics.capture("paywall_viewed", paywallProperties)
-                                },
-                                onRestore = onRestore,
-                                onOpenUrl = onOpenUrl,
                             )
                         }
                     }
@@ -260,40 +332,75 @@ fun SubscriptionScreen(
         if (isPurchasing || billingState.restoring) {
             SubscriptionLoadingOverlay()
         }
-    }
-}
 
-@Composable
-private fun SubscriptionTopBar(onDismiss: () -> Unit) {
-    val closeLabel = stringResource(R.string.common_close)
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(44.dp)
-            .padding(end = 16.dp),
-    ) {
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .size(32.dp)
-                .clip(CircleShape)
-                .background(Color.Black.copy(alpha = 0.05f))
-                .clickable(role = Role.Button, onClick = onDismiss)
-                .semantics { contentDescription = closeLabel },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = null,
-                tint = ChillColors.TextMain.copy(alpha = 0.5f),
-                modifier = Modifier.size(14.dp),
+        if (showWeeklyOffer && weeklyProduct != null) {
+            WeeklyOfferOverlay(
+                product = weeklyProduct,
+                onPurchase = {
+                    showWeeklyOffer = false
+                    ProductAnalytics.beginPurchase(paywallPlacement, paywallViewId, weeklyProduct.id)
+                    onPurchase(weeklyProduct)
+                },
+                onDecline = dismissPaywall,
+                onClose = dismissPaywall,
             )
         }
     }
 }
 
 @Composable
+private fun SubscriptionTopBar(
+    onDismiss: () -> Unit,
+    onBack: (() -> Unit)? = null,
+    showDismiss: Boolean = true,
+) {
+    val closeLabel = stringResource(R.string.common_close)
+    val backLabel = stringResource(R.string.common_back)
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(44.dp)
+            .padding(end = 16.dp),
+    ) {
+        onBack?.let {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                contentDescription = backLabel,
+                tint = ChillColors.TextMain.copy(alpha = 0.58f),
+                modifier = Modifier
+                    .align(Alignment.CenterStart)
+                    .padding(start = 12.dp)
+                    .size(36.dp)
+                    .clickable(role = Role.Button, onClick = it)
+                    .padding(8.dp),
+            )
+        }
+        if (showDismiss) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.CenterEnd)
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(Color.Black.copy(alpha = 0.05f))
+                    .clickable(role = Role.Button, onClick = onDismiss)
+                    .semantics { contentDescription = closeLabel },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = null,
+                    tint = ChillColors.TextMain.copy(alpha = 0.5f),
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun OnboardingTrialIntroContent(
+    hasFreeTrial: Boolean,
+    continueEnabled: Boolean,
     restoreEnabled: Boolean,
     revealProgress: Float,
     onContinue: () -> Unit,
@@ -306,7 +413,7 @@ private fun OnboardingTrialIntroContent(
             .reveal(revealProgress, 18.dp),
     ) {
         OnboardingTrialIntroPage(
-            hasFreeTrial = true,
+            hasFreeTrial = hasFreeTrial,
             modifier = Modifier.weight(1f),
         )
 
@@ -330,6 +437,78 @@ private fun OnboardingTrialIntroContent(
         ) {
             PrimarySubscriptionButton(
                 text = stringResource(R.string.subscription_onboarding_cta_next),
+                enabled = continueEnabled,
+                showChevron = true,
+                onClick = onContinue,
+            )
+
+            OnboardingIntroLegalFooter(
+                restoreEnabled = restoreEnabled,
+                onRestore = onRestore,
+                onOpenUrl = onOpenUrl,
+            )
+        }
+    }
+}
+
+@Composable
+private fun OnboardingTrialReminderContent(
+    restoreEnabled: Boolean,
+    revealProgress: Float,
+    onContinue: () -> Unit,
+    onRestore: () -> Unit,
+    onOpenUrl: (String) -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.White)
+            .reveal(revealProgress, 18.dp),
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+                .padding(horizontal = 28.dp)
+                .padding(top = 50.dp, bottom = 18.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(34.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.subscription_onboarding_reminder_title),
+                color = ChillColors.TextMain,
+                style = ChillTypography.displayLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 4.dp),
+            )
+
+            Spacer(Modifier.weight(1f))
+
+            TrialReminderBellAnimation()
+
+            Spacer(Modifier.weight(1f))
+        }
+
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.White.copy(alpha = 0f),
+                            Color.White,
+                            Color.White,
+                        ),
+                    ),
+                )
+                .padding(horizontal = ChillSpacing.S4)
+                .padding(bottom = 18.dp)
+                .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            PrimarySubscriptionButton(
+                text = stringResource(R.string.subscription_onboarding_reminder_cta),
                 enabled = true,
                 showChevron = true,
                 onClick = onContinue,
@@ -339,6 +518,229 @@ private fun OnboardingTrialIntroContent(
                 restoreEnabled = restoreEnabled,
                 onRestore = onRestore,
                 onOpenUrl = onOpenUrl,
+            )
+        }
+    }
+}
+
+@Composable
+private fun TrialReminderBellAnimation() {
+    val green = Color(0xFF1CB864)
+    val lightGreen = Color(0xFFDDF7E6)
+    val transition = rememberInfiniteTransition(label = "trial reminder bell")
+
+    Box(
+        modifier = Modifier.size(272.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        repeat(3) { index ->
+            val scale by transition.animateFloat(
+                initialValue = 0.72f,
+                targetValue = 1.58f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 1_800, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                    initialStartOffset = StartOffset(index * 600, StartOffsetType.Delay),
+                ),
+                label = "reminder ring scale $index",
+            )
+            val alpha by transition.animateFloat(
+                initialValue = 0.42f,
+                targetValue = 0f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 1_800, easing = LinearEasing),
+                    repeatMode = RepeatMode.Restart,
+                    initialStartOffset = StartOffset(index * 600, StartOffsetType.Delay),
+                ),
+                label = "reminder ring alpha $index",
+            )
+            Box(
+                modifier = Modifier
+                    .size(156.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                    }
+                    .border(3.dp, green.copy(alpha = alpha), CircleShape),
+            )
+        }
+
+        Box(
+            modifier = Modifier
+                .size(148.dp)
+                .shadow(
+                    elevation = 18.dp,
+                    shape = CircleShape,
+                    ambientColor = green.copy(alpha = 0.14f),
+                    spotColor = green.copy(alpha = 0.14f),
+                )
+                .clip(CircleShape)
+                .background(lightGreen),
+            contentAlignment = Alignment.Center,
+        ) {
+            val rotation by transition.animateFloat(
+                initialValue = -7.5f,
+                targetValue = 7.5f,
+                animationSpec = infiniteRepeatable(
+                    animation = tween(durationMillis = 180),
+                    repeatMode = RepeatMode.Reverse,
+                ),
+                label = "reminder bell shake",
+            )
+            Icon(
+                imageVector = Icons.Filled.Notifications,
+                contentDescription = null,
+                tint = green,
+                modifier = Modifier
+                    .size(62.dp)
+                    .graphicsLayer {
+                        rotationZ = rotation
+                        transformOrigin = androidx.compose.ui.graphics.TransformOrigin(0.5f, 0f)
+                    },
+            )
+        }
+    }
+}
+
+@Composable
+private fun WeeklyOfferOverlay(
+    product: BillingProduct,
+    onPurchase: () -> Unit,
+    onDecline: () -> Unit,
+    onClose: () -> Unit,
+) {
+    val displayInfo = rememberGooglePlaySubscriptionDisplayInfo(product)
+    val closeLabel = stringResource(R.string.common_close)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.32f))
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = {},
+            ),
+        contentAlignment = Alignment.BottomCenter,
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp))
+                .background(Color.White)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = {},
+                )
+                .padding(horizontal = 22.dp)
+                .padding(top = 8.dp, bottom = 10.dp)
+                .navigationBarsPadding(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Box(modifier = Modifier.fillMaxWidth()) {
+                Icon(
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = closeLabel,
+                    tint = ChillColors.TextMain.copy(alpha = 0.65f),
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .size(36.dp)
+                        .clickable(role = Role.Button, onClick = onClose)
+                        .padding(10.dp),
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .padding(top = 2.dp)
+                    .size(58.dp)
+                    .clip(CircleShape)
+                    .background(Color(0xFFF0DBFF)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Notifications,
+                    contentDescription = null,
+                    tint = Color(0xFF8C2BE8),
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+
+            Text(
+                text = stringResource(R.string.subscription_onboarding_weekly_offer_title),
+                color = ChillColors.TextMain,
+                style = ChillTypography.headlineMedium,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 18.dp),
+            )
+            Text(
+                text = stringResource(R.string.subscription_onboarding_weekly_offer_subtitle),
+                color = ChillColors.TextSub,
+                style = ChillTypography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 6.dp),
+            )
+
+            Row(
+                modifier = Modifier
+                    .padding(top = 20.dp)
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(Color.White)
+                    .border(1.dp, ChillColors.TextMain.copy(alpha = 0.16f), RoundedCornerShape(14.dp))
+                    .padding(horizontal = 16.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.subscription_plan_weekly),
+                        color = ChillColors.TextMain,
+                        style = ChillTypography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                    Text(
+                        text = stringResource(R.string.subscription_onboarding_weekly_offer_flexible),
+                        color = ChillColors.TextSub,
+                        style = ChillTypography.labelMedium,
+                    )
+                }
+                Column(
+                    horizontalAlignment = Alignment.End,
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                ) {
+                    Text(
+                        text = displayInfo.displayPrice,
+                        color = ChillColors.TextMain,
+                        style = ChillTypography.bodyLarge.copy(fontWeight = FontWeight.SemiBold),
+                    )
+                    Text(
+                        text = stringResource(R.string.subscription_billing_period_weekly),
+                        color = ChillColors.TextSub,
+                        style = ChillTypography.labelMedium,
+                    )
+                }
+            }
+
+            PrimarySubscriptionButton(
+                text = stringResource(R.string.subscription_cta_start_weekly),
+                enabled = true,
+                showChevron = false,
+                onClick = onPurchase,
+                modifier = Modifier.padding(top = 18.dp),
+            )
+
+            Text(
+                text = stringResource(R.string.subscription_onboarding_weekly_offer_decline),
+                color = ChillColors.TextSub,
+                style = ChillTypography.bodyLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(role = Role.Button, onClick = onDecline)
+                    .padding(vertical = 13.dp),
             )
         }
     }
@@ -1280,7 +1682,7 @@ private fun SubscriptionBenefitsCard(modifier: Modifier = Modifier) {
             subtitle = stringResource(R.string.subscription_benefit_unlimited_chat_subtitle),
         ),
         BenefitDefinition(
-            icon = Icons.Filled.Lightbulb,
+            icon = Icons.Filled.VideoLibrary,
             iconColor = IOSOrange,
             title = stringResource(R.string.subscription_benefit_deep_dives_title),
             subtitle = stringResource(R.string.subscription_benefit_deep_dives_subtitle),

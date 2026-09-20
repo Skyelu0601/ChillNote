@@ -52,13 +52,17 @@ export function canonicalRevenueCatUserId(value: string): string {
 export async function accountRevenueCatSnapshot(
   userId: string,
   entitlementId: string,
-  fetchCustomer: (id: string) => Promise<RevenueCatCustomerResponse>
+  fetchCustomer: (id: string) => Promise<RevenueCatCustomerResponse>,
+  allowLegacyAppleFallback = false
 ): Promise<RevenueCatEntitlementSnapshot> {
   const canonical = canonicalRevenueCatUserId(userId);
   const primary = revenueCatEntitlementSnapshot(await fetchCustomer(canonical), entitlementId);
-  // Prefer the canonical owner. Do not query/create an unused uppercase customer
-  // on every request. Old iOS clients may still own a purchase under uppercase.
-  if (primary.active || canonical === canonical.toUpperCase() || canonicalRevenueCatUserId(canonical.toUpperCase()) !== canonical) {
+  // RevenueCat v1 GET is a get-or-create operation. Never probe an uppercase
+  // UUID for ordinary accounts: doing so creates a duplicate Customer whose
+  // first platform is Unknown. Only accounts with an existing legacy Apple
+  // subscription marker may need the old uppercase iOS identity.
+  if (!allowLegacyAppleFallback || primary.active || canonical === canonical.toUpperCase()
+      || canonicalRevenueCatUserId(canonical.toUpperCase()) !== canonical) {
     return primary;
   }
   const legacy = revenueCatEntitlementSnapshot(await fetchCustomer(canonical.toUpperCase()), entitlementId);

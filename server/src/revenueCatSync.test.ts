@@ -24,6 +24,7 @@ function fixture() {
   let lockHeld = false;
   let failWrite = false;
   const invalidated: string[] = [];
+  const calls: string[] = [];
   const upstream: Record<string, RevenueCatCustomerResponse> = { a: customer(true), b: customer(false) };
   const matches = (row: any, where: any): boolean => Object.entries(where).every(([key, value]: [string, any]) => {
     if (value && typeof value === "object") {
@@ -59,6 +60,11 @@ function fixture() {
             }
           },
           user: {
+            findMany: async ({ where }: any) => Object.values(users)
+              .filter((row) => where.id.in.includes(row.id))
+              .filter((row) => row.subscriptionProvider === "apple" ||
+                row.originalTransactionId != null)
+              .map((row) => ({ id: row.id })),
             updateMany: async ({ where, data }: any) => {
               for (const row of Object.values(users)) if (matches(row, where)) Object.assign(row, data);
             }
@@ -71,13 +77,14 @@ function fixture() {
     }
   } as unknown as PrismaClient;
   return {
-    upstream, invalidated,
+    upstream, invalidated, calls,
     get rows() { return rows; }, get users() { return users; },
     failNextWrite() { failWrite = true; },
     sync(userIds: string[]) {
       return syncRevenueCatUsers({
         userIds, entitlementId: "pro", database,
         fetchCustomer: async (userId) => {
+          calls.push(userId);
           assert.equal(lockHeld, true, "lock must precede remote lookup");
           if (!upstream[userId]) throw new Error("RevenueCat unavailable");
           return upstream[userId];
@@ -154,6 +161,12 @@ test("syncing inactive RevenueCat accounts retains independent Google and Creem 
 test("uppercase legacy entitlement writes one canonical row and revokes on cross-account transfer", async () => {
   const f = fixture();
   const id = "c1a99945-082b-423f-bc09-eca9176b14f5";
+  f.users[id] = {
+    id,
+    subscriptionProvider: null,
+    subscriptionTier: "pro",
+    originalTransactionId: "legacy-apple-transaction"
+  };
   f.upstream[id] = customer(false);
   f.upstream[id.toUpperCase()] = customer(true);
   const result = await f.sync([id, id.toUpperCase()]);
@@ -171,9 +184,19 @@ test("uppercase legacy entitlement writes one canonical row and revokes on cross
 test("uppercase provider failure rolls back a previously active account", async () => {
   const f = fixture();
   const id = "c1a99945-082b-423f-bc09-eca9176b14f5";
+  f.users[id] = { id, subscriptionProvider: "apple", subscriptionTier: "pro" };
   f.upstream[id] = customer(true);
   await f.sync([id]);
   f.upstream[id] = customer(false);
   await assert.rejects(f.sync([id]), /RevenueCat unavailable/);
   assert.equal(f.rows[id].isActive, true);
+});
+
+test("ordinary inactive UUIDs never create an uppercase RevenueCat customer", async () => {
+  const f = fixture();
+  const id = "c1a99945-082b-423f-bc09-eca9176b14f5";
+  f.users[id] = { id, subscriptionProvider: null, subscriptionTier: "free", originalTransactionId: null };
+  f.upstream[id] = customer(false);
+  await f.sync([id]);
+  assert.deepEqual(f.calls, [id]);
 });

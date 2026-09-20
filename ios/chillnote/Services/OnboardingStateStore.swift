@@ -26,7 +26,7 @@ struct OnboardingStateStore {
     }
 
     static func hasShownIntroPaywall(for userId: String?) -> Bool {
-        value(for: userId, perUserKey: paywallPerUserKey, globalKey: paywallGlobalKey)
+        return value(for: userId, perUserKey: paywallPerUserKey, globalKey: paywallGlobalKey)
     }
 
     static func setHasShownIntroPaywall(_ value: Bool, for userId: String?) {

@@ -53,7 +53,6 @@ final class ProductAnalytics {
         PostHogSDK.shared.setup(config)
         configured = true
         synchronizeUser(userID)
-        capture("app_session_started", properties: ["surface": "main_app"])
         if !UserDefaults.standard.bool(forKey: firstOpenKey) {
             let existingInstall = UserDefaults.standard.bool(forKey: "onboarding.introViewedOnDevice")
                 || userID != nil

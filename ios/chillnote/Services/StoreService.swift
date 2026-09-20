@@ -426,9 +426,9 @@ class StoreService: ObservableObject {
     }
     
     // Product Identifiers
-    private let productIds = ["com.chillnote.pro.weekly", "com.chillnote.pro.yearly"]
     private let recognizedProductIds: Set<String> = [
         "com.chillnote.pro.weekly",
+        "com.chillnote.pro.yearly49",
         "com.chillnote.pro.yearly",
         "com.chillnote.pro.monthly"
     ]
@@ -467,7 +467,7 @@ class StoreService: ObservableObject {
         transactionListener = listenForTransactions()
         RevenueCatService.shared.setCustomerInfoObserver { [weak self] snapshot in
             self?.applyRevenueCatSnapshot(snapshot)
-            Task { await self?.syncRevenueCatWithBackend() }
+            Task { await self?.syncRevenueCatWithBackend(for: snapshot.appUserID) }
         }
 
         Task {
@@ -546,9 +546,8 @@ class StoreService: ObservableObject {
                 // Keep the legacy Apple verifier populated during the migration
                 // window, so a RevenueCat outage cannot strand an existing user.
                 await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
-                await syncRevenueCatWithBackend()
+                await syncRevenueCatWithBackend(for: result.snapshot.appUserID)
                 _ = await GoMarketMe.shared.syncAllTransactions()
-                ProductAnalytics.shared.capture("subscription_started", properties: analyticsProperties)
             } else {
                 let result = try await product.storeKitProduct.purchase()
                 switch result {
@@ -558,7 +557,6 @@ class StoreService: ObservableObject {
                     await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
                     _ = await GoMarketMe.shared.syncAllTransactions()
                     await transaction.finish()
-                    ProductAnalytics.shared.capture("subscription_started", properties: analyticsProperties)
                 case .userCancelled:
                     ProductAnalytics.shared.capture("purchase_cancelled", properties: analyticsProperties)
                 case .pending:
@@ -590,7 +588,7 @@ class StoreService: ObservableObject {
                 let snapshot = try await RevenueCatService.shared.restorePurchases()
                 applyRevenueCatSnapshot(snapshot)
                 await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
-                await syncRevenueCatWithBackend()
+                await syncRevenueCatWithBackend(for: snapshot.appUserID)
             } else {
                 try await AppStore.sync()
                 await updateSubscriptionStatus(syncActiveTransactionToBackend: true)
@@ -614,13 +612,17 @@ class StoreService: ObservableObject {
         guard let userID else { return }
         await updateSubscriptionStatus(syncActiveTransactionToBackend: false)
         let shouldMigrateLegacyPurchase = currentTier == .pro
-        if let snapshot = await RevenueCatService.shared.identify(
+        let snapshot = await RevenueCatService.shared.identify(
             userID: userID,
             migrateLegacyPurchase: shouldMigrateLegacyPurchase
-        ) {
+        )
+        if let snapshot {
             applyRevenueCatSnapshot(snapshot)
-            await syncRevenueCatWithBackend()
+            await syncRevenueCatWithBackend(for: snapshot.appUserID)
         }
+        // Identification sets the stable price variant. Refresh only after that
+        // so a cached/default Offering can never leak into this user's paywall.
+        await fetchProducts(userID: userID)
     }
 
     func ensureSubscriptionStatusReadyForFeatureGate() async {
@@ -641,6 +643,10 @@ class StoreService: ObservableObject {
         currentTier = .free
         subscriptionExpirationDate = nil
         activeSubscriptionProductId = nil
+        availableProducts = []
+        introductoryOfferEligibleProductIds = []
+        isLoadingProducts = false
+        productsErrorMessage = nil
         lastFreshSubscriptionStatusUserId = nil
         creditBalance = 0
         hasFetchedCreditBalanceFromBackend = false
@@ -667,28 +673,53 @@ class StoreService: ObservableObject {
     
     // MARK: - Data Fetching
     
-    private func fetchProducts() async {
+    private func fetchProducts(userID suppliedUserID: String? = nil) async {
         isLoadingProducts = true
         productsErrorMessage = nil
+        availableProducts = []
+        introductoryOfferEligibleProductIds = []
+
+        guard let userID = suppliedUserID ?? AuthService.shared.currentUserId,
+              !userID.isEmpty else {
+            productsErrorMessage = L10n.text("store.error.no_subscription_products")
+            isLoadingProducts = false
+            return
+        }
+
+        let variant = AnnualPriceExperiment.variant(for: userID)
+        let allowedProductIdentifiers = variant.allowedProductIdentifiers
         do {
             var revenueCatTargets: [String: RevenueCatPurchaseTarget] = [:]
             if RevenueCatService.shared.configured {
                 do {
-                    let packages = try await RevenueCatService.shared.currentOfferingPackages()
+                    let packages = try await RevenueCatService.shared.packages(
+                        offeringIdentifier: variant.offeringIdentifier
+                    )
                     for package in packages {
-                        revenueCatTargets[Self.baseProductIdentifier(package.storeProduct.productIdentifier)] = .package(package)
+                        let productIdentifier = Self.baseProductIdentifier(package.storeProduct.productIdentifier)
+                        guard allowedProductIdentifiers.contains(productIdentifier) else {
+                            Self.logger.error("Ignoring product from mismatched price Offering: \(productIdentifier, privacy: .public)")
+                            continue
+                        }
+                        revenueCatTargets[productIdentifier] = .package(package)
                     }
                     if revenueCatTargets.isEmpty {
-                        let storeProducts = await RevenueCatService.shared.storeProducts(identifiers: productIds)
+                        let storeProducts = await RevenueCatService.shared.storeProducts(
+                            identifiers: Array(allowedProductIdentifiers)
+                        )
                         for storeProduct in storeProducts {
-                            revenueCatTargets[Self.baseProductIdentifier(storeProduct.productIdentifier)] = .product(storeProduct)
+                            let productIdentifier = Self.baseProductIdentifier(storeProduct.productIdentifier)
+                            guard allowedProductIdentifiers.contains(productIdentifier) else { continue }
+                            revenueCatTargets[productIdentifier] = .product(storeProduct)
                         }
                     }
                 } catch {
-                    Self.logger.warning("RevenueCat offerings unavailable; keeping StoreKit fallback: \(error.localizedDescription, privacy: .public)")
+                    Self.logger.warning("Assigned RevenueCat Offering unavailable; keeping same-price StoreKit fallback: \(error.localizedDescription, privacy: .public)")
                 }
             }
-            let requestedProductIds = revenueCatTargets.isEmpty ? productIds : Array(revenueCatTargets.keys)
+            let requestedProductIds = revenueCatTargets.isEmpty
+                ? Array(allowedProductIdentifiers)
+                : Array(revenueCatTargets.keys)
             let products = try await Product.products(for: requestedProductIds)
             var eligibleProductIds: Set<String> = []
             for product in products {
@@ -699,14 +730,17 @@ class StoreService: ObservableObject {
                 }
                 eligibleProductIds.insert(product.id)
             }
+            guard AuthService.shared.currentUserId?.lowercased() == userID.lowercased() else { return }
             introductoryOfferEligibleProductIds = eligibleProductIds
             availableProducts = products
+                .filter { allowedProductIdentifiers.contains($0.id) }
                 .map { SubscriptionProduct(storeKitProduct: $0, revenueCatTarget: revenueCatTargets[$0.id]) }
                 .sorted(by: { $0.price < $1.price })
             if availableProducts.isEmpty {
                 productsErrorMessage = L10n.text("store.error.no_subscription_products")
             }
         } catch {
+            guard AuthService.shared.currentUserId?.lowercased() == userID.lowercased() else { return }
             Self.logger.error("Failed to fetch products: \(error.localizedDescription, privacy: .public)")
             productsErrorMessage = L10n.text("store.error.unable_to_load_prices")
         }
@@ -718,7 +752,14 @@ class StoreService: ObservableObject {
     }
 
     private func applyRevenueCatSnapshot(_ snapshot: RevenueCatEntitlementSnapshot) {
-        guard snapshot.isActive else { return }
+        guard let currentUserID = AuthService.shared.currentUserId,
+              RevenueCatIdentity.matches(snapshot.appUserID, currentUserID) else { return }
+
+        guard snapshot.isActive else {
+            applyCachedSubscriptionStatus(for: currentUserID)
+            activeSubscriptionProductId = nil
+            return
+        }
         currentTier = .pro
         if let expirationDate = snapshot.expirationDate {
             subscriptionExpirationDate = max(subscriptionExpirationDate ?? .distantPast, expirationDate)
@@ -726,10 +767,11 @@ class StoreService: ObservableObject {
         activeSubscriptionProductId = snapshot.productIdentifier ?? activeSubscriptionProductId
     }
 
-    private func syncRevenueCatWithBackend() async {
-        guard AuthService.shared.confirmedUserId != nil,
+    private func syncRevenueCatWithBackend(for expectedUserID: String) async {
+        guard RevenueCatIdentity.matches(AuthService.shared.confirmedUserId, expectedUserID),
               let token = await AuthService.shared.getSessionToken(),
               !token.isEmpty else { return }
+        guard RevenueCatIdentity.matches(AuthService.shared.confirmedUserId, expectedUserID) else { return }
         var request = URLRequest(url: URL(string: "\(AppConfig.backendBaseURL)/subscription/revenuecat/sync")!)
         request.httpMethod = "POST"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
@@ -737,15 +779,16 @@ class StoreService: ObservableObject {
             let (data, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse, (200...299).contains(http.statusCode) else { return }
             let decoded = try JSONDecoder().decode(BackendSubscriptionStatus.self, from: data)
+            guard RevenueCatIdentity.matches(AuthService.shared.confirmedUserId, expectedUserID) else { return }
             let expiresAt = parseBackendDate(decoded.expiresAt)
             let tier = backendTier(from: decoded.tier, expiresAt: expiresAt)
             currentTier = tier
             subscriptionExpirationDate = tier == .pro ? expiresAt ?? subscriptionExpirationDate : nil
-            activeSubscriptionProductId = decoded.activeProductId ?? activeSubscriptionProductId
-            if let userID = AuthService.shared.currentUserId {
-                cacheBackendStatus(tier: tier, expiresAt: decoded.expiresAt, for: userID)
-                lastFreshSubscriptionStatusUserId = userID
-            }
+            activeSubscriptionProductId = tier == .pro
+                ? decoded.activeProductId ?? activeSubscriptionProductId
+                : nil
+            cacheBackendStatus(tier: tier, expiresAt: decoded.expiresAt, for: expectedUserID)
+            lastFreshSubscriptionStatusUserId = expectedUserID
         } catch {
             Self.logger.warning("RevenueCat backend sync failed: \(error.localizedDescription, privacy: .public)")
         }

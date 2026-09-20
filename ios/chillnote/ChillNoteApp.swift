@@ -30,9 +30,7 @@ struct ChillScriptApp: App {
             Group {
                 if let container = dataService.container {
 #if DEBUG
-                    if ProcessInfo.processInfo.arguments.contains("-weekly-topics-design-preview") {
-                        WeeklyTopicsDesignPreview()
-                    } else if ProcessInfo.processInfo.arguments.contains("-note-detail-design-preview") {
+                    if ProcessInfo.processInfo.arguments.contains("-note-detail-design-preview") {
                         NoteDetailWorkspaceDesignPreview()
                     } else if ProcessInfo.processInfo.arguments.contains("-first-action-spotlight-design-preview") {
                         FirstActionGuideSpotlightDesignPreview()

@@ -5,8 +5,15 @@ import {
   buildFCMRequest,
   classifyFCMResponse,
   isRetryablePushError,
+  legacyWeeklyTopicsEnabled,
   payloadForDelivery
 } from "./pushNotifications.js";
+
+test("Chillo rollout preserves legacy weekly service unless explicitly disabled", () => {
+  assert.equal(legacyWeeklyTopicsEnabled({}), true);
+  assert.equal(legacyWeeklyTopicsEnabled({ LEGACY_WEEKLY_TOPICS_ENABLED: "true" }), true);
+  assert.equal(legacyWeeklyTopicsEnabled({ LEGACY_WEEKLY_TOPICS_ENABLED: "false" }), false);
+});
 
 test("weekly topics payload preserves each platform's semantic localization keys", () => {
   const payload = payloadForDelivery({ kind: "weekly_topics_ready", noteId: null });

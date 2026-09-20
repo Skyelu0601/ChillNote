@@ -35,11 +35,17 @@ model User {
   notificationDeliveries NotificationDelivery[]
   weeklyTopicSettings    WeeklyTopicSettings?
   weeklyTopicReports     WeeklyTopicReport[]
+  chilloConversations    ChilloConversation[]
+  chilloConsentVersion   Int @default(0)
+  chilloConsentAt        DateTime?
+  chilloIndexCheckedAt   DateTime?
   syncLogs               SyncLog[]
   hardDeleteTombstones   HardDeleteTombstone[]
   syncIdentityArchives   SyncIdentityDuplicateArchive[]
   googlePlayPurchases    GooglePlayPurchase[]
   revenueCatEntitlements RevenueCatEntitlement[]
+
+  @@index([chilloConsentVersion, chilloIndexCheckedAt])
 }
 
 model RevenueCatEntitlement {
@@ -133,10 +139,15 @@ model Note {
   importCompletedAt      DateTime?
   tags                   Tag[]
   linkImportJobs         LinkImportJob[]
+  chilloChunks           ChilloChunk[]
+  chilloDraft            ChilloDraft?
+  isChilloDraft          Boolean         @default(false)
+  chilloIndexRetryAt     DateTime?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+  @@index([userId, id])
 }
 
 model LinkImportJob {
@@ -407,4 +418,61 @@ model AppNotification {
 
   @@unique([userId, dedupeKey])
   @@index([userId, createdAt])
+}
+
+// Chillo conversations belong to an account; notes stay in the existing sync protocol.
+model ChilloConversation {
+  id          String   @id
+  userId      String
+  title       String
+  excludedIds String[] @default([])
+  pinnedIds   String[] @default([])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  turns       ChilloTurn[]
+  @@index([userId, updatedAt])
+}
+
+// One idempotent user request and its answer. A durable lease survives app/process exits.
+model ChilloTurn {
+  id             String   @id
+  conversationId String
+  request        String
+  locale         String   @default("en")
+  status         String   @default("queued")
+  answer         String   @default("")
+  sources        Json     @default("[]")
+  errorCode      String?
+  leaseId        String?
+  leaseExpiresAt DateTime?
+  createdAt      DateTime @default(now())
+  completedAt    DateTime?
+  conversation   ChilloConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  draft          ChilloDraft?
+  @@index([conversationId, createdAt])
+  @@index([status, leaseExpiresAt])
+}
+
+// Only offsets/hashes and embeddings are retained; source text is read live from Note.
+model ChilloChunk {
+  id        String   @id
+  noteId    String
+  hash      String
+  start     Int
+  end       Int
+  embedding Float[]  @default([])
+  model     String
+  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  @@index([noteId, model])
+}
+
+// Explicitly saved copies, not automatically generated knowledge-base facts.
+model ChilloDraft {
+  id        String   @id
+  turnId    String   @unique
+  noteId    String?  @unique
+  createdAt DateTime @default(now())
+  turn      ChilloTurn @relation(fields: [turnId], references: [id], onDelete: Cascade)
+  note      Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
 }

@@ -131,13 +131,16 @@ struct HomeHeaderView: View {
                         .contentShape(Rectangle())
                         .overlay(alignment: .topTrailing) {
                             if hasUnreadNotifications {
-                                Circle().fill(Color.red).frame(width: 7, height: 7).offset(x: -9, y: 9)
+                                Circle()
+                                    .fill(Color.red)
+                                    .frame(width: 8, height: 8)
+                                    .offset(x: -8, y: 8)
                             }
                         }
                 }
                 .buttonStyle(.bouncy)
                 .disabled(isRecording)
-                .accessibilityLabel(L10n.text(hasUnreadNotifications ? "notifications.accessibility_unread" : "notifications.title"))
+                .accessibilityLabel(L10n.text("notifications.title"))
             }
 
             Button(action: onToggleSearch) {

@@ -275,6 +275,11 @@ private class EditableMarkdownRenderer(
     private val palette: EditableMarkdownPalette,
 ) {
     private val output = markdown.toCharArray()
+    // Scan raw URLs once for the whole document. Calling Regex.find(markdown, index)
+    // for every character repeatedly scanned the remaining suffix and could make
+    // long notes quadratic, blocking Compose's main-thread visual transformation.
+    private val rawWebUrlRanges = RAW_WEB_URL.findAll(markdown).map { it.range }.toList()
+    private var rawWebUrlRangeIndex = 0
     private val spanStyles = mutableListOf<StyleRange<SpanStyle>>()
     private val paragraphStyles = mutableListOf<StyleRange<ParagraphStyle>>()
     private val checklistMarkers = mutableListOf<Int>()
@@ -487,8 +492,22 @@ private class EditableMarkdownRenderer(
     }
 
     private fun renderInline(start: Int, end: Int) {
+        while (
+            rawWebUrlRangeIndex < rawWebUrlRanges.size &&
+            rawWebUrlRanges[rawWebUrlRangeIndex].last < start
+        ) {
+            rawWebUrlRangeIndex++
+        }
+
         var index = start
         while (index < end) {
+            while (
+                rawWebUrlRangeIndex < rawWebUrlRanges.size &&
+                rawWebUrlRanges[rawWebUrlRangeIndex].first < index
+            ) {
+                rawWebUrlRangeIndex++
+            }
+
             if (markdown[index] == '\\' && index + 1 < end) {
                 hide(index, index + 1)
                 index += 2
@@ -560,10 +579,11 @@ private class EditableMarkdownRenderer(
                 }
             }
 
-            val rawUrlMatch = RAW_WEB_URL.find(markdown, index)
-                ?.takeIf { it.range.first == index && it.range.last < end }
-            if (rawUrlMatch != null) {
-                var urlEnd = rawUrlMatch.range.last + 1
+            val rawUrlRange = rawWebUrlRanges.getOrNull(rawWebUrlRangeIndex)
+                ?.takeIf { it.first == index && it.last < end }
+            if (rawUrlRange != null) {
+                rawWebUrlRangeIndex++
+                var urlEnd = rawUrlRange.last + 1
                 while (urlEnd > index && markdown[urlEnd - 1] in URL_TRAILING_PUNCTUATION) urlEnd--
                 if (urlEnd > index) {
                     val url = markdown.substring(index, urlEnd)

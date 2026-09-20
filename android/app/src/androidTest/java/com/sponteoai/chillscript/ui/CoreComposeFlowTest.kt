@@ -11,10 +11,12 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.tryPerformAccessibilityChecks
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.sponteoai.chillscript.ContextChatUiState
+import com.sponteoai.chillscript.chillo.ChilloController
+import com.sponteoai.chillscript.chillo.ChilloDataSource
+import com.sponteoai.chillscript.chillo.ChilloScreen
 import com.sponteoai.chillscript.R
 import com.sponteoai.chillscript.onboarding.OnboardingScreen
-import com.sponteoai.chillscript.ui.chat.ContextChatScreen
+import kotlinx.serialization.json.*
 import com.sponteoai.chillscript.ui.theme.ChillScriptTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -51,28 +53,39 @@ class CoreComposeFlowTest {
     }
 
     @Test
-    fun contextChat_acceptsAndSendsTrimmedMessage() {
+    fun chillo_acceptsAndSendsTrimmedMessage() {
         var sentMessage: String? = null
+        val controller = ChilloController(object : ChilloDataSource {
+            override val json = Json { ignoreUnknownKeys = true }
+            override suspend fun request(path: String, method: String, body: JsonObject?): JsonObject {
+                val payload = when {
+                    path == "/library" -> """{"total":0,"available":0,"indexed":0,"pending":0,"consentVersion":1}"""
+                    path == "/conversations" && method == "GET" -> """{"conversations":[],"nextCursor":null}"""
+                    path == "/conversations" -> """{"id":"conversation","title":""}"""
+                    path.endsWith("/turns") -> {
+                        sentMessage = body?.get("message")?.jsonPrimitive?.content
+                        """{"id":"turn","request":"$sentMessage","answer":"","status":"cancelled","sources":[],"sourcesChanged":false}"""
+                    }
+                    else -> error("Unexpected test request: $path")
+                }
+                return json.parseToJsonElement(payload).jsonObject
+            }
+        })
         composeRule.setContent {
             ChillScriptTheme {
-                ContextChatScreen(
-                    state = ContextChatUiState(isOpen = true),
-                    onClose = {},
-                    onClear = {},
-                    onSend = { sentMessage = it },
-                    onSave = {},
-                    onDismissError = {},
-                )
+                ChilloScreen(controller, onBack = {}, onOpenNote = { false })
             }
         }
         composeRule.enableAccessibilityChecks()
 
-        composeRule.onNodeWithText(resources.getString(R.string.ai_chat_empty_no_notes_title)).assertIsDisplayed()
+        composeRule.waitUntil { !controller.state.value.loading && controller.state.value.library != null }
+        composeRule.onNodeWithText(resources.getString(R.string.chillo_empty_title)).assertIsDisplayed()
         composeRule.onAllNodes(isRoot()).tryPerformAccessibilityChecks()
-        composeRule.onNodeWithText(resources.getString(R.string.ai_chat_input_placeholder))
+        composeRule.onNodeWithText(resources.getString(R.string.chillo_placeholder))
             .performTextInput("  Help me write a hook  ")
-        composeRule.onNodeWithContentDescription(resources.getString(R.string.ai_chat_send)).performClick()
+        composeRule.onNodeWithContentDescription(resources.getString(R.string.chillo_send)).performClick()
 
+        composeRule.waitUntil { sentMessage != null }
         composeRule.runOnIdle { assertEquals("Help me write a hook", sentMessage) }
     }
 }

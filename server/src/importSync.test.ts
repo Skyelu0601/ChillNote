@@ -24,7 +24,7 @@ function row(overrides: Partial<Row> = {}): Row {
     sourceAuthorName: null, sourceAuthorHandle: null, sourceCapturedAt: timestamp,
     section: "inbox", importStatus: "processing", importJobId: jobId,
     importErrorCode: null, importStartedAt: timestamp, importCompletedAt: null,
-    tags: [], ...overrides
+    isChilloDraft: false, chilloIndexRetryAt: null, tags: [], ...overrides
   };
 }
 
