@@ -68,8 +68,8 @@ enum class CaptionPackPlatform(
 
     val platformRule: String
         get() = when (this) {
-            TIKTOK -> "- TikTok: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer."
-            INSTAGRAM_REELS -> "- Instagram Reels: Output Caption and Hashtags. Caption must be under 2,200 characters. Hashtags must be 5 or fewer."
+            TIKTOK -> "- TikTok: Under the platform heading, output ready-to-publish caption text, then a blank line and up to 5 relevant hashtags. Do not include field labels such as Caption or Hashtags (in any language), quotation marks around the caption, or explanatory text. Keep the complete post, including hashtags, under 2,200 characters. Generate hashtags specific to the notes; do not copy template placeholders."
+            INSTAGRAM_REELS -> "- Instagram Reels: Under the platform heading, output ready-to-publish caption text, then a blank line and up to 5 relevant hashtags. Do not include field labels such as Caption or Hashtags (in any language), quotation marks around the caption, or explanatory text. Keep the complete post, including hashtags, under 2,200 characters. Generate hashtags specific to the notes; do not copy template placeholders."
             YOUTUBE_SHORTS -> "- YouTube Shorts: Output Title, Description, and Hashtags. Title must be under 100 characters. Description should be compact and mobile-friendly. Hashtags must be 3 or fewer."
             YOUTUBE_LONG_VIDEO -> "- YouTube Long Video: Output SEO Title, Description, Tags, and Pinned Comment. Make the description fuller than Shorts copy, with a clear summary, search-friendly keywords, and a natural CTA. Tags must be comma-separated."
         }
@@ -95,21 +95,17 @@ enum class CaptionPackPlatform(
             TIKTOK -> """
                 ## TikTok
 
-                Caption:
-                ...
+                [Ready-to-publish caption text]
 
-                Hashtags:
-                #creatorworkflow #contentstrategy #shortformvideo #tiktoktips #contentideas
+                [Up to 5 hashtags relevant to the notes]
             """.trimIndent()
 
             INSTAGRAM_REELS -> """
                 ## Instagram Reels
 
-                Caption:
-                ...
+                [Ready-to-publish caption text]
 
-                Hashtags:
-                #contentcreator #creatorworkflow #reelstips #contentstrategy #socialmediatips
+                [Up to 5 hashtags relevant to the notes]
             """.trimIndent()
 
             YOUTUBE_SHORTS -> """
