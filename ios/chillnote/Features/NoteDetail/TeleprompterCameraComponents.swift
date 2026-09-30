@@ -6,7 +6,7 @@ import UniformTypeIdentifiers
 
 struct TeleprompterFloatingPanel: View {
     let scriptText: String
-    @Binding var scrollSpeed: Double
+    let scrollSpeed: Double
     let fontSize: Double
     let textColor: Color
     let panelSize: CGSize
@@ -70,8 +70,7 @@ struct TeleprompterFloatingPanel: View {
                             let proposed = storedScrollOffset - value.translation.height
                             scrollOffset = clampOffset(proposed)
                         }
-                        .onEnded { value in
-                            updateSpeedAfterManualDrag(value)
+                        .onEnded { _ in
                             storedScrollOffset = scrollOffset
                             isUserDraggingText = false
                         }
@@ -137,13 +136,6 @@ struct TeleprompterFloatingPanel: View {
         let bounded = clampOffset(scrollOffset)
         scrollOffset = bounded
         storedScrollOffset = bounded
-    }
-
-    private func updateSpeedAfterManualDrag(_ value: DragGesture.Value) {
-        let predictedExtraDistance = value.predictedEndTranslation.height - value.translation.height
-        guard predictedExtraDistance < -24 else { return }
-        let speedBoost = min(Double(abs(predictedExtraDistance)) / 12, 10)
-        scrollSpeed = min(scrollSpeed + speedBoost, 50)
     }
 }
 

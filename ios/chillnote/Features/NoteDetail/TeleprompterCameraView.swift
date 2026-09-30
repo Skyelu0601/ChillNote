@@ -10,7 +10,7 @@ struct TeleprompterCameraView: View {
     @StateObject private var camera = TeleprompterCameraManager()
 
     @State private var scriptText: String
-    @State private var scrollSpeed: Double = 16
+    @AppStorage("teleprompter.scrollSpeed") private var scrollSpeed: Double = 16
     @State private var fontSize: Double = 24
     @State private var textColor: TeleprompterTextColor = .white
     @State private var teleprompterOffset: CGSize = .zero
@@ -65,7 +65,7 @@ struct TeleprompterCameraView: View {
             GeometryReader { proxy in
                 TeleprompterFloatingPanel(
                     scriptText: scriptText.isEmpty ? L10n.text("teleprompter.script.empty_placeholder") : scriptText,
-                    scrollSpeed: $scrollSpeed,
+                    scrollSpeed: scrollSpeed,
                     fontSize: fontSize,
                     textColor: textColor.color,
                     panelSize: teleprompterPanelSize(in: proxy.size),
