@@ -1070,6 +1070,61 @@ final class SyncEngineTests: XCTestCase {
         XCTAssertTrue(next.notes.isEmpty)
     }
 
+    func testFinishedImportResponseKeepsNoteInTrashWhenDeletionWasUploaded() throws {
+        try assertFinishedImportKeepsDeletion(deleteBeforeUpload: true)
+    }
+
+    func testFinishedImportResponseKeepsNoteInTrashWhenDeletedDuringSync() throws {
+        try assertFinishedImportKeepsDeletion(deleteBeforeUpload: false)
+    }
+
+    private func assertFinishedImportKeepsDeletion(deleteBeforeUpload: Bool) throws {
+        let userId = "u1"
+        let note = Note(content: "placeholder", userId: userId)
+        note.importStatus = .queued
+        note.importJobId = "job-\(deleteBeforeUpload)"
+        note.sourceURL = "https://www.tiktok.com/@creator/video/123"
+        context.insert(note)
+        note.acknowledgedFingerprint = SyncEntityFingerprint.note(note)
+        try context.save()
+
+        if deleteBeforeUpload { note.markDeleted() }
+        let upload = try engine.makePayload(
+            context: context, since: nil, userId: userId, cursor: "1", deviceId: "device-a",
+            hardDeletedNoteIds: [], hardDeletedTagIds: []
+        )
+        XCTAssertEqual(upload.notes.count, deleteBeforeUpload ? 1 : 0)
+        if !deleteBeforeUpload { note.markDeleted() }
+        try context.save()
+
+        let response = SyncResponse(
+            cursor: "2",
+            changes: SyncChanges(notes: [NoteDTO(
+                id: note.id.uuidString, content: "completed transcription",
+                createdAt: iso(note.createdAt), updatedAt: iso(Date()),
+                deletedAt: nil, pinnedAt: nil, tagIds: [], version: 2,
+                baseVersion: nil, clientUpdatedAt: nil, lastModifiedByDeviceId: "server-import",
+                mutationId: "finished-\(deleteBeforeUpload)", sourceURL: note.sourceURL,
+                section: "inbox", importStatus: NoteImportStatus.completed.rawValue,
+                importJobId: note.importJobId
+            )], tags: nil, hardDeletedNoteIds: nil, hardDeletedTagIds: nil, preferences: nil),
+            conflicts: [], forcedNoteIds: [note.id.uuidString], serverTime: iso(Date())
+        )
+        try engine.apply(remote: response, context: context, userId: userId)
+        try context.save()
+
+        XCTAssertNotNil(note.deletedAt)
+        XCTAssertEqual(note.content, "placeholder")
+        XCTAssertEqual(note.version, 2)
+        XCTAssertEqual(try context.fetchCount(FetchDescriptor<Note>()), 1)
+        let retry = try engine.makePayload(
+            context: context, since: nil, userId: userId, cursor: "2", deviceId: "device-a",
+            hardDeletedNoteIds: [], hardDeletedTagIds: []
+        )
+        XCTAssertEqual(retry.notes.first { $0.id == note.id.uuidString }?.deletedAt,
+                       iso(try XCTUnwrap(note.deletedAt)))
+    }
+
     func testForcedTagWithoutConflictRebasesDirtyEditWithoutCopy() throws {
         let userId = "u1"
         let tag = Tag(name: "baseline", userId: userId)

@@ -156,10 +156,10 @@ for (const protocol of [2, 3, 4]) {
   });
 }
 
-test("real text, tag, location, pin and delete changes retain optimistic conflict protection", async () => {
+test("real text, tag, location and pin changes retain optimistic conflict protection", async () => {
   for (const changes of [
     { content: "My real edit" }, { tagIds: [tagId] }, { section: "drafts" },
-    { pinnedAt: timestamp.toISOString() }, { deletedAt: timestamp.toISOString() },
+    { pinnedAt: timestamp.toISOString() },
     { sourceURL: "https://www.youtube.com/watch?v=other" }
   ]) {
     const db = fixture();
@@ -180,6 +180,73 @@ test("a valid-base user edit or deletion is still applied to a pending import", 
     if (changes.deletedAt) assert.ok(saved.deletedAt);
     assert.equal(saved.importJobId, jobId);
   }
+});
+
+test("trashing an import after the worker finishes preserves the transcript and deletion", async () => {
+  for (const status of ["completed", "failed"] as const) {
+    for (const pendingJobId of [jobId, undefined]) {
+      const db = fixture([row({
+        content: "Generated transcript", importStatus: status,
+        importCompletedAt: timestamp, version: 7
+      })]);
+      const response = await db.sync(upload({
+        baseVersion: 5,
+        importJobId: pendingJobId,
+        deletedAt: new Date(timestamp.getTime() + 1000).toISOString()
+      }));
+      const saved = db.notes.get(noteId)!;
+      assert.deepEqual(response.conflicts, []);
+      assert.deepEqual(response.forcedNoteIds, [noteId]);
+      assert.equal(saved.content, "Generated transcript");
+      assert.equal(saved.importStatus, status);
+      assert.equal(saved.version, 8);
+      assert.ok(saved.deletedAt);
+      assert.equal(response.changes.notes[0].deletedAt, saved.deletedAt?.toISOString());
+      assert.equal(db.writes, 1);
+    }
+  }
+});
+
+test("trashing an import across the enqueue race keeps it in Trash", async () => {
+  const db = fixture([row({ importStatus: "processing", importCompletedAt: null })]);
+  const response = await db.sync(upload({
+    baseVersion: 0,
+    deletedAt: new Date(timestamp.getTime() + 1000).toISOString()
+  }));
+  assert.deepEqual(response.conflicts, []);
+  assert.ok(db.notes.get(noteId)?.deletedAt);
+  assert.equal(db.notes.get(noteId)?.importStatus, "processing");
+  assert.equal(response.changes.notes[0].deletedAt, db.notes.get(noteId)?.deletedAt?.toISOString());
+});
+
+test("a retried deletion after the worker updates a trashed note cannot recreate it", async () => {
+  const db = fixture([row({
+    content: "Finished while trashed", importStatus: "completed",
+    importCompletedAt: timestamp, deletedAt: timestamp, serverDeletedAt: timestamp
+  })]);
+  const response = await db.sync(upload({
+    baseVersion: 5, deletedAt: timestamp.toISOString()
+  }));
+  assert.deepEqual(response.conflicts, []);
+  assert.deepEqual(response.forcedNoteIds, [noteId]);
+  assert.ok(db.notes.get(noteId)?.deletedAt);
+  assert.equal(db.writes, 0);
+});
+
+test("a stale delete cannot override a later user edit to an imported note", async () => {
+  const db = fixture([row({
+    content: "Later user edit", importStatus: "completed",
+    importCompletedAt: timestamp,
+    updatedAt: new Date(timestamp.getTime() + 2000),
+    lastModifiedByDeviceId: "other-device"
+  })]);
+  const response = await db.sync(upload({
+    baseVersion: 5,
+    deletedAt: new Date(timestamp.getTime() + 1000).toISOString()
+  }));
+  assert.equal(response.conflicts[0]?.message, "sync.conflict.version");
+  assert.equal(db.notes.get(noteId)?.deletedAt, null);
+  assert.equal(db.writes, 0);
 });
 
 test("a newer edit made after detachment cannot be erased by a stale retry", async () => {

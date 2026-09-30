@@ -152,7 +152,8 @@ function shouldPreserveFinishedImport(existing: {
   importStatus: string | null;
   importJobId: string | null;
 } | null, incoming: NoteDTO): boolean {
-  if (!existing || (incoming.importStatus !== "queued" && incoming.importStatus !== "processing")) {
+  if (!existing || incoming.deletedAt
+    || (incoming.importStatus !== "queued" && incoming.importStatus !== "processing")) {
     return false;
   }
   const serverFinished = existing.importStatus === "completed" || existing.importStatus === "failed";
@@ -459,6 +460,51 @@ export async function applySync(
         note = clearImportMetadata(note);
         detachedImport = true;
       }
+    }
+
+    // Moving an import to Trash changes its location, not its generated text.
+    // The enqueue/worker may have advanced the server revision after the client
+    // last saw it. Apply that deletion without replaying a stale placeholder or
+    // queued status over the worker's result.
+    const sameImport = !!existing?.importJobId && !!existing.sourceURL
+      && existing.sourceURL === note.sourceURL
+      && (!note.importJobId
+        || syncIdentityKey(existing.importJobId) === syncIdentityKey(note.importJobId));
+    const workerWasLastWriter = !!existing && (
+      (existing.importCompletedAt != null
+        && existing.updatedAt.getTime() === existing.importCompletedAt.getTime())
+      || (existing.importCompletedAt == null && existing.lastModifiedByDeviceId == null)
+    );
+    if (existing && note.deletedAt && (existing.deletedAt || existing.serverDeletedAt) && sameImport) {
+      forcedNoteIds.add(resolvedId);
+      continue;
+    }
+    if (existing && note.deletedAt && !existing.deletedAt && !existing.serverDeletedAt
+      && sameImport && !detachedImport
+      && (note.importStatus === "queued" || note.importStatus === "processing")
+      && (decision === "apply" || (decision === "conflict" && workerWasLastWriter))) {
+      await database.note.update({
+        where: { id: resolvedId },
+        data: {
+          deletedAt: now,
+          serverDeletedAt: now,
+          updatedAt: now,
+          serverUpdatedAt: now,
+          version: existing.version + 1,
+          lastModifiedByDeviceId: deviceId,
+          lastMutationId: note.mutationId ?? randomUUID()
+        }
+      });
+      forcedNoteIds.add(resolvedId);
+      await logSyncChange({
+        userId,
+        entityType: "note",
+        entityId: resolvedId,
+        version: existing.version + 1,
+        serverUpdatedAt: now,
+        operation: "delete"
+      }, database);
+      continue;
     }
 
     if (shouldPreserveFinishedImport(existing, note)

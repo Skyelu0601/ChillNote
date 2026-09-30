@@ -413,6 +413,19 @@ struct SyncEngine {
                 let isDirty = currentFingerprint != existing.acknowledgedFingerprint
                 let isOwnAcknowledgement = sameMutation(dto.mutationId, existing.lastSubmittedMutationId)
 
+                // An import can finish while its note is being moved to Trash.
+                // A forced response to the earlier upload must not restore it
+                // to Inbox, even when the uploaded snapshot already included
+                // the deletion. Rebase and retry the local deletion instead.
+                if isDirty, forcedNoteIds.contains(id),
+                   existing.isLinkImportInProgress, existing.deletedAt != nil,
+                   dto.deletedAt == nil {
+                    rebase(note: existing, from: dto, remoteUpdatedAt: remoteUpdatedAt)
+                    existing.lastSubmittedMutationId = nil
+                    existing.lastSubmittedFingerprint = nil
+                    continue
+                }
+
                 if isOwnAcknowledgement {
                     rebase(note: existing, from: dto, remoteUpdatedAt: remoteUpdatedAt)
                     if currentFingerprint != existing.lastSubmittedFingerprint {
