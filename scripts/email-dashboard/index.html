@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>邮件看板 · ChillScript</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="app.js" defer></script>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">c.</span><span>ChillScript <small>/ 私人邮件看板</small></span></div>
+      <div class="top-actions"><span class="live-dot"></span><span id="updated">正在连接数据</span><button id="refresh" type="button">刷新数据 <span aria-hidden="true">↗</span></button></div>
+    </header>
+
+    <section class="intro">
+      <div><p class="eyebrow">EMAIL OPERATIONS</p><h1>邮件发送概览</h1><p class="subtitle">试用提醒、付款失败提醒与用户召回，放在同一个地方看。</p></div>
+      <label class="period">时间范围 <select id="days"><option value="1" selected>近 24 小时</option><option value="7">近 7 天</option><option value="30">近 30 天</option><option value="0">全部时间</option></select></label>
+    </section>
+
+    <div id="error" class="error" role="alert" hidden></div>
+    <section class="metrics" aria-label="邮件统计">
+      <article class="metric"><span>已发送</span><strong id="sent">—</strong><small>Amazon 已接受发送</small></article>
+      <article class="metric"><span>已送达</span><strong id="delivered">—</strong><small>对方邮件服务器已接收</small></article>
+      <article class="metric"><span>退信</span><strong id="bounced">—</strong><small>包含临时与永久退信</small></article>
+      <article class="metric"><span>待发送</span><strong id="scheduled">—</strong><small>已排程，尚未发送</small></article>
+      <article class="metric"><span>失败 / 跳过</span><strong id="failed">—</strong><small>需要检查原因</small></article>
+    </section>
+
+    <section class="panel overview">
+      <div class="section-title"><div><p class="eyebrow">BY EMAIL TYPE</p><h2>各类邮件</h2></div><span>当前时间范围</span></div>
+      <div id="kinds" class="kind-grid"><p class="muted">正在读取…</p></div>
+    </section>
+
+    <section class="panel deliveries">
+      <div class="section-title"><div><p class="eyebrow">DELIVERY LOG</p><h2>发送明细</h2></div><span id="result-count">—</span></div>
+      <div class="filters">
+        <label>邮件类型 <select id="kind"><option value="">全部类型</option></select></label>
+        <label>状态 <select id="state"><option value="">全部状态</option><option value="delivered">已送达</option><option value="accepted">已发送 / 等待回执</option><option value="bounced">退信</option><option value="complained">投诉</option><option value="rejected">拒绝</option><option value="scheduled">待发送</option><option value="failed">失败</option><option value="skipped">跳过</option><option value="cancelled">已取消</option><option value="suppressed">已抑制</option></select></label>
+        <label class="search-label">搜索邮箱 <input id="search" type="search" placeholder="输入邮箱关键词" autocomplete="off"></label>
+      </div>
+      <div class="table-wrap"><table><thead><tr><th>收件人</th><th>邮件</th><th>状态</th><th>发送 / 排程时间</th><th>备注</th></tr></thead><tbody id="rows"><tr><td colspan="5" class="empty">正在读取…</td></tr></tbody></table></div>
+      <div class="pagination"><span id="page-info">—</span><div><button id="previous" type="button">上一页</button><button id="next" type="button">下一页</button></div></div>
+    </section>
+    <footer>数据来自生产邮件记录。历史邮件如果在追踪启用前发出，可能只有“已发送”，没有逐封送达回执。</footer>
+  </main>
+</body>
+</html>

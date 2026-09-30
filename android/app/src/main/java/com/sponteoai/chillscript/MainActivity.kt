@@ -136,7 +136,6 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import com.sponteoai.chillscript.voice.VoiceRecorder
 import com.sponteoai.chillscript.voice.PendingRecording
-import com.sponteoai.chillscript.voice.PendingRecordingOrigin
 import com.sponteoai.chillscript.domain.ChecklistDraft
 import com.sponteoai.chillscript.domain.ChecklistDraftItem
 import com.sponteoai.chillscript.domain.ChecklistMarkdown
@@ -221,6 +220,8 @@ class MainActivity : ComponentActivity() {
     private var foregroundSyncJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // The system starting window already captured the launch theme.
+        setTheme(R.style.Theme_ChillScript)
         super.onCreate(savedInstanceState)
         BackgroundSyncScheduler.ensurePeriodic(this)
         credentialManager = CredentialManager.create(this)
@@ -233,7 +234,6 @@ class MainActivity : ComponentActivity() {
         reviewManager = ReviewManagerFactory.create(this)
         billingManager.connect()
         sharedText.value = intent.sharedPlainText()
-        captureSharedVideo(intent)
         if (intent.isRecordRequest()) recordRequest.longValue = System.nanoTime()
         intent.oauthCallback()?.let { callback ->
             intent.data = null
@@ -361,7 +361,6 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         sharedText.value = intent.sharedPlainText()
-        captureSharedVideo(intent)
         if (intent.isRecordRequest()) recordRequest.longValue = System.nanoTime()
         intent.oauthCallback()?.let { callback ->
             intent.data = null
@@ -393,6 +392,7 @@ class MainActivity : ComponentActivity() {
     override fun onResume() {
         super.onResume()
         billingManager.showInAppMessages(this)
+        viewModel.refreshSubscription()
         BackgroundSyncScheduler.enqueueForegroundSync(this)
         viewModel.consumePendingShareImports()
         viewModel.refreshPushRegistration()
@@ -482,7 +482,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun openFeedbackEmail() {
-        val uri = Uri.parse("mailto:support@chillnoteai.com?subject=ChillScript%20Feedback")
+        val uri = Uri.parse("mailto:skye@sponteoai.com?subject=ChillScript%20Feedback")
         openExternalTarget(uri.toString())
     }
 
@@ -525,17 +525,6 @@ class MainActivity : ComponentActivity() {
         sharedText.value = url
     }
 
-    private fun captureSharedVideo(intent: Intent) {
-        val uri = intent.sharedVideoUri() ?: return
-        val sourcePackage = intent.sharedSourcePackageHint() ?: referrer?.host
-        viewModel.captureSharedVideo(uri, intent.type, sourcePackage)
-        // The content has already been claimed by the ViewModel. Removing the payload prevents
-        // a configuration change from importing the same video twice; the URI grant remains
-        // valid for the launched task while the private copy is made.
-        intent.removeExtra(Intent.EXTRA_STREAM)
-        intent.clipData = null
-    }
-
     private companion object {
         const val TAG = "MainActivity"
         const val FOREGROUND_SYNC_INTERVAL_MS = 60_000L
@@ -545,24 +534,6 @@ class MainActivity : ComponentActivity() {
 private fun Intent.sharedPlainText(): String? =
     takeIf { action == Intent.ACTION_SEND && type?.startsWith("text/") == true }
         ?.getCharSequenceExtra(Intent.EXTRA_TEXT)?.toString()
-
-private fun Intent.sharedVideoUri(): Uri? {
-    if (action != Intent.ACTION_SEND || type?.startsWith("video/") != true) return null
-    val stream = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-        getParcelableExtra(Intent.EXTRA_STREAM, Uri::class.java)
-    } else {
-        @Suppress("DEPRECATION")
-        (getParcelableExtra<android.os.Parcelable>(Intent.EXTRA_STREAM) as? Uri)
-    }
-    return stream ?: clipData?.takeIf { it.itemCount > 0 }?.getItemAt(0)?.uri
-}
-
-private fun Intent.sharedSourcePackageHint(): String? {
-    val raw = getStringExtra(Intent.EXTRA_REFERRER_NAME)?.trim().orEmpty()
-    return raw.takeIf(String::isNotEmpty)?.let { value ->
-        runCatching { Uri.parse(value).host }.getOrNull() ?: value.take(240)
-    }
-}
 
 private fun Intent.oauthCallback(): Uri? = data?.takeIf { uri ->
     (uri.scheme.equals("chillscript", ignoreCase = true) &&
@@ -924,20 +895,6 @@ private fun HomeScreen(
         }
     }
     LaunchedEffect(
-        pendingRecordings.map { listOf(it.file.absolutePath, it.origin.persistedValue, it.ownerUserId.orEmpty()) },
-        activeCaptureSection,
-        activeCaptureTagIds,
-    ) {
-        if (pendingRecordings.any { it.origin == PendingRecordingOrigin.SharedVideo }) {
-            viewModel.processPendingSharedVideoImports(
-                section = activeCaptureSection,
-                tagIds = activeCaptureTagIds.toList(),
-                onNoteReady = openNoteInEditor,
-                onInsufficientCredits = { showSubscription = true },
-            )
-        }
-    }
-    LaunchedEffect(
         captureFirstActionImport,
         firstActionGuideState,
         notes.map { listOf(it.id, it.importStatus.orEmpty(), it.sourceUrl.orEmpty()) },
@@ -1271,6 +1228,42 @@ private fun HomeScreen(
                 )
             },
             onManageSkills = { showCreatorSkillsLibrary = true },
+            skillsPanelContent = { onDismiss, onSelect ->
+                CreatorSkillsLibrary(
+                    available = viewModel.availableRecipes,
+                    installed = installedRecipes,
+                    isPro = uiState.subscriptionTier.equals("pro", ignoreCase = true),
+                    onBack = onDismiss,
+                    onToggle = viewModel::toggleRecipe,
+                    onCreateCustom = viewModel::createCustomRecipe,
+                    onDeleteCustom = viewModel::deleteCustomRecipe,
+                    onRequestCustomUpgrade = { onDismiss(); showSubscription = true },
+                    onSelect = onSelect,
+                )
+            },
+            conversationFactory = { viewModel.noteConversation(it) },
+            onConversationSettled = { hasReply ->
+                val userId = signedInUser?.id
+                val noteId = editingNote?.id
+                if (userId != null && noteId != null) {
+                    firstActionGuideState = firstActionGuideStore.reconcileConversation(
+                        userId, firstActionGuideState, noteId, hasReply,
+                    )
+                }
+            },
+            onReplaceConversationContent = { result ->
+                val note = editingNote
+                if (note == null || note.deletedAt != null) false
+                else if (viewModel.replaceConversationNote(note, result)) {
+                    undoStack = (undoStack + editorText).takeLast(100)
+                    redoStack = emptyList()
+                    editorText = TextFieldValue(result, TextRange(result.length))
+                    checklistDraft = ChecklistMarkdown.parse(result)
+                    editorDraftSession.recordContent(result)
+                    editorPersistedContent = result
+                    true
+                } else false
+            },
             onStartRecording = {
                 teleprompterScript = editorText.text
                 teleprompterOpen = true
@@ -1581,7 +1574,7 @@ private fun HomeScreen(
             }
         },
     ) { padding ->
-        if (uiState.voiceProcessing || uiState.sharedVideoPreparing) {
+        if (uiState.voiceProcessing) {
             Row(
                 Modifier.fillMaxWidth().padding(padding).padding(horizontal = 20.dp, vertical = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1589,10 +1582,7 @@ private fun HomeScreen(
             ) {
                 CircularProgressIndicator()
                 Text(
-                    stringResource(
-                        if (uiState.sharedVideoPreparing) R.string.shared_video_import_preparing
-                        else R.string.voice_processing,
-                    ),
+                    stringResource(R.string.voice_processing),
                 )
             }
         }
@@ -1828,6 +1818,16 @@ private fun HomeScreen(
             hasLoadedNotesAtLeastOnce = uiState.hasLoadedNotesAtLeastOnce,
             pendingRecordingsCount = pendingRecordings.size,
             subscriptionTier = uiState.subscriptionTier,
+            hasBillingIssue = uiState.hasGooglePlayBillingIssue,
+            onFixBillingIssue = {
+                val sku = uiState.billingIssueProductId?.substringBefore(':')
+                val page = if (sku.isNullOrBlank()) {
+                    "https://play.google.com/store/account/subscriptions"
+                } else {
+                    "https://play.google.com/store/account/subscriptions?sku=$sku&package=com.sponteoai.chillscript"
+                }
+                onOpenUrl(page)
+            },
             creditBalance = uiState.creditBalance,
             notifications = uiState.notifications,
             notificationsLoading = uiState.notificationsLoading,
@@ -2414,7 +2414,7 @@ private fun SettingsScreen(
         onExport = { showExportSheet = true },
         onVoiceLanguage = { showVoiceSettings = true },
         onPermissions = { onOpenUrl("package:com.sponteoai.chillscript") },
-        onFeedback = { onOpenUrl("mailto:support@chillnoteai.com?subject=ChillScript%20Feedback") },
+        onFeedback = { onOpenUrl("mailto:skye@sponteoai.com?subject=ChillScript%20Feedback") },
         onRate = onOpenStoreReview,
         onPrivacy = { onOpenUrl("https://www.chillnoteai.com/privacy") },
         onAgreement = { onOpenUrl("https://www.chillnoteai.com/terms") },

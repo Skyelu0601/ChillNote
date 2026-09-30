@@ -9,6 +9,7 @@ type Dependencies = {
     expiresAt: Date | null;
     source: "legacy" | "revenuecat" | null;
   }>;
+  billingIssue(userId: string): Promise<{ store: string; productId: string | null } | null>;
 };
 
 export function registerSubscriptionVerificationRoutes(
@@ -27,7 +28,8 @@ export function registerSubscriptionVerificationRoutes(
         success: true,
         tier: effective.tier,
         expiresAt: effective.expiresAt?.toISOString() ?? null,
-        activeProductId: effective.source === "revenuecat" ? snapshot.productId : null
+        activeProductId: effective.source === "revenuecat" ? snapshot.productId : null,
+        billingIssue: await deps.billingIssue(userId)
       });
     } catch {
       // Do not fall back to the caller's metadata when the verifier is unavailable.

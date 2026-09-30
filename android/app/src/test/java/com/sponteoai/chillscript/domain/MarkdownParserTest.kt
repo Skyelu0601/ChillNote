@@ -16,6 +16,13 @@ class MarkdownParserTest {
         )
     }
 
+    @Test fun `chat headings and star bullets hide formatting markers`() {
+        val blocks = MarkdownParser.parse("#### Detail\n###### Small\n* First\n+ Second\n***")
+        assertEquals(listOf("Detail", "Small", "First", "Second", "───"), blocks.map { it.text })
+        assertEquals(listOf("", "", "• ", "• ", ""), blocks.map { it.prefix })
+        assertEquals(MarkdownBlockType.Separator, blocks.last().type)
+    }
+
     @Test fun `bold wraps and unwraps selected text`() {
         val wrapped = MarkdownEditing.toggleBold("hello world", 6, 11)
         assertEquals("hello **world**", wrapped.text)

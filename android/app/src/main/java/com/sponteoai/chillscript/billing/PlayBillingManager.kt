@@ -67,6 +67,7 @@ data class BillingProduct(
 data class BillingUiState(
     val connected: Boolean = false,
     val loading: Boolean = true,
+    val purchasing: Boolean = false,
     val restoring: Boolean = false,
     val products: List<BillingProduct> = emptyList(),
     val error: String? = null,
@@ -183,6 +184,8 @@ private class RevenueCatBillingManager(
     }
 
     override fun launchPurchase(activity: Activity, product: BillingProduct, userId: String) {
+        if (mutableState.value.purchasing) return
+        mutableState.value = mutableState.value.copy(purchasing = true, error = null)
         ensureIdentity(userId) {
             Purchases.sharedInstance.setAttributes(ProductAnalytics.currentRevenueCatPurchaseAttributes())
             val params = when (val target = product.purchaseTarget) {
@@ -196,6 +199,7 @@ private class RevenueCatBillingManager(
             Purchases.sharedInstance.purchaseWith(
                 purchaseParams = params,
                 onError = { error, userCancelled ->
+                    mutableState.value = mutableState.value.copy(purchasing = false)
                     if (userCancelled) {
                         ProductAnalytics.completePurchase("purchase_cancelled")
                     } else {
@@ -217,7 +221,7 @@ private class RevenueCatBillingManager(
                     if (purchaseToken.isNullOrBlank()) {
                         reportError("RevenueCat purchase completed without a Google purchase token")
                     } else {
-                        mutableState.value = mutableState.value.copy(error = null)
+                        mutableState.value = mutableState.value.copy(purchasing = false, error = null)
                         onPurchased(purchasedProductId, purchaseToken)
                         onRestoreComplete()
                         ProductAnalytics.clearPurchaseAttribution()
@@ -376,6 +380,7 @@ private class RevenueCatBillingManager(
         Log.w(TAG, detail)
         mutableState.value = mutableState.value.copy(
             loading = false,
+            purchasing = false,
             products = emptyList(),
             error = userFacingError(),
         )
@@ -403,6 +408,7 @@ private class LegacyPlayBillingManager(
 
     private val billingClient = BillingClient.newBuilder(context.applicationContext)
         .setListener { result, purchases ->
+            mutableState.value = mutableState.value.copy(purchasing = false)
             if (result.responseCode == BillingClient.BillingResponseCode.OK) {
                 purchases.orEmpty().filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
                     .forEach(::processPurchase)
@@ -472,7 +478,9 @@ private class LegacyPlayBillingManager(
     }
 
     override fun launchPurchase(activity: Activity, product: BillingProduct, userId: String) {
+        if (mutableState.value.purchasing) return
         val target = product.purchaseTarget as? BillingPurchaseTarget.GooglePlay ?: return
+        mutableState.value = mutableState.value.copy(purchasing = true, error = null)
         val detailParams = BillingFlowParams.ProductDetailsParams.newBuilder()
             .setProductDetails(target.details)
             .setOfferToken(target.offerToken)
@@ -627,7 +635,7 @@ private class LegacyPlayBillingManager(
 
     private fun reportBillingError(operation: String, result: BillingResult) {
         logBillingResult(operation, result)
-        mutableState.value = mutableState.value.copy(error = userFacingError())
+        mutableState.value = mutableState.value.copy(purchasing = false, error = userFacingError())
     }
 
     private fun logBillingResult(operation: String, result: BillingResult) {

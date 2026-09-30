@@ -10,12 +10,14 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,6 +50,8 @@ import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.ClosedCaption
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.ContentCopy
+import androidx.compose.material.icons.outlined.DeleteOutline
+import androidx.compose.material.icons.outlined.RemoveCircleOutline
 import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.FindReplace
@@ -62,6 +66,9 @@ import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
@@ -85,6 +92,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
@@ -489,6 +498,24 @@ private fun NotePickerRow(note: NoteEntity, onClick: () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreatorSkillsSheet(onDismiss: () -> Unit, content: @Composable () -> Unit) {
+    val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = ChillColors.BackgroundPrimary,
+        // Offset-dependent inset consumption must not change the sheet's measured height
+        // and its drag anchors during a scroll. The library handles navigation-bar padding.
+        contentWindowInsets = { WindowInsets(0, 0, 0, 0) },
+    ) {
+        Box(Modifier.fillMaxWidth().height(windowHeight * 0.9f)) {
+            content()
+        }
+    }
+}
+
 @Composable
 fun CreatorSkillsLibrary(
     available: List<AgentRecipe>,
@@ -499,8 +526,10 @@ fun CreatorSkillsLibrary(
     onRequestCustomUpgrade: () -> Unit,
     onCreateCustom: (String, String) -> Unit,
     onDeleteCustom: (AgentRecipe) -> Unit,
+    onSelect: ((AgentRecipe) -> Unit)? = null,
 ) {
     CreatorSkillPreferences.initialize(LocalContext.current)
+    var isManaging by rememberSaveable { mutableStateOf(false) }
     var showCreate by rememberSaveable { mutableStateOf(false) }
     var configuredRecipeId by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingDelete by remember { mutableStateOf<AgentRecipe?>(null) }
@@ -511,9 +540,19 @@ fun CreatorSkillsLibrary(
         modifier = Modifier
             .fillMaxSize()
             .background(ChillColors.BackgroundPrimary)
-            .statusBarsPadding(),
+            .then(if (onSelect == null) Modifier.statusBarsPadding() else Modifier),
     ) {
-        LibraryNavigationBar(onBack = onBack)
+        if (onSelect == null) {
+            LibraryNavigationBar(onBack = onBack)
+        } else {
+            SheetNavigationBar(
+                title = stringResource(R.string.note_detail_ai_skills_title),
+                leadingText = stringResource(R.string.common_close),
+                onLeading = onBack,
+                trailingText = stringResource(if (isManaging) R.string.common_done else R.string.creator_skills_manage),
+                onTrailing = { isManaging = !isManaging },
+            )
+        }
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
@@ -523,18 +562,20 @@ fun CreatorSkillsLibrary(
                 bottom = 28.dp,
             ),
         ) {
-            item {
+            if (installed.isNotEmpty()) item {
                 SkillSection(
                     title = stringResource(R.string.creator_skills_installed),
                     recipes = installed,
                     installed = true,
+                    showsManagement = onSelect == null || isManaging,
+                    onSelect = if (isManaging) null else onSelect,
                     onToggle = onToggle,
                     onConfigure = { configuredRecipeId = it.id },
                     onDelete = { pendingDelete = it },
                 )
             }
-            item { Spacer(Modifier.height(22.dp)) }
-            item {
+            if (installed.isNotEmpty()) item { Spacer(Modifier.height(22.dp)) }
+            if (availableRecipes.isNotEmpty()) item {
                 SkillSection(
                     title = stringResource(R.string.creator_skills_available),
                     recipes = availableRecipes,
@@ -633,6 +674,8 @@ private fun SkillSection(
     title: String,
     recipes: List<AgentRecipe>,
     installed: Boolean,
+    showsManagement: Boolean = true,
+    onSelect: ((AgentRecipe) -> Unit)? = null,
     onToggle: (AgentRecipe) -> Unit,
     onConfigure: (AgentRecipe) -> Unit,
     onDelete: (AgentRecipe) -> Unit,
@@ -667,6 +710,8 @@ private fun SkillSection(
                         SkillManagementRow(
                             recipe = recipe,
                             installed = installed,
+                            showsManagement = showsManagement,
+                            onSelect = onSelect?.let { select -> { select(recipe) } },
                             onToggle = { onToggle(recipe) },
                             onConfigure = if (recipe.id in configurableCreatorSkillIds) {
                                 { onConfigure(recipe) }
@@ -696,90 +741,66 @@ private fun SkillSection(
 private fun SkillManagementRow(
     recipe: AgentRecipe,
     installed: Boolean,
+    showsManagement: Boolean,
+    onSelect: (() -> Unit)?,
     onToggle: () -> Unit,
     onConfigure: (() -> Unit)?,
     onDelete: (() -> Unit)?,
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 64.dp)
-            .padding(horizontal = 14.dp, vertical = 8.dp),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        CreatorSkillIcon(recipe = recipe)
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(3.dp),
+        // Keep the run target separate from settings and management actions.
+        Row(
+            modifier = Modifier.weight(1f)
+                .then(if (onSelect != null) Modifier.clickable(onClick = onSelect) else Modifier)
+                .heightIn(min = 64.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Text(
-                text = recipeName(recipe),
-                color = ChillColors.TextMain,
-                fontSize = 15.sp,
-                lineHeight = 19.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = recipeDescription(recipe),
-                color = ChillColors.TextSub,
-                fontSize = 13.sp,
-                lineHeight = 17.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
+            CreatorSkillIcon(recipe = recipe)
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                Text(
+                    text = recipeName(recipe), color = ChillColors.TextMain,
+                    fontSize = 15.sp, lineHeight = 19.sp, fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = recipeDescription(recipe), color = ChillColors.TextSub,
+                    fontSize = 13.sp, lineHeight = 17.sp,
+                    maxLines = 2, overflow = TextOverflow.Ellipsis,
+                )
+            }
         }
-
         if (onConfigure != null) {
-            IconButton(
-                onClick = onConfigure,
-                modifier = Modifier.size(36.dp),
-            ) {
+            IconButton(onClick = onConfigure, modifier = Modifier.size(48.dp)) {
                 Icon(
                     imageVector = Icons.Outlined.Tune,
                     contentDescription = stringResource(configurationTitleRes(recipe.id)),
-                    modifier = Modifier.size(20.dp),
-                    tint = ChillColors.TextSub.copy(alpha = 0.75f),
+                    modifier = Modifier.size(20.dp), tint = ChillColors.TextSub,
                 )
             }
         }
-
-        if (onDelete != null) {
-            Surface(
-                onClick = onDelete,
-                modifier = Modifier.size(28.dp),
-                color = ChillColors.BackgroundPrimary,
-                shape = CircleShape,
-            ) {
-                Box(contentAlignment = Alignment.Center) {
+        if (showsManagement) {
+            if (onDelete != null) {
+                IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
                     Icon(
-                        imageVector = Icons.Outlined.MoreHoriz,
+                        imageVector = Icons.Outlined.DeleteOutline,
                         contentDescription = stringResource(R.string.common_delete),
-                        modifier = Modifier.size(17.dp),
-                        tint = ChillColors.TextSub,
+                        modifier = Modifier.size(22.dp), tint = Color(0xFFC33B45),
                     )
                 }
-            }
-        } else {
-            IconButton(
-                onClick = onToggle,
-                modifier = Modifier.size(36.dp),
-            ) {
-                Icon(
-                    imageVector = if (installed) Icons.Outlined.CheckCircle
-                    else Icons.Outlined.AddCircleOutline,
-                    contentDescription = stringResource(
-                        if (installed) R.string.creator_skills_remove else R.string.creator_skills_add,
-                    ),
-                    modifier = Modifier.size(23.dp),
-                    tint = if (installed) {
-                        ChillColors.BrandTeal
-                    } else {
-                        ChillColors.TextSub.copy(alpha = 0.55f)
-                    },
-                )
+            } else {
+                IconButton(onClick = onToggle, modifier = Modifier.size(48.dp)) {
+                    Icon(
+                        imageVector = if (installed) Icons.Outlined.RemoveCircleOutline else Icons.Outlined.AddCircleOutline,
+                        contentDescription = stringResource(
+                            if (installed) R.string.creator_skills_remove else R.string.creator_skills_add,
+                        ),
+                        modifier = Modifier.size(23.dp), tint = ChillColors.TextSub,
+                    )
+                }
             }
         }
     }

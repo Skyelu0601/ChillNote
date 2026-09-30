@@ -1,5 +1,6 @@
 package com.sponteoai.chillscript.ui.editor
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -65,6 +66,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -142,6 +144,10 @@ fun EditorScreen(
     onRemoveTag: (TagEntity) -> Unit,
     onSelectRecipe: (AgentRecipe) -> Unit,
     onManageSkills: () -> Unit,
+    skillsPanelContent: @Composable (onDismiss: () -> Unit, onSelect: (AgentRecipe) -> Unit) -> Unit,
+    conversationFactory: (NoteEntity) -> com.sponteoai.chillscript.ai.NoteConversationController,
+    onReplaceConversationContent: suspend (String) -> Boolean,
+    onConversationSettled: (Boolean) -> Unit,
     onStartRecording: () -> Unit,
     onBold: () -> Unit,
     onChecklist: () -> Unit,
@@ -166,7 +172,11 @@ fun EditorScreen(
     onDismissFirstActionGuide: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    val conversation = remember(note?.id) { note?.let(conversationFactory) }
+    DisposableEffect(conversation) { onDispose { conversation?.cancel() } }
     var workspace by remember { mutableStateOf(IOSNoteWorkspace.NOTE) }
+    var conversationExpanded by remember(note?.id) { mutableStateOf(false) }
+    BackHandler(enabled = conversationExpanded) { conversationExpanded = false }
     var menuOpen by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
@@ -189,14 +199,15 @@ fun EditorScreen(
     }
 
     LaunchedEffect(guideStage) {
-        // The apply event below owns the transition back to Note. If the user
-        // dismisses the AI flow instead, preserve the current Create workspace.
+        if (guideStage == HomeFirstActionStage.TapRecordTab || guideStage == HomeFirstActionStage.TapTeleprompter) conversationExpanded = false
+        // Keep the conversation visible after applying; let the user choose Record.
         if (guideStage == HomeFirstActionStage.TapRecordTab) return@LaunchedEffect
         val guidedWorkspace = when (guideStage) {
             HomeFirstActionStage.ReviewTranscript,
             HomeFirstActionStage.TapCreateTab -> IOSNoteWorkspace.NOTE
             HomeFirstActionStage.TapAISkills,
-            HomeFirstActionStage.WaitingForAISkillsDismissal -> IOSNoteWorkspace.CREATE
+            HomeFirstActionStage.WaitingForAISkillsDismissal,
+            HomeFirstActionStage.ReviewAIReply -> IOSNoteWorkspace.CREATE
             HomeFirstActionStage.TapTeleprompter -> IOSNoteWorkspace.RECORD
             else -> workspace
         }
@@ -206,6 +217,7 @@ fun EditorScreen(
 
     LaunchedEffect(returnToNoteRequest) {
         if (returnToNoteRequest > 0L) {
+            conversationExpanded = false
             focusManager.clearFocus()
             workspace = IOSNoteWorkspace.NOTE
         }
@@ -213,6 +225,7 @@ fun EditorScreen(
 
     Box(modifier.fillMaxSize().background(ChillColors.BackgroundSecondary)) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            if (!conversationExpanded) {
             Row(
                 Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 20.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -272,87 +285,90 @@ fun EditorScreen(
                 }
             }
 
+            if (isDeleted) { IOSTrashCountdown(note?.deletedAt) }
+            IOSNoteContext(
+                note = note,
+                tags = selectedTags,
+                isDeleted = isDeleted,
+                onOpenSource = onOpenSource,
+                isProMember = isProMember,
+                onResolveImportCredits = onResolveImportCredits,
+                onRemoveTag = onRemoveTag,
+            )
+            IOSWorkspacePicker(
+                selected = workspace,
+                createEnabled = canUseAISkills && !isDeleted,
+                guideStage = guideStage,
+                onCreateBounds = { createTabBounds = it },
+                onRecordBounds = { recordTabBounds = it },
+                onSelect = { page ->
+                    if (page != IOSNoteWorkspace.NOTE) focusManager.clearFocus()
+                    workspace = page
+                    when {
+                        guideStage == HomeFirstActionStage.TapCreateTab && page == IOSNoteWorkspace.CREATE -> onOpenCreateTab()
+                        guideStage == HomeFirstActionStage.TapRecordTab && page == IOSNoteWorkspace.RECORD -> onOpenRecordTab()
+                    }
+                },
+            )
+            }
             BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
-                val minimumContentHeight = (maxHeight - 56.dp).coerceAtLeast(120.dp)
-                LazyColumn(
-                    Modifier
-                        .fillMaxSize()
-                        .navigationBarsPadding()
-                        .imePadding(),
-                    contentPadding = PaddingValues(bottom = if (guideStage == HomeFirstActionStage.ReviewTranscript) 156.dp else 0.dp),
-                ) {
-                    if (isDeleted) {
-                        item(key = "trash-countdown") {
-                            IOSTrashCountdown(note?.deletedAt)
+                val minimumContentHeight = maxHeight.coerceAtLeast(120.dp)
+                if (workspace == IOSNoteWorkspace.CREATE && conversation != null) {
+                    NoteConversationWorkspace(
+                        controller = conversation, content = text.text, recipes = workspaceRecipes,
+                        expanded = conversationExpanded, onToggleExpanded = { conversationExpanded = !conversationExpanded },
+                        enabled = canUseAISkills && !isDeleted, onReplace = onReplaceConversationContent,
+                        onSkillSelected = onOpenAISkill, onFirstSkillBounds = { firstSkillBounds = it },
+                        skillsPanelContent = skillsPanelContent,
+                        onConversationSettled = onConversationSettled,
+                        modifier = Modifier.navigationBarsPadding().imePadding(),
+                    )
+                } else {
+                    LazyColumn(
+                        Modifier.fillMaxSize().navigationBarsPadding().imePadding(),
+                        contentPadding = PaddingValues(bottom = if (guideStage == HomeFirstActionStage.ReviewTranscript) 156.dp else 0.dp),
+                    ) {
+                        item(key = workspace.name) {
+                            when (workspace) {
+                                IOSNoteWorkspace.NOTE -> IOSNoteEditor(
+                                    value = text,
+                                    enabled = canEdit && !isDeleted,
+                                    onValueChange = onTextChange,
+                                    onOpenLink = onOpenSource,
+                                    focusRequester = focusRequester,
+                                    cursorBottomPadding = if (imeVisible) 48.dp else 0.dp,
+                                    modifier = Modifier.heightIn(min = minimumContentHeight),
+                                )
+                                IOSNoteWorkspace.CREATE -> IOSCreateWorkspace(
+                                    recipes = workspaceRecipes,
+                                    enabled = canUseAISkills && !isDeleted,
+                                    onSelect = onSelectRecipe,
+                                    onManageSkills = onManageSkills,
+                                    minimumHeight = minimumContentHeight,
+                                    onFirstSkillBounds = { firstSkillBounds = it },
+                                    onFirstSkillSelected = onOpenAISkill,
+                                    guideStage = guideStage,
+                                )
+                                IOSNoteWorkspace.RECORD -> IOSRecordWorkspace(
+                                    script = text.text,
+                                    enabled = canEdit && !isDeleted,
+                                    onStartRecording = onStartRecording,
+                                    minimumHeight = minimumContentHeight,
+                                    onStartBounds = { teleprompterBounds = it },
+                                    onFirstActionStart = onOpenTeleprompter,
+                                    guideStage = guideStage,
+                                )
+                            }
                         }
-                    }
-                    item(key = "note-context") {
-                        IOSNoteContext(
-                            note = note,
-                            tags = selectedTags,
-                            isDeleted = isDeleted,
-                            onOpenSource = onOpenSource,
-                            isProMember = isProMember,
-                            onResolveImportCredits = onResolveImportCredits,
-                            onRemoveTag = onRemoveTag,
-                        )
-                    }
-                    stickyHeader(key = "workspace-picker") {
-                        IOSWorkspacePicker(
-                            selected = workspace,
-                            createEnabled = canUseAISkills && !isDeleted,
-                            guideStage = guideStage,
-                            onCreateBounds = { createTabBounds = it },
-                            onRecordBounds = { recordTabBounds = it },
-                            onSelect = { page ->
-                                if (page != IOSNoteWorkspace.NOTE) focusManager.clearFocus()
-                                workspace = page
-                                when {
-                                    guideStage == HomeFirstActionStage.TapCreateTab && page == IOSNoteWorkspace.CREATE -> onOpenCreateTab()
-                                    guideStage == HomeFirstActionStage.TapRecordTab && page == IOSNoteWorkspace.RECORD -> onOpenRecordTab()
-                                }
-                            },
-                        )
-                    }
-                    item(key = workspace.name) {
-                        when (workspace) {
-                            IOSNoteWorkspace.NOTE -> IOSNoteEditor(
-                                value = text,
-                                enabled = canEdit && !isDeleted,
-                                onValueChange = onTextChange,
-                                onOpenLink = onOpenSource,
-                                focusRequester = focusRequester,
-                                cursorBottomPadding = if (imeVisible) 48.dp else 0.dp,
-                                modifier = Modifier.heightIn(min = minimumContentHeight),
-                            )
-                            IOSNoteWorkspace.CREATE -> IOSCreateWorkspace(
-                                recipes = workspaceRecipes,
-                                enabled = canUseAISkills && !isDeleted,
-                                onSelect = onSelectRecipe,
-                                onManageSkills = onManageSkills,
-                                minimumHeight = minimumContentHeight,
-                                onFirstSkillBounds = { firstSkillBounds = it },
-                                onFirstSkillSelected = onOpenAISkill,
-                                guideStage = guideStage,
-                            )
-                            IOSNoteWorkspace.RECORD -> IOSRecordWorkspace(
-                                script = text.text,
-                                enabled = canEdit && !isDeleted,
-                                onStartRecording = onStartRecording,
-                                minimumHeight = minimumContentHeight,
-                                onStartBounds = { teleprompterBounds = it },
-                                onFirstActionStart = onOpenTeleprompter,
-                                guideStage = guideStage,
-                            )
-                        }
-                    }
-                    if (workspace == IOSNoteWorkspace.NOTE && imeVisible) {
-                        item(key = "keyboard-toolbar-spacer") {
-                            Spacer(Modifier.height(48.dp))
+                        if (workspace == IOSNoteWorkspace.NOTE && imeVisible) {
+                            item(key = "keyboard-toolbar-spacer") {
+                                Spacer(Modifier.height(48.dp))
+                            }
                         }
                     }
                 }
             }
+
         }
 
         if (workspace == IOSNoteWorkspace.NOTE && imeVisible) {
@@ -954,7 +970,8 @@ private fun IOSWorkspacePicker(
                 HomeFirstActionStage.ReviewTranscript -> IOSNoteWorkspace.NOTE
                 HomeFirstActionStage.TapCreateTab,
                 HomeFirstActionStage.TapAISkills,
-                HomeFirstActionStage.WaitingForAISkillsDismissal -> IOSNoteWorkspace.CREATE
+                HomeFirstActionStage.WaitingForAISkillsDismissal,
+                HomeFirstActionStage.ReviewAIReply -> IOSNoteWorkspace.CREATE
                 HomeFirstActionStage.TapRecordTab,
                 HomeFirstActionStage.TapTeleprompter -> IOSNoteWorkspace.RECORD
                 else -> null

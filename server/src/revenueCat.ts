@@ -39,6 +39,13 @@ export type RevenueCatWebhook = {
     transferred_to?: string[] | null;
     app_id?: string | null;
     environment?: string | null;
+    period_type?: string | null;
+    purchased_at_ms?: number | null;
+    expiration_at_ms?: number | null;
+    grace_period_expiration_at_ms?: number | null;
+    product_id?: string | null;
+    store?: string | null;
+    cancel_reason?: string | null;
   };
 };
 

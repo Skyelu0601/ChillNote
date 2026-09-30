@@ -2,6 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+    @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var aiConsentManager: AIConsentManager
     @StateObject private var storeService = StoreService.shared
@@ -15,6 +16,11 @@ struct ContentView: View {
 
     var body: some View {
         rootView
+            .onChange(of: scenePhase) { _, phase in
+                if phase == .active, authService.currentUserId != nil {
+                    Task { await storeService.refreshSubscriptionStatus() }
+                }
+            }
             .onAppear {
                 syncOnboardingState(for: authService.currentUserId)
                 if let userId = authService.currentUserId,
@@ -119,6 +125,28 @@ struct ContentView: View {
             introPaywallGateView
         } else {
             HomeView()
+                .safeAreaInset(edge: .top) {
+                    if storeService.hasAppleBillingIssue {
+                        Link(destination: URL(string: "https://apps.apple.com/account/billing")!) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "exclamationmark.circle.fill")
+                                VStack(alignment: .leading, spacing: 3) {
+                                    Text(L10n.text("subscription.billing_issue.title"))
+                                        .font(.subheadline.weight(.semibold))
+                                    Text(L10n.text("subscription.billing_issue.action"))
+                                        .font(.caption)
+                                }
+                                Spacer(minLength: 0)
+                                Image(systemName: "arrow.up.right")
+                            }
+                            .foregroundColor(.primary)
+                            .padding(12)
+                            .frame(maxWidth: .infinity)
+                            .background(Color.orange.opacity(0.15), in: RoundedRectangle(cornerRadius: 12))
+                            .padding(.horizontal, 16)
+                        }
+                    }
+                }
         }
     }
 

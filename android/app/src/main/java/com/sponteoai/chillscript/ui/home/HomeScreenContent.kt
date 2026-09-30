@@ -105,12 +105,8 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -120,7 +116,6 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.util.VelocityTracker
 import androidx.compose.ui.platform.LocalDensity
@@ -163,7 +158,6 @@ import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.Locale
 import kotlin.math.abs
-import kotlin.math.max
 
 /**
  * The Android rendering of the current iOS HomeView shell.
@@ -193,6 +187,8 @@ fun HomeScreenContent(
     hasLoadedNotesAtLeastOnce: Boolean,
     pendingRecordingsCount: Int,
     subscriptionTier: String,
+    hasBillingIssue: Boolean = false,
+    onFixBillingIssue: () -> Unit = {},
     creditBalance: Int?,
     snackbarHostState: SnackbarHostState,
     onSelectSection: (String) -> Unit,
@@ -314,6 +310,18 @@ fun HomeScreenContent(
                 onDeleteSelection = onDeleteSelection,
                 onEmptyTrash = onEmptyTrash,
             )
+
+            if (hasBillingIssue) {
+                Button(
+                    onClick = onFixBillingIssue,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
+                ) {
+                    Column {
+                        Text(stringResource(R.string.subscription_billing_issue_title))
+                        Text(stringResource(R.string.subscription_billing_issue_action))
+                    }
+                }
+            }
 
             AnimatedVisibility(
                 visible = searchVisible,
@@ -456,7 +464,6 @@ fun HomeScreenContent(
 
         IOSHomeSidebar(
             visible = sidebarOpen,
-            notes = allNotes,
             tags = tags,
             selectedSection = if (showSectionPicker || isTrash) selectedSection else "",
             selectedTagId = selectedTagId,
@@ -1602,7 +1609,6 @@ private sealed interface SidebarDropTarget {
 @Composable
 private fun IOSHomeSidebar(
     visible: Boolean,
-    notes: List<NoteEntity>,
     tags: List<TagEntity>,
     selectedSection: String,
     selectedTagId: String?,
@@ -1769,12 +1775,6 @@ private fun IOSHomeSidebar(
                         )
                     }
                 }
-
-                IOSSidebarStats(
-                    notes = notes.filter { it.deletedAt == null },
-                    locale = locale,
-                    modifier = Modifier.padding(horizontal = 16.dp),
-                )
 
                 Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     IOSSidebarItem(
@@ -2062,205 +2062,6 @@ private fun creditColor(balance: Int?): Color = when {
 }
 
 @Composable
-private fun IOSSidebarStats(notes: List<NoteEntity>, locale: Locale, modifier: Modifier = Modifier) {
-    val snapshot = remember(notes, locale) { SidebarStats.from(notes) }
-    val streakText = pluralStringResource(
-        R.plurals.sidebar_stats_streak,
-        snapshot.streakDays,
-        snapshot.streakDays,
-    )
-    val streakCountText = snapshot.streakDays.toString()
-    val styledStreak = remember(streakText, streakCountText) {
-        buildAnnotatedString {
-            append(streakText)
-            val start = streakText.indexOf(streakCountText)
-            if (start >= 0) {
-                addStyle(
-                    SpanStyle(
-                        color = ChillColors.BrandBlue,
-                        fontFamily = FontFamily.Serif,
-                        fontSize = 36.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                    start,
-                    start + streakCountText.length,
-                )
-            }
-        }
-    }
-    val weekSummary = when (snapshot.trend) {
-        SidebarTrend.Up -> stringResource(R.string.sidebar_stats_week_up, snapshot.weekCount, snapshot.percent)
-        SidebarTrend.Down -> stringResource(R.string.sidebar_stats_week_down, snapshot.weekCount, snapshot.percent)
-        SidebarTrend.New -> stringResource(R.string.sidebar_stats_week_new_start, snapshot.weekCount)
-        SidebarTrend.Same -> stringResource(R.string.sidebar_stats_week_same, snapshot.weekCount)
-    }
-    val styledWeekSummary = remember(weekSummary, snapshot) {
-        buildAnnotatedString {
-            append(weekSummary)
-            val countText = snapshot.weekCount.toString()
-            val countStart = weekSummary.indexOf(countText)
-            if (countStart >= 0) {
-                addStyle(
-                    SpanStyle(
-                        color = ChillColors.BrandBlue,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                    countStart,
-                    countStart + countText.length,
-                )
-            }
-            val trendCandidates = when (snapshot.trend) {
-                SidebarTrend.Up -> listOf("+${snapshot.percent}%", "+${snapshot.percent} %", "+${snapshot.percent}\u00A0%")
-                SidebarTrend.Down -> listOf("${snapshot.percent}%", "${snapshot.percent} %", "${snapshot.percent}\u00A0%")
-                SidebarTrend.New, SidebarTrend.Same -> emptyList()
-            }
-            val trendText = trendCandidates.firstOrNull { weekSummary.contains(it) }
-            if (trendText != null) {
-                val trendStart = weekSummary.indexOf(trendText)
-                addStyle(
-                    SpanStyle(
-                        color = if (snapshot.trend == SidebarTrend.Up) ChillColors.BrandTeal else Color(0xFFE58B2A),
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Bold,
-                    ),
-                    trendStart,
-                    trendStart + trendText.length,
-                )
-            }
-        }
-    }
-    Column(
-        modifier
-            .fillMaxWidth()
-            .background(
-                androidx.compose.ui.graphics.Brush.linearGradient(
-                    listOf(ChillColors.BrandBlue.copy(alpha = 0.11f), ChillColors.BackgroundSecondary.copy(alpha = 0.96f)),
-                ),
-                RoundedCornerShape(12.dp),
-            )
-            .border(1.dp, ChillColors.BrandBlue.copy(alpha = 0.08f), RoundedCornerShape(12.dp))
-            .padding(start = 14.dp, top = 14.dp, end = 14.dp, bottom = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp),
-    ) {
-        Text(
-            styledStreak,
-            color = ChillColors.TextMain,
-            fontFamily = FontFamily.Serif,
-            fontSize = 21.sp,
-            fontWeight = FontWeight.Bold,
-            maxLines = 1,
-        )
-        Text(
-            styledWeekSummary,
-            color = ChillColors.TextSub,
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 2,
-        )
-        IOSSidebarActivityChart(
-            counts = snapshot.dailyCounts,
-            locale = locale,
-            modifier = Modifier.fillMaxWidth().height(110.dp),
-        )
-    }
-}
-
-@Composable
-private fun IOSSidebarActivityChart(counts: List<Int>, locale: Locale, modifier: Modifier = Modifier) {
-    val today = remember { LocalDate.now() }
-    val todayLabel = stringResource(R.string.sidebar_stats_today)
-    val dayLabels = remember(today, locale, counts.size) {
-        val formatter = DateTimeFormatter.ofPattern("EEEEE", locale)
-        counts.indices.map { index ->
-            today.minusDays((counts.lastIndex - index).toLong()).format(formatter)
-        }
-    }
-    Box(modifier) {
-        Canvas(Modifier.fillMaxSize()) {
-            if (counts.isEmpty()) return@Canvas
-            val maxValue = max(1, counts.maxOrNull() ?: 1)
-            val chartHeight = max(size.height - 24.dp.toPx(), 1f)
-            val horizontalInset = 7.dp.toPx()
-            val step = if (counts.size <= 1) 0f else (size.width - horizontalInset * 2f) / (counts.size - 1)
-            val usableHeight = max(chartHeight - 16.dp.toPx(), 1f)
-            val points = counts.mapIndexed { index, count ->
-                Offset(
-                    x = horizontalInset + index * step,
-                    y = chartHeight - 5.dp.toPx() - (count.toFloat() / maxValue) * usableHeight,
-                )
-            }
-            val area = Path().apply {
-                moveTo(points.first().x, chartHeight)
-                lineTo(points.first().x, points.first().y)
-                points.indices.drop(1).forEach { index ->
-                    val previous = points[index - 1]
-                    val point = points[index]
-                    val midpointX = (previous.x + point.x) / 2f
-                    cubicTo(midpointX, previous.y, midpointX, point.y, point.x, point.y)
-                }
-                lineTo(points.last().x, chartHeight)
-                close()
-            }
-            drawPath(
-                area,
-                Brush.verticalGradient(
-                    listOf(ChillColors.BrandBlue.copy(alpha = 0.28f), ChillColors.BrandBlue.copy(alpha = 0.02f)),
-                    endY = chartHeight,
-                ),
-            )
-            val line = Path().apply {
-                moveTo(points.first().x, points.first().y)
-                points.indices.drop(1).forEach { index ->
-                    val previous = points[index - 1]
-                    val point = points[index]
-                    val midpointX = (previous.x + point.x) / 2f
-                    cubicTo(midpointX, previous.y, midpointX, point.y, point.x, point.y)
-                }
-            }
-            drawPath(
-                line,
-                ChillColors.BrandBlue,
-                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round),
-            )
-            points.forEachIndexed { index, point ->
-                val isLast = index == points.lastIndex
-                val radius = (if (isLast) 6.5.dp else 4.5.dp).toPx()
-                drawCircle(
-                    color = if (isLast) ChillColors.BrandBlue else ChillColors.BackgroundSecondary,
-                    radius = radius,
-                    center = point,
-                )
-                drawCircle(
-                    color = ChillColors.BrandBlue,
-                    radius = radius,
-                    center = point,
-                    style = Stroke(width = (if (isLast) 3.dp else 2.dp).toPx()),
-                )
-            }
-        }
-        Row(
-            Modifier.fillMaxWidth().align(Alignment.BottomCenter),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            dayLabels.forEachIndexed { index, label ->
-                val isToday = index == dayLabels.lastIndex
-                Text(
-                    if (isToday) todayLabel else label,
-                    color = if (isToday) ChillColors.BrandBlue else ChillColors.TextSub,
-                    fontSize = 10.sp,
-                    fontWeight = if (isToday) FontWeight.Bold else FontWeight.Medium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Clip,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.weight(1f),
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun IOSSidebarItem(
     icon: ImageVector,
     title: String,
@@ -2459,50 +2260,6 @@ private fun IOSHomeEmptyState(section: String, hasActiveSearch: Boolean, modifie
         )
     }
 }
-
-private data class SidebarStats(
-    val streakDays: Int,
-    val weekCount: Int,
-    val percent: Int,
-    val trend: SidebarTrend,
-    val dailyCounts: List<Int>,
-) {
-    companion object {
-        fun from(notes: List<NoteEntity>): SidebarStats {
-            val zone = ZoneId.systemDefault()
-            val today = LocalDate.now(zone)
-            val dates = notes.mapNotNull { runCatching { Instant.parse(it.createdAt).atZone(zone).toLocalDate() }.getOrNull() }
-            val dateSet = dates.toSet()
-            var cursor = if (today in dateSet) today else today.minusDays(1)
-            var streak = 0
-            while (cursor in dateSet) {
-                streak += 1
-                cursor = cursor.minusDays(1)
-            }
-            val weekStart = today.minusDays((today.dayOfWeek.value - 1).toLong())
-            val current = dates.count { !it.isBefore(weekStart) && !it.isAfter(today) }
-            val previousStart = weekStart.minusWeeks(1)
-            val previousEnd = weekStart.minusDays(1)
-            val previous = dates.count { !it.isBefore(previousStart) && !it.isAfter(previousEnd) }
-            val trend = when {
-                previous == 0 && current > 0 -> SidebarTrend.New
-                current > previous -> SidebarTrend.Up
-                current < previous -> SidebarTrend.Down
-                else -> SidebarTrend.Same
-            }
-            val percent = if (previous == 0) 0 else ((kotlin.math.abs(current - previous).toDouble() / previous) * 100).toInt()
-            return SidebarStats(
-                streakDays = streak,
-                weekCount = current,
-                percent = percent,
-                trend = trend,
-                dailyCounts = (6 downTo 0).map { offset -> dates.count { it == today.minusDays(offset.toLong()) } },
-            )
-        }
-    }
-}
-
-private enum class SidebarTrend { Up, Down, Same, New }
 
 private fun tagsForNote(
     noteId: String,

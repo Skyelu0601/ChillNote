@@ -1,6 +1,9 @@
 import SwiftUI
 
 struct ChillRecipesView: View {
+    /// A selection action turns the library into the note's combined run/manage panel.
+    var onSelect: ((AgentRecipe) -> Void)? = nil
+    @State private var isManaging = false
     @StateObject private var recipeManager = RecipeManager.shared
     @StateObject private var storeService = StoreService.shared
     @State private var showingCreateRecipe = false
@@ -21,27 +24,36 @@ struct ChillRecipesView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
-                    SkillSection(
-                        title: L10n.text("recipes.section.installed"),
-                        recipes: installedRecipes,
-                        isInstalled: true,
-                        configureAction: configureAction,
-                        configureLabel: configureLabel,
-                        onToggle: toggleRecipe,
-                        onDelete: { pendingDeleteRecipe = $0 }
-                    )
+                    if !installedRecipes.isEmpty {
+                        SkillSection(
+                            title: L10n.text("recipes.section.installed"),
+                            recipes: installedRecipes,
+                            isInstalled: true,
+                            showsManagement: onSelect == nil || isManaging,
+                            onSelect: isManaging ? nil : onSelect,
+                            configureAction: configureAction,
+                            configureLabel: configureLabel,
+                            onToggle: toggleRecipe,
+                            onDelete: { pendingDeleteRecipe = $0 }
+                        )
+                    }
 
-                    SkillSection(
-                        title: L10n.text("recipes.section.available"),
-                        recipes: availableRecipes,
-                        isInstalled: false,
-                        configureAction: configureAction,
-                        configureLabel: configureLabel,
-                        onToggle: toggleRecipe,
-                        onDelete: { pendingDeleteRecipe = $0 }
-                    )
+                    if !availableRecipes.isEmpty {
+                        SkillSection(
+                            title: L10n.text("recipes.section.available"),
+                            recipes: availableRecipes,
+                            isInstalled: false,
+                            showsManagement: true,
+                            onSelect: nil,
+                            configureAction: configureAction,
+                            configureLabel: configureLabel,
+                            onToggle: toggleRecipe,
+                            onDelete: { pendingDeleteRecipe = $0 }
+                        )
+                    }
 
                     CreateCustomSkillRow(action: showCreateRecipe)
+                        .accessibilityIdentifier("skills-create-custom")
                         .padding(.top, 2)
                 }
                 .padding(.horizontal, 20)
@@ -49,8 +61,18 @@ struct ChillRecipesView: View {
                 .padding(.bottom, 28)
             }
         }
-        .navigationTitle(L10n.text("recipes.title"))
+        .navigationTitle(L10n.text(onSelect == nil ? "recipes.title" : "note_detail.ai_skills.sheet.title"))
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if onSelect != nil {
+                ToolbarItem(placement: .primaryAction) {
+                    Button(L10n.text(isManaging ? "common.done" : "recipes.action.manage")) {
+                        withAnimation { isManaging.toggle() }
+                    }
+                    .accessibilityIdentifier("skills-manage")
+                }
+            }
+        }
         .sheet(isPresented: $showingCreateRecipe) {
             CreateRecipeSheet(
                 name: $newRecipeName,
@@ -190,6 +212,8 @@ private struct SkillSection: View {
     let title: String
     let recipes: [AgentRecipe]
     let isInstalled: Bool
+    let showsManagement: Bool
+    let onSelect: ((AgentRecipe) -> Void)?
     let configureAction: (AgentRecipe) -> (() -> Void)?
     let configureLabel: (AgentRecipe) -> String
     let onToggle: (AgentRecipe) -> Void
@@ -208,6 +232,8 @@ private struct SkillSection: View {
                     SkillManagementRow(
                         recipe: recipe,
                         isInstalled: isInstalled,
+                        showsManagement: showsManagement,
+                        onSelect: onSelect.map { select in { select(recipe) } },
                         onConfigure: configureAction(recipe),
                         configureLabel: configureLabel(recipe),
                         onToggle: { onToggle(recipe) },
@@ -234,74 +260,80 @@ private struct SkillSection: View {
 private struct SkillManagementRow: View {
     let recipe: AgentRecipe
     let isInstalled: Bool
+    let showsManagement: Bool
+    let onSelect: (() -> Void)?
     let onConfigure: (() -> Void)?
     let configureLabel: String
     let onToggle: () -> Void
     let onDelete: (() -> Void)?
 
     var body: some View {
+        HStack(spacing: 4) {
+            if let onSelect {
+                Button(action: onSelect) {
+                    skillLabel
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("skills-run-\(recipe.id)")
+            } else {
+                skillLabel
+            }
+
+            if let onConfigure {
+                Button(action: onConfigure) {
+                    Image(systemName: "slider.horizontal.3")
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundColor(.textSub)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(configureLabel)
+                .accessibilityIdentifier("skills-configure-\(recipe.id)")
+            }
+
+            if showsManagement {
+                if let onDelete {
+                    Button(role: .destructive, action: onDelete) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 17))
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.text("home.notes.action.delete_permanently"))
+                    .accessibilityIdentifier("skills-delete-\(recipe.id)")
+                } else {
+                    Button(action: onToggle) {
+                        Image(systemName: isInstalled ? "minus.circle" : "plus.circle")
+                            .font(.system(size: 21, weight: .semibold))
+                            .foregroundColor(.textSub)
+                            .frame(width: 44, height: 44)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel(L10n.text(isInstalled ? "recipes.action.remove" : "recipes.action.add"))
+                    .accessibilityIdentifier("skills-\(isInstalled ? "remove" : "add")-\(recipe.id)")
+                }
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+    }
+
+    private var skillLabel: some View {
         HStack(spacing: 12) {
             CreatorSkillIcon(recipe: recipe, size: 18, container: 40)
-
             VStack(alignment: .leading, spacing: 3) {
                 Text(recipe.localizedName)
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundColor(.textMain)
-                    .lineLimit(1)
-
+                    .fixedSize(horizontal: false, vertical: true)
                 Text(recipe.localizedDescription)
                     .font(.system(size: 13))
                     .foregroundColor(.textSub)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
-
-            Spacer(minLength: 10)
-
-            HStack(spacing: 10) {
-                if let onConfigure {
-                    Button(action: onConfigure) {
-                        Image(systemName: "slider.horizontal.3")
-                            .font(.system(size: 17, weight: .medium))
-                            .foregroundColor(.textSub.opacity(0.75))
-                            .frame(width: 28, height: 28)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(configureLabel)
-                }
-
-                if let onDelete {
-                    Menu {
-                        Button(role: .destructive, action: onDelete) {
-                            Label(L10n.text("home.notes.action.delete_permanently"), systemImage: "trash")
-                        }
-                    } label: {
-                        Image(systemName: "ellipsis")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(.textSub)
-                            .frame(width: 28, height: 28)
-                            .background(Color.bgPrimary)
-                            .clipShape(Circle())
-                    }
-                    .buttonStyle(.plain)
-                } else {
-                    Button(action: onToggle) {
-                        Image(systemName: isInstalled ? "checkmark.circle.fill" : "plus.circle")
-                            .font(.system(size: 21, weight: .semibold))
-                            .foregroundColor(
-                                isInstalled
-                                    ? .accentSecondary
-                                    : .textSub.opacity(0.55)
-                            )
-                            .frame(width: 28, height: 28)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(L10n.text(isInstalled ? "recipes.action.remove" : "recipes.action.add"))
-                }
-            }
+            Spacer(minLength: 0)
         }
-        .frame(minHeight: 64)
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
         .contentShape(Rectangle())
     }
 }

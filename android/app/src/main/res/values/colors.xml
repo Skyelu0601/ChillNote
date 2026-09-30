@@ -3,4 +3,6 @@
     <color name="brand_ink">#17211F</color>
     <color name="brand_surface">#F7F8F4</color>
     <color name="brand_dark_background">#101615</color>
+    <color name="launch_background">#FDFCF8</color>
+    <color name="launch_accent">#2E5D91F5</color>
 </resources>

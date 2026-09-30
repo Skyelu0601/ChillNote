@@ -74,7 +74,8 @@ final class FirstActionGuideServiceTests: XCTestCase {
         service.markTranscriptReviewed(in: noteID)
         service.markCreateTabTapped(in: noteID)
         service.markAISkillsTapped(in: noteID)
-        service.markAISkillsFlowDismissed(in: noteID)
+        service.reconcileConversation(in: noteID, hasReply: true)
+        XCTAssertEqual(service.stage, .tapRecordTab)
         service.markRecordTabTapped(in: noteID)
         service.markTeleprompterTapped(in: noteID)
 
@@ -107,7 +108,8 @@ final class FirstActionGuideServiceTests: XCTestCase {
 
         service.markCreateTabTapped(in: noteID)
         service.markAISkillsTapped(in: noteID)
-        service.markAISkillsFlowDismissed(in: noteID)
+        service.reconcileConversation(in: noteID, hasReply: true)
+        XCTAssertEqual(service.stage, .tapRecordTab)
         XCTAssertEqual(service.stage, .tapRecordTab)
 
         service.markTeleprompterTapped(in: noteID)
@@ -116,6 +118,62 @@ final class FirstActionGuideServiceTests: XCTestCase {
         service.markRecordTabTapped(in: noteID)
         service.markTeleprompterTapped(in: noteID)
         XCTAssertEqual(service.stage, .completed)
+    }
+
+    func testFailedOrCancelledReplyCanRetryAndSuccessAdvancesDirectlyToRecord() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let noteID = UUID()
+        let service = makeService(now: now)
+        service.configure(userId: "new-user", accountCreatedAt: now)
+        service.registerSharedVideoImport(noteID: noteID)
+        service.updateTargetImportStatus(.completed)
+        service.markImportedNoteOpened(noteID)
+        service.markTranscriptReviewed(in: noteID)
+        service.markCreateTabTapped(in: noteID)
+        service.markAISkillsTapped(in: noteID)
+        XCTAssertEqual(service.stage, .waitingForAISkillsDismissal)
+        service.reconcileConversation(in: noteID, hasReply: false)
+        XCTAssertEqual(service.stage, .tapAISkills)
+        // Retrying the failed chat turn and a freeform first message both bypass the skill button.
+        service.reconcileConversation(in: noteID, hasReply: true)
+        XCTAssertEqual(service.stage, .tapRecordTab)
+        service.reconcileConversation(in: noteID, hasReply: true)
+        XCTAssertEqual(service.stage, .tapRecordTab)
+    }
+
+    func testRestoresLegacyWaitingStateAndRecoversMissingLocalReply() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let noteID = UUID()
+        defaults.set(["new-user": "waitingForAISkillsDismissal"], forKey: "onboarding.firstAction.stageByUserId")
+        defaults.set(["new-user": noteID.uuidString], forKey: "onboarding.firstAction.noteByUserId")
+        let service = makeService(now: now)
+        service.configure(userId: "new-user", accountCreatedAt: now)
+        XCTAssertEqual(service.stage, .waitingForAISkillsDismissal)
+        service.reconcileConversation(in: noteID, hasReply: true)
+        let restored = makeService(now: now)
+        restored.configure(userId: "new-user", accountCreatedAt: now)
+        XCTAssertEqual(restored.stage, .tapRecordTab)
+        // A previous build's removed review step is reconciled without showing its banner.
+        for hasReply in [false, true] {
+            defaults.set(["new-user": "reviewAIReply"], forKey: "onboarding.firstAction.stageByUserId")
+            let legacy = makeService(now: now)
+            legacy.configure(userId: "new-user", accountCreatedAt: now)
+            legacy.reconcileConversation(in: noteID, hasReply: hasReply)
+            XCTAssertEqual(legacy.stage, hasReply ? .tapRecordTab : .tapAISkills)
+        }
+    }
+
+    func testOtherNotesAndDismissedGuideCannotAdvance() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let service = makeService(now: now)
+        service.configure(userId: "new-user", accountCreatedAt: now)
+        let noteID = UUID()
+        service.registerSharedVideoImport(noteID: noteID)
+        service.reconcileConversation(in: UUID(), hasReply: true)
+        XCTAssertEqual(service.stage, .waitingForImport)
+        service.dismiss()
+        service.reconcileConversation(in: noteID, hasReply: true)
+        XCTAssertEqual(service.stage, .dismissed)
     }
 
     private func makeService(now: Date) -> FirstActionGuideService {

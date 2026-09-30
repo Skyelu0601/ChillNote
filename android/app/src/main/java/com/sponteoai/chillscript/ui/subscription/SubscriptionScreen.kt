@@ -173,6 +173,7 @@ fun SubscriptionScreen(
     var showContent by remember { mutableStateOf(false) }
     var onboardingTrialPage by rememberSaveable { mutableStateOf(OnboardingTrialPage.Intro) }
     var showWeeklyOffer by rememberSaveable { mutableStateOf(false) }
+    val purchaseInProgress = isPurchasing || billingState.purchasing
     val paywallViewId = rememberSaveable { UUID.randomUUID().toString() }
     val paywallPlacement = when (context) {
         SubscriptionScreenContext.OnboardingTrial -> "post_login"
@@ -302,7 +303,7 @@ fun SubscriptionScreen(
                             )
                             OnboardingTrialPage.Offer -> LegacyOnboardingTrialPriceContent(
                                 billingState = billingState,
-                                isPurchasing = isPurchasing,
+                                isPurchasing = purchaseInProgress,
                                 revealProgress = revealProgress,
                                 onPurchase = trackedPurchase,
                                 onRestore = onRestore,
@@ -314,7 +315,7 @@ fun SubscriptionScreen(
                     }
                     else -> StandardUpgradeContent(
                         billingState = billingState,
-                        isPurchasing = isPurchasing,
+                        isPurchasing = purchaseInProgress,
                         revealProgress = revealProgress,
                         onPurchase = trackedPurchase,
                         onRestore = onRestore,
@@ -329,13 +330,14 @@ fun SubscriptionScreen(
     BrandBackground(modifier = modifier.fillMaxSize()) {
         screenContent()
 
-        if (isPurchasing || billingState.restoring) {
+        if (purchaseInProgress || billingState.restoring) {
             SubscriptionLoadingOverlay()
         }
 
         if (showWeeklyOffer && weeklyProduct != null) {
             WeeklyOfferOverlay(
                 product = weeklyProduct,
+                purchaseEnabled = !purchaseInProgress,
                 onPurchase = {
                     showWeeklyOffer = false
                     ProductAnalytics.beginPurchase(paywallPlacement, paywallViewId, weeklyProduct.id)
@@ -605,6 +607,7 @@ private fun TrialReminderBellAnimation() {
 @Composable
 private fun WeeklyOfferOverlay(
     product: BillingProduct,
+    purchaseEnabled: Boolean,
     onPurchase: () -> Unit,
     onDecline: () -> Unit,
     onClose: () -> Unit,
@@ -726,7 +729,7 @@ private fun WeeklyOfferOverlay(
 
             PrimarySubscriptionButton(
                 text = stringResource(R.string.subscription_cta_start_weekly),
-                enabled = true,
+                enabled = purchaseEnabled,
                 showChevron = false,
                 onClick = onPurchase,
                 modifier = Modifier.padding(top = 18.dp),

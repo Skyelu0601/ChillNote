@@ -200,13 +200,6 @@
     <string name="common_back">戻る</string>
     <string name="common_request_failed">リクエストに失敗しました。もう一度お試しください。</string>
     <string name="voice_processing_error">文字起こしに失敗しました。音声は保留中の録音に保存されました。再試行してください。</string>
-    <string name="shared_video_import_preparing">共有された動画を準備しています…</string>
-    <string name="shared_video_import_error_too_large">この動画は 100 MB を超えています。より小さい動画を選択してください。</string>
-    <string name="shared_video_import_error_too_long">この動画は 3 時間を超えています。より短い動画を選択してください。</string>
-    <string name="shared_video_import_error_no_audio">この動画には文字起こしできる音声トラックがありません。</string>
-    <string name="shared_video_import_error_unsupported">この動画形式または音声トラックには対応していません。</string>
-    <string name="shared_video_import_error_empty">この動画は空です。</string>
-    <string name="shared_video_import_error_failed">この動画を読み込めませんでした。もう一度共有してください。</string>
     <string name="ai_request_error">AIへのリクエストに失敗しました。もう一度お試しください。</string>
     <string name="sync_error">現在同期できません。ローカルの変更は保存されています。</string>
     <string name="common_delete">削除</string>
@@ -652,9 +645,9 @@
     <string name="quick_capture_link_import_card_title">ノートを作成中…</string>
     <string name="quick_capture_link_import_card_body">そのまま閲覧できます。ここで仕上げておきます。</string>
     <string name="sidebar_tags_title">テーマ</string>
-    <string name="onboarding_first_action_create_tab">「作成」をタップして、このノートから新しいコンテンツを作りましょう。</string>
-    <string name="onboarding_first_action_ai_skills">AIスキルを1つ選んで、このノートからコンテンツを作りましょう。</string>
-    <string name="onboarding_first_action_record_tab">コンテンツの準備ができました。「録画」をタップして撮影の準備をしましょう。</string>
+    <string name="onboarding_first_action_create_tab">「作成」をタップして、このノートについて Chillo と話しましょう。</string>
+    <string name="onboarding_first_action_ai_skills">スキルをタップするとすぐに送信され、Chillo がここで返信します。</string>
+    <string name="onboarding_first_action_record_tab">「撮影」をタップして、このノートを使った撮影を試しましょう。</string>
     <string name="onboarding_first_action_teleprompter">台本の準備ができました。ここをタップしてテレプロンプターを開き、録画を始めましょう。</string>
     <string name="onboarding_first_action_transcript_review_title">動画の文字起こしが完了しました</string>
     <string name="onboarding_first_action_transcript_review_action">これを使って作成してみる</string>
@@ -744,4 +737,18 @@
     <string name="notifications_error">通知を同期できませんでした。もう一度お試しください。</string>
     <string name="notifications_retry">再試行</string>
     <string name="share_extension_open_app">ChillScript を開く</string>
+    <string name="subscription_billing_issue_title">お支払いの確認が必要です</string>
+    <string name="subscription_billing_issue_action">Proを継続するにはお支払い方法を更新してください</string>
+    <string name="note_chat_welcome_title">この内容をどうしますか？</string>
+    <string name="note_chat_welcome_message">質問するか、スキルを選んで始めましょう。</string>
+    <string name="note_chat_all_skills">すべてのスキル</string>
+    <string name="note_chat_skills">スキル</string>
+    <string name="note_chat_skill_badge">スキル</string>
+    <string name="note_chat_replace">この内容を使う</string>
+    <string name="note_chat_failed">返信を受信できませんでした。もう一度お試しください。</string>
+    <string name="note_chat_history_error">この会話を保存または読み込めませんでした。</string>
+    <string name="note_chat_save_error">ノートを保存できませんでした。もう一度お試しください。</string>
+    <string name="note_chat_expand">チャットを拡大</string>
+    <string name="note_chat_collapse">チャットを縮小</string>
+    <string name="creator_skills_manage">管理</string>
 </resources>

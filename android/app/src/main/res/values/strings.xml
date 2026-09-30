@@ -210,13 +210,6 @@
     <string name="common_back">Back</string>
     <string name="common_request_failed">Request failed. Please try again.</string>
     <string name="voice_processing_error">Transcription failed. Audio was saved to Pending Records. Please retry.</string>
-    <string name="shared_video_import_preparing">Preparing shared video…</string>
-    <string name="shared_video_import_error_too_large">This video is larger than 100 MB. Choose a smaller video.</string>
-    <string name="shared_video_import_error_too_long">This video is longer than 3 hours. Choose a shorter video.</string>
-    <string name="shared_video_import_error_no_audio">This video has no audio track to transcribe.</string>
-    <string name="shared_video_import_error_unsupported">This video format or audio track is not supported.</string>
-    <string name="shared_video_import_error_empty">This video is empty.</string>
-    <string name="shared_video_import_error_failed">Could not import this video. Please try sharing it again.</string>
     <string name="ai_request_error">AI request failed. Please try again.</string>
     <string name="sync_error">We can’t sync right now. Your local changes have been kept.</string>
     <string name="common_delete">Delete</string>
@@ -668,9 +661,9 @@
     <string name="quick_capture_link_import_card_title">Creating your note…</string>
     <string name="quick_capture_link_import_card_body">You can keep browsing—we’ll finish it here.</string>
     <string name="sidebar_tags_title">TOPICS</string>
-    <string name="onboarding_first_action_create_tab">Tap Create to turn this note into new content.</string>
-    <string name="onboarding_first_action_ai_skills">Choose an AI Skill to create from this note.</string>
-    <string name="onboarding_first_action_record_tab">Your content is ready. Tap Record to get ready to film.</string>
+    <string name="onboarding_first_action_create_tab">Tap Create to chat with Chillo about this note.</string>
+    <string name="onboarding_first_action_ai_skills">Tap a skill to send it instantly. Chillo will reply here.</string>
+    <string name="onboarding_first_action_record_tab">Tap Record to try recording with your note.</string>
     <string name="onboarding_first_action_teleprompter">Your script is ready. Tap here to open the teleprompter and start recording.</string>
     <string name="onboarding_first_action_transcript_review_title">Your video transcript is ready</string>
     <string name="onboarding_first_action_transcript_review_action">See what you can create</string>
@@ -760,4 +753,18 @@
     <string name="notifications_error">Notifications could not be synced. Please try again.</string>
     <string name="notifications_retry">Try again</string>
     <string name="share_extension_open_app">Open ChillScript</string>
+    <string name="subscription_billing_issue_title">Payment needs attention</string>
+    <string name="subscription_billing_issue_action">Update your payment method to keep Pro active</string>
+    <string name="note_chat_welcome_title">What would you like to do?</string>
+    <string name="note_chat_welcome_message">Ask a question or choose a skill to get started.</string>
+    <string name="note_chat_all_skills">All Skills</string>
+    <string name="note_chat_skills">Skills</string>
+    <string name="note_chat_skill_badge">Skill</string>
+    <string name="note_chat_replace">Use this</string>
+    <string name="note_chat_failed">No reply received. Please try again.</string>
+    <string name="note_chat_history_error">Could not save or load this conversation.</string>
+    <string name="note_chat_save_error">Could not save the note. Please try again.</string>
+    <string name="note_chat_expand">Expand chat</string>
+    <string name="note_chat_collapse">Collapse chat</string>
+    <string name="creator_skills_manage">Manage</string>
 </resources>

@@ -3,7 +3,6 @@ import SwiftUI
 struct NoteDetailAlertsAndSheets: ViewModifier {
     @ObservedObject var viewModel: NoteDetailViewModel
     let onAISkillApplied: () -> Void
-    @StateObject private var recipeManager = RecipeManager.shared
 
     func body(content: Content) -> some View {
         content
@@ -14,7 +13,6 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
             }
             .sheet(isPresented: $viewModel.showAISkillsSheet, onDismiss: viewModel.aiSkillsSheetDidDismiss) {
                 NoteDetailAISkillsSheet(
-                    recipes: recipeManager.savedRecipes,
                     onSelect: { viewModel.startAISkill($0) }
                 )
             }

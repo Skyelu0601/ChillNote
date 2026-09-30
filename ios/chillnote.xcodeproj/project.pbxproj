@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		4F5348013300000000000004 /* ShareView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 05334515EB91675E72A377E2 /* ShareView.swift */; };
+		4F5348013300000000000005 /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 737E7F76A4F0D5112A54E704 /* ShareViewController.swift */; };
 		3D61A20292BAAFD3B14AF5A3 /* ShareModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3491B96189736026BC88AF /* ShareModels.swift */; };
 		493CE1B92F21DB9600F2A94F /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 493CE1B82F21DB9600F2A94F /* WidgetKit.framework */; };
 		493CE1BB2F21DB9600F2A94F /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 493CE1BA2F21DB9600F2A94F /* SwiftUI.framework */; };
@@ -22,6 +24,9 @@
 		4C52430132F0000000A11F1A /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 4C52430332F0000000A11F1A /* RevenueCat */; };
 		4D50480132F0000000A11F1A /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 4D50480332F0000000A11F1A /* PostHog */; };
 		4E41500132F1000000A11F1A /* AppsFlyerLib-Strict in Frameworks */ = {isa = PBXBuildFile; productRef = 4E41500332F1000000A11F1A /* AppsFlyerLib-Strict */; };
+		4F5348013300000000000001 /* ShareModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3491B96189736026BC88AF /* ShareModels.swift */; };
+		4F5348013300000000000002 /* ShareImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848A4B6DBF955B10631AC303 /* ShareImportService.swift */; };
+		4F5348013300000000000003 /* ShareL10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7C8A054AC616AD68350DA3 /* ShareL10n.swift */; };
 		51BBCBCA3E5F5686457FE3C9 /* ShareL10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7C8A054AC616AD68350DA3 /* ShareL10n.swift */; };
 		932170DB1678D35ED224F76C /* ShareViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 737E7F76A4F0D5112A54E704 /* ShareViewController.swift */; };
 		9339EBEAC205D67B1EE414EF /* ChillNoteShareExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = CEF4C767BEF8D0B5809BF10B /* ChillNoteShareExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -507,6 +512,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4F5348013300000000000004 /* ShareView.swift in Sources */,
+				4F5348013300000000000005 /* ShareViewController.swift in Sources */,
+				4F5348013300000000000001 /* ShareModels.swift in Sources */,
+				4F5348013300000000000002 /* ShareImportService.swift in Sources */,
+				4F5348013300000000000003 /* ShareL10n.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

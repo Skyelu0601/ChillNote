@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import chillnote
 
 final class ChilloModelsTests: XCTestCase {
@@ -32,6 +33,13 @@ final class ChilloModelsTests: XCTestCase {
         )
 
         XCTAssertEqual(rendered.string, "Supported. Orphaned.")
+    }
+
+    func testCreateAnswerRendersHeadingsBoldAndBulletsWithoutRemovingNumbers() {
+        let rendered = ChilloCitationRenderer.richText("# Title\n#### Detail\n**Bold**\n* First\n+ Second\nKeep [42]")
+        XCTAssertEqual(rendered.string, "Title\nDetail\nBold\n• First\n• Second\nKeep [42]")
+        let font = rendered.attribute(.font, at: 0, effectiveRange: nil) as? UIFont
+        XCTAssertTrue(font?.fontDescriptor.symbolicTraits.contains(.traitBold) == true)
     }
 
     func testNotesUsedAreDeduplicatedByNote() {

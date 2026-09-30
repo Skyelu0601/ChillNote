@@ -3,7 +3,7 @@ import test from "node:test";
 import type { Express, Request, RequestHandler, Response } from "express";
 import { registerSubscriptionVerificationRoutes } from "./subscriptionVerification.js";
 
-function fixture(pro = false, unavailable = false) {
+function fixture(pro = false, unavailable = false, billingIssue = false) {
   const routes = new Map<string, RequestHandler>();
   const lookedUp: string[] = [];
   registerSubscriptionVerificationRoutes({
@@ -17,7 +17,8 @@ function fixture(pro = false, unavailable = false) {
         productId: pro ? "com.chillnote.pro.yearly" : null, store: "app_store", originalTransactionId: null };
     },
     effective: async () => ({ tier: pro ? "pro" : "free",
-      expiresAt: pro ? new Date("2030-01-01") : null, source: pro ? "revenuecat" : null })
+      expiresAt: pro ? new Date("2030-01-01") : null, source: pro ? "revenuecat" : null }),
+    billingIssue: async () => billingIssue ? { store: "app_store", productId: "com.chillnote.pro.yearly" } : null
   });
   return {
     lookedUp,
@@ -55,5 +56,12 @@ for (const path of ["/subscription/verify", "/subscription/revenuecat/sync"]) {
     const result = await fixture(false, true).call(path, { productId: "pro", expiresDate: "2099-01-01" });
     assert.equal(result.status, 503);
     assert.equal(result.response.tier, undefined);
+  });
+  test(`${path}: billing warning comes from server state, not request metadata`, async () => {
+    const active = await fixture(true, false, true).call(path, { billingIssue: false });
+    assert.deepEqual(active.response.billingIssue,
+      { store: "app_store", productId: "com.chillnote.pro.yearly" });
+    const clear = await fixture().call(path, { billingIssue: true });
+    assert.equal(clear.response.billingIssue, null);
   });
 }

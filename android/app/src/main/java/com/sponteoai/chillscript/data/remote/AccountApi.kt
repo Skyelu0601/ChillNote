@@ -12,7 +12,10 @@ import java.net.URL
     val tier: String,
     val expiresAt: String? = null,
     val activeProductId: String? = null,
+    val billingIssue: BillingIssueResponse? = null,
 )
+
+@Serializable data class BillingIssueResponse(val store: String, val productId: String? = null)
 
 @Serializable data class CreditBalanceResponse(val balance: Int? = null, val tier: String? = null)
 @Serializable data class CreditConsumeResponse(val balance: Int? = null, val tier: String? = null)

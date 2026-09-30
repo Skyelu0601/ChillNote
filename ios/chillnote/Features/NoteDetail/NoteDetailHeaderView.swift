@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct NoteDetailHeaderView: View {
+    var title: String? = nil
     let isDeleted: Bool
     let onBack: () -> Void
     let onRestore: () -> Void
@@ -19,7 +20,10 @@ struct NoteDetailHeaderView: View {
             .buttonStyle(.bouncy)
             .accessibilityLabel(L10n.text("note_detail.header.accessibility.back"))
 
-            Spacer()
+            if let title {
+                Text(title).font(.subheadline.weight(.semibold)).lineLimit(1)
+                    .frame(maxWidth: .infinity)
+            } else { Spacer() }
 
             if isDeleted {
                 Button(action: onRestore) {

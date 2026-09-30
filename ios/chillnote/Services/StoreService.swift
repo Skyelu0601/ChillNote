@@ -313,6 +313,7 @@ class StoreService: ObservableObject {
     // Subscription Details
     @Published var subscriptionExpirationDate: Date?
     @Published var activeSubscriptionProductId: String?
+    @Published private(set) var hasAppleBillingIssue = false
 
     // MARK: - Credit System
     /// Remaining AI credits for free users. Default 50 (new-user grant) — overwritten on first server sync.
@@ -438,6 +439,11 @@ class StoreService: ObservableObject {
         let tier: String?
         let expiresAt: String?
         let activeProductId: String?
+        let billingIssue: BackendBillingIssue?
+    }
+
+    private struct BackendBillingIssue: Decodable {
+        let store: String
     }
 
     private struct CachedBackendSubscriptionStatus: Codable {
@@ -449,6 +455,7 @@ class StoreService: ObservableObject {
         let tier: SubscriptionTier
         let expiresAt: Date?
         let isFreshFromBackend: Bool
+        let hasAppleBillingIssue: Bool
     }
 
     private static let legacyBackendTierCacheKey = "cached_backend_subscription_tier"
@@ -643,6 +650,7 @@ class StoreService: ObservableObject {
         currentTier = .free
         subscriptionExpirationDate = nil
         activeSubscriptionProductId = nil
+        hasAppleBillingIssue = false
         availableProducts = []
         introductoryOfferEligibleProductIds = []
         isLoadingProducts = false
@@ -787,6 +795,7 @@ class StoreService: ObservableObject {
             activeSubscriptionProductId = tier == .pro
                 ? decoded.activeProductId ?? activeSubscriptionProductId
                 : nil
+            hasAppleBillingIssue = decoded.billingIssue?.store == "app_store"
             cacheBackendStatus(tier: tier, expiresAt: decoded.expiresAt, for: expectedUserID)
             lastFreshSubscriptionStatusUserId = expectedUserID
         } catch {
@@ -830,6 +839,7 @@ class StoreService: ObservableObject {
         guard AuthService.shared.currentUserId == userIdAtStart else { return }
 
         self.currentTier = backendStatus.tier
+        self.hasAppleBillingIssue = backendStatus.isFreshFromBackend && backendStatus.hasAppleBillingIssue
         if backendStatus.tier == .pro {
             self.subscriptionExpirationDate = backendStatus.expiresAt ?? self.subscriptionExpirationDate
         }
@@ -843,7 +853,7 @@ class StoreService: ObservableObject {
     private func fetchBackendSubscriptionStatus(for userId: String?) async -> BackendSubscriptionSnapshot {
         guard let userId else {
             UserDefaults.standard.removeObject(forKey: Self.legacyBackendTierCacheKey)
-            return BackendSubscriptionSnapshot(tier: .free, expiresAt: nil, isFreshFromBackend: false)
+            return BackendSubscriptionSnapshot(tier: .free, expiresAt: nil, isFreshFromBackend: false, hasAppleBillingIssue: false)
         }
 
         guard let token = await AuthService.shared.getSessionToken(), !token.isEmpty else {
@@ -863,7 +873,7 @@ class StoreService: ObservableObject {
             guard (200...299).contains(http.statusCode) else {
                 if http.statusCode == 401 || http.statusCode == 403 {
                     cacheBackendStatus(tier: .free, expiresAt: nil, for: userId)
-                    return BackendSubscriptionSnapshot(tier: .free, expiresAt: nil, isFreshFromBackend: true)
+                    return BackendSubscriptionSnapshot(tier: .free, expiresAt: nil, isFreshFromBackend: true, hasAppleBillingIssue: false)
                 }
                 return cachedBackendStatus(for: userId)
             }
@@ -873,7 +883,8 @@ class StoreService: ObservableObject {
             // Cache successful result for offline fallback
             cacheBackendStatus(tier: tier, expiresAt: decoded.expiresAt, for: userId)
             UserDefaults.standard.removeObject(forKey: Self.legacyBackendTierCacheKey)
-            return BackendSubscriptionSnapshot(tier: tier, expiresAt: expiresAt, isFreshFromBackend: true)
+            return BackendSubscriptionSnapshot(tier: tier, expiresAt: expiresAt, isFreshFromBackend: true,
+                                               hasAppleBillingIssue: decoded.billingIssue?.store == "app_store")
         } catch {
             // Network failure: return last known backend tier
             return cachedBackendStatus(for: userId)
@@ -930,12 +941,14 @@ class StoreService: ObservableObject {
             return BackendSubscriptionSnapshot(
                 tier: backendTier(from: cached.tier, expiresAt: expiresAt),
                 expiresAt: expiresAt,
-                isFreshFromBackend: false
+                isFreshFromBackend: false,
+                hasAppleBillingIssue: false
             )
         }
 
         let tier = SubscriptionTier(rawValue: raw) ?? .free
-        return BackendSubscriptionSnapshot(tier: tier, expiresAt: nil, isFreshFromBackend: false)
+        return BackendSubscriptionSnapshot(tier: tier, expiresAt: nil, isFreshFromBackend: false,
+                                           hasAppleBillingIssue: false)
     }
 
     private func backendTier(from rawTier: String?, expiresAt: Date?) -> SubscriptionTier {

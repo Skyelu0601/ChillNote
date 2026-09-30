@@ -12,8 +12,8 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  welcomeNotificationEligible Boolean @default(true)
-  appNotifications AppNotification[]
+  welcomeNotificationEligible Boolean           @default(true)
+  appNotifications            AppNotification[]
 
   // Subscription Info
   subscriptionTier      String    @default("free") // "free" or "pro"
@@ -27,8 +27,8 @@ model User {
   tags                   Tag[]
   linkImportJobs         LinkImportJob[]
   inviteCode             InviteCode?
-  sentInvites            Invite[]                @relation("InviteInviter")
-  receivedInvite         Invite?                 @relation("InviteInvitee")
+  sentInvites            Invite[]                       @relation("InviteInviter")
+  receivedInvite         Invite?                        @relation("InviteInvitee")
   membershipGrants       MembershipGrantLedger[]
   credits                UserCredits?
   pushDevices            PushDevice[]
@@ -36,7 +36,7 @@ model User {
   weeklyTopicSettings    WeeklyTopicSettings?
   weeklyTopicReports     WeeklyTopicReport[]
   chilloConversations    ChilloConversation[]
-  chilloConsentVersion   Int @default(0)
+  chilloConsentVersion   Int                            @default(0)
   chilloConsentAt        DateTime?
   chilloIndexCheckedAt   DateTime?
   syncLogs               SyncLog[]
@@ -44,8 +44,78 @@ model User {
   syncIdentityArchives   SyncIdentityDuplicateArchive[]
   googlePlayPurchases    GooglePlayPurchase[]
   revenueCatEntitlements RevenueCatEntitlement[]
+  emailPreference        EmailPreference?
+  emailDeliveries        EmailDelivery[]
 
   @@index([chilloConsentVersion, chilloIndexCheckedAt])
+}
+
+model EmailPreference {
+  userId                  String    @id
+  // Legacy "unknown" and missing preference rows are Marketing-eligible;
+  // only an explicit "unsubscribed" status opts the user out.
+  marketingStatus         String    @default("unknown")
+  marketingConsentedAt    DateTime?
+  marketingConsentSource  String?
+  marketingUnsubscribedAt DateTime?
+  subscriptionBillingEmailsEnabled Boolean @default(true)
+  serviceSuppressedAt     DateTime?
+  suppressionReason       String?
+  billingIssueAt          DateTime?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([marketingStatus])
+}
+
+model EmailDelivery {
+  id                String    @id @default(uuid())
+  userId            String
+  kind              String
+  dedupeKey         String    @unique
+  scheduledAt       DateTime
+  expectedExpiresAt DateTime?
+  activityAnchorAt  DateTime?
+  status            String    @default("scheduled")
+  attempts          Int       @default(0)
+  sentAt            DateTime?
+  providerMessageId String?
+  providerStatus    String?
+  providerEventAt   DateTime?
+  deliveredAt       DateTime?
+  bouncedAt         DateTime?
+  complainedAt      DateTime?
+  lastError         String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  events EmailEvent[]
+
+  @@index([status, scheduledAt])
+  @@index([userId, kind])
+  @@index([userId, kind, activityAnchorAt])
+  @@index([providerMessageId])
+}
+
+model EmailEvent {
+  id                String    @id @default(uuid())
+  deliveryId        String
+  providerMessageId String
+  snsMessageId      String
+  eventType         String
+  eventTimestamp    DateTime?
+  details           Json?
+  createdAt         DateTime  @default(now())
+
+  delivery EmailDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+
+  @@unique([snsMessageId, eventType])
+  @@index([deliveryId, eventTimestamp])
+  @@index([providerMessageId])
+  @@index([eventType, eventTimestamp])
 }
 
 model RevenueCatEntitlement {
@@ -58,15 +128,15 @@ model RevenueCatEntitlement {
   originalTransactionId String?
   storeTransactionId    String?
   lastEventId           String?
-  lastSyncedAt          DateTime   @default(now())
-  createdAt             DateTime   @default(now())
-  updatedAt             DateTime   @updatedAt
+  lastSyncedAt          DateTime  @default(now())
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([userId, entitlementId])
-  @@index([userId, isActive, expiresAt])
   @@unique([store, storeTransactionId])
+  @@index([userId, isActive, expiresAt])
 }
 
 model RevenueCatWebhookEvent {
@@ -320,11 +390,11 @@ model MembershipGrantLedger {
 }
 
 model UserCredits {
-  userId    String   @id
-  balance   Int      @default(50)
+  userId             String   @id
+  balance            Int      @default(50)
   initialGrantAmount Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -407,14 +477,14 @@ model WeeklyTopicReport {
 
 // Separate from push delivery: this is the account's persistent in-app inbox.
 model AppNotification {
-  id String @id @default(uuid())
-  userId String
+  id        String    @id @default(uuid())
+  userId    String
   dedupeKey String
-  kind String
-  amount Int?
-  createdAt DateTime @default(now())
-  readAt DateTime?
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String
+  amount    Int?
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, dedupeKey])
   @@index([userId, createdAt])
@@ -422,57 +492,60 @@ model AppNotification {
 
 // Chillo conversations belong to an account; notes stay in the existing sync protocol.
 model ChilloConversation {
-  id          String   @id
+  id          String       @id
   userId      String
   title       String
-  excludedIds String[] @default([])
-  pinnedIds   String[] @default([])
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  excludedIds String[]     @default([])
+  pinnedIds   String[]     @default([])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
   turns       ChilloTurn[]
+
   @@index([userId, updatedAt])
 }
 
 // One idempotent user request and its answer. A durable lease survives app/process exits.
 model ChilloTurn {
-  id             String   @id
+  id             String             @id
   conversationId String
   request        String
-  locale         String   @default("en")
-  status         String   @default("queued")
-  answer         String   @default("")
-  sources        Json     @default("[]")
+  locale         String             @default("en")
+  status         String             @default("queued")
+  answer         String             @default("")
+  sources        Json               @default("[]")
   errorCode      String?
   leaseId        String?
   leaseExpiresAt DateTime?
-  createdAt      DateTime @default(now())
+  createdAt      DateTime           @default(now())
   completedAt    DateTime?
   conversation   ChilloConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   draft          ChilloDraft?
+
   @@index([conversationId, createdAt])
   @@index([status, leaseExpiresAt])
 }
 
 // Only offsets/hashes and embeddings are retained; source text is read live from Note.
 model ChilloChunk {
-  id        String   @id
+  id        String  @id
   noteId    String
   hash      String
   start     Int
   end       Int
-  embedding Float[]  @default([])
+  embedding Float[] @default([])
   model     String
-  note      Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  note      Note    @relation(fields: [noteId], references: [id], onDelete: Cascade)
+
   @@index([noteId, model])
 }
 
 // Explicitly saved copies, not automatically generated knowledge-base facts.
 model ChilloDraft {
-  id        String   @id
-  turnId    String   @unique
-  noteId    String?  @unique
-  createdAt DateTime @default(now())
+  id        String     @id
+  turnId    String     @unique
+  noteId    String?    @unique
+  createdAt DateTime   @default(now())
   turn      ChilloTurn @relation(fields: [turnId], references: [id], onDelete: Cascade)
-  note      Note?    @relation(fields: [noteId], references: [id], onDelete: SetNull)
+  note      Note?      @relation(fields: [noteId], references: [id], onDelete: SetNull)
 }

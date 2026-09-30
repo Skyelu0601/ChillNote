@@ -214,13 +214,6 @@
     <string name="common_back">Voltar</string>
     <string name="common_request_failed">A solicitação falhou. Tente novamente.</string>
     <string name="voice_processing_error">A transcrição falhou. O áudio foi salvo em Gravações pendentes. Tente novamente.</string>
-    <string name="shared_video_import_preparing">Preparando vídeo compartilhado…</string>
-    <string name="shared_video_import_error_too_large">Este vídeo tem mais de 100 MB. Escolha um vídeo menor.</string>
-    <string name="shared_video_import_error_too_long">Este vídeo tem mais de 3 horas. Escolha um vídeo mais curto.</string>
-    <string name="shared_video_import_error_no_audio">Este vídeo não tem faixa de áudio para transcrever.</string>
-    <string name="shared_video_import_error_unsupported">O formato de vídeo ou a faixa de áudio não é compatível.</string>
-    <string name="shared_video_import_error_empty">Este vídeo está vazio.</string>
-    <string name="shared_video_import_error_failed">Não foi possível importar este vídeo. Tente compartilhá-lo novamente.</string>
     <string name="ai_request_error">A solicitação à IA falhou. Tente novamente.</string>
     <string name="sync_error">Não foi possível sincronizar agora. Suas alterações locais foram mantidas.</string>
     <string name="common_delete">Excluir</string>
@@ -678,9 +671,9 @@
     <string name="quick_capture_link_import_card_title">Criando sua nota…</string>
     <string name="quick_capture_link_import_card_body">Você pode continuar navegando. Concluiremos por aqui.</string>
     <string name="sidebar_tags_title">TEMAS</string>
-    <string name="onboarding_first_action_create_tab">Toque em Criar para transformar esta nota em conteúdo novo.</string>
-    <string name="onboarding_first_action_ai_skills">Escolha uma ferramenta de IA para criar a partir desta nota.</string>
-    <string name="onboarding_first_action_record_tab">Seu conteúdo está pronto. Toque em Gravar para preparar a filmagem.</string>
+    <string name="onboarding_first_action_create_tab">Toque em Criar para conversar com Chillo sobre esta nota.</string>
+    <string name="onboarding_first_action_ai_skills">Toque em uma habilidade para enviá-la na hora. Chillo responderá aqui.</string>
+    <string name="onboarding_first_action_record_tab">Toque em Gravar para experimentar uma gravação com sua nota.</string>
     <string name="onboarding_first_action_teleprompter">Seu roteiro está pronto. Toque aqui para abrir o teleprompter e começar a gravar.</string>
     <string name="onboarding_first_action_transcript_review_title">A transcrição do seu vídeo está pronta</string>
     <string name="onboarding_first_action_transcript_review_action">Veja o que você pode criar</string>
@@ -770,4 +763,18 @@
     <string name="notifications_error">Não foi possível sincronizar as notificações. Tente novamente.</string>
     <string name="notifications_retry">Tentar novamente</string>
     <string name="share_extension_open_app">Abrir ChillScript</string>
+    <string name="subscription_billing_issue_title">Problema no pagamento</string>
+    <string name="subscription_billing_issue_action">Atualize a forma de pagamento para manter o Pro</string>
+    <string name="note_chat_welcome_title">O que você gostaria de fazer?</string>
+    <string name="note_chat_welcome_message">Faça uma pergunta ou escolha uma ferramenta para começar.</string>
+    <string name="note_chat_all_skills">Todas as ferramentas</string>
+    <string name="note_chat_skills">Ferramentas</string>
+    <string name="note_chat_skill_badge">Ferramenta</string>
+    <string name="note_chat_replace">Usar esta versão</string>
+    <string name="note_chat_failed">Nenhuma resposta recebida. Tente novamente.</string>
+    <string name="note_chat_history_error">Não foi possível salvar ou carregar esta conversa.</string>
+    <string name="note_chat_save_error">Não foi possível salvar a nota. Tente novamente.</string>
+    <string name="note_chat_expand">Expandir conversa</string>
+    <string name="note_chat_collapse">Recolher conversa</string>
+    <string name="creator_skills_manage">Gerenciar</string>
 </resources>

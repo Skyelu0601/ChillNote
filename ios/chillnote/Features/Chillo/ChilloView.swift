@@ -19,16 +19,15 @@ struct ChilloView: View {
     @EnvironmentObject private var authService: AuthService
     @EnvironmentObject private var syncManager: SyncManager
     @StateObject private var store = ChilloStore()
-    @StateObject private var dictation = ChilloDictation()
     @State private var sheet: Sheet?
     @State private var note: Note?
     @State private var deleteID: String?
     @State private var syncFailed = false
     @FocusState private var focused: Bool
     private enum Sheet: Identifiable {
-        case history, sources(ChilloTurn), library
+        case history, sources(ChilloTurn)
         var id: String {
-            switch self { case .history: return "history"; case .sources(let turn): return turn.id; case .library: return "library" }
+            switch self { case .history: return "history"; case .sources(let turn): return turn.id }
         }
     }
 
@@ -49,9 +48,7 @@ struct ChilloView: View {
             syncFailed = !(await syncManager.syncNow(context: modelContext))
             await store.poll()
         }
-        .onDisappear { dictation.stop() }
         .onChange(of: authService.currentUserId) { _, _ in dismiss() }
-        .onChange(of: dictation.transcript) { _, text in store.input = text }
         .sheet(item: $sheet) { destination in
             NavigationStack {
                 sheetContent(destination)
@@ -86,7 +83,7 @@ struct ChilloView: View {
                 }.frame(minHeight: 44)
             }.accessibilityLabel(L10n.text("chillo.history"))
             Spacer()
-            Button { dictation.stop(); store.newConversation() } label: { Image(systemName: "square.and.pencil").frame(width: 44, height: 44) }
+            Button { store.newConversation() } label: { Image(systemName: "square.and.pencil").frame(width: 44, height: 44) }
                 .disabled(store.busy).accessibilityLabel(L10n.text("chillo.new"))
         }
         .font(.system(size: 20))
@@ -199,21 +196,14 @@ struct ChilloView: View {
 
     private var composer: some View {
         VStack(spacing: 4) {
-            if let error = dictation.error { Text(error).font(.caption).foregroundStyle(.secondary) }
             HStack(alignment: .bottom, spacing: 10) {
-                Button { focused = false; sheet = .library } label: { Image(systemName: "plus").frame(width: 44, height: 44) }
-                    .buttonStyle(ChilloPressStyle())
-                    .accessibilityLabel(L10n.text("chillo.library"))
                 TextField(L10n.text("chillo.placeholder"), text: composerInput(for: store.composerRevision), axis: .vertical)
                     .lineLimit(1...6).font(.system(size: 16)).focused($focused)
                     .id(store.composerRevision)
                     .padding(.vertical, 10)
-                Button { Task { if dictation.recording { dictation.stop() } else { await dictation.start(prefix: store.input) } } } label: {
-                    Image(systemName: dictation.recording ? "stop.circle" : "mic").frame(width: 44, height: 44)
-                }.buttonStyle(ChilloPressStyle()).accessibilityLabel(L10n.text("chillo.dictate")).disabled(store.busy || store.generating)
+                    .padding(.leading, 8)
                 Button {
                     UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    dictation.stop()
                     if let turn = store.turns.last, turn.isActive { Task { _ = await store.action("cancel", turn: turn) } }
                     else { Task { await store.send() } }
                 } label: {
@@ -265,18 +255,6 @@ struct ChilloView: View {
                     Button(L10n.text("chillo.exclude")) { Task { await store.exclude(source); sheet = nil } }.font(.footnote).disabled(store.generating)
                 }.padding(.vertical, 8)
             }.navigationTitle(L10n.text("chillo.sources")).navigationBarTitleDisplayMode(.inline)
-        case .library:
-            List {
-                if let library = store.library {
-                    Text(L10n.text("chillo.library.summary", Int64(library.available), Int64(library.total)))
-                    Text(L10n.text("chillo.library.index", Int64(library.indexed), Int64(library.available))).foregroundStyle(.secondary)
-                }
-                Text(L10n.text("chillo.library.scope")).font(.subheadline).foregroundStyle(.secondary)
-                Text(L10n.text("chillo.consent.body")).font(.footnote).foregroundStyle(.secondary)
-                Button(L10n.text(store.needsConsent ? "chillo.consent.accept" : "chillo.consent.revoke")) {
-                    Task { await store.consent(store.needsConsent); sheet = nil }
-                }
-            }.navigationTitle(L10n.text("chillo.library")).navigationBarTitleDisplayMode(.inline)
         }
     }
 
@@ -289,14 +267,15 @@ struct ChilloView: View {
     }
 }
 
-private struct ChilloAnswerText: View {
+struct ChilloAnswerText: View {
     let answer: String
+    var removesCitations = true
     var body: some View {
         Text(rendered).font(.system(size: 16)).lineSpacing(6).textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
     private var rendered: AttributedString {
-        AttributedString(ChilloCitationRenderer.render(answer: answer))
+        AttributedString(ChilloCitationRenderer.richText(removesCitations ? ChilloCitationRenderer.plainAnswer(answer) : answer))
     }
 }
 
@@ -318,8 +297,17 @@ enum ChilloCitationRenderer {
     }
 
     static func render(answer: String) -> NSAttributedString {
-        RichTextConverter.markdownToAttributedString(
-            plainAnswer(answer),
+        richText(plainAnswer(answer))
+    }
+
+    /// Shared display conversion for library chat and the note's Create conversation.
+    /// Keep the original answer untouched for saving and copying.
+    static func richText(_ answer: String) -> NSAttributedString {
+        let normalized = answer
+            .replacingOccurrences(of: #"(?m)^([ \t]*)#{4,6}[ \t]+"#, with: "$1### ", options: .regularExpression)
+            .replacingOccurrences(of: #"(?m)^([ \t]*)\+[ \t]+"#, with: "$1- ", options: .regularExpression)
+        return RichTextConverter.markdownToAttributedString(
+            normalized,
             baseFont: .systemFont(ofSize: 16),
             textColor: .black
         )

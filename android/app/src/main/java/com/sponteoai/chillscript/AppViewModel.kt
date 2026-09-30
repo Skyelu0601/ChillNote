@@ -30,7 +30,6 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.retryWhen
 import kotlinx.coroutines.flow.stateIn
@@ -60,10 +59,6 @@ import com.sponteoai.chillscript.ai.AIConsentTrigger
 import com.sponteoai.chillscript.voice.RecordingFileManager
 import com.sponteoai.chillscript.voice.PendingRecording
 import com.sponteoai.chillscript.voice.PendingRecordingSaveOutcome
-import com.sponteoai.chillscript.voice.PendingRecordingOrigin
-import com.sponteoai.chillscript.voice.SharedVideoImporter
-import com.sponteoai.chillscript.voice.SharedVideoImportException
-import com.sponteoai.chillscript.voice.SharedVideoImportSource
 import com.sponteoai.chillscript.ai.AgentRecipe
 import com.sponteoai.chillscript.ai.RecipeStore
 import com.sponteoai.chillscript.ai.requestPrompts
@@ -132,8 +127,9 @@ data class AppUiState(
     val subscriptionTier: String = "free",
     val subscriptionExpiresAt: String? = null,
     val activeSubscriptionProductId: String? = null,
+    val billingIssueProductId: String? = null,
+    val hasGooglePlayBillingIssue: Boolean = false,
     val voiceProcessing: Boolean = false,
-    val sharedVideoPreparing: Boolean = false,
     val introPaywallResolved: Boolean = false,
     val introPaywallRequired: Boolean = false,
     val creditBalance: Int? = null,
@@ -152,7 +148,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val onboardingPreferences = OnboardingPreferences(application)
     private val aiConsentManager = AIConsentManager(application)
     private val recordingFileManager = RecordingFileManager(application)
-    private val sharedVideoImporter = SharedVideoImporter(application, recordingFileManager)
     private val recipeStore = RecipeStore(application)
     private val creatorSkillsApi = CreatorSkillsApi()
     private val capturePreferences = CapturePreferences(application)
@@ -163,6 +158,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var sessionRefreshJob: Job? = null
     private var pushRegistrationJob: Job? = null
     private var signOutJob: Job? = null
+    private var noteConversationGeneration = 0L
+    private val noteConversations = mutableMapOf<String, java.lang.ref.WeakReference<com.sponteoai.chillscript.ai.NoteConversationController>>()
     private var voiceStartAuthorizationJob: Job? = null
     private var foregroundPollSyncJob: Job? = null
     private var pendingRecordingsRefreshJob: Job? = null
@@ -170,8 +167,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private var pendingLinkImportCreditNoteId: String? = null
     @Volatile private var editorActive: Boolean = false
     private val voiceProcessingJobs = ConcurrentHashMap<String, Job>()
-    private val sharedVideoCaptureJobs = ConcurrentHashMap<String, Job>()
-    private val sharedVideoAuthorizationJobs = ConcurrentHashMap<String, Job>()
     private val sessionRefreshMutex = Mutex()
     /** Serializes every editor-originated mutation for a note. */
     private val noteMutationMutex = Mutex()
@@ -327,6 +322,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun signOut() {
         if (signOutJob?.isActive == true) return
+        noteConversationGeneration++
+        noteConversations.values.forEach { it.get()?.cancel() }
+        noteConversations.clear()
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session
         cancelVoiceWork()
         sessionRefreshJob?.cancel()
@@ -367,6 +365,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     subscriptionTier = status.tier,
                     subscriptionExpiresAt = status.expiresAt,
                     activeSubscriptionProductId = status.activeProductId,
+                    billingIssueProductId = status.billingIssue?.takeIf { it.store == "play_store" || it.store == "google_play" }?.productId,
+                    hasGooglePlayBillingIssue = status.billingIssue?.store in setOf("play_store", "google_play"),
                     introPaywallResolved = true,
                     introPaywallRequired = status.tier != "pro" && !onboardingPreferences.hasShownIntroPaywall(session.user.id),
                 ).also {
@@ -375,6 +375,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 } }
                 .onFailure {
                     mutableUiState.value = mutableUiState.value.copy(
+                        billingIssueProductId = null,
+                        hasGooglePlayBillingIssue = false,
                         introPaywallResolved = true,
                         introPaywallRequired = !onboardingPreferences.hasShownIntroPaywall(session.user.id),
                     )
@@ -392,6 +394,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                             subscriptionTier = status.tier,
                             subscriptionExpiresAt = status.expiresAt,
                             activeSubscriptionProductId = status.activeProductId,
+                            billingIssueProductId = status.billingIssue?.takeIf { it.store == "play_store" || it.store == "google_play" }?.productId,
+                            hasGooglePlayBillingIssue = status.billingIssue?.store in setOf("play_store", "google_play"),
                             introPaywallResolved = true,
                             introPaywallRequired = status.tier != "pro" &&
                                 !onboardingPreferences.hasShownIntroPaywall(session.user.id),
@@ -468,6 +472,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteAccount() {
+        noteConversationGeneration++
+        noteConversations.values.forEach { it.get()?.cancel() }
+        noteConversations.clear()
         cancelVoiceWork()
         launchBusy {
             val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return@launchBusy
@@ -483,6 +490,9 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 notesRepository.clearLocalUserData(session.user.id)
                 recordingFileManager.clearAll()
                 recipeStore.clearUserData()
+                com.sponteoai.chillscript.ai.NoteConversationArchive.removeAccount(
+                    java.io.File(getApplication<Application>().filesDir, "note_conversations"), session.user.id,
+                )
                 onboardingPreferences.clearUserData(session.user.id)
                 mutablePendingRecordings.value = emptyList()
                 mutableVoiceNoteStates.value = emptyMap()
@@ -503,6 +513,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             subscriptionTier = status.tier,
             subscriptionExpiresAt = status.expiresAt,
             activeSubscriptionProductId = status.activeProductId ?: productId,
+            billingIssueProductId = null,
+            hasGooglePlayBillingIssue = false,
             introPaywallResolved = true,
             introPaywallRequired = false,
         )
@@ -511,110 +523,12 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         refreshCredits()
     }
 
-    /**
-     * Claims the temporary ACTION_SEND grant immediately. The original video is copied and
-     * reduced to an audio-only recovery file before this function returns its result to UI.
-     */
-    fun captureSharedVideo(uri: Uri, declaredMimeType: String?, sourcePackage: String?) {
-        val captureKey = uri.toString()
-        if (sharedVideoCaptureJobs.containsKey(captureKey)) return
-        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
-            mutableUiState.value = mutableUiState.value.copy(sharedVideoPreparing = true, errorMessage = null)
-            try {
-                val state = uiState.first { it.authState != AuthState.Checking }
-                val ownerUserId = (state.authState as? AuthState.SignedIn)?.session?.user?.id
-                sharedVideoImporter.import(
-                    SharedVideoImportSource(uri, declaredMimeType, sourcePackage),
-                    ownerUserId = ownerUserId,
-                )
-                refreshPendingRecordings()
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            } catch (error: Throwable) {
-                Log.w(TAG, "Shared video capture failed", error)
-                mutableUiState.value = mutableUiState.value.copy(
-                    errorMessage = getApplication<Application>().getString(sharedVideoErrorResource(error)),
-                )
-            } finally {
-                sharedVideoCaptureJobs.remove(captureKey)
-                mutableUiState.value = mutableUiState.value.copy(
-                    sharedVideoPreparing = sharedVideoCaptureJobs.values.any { it.isActive },
-                )
-            }
-        }
-        if (sharedVideoCaptureJobs.putIfAbsent(captureKey, job) == null) job.start() else job.cancel()
-    }
-
-    /** Starts one durable shared-video item. On failure its extracted audio remains retryable. */
-    fun processPendingSharedVideoImports(
-        section: String,
-        tagIds: List<String> = emptyList(),
-        onNoteReady: (NoteEntity) -> Unit = {},
-        onInsufficientCredits: () -> Unit = {},
-    ) {
-        val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
-        val recording = mutablePendingRecordings.value.firstOrNull { pending ->
-            pending.origin == PendingRecordingOrigin.SharedVideo &&
-                (pending.ownerUserId == null || pending.ownerUserId == session.user.id) &&
-                pending.file.isFile &&
-                !voiceProcessingJobs.containsKey(pending.file.absolutePath) &&
-                !sharedVideoAuthorizationJobs.containsKey(pending.file.absolutePath)
-        } ?: return
-        val recordingKey = recording.file.absolutePath
-        val job = viewModelScope.launch(start = CoroutineStart.LAZY) {
-            if (!aiConsentManager.ensureConsent(AIConsentTrigger.Audio)) return@launch
-            ensureVoiceSessionActive(session.user.id)
-            if (recording.ownerUserId == null) {
-                try {
-                    recordingFileManager.setOwnerUserId(recording.file, session.user.id)
-                } catch (error: Throwable) {
-                    Log.w(TAG, "Could not persist shared-video owner", error)
-                    mutableUiState.value = mutableUiState.value.copy(
-                        errorMessage = getApplication<Application>().getString(R.string.common_request_failed),
-                    )
-                    return@launch
-                }
-                refreshPendingRecordings()
-            }
-            val authorization = authorizeVoiceCredit(session, "Shared video")
-            ensureVoiceSessionActive(session.user.id)
-            when (authorization) {
-                VoiceCreditAuthorization.Authorized -> processVoiceRecording(
-                    recording.file,
-                    section,
-                    tagIds,
-                    onNoteReady,
-                    creationType = "video_transcript",
-                )
-                VoiceCreditAuthorization.Insufficient -> onInsufficientCredits()
-                VoiceCreditAuthorization.Unavailable -> Unit
-            }
-        }
-        if (sharedVideoAuthorizationJobs.putIfAbsent(recordingKey, job) == null) {
-            job.invokeOnCompletion { sharedVideoAuthorizationJobs.remove(recordingKey, job) }
-            job.start()
-        } else {
-            job.cancel()
-        }
-    }
-
-    private fun sharedVideoErrorResource(error: Throwable): Int = when (error) {
-        SharedVideoImportException.TooLarge -> R.string.shared_video_import_error_too_large
-        SharedVideoImportException.TooLong -> R.string.shared_video_import_error_too_long
-        SharedVideoImportException.NoAudioTrack -> R.string.shared_video_import_error_no_audio
-        SharedVideoImportException.UnsupportedType,
-        SharedVideoImportException.UnableToExtractAudio -> R.string.shared_video_import_error_unsupported
-        SharedVideoImportException.Empty -> R.string.shared_video_import_error_empty
-        else -> R.string.shared_video_import_error_failed
-    }
-
     fun processVoiceRecording(
         file: File,
         section: String,
         tagIds: List<String> = emptyList(),
         onNoteReady: (NoteEntity) -> Unit = {},
         onOutcome: (PendingRecordingSaveOutcome) -> Unit = {},
-        creationType: String = "audio_transcript",
         analyticsOperationId: String? = null,
     ) {
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: run {
@@ -653,9 +567,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 val operationId = analyticsOperationId ?: note.id
                 val attemptId = UUID.randomUUID().toString()
                 val transcriptionStartedAt = android.os.SystemClock.elapsedRealtime()
-                val transcriptionPrefix = if (creationType == "video_transcript") "video" else "audio"
                 ProductAnalytics.capture(
-                    "${transcriptionPrefix}_transcription_started",
+                    "audio_transcription_started",
                     mapOf("operation_id" to operationId, "attempt_id" to attemptId),
                 )
                 recordingFileManager.setNoteId(file, note.id)
@@ -674,7 +587,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 ensureVoiceSessionActive(session.user.id)
                 require(raw.isNotBlank()) { "Voice transcription was empty" }
                 ProductAnalytics.capture(
-                    "${transcriptionPrefix}_transcription_completed",
+                    "audio_transcription_completed",
                     mapOf(
                         "operation_id" to operationId,
                         "attempt_id" to attemptId,
@@ -709,8 +622,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 appRatingTracker.registerVoiceNote()
                 ProductAnalytics.captureCreationCompleted(
                     operationId = operationId,
-                    type = creationType,
-                    entryPoint = if (creationType == "video_transcript") "shared_video" else "home_voice",
+                    type = "audio_transcript",
+                    entryPoint = "home_voice",
                 )
                 refreshCredits()
                 sync()
@@ -729,7 +642,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             } catch (error: Throwable) {
                 Log.w(TAG, "Voice transcription failed", error)
                 ProductAnalytics.capture(
-                    if (creationType == "video_transcript") "video_transcription_failed" else "audio_transcription_failed",
+                    "audio_transcription_failed",
                     mapOf(
                         "operation_id" to (voiceNote?.id ?: "unknown"),
                         "error_code" to if (error is SyncHttpException && error.statusCode == 402) {
@@ -834,7 +747,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deletePendingRecording(recording: PendingRecording) {
-        sharedVideoAuthorizationJobs.remove(recording.file.absolutePath)?.cancel()
         voiceProcessingJobs.remove(recording.file.absolutePath)?.cancel()
         try {
             recordingFileManager.cancel(recording.file)
@@ -923,8 +835,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private fun cancelVoiceWork() {
         voiceStartAuthorizationJob?.cancel()
         voiceStartAuthorizationJob = null
-        sharedVideoAuthorizationJobs.values.toList().forEach { it.cancel() }
-        sharedVideoAuthorizationJobs.clear()
         voiceProcessingJobs.values.toList().forEach { it.cancel() }
         voiceProcessingJobs.clear()
         mutableVoiceNoteStates.value = emptyMap()
@@ -1001,6 +911,45 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
         }
+    }
+
+    fun noteConversation(note: NoteEntity, onSkillFlowFinished: () -> Unit = {}): com.sponteoai.chillscript.ai.NoteConversationController {
+        val generation = noteConversationGeneration
+        val archive = com.sponteoai.chillscript.ai.NoteConversationArchive(
+            java.io.File(getApplication<Application>().filesDir, "note_conversations"), note.userId, note.id,
+        )
+        return com.sponteoai.chillscript.ai.NoteConversationController(
+            scope = viewModelScope, load = archive::load, save = archive::save,
+            authorized = { currentUserId == note.userId && generation == noteConversationGeneration && signOutJob?.isActive != true },
+            consent = { aiConsentManager.ensureConsent(AIConsentTrigger.Text) },
+            generate = { prompt, system, skill ->
+                val token = chilloAccessToken() ?: throw CancellationException("Session ended")
+                if (currentUserId != note.userId) throw CancellationException("Session changed")
+                val latest = notesRepository.note(note.userId, note.id)
+                if (latest == null || latest.deletedAt != null) throw CancellationException("Note unavailable")
+                val result = creatorSkillsApi.generate(token, prompt, system, if (skill) "agent_recipe" else "chat")
+                val current = notesRepository.note(note.userId, note.id)
+                if (current == null || current.deletedAt != null) throw CancellationException("Note unavailable")
+                result
+            },
+            refreshCredits = { refreshCredits() },
+            onInsufficientCredits = { mutablePaywallRequests.tryEmit(Unit) },
+            onSkillFlowFinished = onSkillFlowFinished,
+        ).also { noteConversations[note.id] = java.lang.ref.WeakReference(it) }
+    }
+
+    suspend fun replaceConversationNote(note: NoteEntity, content: String): Boolean {
+        if (currentUserId != note.userId) return false
+        val requestId = markLatestEditorMutation(note.id)
+        val saved = noteMutationMutex.withLock {
+            if (currentUserId != note.userId || latestEditorSaveRequest[note.id] != requestId) return@withLock null
+            val latest = notesRepository.note(note.userId, note.id)
+            if (latest == null || latest.deletedAt != null) return@withLock null
+            notesRepository.updateNoteContent(note.userId, note.id, content)
+        }
+        latestEditorSaveRequest.remove(note.id, requestId)
+        if (saved != null) sync()
+        return saved != null
     }
 
     fun dismissCreatorSkillResult() {
@@ -1112,6 +1061,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun deleteNote(note: NoteEntity) {
+        noteConversations.remove(note.id)?.get()?.cancel()
         markLatestEditorMutation(note.id)
         viewModelScope.launch {
             noteMutationMutex.withLock { notesRepository.moveToTrash(note) }
@@ -1137,10 +1087,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun permanentlyDelete(note: NoteEntity) {
+        noteConversations.remove(note.id)?.get()?.cancel()
         val userId = (mutableUiState.value.authState as? AuthState.SignedIn)?.session?.user?.id ?: return
         markLatestEditorMutation(note.id)
         viewModelScope.launch {
             noteMutationMutex.withLock { notesRepository.permanentlyDelete(userId, note) }
+            com.sponteoai.chillscript.ai.NoteConversationArchive(
+                java.io.File(getApplication<Application>().filesDir, "note_conversations"), userId, note.id,
+            ).remove()
             sync()
         }
     }

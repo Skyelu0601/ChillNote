@@ -13,23 +13,27 @@ data class MarkdownBlock(
 )
 
 object MarkdownParser {
+    private val smallHeading = Regex("^#{3,6}\\s+")
     private val numbered = Regex("^(\\d+\\.\\s)(.*)$")
     private val image = Regex("^!\\[[^]]*]\\(([^)]+)\\)$")
 
     fun parse(markdown: String): List<MarkdownBlock> = markdown.split('\n').map { line ->
         val trimmed = line.trim()
         when {
-            trimmed.startsWith("### ") -> MarkdownBlock(MarkdownBlockType.Heading3, trimmed.drop(4))
+            smallHeading.find(trimmed) != null -> MarkdownBlock(
+                MarkdownBlockType.Heading3, trimmed.replaceFirst(smallHeading, ""),
+            )
             trimmed.startsWith("## ") -> MarkdownBlock(MarkdownBlockType.Heading2, trimmed.drop(3))
             trimmed.startsWith("# ") -> MarkdownBlock(MarkdownBlockType.Heading1, trimmed.drop(2))
             trimmed.startsWith("- [ ] ") -> MarkdownBlock(MarkdownBlockType.ChecklistOpen, trimmed.drop(6), "○ ")
             trimmed.startsWith("- [x] ", true) -> MarkdownBlock(MarkdownBlockType.ChecklistDone, trimmed.drop(6), "◉ ")
-            trimmed.startsWith("- ") || trimmed.startsWith("• ") -> MarkdownBlock(MarkdownBlockType.Bullet, trimmed.drop(2), "• ")
+            trimmed == "---" || trimmed == "***" || trimmed == "___" -> MarkdownBlock(MarkdownBlockType.Separator, "───")
+            trimmed.startsWith("- ") || trimmed.startsWith("• ") || trimmed.startsWith("* ") || trimmed.startsWith("+ ") -> MarkdownBlock(MarkdownBlockType.Bullet, trimmed.drop(2), "• ")
             numbered.matches(trimmed) -> numbered.matchEntire(trimmed)!!.let {
                 MarkdownBlock(MarkdownBlockType.Numbered, it.groupValues[2], it.groupValues[1])
             }
             trimmed.startsWith("> ") -> MarkdownBlock(MarkdownBlockType.Quote, trimmed.drop(2), "│ ")
-            trimmed == "---" || trimmed.startsWith("═") -> MarkdownBlock(MarkdownBlockType.Separator, "───")
+            trimmed.startsWith("═") -> MarkdownBlock(MarkdownBlockType.Separator, "───")
             image.matches(trimmed) -> MarkdownBlock(MarkdownBlockType.Image, "", imageUrl = image.matchEntire(trimmed)!!.groupValues[1])
             else -> MarkdownBlock(MarkdownBlockType.Paragraph, line)
         }

@@ -33,13 +33,18 @@ cp .env.example .env
    - `REVENUECAT_WEBHOOK_HMAC_SECRET` (the webhook signing secret shown when HMAC is enabled)
    - `REVENUECAT_ALLOWED_APP_IDS` (comma-separated RevenueCat app IDs for the iOS and Android apps)
 
-7) Create schema
+7) To enable Amazon SES trial reminders, configure the variables and rollout
+   checklist in [SES_EMAIL.md](./SES_EMAIL.md). Keep `EMAIL_ENABLED=false` until
+   SES production access, the verified sender, and the database migration are
+   ready.
+
+8) Create schema
 
 ```bash
 npx prisma migrate dev --name init
 ```
 
-8) Run dev server
+9) Run dev server
 
 ```bash
 npm run dev
@@ -57,6 +62,13 @@ npm run dev
 - `POST /webhooks/revenuecat` - Receive authenticated, HMAC-signed RevenueCat lifecycle webhooks
 - `POST /subscription/revenuecat/sync` - Refresh the signed-in user's canonical RevenueCat entitlement
 - `POST /subscription/verify` - Compatibility alias for the same server-side verification; client Apple metadata never grants Pro
+- `GET /email/preferences` - Read the signed-in user's marketing email preference
+- `PUT /email/preferences` - Opt in or out of marketing email
+- `GET|POST /email/unsubscribe` - Signed public marketing unsubscribe flow
+
+Marketing win-back email is scheduled from meaningful note, import, and Chillo
+activity. See [SES_EMAIL.md](./SES_EMAIL.md) for cadence, consent, daily limits,
+holdout behavior, and unsubscribe requirements.
 - `POST /ai/voice-note` - Voice transcription only (no polishing)
 - `POST /ai/media-link-transcript` - TikTok / YouTube / Instagram link transcription with backend worker
 - `POST /ai/tiktok-transcript` - Backward-compatible TikTok-only alias
@@ -100,34 +112,25 @@ Recommended environment variables:
 - `MEDIA_LINK_TRANSCRIPT_RESOLVER_URL`: Optional external resolver endpoint that accepts `{ "url": "...", "videoID": "...", "platform": "..." }` and returns media for transcription.
 - `MEDIA_LINK_TRANSCRIPT_RESOLVER_TOKEN`: Optional bearer token for the resolver.
 - `MEDIA_LINK_TRANSCRIPT_USE_YTDLP`: Defaults to `true`. When enabled, the worker tries `yt-dlp` on the server if no resolver is configured.
-- `MEDIA_LINK_YTDLP_BIN`: Optional default path to `yt-dlp` for YouTube, Instagram, and TikTok when no TikTok-specific override is configured.
-- `MEDIA_LINK_TIKTOK_YTDLP_BIN`: Optional TikTok-only `yt-dlp` path. This allows TikTok to temporarily use a pinned working version while YouTube and Instagram stay on the current version.
+- `MEDIA_LINK_YTDLP_BIN`: Optional path to the shared `yt-dlp` binary for YouTube, Instagram, and TikTok. Production currently uses version `2026.08.19`.
 - `MEDIA_LINK_FFMPEG_BIN`: Optional path to `ffmpeg` for video-to-audio extraction.
 - `MEDIA_LINK_TRANSCRIPT_EXTRACT_AUDIO`: Defaults to `true`. Extracts audio before transcription when possible.
 - `MEDIA_LINK_TRANSCRIPT_MAX_MEDIA_MB`: Max media size accepted for transcription. Defaults to `100`.
 - `MEDIA_LINK_TRANSCRIPT_DOWNLOAD_TIMEOUT_MS`: Media download timeout. Defaults to `90000`.
 - `MEDIA_LINK_TRANSCRIPT_TIMEOUT_MS`: Gemini transcription timeout. Defaults to `180000`.
-- `MEDIA_LINK_APIFY_TOKEN`: Optional Apify API token. When set, TikTok media-fetch failures automatically fall back to Apify after `yt-dlp` fails.
-- `MEDIA_LINK_APIFY_FALLBACK`: Defaults to `true`. Set to `false` to disable the paid Apify fallback without removing the token.
-- `MEDIA_LINK_APIFY_ACTOR_ID`: Defaults to `clockworks~tiktok-video-scraper`.
-- `MEDIA_LINK_APIFY_TIMEOUT_MS`: Total timeout for an Apify run and media download. Defaults to `150000`.
-- `MEDIA_LINK_APIFY_MAX_TOTAL_CHARGE_USD`: Hard per-run charge cap passed to Apify. Defaults to `0.10`.
 
 - `TIKTOK_TRANSCRIPT_RESOLVER_URL`: Optional external resolver endpoint that accepts `{ "url": "...", "videoID": "..." }` and returns media for transcription.
 - `TIKTOK_TRANSCRIPT_RESOLVER_TOKEN`: Optional bearer token for the resolver.
 - `TIKTOK_TRANSCRIPT_USE_YTDLP`: Defaults to `true`. When enabled, the worker tries `yt-dlp` on the server if no resolver is configured.
-- `TIKTOK_YTDLP_BIN`: Legacy TikTok-only alias for `MEDIA_LINK_TIKTOK_YTDLP_BIN`.
 - `TIKTOK_FFMPEG_BIN`: Optional path to `ffmpeg` for video-to-audio extraction.
 - `TIKTOK_TRANSCRIPT_EXTRACT_AUDIO`: Defaults to `true`. Extracts audio before transcription when possible.
 - `TIKTOK_TRANSCRIPT_MAX_MEDIA_MB`: Max media size accepted for transcription. Defaults to `100`.
 - `TIKTOK_TRANSCRIPT_DOWNLOAD_TIMEOUT_MS`: Media download timeout. Defaults to `90000`.
 - `TIKTOK_TRANSCRIPT_TIMEOUT_MS`: Gemini transcription timeout. Defaults to `180000`.
 
-The `TIKTOK_*` variables remain supported as fallbacks for backward compatibility.
+The listed `TIKTOK_*` variables remain supported as fallbacks for backward compatibility.
 
 For YouTube, TikTok, and Instagram/Reels, the worker first tries to read available captions or auto-captions through `yt-dlp`, then falls back to media download and transcription. This avoids the common case where a media download exceeds `MEDIA_LINK_TRANSCRIPT_MAX_MEDIA_MB`.
-
-When `MEDIA_LINK_APIFY_TOKEN` (or the compatible `APIFY_TOKEN` / `TIKTOK_APIFY_TOKEN`) is configured, only TikTok fetch failures fall back to Apify. Each run is limited to one paid result and the configured charge cap. The worker downloads protected media with backend-only authorization, then best-effort deletes the temporary Apify video store, dataset, input store, request queue, and run record. The token is never returned to the iOS app or sent to a TikTok CDN host.
 
 If neither `MEDIA_LINK_TRANSCRIPT_RESOLVER_URL` nor a working `yt-dlp` binary is available, the endpoint will return `available: false` and the iOS app will fall back to a metadata-only link note.
 

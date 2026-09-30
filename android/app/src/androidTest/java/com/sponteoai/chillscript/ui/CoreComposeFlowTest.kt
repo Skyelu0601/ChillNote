@@ -73,7 +73,7 @@ class CoreComposeFlowTest {
         })
         composeRule.setContent {
             ChillScriptTheme {
-                ChilloScreen(controller, onBack = {}, onOpenNote = { false })
+                ChilloScreen(controller, onBack = {}, onOpenNote = { false }, onInsufficientCredits = {})
             }
         }
         composeRule.enableAccessibilityChecks()

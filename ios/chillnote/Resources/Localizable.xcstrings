@@ -1,6 +1,9 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "" : {
+
+    },
     "\"%@\"" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -330,7 +333,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillScript ist ein KI-Werkzeug fuer Creator, die jeden Tag Ideen, Clips, Hooks, Beschreibungen und Transkripte sammeln.\n\nEs geht nicht darum, noch eine chaotische Notizsammlung zu bauen. Es geht darum, Inspiration so festzuhalten, dass du sie spaeter wiederfinden, verstehen und in eigene Inhalte verwandeln kannst.\n\nSpeichere ein Video, sprich eine rohe Idee ein oder importiere Material. ChillScript hilft dir, daraus private, durchsuchbare AI Creator Notes zu machen, bereit fuer deine naechste Aufnahme, deinen naechsten Post oder dein naechstes Skript."
+            "value" : "ChillScript ist ein KI-Werkzeug für Creator, die jeden Tag Ideen, Clips, Hooks, Beschreibungen und Transkripte sammeln.\n\nEs geht nicht darum, noch eine chaotische Notizsammlung zu bauen. Es geht darum, Inspiration so festzuhalten, dass du sie später wiederfinden, verstehen und in eigene Inhalte verwandeln kannst.\n\nSpeichere ein Video, sprich eine rohe Idee ein oder importiere Material. ChillScript hilft dir, daraus private, durchsuchbare AI Creator Notes zu machen, bereit für deine nächste Aufnahme, deinen nächsten Post oder dein nächstes Skript."
           }
         },
         "en" : {
@@ -348,7 +351,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillScript est une app de notes IA pour les createurs qui collectent chaque jour des idees, des clips, des hooks, des descriptions et des transcriptions.\n\nIl ne s agit pas de creer une autre pile de notes desordonnee. Il s agit de sauvegarder l inspiration sous une forme que vous pouvez retrouver, comprendre vite et transformer en creation personnelle.\n\nEnregistrez une video, dictez une idee brute ou importez une source. ChillScript vous aide a en faire des notes creator privees et consultables, pretes pour votre prochain enregistrement, post ou script."
+            "value" : "ChillScript est une app de notes IA pour les créateurs qui collectent chaque jour des idées, des clips, des hooks, des descriptions et des transcriptions.\n\nIl ne s’agit pas de créer une autre pile de notes désordonnée. Il s’agit de sauvegarder l’inspiration sous une forme que vous pouvez retrouver, comprendre rapidement et transformer en créations personnelles.\n\nEnregistrez une vidéo, dictez une idée brute ou importez une source. ChillScript vous aide à en faire des notes de création privées et consultables, prêtes pour votre prochain enregistrement, post ou script."
           }
         },
         "ja" : {
@@ -395,7 +398,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Creator sehen ueberall Material: einen starken Hook, eine klare Struktur, einen Kommentar, eine Produktidee oder eine Formulierung, die haengen bleibt."
+            "value" : "Creator sehen überall Material: einen starken Hook, eine klare Struktur, einen Kommentar, eine Produktidee oder eine Formulierung, die hängen bleibt."
           }
         },
         "en" : {
@@ -413,7 +416,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Les createurs reperent de la matiere partout : un hook fort, une structure claire, un commentaire, un angle produit ou une phrase qui reste en tete."
+            "value" : "Les créateurs repèrent de la matière partout : un hook fort, une structure claire, un commentaire, un angle produit ou une phrase qui reste en tête."
           }
         },
         "ja" : {
@@ -460,7 +463,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Das Problem:** Wenn dieses Material nur als Link, Screenshot oder vage Erinnerung bleibt, verschwindet der eigentliche Grund, warum es nuetzlich war."
+            "value" : "**Das Problem:** Wenn dieses Material nur als Link, Screenshot oder vage Erinnerung bleibt, verschwindet der eigentliche Grund, warum es nützlich war."
           }
         },
         "en" : {
@@ -478,7 +481,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Le probleme :** Quand cette matiere reste seulement un lien, une capture d ecran ou un souvenir vague, le motif utile se perd."
+            "value" : "**Le problème :** Quand cette matière reste seulement un lien, une capture d’écran ou un souvenir vague, le motif utile se perd."
           }
         },
         "ja" : {
@@ -525,7 +528,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**ChillScript:** Speichere die Quelle, halte fest, was wichtig war, und bewahre den Kontext dort auf, wo du ihn spaeter wirklich wieder nutzen kannst."
+            "value" : "**ChillScript:** Speichere die Quelle, halte fest, was wichtig war, und bewahre den Kontext dort auf, wo du ihn später wirklich wieder nutzen kannst."
           }
         },
         "en" : {
@@ -543,7 +546,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**ChillScript :** Sauvegardez la source, gardez la raison pour laquelle elle comptait et rangez le contexte la ou vous pourrez vraiment le reutiliser plus tard."
+            "value" : "**ChillScript :** Sauvegardez la source, gardez la raison pour laquelle elle comptait et rangez le contexte là où vous pourrez vraiment le réutiliser plus tard."
           }
         },
         "ja" : {
@@ -590,7 +593,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Dieses Video hat etwas. Ich will mich spaeter daran erinnern.\""
+            "value" : "\"Dieses Video hat etwas. Ich will mich später daran erinnern.\""
           }
         },
         "en" : {
@@ -608,7 +611,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Il y a quelque chose dans cette video. Je veux me rappeler pourquoi.\""
+            "value" : "\"Il y a quelque chose dans cette vidéo. Je veux me rappeler pourquoi.\""
           }
         },
         "ja" : {
@@ -655,7 +658,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Inspiration sammeln, bevor sie verstreut"
+            "value" : "Inspiration festhalten, bevor sie verloren geht"
           }
         },
         "en" : {
@@ -673,7 +676,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Capturez l inspiration avant qu elle se disperse"
+            "value" : "Capturez l’inspiration avant qu’elle ne se disperse"
           }
         },
         "ja" : {
@@ -720,7 +723,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ein guter Creator speichert nicht nur Inhalte. Er sammelt Muster: Einstieg, Erzaehlrhythmus, Nutzenversprechen, Einwand, CTA und Tonfall."
+            "value" : "Ein guter Creator speichert nicht nur Inhalte. Er sammelt Muster: Einstieg, Erzählrhythmus, Nutzenversprechen, Einwand, CTA und Tonfall."
           }
         },
         "en" : {
@@ -738,7 +741,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un bon createur ne sauvegarde pas seulement du contenu. Il collecte des motifs : ouverture, rythme, promesse, objection, appel a l action et ton."
+            "value" : "Un bon créateur ne sauvegarde pas seulement du contenu. Il collecte des motifs : ouverture, rythme, promesse, objection, appel à l’action et ton."
           }
         },
         "ja" : {
@@ -803,7 +806,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**La friction :** Copier, transcrire et resumer a la main prend de l energie au moment precis ou vous voudriez continuer a reflechir."
+            "value" : "**La friction :** Copier, transcrire et résumer à la main prend de l’énergie au moment précis où vous voudriez continuer à réfléchir."
           }
         },
         "ja" : {
@@ -868,7 +871,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**ChillScript :** L IA aide a transformer descriptions, hooks et transcriptions en notes lisibles, pour que l inspiration devienne une matiere exploitable."
+            "value" : "**ChillScript :** L’IA aide à transformer descriptions, hooks et transcriptions en notes lisibles, pour que l’inspiration devienne une matière exploitable."
           }
         },
         "ja" : {
@@ -933,7 +936,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Je n ai pas seulement besoin de la video. J ai besoin de la structure derriere.\""
+            "value" : "\"Je n’ai pas seulement besoin de la vidéo. J’ai besoin de la structure derrière.\""
           }
         },
         "ja" : {
@@ -1063,7 +1066,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Le travail de creation commence rarement par un premier jet parfait. Il faut souvent des hooks, des variantes de legende, des idees de script, des resumes ou un autre ton."
+            "value" : "Le travail de création commence rarement par un premier jet parfait. Il faut souvent des hooks, des variantes de légende, des idées de script, des résumés ou un autre ton."
           }
         },
         "ja" : {
@@ -1110,7 +1113,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Das Problem:** Generische KI-Chats kennen deinen Kontext nicht. Sie helfen, aber du musst jedes Mal wieder erklaeren, was du gesammelt hast und wohin du willst."
+            "value" : "**Das Problem:** Generische KI-Chats kennen deinen Kontext nicht. Sie helfen, aber du musst jedes Mal wieder erklären, was du gesammelt hast und wohin du willst."
           }
         },
         "en" : {
@@ -1128,7 +1131,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Le probleme :** Les chats IA generiques ne connaissent pas votre contexte. Ils peuvent aider, mais vous devez reexpliquer a chaque fois ce que vous avez garde et ou vous voulez aller."
+            "value" : "**Le problème :** Les chats IA génériques ne connaissent pas votre contexte. Ils peuvent aider, mais vous devez réexpliquer à chaque fois ce que vous avez gardé et où vous voulez aller."
           }
         },
         "ja" : {
@@ -1175,7 +1178,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**ChillScript:** Deine Notizen und AI Skills leben zusammen. Du kannst gespeicherte Inspiration direkt in neue Hooks, Captions, Skripte oder klare naechste Schritte verwandeln."
+            "value" : "**ChillScript:** Deine Notizen und AI Skills leben zusammen. Du kannst gespeicherte Inspiration direkt in neue Hooks, Captions, Skripte oder klare nächste Schritte verwandeln."
           }
         },
         "en" : {
@@ -1193,7 +1196,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**ChillScript :** Vos notes et vos AI Skills vivent ensemble. Vous pouvez transformer l inspiration sauvegardee directement en nouveaux hooks, legendes, scripts ou prochaines etapes claires."
+            "value" : "**ChillScript :** Vos notes et vos AI Skills vivent ensemble. Vous pouvez transformer l’inspiration sauvegardée directement en nouveaux hooks, légendes, scripts ou prochaines étapes claires."
           }
         },
         "ja" : {
@@ -1258,7 +1261,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"J ai l etincelle. Maintenant il me faut des angles.\""
+            "value" : "\"J’ai l’étincelle. Maintenant il me faut des angles.\""
           }
         },
         "ja" : {
@@ -1323,7 +1326,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Donnez forme a vos idees plus vite"
+            "value" : "Donnez forme à vos idées plus vite"
           }
         },
         "ja" : {
@@ -1388,7 +1391,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillScript traite l inspiration sauvegardee comme une matiere de reference, pas comme un texte a dupliquer."
+            "value" : "ChillScript traite l’inspiration sauvegardée comme une matière de référence, pas comme un texte à dupliquer."
           }
         },
         "ja" : {
@@ -1435,7 +1438,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Der Unterschied:** Du baust ein Verstaendnis fuer Muster auf: warum ein Einstieg funktioniert, wie ein Skript Spannung haelt oder welche Sprache eine Zielgruppe bewegt."
+            "value" : "**Der Unterschied:** Du baust ein Verständnis für Muster auf: warum ein Einstieg funktioniert, wie ein Skript Spannung hält oder welche Sprache eine Zielgruppe bewegt."
           }
         },
         "en" : {
@@ -1453,7 +1456,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**La difference :** Vous construisez une comprehension des motifs : pourquoi une ouverture fonctionne, comment un script garde l attention ou quel langage touche une audience."
+            "value" : "**La différence :** Vous construisez une compréhension des motifs : pourquoi une ouverture fonctionne, comment un script garde l’attention ou quel langage touche une audience."
           }
         },
         "ja" : {
@@ -1518,7 +1521,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "**Le resultat :** Vos notes creator IA restent privees, organisees et utiles, afin d apprendre de plus de sources sans perdre votre propre voix."
+            "value" : "**Le résultat :** Vos notes IA pour créateurs restent privées, organisées et utiles, afin d’apprendre de plus de sources sans perdre votre propre voix."
           }
         },
         "ja" : {
@@ -1630,7 +1633,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Eine private Bibliothek fuer Creator-Muster"
+            "value" : "Eine private Bibliothek für Creator-Muster"
           }
         },
         "en" : {
@@ -1648,7 +1651,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Une bibliotheque privee de motifs de creation"
+            "value" : "Une bibliothèque privée de motifs de création"
           }
         },
         "ja" : {
@@ -1695,7 +1698,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI Creator Notes fuer deinen Workflow"
+            "value" : "KI-Notizen für Creator"
           }
         },
         "en" : {
@@ -1713,7 +1716,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Notes creator IA pour ton workflow"
+            "value" : "Notes IA pour créateurs"
           }
         },
         "ja" : {
@@ -1760,7 +1763,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "\"Sammle die Vorlage.\nMach daraus den naechsten Beitrag.\""
+            "value" : "\"Sammle die Vorlage.\nMach daraus den nächsten Beitrag.\""
           }
         },
         "en" : {
@@ -1825,7 +1828,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillScript soll der Ort sein, an dem Creator Inspiration nicht nur sammeln, sondern nutzbar machen.\n\nNimm auf, was dich anspringt. Verstehe, warum es funktioniert. Verwandle es mit KI in Material, das deine eigene Stimme, deinen eigenen Kanal und deinen naechsten Schritt unterstuetzt."
+            "value" : "ChillScript soll der Ort sein, an dem Creator Inspiration nicht nur sammeln, sondern nutzbar machen.\n\nHalte fest, was dich inspiriert. Verstehe, warum es funktioniert. Verwandle es mit KI in Material, das deine eigene Stimme, deinen eigenen Kanal und deinen nächsten Schritt unterstützt."
           }
         },
         "en" : {
@@ -1843,7 +1846,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ChillScript existe pour aider les createurs a transformer l inspiration en matiere creative reutilisable.\n\nCapturez ce qui retient votre attention. Comprenez pourquoi cela fonctionne. Utilisez l IA pour le faconner en une matiere qui soutient votre propre voix, votre propre canal et votre prochain geste."
+            "value" : "ChillScript existe pour aider les créateurs à transformer l’inspiration en matière créative réutilisable.\n\nCapturez ce qui retient votre attention. Comprenez pourquoi cela fonctionne. Utilisez l’IA pour la façonner en une matière qui soutient votre propre voix, votre propre canal et votre prochain geste."
           }
         },
         "ja" : {
@@ -1955,7 +1958,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lass KI Transkripte bereinigen, Hooks erkennen, Notizen ordnen und aus Rohmaterial klare Ansaetze machen."
+            "value" : "Lass KI Transkripte bereinigen, Hooks erkennen, Notizen ordnen und aus Rohmaterial klare Ansätze machen."
           }
         },
         "en" : {
@@ -1973,7 +1976,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Laissez l IA nettoyer les transcriptions, identifier les hooks, organiser les notes et transformer la matiere brute en points de depart clairs."
+            "value" : "Laissez l’IA nettoyer les transcriptions, identifier les hooks, organiser les notes et transformer la matière brute en points de départ clairs."
           }
         },
         "ja" : {
@@ -2038,7 +2041,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Structurer avec l IA"
+            "value" : "Structurer avec l’IA"
           }
         },
         "ja" : {
@@ -2103,7 +2106,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Sauvegardez liens, videos, audio, images et pensees brutes avant que le contexte disparaisse."
+            "value" : "Sauvegardez liens, vidéos, audio, images et pensées brutes avant que le contexte disparaisse."
           }
         },
         "ja" : {
@@ -2233,7 +2236,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Transformez l inspiration sauvegardee en hooks, legendes, scripts, resumes ou workflows personnels repetables."
+            "value" : "Transformez l’inspiration sauvegardée en hooks, légendes, scripts, résumés ou workflows personnels répétables."
           }
         },
         "ja" : {
@@ -2298,7 +2301,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Reutiliser avec AI Skills"
+            "value" : "Réutiliser avec AI Skills"
           }
         },
         "ja" : {
@@ -2363,7 +2366,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Un chemin plus rapide entre inspiration de createur et matiere reutilisable."
+            "value" : "Un chemin plus rapide entre l’inspiration des créateurs et la matière réutilisable."
           }
         },
         "ja" : {
@@ -2410,7 +2413,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wofuer ChillScript gebaut ist"
+            "value" : "Wofür ChillScript gebaut ist"
           }
         },
         "en" : {
@@ -2428,7 +2431,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ce pour quoi ChillScript est concu"
+            "value" : "Ce pour quoi ChillScript est conçu"
           }
         },
         "ja" : {
@@ -3598,7 +3601,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Generez un script de video courte de 30, 45 ou 60 secondes."
+            "value" : "Générez un script de vidéo courte de 30, 45 ou 60 secondes."
           }
         },
         "ja" : {
@@ -4183,7 +4186,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Utilisez vos notes pour obtenir des reponses, des resumes et de nouvelles idees."
+            "value" : "Utilisez vos notes pour obtenir des réponses, des résumés et de nouvelles idées."
           }
         },
         "ja" : {
@@ -4425,7 +4428,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Schreib, frag oder tippe / fur Skills"
+            "value" : "Schreib, frag oder tippe / für Skills"
           }
         },
         "en" : {
@@ -4443,7 +4446,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ecrivez, demandez ou tapez / pour les Skills"
+            "value" : "Écrivez, demandez ou tapez / pour les Skills"
           }
         },
         "ja" : {
@@ -5028,7 +5031,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vos donnees sont utilisees uniquement pour traiter votre demande. Ni nous ni nos partenaires tiers n'utilisons vos notes ou enregistrements pour entrainer des modeles."
+            "value" : "Vos données sont utilisées uniquement pour traiter votre demande. Ni nous ni nos partenaires tiers n'utilisons vos notes ou enregistrements pour entraîner des modèles."
           }
         },
         "ja" : {
@@ -5158,7 +5161,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "L'audio brut est traite de facon ephemere et n'est pas conserve sur nos serveurs apres le traitement."
+            "value" : "L'audio brut est traité de façon éphémère et n'est pas conservé sur nos serveurs après le traitement."
           }
         },
         "ja" : {
@@ -5223,7 +5226,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pour transcrire votre note vocale, ChillScript peut envoyer votre audio et les details techniques essentiels au serveur securise de ChillScript et a Google Gemini pour traitement."
+            "value" : "Pour transcrire votre note vocale, ChillScript peut envoyer votre audio et les détails techniques essentiels au serveur sécurisé de ChillScript et à Google Gemini pour traitement."
           }
         },
         "ja" : {
@@ -5270,7 +5273,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Um deine Notiz zu verbessern, kann ChillScript den von dir ausgewaehlten Text zur Verarbeitung an die sicheren Server von ChillScript und an Google Gemini senden."
+            "value" : "Um deine Notiz zu verbessern, kann ChillScript den von dir ausgewählten Text zur Verarbeitung an die sicheren Server von ChillScript und an Google Gemini senden."
           }
         },
         "en" : {
@@ -5288,7 +5291,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pour ameliorer votre note, ChillScript peut envoyer le texte que vous choisissez au serveur securise de ChillScript et a Google Gemini pour traitement."
+            "value" : "Pour améliorer votre note, ChillScript peut envoyer le texte que vous choisissez au serveur sécurisé de ChillScript et à Google Gemini pour traitement."
           }
         },
         "ja" : {
@@ -10075,6 +10078,7 @@
       }
     },
     "Chill" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -21745,7 +21749,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wenn dir ChillScript gefaellt, gib uns gern eine Bewertung. Wenn nicht, sag uns bitte Bescheid."
+            "value" : "Wenn dir ChillScript gefällt, gib uns gern eine Bewertung. Wenn nicht, sag uns bitte Bescheid."
           }
         },
         "en" : {
@@ -22673,7 +22677,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI Skills fonctionne avec une seule note a la fois. Selectionnez une seule note."
+            "value" : "AI Skills fonctionne avec une seule note à la fois. Sélectionnez une seule note."
           }
         },
         "ja" : {
@@ -23034,6 +23038,721 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "模式"
+          }
+        }
+      }
+    },
+    "note_chat.all_skills" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Alle KI-Tools"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Skills"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas las herramientas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tous les outils"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "すべてのスキル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "모든 스킬"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas as ferramentas"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Todas as ferramentas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部技能"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部技能"
+          }
+        }
+      }
+    },
+    "note_chat.collapse" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat verkleinern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Collapse chat"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reducir conversación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Réduire la conversation"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "チャットを縮小"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대화 접기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recolher conversa"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recolher conversa"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起对话"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起對話"
+          }
+        }
+      }
+    },
+    "note_chat.expand" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Chat vergrößern"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expand chat"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ampliar conversación"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Agrandir la conversation"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "チャットを拡大"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "대화 펼치기"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expandir conversa"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Expandir conversa"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展开对话"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "展開對話"
+          }
+        }
+      }
+    },
+    "note_chat.failed" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keine Antwort erhalten. Bitte erneut versuchen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No reply received. Please try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se recibió una respuesta. Inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aucune réponse reçue. Réessayez."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "返信を受信できませんでした。もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "응답을 받지 못했습니다. 다시 시도해 주세요."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Nenhuma resposta recebida. Tente novamente."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi recebida nenhuma resposta. Tente novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未收到回复，请重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未收到回覆，請重試。"
+          }
+        }
+      }
+    },
+    "note_chat.history_error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Diese Unterhaltung konnte nicht gespeichert oder geladen werden."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not save or load this conversation."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo guardar o cargar esta conversación."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’enregistrer ou de charger cette conversation."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この会話を保存または読み込めませんでした。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 대화를 저장하거나 불러올 수 없습니다."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível salvar ou carregar esta conversa."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível guardar ou carregar esta conversa."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "无法保存或读取这段对话。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法儲存或讀取這段對話。"
+          }
+        }
+      }
+    },
+    "note_chat.replace" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Übernehmen"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use this"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar esta versión"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Utiliser cette version"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この内容を使う"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 버전 사용"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar esta versão"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Usar esta versão"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用此版本"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "用此版本"
+          }
+        }
+      }
+    },
+    "note_chat.save_error" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Die Notiz konnte nicht gespeichert werden. Bitte erneut versuchen."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Could not save the note. Please try again."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No se pudo guardar la nota. Inténtalo de nuevo."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Impossible d’enregistrer la note. Réessayez."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ノートを保存できませんでした。もう一度お試しください。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "노트를 저장할 수 없습니다. 다시 시도해 주세요."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível salvar a nota. Tente novamente."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Não foi possível guardar a nota. Tente novamente."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "笔记保存失败，请重试。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "筆記儲存失敗，請重試。"
+          }
+        }
+      }
+    },
+    "note_chat.skill_badge" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KI-Tool"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skill"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herramienta"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outil"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スキル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스킬"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferramenta"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferramenta"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "技能"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "技能"
+          }
+        }
+      }
+    },
+    "note_chat.skills" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "KI-Tools"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Skills"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Herramientas"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Outils"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "スキル"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "스킬"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferramentas"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ferramentas"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "技能"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "技能"
+          }
+        }
+      }
+    },
+    "note_chat.welcome.message" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Stelle eine Frage oder wähle ein KI-Tool aus."
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Ask a question or choose a skill to get started."
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Haz una pregunta o elige una herramienta para empezar."
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Posez une question ou choisissez un outil pour commencer."
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "質問するか、スキルを選んで始めましょう。"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "질문하거나 스킬을 선택해 시작하세요."
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faça uma pergunta ou escolha uma ferramenta para começar."
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Faça uma pergunta ou escolha uma ferramenta para começar."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "直接提问，或选择一个技能开始。"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "直接提問，或選擇一個技能開始。"
+          }
+        }
+      }
+    },
+    "note_chat.welcome.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Was möchtest du tun?"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "What would you like to do?"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "¿Qué te gustaría hacer?"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Que souhaitez-vous faire ?"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "この内容をどうしますか？"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 내용을 어떻게 다듬을까요?"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O que você gostaria de fazer?"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "O que gostaria de fazer?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "想怎么处理这篇内容？"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "想怎麼處理這篇內容？"
           }
         }
       }
@@ -23452,7 +24171,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajouter a la fin"
+            "value" : "Ajouter à la fin"
           }
         },
         "ja" : {
@@ -23907,7 +24626,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Impossible d’executer le Skill"
+            "value" : "Impossible d’exécuter le Skill"
           }
         },
         "ja" : {
@@ -24037,7 +24756,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cree a partir de cette note"
+            "value" : "Créé à partir de cette note"
           }
         },
         "ja" : {
@@ -24102,7 +24821,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cree a partir du texte selectionne"
+            "value" : "Créé à partir du texte sélectionné"
           }
         },
         "ja" : {
@@ -24167,7 +24886,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Resultat du Skill"
+            "value" : "Résultat du Skill"
           }
         },
         "ja" : {
@@ -28665,61 +29384,61 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Wähle einen KI-Skill, um aus dieser Notiz neue Inhalte zu erstellen."
+            "value" : "Tippe auf einen Skill, um ihn sofort zu senden. Chillo antwortet hier."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose an AI Skill to create from this note."
+            "value" : "Tap a skill to send it instantly. Chillo will reply here."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Elige una habilidad de IA para crear contenido a partir de esta nota."
+            "value" : "Toca una habilidad para enviarla al instante. Chillo responderá aquí."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choisissez une compétence IA pour créer à partir de cette note."
+            "value" : "Appuie sur une compétence pour l’envoyer immédiatement. Chillo répondra ici."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AIスキルを1つ選んで、このノートからコンテンツを作りましょう。"
+            "value" : "スキルをタップするとすぐに送信され、Chillo がここで返信します。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "AI 스킬을 하나 선택해 이 노트로 콘텐츠를 만들어 보세요."
+            "value" : "스킬을 누르면 바로 전송되고 Chillo가 여기서 답변해요."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Escolha uma ferramenta de IA para criar a partir desta nota."
+            "value" : "Toque em uma habilidade para enviá-la na hora. Chillo responderá aqui."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Escolha uma ferramenta de IA para criar a partir desta nota."
+            "value" : "Toca numa competência para a enviar de imediato. Chillo responde aqui."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "选择一个 AI 技能，用这条笔记开始创作"
+            "value" : "点一下技能即可直接发送，Chillo 会在这里回复。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "選擇一個 AI 技能，用這則筆記開始創作"
+            "value" : "點一下技能即可直接傳送，Chillo 會在這裡回覆。"
           }
         }
       }
@@ -28730,61 +29449,61 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tippe auf „Erstellen“, um diese Notiz in neue Inhalte zu verwandeln."
+            "value" : "Tippe auf „Erstellen“, um mit Chillo über diese Notiz zu chatten."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tap Create to turn this note into new content."
+            "value" : "Tap Create to chat with Chillo about this note."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toca Crear para convertir esta nota en contenido nuevo."
+            "value" : "Toca Crear para hablar con Chillo sobre esta nota."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Touchez Créer pour transformer cette note en nouveau contenu."
+            "value" : "Appuie sur Créer pour discuter de cette note avec Chillo."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "「作成」をタップして、このノートから新しいコンテンツを作りましょう。"
+            "value" : "「作成」をタップして、このノートについて Chillo と話しましょう。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "만들기를 눌러 이 노트를 새로운 콘텐츠로 바꿔 보세요."
+            "value" : "만들기를 눌러 이 노트에 대해 Chillo와 대화해 보세요."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toque em Criar para transformar esta nota em conteúdo novo."
+            "value" : "Toque em Criar para conversar com Chillo sobre esta nota."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Toque em Criar para transformar esta nota em conteúdo novo."
+            "value" : "Toca em Criar para conversar com Chillo sobre esta nota."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "点“创作”，把这条笔记变成新内容"
+            "value" : "点“创作”，围绕这条笔记和 Chillo 对话。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "點「創作」，把這則筆記變成新內容"
+            "value" : "點「創作」，圍繞這則筆記和 Chillo 對話。"
           }
         }
       }
@@ -28860,61 +29579,61 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dein Inhalt ist bereit. Tippe auf „Aufnehmen“, um dich auf die Aufnahme vorzubereiten."
+            "value" : "Tippe auf „Aufnahme“, um eine Aufnahme mit deiner Notiz auszuprobieren."
           }
         },
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Your content is ready. Tap Record to get ready to film."
+            "value" : "Tap Record to try recording with your note."
           }
         },
         "es" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Tu contenido está listo. Toca Grabar para preparar la filmación."
+            "value" : "Toca Grabar para probar una grabación con tu nota."
           }
         },
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Votre contenu est prêt. Touchez Enregistrer pour préparer le tournage."
+            "value" : "Appuie sur Enregistrer pour essayer de filmer avec ta note."
           }
         },
         "ja" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "コンテンツの準備ができました。「録画」をタップして撮影の準備をしましょう。"
+            "value" : "「撮影」をタップして、このノートを使った撮影を試しましょう。"
           }
         },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "콘텐츠가 준비됐어요. 녹화를 눌러 촬영을 준비하세요."
+            "value" : "녹화를 눌러 이 노트로 촬영해 보세요."
           }
         },
         "pt-BR" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seu conteúdo está pronto. Toque em Gravar para preparar a filmagem."
+            "value" : "Toque em Gravar para experimentar uma gravação com sua nota."
           }
         },
         "pt-PT" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Seu conteúdo está pronto. Toque em Gravar para preparar a filmagem."
+            "value" : "Toca em Gravar para experimentar uma gravação com a tua nota."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "内容准备好了，点“录制”进入拍摄准备"
+            "value" : "点“录制”，试试用这条笔记拍摄。"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "內容準備好了，點「錄製」進入拍攝準備"
+            "value" : "點「錄製」，試試用這則筆記拍攝。"
           }
         }
       }
@@ -29723,7 +30442,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Commencer a creer"
+            "value" : "Commencer à créer"
           }
         },
         "ja" : {
@@ -30550,7 +31269,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Question"
+            "value" : "Frage"
           }
         },
         "en" : {
@@ -31915,7 +32634,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fuege Links aus Videos, Artikeln oder von ueberall ein, wo Inspiration entsteht."
+            "value" : "Füge Links aus Videos, Artikeln oder von überall ein, wo Inspiration entsteht."
           }
         },
         "en" : {
@@ -31933,7 +32652,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Colle des liens depuis des videos, des articles ou partout ou l inspiration commence."
+            "value" : "Colle des liens depuis des vidéos, des articles ou partout où l’inspiration commence."
           }
         },
         "ja" : {
@@ -32128,7 +32847,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "TikTok de 60 secondes par Chef Maya sur une recette de pates a 4 ingredients devenue virale."
+            "value" : "TikTok de 60 secondes par Chef Maya sur une recette de pâtes à 4 ingredients devenue virale."
           }
         },
         "ja" : {
@@ -32193,7 +32912,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pourquoi tout le monde prepare ces pates a 4 ingredients ?"
+            "value" : "Pourquoi tout le monde prépare ces pâtes à 4 ingredients ?"
           }
         },
         "ja" : {
@@ -32258,7 +32977,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Pourquoi ce reel de pates fonctionne"
+            "value" : "Pourquoi cette vidéo de pâtes fonctionne"
           }
         },
         "ja" : {
@@ -32305,7 +33024,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Alles, was du brauchst, sind Pasta, Butter, Parmesan und die eine Zutat, ueber die niemand spricht. Heb etwas Pastawasser auf, denn damit wird die Sauce glaenzend. Dann alles direkt in der warmen Pfanne schwenken, bis es cremig wird. Der Trick ist, den Herd auszuschalten, bevor der Kaese klumpt, und die Sauce eine Minute ruhen zu lassen. Danach sieht es aus wie Restaurant-Pasta, aber es dauert weniger als zehn Minuten."
+            "value" : "Alles, was du brauchst, sind Pasta, Butter, Parmesan und die eine Zutat, über die niemand spricht. Heb etwas Pastawasser auf, denn damit wird die Sauce glänzend. Dann alles direkt in der warmen Pfanne schwenken, bis es cremig wird. Der Trick ist, den Herd auszuschalten, bevor der Käse klumpt, und die Sauce eine Minute ruhen zu lassen. Danach sieht es aus wie Restaurant-Pasta, aber es dauert weniger als zehn Minuten."
           }
         },
         "en" : {
@@ -32323,7 +33042,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Il vous faut seulement des pates, du beurre, du parmesan et l ingredient dont personne ne parle. Gardez l eau de cuisson, c est elle qui rend la sauce brillante. Melangez ensuite le tout dans la poele chaude jusqu a obtenir une texture cremeuse. L astuce consiste a couper le feu avant que le fromage fasse des paquets, puis a laisser la sauce reposer une minute. Ca ressemble a des pates de restaurant, mais ca prend moins de dix minutes."
+            "value" : "Il vous faut seulement des pâtes, du beurre, du parmesan et l’ingrédient dont personne ne parle. Gardez l’eau de cuisson, c’est elle qui rend la sauce brillante. Mélangez ensuite le tout dans la poêle chaude jusqu’à obtenir une texture crémeuse. L’astuce consiste à couper le feu avant que le fromage fasse des paquets, puis à laisser la sauce reposer une minute. Ça ressemble à des pâtes de restaurant, mais ça prend moins de dix minutes."
           }
         },
         "ja" : {
@@ -32388,7 +33107,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "La recette de pates a 4 ingredients qui explose"
+            "value" : "La recette de pâtes à 4 ingredients qui explose"
           }
         },
         "ja" : {
@@ -32453,7 +33172,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ecris librement, sans modeles ni limites."
+            "value" : "Écris librement, sans modèles ni limites."
           }
         },
         "ja" : {
@@ -32500,7 +33219,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hook: Deine besten Ideen warten nicht, bis du ein leeres Dokument oeffnest.\n\nZeig drei Capture-Momente: ein gespeichertes TikTok, eine Voice Note beim Spazierengehen und einen getippten Gedanken um Mitternacht.\n\nPayoff: ChillScript macht aus jedem davon eine Notiz, die ich spaeter fuer Scripts, Captions und neue Posts wiederverwenden kann."
+            "value" : "Hook: Deine besten Ideen warten nicht, bis du ein leeres Dokument öffnest.\n\nZeig drei Capture-Momente: ein gespeichertes TikTok, eine Voice Note beim Spazierengehen und einen getippten Gedanken um Mitternacht.\n\nPayoff: ChillScript macht aus jedem davon eine Notiz, die ich später für Scripts, Captions und neue Posts wiederverwenden kann."
           }
         },
         "en" : {
@@ -32518,7 +33237,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Hook : Tes meilleures idees n attendent pas que tu ouvres un document vide.\n\nMontrer trois moments de capture : un TikTok sauvegarde, une note vocale en marchant et une idee tapee a minuit.\n\nPayoff : ChillScript transforme chacun en note que je peux reutiliser pour scripts, captions et futurs posts."
+            "value" : "Hook : Tes meilleures idées n’attendent pas que tu ouvres un document vide.\n\nMontrer trois moments de capture : un TikTok sauvegardé, une note vocale en marchant et une idée tapée à minuit.\n\nPayoff : ChillScript transforme chacun en note que je peux réutiliser pour scripts, captions et futurs posts."
           }
         },
         "ja" : {
@@ -32648,7 +33367,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "#IdeeVideo"
+            "value" : "#IdéeVidéo"
           }
         },
         "ja" : {
@@ -32778,7 +33497,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Idee video : capturer avant que ca disparaisse"
+            "value" : "Idée vidéo : capturer avant que ça disparaisse"
           }
         },
         "ja" : {
@@ -32908,7 +33627,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ecrite a l instant"
+            "value" : "écrite à l’instant"
           }
         },
         "ja" : {
@@ -33038,7 +33757,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "idee"
+            "value" : "idée"
           }
         },
         "ja" : {
@@ -33215,7 +33934,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gedanken klaeren"
+            "value" : "Gedanken klären"
           }
         },
         "en" : {
@@ -33233,7 +33952,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Clarifier les idees"
+            "value" : "Clarifier les idées"
           }
         },
         "ja" : {
@@ -33298,7 +34017,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Extraire les taches"
+            "value" : "Extraire les tâches"
           }
         },
         "ja" : {
@@ -33410,7 +34129,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fuellwoerter entfernen"
+            "value" : "Füllwörter entfernen"
           }
         },
         "en" : {
@@ -33475,7 +34194,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ich will ein Video darueber machen, warum Creator-Tools oft zu schwer wirken.\n\nHook: \"Deine besten Ideen entstehen nicht in einem leeren Dokument.\"\n\nZeig den echten Moment: draussen laufen, ins Handy sprechen und den rohen Gedanken festhalten, bevor er weg ist. Es geht nicht um perfektes Schreiben, sondern um eine klare Notiz, zu der ich spaeter fuer Script und Caption zurueckkommen kann."
+            "value" : "Ich will ein Video darüber machen, warum Creator-Tools oft zu schwer wirken.\n\nHook: \"Deine besten Ideen entstehen nicht in einem leeren Dokument.\"\n\nZeig den echten Moment: draußen laufen, ins Handy sprechen und den rohen Gedanken festhalten, bevor er weg ist. Es geht nicht um perfektes Schreiben, sondern um eine klare Notiz, zu der ich später für Script und Caption zurückkommen kann."
           }
         },
         "en" : {
@@ -33493,7 +34212,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Je veux faire une video sur pourquoi les outils pour createurs semblent trop lourds.\n\nHook : \"Tes meilleures idees ne naissent pas dans un document vide.\"\n\nMontrer le vrai moment : marcher dehors, parler au telephone et sauver l idee brute avant qu elle disparaisse. Le but n est pas d ecrire parfaitement, mais d avoir une note claire a reprendre pour le script et la caption."
+            "value" : "Je veux faire une vidéo sur pourquoi les outils pour créateurs semblent trop lourds.\n\nHook : \"Tes meilleures idées ne naissent pas dans un document vide.\"\n\nMontrer le vrai moment : marcher dehors, parler au téléphone et sauvegarder l’idée brute avant qu’elle disparaisse. Le but n’est pas d’écrire parfaitement, mais d’avoir une note claire à reprendre pour le script et la caption."
           }
         },
         "ja" : {
@@ -33558,7 +34277,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Note enregistree"
+            "value" : "Note enregistrée"
           }
         },
         "ja" : {
@@ -33605,7 +34324,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "okay vielleicht ist der hook so: deine besten ideen entstehen nicht in einem leeren dokument, eher wenn du draussen laeufst und es schnell festhalten musst bevor es weg ist..."
+            "value" : "okay vielleicht ist der hook so: deine besten ideen entstehen nicht in einem leeren dokument, eher wenn du draußen läufst und es schnell festhalten musst bevor es weg ist..."
           }
         },
         "en" : {
@@ -33623,7 +34342,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "ok peut-etre que le hook c est : tes meilleures idees ne naissent pas dans un document vide, elles arrivent quand tu marches dehors et que tu dois les attraper avant qu elles disparaissent..."
+            "value" : "ok peut-être que le hook c’est : tes meilleures idées ne naissent pas dans un document vide, elles arrivent quand tu marches dehors et que tu dois les attraper avant qu’elles disparaissent..."
           }
         },
         "ja" : {
@@ -33688,7 +34407,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ce que j ai dit"
+            "value" : "Ce que j’ai dit"
           }
         },
         "ja" : {
@@ -33753,7 +34472,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Idee de short pendant ma marche"
+            "value" : "Idée de short pendant ma marche"
           }
         },
         "ja" : {
@@ -33883,7 +34602,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "00:38 · enregistree a l instant"
+            "value" : "00:38 · enregistrée à l’instant"
           }
         },
         "ja" : {
@@ -35118,7 +35837,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : " a partir de notes"
+            "value" : " à partir de notes"
           }
         },
         "ja" : {
@@ -35378,7 +36097,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous avez deja un compte ?"
+            "value" : "Vous avez déjà un compte ?"
           }
         },
         "ja" : {
@@ -35443,7 +36162,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistrez des videos, extrayez des idees et creez du contenu avec l'IA"
+            "value" : "Enregistrez des vidéos, extrayez des idées et créez du contenu avec l'IA"
           }
         },
         "ja" : {
@@ -35508,7 +36227,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Vous pouvez enregistrer des videos depuis"
+            "value" : "Vous pouvez enregistrer des vidéos depuis"
           }
         },
         "ja" : {
@@ -35573,7 +36292,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistrons votre premiere video"
+            "value" : "Enregistrons votre première vidéo"
           }
         },
         "ja" : {
@@ -35638,7 +36357,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "video"
+            "value" : "vidéo"
           }
         },
         "ja" : {
@@ -35703,7 +36422,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Enregistrons votre premiere "
+            "value" : "Enregistrons votre première "
           }
         },
         "ja" : {
@@ -35880,7 +36599,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Oeffne ChillScript und sieh zu, wie die Notiz fertig importiert wird."
+            "value" : "Öffne ChillScript und sieh zu, wie die Notiz fertig importiert wird."
           }
         },
         "en" : {
@@ -35963,7 +36682,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "2. Extraire des idees"
+            "value" : "2. Extraire des idées"
           }
         },
         "ja" : {
@@ -36028,7 +36747,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Partagez une video depuis TikTok, YouTube ou Reels."
+            "value" : "Partagez une vidéo depuis TikTok, YouTube ou Reels."
           }
         },
         "ja" : {
@@ -36093,7 +36812,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "1. Enregistrer des videos"
+            "value" : "1. Enregistrer des vidéos"
           }
         },
         "ja" : {
@@ -36158,7 +36877,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Analysez des videos TikTok, YouTube et Instagram Reels dans ChillScript."
+            "value" : "Analysez des vidéos TikTok, YouTube et Instagram Reels dans ChillScript."
           }
         },
         "ja" : {
@@ -36418,7 +37137,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Regardez les deux etapes pour continuer."
+            "value" : "Regardez les deux étapes pour continuer."
           }
         },
         "ja" : {
@@ -37115,7 +37834,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Erstelle eigene Skills fur deinen Workflow."
+            "value" : "Erstelle eigene Skills für deinen Workflow."
           }
         },
         "en" : {
@@ -37133,7 +37852,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Creez des Skills personnalises pour votre workflow."
+            "value" : "Créez des Skills personnalisés pour votre workflow."
           }
         },
         "ja" : {
@@ -42244,6 +42963,71 @@
         }
       }
     },
+    "recipes.action.manage" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Verwalten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gestionar"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gérer"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "관리"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gerenciar"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gerir"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理"
+          }
+        }
+      }
+    },
     "recipes.action.remove" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -42315,7 +43099,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Dieser eigene Skill wird dadurch dauerhaft geloscht."
+            "value" : "Dieser eigene Skill wird dadurch dauerhaft gelöscht."
           }
         },
         "en" : {
@@ -42333,7 +43117,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ce Skill personnalise sera supprime definitivement."
+            "value" : "Ce Skill personnalisé sera supprimé définitivement."
           }
         },
         "ja" : {
@@ -42380,7 +43164,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skill loschen"
+            "value" : "Skill löschen"
           }
         },
         "en" : {
@@ -42528,7 +43312,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Details du Skill"
+            "value" : "Détails du Skill"
           }
         },
         "ja" : {
@@ -42788,7 +43572,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Creer un Skill"
+            "value" : "Créer un Skill"
           }
         },
         "ja" : {
@@ -42853,7 +43637,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Skill personnalise"
+            "value" : "Skill personnalisé"
           }
         },
         "ja" : {
@@ -42983,7 +43767,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Creez votre propre action reutilisable"
+            "value" : "Créez votre propre action réutilisable"
           }
         },
         "ja" : {
@@ -43048,7 +43832,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Creer un Skill personnalise"
+            "value" : "Créer un Skill personnalisé"
           }
         },
         "ja" : {
@@ -43113,7 +43897,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Ajoutez des Skills depuis la bibliotheque. Les membres payants peuvent aussi creer leurs propres Skills personnalises."
+            "value" : "Ajoutez des Skills depuis la bibliothèque. Les membres payants peuvent aussi créer leurs propres Skills personnalisés."
           }
         },
         "ja" : {
@@ -43308,7 +44092,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Installees"
+            "value" : "Installées"
           }
         },
         "ja" : {
@@ -45040,6 +45824,7 @@
       }
     },
     "Script" : {
+      "extractionState" : "stale",
       "localizations" : {
         "de" : {
           "stringUnit" : {
@@ -54063,7 +54848,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Gerez ou annulez facilement dans les reglages de votre identifiant Apple."
+            "value" : "Gérez ou annulez facilement dans les réglages de votre identifiant Apple."
           }
         },
         "ja" : {
@@ -54944,6 +55729,136 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "和你的筆記聊天"
+          }
+        }
+      }
+    },
+    "subscription.billing_issue.action" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Aktualisiere deine Zahlungsmethode, um Pro zu behalten"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update your payment method to keep Pro active"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Actualiza tu método de pago para mantener Pro"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mettez à jour votre moyen de paiement pour conserver Pro"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Proを継続するにはお支払い方法を更新してください"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Pro를 계속 사용하려면 결제 수단을 업데이트하세요"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atualize a forma de pagamento para manter o Pro"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Atualize o método de pagamento para manter o Pro"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新付款方式以继续使用 Pro"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新付款方式以繼續使用 Pro"
+          }
+        }
+      }
+    },
+    "subscription.billing_issue.title" : {
+      "extractionState" : "stale",
+      "localizations" : {
+        "de" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Zahlung benötigt Aufmerksamkeit"
+          }
+        },
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment needs attention"
+          }
+        },
+        "es" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Hay un problema con el pago"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Un problème de paiement"
+          }
+        },
+        "ja" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "お支払いの確認が必要です"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "결제 정보를 확인해 주세요"
+          }
+        },
+        "pt-BR" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problema no pagamento"
+          }
+        },
+        "pt-PT" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problema no pagamento"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款需要处理"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款需要處理"
           }
         }
       }
@@ -68728,7 +69643,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Oeffnet ChillScript und startet direkt die Aufnahme"
+            "value" : "Öffnet ChillScript und startet direkt die Aufnahme"
           }
         },
         "en" : {
@@ -68811,7 +69726,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Demarrer un enregistrement brain dump"
+            "value" : "Démarrer un enregistrement brain dump"
           }
         },
         "ja" : {
@@ -68858,7 +69773,7 @@
         "de" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Fuege einen Schnellzugriff hinzu, um in ChillScript direkt loszusprechen."
+            "value" : "Füge einen Schnellzugriff hinzu, um in ChillScript direkt loszusprechen."
           }
         },
         "en" : {
@@ -69071,7 +69986,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Demarrer brain dump"
+            "value" : "Démarrer brain dump"
           }
         },
         "ja" : {
@@ -69136,7 +70051,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Lancez un enregistrement ChillScript depuis l'ecran verrouille ou le centre de controle."
+            "value" : "Lancez un enregistrement ChillScript depuis l'écran verrouillé ou le centre de contrôle."
           }
         },
         "ja" : {
@@ -69266,7 +70181,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Touchez une fois et commencez a parler"
+            "value" : "Touchez une fois et commencez à parler"
           }
         },
         "ja" : {
@@ -69331,7 +70246,7 @@
         "fr" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Demarrer brain dump"
+            "value" : "Démarrer brain dump"
           }
         },
         "ja" : {

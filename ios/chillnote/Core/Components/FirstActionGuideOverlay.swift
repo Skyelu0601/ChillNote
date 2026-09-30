@@ -195,6 +195,7 @@ struct FirstActionTranscriptReviewPromptView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .buttonStyle(.tactile)
+            .accessibilityIdentifier("note-guide-review-continue")
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)

@@ -5,19 +5,8 @@ import { normalizeTranscriptParagraphs } from "./linkImportJobs.js";
 import {
   buildYtDlpInfoArgs,
   instagramMetadataFromYtDlpInfo,
-  isApifyFallbackReason,
-  selectBestCaption,
-  selectYtDlpBinary
+  selectBestCaption
 } from "./tiktokTranscript.js";
-
-test("TikTok can use a dedicated yt-dlp binary without downgrading other platforms", () => {
-  const currentBinary = "/usr/local/bin/yt-dlp";
-  const tikTokBinary = "/opt/chillnote/bin/yt-dlp-tiktok-2026.03.17";
-
-  assert.equal(selectYtDlpBinary("tiktok", currentBinary, tikTokBinary), tikTokBinary);
-  assert.equal(selectYtDlpBinary("youtube", currentBinary, tikTokBinary), currentBinary);
-  assert.equal(selectYtDlpBinary("instagram", currentBinary, tikTokBinary), currentBinary);
-});
 
 test("YouTube metadata excludes auto-translated subtitle tracks", () => {
   const url = "https://www.youtube.com/watch?v=example";
@@ -206,15 +195,4 @@ test("creator transcript paragraphs never retain visual blank lines", () => {
     normalizeTranscriptParagraphs("\r\nFirst paragraph.\r\n \r\nSecond paragraph.\u2029\u2029Third paragraph.\r\n"),
     "First paragraph.\nSecond paragraph.\nThird paragraph."
   );
-});
-
-test("Apify fallback is limited to TikTok media-fetch failures", () => {
-  assert.equal(isApifyFallbackReason("tiktok", "media_fetch_failed"), true);
-  assert.equal(isApifyFallbackReason("tiktok", "media_fetch_forbidden"), true);
-  assert.equal(isApifyFallbackReason("tiktok", "media_fetch_login_required"), true);
-  assert.equal(isApifyFallbackReason("tiktok", "media_fetch_rate_limited"), true);
-  assert.equal(isApifyFallbackReason("youtube", "media_fetch_failed"), false);
-  assert.equal(isApifyFallbackReason("instagram", "media_fetch_failed"), false);
-  assert.equal(isApifyFallbackReason("tiktok", "transcription_failed"), false);
-  assert.equal(isApifyFallbackReason("tiktok", "media_too_large"), false);
 });

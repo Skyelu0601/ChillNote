@@ -12,7 +12,9 @@ final class FirstActionGuideService: ObservableObject {
         case reviewTranscript
         case tapCreateTab
         case tapAISkills
+        // Keep the persisted identifier used by earlier app versions.
         case waitingForAISkillsDismissal
+        case reviewAIReply // Legacy state; resume at Record once a reply exists.
         case tapRecordTab
         case tapTeleprompter
         case completed
@@ -109,9 +111,11 @@ final class FirstActionGuideService: ObservableObject {
         transition(to: .waitingForAISkillsDismissal)
     }
 
-    func markAISkillsFlowDismissed(in noteID: UUID) {
-        guard stage == .waitingForAISkillsDismissal, targetNoteID == noteID else { return }
-        transition(to: .tapRecordTab)
+    func reconcileConversation(in noteID: UUID, hasReply: Bool) {
+        guard targetNoteID == noteID,
+              [.tapAISkills, .waitingForAISkillsDismissal, .reviewAIReply].contains(stage) else { return }
+        let next: Stage = hasReply ? .tapRecordTab : .tapAISkills
+        if stage != next { transition(to: next) }
     }
 
     func markRecordTabTapped(in noteID: UUID) {

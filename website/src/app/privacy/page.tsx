@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       <article className="legal-document">
         <p className="eyebrow">Legal</p>
         <h1>Privacy Policy</h1>
-        <p><strong>Last Updated:</strong> September 14, 2026</p>
+        <p><strong>Last Updated:</strong> September 21, 2026</p>
 
         <p>
           <strong>Sponteoai</strong> respects your privacy and is committed to protecting it. This policy describes the
@@ -23,7 +23,11 @@ export default function PrivacyPage() {
 
         <h2>1. Information We Collect</h2>
         <h3>Account Information</h3>
-        <p>When you sign in, we collect the account identifiers and email address needed to authenticate you and sync your data.</p>
+        <p>
+          When you sign in, we collect the account identifiers and email address needed to authenticate you, sync your
+          data, and send essential account or active-subscription messages. We send marketing email only when you choose
+          to receive it, and you can unsubscribe at any time.
+        </p>
 
         <h3>Notes and Text Content</h3>
         <p>
@@ -73,6 +77,8 @@ export default function PrivacyPage() {
           <li>Maintain performance, security, and compatibility.</li>
           <li>Understand app usage and improve the mobile experience.</li>
           <li>Measure app-install and subscription performance by advertising campaign.</li>
+          <li>Send essential account and subscription communications.</li>
+          <li>Send optional product news and offers when you have chosen to receive marketing email.</li>
         </ul>
         <p><strong>No Model Training:</strong> We and our third-party partners do not use your notes or recordings to train models.</p>
 
@@ -98,6 +104,11 @@ export default function PrivacyPage() {
           measurement. See the <a className="inline-link" href="https://www.appsflyer.com/legal/privacy-policy/">AppsFlyer privacy policy</a> and <a className="inline-link" href="https://www.revenuecat.com/privacy/">RevenueCat privacy policy</a>.
         </p>
 
+        <p>
+          Amazon Web Services processes email addresses and limited delivery metadata when Amazon Simple Email Service
+          sends ChillScript account, subscription, or optional marketing messages. See the <a className="inline-link" href="https://aws.amazon.com/privacy/">AWS privacy notice</a>.
+        </p>
+
         <h2>5. Data Retention and Security</h2>
         <ul>
           <li>Raw audio is processed transiently and is not retained on server disk after processing.</li>
@@ -110,6 +121,8 @@ export default function PrivacyPage() {
         <p>
           You may edit or delete note content at any time. You can permanently delete your account in the app settings
           or use our <a className="inline-link" href="/delete-account">account deletion page</a> if you no longer have access to the app.
+          You can also unsubscribe from marketing email using the link in any marketing message. Unsubscribing from
+          marketing does not disable essential account, security, or active-subscription messages.
         </p>
 
         <h2>7. Children's Privacy</h2>

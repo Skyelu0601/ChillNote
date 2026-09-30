@@ -374,6 +374,7 @@ final class AuthService: ObservableObject {
     }
     
     func deleteAccount() async -> Bool {
+        let deletingUserID = currentUserId
         // Supabase Client SDK doesn't allow deleting self easily without admin, 
         // usually you call an Edge Function or Backend endpoint.
         // We will call our Backend endpoint which requires the JWT.
@@ -397,6 +398,7 @@ final class AuthService: ObservableObject {
             let (_, response) = try await URLSession.shared.data(for: request)
             if let http = response as? HTTPURLResponse, http.statusCode == 200 {
                 signOut()
+                if let deletingUserID { try? NoteConversationArchive.removeAccount(deletingUserID) }
                 return true
             }
         } catch {

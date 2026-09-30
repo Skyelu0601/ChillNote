@@ -13,16 +13,17 @@ struct NoteDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @EnvironmentObject private var syncManager: SyncManager
-    @ObservedObject private var firstActionGuide = FirstActionGuideService.shared
+    @ObservedObject private var firstActionGuide: FirstActionGuideService
     @StateObject private var recipeManager = RecipeManager.shared
     @StateObject private var storeService = StoreService.shared
 
     @StateObject private var viewModel: NoteDetailViewModel
+    @StateObject private var conversation: NoteConversationStore
     @State private var activeVoiceAlert: VoiceAlertState?
     @State private var editorController = RichTextEditorController()
     @State private var workspacePage: NoteDetailWorkspacePage = .script
+    @State private var isConversationExpanded = false
     @State private var isEditorActive = false
-    @State private var isSkillManagerPresented = false
     @State private var pendingLinkImportUpgrade = false
 
     private var noteContentBinding: Binding<String> {
@@ -65,9 +66,15 @@ struct NoteDetailView: View {
         }
     }
 
-    init(note: Note, isNewBlankDraft: Bool = false) {
+    init(note: Note, isNewBlankDraft: Bool = false,
+         conversationStore: NoteConversationStore? = nil,
+         firstActionGuide: FirstActionGuideService = .shared,
+         initialWorkspace: NoteDetailWorkspacePage = .script) {
         self.note = note
+        _firstActionGuide = ObservedObject(wrappedValue: firstActionGuide)
         _viewModel = StateObject(wrappedValue: NoteDetailViewModel(note: note, isNewBlankDraft: isNewBlankDraft))
+        _conversation = StateObject(wrappedValue: conversationStore ?? NoteConversationStore(note: note))
+        _workspacePage = State(initialValue: initialWorkspace)
     }
 
     var body: some View {
@@ -75,6 +82,7 @@ struct NoteDetailView: View {
             Color.bgSecondary.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
+                if !isConversationExpanded {
                 NoteDetailHeaderView(
                     isDeleted: viewModel.isDeleted,
                     onBack: {
@@ -84,98 +92,97 @@ struct NoteDetailView: View {
                     onRestore: { viewModel.send(.restoreTapped) },
                     onAddTopic: { viewModel.resetNewTagInput() },
                     onExport: { sendAfterFlushing(.exportTapped) },
-                    onDelete: { sendAfterFlushing(.deleteTapped) }
+                    onDelete: { conversation.cancel(); sendAfterFlushing(.deleteTapped) }
                 )
                 .padding(.horizontal, 20)
                 .padding(.top, 12)
 
+                if let trashCountdownText = viewModel.trashCountdownText {
+                    HStack(spacing: 10) {
+                        Image(systemName: "trash")
+                            .font(.system(size: 14))
+                            .foregroundColor(.red.opacity(0.8))
+                        Text(trashCountdownText)
+                            .font(.system(size: 13, weight: .medium))
+                            .foregroundColor(.textSub)
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 10)
+                    .background(Color.red.opacity(0.08))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+                }
+
+                if shouldShowContextSection {
+                    NoteDetailContextSectionView(
+                        note: note,
+                        isDeleted: viewModel.isDeleted,
+                        creditActionTitle: L10n.text(
+                            storeService.currentTier == .pro
+                                ? "common.try_again"
+                                : "sidebar.membership.upgrade"
+                        ),
+                        onResolveImportCredits: resolveImportCredits,
+                        onRemoveTag: { viewModel.send(.removeTagTapped($0)) }
+                    )
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                    .padding(.bottom, 10)
+
+                    Rectangle()
+                        .fill(Color.borderSubtle)
+                        .frame(height: 1)
+                }
+
+                NoteDetailWorkspacePicker(
+                    selection: workspacePage,
+                    isCreateEnabled: viewModel.isAISkillsEnabled,
+                    guideRequiredPage: guideRequiredWorkspacePage,
+                    guideTarget: guideWorkspaceTarget,
+                    onSelect: selectWorkspacePage
+                )
+
+                }
+
                 GeometryReader { geometry in
-                    ScrollView(.vertical, showsIndicators: false) {
-                        LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
-                            if let trashCountdownText = viewModel.trashCountdownText {
-                                HStack(spacing: 10) {
-                                    Image(systemName: "trash")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.red.opacity(0.8))
-                                    Text(trashCountdownText)
-                                        .font(.system(size: 13, weight: .medium))
-                                        .foregroundColor(.textSub)
-                                }
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 10)
-                                .background(Color.red.opacity(0.08))
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                                .padding(.horizontal, 16)
-                                .padding(.top, 8)
-                            }
-
-                            if shouldShowContextSection {
-                                NoteDetailContextSectionView(
-                                    note: note,
+                    if workspacePage == .create {
+                        NoteConversationView(
+                            store: conversation, recipes: workspaceRecipes,
+                            isExpanded: $isConversationExpanded,
+                            enabled: viewModel.isInteractionEnabled,
+                            content: note.content, onSkill: startAISkill,
+                            save: viewModel.replaceConversationContent
+                        )
+                    } else {
+                        ScrollView(.vertical, showsIndicators: false) {
+                            let minimumContentHeight = max(120, geometry.size.height)
+                            switch workspacePage {
+                            case .script:
+                                NoteDetailEditorSectionView(
+                                    noteContent: noteContentBinding,
+                                    editorSelection: $viewModel.editorSelection,
+                                    editorController: editorController,
                                     isDeleted: viewModel.isDeleted,
-                                    creditActionTitle: L10n.text(
-                                        storeService.currentTier == .pro
-                                            ? "common.try_again"
-                                            : "sidebar.membership.upgrade"
-                                    ),
-                                    onResolveImportCredits: resolveImportCredits,
-                                    onRemoveTag: { viewModel.send(.removeTagTapped($0)) }
+                                    isProcessing: viewModel.isProcessing,
+                                    isVoiceProcessing: viewModel.isVoiceProcessing,
+                                    minimumHeight: minimumContentHeight,
+                                    isEditing: $isEditorActive,
+                                    onFinalTextCommit: viewModel.stageFinalEditorText
                                 )
-                                .padding(.horizontal, 20)
-                                .padding(.top, 10)
-                                .padding(.bottom, 10)
-
-                                Rectangle()
-                                    .fill(Color.borderSubtle)
-                                    .frame(height: 1)
-                            }
-
-                            Section {
-                                let minimumContentHeight = max(120, geometry.size.height - 56)
-
-                                switch workspacePage {
-                                case .script:
-                                    NoteDetailEditorSectionView(
-                                        noteContent: noteContentBinding,
-                                        editorSelection: $viewModel.editorSelection,
-                                        editorController: editorController,
-                                        isDeleted: viewModel.isDeleted,
-                                        isProcessing: viewModel.isProcessing,
-                                        isVoiceProcessing: viewModel.isVoiceProcessing,
-                                        minimumHeight: minimumContentHeight,
-                                        isEditing: $isEditorActive,
-                                        onFinalTextCommit: viewModel.stageFinalEditorText
-                                    )
-                                case .create:
-                                    NoteDetailCreatePageView(
-                                        recipes: workspaceRecipes,
-                                        isEnabled: viewModel.isAISkillsEnabled,
-                                        minimumHeight: minimumContentHeight,
-                                        onSelect: startAISkill,
-                                        onManageSkills: { isSkillManagerPresented = true }
-                                    )
-                                case .record:
-                                    NoteDetailRecordPageView(
-                                        script: note.content,
-                                        isEnabled: viewModel.isInteractionEnabled,
-                                        minimumHeight: minimumContentHeight,
-                                        onStartRecording: openTeleprompter
-                                    )
-                                }
-                            } header: {
-                                NoteDetailWorkspacePicker(
-                                    selection: workspacePage,
-                                    isCreateEnabled: viewModel.isAISkillsEnabled,
-                                    guideRequiredPage: guideRequiredWorkspacePage,
-                                    guideTarget: guideWorkspaceTarget,
-                                    onSelect: selectWorkspacePage
+                            case .create:
+                                EmptyView()
+                            case .record:
+                                NoteDetailRecordPageView(
+                                    script: note.content,
+                                    isEnabled: viewModel.isInteractionEnabled,
+                                    minimumHeight: minimumContentHeight,
+                                    onStartRecording: openTeleprompter
                                 )
-                                .zIndex(1)
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .scrollDismissesKeyboard(.interactively)
                     }
-                    .scrollDismissesKeyboard(.interactively)
                 }
 
             }
@@ -211,9 +218,6 @@ struct NoteDetailView: View {
         .fullScreenCover(isPresented: $viewModel.showTeleprompterCamera) {
             TeleprompterCameraView(initialScript: note.content)
         }
-        .sheet(isPresented: $isSkillManagerPresented) {
-            CreatorSkillsManagementSheet()
-        }
         .noteDetailAlertsAndSheets(
             viewModel: viewModel,
             onAISkillApplied: returnToNoteWorkspace
@@ -226,17 +230,8 @@ struct NoteDetailView: View {
                 message: VoiceErrorPresentation.userMessage(for: message)
             )
         }
-        .onChange(of: viewModel.showAISkillsSheet) { _, _ in
-            advanceFirstActionGuideAfterAISkillsIfReady()
-        }
-        .onChange(of: viewModel.showAISkillTranslateSheet) { _, _ in
-            advanceFirstActionGuideAfterAISkillsIfReady()
-        }
-        .onChange(of: viewModel.aiSkillPreview?.id) { _, _ in
-            advanceFirstActionGuideAfterAISkillsIfReady()
-        }
-        .onChange(of: viewModel.isProcessing) { _, _ in
-            advanceFirstActionGuideAfterAISkillsIfReady()
+        .onChange(of: conversation.busy) { _, busy in
+            if !busy { reconcileConversationGuide() }
         }
         .onChange(of: storeService.currentTier) { _, tier in
             guard tier == .pro, pendingLinkImportUpgrade else { return }
@@ -249,7 +244,8 @@ struct NoteDetailView: View {
                 viewModel.commitPendingEdits()
             }
         }
-        .onChange(of: firstActionGuide.stage) { _, _ in
+        .onChange(of: firstActionGuide.stage) { _, stage in
+            if stage == .tapRecordTab || stage == .tapTeleprompter { isConversationExpanded = false }
             syncWorkspaceWithFirstActionGuide()
         }
         .animation(.easeInOut(duration: 0.2), value: isEditorActive)
@@ -270,9 +266,10 @@ struct NoteDetailView: View {
                 dismissAction: { dismiss() }
             )
             syncWorkspaceWithFirstActionGuide()
-            advanceFirstActionGuideAfterAISkillsIfReady()
+            reconcileConversationGuide()
         }
         .onDisappear {
+            conversation.cancel()
             editorController.flush()
             viewModel.commitPendingEdits()
         }
@@ -318,7 +315,7 @@ struct NoteDetailView: View {
         editorController.endEditing()
         editorController.flush()
         firstActionGuide.markAISkillsTapped(in: note.id)
-        viewModel.startAISkill(recipe)
+        conversation.send(recipe: recipe)
     }
 
     private func returnToNoteWorkspace() {
@@ -357,7 +354,7 @@ struct NoteDetailView: View {
         switch firstActionGuide.stage {
         case .reviewTranscript:
             return .script
-        case .tapCreateTab, .tapAISkills:
+        case .tapCreateTab, .tapAISkills, .waitingForAISkillsDismissal, .reviewAIReply:
             return .create
         case .tapRecordTab, .tapTeleprompter:
             return .record
@@ -390,14 +387,9 @@ struct NoteDetailView: View {
             && firstActionGuide.stage == .reviewTranscript
     }
 
-    private func advanceFirstActionGuideAfterAISkillsIfReady() {
-        guard !viewModel.showAISkillsSheet,
-              !viewModel.showAISkillTranslateSheet,
-              viewModel.aiSkillPreview == nil,
-              !viewModel.isProcessing else {
-            return
-        }
-        firstActionGuide.markAISkillsFlowDismissed(in: note.id)
+    private func reconcileConversationGuide() {
+        guard !conversation.busy else { return }
+        firstActionGuide.reconcileConversation(in: note.id, hasReply: conversation.turns.contains { $0.answer != nil })
     }
 
     private func syncWorkspaceWithFirstActionGuide() {
@@ -407,11 +399,10 @@ struct NoteDetailView: View {
         switch firstActionGuide.stage {
         case .reviewTranscript:
             page = .script
-        case .tapAISkills:
+        case .tapAISkills, .waitingForAISkillsDismissal, .reviewAIReply:
             page = .create
         case .tapRecordTab:
-            // Keep the current page here. Applying a skill explicitly returns to
-            // Note, while dismissing the skill flow leaves Create unchanged.
+            // Leave the reply visible until the user chooses Record.
             page = nil
         case .tapTeleprompter:
             page = .record
@@ -436,7 +427,27 @@ struct NoteDetailView: View {
 
 #if DEBUG
 struct NoteDetailWorkspaceDesignPreview: View {
-    private let note: Note
+    @StateObject private var model = NoteDetailPreviewModel()
+
+    var body: some View {
+        NavigationStack {
+            NoteDetailView(note: model.note, conversationStore: model.conversation,
+                           firstActionGuide: model.guide,
+                           initialWorkspace: model.guidePreview ? .script : (model.chatPreview ? .create : .script))
+        }
+        .modelContainer(model.container)
+        .environmentObject(SyncManager())
+    }
+}
+
+@MainActor
+private final class NoteDetailPreviewModel: ObservableObject {
+    let note: Note
+    let container: ModelContainer
+    let conversation: NoteConversationStore?
+    let guide: FirstActionGuideService
+    let guidePreview = ProcessInfo.processInfo.arguments.contains("-note-chat-guide-preview")
+    let chatPreview = ProcessInfo.processInfo.arguments.contains("-note-chat-design-preview")
 
     init() {
         let previewContent = "Tier three countries tend to be the cheapest with the most purchasing power. If you want to optimize your budget, start with tier two and tier three countries and keep testing.\n\nToday's guest runs multiple apps, and one of them just reached more than $10,000 in the last month."
@@ -462,15 +473,38 @@ struct NoteDetailWorkspaceDesignPreview: View {
         }
 
         note = previewNote
+        container = try! ModelContainer(for: Note.self, Tag.self, ChecklistItem.self,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        container.mainContext.insert(previewNote)
+        guide = FirstActionGuideService(defaults: UserDefaults(suiteName: "guide-preview-" + UUID().uuidString)!)
+        if guidePreview {
+            guide.configure(userId: "preview", accountCreatedAt: Date())
+            guide.registerSharedVideoImport(noteID: previewNote.id)
+            guide.updateTargetImportStatus(.completed)
+            guide.markImportedNoteOpened(previewNote.id)
+        }
+        if chatPreview {
+            var dependencies = NoteConversationStore.Dependencies()
+            dependencies.consent = { true }
+            dependencies.authorized = { _ in true }
+            dependencies.refreshCredits = {}
+            dependencies.generate = { prompt, _, _ in
+                try await Task.sleep(for: .milliseconds(200))
+                if ProcessInfo.processInfo.arguments.contains("-note-chat-long-reply-preview") {
+                    return (1...12).map { index in
+                        "Section \(index). Capture the thought before it disappears. A quick voice note is enough. You can shape it into a story later. Keep the original meaning while making the script natural and easy to follow."
+                    }.joined(separator: "\n\n")
+                }
+                return prompt.contains("Make it shorter")
+                    ? "Capture your idea now. Shape it into a script later."
+                    : "Great ideas rarely arrive on schedule.\n\nCapture the thought before it disappears. A quick voice note is enough.\n\nYou can shape it into a story later."
+            }
+            conversation = NoteConversationStore(note: previewNote,
+                directory: FileManager.default.temporaryDirectory.appendingPathComponent("note-chat-preview-" + UUID().uuidString),
+                dependencies: dependencies)
+        } else { conversation = nil }
     }
 
-    var body: some View {
-        NavigationStack {
-            NoteDetailView(note: note)
-        }
-        .modelContainer(DataService.shared.container!)
-        .environmentObject(SpeechRecognizer())
-        .environmentObject(SyncManager())
-    }
 }
+
 #endif

@@ -28,33 +28,33 @@ final class ShareViewModel: ObservableObject {
     @Published var sourcePlatformID = "web"
     @Published var statusText = ShareL10n.text("share_extension.reading_content")
     @Published var stage: ShareImportStage = .readingContent
-    @Published var progress = 0.05
-    @Published var visualProgress = 0.05
     @Published var isCompleted = false
     @Published var errorMessage: String?
     @Published var isCreditsRequired = false
 
     private weak var extensionContext: NSExtensionContext?
-    private var sharedURL: URL?
-    private var visualProgressCeiling = 0.12
-    private var visualProgressTask: Task<Void, Never>?
-    private let service = ShareImportService()
+    private var hasStarted = false
+    private var hasDismissed = false
+    private let service: ShareImportService
+    private let automaticDismissDelay: Duration
     private let operationID = UUID().uuidString.lowercased()
 
-    init(extensionContext: NSExtensionContext?) {
+    init(
+        extensionContext: NSExtensionContext?,
+        service: ShareImportService = ShareImportService(),
+        automaticDismissDelay: Duration = .milliseconds(900)
+    ) {
         self.extensionContext = extensionContext
-    }
-
-    deinit {
-        visualProgressTask?.cancel()
+        self.service = service
+        self.automaticDismissDelay = automaticDismissDelay
     }
 
     func start() async {
-        beginVisualProgress()
+        guard !hasStarted else { return }
+        hasStarted = true
 
         do {
             let url = try await loadSharedURL()
-            sharedURL = url
             let platform = SharePlatformResolver.platform(for: url)
             sourceName = platform.displayName
             sourcePlatformID = platform.id
@@ -75,15 +75,8 @@ final class ShareViewModel: ObservableObject {
             ])
 
             statusText = ShareL10n.text("share_extension.saved")
-            progress = 1.0
-            visualProgress = 1.0
             isCompleted = true
-            stopVisualProgress()
-
-            try? await Task.sleep(for: .milliseconds(850))
-            extensionContext?.completeRequest(returningItems: nil)
         } catch {
-            stopVisualProgress()
             isCreditsRequired = (error as? ShareImportError)?.analyticsCode == "insufficient_credits"
             ShareAnalyticsQueue.capture("share_import_blocked", properties: [
                 "operation_id": operationID,
@@ -97,57 +90,27 @@ final class ShareViewModel: ObservableObject {
     }
 
     func dismiss() {
+        guard !hasDismissed else { return }
+        hasDismissed = true
         extensionContext?.completeRequest(returningItems: nil)
     }
 
-    func openApp() {
-        guard let url = URL(string: "chillnote://shared-imports") else {
-            dismiss()
-            return
+    /// The view animates the panel away only after this pause finishes.
+    /// Cancellation, errors and an earlier swipe must never trigger another close.
+    func waitForAutomaticDismissal(voiceOverRunning: Bool) async -> Bool {
+        guard isCompleted, errorMessage == nil, !hasDismissed, !voiceOverRunning else { return false }
+        do {
+            try await Task.sleep(for: automaticDismissDelay)
+        } catch {
+            return false
         }
-        extensionContext?.open(url) { [weak self] _ in
-            Task { @MainActor in
-                self?.dismiss()
-            }
-        }
+        return isCompleted && errorMessage == nil && !hasDismissed && !Task.isCancelled
     }
 
     private func apply(_ stage: ShareImportStage) {
         self.stage = stage
-        progress = stage.progress
-        visualProgress = max(visualProgress, stage.progress)
-        visualProgressCeiling = stage.visualCeiling
         statusText = stage.message
         isCompleted = stage == .completed
-
-        if stage == .completed {
-            visualProgress = 1.0
-            stopVisualProgress()
-        }
-    }
-
-    private func beginVisualProgress() {
-        visualProgressTask?.cancel()
-        visualProgressTask = Task { [weak self] in
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(220))
-                guard let self else { return }
-
-                if self.isCompleted {
-                    return
-                }
-
-                let remaining = self.visualProgressCeiling - self.visualProgress
-                guard remaining > 0.003 else { continue }
-
-                self.visualProgress += min(max(remaining * 0.08, 0.004), 0.014)
-            }
-        }
-    }
-
-    private func stopVisualProgress() {
-        visualProgressTask?.cancel()
-        visualProgressTask = nil
     }
 
     private func loadSharedURL() async throws -> URL {
@@ -248,6 +211,6 @@ final class ShareViewController: UIViewController {
         ])
         hostingController.didMove(toParent: self)
 
-        preferredContentSize = CGSize(width: 390, height: 320)
+        preferredContentSize = CGSize(width: 390, height: 540)
     }
 }

@@ -201,13 +201,6 @@
     <string name="common_back">Atrás</string>
     <string name="common_request_failed">La solicitud ha fallado. Inténtalo de nuevo.</string>
     <string name="voice_processing_error">La transcripción falló. El audio se guardó en Registros pendientes. Inténtalo de nuevo.</string>
-    <string name="shared_video_import_preparing">Preparando el vídeo compartido…</string>
-    <string name="shared_video_import_error_too_large">Este vídeo supera los 100 MB. Elige uno más pequeño.</string>
-    <string name="shared_video_import_error_too_long">Este vídeo dura más de 3 horas. Elige uno más corto.</string>
-    <string name="shared_video_import_error_no_audio">Este vídeo no tiene una pista de audio para transcribir.</string>
-    <string name="shared_video_import_error_unsupported">Este formato de vídeo o de audio no es compatible.</string>
-    <string name="shared_video_import_error_empty">Este vídeo está vacío.</string>
-    <string name="shared_video_import_error_failed">No se pudo importar este vídeo. Intenta compartirlo de nuevo.</string>
     <string name="ai_request_error">La solicitud a la IA ha fallado. Inténtalo de nuevo.</string>
     <string name="sync_error">No se puede sincronizar ahora. Tus cambios locales se han conservado.</string>
     <string name="common_delete">Eliminar</string>
@@ -659,9 +652,9 @@
     <string name="quick_capture_link_import_card_title">Creando tu nota…</string>
     <string name="quick_capture_link_import_card_body">Puedes seguir navegando; la terminaremos aquí.</string>
     <string name="sidebar_tags_title">TEMAS</string>
-    <string name="onboarding_first_action_create_tab">Toca Crear para convertir esta nota en contenido nuevo.</string>
-    <string name="onboarding_first_action_ai_skills">Elige una habilidad de IA para crear contenido a partir de esta nota.</string>
-    <string name="onboarding_first_action_record_tab">Tu contenido está listo. Toca Grabar para preparar la filmación.</string>
+    <string name="onboarding_first_action_create_tab">Toca Crear para hablar con Chillo sobre esta nota.</string>
+    <string name="onboarding_first_action_ai_skills">Toca una habilidad para enviarla al instante. Chillo responderá aquí.</string>
+    <string name="onboarding_first_action_record_tab">Toca Grabar para probar una grabación con tu nota.</string>
     <string name="onboarding_first_action_teleprompter">Tu guion está listo. Toca aquí para abrir el teleprompter y empezar a grabar.</string>
     <string name="onboarding_first_action_transcript_review_title">La transcripción de tu video está lista</string>
     <string name="onboarding_first_action_transcript_review_action">Descubre qué puedes crear</string>
@@ -751,4 +744,18 @@
     <string name="notifications_error">No se pudieron sincronizar las notificaciones. Inténtalo de nuevo.</string>
     <string name="notifications_retry">Reintentar</string>
     <string name="share_extension_open_app">Abrir ChillScript</string>
+    <string name="subscription_billing_issue_title">Hay un problema con el pago</string>
+    <string name="subscription_billing_issue_action">Actualiza tu método de pago para mantener Pro</string>
+    <string name="note_chat_welcome_title">¿Qué te gustaría hacer?</string>
+    <string name="note_chat_welcome_message">Haz una pregunta o elige una herramienta para empezar.</string>
+    <string name="note_chat_all_skills">Todas las herramientas</string>
+    <string name="note_chat_skills">Herramientas</string>
+    <string name="note_chat_skill_badge">Herramienta</string>
+    <string name="note_chat_replace">Usar esta versión</string>
+    <string name="note_chat_failed">No se recibió una respuesta. Inténtalo de nuevo.</string>
+    <string name="note_chat_history_error">No se pudo guardar o cargar esta conversación.</string>
+    <string name="note_chat_save_error">No se pudo guardar la nota. Inténtalo de nuevo.</string>
+    <string name="note_chat_expand">Ampliar conversación</string>
+    <string name="note_chat_collapse">Reducir conversación</string>
+    <string name="creator_skills_manage">Gestionar</string>
 </resources>

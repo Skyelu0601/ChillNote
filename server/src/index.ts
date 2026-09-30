@@ -82,6 +82,8 @@ import {
 import { prisma } from "./db.js"; // Import prisma for direct queries in index.ts if needed, though best to abstract
 import type { SyncPayload } from "./types.js";
 import { supabaseAdmin } from "./supabase.js";
+import { createRequireAuth } from "./auth.js";
+import { findActiveAuthUser } from "./authSession.js";
 import { syncRevenueCatUsers } from "./revenueCatSync.js";
 import { registerSubscriptionVerificationRoutes } from "./subscriptionVerification.js";
 import {
@@ -128,6 +130,12 @@ import {
 import fetch from "node-fetch";
 import { createFreeToolsRouter } from "./freeTools.js";
 import { registerChillo } from "./chillo.js";
+import {
+  handleRevenueCatEmailLifecycle,
+  registerEmailRoutes,
+  scheduleEmailWorker
+} from "./email.js";
+import { registerSesEventRoute } from "./sesEvents.js";
 
 const app = express();
 app.use("/free-tools", express.json({ limit: "8kb" }), createFreeToolsRouter());
@@ -147,7 +155,7 @@ app.use((req, res, next) => {
     syncJsonParser(req, res, next);
     return;
   }
-  if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem" || req.path === "/webhooks/revenuecat") {
+  if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem" || req.path === "/webhooks/revenuecat" || req.path === "/webhooks/ses") {
     next();
     return;
   }
@@ -155,7 +163,7 @@ app.use((req, res, next) => {
 });
 
 app.use((req, res, next) => {
-  if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem" || req.path === "/webhooks/revenuecat") {
+  if (req.path.startsWith("/ai/") || req.path === "/webhooks/creem" || req.path === "/webhooks/revenuecat" || req.path === "/webhooks/ses") {
     next();
     return;
   }
@@ -387,33 +395,15 @@ const linkImportJobSchema = z.object({
   }).optional()
 });
 
-// Middleware to validate Supabase Auth Header
-async function requireAuth(req: express.Request, res: express.Response, next: express.NextFunction) {
-  const header = req.headers.authorization;
-  if (!header?.startsWith("Bearer ")) {
-    res.status(401).json({ error: "Missing token" });
-    return;
-  }
-  const token = header.replace("Bearer ", "");
-
-  try {
-    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
-
-    if (error || !user) {
-      console.error("Auth check failed:", error);
-      res.status(401).json({ error: "Invalid token" });
-      return;
-    }
-
-    req.userId = user.id;
-    req.userEmail = user.email ?? undefined;
-    req.userCreatedAt = user.created_at;
-    next();
-  } catch (err) {
-    console.error("Auth Exception:", err);
-    res.status(401).json({ error: "Invalid token" });
-  }
-}
+const requireAuth = createRequireAuth({
+  issuer: `${process.env.SUPABASE_URL!.replace(/\/$/, "")}/auth/v1`,
+  getClaims: token => supabaseAdmin.auth.getClaims(token),
+  findActiveUser: (userId, sessionId) => findActiveAuthUser(prisma, userId, sessionId),
+  onError: error => console.error("Auth verification failed:", {
+    name: error instanceof Error ? error.name : "UnknownError",
+    code: typeof error === "object" && error !== null && "code" in error ? error.code : undefined
+  })
+});
 
 type UserTier = "free" | "pro";
 
@@ -849,6 +839,7 @@ app.post("/webhooks/revenuecat", express.raw({ type: "application/json", limit: 
       lastEventId: event.id, database: prisma, fetchCustomer: fetchRevenueCatCustomer,
       invalidate: invalidateUserTierCache
     });
+    await handleRevenueCatEmailLifecycle(event, users.map((user) => user.id));
     await prisma.revenueCatWebhookEvent.create({
       data: {
         id: event.id,
@@ -1594,8 +1585,25 @@ app.post("/subscription/google/verify", requireAuth, async (req, res) => {
 registerSubscriptionVerificationRoutes(app, requireAuth, {
   upsertUser,
   sync: syncRevenueCatEntitlement,
-  effective: (userId) => getEffectiveSubscription(userId, new Date(), REVENUECAT_ENTITLEMENT_ID)
+  effective: (userId) => getEffectiveSubscription(userId, new Date(), REVENUECAT_ENTITLEMENT_ID),
+  billingIssue: getActiveBillingIssue
 });
+
+async function getActiveBillingIssue(userId: string): Promise<{ store: string; productId: string | null } | null> {
+  const [preference, entitlement] = await Promise.all([
+    prisma.emailPreference.findUnique({ where: { userId }, select: { billingIssueAt: true } }),
+    prisma.revenueCatEntitlement.findUnique({
+      where: { userId_entitlementId: { userId, entitlementId: REVENUECAT_ENTITLEMENT_ID } },
+      select: { store: true, productId: true }
+    })
+  ]);
+  const issueAt = preference?.billingIssueAt;
+  if (!issueAt || Date.now() - issueAt.getTime() >= 60 * 24 * 60 * 60 * 1000) return null;
+  const store = entitlement?.store;
+  return store === "app_store" || store === "play_store" || store === "google_play"
+    ? { store, productId: entitlement?.productId ?? null }
+    : null;
+}
 
 app.get("/subscription/status", requireAuth, async (req, res) => {
   const userId = req.userId as string;
@@ -1636,7 +1644,8 @@ app.get("/subscription/status", requireAuth, async (req, res) => {
         ? effective.productId
         : effective.tier === "pro" && user?.subscriptionProvider === "google_play"
           ? user.googlePlayPurchases[0]?.productId ?? null
-          : null
+          : null,
+      billingIssue: await getActiveBillingIssue(userId)
     });
   } catch (error) {
     console.error("❌ Subscription Status Error:", error);
@@ -1732,6 +1741,8 @@ registerAppNotificationRoutes(app, requireAuth, {
   resolveTier: async (userId) => (await getEffectiveSubscription(userId, new Date(), REVENUECAT_ENTITLEMENT_ID)).tier,
   initialCredits: INITIAL_CREDITS
 });
+registerEmailRoutes(app, requireAuth);
+registerSesEventRoute(app);
 
 app.get("/credits/balance", requireAuth, async (req, res) => {
   try {
@@ -1791,17 +1802,8 @@ app.listen(PORT, () => {
   console.log(`ChillScript backend listening on :${PORT}`);
   scheduleLinkImportWorker();
   scheduleNotificationWorker();
+  scheduleEmailWorker();
   // Keep older installed clients working during the Chillo rollout.
   if (legacyWeeklyTopicsEnabled()) scheduleWeeklyTopicWorker();
   scheduleGooglePlayBillingWorker(googlePlayBillingDependencies);
 });
-
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: string;
-      userEmail?: string;
-      userCreatedAt?: string;
-    }
-  }
-}

@@ -841,6 +841,14 @@ import SwiftData
 extension AgentRecipe {
     /// Generate recipe output without deciding where the result should be saved.
     func generateResult(from content: String, userInstruction: String? = nil) async throws -> String {
+        let request = generationRequest(from: content, userInstruction: userInstruction)
+        return try await GeminiService.shared.generateContent(
+            prompt: request.prompt, systemInstruction: request.system, usageType: .agentRecipe
+        )
+    }
+
+    /// Shared by standalone skills and the note's conversational Create workspace.
+    func generationRequest(from content: String, userInstruction: String? = nil) -> (prompt: String, system: String) {
         let prompt: String
         let systemInstruction: String
         let languageRule = LanguageDetection.languagePreservationRule(for: content)
@@ -1041,11 +1049,7 @@ extension AgentRecipe {
             """
         }
 
-        return try await GeminiService.shared.generateContent(
-            prompt: prompt,
-            systemInstruction: systemInstruction,
-            usageType: .agentRecipe
-        )
+        return (prompt, systemInstruction)
     }
 
     /// Execute the recipe on given notes

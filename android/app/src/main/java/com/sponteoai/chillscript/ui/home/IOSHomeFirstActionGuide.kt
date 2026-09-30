@@ -67,7 +67,8 @@ enum class HomeFirstActionStage {
     ReviewTranscript,
     TapCreateTab,
     TapAISkills,
-    WaitingForAISkillsDismissal,
+    WaitingForAISkillsDismissal, // Persisted identifier from the earlier skills sheet.
+    ReviewAIReply, // Legacy state; resume at Record once a reply exists.
     TapRecordTab,
     TapTeleprompter,
     Completed,
@@ -79,6 +80,12 @@ data class HomeFirstActionGuideState(
     val targetNoteId: String? = null,
     val shareAcknowledgedAt: String? = null,
 )
+
+internal fun HomeFirstActionGuideState.reconcileConversation(noteId: String, hasReply: Boolean): HomeFirstActionGuideState {
+    if (targetNoteId != noteId || stage !in setOf(HomeFirstActionStage.TapAISkills,
+            HomeFirstActionStage.WaitingForAISkillsDismissal, HomeFirstActionStage.ReviewAIReply)) return this
+    return copy(stage = if (hasReply) HomeFirstActionStage.TapRecordTab else HomeFirstActionStage.TapAISkills)
+}
 
 /** Per-account persistence matching the iOS first-action guide's Home stages. */
 class HomeFirstActionGuideStore(context: Context) {
@@ -143,7 +150,12 @@ class HomeFirstActionGuideStore(context: Context) {
         transitionForTarget(userId, state, noteId, HomeFirstActionStage.TapAISkills, HomeFirstActionStage.WaitingForAISkillsDismissal)
 
     fun markAISkillsFlowDismissed(userId: String, state: HomeFirstActionGuideState, noteId: String) =
-        transitionForTarget(userId, state, noteId, HomeFirstActionStage.WaitingForAISkillsDismissal, HomeFirstActionStage.TapRecordTab)
+        transitionForTarget(userId, state, noteId, HomeFirstActionStage.WaitingForAISkillsDismissal, HomeFirstActionStage.TapAISkills)
+
+    fun reconcileConversation(userId: String, state: HomeFirstActionGuideState, noteId: String, hasReply: Boolean): HomeFirstActionGuideState {
+        val updated = state.reconcileConversation(noteId, hasReply)
+        return if (updated == state) state else persist(userId, updated)
+    }
 
     fun markRecordTabTapped(userId: String, state: HomeFirstActionGuideState, noteId: String) =
         transitionForTarget(userId, state, noteId, HomeFirstActionStage.TapRecordTab, HomeFirstActionStage.TapTeleprompter)

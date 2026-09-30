@@ -198,13 +198,6 @@
     <string name="common_back">後退</string>
     <string name="common_request_failed">請求失敗，請再試一次。</string>
     <string name="voice_processing_error">轉錄失敗。音訊已儲存到待處理錄音，請重試。</string>
-    <string name="shared_video_import_preparing">正在準備分享的影片…</string>
-    <string name="shared_video_import_error_too_large">影片超過 100 MB，請選擇較小的影片。</string>
-    <string name="shared_video_import_error_too_long">影片長度超過 3 小時，請選擇較短的影片。</string>
-    <string name="shared_video_import_error_no_audio">此影片沒有可轉錄的音軌。</string>
-    <string name="shared_video_import_error_unsupported">暫不支援此影片格式或音軌格式。</string>
-    <string name="shared_video_import_error_empty">此影片是空的。</string>
-    <string name="shared_video_import_error_failed">無法匯入此影片，請重新分享後再試。</string>
     <string name="ai_request_error">AI 請求失敗，請再試一次。</string>
     <string name="sync_error">暫時無法同步，你的本機變更已保留。</string>
     <string name="common_delete">刪除</string>
@@ -650,9 +643,9 @@
     <string name="quick_capture_link_import_card_title">正在建立你的筆記…</string>
     <string name="quick_capture_link_import_card_body">你可以繼續瀏覽，我們會在這裡完成。</string>
     <string name="sidebar_tags_title">主題</string>
-    <string name="onboarding_first_action_create_tab">點「創作」，把這則筆記變成新內容</string>
-    <string name="onboarding_first_action_ai_skills">選擇一個 AI 技能，用這則筆記開始創作</string>
-    <string name="onboarding_first_action_record_tab">內容準備好了，點「錄製」進入拍攝準備</string>
+    <string name="onboarding_first_action_create_tab">點「創作」，圍繞這則筆記和 Chillo 對話。</string>
+    <string name="onboarding_first_action_ai_skills">點一下技能即可直接傳送，Chillo 會在這裡回覆。</string>
+    <string name="onboarding_first_action_record_tab">點「錄製」，試試用這則筆記拍攝。</string>
     <string name="onboarding_first_action_teleprompter">腳本已就位，點這裡打開提詞器開始錄製</string>
     <string name="onboarding_first_action_transcript_review_title">影片轉錄已完成</string>
     <string name="onboarding_first_action_transcript_review_action">看看怎麼創作</string>
@@ -742,4 +735,18 @@
     <string name="notifications_error">通知暫時無法同步，請重試。</string>
     <string name="notifications_retry">重試</string>
     <string name="share_extension_open_app">開啟 ChillScript</string>
+    <string name="subscription_billing_issue_title">付款需要處理</string>
+    <string name="subscription_billing_issue_action">更新付款方式以繼續使用 Pro</string>
+    <string name="note_chat_welcome_title">想怎麼處理這篇內容？</string>
+    <string name="note_chat_welcome_message">直接提問，或選擇一個技能開始。</string>
+    <string name="note_chat_all_skills">全部技能</string>
+    <string name="note_chat_skills">技能</string>
+    <string name="note_chat_skill_badge">技能</string>
+    <string name="note_chat_replace">用此版本</string>
+    <string name="note_chat_failed">未收到回覆，請重試。</string>
+    <string name="note_chat_history_error">無法儲存或讀取這段對話。</string>
+    <string name="note_chat_save_error">筆記儲存失敗，請重試。</string>
+    <string name="note_chat_expand">展開對話</string>
+    <string name="note_chat_collapse">收起對話</string>
+    <string name="creator_skills_manage">管理</string>
 </resources>

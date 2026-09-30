@@ -73,42 +73,6 @@ class RecordingFileManager(context: Context) {
             .sortedByDescending { it.createdAt }
     }
 
-    fun adoptSharedVideoAudio(
-        stagedAudio: File,
-        durationMillis: Long,
-        originalDisplayName: String?,
-        originalVideoMimeType: String,
-        sourcePackage: String?,
-        ownerUserId: String?,
-    ): PendingRecording {
-        check(stagedAudio.isFile && stagedAudio.length() > 0L) { "Extracted audio was empty" }
-        ensureDirectory()
-        val destination = File(directory, "${UUID.randomUUID()}_${System.currentTimeMillis()}.m4a")
-        if (!stagedAudio.renameTo(destination)) {
-            stagedAudio.inputStream().buffered().use { input ->
-                destination.outputStream().buffered().use { output -> input.copyTo(output) }
-            }
-            if (!stagedAudio.delete() && stagedAudio.exists()) {
-                throw IOException("Could not remove staged shared-video audio")
-            }
-        }
-        val now = System.currentTimeMillis()
-        if (!destination.setLastModified(now)) {
-            throw IOException("Could not timestamp pending recording")
-        }
-        val metadataSaved = mediaMetadata.edit()
-            .putString(metadataKey(destination, KEY_ORIGIN), PendingRecordingOrigin.SharedVideo.persistedValue)
-            .putString(metadataKey(destination, KEY_MIME_TYPE), "audio/mp4")
-            .putString(metadataKey(destination, KEY_ORIGINAL_NAME), originalDisplayName?.take(240))
-            .putString(metadataKey(destination, KEY_ORIGINAL_VIDEO_MIME), originalVideoMimeType)
-            .putString(metadataKey(destination, KEY_SOURCE_PACKAGE), sourcePackage?.take(240))
-            .putString(metadataKey(destination, KEY_OWNER_USER_ID), ownerUserId)
-            .putLong(metadataKey(destination, KEY_DURATION_MILLIS), durationMillis.coerceAtLeast(0L))
-            .commit()
-        if (!metadataSaved) throw IOException("Could not save pending recording metadata")
-        return pendingRecording(destination)
-    }
-
     fun setOwnerUserId(file: File, userId: String) {
         val saved = mediaMetadata.edit().putString(metadataKey(file, KEY_OWNER_USER_ID), userId).commit()
         if (!saved) throw IOException("Could not save pending recording owner")

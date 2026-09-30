@@ -273,6 +273,25 @@ final class NoteDetailViewModel: ObservableObject {
         return true
     }
 
+    /// Apply a chat answer through the same persistence and sync path as editor changes.
+    @discardableResult
+    func replaceConversationContent(_ content: String) -> Bool {
+        guard !isDeleted, isInteractionEnabled else { return false }
+        let previous = note.content
+        let previousDate = note.updatedAt
+        note.updateContent(content)
+        if let modelContext { note.syncContentStructure(with: modelContext) }
+        note.updatedAt = dependencies.now()
+        guard persistAndSync() else {
+            note.updateContent(previous)
+            note.updatedAt = previousDate
+            if let modelContext { note.syncContentStructure(with: modelContext) }
+            return false
+        }
+        initialContent = content
+        return true
+    }
+
     func confirmDeleteNote() {
         deleteNote()
     }
@@ -346,10 +365,12 @@ final class NoteDetailViewModel: ObservableObject {
     private func deleteNotePermanently(shouldDismiss: Bool = true) -> Bool {
         guard !hasPermanentlyDeletedNote, let modelContext else { return false }
         let candidateTags = Array(note.tags)
+        let conversationArchive = NoteConversationArchive(userID: note.userId, noteID: note.id)
         modelContext.delete(note)
         TagService.shared.cleanupEmptyTags(context: modelContext, candidates: candidateTags)
         guard persistAndSync(hardDeletedNoteIDs: [note.id]) else { return false }
         hasPermanentlyDeletedNote = true
+        try? conversationArchive.remove()
         if shouldDismiss {
             dismissAction?()
         }

@@ -1,104 +1,28 @@
 import SwiftUI
 
 struct NoteDetailAISkillsSheet: View {
-    let recipes: [AgentRecipe]
     let onSelect: (AgentRecipe) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
-    private let columns = [
-        GridItem(.adaptive(minimum: 130), spacing: 12)
-    ]
-
     var body: some View {
         NavigationStack {
-            ZStack {
-                Color.bgPrimary.ignoresSafeArea()
-
-                if recipes.isEmpty {
-                    VStack(alignment: .leading, spacing: 14) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 36, weight: .semibold))
-                            .foregroundColor(.accentSecondary)
-
-                        Text(L10n.text("note_detail.ai_skills.empty.title"))
-                            .font(.title3.bold())
-                            .foregroundColor(.textMain)
-
-                        Text(L10n.text("note_detail.ai_skills.empty.message"))
-                            .font(.body)
-                            .foregroundColor(.textSub)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                    }
-                    .padding(24)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
-                } else {
-                    ScrollView {
-                        LazyVGrid(columns: columns, spacing: 12) {
-                            ForEach(recipes) { recipe in
-                                Button {
-                                    dismiss()
-                                    onSelect(recipe)
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 10) {
-                                        CreatorSkillIcon(recipe: recipe, size: 18, container: 40)
-
-                                        Text(recipe.localizedName)
-                                            .font(.system(size: 15, weight: .semibold))
-                                            .foregroundColor(.textMain)
-                                            .lineLimit(2)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-
-                                        Text(recipe.localizedDescription)
-                                            .font(.caption)
-                                            .foregroundColor(.textSub)
-                                            .lineLimit(3)
-                                            .fixedSize(horizontal: false, vertical: true)
-                                            .frame(maxWidth: .infinity, alignment: .leading)
-                                    }
-                                    .padding(14)
-                                    .frame(maxWidth: .infinity, minHeight: 142, alignment: .topLeading)
-                                    .background(Color.white)
-                                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                            .stroke(Color.black.opacity(0.04), lineWidth: 1)
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(16)
-                    }
-                }
-            }
-            .navigationTitle(L10n.text("note_detail.ai_skills.sheet.title"))
-            .navigationBarTitleDisplayMode(.inline)
+            ChillRecipesView(onSelect: { recipe in
+                onSelect(recipe)
+                dismiss()
+            })
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button(L10n.text("common.cancel")) {
+                    Button(L10n.text("common.close")) {
                         dismiss()
-                    }
-                }
-
-                ToolbarItem(placement: .primaryAction) {
-                    NavigationLink {
-                        ChillRecipesView()
-                    } label: {
-                        Label(
-                            L10n.text("note_detail.ai_skills.add_skills"),
-                            systemImage: "plus"
-                        )
                     }
                 }
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
         .presentationDragIndicator(.visible)
         .presentationCornerRadius(24)
     }
-
 }
 
 struct NoteDetailAISkillPreviewSheet: View {

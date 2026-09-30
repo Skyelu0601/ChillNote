@@ -1,11 +1,6 @@
 package com.sponteoai.chillscript.chillo
 
-import android.app.Activity
-import android.content.Intent
-import android.speech.RecognizerIntent
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
@@ -65,13 +60,6 @@ fun ChilloScreen(
     var sourceTurn by remember { mutableStateOf<ChilloTurn?>(null) }
     var deletion by remember { mutableStateOf<String?>(null) }
     var localError by remember { mutableStateOf<Int?>(null) }
-    val voice = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()?.let {
-                controller.input(listOf(state.input, it).filter(String::isNotBlank).joinToString(" "))
-            }
-        }
-    }
     fun open(id: String) { scope.launch { if (!onOpenNote(id)) localError = R.string.chillo_note_unavailable } }
     BackHandler(onBack = onBack)
     LaunchedEffect(controller) { controller.load(); controller.reload(); controller.poll() }
@@ -170,15 +158,10 @@ fun ChilloScreen(
                 }
             }
             Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(27.dp)).padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.Bottom) {
-                IconButton(onClick = { focus.clearFocus(); sheet = "library" }) { Icon(Icons.Outlined.Add, stringResource(R.string.chillo_library)) }
-                BasicTextField(value = state.input, onValueChange = controller::input, modifier = Modifier.weight(1f).focusRequester(inputFocusRequester).padding(vertical = 13.dp), maxLines = 6, textStyle = TextStyle(color = Color.Black, fontSize = 16.sp), decorationBox = { inner ->
+                BasicTextField(value = state.input, onValueChange = controller::input, modifier = Modifier.weight(1f).focusRequester(inputFocusRequester).padding(start = 14.dp, top = 13.dp, bottom = 13.dp), maxLines = 6, textStyle = TextStyle(color = Color.Black, fontSize = 16.sp), decorationBox = { inner ->
                     if (state.input.isEmpty()) Text(stringResource(R.string.chillo_placeholder), color = Color.Gray, fontSize = 16.sp)
                     inner()
                 })
-                IconButton(onClick = {
-                    runCatching { voice.launch(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)) }
-                        .onFailure { localError = R.string.chillo_dictate_unavailable }
-                }, enabled = !state.busy && !state.generating, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.Mic, stringResource(R.string.chillo_dictate), Modifier.size(21.dp)) }
                 val sendEnabled = !state.busy && (state.generating || (!state.needsConsent && state.input.isNotBlank() && state.input.length <= 16000))
                 IconButton(onClick = {
                     scope.launch {
@@ -194,7 +177,7 @@ fun ChilloScreen(
         }
         if (sheet != null) ModalBottomSheet(onDismissRequest = { sheet = null }, containerColor = Color.White) {
             LazyColumn(Modifier.fillMaxWidth().padding(horizontal = 22.dp), verticalArrangement = Arrangement.spacedBy(18.dp), contentPadding = PaddingValues(bottom = 32.dp)) {
-                item { Text(stringResource(when (sheet) { "history" -> R.string.chillo_history; "sources" -> R.string.chillo_sources; else -> R.string.chillo_library }), fontSize = 19.sp, fontWeight = FontWeight.SemiBold) }
+                item { Text(stringResource(when (sheet) { "history" -> R.string.chillo_history; else -> R.string.chillo_sources }), fontSize = 19.sp, fontWeight = FontWeight.SemiBold) }
                 when (sheet) {
                     "history" -> {
                         items(state.history, key = { it.id }) { conversation ->
@@ -209,15 +192,6 @@ fun ChilloScreen(
                         TextButton(onClick = { sheet = null; open(source.noteId) }, enabled = source.availability != "unavailable") { Text(source.title, fontWeight = FontWeight.SemiBold) }
                         SelectionContainer { Text(if (source.availability == "active") source.excerpt else stringResource(R.string.chillo_sources_changed), fontSize = 14.sp, color = Color.Gray) }
                         TextButton(onClick = { scope.launch { controller.exclude(source); sheet = null } }, enabled = !state.generating) { Text(stringResource(R.string.chillo_exclude)) }
-                    }
-                    else -> {
-                        state.library?.let { library ->
-                            item { Text(stringResource(R.string.chillo_library_summary, library.available, library.total)) }
-                            item { Text(stringResource(R.string.chillo_library_index, library.indexed, library.available), color = Color.Gray) }
-                        }
-                        item { Text(stringResource(R.string.chillo_library_scope), color = Color.Gray) }
-                        item { Text(stringResource(R.string.chillo_consent_body), fontSize = 13.sp, color = Color.Gray) }
-                        item { TextButton(onClick = { scope.launch { controller.consent(state.needsConsent); sheet = null } }) { Text(stringResource(if (state.needsConsent) R.string.chillo_consent_accept else R.string.chillo_consent_revoke)) } }
                     }
                 }
             }
