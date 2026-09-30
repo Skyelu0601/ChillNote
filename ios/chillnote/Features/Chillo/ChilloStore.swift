@@ -75,6 +75,8 @@ final class ChilloStore: ObservableObject {
     @Published private(set) var loading = false
     @Published var error: String?
     @Published var input = ""
+    @Published private(set) var composerRevision = 0
+    @Published private(set) var submittingMessage: String?
     @Published private(set) var olderCursor: String?
     @Published private(set) var historyCursor: String?
     private var pinnedIds: [String] = []
@@ -107,6 +109,7 @@ final class ChilloStore: ObservableObject {
 
     func newConversation() {
         guard !busy else { return }
+        composerRevision += 1
         conversationID = nil; turns = []; input = ""; pinnedIds = []; excludedIds = []
         pendingSubmission = nil; olderCursor = nil; error = nil
     }
@@ -117,8 +120,14 @@ final class ChilloStore: ObservableObject {
             let detail: ChilloDetail = try await self.service.request("/conversations/\(id)")
             self.conversationID = id; self.turns = detail.turns; self.olderCursor = detail.olderCursor
             self.pinnedIds = detail.pinnedIds; self.excludedIds = detail.excludedIds
+            self.composerRevision += 1
             self.input = ""; self.pendingSubmission = nil
         }
+    }
+
+    func updateComposerInput(_ text: String, revision: Int) {
+        guard revision == composerRevision else { return }
+        input = text
     }
 
     func send() async {
@@ -126,17 +135,35 @@ final class ChilloStore: ObservableObject {
         let message = input.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !message.isEmpty, message.count <= 16000 else { return }
         busy = true
-        defer { busy = false }
-        await perform {
-            if self.conversationID == nil { self.conversationID = UUID().uuidString.lowercased() }
-            let conversationID = self.conversationID!
-            let _: ChilloConversation = try await self.service.request("/conversations", method: "POST", body: ["id": conversationID])
-            if self.pendingSubmission?.message != message { self.pendingSubmission = (UUID().uuidString.lowercased(), message) }
-            let turn: ChilloTurn = try await self.service.request("/conversations/\(conversationID)/turns", method: "POST", body: ["id": self.pendingSubmission!.id, "message": message, "locale": L10n.contentLocaleIdentifier])
-            if !self.turns.contains(where: { $0.id == turn.id }) { self.turns.append(turn) }
-            self.input = ""; self.pendingSubmission = nil
-            try await self.refreshHistory()
+        submittingMessage = message
+        let originalInput = input
+        composerRevision += 1
+        input = ""
+        defer { busy = false; submittingMessage = nil }
+        do {
+            if conversationID == nil { conversationID = UUID().uuidString.lowercased() }
+            let conversationID = conversationID!
+            let _: ChilloConversation = try await service.request("/conversations", method: "POST", body: ["id": conversationID])
+            if pendingSubmission?.message != message { pendingSubmission = (UUID().uuidString.lowercased(), message) }
+            let turn: ChilloTurn = try await service.request("/conversations/\(conversationID)/turns", method: "POST", body: ["id": pendingSubmission!.id, "message": message, "locale": L10n.contentLocaleIdentifier])
+            submittingMessage = nil
+            if !turns.contains(where: { $0.id == turn.id }) { turns.append(turn) }
+            pendingSubmission = nil
+            error = nil
+            try? await refreshHistory()
+        } catch is CancellationError {
+            restoreInput(originalInput)
+        } catch let failure as ChilloService.Failure {
+            restoreInput(originalInput)
+            error = Self.errorText(failure.code)
+        } catch {
+            restoreInput(originalInput)
+            self.error = L10n.text("chillo.error.connection")
         }
+    }
+
+    private func restoreInput(_ original: String) {
+        input = input.isEmpty ? original : original + "\n" + input
     }
 
     func poll() async {

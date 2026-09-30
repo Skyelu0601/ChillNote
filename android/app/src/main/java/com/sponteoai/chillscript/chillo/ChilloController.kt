@@ -23,7 +23,8 @@ import java.util.UUID
 @Serializable data class ChilloLibrary(val total: Int, val available: Int, val indexed: Int, val pending: Int, val consentVersion: Int)
 data class ChilloState(
     val conversationId: String? = null, val turns: List<ChilloTurn> = emptyList(), val history: List<ChilloConversation> = emptyList(),
-    val library: ChilloLibrary? = null, val input: String = "", val busy: Boolean = false, val loading: Boolean = false,
+    val library: ChilloLibrary? = null, val input: String = "", val submittingMessage: String? = null,
+    val busy: Boolean = false, val loading: Boolean = false,
     val error: String? = null, val olderCursor: String? = null, val historyCursor: String? = null,
 ) {
     val generating get() = turns.any { it.active }
@@ -105,18 +106,33 @@ class ChilloController(private val api: ChilloDataSource) {
         val current = mutable.value
         val message = current.input.trim()
         if (current.busy || current.generating || current.needsConsent || message.isEmpty() || message.length > 16000) return
-        mutable.value = current.copy(busy = true)
-        try { attempt {
+        mutable.value = current.copy(busy = true, submittingMessage = message, input = "")
+        try {
             val id = mutable.value.conversationId ?: UUID.randomUUID().toString().also { mutable.value = mutable.value.copy(conversationId = it) }
             api.request("/conversations", "POST", buildJsonObject { put("id", id) })
             if (pending?.second != message) pending = UUID.randomUUID().toString() to message
             val turn = api.json.decodeFromJsonElement<ChilloTurn>(api.request("/conversations/$id/turns", "POST", buildJsonObject {
                 put("id", pending!!.first); put("message", message); put("locale", Locale.getDefault().toLanguageTag())
             }))
-            mutable.value = mutable.value.copy(input = "", turns = (mutable.value.turns + turn).distinctBy { it.id })
-            pending = null; history()
-        } } finally { mutable.value = mutable.value.copy(busy = false) }
+            mutable.value = mutable.value.copy(
+                turns = (mutable.value.turns + turn).distinctBy { it.id },
+                submittingMessage = null,
+                error = null,
+            )
+            pending = null
+            runCatching { history() }
+        } catch (cancelled: CancellationException) {
+            mutable.value = mutable.value.copy(input = restoreInput(current.input, mutable.value.input))
+            throw cancelled
+        } catch (error: Exception) {
+            mutable.value = mutable.value.copy(
+                input = restoreInput(current.input, mutable.value.input),
+                error = (error as? ChilloApi.Failure)?.code ?: "REQUEST_FAILED",
+            )
+        } finally { mutable.value = mutable.value.copy(busy = false, submittingMessage = null) }
     }
+    private fun restoreInput(original: String, newer: String): String =
+        if (newer.isEmpty()) original else "$original\n$newer"
     private suspend fun refresh() {
         val id = mutable.value.conversationId ?: return
         val detail = api.json.decodeFromJsonElement<ChilloDetail>(api.request("/conversations/$id"))

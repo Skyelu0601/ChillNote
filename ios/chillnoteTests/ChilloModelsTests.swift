@@ -41,4 +41,18 @@ final class ChilloModelsTests: XCTestCase {
 
         XCTAssertEqual(uniqueChilloSources([first, second, third]).map(\.noteId), ["note", "other"])
     }
+
+    @MainActor
+    func testOldComposerCannotRestoreClearedText() {
+        let store = ChilloStore()
+        let oldRevision = store.composerRevision
+        store.updateComposerInput("hi", revision: oldRevision)
+        store.newConversation()
+
+        store.updateComposerInput("hi", revision: oldRevision)
+        XCTAssertEqual(store.input, "")
+
+        store.updateComposerInput("next idea", revision: store.composerRevision)
+        XCTAssertEqual(store.input, "next idea")
+    }
 }

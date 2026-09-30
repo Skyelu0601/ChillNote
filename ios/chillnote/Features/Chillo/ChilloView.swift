@@ -4,6 +4,15 @@ import UIKit
 
 struct ChilloRoute: Hashable { }
 
+private struct ChilloPressStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .contentShape(Rectangle())
+            .scaleEffect(configuration.isPressed ? 0.9 : 1)
+            .animation(.spring(response: 0.22, dampingFraction: 0.65), value: configuration.isPressed)
+    }
+}
+
 struct ChilloView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -90,12 +99,24 @@ struct ChilloView: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 28) {
                     if syncFailed { Text(L10n.text("chillo.sync.warning")).font(.footnote).foregroundStyle(.secondary) }
-                    if store.turns.isEmpty { emptyState }
+                    if store.turns.isEmpty && store.submittingMessage == nil { emptyState }
                     if store.olderCursor != nil {
                         Button(L10n.text("chillo.more")) { Task { await store.loadOlder() } }
                     }
                     ForEach(store.turns) { turn in
                         turnView(turn).id(turn.id)
+                    }
+                    if let message = store.submittingMessage {
+                        VStack(alignment: .leading, spacing: 16) {
+                            HStack {
+                                Spacer(minLength: 40)
+                                Text(message).font(.system(size: 16)).lineSpacing(5)
+                                    .padding(.horizontal, 17).padding(.vertical, 13)
+                                    .background(Color(red: 238 / 255, green: 245 / 255, blue: 1), in: RoundedRectangle(cornerRadius: 21))
+                            }
+                            ProgressView().frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .id("submitting")
                     }
                     if let error = store.error {
                         VStack(alignment: .leading, spacing: 8) {
@@ -110,6 +131,9 @@ struct ChilloView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .onChange(of: store.turns.last?.id) { _, _ in withAnimation { proxy.scrollTo("bottom", anchor: .bottom) } }
+            .onChange(of: store.submittingMessage) { _, message in
+                if message != nil { withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo("submitting", anchor: .bottom) } }
+            }
             .onChange(of: store.turns.last?.status) { _, _ in
                 if store.turns.last?.status == "completed", let id = store.turns.last?.id { withAnimation { proxy.scrollTo(id, anchor: .top) } }
             }
@@ -177,33 +201,45 @@ struct ChilloView: View {
         VStack(spacing: 4) {
             if let error = dictation.error { Text(error).font(.caption).foregroundStyle(.secondary) }
             HStack(alignment: .bottom, spacing: 10) {
-                Button { focused = false; sheet = .library } label: { Image(systemName: "plus").frame(width: 32, height: 40) }
+                Button { focused = false; sheet = .library } label: { Image(systemName: "plus").frame(width: 44, height: 44) }
+                    .buttonStyle(ChilloPressStyle())
                     .accessibilityLabel(L10n.text("chillo.library"))
-                TextField(L10n.text("chillo.placeholder"), text: $store.input, axis: .vertical)
+                TextField(L10n.text("chillo.placeholder"), text: composerInput(for: store.composerRevision), axis: .vertical)
                     .lineLimit(1...6).font(.system(size: 16)).focused($focused)
-                    .padding(.vertical, 10).disabled(store.busy)
+                    .id(store.composerRevision)
+                    .padding(.vertical, 10)
                 Button { Task { if dictation.recording { dictation.stop() } else { await dictation.start(prefix: store.input) } } } label: {
-                    Image(systemName: dictation.recording ? "stop.circle" : "mic").frame(width: 28, height: 40)
-                }.accessibilityLabel(L10n.text("chillo.dictate")).disabled(store.busy || store.generating)
+                    Image(systemName: dictation.recording ? "stop.circle" : "mic").frame(width: 44, height: 44)
+                }.buttonStyle(ChilloPressStyle()).accessibilityLabel(L10n.text("chillo.dictate")).disabled(store.busy || store.generating)
                 Button {
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     dictation.stop()
                     if let turn = store.turns.last, turn.isActive { Task { _ = await store.action("cancel", turn: turn) } }
-                    else { focused = false; Task { await store.send() } }
+                    else { Task { await store.send() } }
                 } label: {
                     Image(systemName: store.generating ? "stop.fill" : "arrow.up")
                         .font(.system(size: 16, weight: .semibold)).foregroundStyle(.white)
                         .frame(width: 34, height: 34).background(.black, in: Circle())
-                        .padding(.bottom, 3)
+                        .frame(width: 44, height: 44)
                 }
+                .buttonStyle(ChilloPressStyle())
                 .disabled(store.busy || (!store.generating && (store.input.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || store.needsConsent || store.input.count > 16000)))
                 .opacity(store.needsConsent || (store.input.isEmpty && !store.generating) ? 0.3 : 1)
                 .accessibilityLabel(L10n.text(store.generating ? "chillo.stop" : "chillo.send"))
             }
             .foregroundStyle(.black).padding(.horizontal, 10).padding(.vertical, 5)
             .background(Color.white, in: RoundedRectangle(cornerRadius: 27))
-            .overlay(RoundedRectangle(cornerRadius: 27).stroke(Color.black.opacity(0.12)))
+            .overlay(RoundedRectangle(cornerRadius: 27).stroke(focused ? Color.brandBlue.opacity(0.5) : Color.black.opacity(0.12)))
+            .animation(.easeOut(duration: 0.18), value: focused)
             .padding(.horizontal, 16).padding(.vertical, 8)
         }.background(.white)
+    }
+
+    private func composerInput(for revision: Int) -> Binding<String> {
+        Binding(
+            get: { store.input },
+            set: { store.updateComposerInput($0, revision: revision) }
+        )
     }
 
     @ViewBuilder private func sheetContent(_ destination: Sheet) -> some View {

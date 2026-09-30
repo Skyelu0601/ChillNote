@@ -6,8 +6,12 @@ import android.speech.RecognizerIntent
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -23,7 +27,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.stringResource
@@ -49,6 +56,10 @@ fun ChilloScreen(
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
     val focus = LocalFocusManager.current
+    val inputFocusRequester = remember { FocusRequester() }
+    val sendInteraction = remember { MutableInteractionSource() }
+    val sendPressed by sendInteraction.collectIsPressedAsState()
+    val sendScale by animateFloatAsState(if (sendPressed) 0.9f else 1f, spring(), label = "Chillo send press")
     val list = rememberLazyListState()
     var sheet by remember { mutableStateOf<String?>(null) }
     var sourceTurn by remember { mutableStateOf<ChilloTurn?>(null) }
@@ -64,7 +75,11 @@ fun ChilloScreen(
     fun open(id: String) { scope.launch { if (!onOpenNote(id)) localError = R.string.chillo_note_unavailable } }
     BackHandler(onBack = onBack)
     LaunchedEffect(controller) { controller.load(); controller.reload(); controller.poll() }
-    LaunchedEffect(state.turns.lastOrNull()?.id) { if (state.turns.isNotEmpty()) list.animateScrollToItem(list.layoutInfo.totalItemsCount.coerceAtLeast(1) - 1) }
+    LaunchedEffect(state.turns.lastOrNull()?.id, state.submittingMessage) {
+        if (state.turns.isNotEmpty() || state.submittingMessage != null) {
+            list.animateScrollToItem(list.layoutInfo.totalItemsCount.coerceAtLeast(1) - 1)
+        }
+    }
     val latestCreditError = state.error == "INSUFFICIENT_CREDITS" ||
         state.turns.lastOrNull()?.errorCode == "INSUFFICIENT_CREDITS"
     LaunchedEffect(latestCreditError) {
@@ -83,7 +98,7 @@ fun ChilloScreen(
                 IconButton(onClick = controller::newConversation, enabled = !state.busy) { Icon(Icons.Outlined.Edit, stringResource(R.string.chillo_new), tint = Color.Black) }
             }
             LazyColumn(state = list, modifier = Modifier.weight(1f), contentPadding = PaddingValues(horizontal = 22.dp, vertical = 26.dp), verticalArrangement = Arrangement.spacedBy(26.dp)) {
-                if (state.turns.isEmpty()) item {
+                if (state.turns.isEmpty() && state.submittingMessage == null) item {
                     Column(Modifier.padding(top = 68.dp), verticalArrangement = Arrangement.spacedBy(18.dp)) {
                         Text(stringResource(R.string.chillo_empty_title), fontSize = 24.sp, fontWeight = FontWeight.SemiBold)
                         Text(stringResource(R.string.chillo_empty_body), color = Color.Gray, fontSize = 15.sp, lineHeight = 22.sp)
@@ -102,7 +117,7 @@ fun ChilloScreen(
                         } else {
                             listOf(R.string.chillo_suggestion_ideas, R.string.chillo_suggestion_connect).forEach { key ->
                                 val text = stringResource(key)
-                                OutlinedButton(onClick = { controller.input(text) }) { Text(text, color = Color.Black, fontSize = 14.sp) }
+                                OutlinedButton(onClick = { controller.input(text); inputFocusRequester.requestFocus() }) { Text(text, color = Color.Black, fontSize = 14.sp) }
                             }
                         }
                     }
@@ -139,6 +154,16 @@ fun ChilloScreen(
                         }
                     }
                 }
+                state.submittingMessage?.let { message ->
+                    item(key = "submitting") {
+                        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                                Text(message, Modifier.widthIn(max = 300.dp).background(Color(0xFFEEF5FF), RoundedCornerShape(21.dp)).padding(horizontal = 17.dp, vertical = 13.dp), fontSize = 16.sp, lineHeight = 23.sp)
+                            }
+                            CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
+                        }
+                    }
+                }
                 if (state.error != null || localError != null) item {
                     Text(stringResource(localError ?: chilloError(state.error)), color = Color.Gray, fontSize = 13.sp)
                     TextButton(onClick = { localError = null; scope.launch { controller.load(); controller.reload() } }) { Text(stringResource(R.string.chillo_retry)) }
@@ -146,22 +171,24 @@ fun ChilloScreen(
             }
             Row(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().border(1.dp, Color(0xFFE0E0E0), RoundedCornerShape(27.dp)).padding(horizontal = 4.dp, vertical = 4.dp), verticalAlignment = Alignment.Bottom) {
                 IconButton(onClick = { focus.clearFocus(); sheet = "library" }) { Icon(Icons.Outlined.Add, stringResource(R.string.chillo_library)) }
-                BasicTextField(value = state.input, onValueChange = controller::input, enabled = !state.busy, modifier = Modifier.weight(1f).padding(vertical = 13.dp), maxLines = 6, textStyle = TextStyle(color = Color.Black, fontSize = 16.sp), decorationBox = { inner ->
+                BasicTextField(value = state.input, onValueChange = controller::input, modifier = Modifier.weight(1f).focusRequester(inputFocusRequester).padding(vertical = 13.dp), maxLines = 6, textStyle = TextStyle(color = Color.Black, fontSize = 16.sp), decorationBox = { inner ->
                     if (state.input.isEmpty()) Text(stringResource(R.string.chillo_placeholder), color = Color.Gray, fontSize = 16.sp)
                     inner()
                 })
                 IconButton(onClick = {
                     runCatching { voice.launch(Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)) }
                         .onFailure { localError = R.string.chillo_dictate_unavailable }
-                }, enabled = !state.busy && !state.generating, modifier = Modifier.size(40.dp)) { Icon(Icons.Outlined.Mic, stringResource(R.string.chillo_dictate), Modifier.size(21.dp)) }
+                }, enabled = !state.busy && !state.generating, modifier = Modifier.size(48.dp)) { Icon(Icons.Outlined.Mic, stringResource(R.string.chillo_dictate), Modifier.size(21.dp)) }
+                val sendEnabled = !state.busy && (state.generating || (!state.needsConsent && state.input.isNotBlank() && state.input.length <= 16000))
                 IconButton(onClick = {
-                    focus.clearFocus()
                     scope.launch {
                         val activeTurn = state.turns.lastOrNull()?.takeIf { it.active }
                         if (activeTurn != null) controller.action("cancel", activeTurn) else controller.send()
                     }
-                }, enabled = !state.busy && (state.generating || (!state.needsConsent && state.input.isNotBlank() && state.input.length <= 16000)), modifier = Modifier.padding(3.dp).size(36.dp).background(Color.Black, CircleShape)) {
-                    Icon(if (state.generating) Icons.Outlined.Stop else Icons.Outlined.ArrowUpward, stringResource(if (state.generating) R.string.chillo_stop else R.string.chillo_send), tint = Color.White, modifier = Modifier.size(21.dp))
+                }, enabled = sendEnabled, interactionSource = sendInteraction, modifier = Modifier.size(48.dp)) {
+                    Box(Modifier.size(36.dp).graphicsLayer { scaleX = sendScale; scaleY = sendScale }.background(if (sendEnabled) Color.Black else Color.Black.copy(alpha = 0.3f), CircleShape), contentAlignment = Alignment.Center) {
+                        Icon(if (state.generating) Icons.Outlined.Stop else Icons.Outlined.ArrowUpward, stringResource(if (state.generating) R.string.chillo_stop else R.string.chillo_send), tint = Color.White, modifier = Modifier.size(21.dp))
+                    }
                 }
             }
         }
