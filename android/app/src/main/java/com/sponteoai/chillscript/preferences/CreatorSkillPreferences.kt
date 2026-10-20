@@ -4,6 +4,33 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.annotation.StringRes
 import com.sponteoai.chillscript.R
+import java.util.Locale
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+
+enum class TranslateTargetLanguage(val rawValue: String, val promptName: String) {
+    SIMPLIFIED_CHINESE("zh-Hans", "Simplified Chinese"),
+    TRADITIONAL_CHINESE("zh-Hant", "Traditional Chinese"),
+    FRENCH("fr", "French"),
+    ENGLISH("en", "English"),
+    GERMAN("de", "German"),
+    JAPANESE("ja", "Japanese"),
+    SPANISH("es", "Spanish"),
+    PORTUGUESE("pt-BR", "Portuguese"),
+    KOREAN("ko", "Korean");
+
+    val displayName: String
+        get() = Locale.forLanguageTag(if (this == PORTUGUESE) "pt" else rawValue).let { locale ->
+            val name = locale.getDisplayName(locale)
+            if (this == PORTUGUESE) name.replaceFirstChar { it.uppercase() } else name
+        }
+
+    companion object {
+        fun fromRawValue(value: String?): TranslateTargetLanguage =
+            if (value in listOf("pt", "pt-PT", "pt-BR")) PORTUGUESE
+            else entries.firstOrNull { it.rawValue == value } ?: ENGLISH
+    }
+}
 
 enum class CaptionPackOutputStyle(
     val rawValue: String,
@@ -51,6 +78,11 @@ enum class CaptionPackTone(
     ;
 
     companion object {
+        val captionOptions = entries.filter { it != STORY_DRIVEN && it != CREATOR_VOICE }
+
+        fun fromCaptionRawValue(value: String?): CaptionPackTone =
+            captionOptions.firstOrNull { it.rawValue == value } ?: CASUAL_USEFUL
+
         fun fromRawValue(value: String?): CaptionPackTone =
             entries.firstOrNull { it.rawValue == value } ?: CASUAL_USEFUL
     }
@@ -157,46 +189,22 @@ data class CaptionPackPreferences(
         }.ifEmpty { CaptionPackPlatform.entries }
 }
 
-data class BrandVoicePreferences(
-    val sample: String = "",
-    val tone: String = "",
-    val audience: String = "",
-    val cta: String = "",
-    val avoid: String = "",
-) {
-    val isConfigured: Boolean
-        get() = listOf(sample, tone, audience, cta, avoid).any { it.isNotBlank() }
-
+data class BrandVoicePreferences(val samples: List<String> = emptyList()) {
+    val isConfigured: Boolean get() = samples.any { it.isNotBlank() }
     val promptProfile: String
-        get() = buildList {
-            tone.trim().takeIf { it.isNotEmpty() }?.let { add("Tone / voice style:\n$it") }
-            audience.trim().takeIf { it.isNotEmpty() }?.let { add("Audience:\n$it") }
-            cta.trim().takeIf { it.isNotEmpty() }?.let { add("Preferred CTA:\n$it") }
-            avoid.trim().takeIf { it.isNotEmpty() }?.let { add("Avoid:\n$it") }
-            sample.trim().takeIf { it.isNotEmpty() }?.let { add("Example posts / writing samples:\n$it") }
-        }.joinToString("\n\n")
-}
-
-enum class TimedScriptDuration(
-    val rawValue: String,
-    val seconds: Int,
-    val wordCountRange: String,
-    @StringRes val titleRes: Int,
-) {
-    SECONDS_30("seconds30", 30, "70-90", R.string.timed_script_duration_30),
-    SECONDS_45("seconds45", 45, "105-130", R.string.timed_script_duration_45),
-    SECONDS_60("seconds60", 60, "140-170", R.string.timed_script_duration_60),
-    ;
+        get() = samples.map { it.trim() }.filter { it.isNotEmpty() }
+            .mapIndexed { index, sample -> "Writing example ${index + 1}:\n$sample" }
+            .joinToString("\n\n")
 
     companion object {
-        fun fromRawValue(value: String?): TimedScriptDuration =
-            entries.firstOrNull { it.rawValue == value } ?: SECONDS_45
+        fun load(preferences: SharedPreferences?): BrandVoicePreferences {
+            val stored = preferences?.getString("brandVoiceSamples", null)
+            val samples = stored?.let { runCatching { Json.decodeFromString<List<String>>(it) }.getOrNull() }
+                ?: listOf(preferences?.getString("brandVoiceSample", "").orEmpty())
+            return BrandVoicePreferences(samples.filter { it.isNotBlank() })
+        }
     }
 }
-
-data class TimedScriptPreferences(
-    val duration: TimedScriptDuration = TimedScriptDuration.SECONDS_45,
-)
 
 enum class RepurposeThreadLength(
     val rawValue: String,
@@ -214,69 +222,66 @@ enum class RepurposeThreadLength(
     }
 }
 
-enum class RepurposeFormat(
-    @StringRes val titleRes: Int,
-    val displayName: String,
-) {
-    X_POST(R.string.repurpose_pack_format_x_post, "X Post"),
-    LINKEDIN(R.string.repurpose_pack_format_linkedin, "LinkedIn"),
-    THREADS(R.string.repurpose_pack_format_threads, "Threads"),
-    FACEBOOK_PAGE(R.string.repurpose_pack_format_facebook_page, "Facebook Page"),
-    NEWSLETTER(R.string.repurpose_pack_format_newsletter, "Newsletter"),
-    INSTAGRAM_CAROUSEL(R.string.repurpose_pack_format_instagram_carousel, "Instagram Carousel Outline"),
-    PINTEREST_PIN(R.string.repurpose_pack_format_pinterest_pin, "Pinterest Pin"),
-    YOUTUBE_COMMUNITY(R.string.repurpose_pack_format_youtube_community, "YouTube Community Post"),
+enum class RepurposeFormat(val preferenceKey: String, @StringRes val titleRes: Int, val displayName: String) {
+    TIKTOK("repurposePackFormatTikTok", R.string.caption_pack_platform_tiktok, "TikTok"),
+    INSTAGRAM_REELS("repurposePackFormatInstagramReels", R.string.caption_pack_platform_instagram_reels, "Instagram Reels"),
+    YOUTUBE_SHORTS("repurposePackFormatYouTubeShorts", R.string.caption_pack_platform_youtube_shorts, "YouTube Shorts"),
+    YOUTUBE_VIDEO("repurposePackFormatYouTubeVideo", R.string.caption_pack_platform_youtube_long_video, "YouTube Video"),
+    NEWSLETTER("repurposePackFormatNewsletter", R.string.repurpose_pack_format_newsletter, "Newsletter"),
+    X_POST("repurposePackFormatXPost", R.string.repurpose_pack_format_x_post, "X Post"),
+    THREADS("repurposePackFormatThreads", R.string.repurpose_pack_format_threads, "Threads"),
+    LINKEDIN("repurposePackFormatLinkedIn", R.string.repurpose_pack_format_linkedin, "LinkedIn"),
     ;
-
-    val formatRule: String
-        get() = when (this) {
-            X_POST -> "- X Post: one standalone post, 280 characters or fewer, leading with the strongest takeaway."
-            LINKEDIN -> "- LinkedIn: open with the core insight, use short scannable paragraphs, professional and credible, no hype."
-            THREADS -> "- Threads: numbered posts (1/, 2/, ...). Each post must be 500 characters or fewer, conversational tone."
-            FACEBOOK_PAGE -> "- Facebook Page: clear, approachable page post for a broader audience. Make it easy to understand and share."
-            NEWSLETTER -> "- Newsletter: a 2-3 sentence intro blurb that teases the piece, ending with a [link] placeholder."
-            INSTAGRAM_CAROUSEL -> "- Instagram Carousel Outline: 6-8 slide outline with one short headline and one supporting line per slide."
-            PINTEREST_PIN -> "- Pinterest Pin: SEO-friendly Title, Description, and Keywords. Make it searchable and evergreen."
-            YOUTUBE_COMMUNITY -> "- YouTube Community Post: a short community update, question, or teaser that invites comments without sounding spammy."
-        }
-
-    val outputTemplate: String
-        get() = when (this) {
-            X_POST -> "## X Post\n\n..."
-            LINKEDIN -> "## LinkedIn\n\n..."
-            THREADS -> "## Threads\n\n1/ ...\n2/ ..."
-            FACEBOOK_PAGE -> "## Facebook Page\n\n..."
-            NEWSLETTER -> "## Newsletter\n\n..."
-            INSTAGRAM_CAROUSEL -> "## Instagram Carousel Outline\n\nSlide 1: ...\nSlide 2: ..."
-            PINTEREST_PIN -> "## Pinterest Pin\n\nTitle:\n...\n\nDescription:\n...\n\nKeywords:\n..."
-            YOUTUBE_COMMUNITY -> "## YouTube Community Post\n\n..."
-        }
+    companion object {
+        val defaultFormats = listOf(TIKTOK, INSTAGRAM_REELS)
+        val primaryFormats = entries.take(5)
+        val additionalFormats = entries.takeLast(3)
+    }
+    val formatRule: String get() = when (this) {
+        TIKTOK -> "- TikTok: a ready-to-record video script with a direct, conversational opening, a tightly focused progression, and a natural ending. Reshape the content rather than writing a caption."
+        INSTAGRAM_REELS -> "- Instagram Reels: a ready-to-record video script with a relatable opening, clear progression, and a memorable takeaway. Do not output carousel slides or a publishing caption."
+        YOUTUBE_SHORTS -> "- YouTube Shorts: a ready-to-record short video script focused on one clear question or insight, delivering its promised answer before a complete ending. Do not output a description or tags."
+        YOUTUBE_VIDEO -> "- YouTube Video: a complete long-video script with an introduction, clearly titled chapters, transitions, substantive explanations, and a conclusion. Expand supported ideas, not invented facts. Do not return only an outline."
+        NEWSLETTER -> "- Newsletter: a complete email with a subject line, an opening, substantial body sections, and a closing. Target 600-1,000 English words, 1,200-2,000 Chinese characters, or a comparable reading length in other languages when the material supports it. Never return only an intro blurb or pad the email with repetition. Use a shorter complete email if evidence is limited; do not invent anecdotes, statistics, or links."
+        X_POST -> "- X Post: one standalone post, 280 characters or fewer, leading with the strongest takeaway."
+        THREADS -> "- Threads: numbered posts (1/, 2/, ...). Each post must be 500 characters or fewer, with a conversational progression."
+        LINKEDIN -> "- LinkedIn: open with the core insight, use short scannable paragraphs, professional and credible, no hype."
+    }
+    val outputTemplate: String get() = "## $displayName\n\n..."
 }
 
 data class RepurposePackPreferences(
-    val includeXPost: Boolean = true,
-    val includeLinkedIn: Boolean = true,
-    val includeThreads: Boolean = false,
-    val includeFacebookPage: Boolean = false,
-    val includeNewsletter: Boolean = false,
-    val includeInstagramCarousel: Boolean = true,
-    val includePinterestPin: Boolean = false,
-    val includeYouTubeCommunity: Boolean = false,
+    val formats: List<RepurposeFormat> = RepurposeFormat.defaultFormats,
     val threadLength: RepurposeThreadLength = RepurposeThreadLength.MEDIUM,
-    val tone: CaptionPackTone = CaptionPackTone.CREATOR_VOICE,
-    val includeCTA: Boolean = true,
+    val longVideoMinutes: Int = 5,
 ) {
-    val selectedFormats: List<RepurposeFormat>
-        get() = buildList {
-            if (includeXPost) add(RepurposeFormat.X_POST)
-            if (includeLinkedIn) add(RepurposeFormat.LINKEDIN)
-            if (includeThreads) add(RepurposeFormat.THREADS)
-            if (includeFacebookPage) add(RepurposeFormat.FACEBOOK_PAGE)
-            if (includeNewsletter) add(RepurposeFormat.NEWSLETTER)
-            if (includeInstagramCarousel) add(RepurposeFormat.INSTAGRAM_CAROUSEL)
-            if (includePinterestPin) add(RepurposeFormat.PINTEREST_PIN)
-            if (includeYouTubeCommunity) add(RepurposeFormat.YOUTUBE_COMMUNITY)
-        }.ifEmpty { listOf(RepurposeFormat.X_POST, RepurposeFormat.LINKEDIN, RepurposeFormat.INSTAGRAM_CAROUSEL) }
+    val selectedFormats: List<RepurposeFormat> get() = formats.ifEmpty { RepurposeFormat.defaultFormats }
+    val lengthInstruction: String get() = listOfNotNull(
+        if (RepurposeFormat.YOUTUBE_VIDEO in selectedFormats) "YouTube Video target: $longVideoMinutes minutes. Use complete spoken sections with chapter headings." else null,
+        if (RepurposeFormat.THREADS in selectedFormats) "Thread length (Threads): ${threadLength.tweetCountRange} posts." else null,
+    ).joinToString("\n")
+    companion object {
+        val longVideoOptions = listOf(5, 8, 12)
+        fun load(preferences: SharedPreferences?): RepurposePackPreferences {
+            val savedFormats = RepurposeFormat.entries.filter { preferences?.getBoolean(it.preferenceKey, false) == true }
+            val minutes = preferences?.getInt("repurposePackLongVideoMinutes", 5) ?: 5
+            return RepurposePackPreferences(
+                formats = savedFormats.ifEmpty { RepurposeFormat.defaultFormats },
+                threadLength = RepurposeThreadLength.fromRawValue(preferences?.getString("repurposePackThreadLength", null)),
+                longVideoMinutes = minutes.takeIf { it in longVideoOptions } ?: 5,
+            )
+        }
+        val adaptationRules = """
+
+            Adapt the current draft into content for the requested platforms. Use the latest edited draft or the draft selected in our conversation, not the original imported transcript when a revised draft is available.
+            - Preserve the core ideas and supported facts. Treat imported creators' personal experiences as reference material, not as the user's own experiences.
+            - For video targets, return ready-to-record scripts; publishing captions belong to a separate task.
+            - Adapt openings, information order, pacing, detail, and endings to each requested target. Do not repeat the same script with different platform headings, and do not claim that a platform guarantees reach.
+            - Expand or condense the content to the requested length only when the available material supports it. Do not invent facts, quotes, results, personal anecdotes, visual details, or links to fill space.
+            - For Newsletter, write a complete substantial email, not a teaser or a brief introduction.
+            - Return only the requested adapted content, with ## headings reserved for target platforms and ### headings for internal chapters or email sections. Follow explicit conversation preferences over saved defaults.
+        """.trimIndent()
+    }
 }
 
 /** SharedPreferences mirror of the iOS AppStorage values used by configurable Creator Skills. */
@@ -294,6 +299,13 @@ object CreatorSkillPreferences {
         }
     }
 
+    fun translateTargetLanguage(): TranslateTargetLanguage =
+        TranslateTargetLanguage.fromRawValue(sharedPreferences?.getString(KEY_TRANSLATE_LANGUAGE, null))
+
+    fun saveTranslateTargetLanguage(value: TranslateTargetLanguage) {
+        sharedPreferences?.edit()?.putString(KEY_TRANSLATE_LANGUAGE, value.rawValue)?.apply()
+    }
+
     fun captionPack(): CaptionPackPreferences {
         val preferences = sharedPreferences
         return CaptionPackPreferences(
@@ -302,7 +314,7 @@ object CreatorSkillPreferences {
             includeYouTubeLongVideo = preferences?.getBoolean(KEY_CAPTION_YOUTUBE_LONG_VIDEO, true) ?: true,
             includeInstagramReels = preferences?.getBoolean(KEY_CAPTION_INSTAGRAM_REELS, true) ?: true,
             goal = CaptionPackGoal.fromRawValue(preferences?.getString(KEY_CAPTION_GOAL, null)),
-            tone = CaptionPackTone.fromRawValue(preferences?.getString(KEY_CAPTION_TONE, null)),
+            tone = CaptionPackTone.fromCaptionRawValue(preferences?.getString(KEY_CAPTION_TONE, null)),
             outputStyle = CaptionPackOutputStyle.fromRawValue(preferences?.getString(KEY_CAPTION_OUTPUT_STYLE, null)),
         )
     }
@@ -319,71 +331,24 @@ object CreatorSkillPreferences {
             ?.apply()
     }
 
-    fun brandVoice(): BrandVoicePreferences {
-        val preferences = sharedPreferences
-        return BrandVoicePreferences(
-            sample = preferences?.getString(KEY_BRAND_SAMPLE, "").orEmpty(),
-            tone = preferences?.getString(KEY_BRAND_TONE, "").orEmpty(),
-            audience = preferences?.getString(KEY_BRAND_AUDIENCE, "").orEmpty(),
-            cta = preferences?.getString(KEY_BRAND_CTA, "").orEmpty(),
-            avoid = preferences?.getString(KEY_BRAND_AVOID, "").orEmpty(),
-        )
-    }
+    fun brandVoice(): BrandVoicePreferences = BrandVoicePreferences.load(sharedPreferences)
 
     fun saveBrandVoice(value: BrandVoicePreferences) {
         sharedPreferences?.edit()
-            ?.putString(KEY_BRAND_SAMPLE, value.sample)
-            ?.putString(KEY_BRAND_TONE, value.tone)
-            ?.putString(KEY_BRAND_AUDIENCE, value.audience)
-            ?.putString(KEY_BRAND_CTA, value.cta)
-            ?.putString(KEY_BRAND_AVOID, value.avoid)
+            ?.putString("brandVoiceSamples", Json.encodeToString(value.samples.filter { it.isNotBlank() }))
             ?.apply()
     }
 
-    fun timedScript(): TimedScriptPreferences = TimedScriptPreferences(
-        duration = TimedScriptDuration.fromRawValue(
-            sharedPreferences?.getString(KEY_TIMED_SCRIPT_DURATION, null),
-        ),
-    )
-
-    fun saveTimedScript(value: TimedScriptPreferences) {
-        sharedPreferences?.edit()?.putString(KEY_TIMED_SCRIPT_DURATION, value.duration.rawValue)?.apply()
-    }
-
-    fun repurposePack(): RepurposePackPreferences {
-        val preferences = sharedPreferences
-        return RepurposePackPreferences(
-            includeXPost = preferences?.getBoolean(KEY_REPURPOSE_X_POST, true) ?: true,
-            includeLinkedIn = preferences?.getBoolean(KEY_REPURPOSE_LINKEDIN, true) ?: true,
-            includeThreads = preferences?.getBoolean(KEY_REPURPOSE_THREADS, false) ?: false,
-            includeFacebookPage = preferences?.getBoolean(KEY_REPURPOSE_FACEBOOK_PAGE, false) ?: false,
-            includeNewsletter = preferences?.getBoolean(KEY_REPURPOSE_NEWSLETTER, false) ?: false,
-            includeInstagramCarousel = preferences?.getBoolean(KEY_REPURPOSE_INSTAGRAM_CAROUSEL, true) ?: true,
-            includePinterestPin = preferences?.getBoolean(KEY_REPURPOSE_PINTEREST_PIN, false) ?: false,
-            includeYouTubeCommunity = preferences?.getBoolean(KEY_REPURPOSE_YOUTUBE_COMMUNITY, false) ?: false,
-            threadLength = RepurposeThreadLength.fromRawValue(preferences?.getString(KEY_REPURPOSE_THREAD_LENGTH, null)),
-            tone = CaptionPackTone.fromRawValue(
-                preferences?.getString(KEY_REPURPOSE_TONE, CaptionPackTone.CREATOR_VOICE.rawValue)
-                    ?: CaptionPackTone.CREATOR_VOICE.rawValue,
-            ),
-            includeCTA = preferences?.getBoolean(KEY_REPURPOSE_INCLUDE_CTA, true) ?: true,
-        )
-    }
+    fun repurposePack(): RepurposePackPreferences = RepurposePackPreferences.load(sharedPreferences)
 
     fun saveRepurposePack(value: RepurposePackPreferences) {
-        sharedPreferences?.edit()
-            ?.putBoolean(KEY_REPURPOSE_X_POST, value.includeXPost)
-            ?.putBoolean(KEY_REPURPOSE_LINKEDIN, value.includeLinkedIn)
-            ?.putBoolean(KEY_REPURPOSE_THREADS, value.includeThreads)
-            ?.putBoolean(KEY_REPURPOSE_FACEBOOK_PAGE, value.includeFacebookPage)
-            ?.putBoolean(KEY_REPURPOSE_NEWSLETTER, value.includeNewsletter)
-            ?.putBoolean(KEY_REPURPOSE_INSTAGRAM_CAROUSEL, value.includeInstagramCarousel)
-            ?.putBoolean(KEY_REPURPOSE_PINTEREST_PIN, value.includePinterestPin)
-            ?.putBoolean(KEY_REPURPOSE_YOUTUBE_COMMUNITY, value.includeYouTubeCommunity)
-            ?.putString(KEY_REPURPOSE_THREAD_LENGTH, value.threadLength.rawValue)
-            ?.putString(KEY_REPURPOSE_TONE, value.tone.rawValue)
-            ?.putBoolean(KEY_REPURPOSE_INCLUDE_CTA, value.includeCTA)
-            ?.apply()
+        val editor = sharedPreferences?.edit() ?: return
+        for (format in RepurposeFormat.entries) {
+            editor.putBoolean(format.preferenceKey, format in value.selectedFormats)
+        }
+        editor.putString("repurposePackThreadLength", value.threadLength.rawValue)
+            .putInt("repurposePackLongVideoMinutes", value.longVideoMinutes)
+            .apply()
     }
 
     fun localizedTitle(@StringRes resource: Int, fallback: String): String =
@@ -393,6 +358,7 @@ object CreatorSkillPreferences {
     private var applicationContext: Context? = null
 
     private const val FILE_NAME = "creator_skill_settings"
+    private const val KEY_TRANSLATE_LANGUAGE = "translateTargetLanguage"
 
     private const val KEY_CAPTION_TIKTOK = "captionPackPlatformTikTok"
     private const val KEY_CAPTION_YOUTUBE_SHORTS = "captionPackPlatformYouTubeShorts"
@@ -401,24 +367,4 @@ object CreatorSkillPreferences {
     private const val KEY_CAPTION_GOAL = "captionPackGoal"
     private const val KEY_CAPTION_TONE = "captionPackTone"
     private const val KEY_CAPTION_OUTPUT_STYLE = "captionPackOutputStyle"
-
-    private const val KEY_BRAND_SAMPLE = "brandVoiceSample"
-    private const val KEY_BRAND_TONE = "brandVoiceTone"
-    private const val KEY_BRAND_AUDIENCE = "brandVoiceAudience"
-    private const val KEY_BRAND_CTA = "brandVoiceCTA"
-    private const val KEY_BRAND_AVOID = "brandVoiceAvoid"
-
-    private const val KEY_TIMED_SCRIPT_DURATION = "timedScriptDuration"
-
-    private const val KEY_REPURPOSE_X_POST = "repurposePackFormatXPost"
-    private const val KEY_REPURPOSE_LINKEDIN = "repurposePackFormatLinkedIn"
-    private const val KEY_REPURPOSE_THREADS = "repurposePackFormatThreads"
-    private const val KEY_REPURPOSE_FACEBOOK_PAGE = "repurposePackFormatFacebookPage"
-    private const val KEY_REPURPOSE_NEWSLETTER = "repurposePackFormatNewsletter"
-    private const val KEY_REPURPOSE_INSTAGRAM_CAROUSEL = "repurposePackFormatInstagramCarousel"
-    private const val KEY_REPURPOSE_PINTEREST_PIN = "repurposePackFormatPinterestPin"
-    private const val KEY_REPURPOSE_YOUTUBE_COMMUNITY = "repurposePackFormatYouTubeCommunity"
-    private const val KEY_REPURPOSE_THREAD_LENGTH = "repurposePackThreadLength"
-    private const val KEY_REPURPOSE_TONE = "repurposePackTone"
-    private const val KEY_REPURPOSE_INCLUDE_CTA = "repurposePackIncludeCTA"
 }

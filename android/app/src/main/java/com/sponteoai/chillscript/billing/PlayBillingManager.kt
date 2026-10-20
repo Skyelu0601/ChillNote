@@ -15,6 +15,7 @@ import com.android.billingclient.api.Purchase
 import com.android.billingclient.api.QueryProductDetailsParams
 import com.android.billingclient.api.QueryPurchasesParams
 import com.revenuecat.purchases.Package
+import com.revenuecat.purchases.CacheFetchPolicy
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.interfaces.UpdatedCustomerInfoListener
@@ -28,7 +29,6 @@ import com.revenuecat.purchases.syncPurchasesWith
 import com.revenuecat.purchases.models.StoreProduct
 import com.revenuecat.purchases.models.InAppMessageType
 import com.sponteoai.chillscript.R
-import com.sponteoai.chillscript.analytics.AppsFlyerService
 import com.sponteoai.chillscript.analytics.ProductAnalytics
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,9 +82,10 @@ class PlayBillingManager(
     context: Context,
     onPurchased: (productId: String, purchaseToken: String) -> Unit,
     onRestoreComplete: () -> Unit = {},
+    onRevenueCatPurchased: () -> Unit = onRestoreComplete,
 ) {
     private val delegate: BillingManagerDelegate = if (RevenueCatService.isConfigured) {
-        RevenueCatBillingManager(context, onPurchased, onRestoreComplete)
+        RevenueCatBillingManager(context, onRevenueCatPurchased, onRestoreComplete)
     } else {
         LegacyPlayBillingManager(context, onPurchased)
     }
@@ -120,7 +121,7 @@ private interface BillingManagerDelegate {
 
 private class RevenueCatBillingManager(
     context: Context,
-    private val onPurchased: (productId: String, purchaseToken: String) -> Unit,
+    private val onPurchased: () -> Unit,
     private val onRestoreComplete: () -> Unit,
 ) : BillingManagerDelegate {
     private val appContext = context.applicationContext
@@ -158,7 +159,6 @@ private class RevenueCatBillingManager(
             )
             return
         }
-        AppsFlyerService.identify(appContext, userId)
         val offeringIdentifier = AnnualPriceExperiment.offeringIdentifierFor(userId)
         val annualBasePlanId = AnnualPriceExperiment.annualBasePlanIdFor(userId)
         assignedOfferingIdentifier = offeringIdentifier
@@ -169,6 +169,8 @@ private class RevenueCatBillingManager(
             error = null,
         )
         ensureIdentity(userId) {
+            // Log-in may return cached CustomerInfo without emitting a listener update.
+            onRestoreComplete()
             Purchases.sharedInstance.setAttributes(
                 mapOf("annual_price_variant" to AnnualPriceExperiment.variantFor(userId)),
             )
@@ -184,51 +186,64 @@ private class RevenueCatBillingManager(
     }
 
     override fun launchPurchase(activity: Activity, product: BillingProduct, userId: String) {
-        if (mutableState.value.purchasing) return
+        if (mutableState.value.purchasing || mutableState.value.restoring) return
         mutableState.value = mutableState.value.copy(purchasing = true, error = null)
         ensureIdentity(userId) {
-            Purchases.sharedInstance.setAttributes(ProductAnalytics.currentRevenueCatPurchaseAttributes())
-            val params = when (val target = product.purchaseTarget) {
-                is BillingPurchaseTarget.RevenueCatPackage -> PurchaseParams.Builder(activity, target.value).build()
-                is BillingPurchaseTarget.RevenueCatProduct -> PurchaseParams.Builder(activity, target.value).build()
-                is BillingPurchaseTarget.GooglePlay -> {
-                    reportError("Unexpected legacy product passed to RevenueCat")
-                    return@ensureIdentity
-                }
-            }
-            Purchases.sharedInstance.purchaseWith(
-                purchaseParams = params,
-                onError = { error, userCancelled ->
-                    mutableState.value = mutableState.value.copy(purchasing = false)
-                    if (userCancelled) {
-                        ProductAnalytics.completePurchase("purchase_cancelled")
-                    } else {
-                        ProductAnalytics.completePurchase(
-                            "purchase_failed", "store_error",
-                            billingProvider = "revenuecat",
-                            billingErrorCode = error.code.name,
-                            billingStage = "purchase",
-                        )
-                        reportError("RevenueCat purchase failed: ${error.code}")
-                    }
-                },
-                onSuccess = { transaction, _ ->
-                    val purchaseToken = transaction?.purchaseToken
-                    val purchasedProductId = transaction?.productIds
-                        ?.map(String::baseProductId)
-                        ?.firstOrNull { it in PlayBillingManager.RECOGNIZED_PRODUCT_IDS }
-                        ?: product.id
-                    if (purchaseToken.isNullOrBlank()) {
-                        reportError("RevenueCat purchase completed without a Google purchase token")
-                    } else {
-                        mutableState.value = mutableState.value.copy(purchasing = false, error = null)
-                        onPurchased(purchasedProductId, purchaseToken)
-                        onRestoreComplete()
+            Purchases.sharedInstance.getCustomerInfoWith(
+                fetchPolicy = CacheFetchPolicy.FETCH_CURRENT,
+                onError = { error -> reportError("RevenueCat purchase preflight failed: ${error.code}") },
+                onSuccess = { info ->
+                    if (Purchases.sharedInstance.appUserID != userId) {
+                        mutableState.value = mutableState.value.copy(purchasing = false)
+                    } else if (info.entitlements[ENTITLEMENT_ID]?.isActive == true) {
+                        // Reconcile the existing subscription instead of creating a replacement order.
                         ProductAnalytics.clearPurchaseAttribution()
+                        onRestoreComplete()
+                        mutableState.value = mutableState.value.copy(purchasing = false, error = null)
+                    } else {
+                        purchase(activity, product, userId)
                     }
                 },
             )
         }
+    }
+
+    private fun purchase(activity: Activity, product: BillingProduct, userId: String) {
+        Purchases.sharedInstance.setAttributes(ProductAnalytics.currentRevenueCatPurchaseAttributes())
+        val params = when (val target = product.purchaseTarget) {
+            is BillingPurchaseTarget.RevenueCatPackage -> PurchaseParams.Builder(activity, target.value).build()
+            is BillingPurchaseTarget.RevenueCatProduct -> PurchaseParams.Builder(activity, target.value).build()
+            is BillingPurchaseTarget.GooglePlay -> {
+                reportError("Unexpected legacy product passed to RevenueCat")
+                return
+            }
+        }
+        Purchases.sharedInstance.purchaseWith(
+            purchaseParams = params,
+            onError = { error, userCancelled ->
+                mutableState.value = mutableState.value.copy(purchasing = false)
+                if (userCancelled) {
+                    ProductAnalytics.completePurchase("purchase_cancelled")
+                } else {
+                    ProductAnalytics.completePurchase(
+                        "purchase_failed", "store_error",
+                        billingProvider = "revenuecat",
+                        billingErrorCode = error.code.name,
+                        billingStage = "purchase",
+                    )
+                    reportError("RevenueCat purchase failed: ${error.code}")
+                }
+            },
+            onSuccess = { _, _ ->
+                if (Purchases.sharedInstance.appUserID == userId) {
+                    // RevenueCat completed and acknowledged checkout. The backend verifies
+                    // its current entitlement; never invoke the legacy Google verifier here.
+                    onPurchased()
+                    ProductAnalytics.clearPurchaseAttribution()
+                }
+                mutableState.value = mutableState.value.copy(purchasing = false, error = null)
+            },
+        )
     }
 
     override fun restorePurchases() {

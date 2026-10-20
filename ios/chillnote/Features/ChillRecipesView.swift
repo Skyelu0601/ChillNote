@@ -1,17 +1,16 @@
 import SwiftUI
 
 struct ChillRecipesView: View {
-    /// A selection action turns the library into the note's combined run/manage panel.
-    var onSelect: ((AgentRecipe) -> Void)? = nil
-    @State private var isManaging = false
     @StateObject private var recipeManager = RecipeManager.shared
     @StateObject private var storeService = StoreService.shared
     @State private var showingCreateRecipe = false
     @State private var showingSubscription = false
     @State private var showingCaptionPackSettings = false
     @State private var showingRepurposePackSettings = false
+    @State private var showingTranslateSettings = false
     @State private var showingBrandVoiceSettings = false
-    @State private var showingTimedScriptSettings = false
+    @State private var showingMinimumFavoriteAlert = false
+    @State private var pendingReplacement: AgentRecipe?
     @State private var pendingDeleteRecipe: AgentRecipe?
 
     @State private var newRecipeName = ""
@@ -24,13 +23,13 @@ struct ChillRecipesView: View {
 
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
+                    Text(L10n.text("recipes.favorites.help"))
+                        .font(.footnote).foregroundStyle(Color.textSub)
                     if !installedRecipes.isEmpty {
                         SkillSection(
                             title: L10n.text("recipes.section.installed"),
                             recipes: installedRecipes,
                             isInstalled: true,
-                            showsManagement: onSelect == nil || isManaging,
-                            onSelect: isManaging ? nil : onSelect,
                             configureAction: configureAction,
                             configureLabel: configureLabel,
                             onToggle: toggleRecipe,
@@ -43,8 +42,6 @@ struct ChillRecipesView: View {
                             title: L10n.text("recipes.section.available"),
                             recipes: availableRecipes,
                             isInstalled: false,
-                            showsManagement: true,
-                            onSelect: nil,
                             configureAction: configureAction,
                             configureLabel: configureLabel,
                             onToggle: toggleRecipe,
@@ -61,17 +58,19 @@ struct ChillRecipesView: View {
                 .padding(.bottom, 28)
             }
         }
-        .navigationTitle(L10n.text(onSelect == nil ? "recipes.title" : "note_detail.ai_skills.sheet.title"))
+        .navigationTitle(L10n.text("recipes.action.manage"))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if onSelect != nil {
-                ToolbarItem(placement: .primaryAction) {
-                    Button(L10n.text(isManaging ? "common.done" : "recipes.action.manage")) {
-                        withAnimation { isManaging.toggle() }
-                    }
-                    .accessibilityIdentifier("skills-manage")
+        .confirmationDialog(L10n.text("recipes.favorites.replace"), isPresented: Binding(
+            get: { pendingReplacement != nil },
+            set: { if !$0 { pendingReplacement = nil } }
+        ), titleVisibility: .visible) {
+            ForEach(recipeManager.favoriteRecipes) { favorite in
+                Button(favorite.localizedName) {
+                    if let recipe = pendingReplacement { recipeManager.replaceFavorite(favorite, with: recipe) }
+                    pendingReplacement = nil
                 }
             }
+            Button(L10n.text("common.cancel"), role: .cancel) { pendingReplacement = nil }
         }
         .sheet(isPresented: $showingCreateRecipe) {
             CreateRecipeSheet(
@@ -94,11 +93,14 @@ struct ChillRecipesView: View {
         .sheet(isPresented: $showingRepurposePackSettings) {
             RepurposePackSettingsSheet()
         }
+        .sheet(isPresented: $showingTranslateSettings) {
+            TranslateSettingsSheet()
+        }
         .sheet(isPresented: $showingBrandVoiceSettings) {
             BrandVoiceSettingsSheet()
         }
-        .sheet(isPresented: $showingTimedScriptSettings) {
-            TimedScriptSettingsSheet()
+        .alert(L10n.text("recipes.favorites.minimum"), isPresented: $showingMinimumFavoriteAlert) {
+            Button(L10n.text("common.ok"), role: .cancel) {}
         }
         .alert(L10n.text("recipes.alert.delete_skill.title"), isPresented: Binding(
             get: { pendingDeleteRecipe != nil },
@@ -128,45 +130,41 @@ struct ChillRecipesView: View {
     }
 
     private func toggleRecipe(_ recipe: AgentRecipe) {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-            recipeManager.toggleRecipe(recipe)
+        if recipeManager.isAdded(recipe) && recipeManager.favoriteRecipes.count <= 1 {
+            showingMinimumFavoriteAlert = true
+        } else if !recipeManager.isAdded(recipe) && recipeManager.favoriteRecipes.count >= 4 {
+            pendingReplacement = recipe
+        } else {
+            withAnimation { recipeManager.toggleRecipe(recipe) }
         }
     }
 
     private func configureAction(for recipe: AgentRecipe) -> (() -> Void)? {
         switch recipe.id {
+        case "translate": return { showingTranslateSettings = true }
         case "caption_pack": return { showingCaptionPackSettings = true }
         case "repurpose_pack": return { showingRepurposePackSettings = true }
         case "style_match": return { showingBrandVoiceSettings = true }
-        case "timed_script": return { showingTimedScriptSettings = true }
         default: return nil
         }
     }
 
     private func configureLabel(for recipe: AgentRecipe) -> String {
         switch recipe.id {
+        case "translate": return L10n.text("translate.settings.title")
         case "caption_pack": return L10n.text("caption_pack.settings.title")
         case "repurpose_pack": return L10n.text("repurpose_pack.settings.title")
         case "style_match": return L10n.text("brand_voice.settings.title")
-        case "timed_script": return L10n.text("timed_script.settings.title")
         default: return L10n.text("caption_pack.settings.title")
         }
     }
 
-    private var libraryRecipes: [AgentRecipe] {
-        AgentRecipe.allRecipes.filter {
-            !RecipeManager.retiredRecipeIds.contains($0.id)
-        }
-    }
-
     private var installedRecipes: [AgentRecipe] {
-        recipeManager.savedRecipes.filter {
-            !RecipeManager.retiredRecipeIds.contains($0.id)
-        }
+        recipeManager.favoriteRecipes
     }
 
     private var availableRecipes: [AgentRecipe] {
-        libraryRecipes.filter { !recipeManager.isAdded($0) }
+        recipeManager.savedRecipes.filter { !recipeManager.isAdded($0) }
     }
 
     private func saveCustomRecipe() {
@@ -212,8 +210,6 @@ private struct SkillSection: View {
     let title: String
     let recipes: [AgentRecipe]
     let isInstalled: Bool
-    let showsManagement: Bool
-    let onSelect: ((AgentRecipe) -> Void)?
     let configureAction: (AgentRecipe) -> (() -> Void)?
     let configureLabel: (AgentRecipe) -> String
     let onToggle: (AgentRecipe) -> Void
@@ -232,8 +228,6 @@ private struct SkillSection: View {
                     SkillManagementRow(
                         recipe: recipe,
                         isInstalled: isInstalled,
-                        showsManagement: showsManagement,
-                        onSelect: onSelect.map { select in { select(recipe) } },
                         onConfigure: configureAction(recipe),
                         configureLabel: configureLabel(recipe),
                         onToggle: { onToggle(recipe) },
@@ -260,8 +254,6 @@ private struct SkillSection: View {
 private struct SkillManagementRow: View {
     let recipe: AgentRecipe
     let isInstalled: Bool
-    let showsManagement: Bool
-    let onSelect: (() -> Void)?
     let onConfigure: (() -> Void)?
     let configureLabel: String
     let onToggle: () -> Void
@@ -269,15 +261,7 @@ private struct SkillManagementRow: View {
 
     var body: some View {
         HStack(spacing: 4) {
-            if let onSelect {
-                Button(action: onSelect) {
-                    skillLabel
-                }
-                .buttonStyle(.plain)
-                .accessibilityIdentifier("skills-run-\(recipe.id)")
-            } else {
-                skillLabel
-            }
+            skillLabel
 
             if let onConfigure {
                 Button(action: onConfigure) {
@@ -291,26 +275,23 @@ private struct SkillManagementRow: View {
                 .accessibilityIdentifier("skills-configure-\(recipe.id)")
             }
 
-            if showsManagement {
+            Group {
+                Button(action: onToggle) {
+                    Image(systemName: isInstalled ? "star.fill" : "star")
+                        .font(.system(size: 21, weight: .semibold))
+                        .foregroundColor(isInstalled ? Color.brandBlue : Color.textSub)
+                        .frame(width: 44, height: 44)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(L10n.text(isInstalled ? "recipes.action.remove" : "recipes.action.add"))
+                .accessibilityIdentifier("skills-\(isInstalled ? "remove" : "add")-\(recipe.id)")
                 if let onDelete {
                     Button(role: .destructive, action: onDelete) {
-                        Image(systemName: "trash")
-                            .font(.system(size: 17))
-                            .frame(width: 44, height: 44)
+                        Image(systemName: "trash").frame(width: 44, height: 44)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel(L10n.text("home.notes.action.delete_permanently"))
                     .accessibilityIdentifier("skills-delete-\(recipe.id)")
-                } else {
-                    Button(action: onToggle) {
-                        Image(systemName: isInstalled ? "minus.circle" : "plus.circle")
-                            .font(.system(size: 21, weight: .semibold))
-                            .foregroundColor(.textSub)
-                            .frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityLabel(L10n.text(isInstalled ? "recipes.action.remove" : "recipes.action.add"))
-                    .accessibilityIdentifier("skills-\(isInstalled ? "remove" : "add")-\(recipe.id)")
                 }
             }
         }
@@ -396,6 +377,170 @@ private struct CreateCustomSkillRow: View {
     }
 }
 
+// Shared, open layout for skill defaults. Copy and preference storage stay in each screen.
+private struct SkillConfigurationPage<Content: View>: View {
+    @Environment(\.dismiss) private var dismiss
+    let title: String
+    let symbol: String
+    var confirmationTitle: String? = nil
+    var confirmationEnabled = true
+    var onConfirm: (() -> Void)? = nil
+    var onCancel: (() -> Void)? = nil
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 28) {
+                    VStack(alignment: .leading, spacing: 20) {
+                        Image(systemName: symbol)
+                            .font(.system(size: 28, weight: .medium))
+                            .foregroundStyle(Color.brandTealText)
+                            .accessibilityHidden(true)
+                        Text(title)
+                            .font(.largeTitle.bold())
+                            .foregroundStyle(Color.textMain)
+                            .accessibilityAddTraits(.isHeader)
+                    }
+                    content
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 24)
+                .padding(.top, 12)
+                .padding(.bottom, 32)
+            }
+            .background(Color.bgPrimary.ignoresSafeArea())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if let onCancel {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(L10n.text("common.cancel"), action: onCancel)
+                            .tint(Color.textSub)
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(confirmationTitle ?? L10n.text("common.done")) {
+                        if let onConfirm { onConfirm() } else { dismiss() }
+                    }
+                    .font(.body.weight(.semibold))
+                    .tint(Color.accentPrimaryText)
+                    .disabled(!confirmationEnabled)
+                }
+            }
+        }
+    }
+}
+
+private struct SkillConfigurationSection<Content: View>: View {
+    let title: String
+    @ViewBuilder let content: Content
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(Color.textMain)
+                .accessibilityAddTraits(.isHeader)
+            VStack(spacing: 0) { content }
+        }
+    }
+}
+
+private struct SkillSelectionToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            configuration.isOn.toggle()
+        } label: {
+            HStack(spacing: 16) {
+                configuration.label
+                    .foregroundStyle(Color.textMain)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: configuration.isOn ? "checkmark.square.fill" : "square")
+                    .font(.system(size: 24, weight: .regular))
+                    .foregroundStyle(configuration.isOn ? Color.accentPrimary : Color.textSub)
+                    .accessibilityHidden(true)
+            }
+            .font(.body)
+            .frame(minHeight: 60)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityRepresentation {
+            Toggle(isOn: configuration.$isOn) { configuration.label }
+        }
+    }
+}
+
+private struct SkillPlatformLabel: View {
+    let title: String
+    var asset: String? = nil
+    var symbol: String = "text.alignleft"
+
+    var body: some View {
+        HStack(spacing: 16) {
+            Group {
+                if let asset {
+                    Image(asset).resizable().scaledToFit()
+                } else {
+                    Image(systemName: symbol)
+                        .font(.system(size: 22, weight: .medium))
+                }
+            }
+            .frame(width: 28, height: 28)
+            .accessibilityHidden(true)
+            Text(title)
+        }
+    }
+}
+
+private struct SkillSettingsDivider: View {
+    var body: some View {
+        Rectangle().fill(Color.separator).frame(height: 1)
+            .accessibilityHidden(true)
+    }
+}
+
+private struct TranslateSettingsSheet: View {
+    @AppStorage(TranslatePreferences.targetLanguageKey) private var languageID = "en"
+
+    var body: some View {
+        SkillConfigurationPage(title: L10n.text("translate.settings.title"), symbol: "globe") {
+            VStack(alignment: .leading, spacing: 16) {
+                VStack(spacing: 0) {
+                    SkillSettingsDivider()
+                    ForEach(TranslateLanguage.defaultLanguages) { language in
+                        Button {
+                            languageID = language.id
+                        } label: {
+                            HStack(spacing: 16) {
+                                Text(verbatim: language.displayName)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                if TranslatePreferences.language(for: languageID).id == language.id {
+                                    Image(systemName: "checkmark")
+                                        .font(.body.weight(.semibold))
+                                        .foregroundStyle(Color.accentPrimary)
+                                        .accessibilityHidden(true)
+                                }
+                            }
+                            .font(.body)
+                            .foregroundStyle(Color.textMain)
+                            .frame(minHeight: 58)
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityAddTraits(TranslatePreferences.language(for: languageID).id == language.id ? [.isSelected] : [])
+                        SkillSettingsDivider()
+                    }
+                }
+                .accessibilityIdentifier("translate-default-language")
+                Text(L10n.text("translate.settings.help"))
+                    .font(.footnote)
+                    .foregroundStyle(Color.textSub)
+            }
+        }
+    }
+}
+
 private struct CaptionPackSettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage(CaptionPackPreferences.tiktokKey) private var includeTikTok = true
@@ -411,54 +556,62 @@ private struct CaptionPackSettingsSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section(L10n.text("caption_pack.settings.platforms")) {
-                    Toggle(L10n.text("caption_pack.platform.tiktok"), isOn: bindingForPlatform($includeTikTok))
-                    Toggle(L10n.text("caption_pack.platform.instagram_reels"), isOn: bindingForPlatform($includeInstagramReels))
-                    Toggle(L10n.text("caption_pack.platform.youtube_shorts"), isOn: bindingForPlatform($includeYouTubeShorts))
-                    Toggle(L10n.text("caption_pack.platform.youtube_long_video"), isOn: bindingForPlatform($includeYouTubeLongVideo))
-                }
-
-                Section(L10n.text("caption_pack.settings.goal")) {
+        SkillConfigurationPage(title: L10n.text("caption_pack.settings.title"), symbol: "square.and.pencil") {
+            SkillConfigurationSection(title: L10n.text("caption_pack.settings.platforms")) {
+                platformRow("caption_pack.platform.tiktok", asset: "TikTokBrandLogo", binding: $includeTikTok)
+                platformRow("caption_pack.platform.instagram_reels", asset: "InstagramBrandLogo", binding: $includeInstagramReels)
+                platformRow("caption_pack.platform.youtube_shorts", asset: "YouTubeBrandLogo", binding: $includeYouTubeShorts)
+                platformRow("caption_pack.platform.youtube_long_video", asset: "YouTubeBrandLogo", binding: $includeYouTubeLongVideo)
+            }
+            VStack(spacing: 0) {
+                SkillSettingsDivider()
+                HStack {
+                    Text(L10n.text("caption_pack.settings.goal")).font(.headline)
+                    Spacer(minLength: 12)
                     Picker(L10n.text("caption_pack.settings.goal"), selection: $goalRawValue) {
                         ForEach(CaptionPackGoal.allCases) { goal in
                             Text(goal.localizedTitle).tag(goal.rawValue)
                         }
                     }
-                    .labelsHidden()
-                    .pickerStyle(.inline)
+                    .labelsHidden().pickerStyle(.menu).tint(Color.textSub)
                 }
-
-                Section(L10n.text("caption_pack.settings.tone")) {
-                    Picker(L10n.text("caption_pack.settings.tone"), selection: $toneRawValue) {
-                        ForEach(CaptionPackTone.allCases) { tone in
+                .frame(minHeight: 64)
+                SkillSettingsDivider()
+                HStack {
+                    Text(L10n.text("caption_pack.settings.tone")).font(.headline)
+                    Spacer(minLength: 12)
+                    Picker(L10n.text("caption_pack.settings.tone"), selection: Binding(
+                        get: { CaptionPackTone.fromCaptionRawValue(toneRawValue).rawValue },
+                        set: { toneRawValue = $0 }
+                    )) {
+                        ForEach(CaptionPackTone.captionOptions) { tone in
                             Text(tone.localizedTitle).tag(tone.rawValue)
                         }
                     }
-                    .labelsHidden()
-                    .pickerStyle(.inline)
+                    .labelsHidden().pickerStyle(.menu).tint(Color.textSub)
                 }
+                .frame(minHeight: 64)
+                SkillSettingsDivider()
+            }
+            .foregroundStyle(Color.textMain)
+            SkillConfigurationSection(title: L10n.text("caption_pack.settings.output_style")) {
+                Picker(L10n.text("caption_pack.settings.output_style"), selection: $outputStyleRawValue) {
+                    ForEach(CaptionPackOutputStyle.allCases) { style in
+                        Text(style.localizedTitle).tag(style.rawValue)
+                    }
+                }
+                .labelsHidden().pickerStyle(.segmented)
+            }
+        }
+    }
 
-                Section(L10n.text("caption_pack.settings.output_style")) {
-                    Picker(L10n.text("caption_pack.settings.output_style"), selection: $outputStyleRawValue) {
-                        ForEach(CaptionPackOutputStyle.allCases) { style in
-                            Text(style.localizedTitle).tag(style.rawValue)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                }
+    private func platformRow(_ key: String, asset: String, binding: Binding<Bool>) -> some View {
+        VStack(spacing: 0) {
+            Toggle(isOn: bindingForPlatform(binding)) {
+                SkillPlatformLabel(title: L10n.text(key), asset: asset)
             }
-            .navigationTitle(L10n.text("caption_pack.settings.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.text("common.done")) {
-                        dismiss()
-                    }
-                }
-            }
+            .toggleStyle(SkillSelectionToggleStyle())
+            SkillSettingsDivider()
         }
     }
 
@@ -475,101 +628,126 @@ private struct CaptionPackSettingsSheet: View {
     }
 }
 
-private struct TimedScriptSettingsSheet: View {
+private struct BrandVoiceSettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage(TimedScriptPreferences.durationKey) private var durationRawValue = TimedScriptDuration.seconds45.rawValue
+    @State private var preferences = BrandVoicePreferences.current
+    @State private var editor: WritingExampleDraft?
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section(L10n.text("timed_script.settings.duration")) {
-                    Picker(L10n.text("timed_script.settings.duration"), selection: $durationRawValue) {
-                        ForEach(TimedScriptDuration.allCases) { duration in
-                            Text(duration.localizedTitle).tag(duration.rawValue)
+        SkillConfigurationPage(title: L10n.text("brand_voice.settings.title"), symbol: "pencil.and.scribble") {
+            VStack(alignment: .leading, spacing: 18) {
+                VStack(spacing: 0) {
+                    SkillSettingsDivider()
+                    ForEach(preferences.samples.indices, id: \.self) { index in
+                        Button {
+                            editor = WritingExampleDraft(index: index, text: preferences.samples[index])
+                        } label: {
+                            HStack(spacing: 16) {
+                                Text(L10n.text("brand_voice.settings.example_title", index + 1))
+                                Spacer()
+                                Image(systemName: "chevron.right")
+                                    .font(.footnote.weight(.semibold))
+                                    .foregroundStyle(Color.textSub)
+                                    .accessibilityHidden(true)
+                            }
+                            .font(.body)
+                            .foregroundStyle(Color.textMain)
+                            .frame(minHeight: 68)
+                            .contentShape(Rectangle())
                         }
+                        .buttonStyle(.plain)
+                        SkillSettingsDivider()
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
+                    Button {
+                        editor = WritingExampleDraft(index: nil, text: "")
+                    } label: {
+                        Label(L10n.text("brand_voice.settings.add_example"), systemImage: "plus")
+                            .font(.body.weight(.medium))
+                            .frame(maxWidth: .infinity, minHeight: 76, alignment: .leading)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(Color.accentPrimaryText)
+                    SkillSettingsDivider()
                 }
+                Text(L10n.text("brand_voice.settings.examples_help"))
+                    .font(.footnote)
+                    .foregroundStyle(Color.textSub)
             }
-            .navigationTitle(L10n.text("timed_script.settings.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.text("common.done")) {
-                        dismiss()
-                    }
+        }
+        .sheet(item: $editor) { draft in
+            WritingExampleEditor(draft: draft) { text in
+                if let index = draft.index {
+                    preferences.samples[index] = text
+                } else {
+                    preferences.samples.append(text)
+                }
+                preferences.save()
+            } onDelete: {
+                if let index = draft.index {
+                    preferences.samples.remove(at: index)
+                    preferences.save()
                 }
             }
         }
     }
 }
 
-private struct BrandVoiceSettingsSheet: View {
+private struct WritingExampleDraft: Identifiable {
+    let id = UUID()
+    let index: Int?
+    var text: String
+}
+
+private struct WritingExampleEditor: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage(BrandVoicePreferences.sampleKey) private var sample = ""
-    @AppStorage(BrandVoicePreferences.toneKey) private var tone = ""
-    @AppStorage(BrandVoicePreferences.audienceKey) private var audience = ""
-    @AppStorage(BrandVoicePreferences.ctaKey) private var cta = ""
-    @AppStorage(BrandVoicePreferences.avoidKey) private var avoid = ""
+    let draft: WritingExampleDraft
+    let onSave: (String) -> Void
+    let onDelete: () -> Void
+    @State private var text: String
+
+    init(draft: WritingExampleDraft, onSave: @escaping (String) -> Void, onDelete: @escaping () -> Void) {
+        self.draft = draft
+        self.onSave = onSave
+        self.onDelete = onDelete
+        _text = State(initialValue: draft.text)
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section {
-                    TextField(L10n.text("brand_voice.settings.tone_placeholder"), text: $tone, axis: .vertical)
-                        .lineLimit(1...3)
-                } header: {
-                    Text(L10n.text("brand_voice.settings.tone_label"))
-                } footer: {
-                    Text(L10n.text("brand_voice.settings.tone_help"))
+                    TextEditor(text: $text)
+                        .accessibilityIdentifier("brand-voice-example-text")
+                        .frame(minHeight: 260)
+                        .overlay(alignment: .topLeading) {
+                            if text.isEmpty {
+                                Text(L10n.text("brand_voice.settings.paste_placeholder"))
+                                    .foregroundStyle(.secondary)
+                                    .padding(.top, 8).padding(.leading, 5)
+                                    .allowsHitTesting(false)
+                            }
+                        }
                 }
-
-                Section {
-                    TextField(L10n.text("brand_voice.settings.audience_placeholder"), text: $audience, axis: .vertical)
-                        .lineLimit(1...3)
-                } header: {
-                    Text(L10n.text("brand_voice.settings.audience_label"))
-                } footer: {
-                    Text(L10n.text("brand_voice.settings.audience_help"))
-                }
-
-                Section {
-                    TextField(L10n.text("brand_voice.settings.cta_placeholder"), text: $cta, axis: .vertical)
-                        .lineLimit(1...3)
-                } header: {
-                    Text(L10n.text("brand_voice.settings.cta_label"))
-                } footer: {
-                    Text(L10n.text("brand_voice.settings.cta_help"))
-                }
-
-                Section {
-                    TextEditor(text: $avoid)
-                        .frame(minHeight: 90)
-                        .font(.body)
-                } header: {
-                    Text(L10n.text("brand_voice.settings.avoid_label"))
-                } footer: {
-                    Text(L10n.text("brand_voice.settings.avoid_help"))
-                }
-
-                Section {
-                    TextEditor(text: $sample)
-                        .frame(minHeight: 140)
-                        .font(.body)
-                } header: {
-                    Text(L10n.text("brand_voice.settings.sample_label"))
-                } footer: {
-                    Text(L10n.text("brand_voice.settings.sample_help"))
-                }
-            }
-            .navigationTitle(L10n.text("brand_voice.settings.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.text("common.done")) {
+                if draft.index != nil {
+                    Button(L10n.text("common.delete"), role: .destructive) {
+                        onDelete()
                         dismiss()
                     }
+                }
+            }
+            .navigationTitle(draft.index.map { L10n.text("brand_voice.settings.example_title", $0 + 1) }
+                ?? L10n.text("brand_voice.settings.add_example"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(L10n.text("common.cancel")) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(L10n.text("common.save")) {
+                        onSave(text.trimmingCharacters(in: .whitespacesAndNewlines))
+                        dismiss()
+                    }.disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
         }
@@ -578,97 +756,100 @@ private struct BrandVoiceSettingsSheet: View {
 
 private struct RepurposePackSettingsSheet: View {
     @Environment(\.dismiss) private var dismiss
-    @AppStorage(RepurposePackPreferences.xPostKey) private var includeXPost = true
-    @AppStorage(RepurposePackPreferences.linkedinKey) private var includeLinkedIn = true
-    @AppStorage(RepurposePackPreferences.threadsKey) private var includeThreads = false
-    @AppStorage(RepurposePackPreferences.facebookPageKey) private var includeFacebookPage = false
-    @AppStorage(RepurposePackPreferences.newsletterKey) private var includeNewsletter = false
-    @AppStorage(RepurposePackPreferences.instagramCarouselKey) private var includeInstagramCarousel = true
-    @AppStorage(RepurposePackPreferences.pinterestPinKey) private var includePinterestPin = false
-    @AppStorage(RepurposePackPreferences.youtubeCommunityKey) private var includeYouTubeCommunity = false
-    @AppStorage(RepurposePackPreferences.threadLengthKey) private var threadLengthRawValue = RepurposeThreadLength.medium.rawValue
-    @AppStorage(RepurposePackPreferences.toneKey) private var toneRawValue = CaptionPackTone.creatorVoice.rawValue
-    @AppStorage(RepurposePackPreferences.ctaKey) private var includeCTA = true
-
-    private var selectedFormatCount: Int {
-        [
-            includeXPost,
-            includeLinkedIn,
-            includeThreads,
-            includeFacebookPage,
-            includeNewsletter,
-            includeInstagramCarousel,
-            includePinterestPin,
-            includeYouTubeCommunity
-        ].filter { $0 }.count
-    }
-
-    private var showThreadLength: Bool {
-        includeThreads
-    }
+    @State private var preferences = RepurposePackPreferences.current
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section(L10n.text("repurpose_pack.settings.formats")) {
-                    Toggle(L10n.text("repurpose_pack.format.x_post"), isOn: bindingForFormat($includeXPost))
-                    Toggle(L10n.text("repurpose_pack.format.linkedin"), isOn: bindingForFormat($includeLinkedIn))
-                    Toggle(L10n.text("repurpose_pack.format.threads"), isOn: bindingForFormat($includeThreads))
-                    Toggle(L10n.text("repurpose_pack.format.facebook_page"), isOn: bindingForFormat($includeFacebookPage))
-                    Toggle(L10n.text("repurpose_pack.format.newsletter"), isOn: bindingForFormat($includeNewsletter))
-                    Toggle(L10n.text("repurpose_pack.format.instagram_carousel"), isOn: bindingForFormat($includeInstagramCarousel))
-                    Toggle(L10n.text("repurpose_pack.format.pinterest_pin"), isOn: bindingForFormat($includePinterestPin))
-                    Toggle(L10n.text("repurpose_pack.format.youtube_community"), isOn: bindingForFormat($includeYouTubeCommunity))
-                }
-
-                if showThreadLength {
-                    Section(L10n.text("repurpose_pack.settings.thread_length")) {
-                        Picker(L10n.text("repurpose_pack.settings.thread_length"), selection: $threadLengthRawValue) {
-                            ForEach(RepurposeThreadLength.allCases) { length in
-                                Text(length.localizedTitle).tag(length.rawValue)
-                            }
-                        }
-                        .labelsHidden()
-                        .pickerStyle(.segmented)
-                    }
-                }
-
-                Section(L10n.text("repurpose_pack.settings.tone")) {
-                    Picker(L10n.text("repurpose_pack.settings.tone"), selection: $toneRawValue) {
-                        ForEach(CaptionPackTone.allCases) { tone in
-                            Text(tone.localizedTitle).tag(tone.rawValue)
-                        }
-                    }
-                    .labelsHidden()
-                    .pickerStyle(.inline)
-                }
-
-                Section {
-                    Toggle(L10n.text("repurpose_pack.settings.cta"), isOn: $includeCTA)
+        SkillConfigurationPage(title: L10n.text("repurpose_pack.settings.title"), symbol: "square.stack.3d.up") {
+            SkillConfigurationSection(title: L10n.text("repurpose_pack.settings.formats")) {
+                ForEach(RepurposeFormat.primaryFormats) { format in
+                    formatRow(format)
                 }
             }
-            .navigationTitle(L10n.text("repurpose_pack.settings.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.text("common.done")) {
-                        dismiss()
-                    }
+            SkillConfigurationSection(title: L10n.text("repurpose_pack.settings.more_platforms")) {
+                ForEach(RepurposeFormat.additionalFormats) { format in
+                    formatRow(format)
                 }
             }
         }
     }
 
-    private func bindingForFormat(_ binding: Binding<Bool>) -> Binding<Bool> {
-        Binding(
-            get: { binding.wrappedValue },
-            set: { newValue in
-                if !newValue && selectedFormatCount <= 1 {
-                    return
+    @ViewBuilder
+    private func formatRow(_ format: RepurposeFormat) -> some View {
+        Toggle(isOn: formatBinding(format)) {
+            SkillPlatformLabel(title: format.localizedTitle, asset: asset(for: format), symbol: symbol(for: format))
+        }
+        .toggleStyle(SkillSelectionToggleStyle())
+        .accessibilityIdentifier("repurpose-format-\(format.id)")
+
+        if format == .youtubeVideo && preferences.selectedFormats.contains(.youtubeVideo) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L10n.text("repurpose_pack.settings.long_video_duration"))
+                    .font(.subheadline).foregroundStyle(Color.textSub)
+                Picker(L10n.text("repurpose_pack.settings.long_video_duration"), selection: savedBinding(\.longVideoMinutes)) {
+                    ForEach(RepurposePackPreferences.longVideoOptions, id: \.self) { minutes in
+                        Text(L10n.text("repurpose_pack.duration.minutes", minutes)).tag(minutes)
+                    }
                 }
-                binding.wrappedValue = newValue
+                .labelsHidden().pickerStyle(.segmented)
             }
-        )
+            .padding(.leading, 44)
+            .padding(.bottom, 18)
+        }
+        if format == .threads && preferences.selectedFormats.contains(.threads) {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L10n.text("repurpose_pack.settings.thread_length"))
+                    .font(.subheadline).foregroundStyle(Color.textSub)
+                Picker(L10n.text("repurpose_pack.settings.thread_length"), selection: savedBinding(\.threadLength)) {
+                    ForEach(RepurposeThreadLength.allCases) { length in
+                        Text(length.localizedTitle).tag(length)
+                    }
+                }
+                .labelsHidden().pickerStyle(.segmented)
+            }
+            .padding(.leading, 44)
+            .padding(.bottom, 18)
+        }
+        SkillSettingsDivider()
+    }
+
+    private func asset(for format: RepurposeFormat) -> String? {
+        switch format {
+        case .tiktok: return "TikTokBrandLogo"
+        case .instagramReels: return "InstagramBrandLogo"
+        case .youtubeShorts, .youtubeVideo: return "YouTubeBrandLogo"
+        default: return nil
+        }
+    }
+
+    private func symbol(for format: RepurposeFormat) -> String {
+        switch format {
+        case .newsletter: return "envelope"
+        case .xPost: return "text.bubble"
+        case .threads: return "at"
+        case .linkedin: return "briefcase"
+        default: return "play.rectangle"
+        }
+    }
+
+    private func savedBinding<Value>(_ keyPath: WritableKeyPath<RepurposePackPreferences, Value>) -> Binding<Value> {
+        Binding(get: { preferences[keyPath: keyPath] }, set: {
+            preferences[keyPath: keyPath] = $0
+            preferences.save()
+        })
+    }
+
+    private func formatBinding(_ format: RepurposeFormat) -> Binding<Bool> {
+        Binding(get: { preferences.selectedFormats.contains(format) }, set: { enabled in
+            var selected = preferences.selectedFormats
+            if enabled {
+                if !selected.contains(format) { selected.append(format) }
+            } else {
+                guard selected.count > 1 else { return }
+                selected.removeAll { $0 == format }
+            }
+            preferences.formats = RepurposeFormat.allCases.filter { selected.contains($0) }
+            preferences.save()
+        })
     }
 }
 
@@ -686,41 +867,69 @@ private struct CreateRecipeSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            Form {
-                Section(L10n.text("recipes.create_sheet.details")) {
-                    TextField(L10n.text("recipes.create_sheet.name_placeholder"), text: $name)
-                    
-                    Button(action: { isIconPickerPresented = true }) {
-                        HStack {
-                            Text(L10n.text("recipes.create_sheet.icon"))
-                                .foregroundColor(.textMain)
-                            Spacer()
-                            Image(systemName: icon.isEmpty ? "sparkles" : icon)
-                                .foregroundColor(.textMain)
-                        }
+        SkillConfigurationPage(
+            title: L10n.text("recipes.create_sheet.title"),
+            symbol: "square.and.pencil",
+            confirmationTitle: L10n.text("common.save"),
+            confirmationEnabled: !isSaveDisabled,
+            onConfirm: onSave,
+            onCancel: onCancel
+        ) {
+            SkillConfigurationSection(title: L10n.text("recipes.create_sheet.details")) {
+                TextField(L10n.text("recipes.create_sheet.name_placeholder"), text: $name)
+                    .font(.body)
+                    .foregroundStyle(Color.textMain)
+                    .padding(16)
+                    .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 14))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.borderSubtle, lineWidth: 1)
                     }
-                }
+                    .accessibilityIdentifier("custom-skill-name")
 
-                Section(L10n.text("recipes.create_sheet.prompt")) {
-                    TextEditor(text: $prompt)
-                        .frame(minHeight: 120)
+                Button(action: { isIconPickerPresented = true }) {
+                    HStack(spacing: 16) {
+                        Text(L10n.text("recipes.create_sheet.icon"))
+                        Spacer()
+                        Image(systemName: icon.isEmpty ? "sparkles" : icon)
+                            .font(.system(size: 22, weight: .medium))
+                            .foregroundStyle(Color.brandTealText)
+                            .frame(width: 28, height: 28)
+                            .accessibilityHidden(true)
+                        Image(systemName: "chevron.right")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundStyle(Color.textSub)
+                            .accessibilityHidden(true)
+                    }
+                    .font(.body)
+                    .foregroundStyle(Color.textMain)
+                    .frame(minHeight: 64)
+                    .contentShape(Rectangle())
                 }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("custom-skill-icon")
+                SkillSettingsDivider()
             }
-            .navigationTitle(L10n.text("recipes.create_sheet.title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(L10n.text("common.cancel"), action: onCancel)
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(L10n.text("common.save"), action: onSave)
-                        .disabled(isSaveDisabled)
-                }
+
+            SkillConfigurationSection(title: L10n.text("recipes.create_sheet.prompt")) {
+                TextEditor(text: $prompt)
+                    .font(.body)
+                    .foregroundStyle(Color.textMain)
+                    .scrollContentBackground(.hidden)
+                    .frame(minHeight: 240)
+                    .padding(12)
+                    .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 14))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color.borderSubtle, lineWidth: 1)
+                    }
+                    .accessibilityLabel(L10n.text("recipes.create_sheet.prompt"))
+                    .accessibilityIdentifier("custom-skill-prompt")
             }
-            .sheet(isPresented: $isIconPickerPresented) {
-                IconPickerView(selectedIcon: $icon)
-            }
+        }
+        .scrollDismissesKeyboard(.interactively)
+        .sheet(isPresented: $isIconPickerPresented) {
+            IconPickerView(selectedIcon: $icon)
         }
     }
 }

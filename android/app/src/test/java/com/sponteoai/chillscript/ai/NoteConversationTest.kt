@@ -58,14 +58,14 @@ class NoteConversationTest {
         assertEquals("", NoteConversationPrompt.defaults(custom))
         val root = kotlin.io.path.createTempDirectory().toFile()
         try {
-            val recipe = BuiltInRecipes.all.first { it.id == "timed_script" }
-            val turn = NoteConversationTurn(message = "Script", recipe = recipe, answer = "Draft", noteFingerprint = NoteConversationPrompt.fingerprint("Source"), savedDefaults = "Duration: 60 seconds.")
+            val recipe = BuiltInRecipes.all.first { it.id == "caption_pack" }
+            val turn = NoteConversationTurn(message = "Script", recipe = recipe, answer = "Draft", noteFingerprint = NoteConversationPrompt.fingerprint("Source"), savedDefaults = "Platforms: TikTok.")
             val archive = NoteConversationArchive(root, "A", "note")
             archive.save(listOf(turn))
             val loaded = archive.load()
             assertEquals(turn.savedDefaults, loaded.single().savedDefaults)
             val (prompt, system) = NoteConversationPrompt.build("Source", loaded, "Shorter sentences", null)
-            assertTrue(prompt.contains("Duration: 60 seconds."))
+            assertTrue(prompt.contains("Platforms: TikTok."))
             assertFalse(system.contains("105-130"))
             val old = """{"message":"Old request","noteFingerprint":"hash"}"""
             assertNull(Json.decodeFromString<NoteConversationTurn>(old).savedDefaults)
@@ -146,10 +146,29 @@ class NoteConversationTest {
         assertTrue(chat.state.value.saveError)
     }
 
-    @Test fun translateAsksForMissingLanguageWithoutChoosingEnglish() {
+    @Test fun useThisCompactsAISeparatorsAndUndoRestoresExactOriginal() = runBlocking {
+        val original = "Original\n\n\nKeep my blank lines\n"
+        val answer = "\n# Heading\r\n\r\nFirst paragraph\n \n\n- Item one\n\n- Item two\n\n```kotlin\nval value = 1\n\nprintln(value)\n```\n\n"
+        val expected = "# Heading\nFirst paragraph\n- Item one\n- Item two\n```kotlin\nval value = 1\n\nprintln(value)\n```"
+        val chat = controller(this, generate = { _, _, _ -> answer })
+        chat.send(original, "Rewrite"); finish(chat)
+        val turn = chat.state.value.turns.single()
+        var content = original
+        val apply: suspend (String) -> Boolean = { content = it; true }
+        chat.replace(turn, content, apply)
+        assertEquals(expected, content)
+        assertEquals(turn.id, chat.state.value.appliedTurnId)
+        assertEquals(answer, chat.state.value.turns.single().answer)
+        chat.replace(turn, content, apply)
+        chat.undo(content, apply)
+        assertEquals(original, content)
+        assertNull(chat.state.value.appliedTurnId)
+    }
+
+    @Test fun translateUsesConfiguredDefaultWhenNoLanguageWasRequested() {
         val recipe = BuiltInRecipes.all.first { it.id == "translate" }
         val (prompt, system) = NoteConversationPrompt.build("Source", emptyList(), "Translate", recipe)
-        assertTrue(prompt.contains("ask which language"))
+        assertTrue(prompt.contains("default target language in savedDefaults"))
         assertFalse(system.contains("Translate into English"))
     }
 
@@ -165,4 +184,34 @@ class NoteConversationTest {
         assertEquals(2, finished)
         assertEquals("An unsent follow-up", chat.state.value.input)
     }
+    @Test fun clearCancelsPendingReplyPreservesInputAndPersistsEmptyHistory() = runBlocking {
+        var persisted = emptyList<NoteConversationTurn>()
+        val gate = CompletableDeferred<String>()
+        val chat = NoteConversationController(this, { emptyList() }, { persisted = it }, { true }, { true },
+            { _, _, _ -> withContext(NonCancellable) { gate.await() } }, {}, {}, { _, _ -> })
+        chat.send("Original", "Rewrite"); yield()
+        chat.input("Unsent follow-up")
+        chat.clearConversation()
+        gate.complete("Late reply"); yield()
+        assertTrue(chat.state.value.turns.isEmpty())
+        assertTrue(persisted.isEmpty())
+        assertFalse(chat.state.value.busy)
+        assertEquals("Unsent follow-up", chat.state.value.input)
+    }
+
+    @Test fun clearFailureKeepsHistoryAndUnauthorizedClearDoesNothing() = runBlocking {
+        val turn = NoteConversationTurn(message = "Question", answer = "Answer", noteFingerprint = "hash")
+        var allowed = true
+        var attempts = 0
+        val chat = NoteConversationController(this, { listOf(turn) }, { attempts++; error("Storage unavailable") },
+            { allowed }, { true }, { _, _, _ -> "Reply" }, {}, {}, { _, _ -> })
+        allowed = false
+        chat.clearConversation()
+        assertEquals(0, attempts)
+        allowed = true
+        chat.clearConversation()
+        assertEquals(listOf(turn), chat.state.value.turns)
+        assertTrue(chat.state.value.clearError)
+    }
+
 }

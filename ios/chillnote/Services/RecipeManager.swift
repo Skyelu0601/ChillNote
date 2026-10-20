@@ -15,56 +15,66 @@ final class RecipeManager: ObservableObject {
         "linkedin_post",
         "brainstorm",
         "expand",
+        "timed_script",
         "youtube_script"
     ]
 
-    @AppStorage("savedRecipesJSON") private var savedRecipesJSON: String = "[]"
     @AppStorage("customRecipesJSON") private var customRecipesJSON: String = "[]"
-    @AppStorage("defaultRecipesInstalled") private var defaultRecipesInstalled = false
-    @AppStorage("hookRecipeInstalled") private var hookRecipeInstalled = false
-    @AppStorage("captionPackRecipeInstalled") private var captionPackRecipeInstalled = false
-    @AppStorage("rewriteRecipeInstalled") private var rewriteRecipeInstalled = false
-    @AppStorage("repurposePackRecipeInstalled") private var repurposePackRecipeInstalled = false
+    @AppStorage("favoriteSkillIDsJSON") private var favoriteSkillIDsJSON = ""
+    @Published private(set) var favoriteSkillIDs: [String] = []
+    static let defaultFavoriteIDs = ["rewrite", "hook_generator", "caption_pack", "repurpose_pack"]
 
-    @Published var savedRecipes: [AgentRecipe] = [] {
-        didSet { saveToDisk() }
+    var favoriteRecipes: [AgentRecipe] {
+        favoriteSkillIDs.compactMap { id in savedRecipes.first { $0.id == id } }
     }
 
-    @Published var savedRecipeIds: Set<String> = []
-    @Published var customRecipes: [AgentRecipe] = [] {
+    var savedRecipes: [AgentRecipe] {
+        AgentRecipe.allRecipes.filter { !Self.retiredRecipeIds.contains($0.id) } + customRecipes
+    }
+    @Published private(set) var customRecipes: [AgentRecipe] = [] {
         didSet { saveCustomToDisk() }
     }
 
-    private init() {
-        loadFromDisk()
-        installDefaultRecipesIfNeeded()
-        installHookRecipeIfNeeded()
-        installCaptionPackRecipeIfNeeded()
-        installRewriteRecipeIfNeeded()
-        installRepurposePackRecipeIfNeeded()
+    init(userDefaults: UserDefaults = .standard) {
+        _customRecipesJSON = AppStorage(wrappedValue: "[]", "customRecipesJSON", store: userDefaults)
+        _favoriteSkillIDsJSON = AppStorage(wrappedValue: "", "favoriteSkillIDsJSON", store: userDefaults)
+        loadCustomFromDisk()
+        favoriteSkillIDs = favoriteSkillIDsJSON.isEmpty
+            ? Self.defaultFavoriteIDs
+            : (favoriteSkillIDsJSON.data(using: .utf8).flatMap { try? JSONDecoder().decode([String].self, from: $0) } ?? Self.defaultFavoriteIDs)
+        persistFavorites()
     }
 
     func toggleRecipe(_ recipe: AgentRecipe) {
-        if savedRecipeIds.contains(recipe.id) {
-            removeRecipe(recipe)
-        } else {
-            addRecipe(recipe)
+        if isAdded(recipe) {
+            guard favoriteSkillIDs.count > 1 else { return }
+            favoriteSkillIDs.removeAll { $0 == recipe.id }
+        } else if favoriteSkillIDs.count < 4 {
+            favoriteSkillIDs.append(recipe.id)
         }
+        persistFavorites()
     }
 
-    func addRecipe(_ recipe: AgentRecipe) {
-        guard !savedRecipeIds.contains(recipe.id) else { return }
-        savedRecipes.append(recipe)
-        savedRecipeIds.insert(recipe.id)
-    }
-
-    func removeRecipe(_ recipe: AgentRecipe) {
-        savedRecipes.removeAll { $0.id == recipe.id }
-        savedRecipeIds.remove(recipe.id)
+    func replaceFavorite(_ old: AgentRecipe, with recipe: AgentRecipe) {
+        guard !isAdded(recipe), let index = favoriteSkillIDs.firstIndex(of: old.id) else { return }
+        favoriteSkillIDs[index] = recipe.id
+        persistFavorites()
     }
 
     func isAdded(_ recipe: AgentRecipe) -> Bool {
-        savedRecipeIds.contains(recipe.id)
+        favoriteSkillIDs.contains(recipe.id)
+    }
+
+    private func persistFavorites() {
+        let validIDs = Set(savedRecipes.map(\.id))
+        var seen = Set<String>()
+        favoriteSkillIDs = Array(favoriteSkillIDs.filter { validIDs.contains($0) && seen.insert($0).inserted }.prefix(4))
+        if favoriteSkillIDs.isEmpty, let fallback = Self.defaultFavoriteIDs.first(where: { validIDs.contains($0) }) {
+            favoriteSkillIDs = [fallback]
+        }
+        if let data = try? JSONEncoder().encode(favoriteSkillIDs), let json = String(data: data, encoding: .utf8) {
+            favoriteSkillIDsJSON = json
+        }
     }
 
     func addCustomRecipe(name: String, systemIcon: String, prompt: String) -> AgentRecipe {
@@ -74,76 +84,19 @@ final class RecipeManager: ObservableObject {
             name: name,
             description: L10n.text("recipes.custom_skill"),
             prompt: prompt,
-            category: .shape,
             isCustom: true
         )
         customRecipes.append(recipe)
-        addRecipe(recipe)
         return recipe
     }
 
     func deleteCustomRecipe(_ recipe: AgentRecipe) {
         customRecipes.removeAll { $0.id == recipe.id }
-        removeRecipe(recipe)
+        favoriteSkillIDs.removeAll { $0 == recipe.id }
+        persistFavorites()
     }
 
-    func installDefaultRecipesIfNeeded() {
-        guard !defaultRecipesInstalled else { return }
-        guard savedRecipes.isEmpty else {
-            defaultRecipesInstalled = true
-            return
-        }
-
-        let defaultIDs = ["hook_generator", "caption_pack", "rewrite", "repurpose_pack"]
-        let defaults = AgentRecipe.allRecipes.filter { defaultIDs.contains($0.id) }
-        guard !defaults.isEmpty else { return }
-
-        savedRecipes = defaults
-        savedRecipeIds = Set(defaults.map(\.id))
-        defaultRecipesInstalled = true
-    }
-
-    func installCaptionPackRecipeIfNeeded() {
-        guard !captionPackRecipeInstalled else { return }
-        guard let recipe = AgentRecipe.allRecipes.first(where: { $0.id == "caption_pack" }) else { return }
-
-        if !savedRecipeIds.contains(recipe.id) {
-            addRecipe(recipe)
-        }
-        captionPackRecipeInstalled = true
-    }
-
-    func installHookRecipeIfNeeded() {
-        guard !hookRecipeInstalled else { return }
-        guard let recipe = AgentRecipe.allRecipes.first(where: { $0.id == "hook_generator" }) else { return }
-
-        if !savedRecipeIds.contains(recipe.id) {
-            addRecipe(recipe)
-        }
-        hookRecipeInstalled = true
-    }
-
-    func installRewriteRecipeIfNeeded() {
-        guard !rewriteRecipeInstalled else { return }
-        guard let recipe = AgentRecipe.allRecipes.first(where: { $0.id == "rewrite" }) else { return }
-
-        if !savedRecipeIds.contains(recipe.id) {
-            addRecipe(recipe)
-        }
-        rewriteRecipeInstalled = true
-    }
-
-    func installRepurposePackRecipeIfNeeded() {
-        guard !repurposePackRecipeInstalled else { return }
-        guard let recipe = AgentRecipe.allRecipes.first(where: { $0.id == "repurpose_pack" }) else { return }
-
-        if !savedRecipeIds.contains(recipe.id) {
-            addRecipe(recipe)
-        }
-        repurposePackRecipeInstalled = true
-    }
-
-    private func loadFromDisk() {
+    private func loadCustomFromDisk() {
         if let data = customRecipesJSON.data(using: .utf8) {
             do {
                 customRecipes = try JSONDecoder().decode([AgentRecipe].self, from: data)
@@ -155,38 +108,7 @@ final class RecipeManager: ObservableObject {
             Self.logger.error("Failed to read custom recipes JSON as UTF-8")
             customRecipes = []
         }
-
-        if let data = savedRecipesJSON.data(using: .utf8) {
-            do {
-                let decoded = try JSONDecoder().decode([AgentRecipe].self, from: data)
-                savedRecipes = decoded.filter { !Self.retiredRecipeIds.contains($0.id) }
-            } catch {
-                Self.logger.error("Failed to decode saved recipes: \(error.localizedDescription, privacy: .public)")
-                savedRecipes = []
-                savedRecipeIds = []
-            }
-        } else {
-            Self.logger.error("Failed to read saved recipes JSON as UTF-8")
-            savedRecipes = []
-            savedRecipeIds = []
-        }
-        savedRecipeIds = Set(savedRecipes.map { $0.id })
     }
-
-    private func saveToDisk() {
-        do {
-            let encoded = try JSONEncoder().encode(savedRecipes)
-            guard let jsonString = String(data: encoded, encoding: .utf8) else {
-                Self.logger.error("Failed to encode saved recipes JSON as UTF-8")
-                return
-            }
-            savedRecipesJSON = jsonString
-            savedRecipeIds = Set(savedRecipes.map { $0.id })
-        } catch {
-            Self.logger.error("Failed to encode saved recipes: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
 
     private func saveCustomToDisk() {
         do {

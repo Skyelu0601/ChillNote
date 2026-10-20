@@ -7,6 +7,7 @@ struct InboxNotification: Decodable, Identifiable {
     let amount: Int?
     let createdAt: String
     var readAt: String?
+    var trial: TrialInboxInfo? = nil
 
     var isSupported: Bool {
         kind == "welcome_pro" || (kind == "welcome_credits" && (amount ?? 0) > 0)
@@ -15,6 +16,31 @@ struct InboxNotification: Decodable, Identifiable {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter.date(from: createdAt) ?? ISO8601DateFormatter().date(from: createdAt)
+    }
+}
+
+struct TrialInboxInfo: Decodable {
+    let expiresAt: String
+    let autoRenew: Bool
+    let reminderStatus: String
+    let reminderAt: String?
+    let maskedEmail: String?
+    let manageSubscriptionURL: String?
+
+    var endDate: Date? { Self.parseDate(expiresAt) }
+    var reminderDate: Date? { reminderAt.flatMap(Self.parseDate) }
+    var subscriptionURL: URL? {
+        guard let raw = manageSubscriptionURL, let url = URL(string: raw),
+              url.scheme == "https", url.user == nil, url.password == nil, url.port == nil,
+              (url.host == "play.google.com" && url.path == "/store/account/subscriptions") ||
+              (url.host == "apps.apple.com" && url.path == "/account/subscriptions") else { return nil }
+        return url
+    }
+
+    private static func parseDate(_ value: String) -> Date? {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
     }
 }
 

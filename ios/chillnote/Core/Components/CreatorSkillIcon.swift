@@ -36,6 +36,8 @@ private struct CreatorSkillIconStyle {
         switch recipe.id {
         case "hook_generator":
             symbolName = "link"
+        case "title_thumbnail":
+            symbolName = "rectangle.and.text.magnifyingglass"
         case "caption_pack":
             symbolName = "captions.bubble"
         case "rewrite":
@@ -44,8 +46,6 @@ private struct CreatorSkillIconStyle {
             symbolName = "square.stack.3d.up"
         case "style_match":
             symbolName = "waveform"
-        case "timed_script":
-            symbolName = "timer"
         default:
             symbolName = nil
         }
@@ -82,10 +82,10 @@ enum CreatorSkillPalette {
             return Color(hex: "8A69A5")
         case "hook_generator":
             return .brandBlue
+        case "title_thumbnail":
+            return Color(hex: "5D8297")
         case "caption_pack":
             return Color(hex: "B77A2D")
-        case "timed_script":
-            return Color(hex: "68758A")
         case "repurpose_pack":
             return Color(hex: "C76655")
         default:

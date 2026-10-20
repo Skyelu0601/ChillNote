@@ -116,6 +116,11 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.view.isVisible
 import com.sponteoai.chillscript.R
+import com.sponteoai.chillscript.ai.AgentRecipe
+import com.sponteoai.chillscript.ai.BuiltInRecipes
+import com.sponteoai.chillscript.ui.skills.CreatorSkillIcon
+import com.sponteoai.chillscript.ui.skills.recipeName
+import androidx.compose.ui.MotionDurationScale
 import com.sponteoai.chillscript.analytics.ProductAnalytics
 import kotlinx.coroutines.delay
 import kotlin.math.abs
@@ -663,6 +668,10 @@ private fun IOSAISkillsPage(isActive: Boolean) {
             revealPhase = 1
             return@LaunchedEffect
         }
+        if (coroutineContext[MotionDurationScale]?.scaleFactor == 0f) {
+            revealPhase = 8
+            return@LaunchedEffect
+        }
         revealPhase = 1
         delay(300)
         for (phase in 2..8) {
@@ -672,7 +681,7 @@ private fun IOSAISkillsPage(isActive: Boolean) {
     }
 
     BoxWithConstraints(Modifier.fillMaxSize()) {
-        val compact = maxHeight <= 700.dp
+        val compact = LocalConfiguration.current.screenHeightDp <= 700
         IOSMarketingPageColumn {
             IOSHighlightedTitle(
                 full = stringResource(R.string.onboarding_page_skills_title),
@@ -1439,9 +1448,7 @@ private fun IOSHooksTransitionCard(modifier: Modifier = Modifier) {
 }
 
 private data class IOSSkillPreview(
-    @StringRes val name: Int,
-    val icon: androidx.compose.ui.graphics.vector.ImageVector,
-    val tint: Color,
+    val recipe: AgentRecipe,
     val installed: Boolean,
 )
 
@@ -1452,13 +1459,12 @@ private fun IOSSkillsLibraryCard(
     modifier: Modifier = Modifier,
 ) {
     val skills = listOf(
-        IOSSkillPreview(R.string.recipe_hook_generator_name, Icons.Outlined.Link, IOSOnboardingColors.Accent, true),
-        IOSSkillPreview(R.string.recipe_rewrite_name, Icons.Outlined.Edit, Color(0xFF38886F), true),
-        IOSSkillPreview(R.string.recipe_caption_pack_name, Icons.Outlined.ClosedCaption, Color(0xFFB77A2D), true),
-        IOSSkillPreview(R.string.recipe_repurpose_pack_name, Icons.Outlined.Layers, Color(0xFFC76655), true),
-        IOSSkillPreview(R.string.recipe_humanizer_name, Icons.Outlined.FavoriteBorder, Color(0xFFB56C82), false),
-        IOSSkillPreview(R.string.recipe_style_match_name, Icons.Outlined.GraphicEq, Color(0xFF8A69A5), false),
-    )
+        "hook_generator", "rewrite", "caption_pack", "repurpose_pack", "humanizer", "style_match",
+    ).mapNotNull { id ->
+        BuiltInRecipes.all.firstOrNull { it.id == id }?.let { recipe ->
+            IOSSkillPreview(recipe = recipe, installed = id != "humanizer" && id != "style_match")
+        }
+    }
     val visibleCount = revealPhase.coerceIn(1, skills.size)
 
     Column(
@@ -1493,22 +1499,23 @@ private fun IOSSkillsLibraryCard(
                 .background(Color.White, RoundedCornerShape(16.dp))
                 .border(BorderStroke(1.dp, Color.Black.copy(alpha = 0.06f)), RoundedCornerShape(16.dp)),
         ) {
-            skills.take(visibleCount).forEachIndexed { index, skill ->
+            skills.forEachIndexed { index, skill ->
                 AnimatedVisibility(
                     visible = index < visibleCount,
-                    enter = fadeIn(tween(220)) + slideInVertically { it / 2 },
+                    enter = fadeIn(tween(240)) + slideInVertically { it / 2 },
                     exit = ExitTransition.None,
                 ) {
-                    IOSSkillRow(skill = skill, compact = compact)
-                }
-                if (index < visibleCount - 1) {
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(start = if (compact) 52.dp else 58.dp)
-                            .height(1.dp)
-                            .background(Color.Black.copy(alpha = 0.08f)),
-                    )
+                    Column {
+                        IOSSkillRow(skill = skill, compact = compact)
+                        if (index < skills.lastIndex && index < visibleCount - 1) {
+                            Box(
+                                Modifier.fillMaxWidth()
+                                    .padding(start = if (compact) 52.dp else 58.dp)
+                                    .height(1.dp)
+                                    .background(Color.Black.copy(alpha = 0.06f)),
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -1525,33 +1532,26 @@ private fun IOSSkillsLibraryCard(
 
 @Composable
 private fun IOSSkillsLibraryIconStack(skills: List<IOSSkillPreview>) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy((-7).dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        skills.forEach { skill ->
-            Box(
+    val iconStep = 21.dp
+    val badgeLeft = iconStep * (skills.size - 1) + 31.dp
+    // Explicit offsets keep the overlapping icons from shrinking the final badge.
+    Box(Modifier.width(badgeLeft + 31.dp).height(28.dp)) {
+        skills.forEachIndexed { index, skill ->
+            CreatorSkillIcon(
+                recipe = skill.recipe,
+                iconSize = 13.dp,
+                container = 28.dp,
                 modifier = Modifier
-                    .size(28.dp)
-                    .shadow(4.dp, RoundedCornerShape(8.dp))
-                    .background(Color.White, CircleShape)
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(skill.tint.copy(alpha = 0.11f), RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    imageVector = skill.icon,
-                    contentDescription = null,
-                    tint = skill.tint,
-                    modifier = Modifier.size(13.dp),
-                )
-            }
+                    .offset(x = iconStep * index)
+                    .background(Color.White, RoundedCornerShape(8.dp)),
+            )
         }
         Box(
             modifier = Modifier
-                .padding(start = 3.dp)
+                .offset(x = badgeLeft)
                 .width(31.dp)
                 .height(28.dp)
+                .background(Color.White, CircleShape)
                 .background(IOSOnboardingColors.Accent.copy(alpha = 0.10f), CircleShape)
                 .border(
                     BorderStroke(1.dp, IOSOnboardingColors.Accent.copy(alpha = 0.16f)),
@@ -1579,22 +1579,13 @@ private fun IOSSkillRow(skill: IOSSkillPreview, compact: Boolean) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(if (compact) 10.dp else 12.dp),
     ) {
-        Box(
-            modifier = Modifier
-                .size(if (compact) 36.dp else 40.dp)
-                .background(skill.tint.copy(alpha = 0.11f), RoundedCornerShape(8.dp))
-                .border(BorderStroke(1.dp, skill.tint.copy(alpha = 0.22f)), RoundedCornerShape(8.dp)),
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(
-                imageVector = skill.icon,
-                contentDescription = null,
-                tint = skill.tint,
-                modifier = Modifier.size(if (compact) 16.dp else 18.dp),
-            )
-        }
+        CreatorSkillIcon(
+            recipe = skill.recipe,
+            iconSize = if (compact) 16.dp else 18.dp,
+            container = if (compact) 36.dp else 40.dp,
+        )
         Text(
-            text = stringResource(skill.name),
+            text = recipeName(skill.recipe),
             color = IOSOnboardingColors.TextMain,
             fontSize = if (compact) 14.sp else 15.sp,
             fontWeight = FontWeight.SemiBold,
@@ -1604,7 +1595,7 @@ private fun IOSSkillRow(skill: IOSSkillPreview, compact: Boolean) {
         )
         Text(
             text = stringResource(
-                if (skill.installed) R.string.onboarding_skills_installed else R.string.onboarding_skills_new,
+                if (skill.installed) R.string.creator_skills_installed else R.string.onboarding_skills_new,
             ),
             color = if (skill.installed) IOSOnboardingColors.Accent else IOSOnboardingColors.Teal,
             fontSize = 10.5.sp,

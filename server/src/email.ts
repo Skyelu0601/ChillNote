@@ -24,7 +24,11 @@ import {
   renderEmailChoicesPage,
   type UnsubscribeCategory
 } from "./emailPreferences.js";
-import type { RevenueCatWebhook } from "./revenueCat.js";
+import { revenueCatEntitlementSnapshot, type RevenueCatCustomerResponse, type RevenueCatWebhook } from "./revenueCat.js";
+import {
+  billingRecoveryKey, nextRenewalCheck, renewalCheckResult, renewalSubscription,
+  RENEWAL_CHECK_DELAY_MS, RENEWAL_CHECK_WINDOW_MS
+} from "./renewalCheck.js";
 import { subscriptionURL } from "./subscriptionLinks.js";
 import { emailAppOpenURL, registerEmailAppOpenRoute } from "./emailAppLink.js";
 import { upsertUser } from "./store.js";
@@ -65,9 +69,19 @@ let marketingTimer: NodeJS.Timeout | null = null;
 let workerRunning = false;
 let marketingSchedulerRunning = false;
 let sesClient: SESv2Client | null = null;
+type RenewalCheckDependencies = {
+  entitlementId: string;
+  fetchCustomer(userId: string): Promise<RevenueCatCustomerResponse>;
+};
+let renewalChecks: RenewalCheckDependencies | null = null;
+let lastRenewalScanAt = 0;
 
 function configured(): boolean {
   return EMAIL_ENABLED && Boolean(SES_REGION && SES_FROM_EMAIL);
+}
+
+export function subscriptionReminderEmailConfigured(): boolean {
+  return configured();
 }
 
 function marketingConfigured(): boolean {
@@ -159,6 +173,18 @@ export async function handleRevenueCatEmailLifecycle(
     });
   }
 
+  // A previously cancelled check can be restored even for a paid (non-trial)
+  // subscription, where there are no other lifecycle emails to schedule.
+  if (event.type === "UNCANCELLATION" && Number.isFinite(event.expiration_at_ms)) {
+    await prisma.emailDelivery.updateMany({
+      where: {
+        userId: { in: userIds }, kind: "renewal_check", status: "cancelled",
+        lastError: { in: ["revenuecat_cancellation", "renewal_cancelled"] },
+        expectedExpiresAt: new Date(event.expiration_at_ms!)
+      },
+      data: { status: "scheduled", lastError: null }
+    });
+  }
   const schedules = lifecycleEmailSchedules(event, now);
   if (schedules.length === 0) return;
   const preferences = await prisma.emailPreference.findMany({
@@ -180,6 +206,38 @@ export async function handleRevenueCatEmailLifecycle(
     for (const owner of owners) {
       if (!categoryAllowsEmail(schedule.kind, preferencesByUser.get(owner.userId) ?? null)) continue;
       const expiryKey = schedule.expectedExpiresAt.toISOString();
+      if (schedule.kind === "billing_issue") {
+        // A delayed webhook can carry a grace expiry instead of the original
+        // billing date. Do not send a second recovery email for that period.
+        const priorReminder = await prisma.emailDelivery.findFirst({
+          where: {
+            userId: owner.userId, kind: { in: ["renewal_check", "billing_issue"] }, status: "sent",
+            expectedExpiresAt: {
+              gte: new Date(event.event_timestamp_ms - RENEWAL_CHECK_WINDOW_MS),
+              lte: new Date(event.event_timestamp_ms + RENEWAL_CHECK_WINDOW_MS)
+            }
+          }, select: { id: true }
+        });
+        if (priorReminder) continue;
+        await prisma.emailDelivery.updateMany({
+          where: {
+            dedupeKey: billingRecoveryKey(owner.userId, schedule.expectedExpiresAt),
+            kind: "renewal_check", status: "scheduled"
+          },
+          data: { kind: "billing_issue", scheduledAt: now }
+        });
+        await prisma.emailDelivery.updateMany({
+          where: {
+            userId: owner.userId, kind: "renewal_check", status: { in: ["scheduled", "processing"] },
+            dedupeKey: { not: billingRecoveryKey(owner.userId, schedule.expectedExpiresAt) },
+            expectedExpiresAt: {
+              gte: new Date(event.event_timestamp_ms - RENEWAL_CHECK_WINDOW_MS),
+              lte: new Date(event.event_timestamp_ms + RENEWAL_CHECK_WINDOW_MS)
+            }
+          },
+          data: { status: "cancelled", lastError: "billing_issue_detected" }
+        });
+      }
       await prisma.emailDelivery.upsert({
         where: { dedupeKey: `${schedule.kind}:${owner.userId}:${expiryKey}` },
         create: {
@@ -193,6 +251,37 @@ export async function handleRevenueCatEmailLifecycle(
       });
     }
   }
+}
+
+async function enqueueRenewalCheck(userId: string, expectedExpiresAt: Date): Promise<void> {
+  await prisma.emailDelivery.upsert({
+    where: { dedupeKey: billingRecoveryKey(userId, expectedExpiresAt) },
+    create: {
+      userId, kind: "renewal_check", dedupeKey: billingRecoveryKey(userId, expectedExpiresAt),
+      expectedExpiresAt,
+      scheduledAt: new Date(expectedExpiresAt.getTime() + RENEWAL_CHECK_DELAY_MS)
+    },
+    update: {}
+  });
+}
+
+async function scanRenewalChecks(now = new Date()): Promise<void> {
+  if (!renewalChecks || now.getTime() - lastRenewalScanAt < 5 * 60_000) return;
+  const candidates = await prisma.revenueCatEntitlement.findMany({
+    where: {
+      entitlementId: renewalChecks.entitlementId,
+      store: { in: ["app_store", "play_store"] },
+      expiresAt: {
+        gte: new Date(now.getTime() - RENEWAL_CHECK_WINDOW_MS),
+        lte: new Date(now.getTime() + RENEWAL_CHECK_WINDOW_MS)
+      }
+    },
+    select: { userId: true, expiresAt: true }
+  });
+  for (const candidate of candidates) {
+    await enqueueRenewalCheck(candidate.userId, candidate.expiresAt!);
+  }
+  lastRenewalScanAt = now.getTime();
 }
 
 function newestDate(values: Array<Date | null | undefined>): Date | null {
@@ -378,7 +467,8 @@ export async function runMarketingWinbackScheduler(now = new Date()): Promise<vo
   }
 }
 
-export function scheduleEmailWorker(): void {
+export function scheduleEmailWorker(dependencies?: RenewalCheckDependencies): void {
+  renewalChecks = dependencies ?? null;
   if (!configured()) {
     console.log("Email worker disabled; set EMAIL_ENABLED=true, SES_REGION, and SES_FROM_EMAIL to enable it");
     return;
@@ -397,10 +487,16 @@ export function scheduleEmailWorker(): void {
   void runEmailWorker();
 }
 
-export async function runEmailWorker(): Promise<void> {
+export async function runEmailWorker(dependencies?: RenewalCheckDependencies): Promise<void> {
   if (!configured() || workerRunning) return;
+  if (dependencies) renewalChecks = dependencies;
   workerRunning = true;
   try {
+    try {
+      await scanRenewalChecks();
+    } catch (error) {
+      console.error("Renewal check scheduler failed:", safeErrorMessage(error));
+    }
     while (true) {
       const delivery = await claimNextDelivery();
       if (!delivery) break;
@@ -503,7 +599,77 @@ async function processDelivery(delivery: EmailDeliveryRow): Promise<void> {
         select: { isActive: true, expiresAt: true, store: true, productId: true }
       })
       : null;
-    if (lifecycle && delivery.kind !== "billing_issue"
+    let renewalResult: "pending" | "billing_issue" | null = null;
+    let renewalStore: string | null = null;
+    let renewalProductId: string | null = null;
+    if (delivery.kind === "renewal_check") {
+      if (!renewalChecks) throw new Error("Renewal checks are not configured");
+      const checkAt = new Date(delivery.expectedExpiresAt!.getTime() + RENEWAL_CHECK_DELAY_MS);
+      if (new Date() < checkAt) {
+        // Also defer any checks already queued under the previous delay.
+        await prisma.emailDelivery.update({
+          where: { id: delivery.id },
+          data: { status: "scheduled", scheduledAt: checkAt, attempts: { decrement: 1 }, lastError: null }
+        });
+        return;
+      }
+      if (Date.now() - delivery.expectedExpiresAt!.getTime() > RENEWAL_CHECK_WINDOW_MS) {
+        await finishDelivery(delivery.id, "cancelled", "renewal_check_too_late");
+        return;
+      }
+      let body = await renewalChecks.fetchCustomer(delivery.userId);
+      let current = renewalSubscription(body, renewalChecks.entitlementId);
+      if (!current || !revenueCatEntitlementSnapshot(body, renewalChecks.entitlementId).active) {
+        const user = await prisma.user.findUnique({
+          where: { id: delivery.userId },
+          select: { subscriptionProvider: true, originalTransactionId: true }
+        });
+        // Preserve only the existing legacy Apple UUID fallback, never probe
+        // uppercase identities for ordinary accounts or Google Play customers.
+        if ((user?.subscriptionProvider === "apple" || user?.originalTransactionId)
+          && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(delivery.userId)) {
+          body = await renewalChecks.fetchCustomer(delivery.userId.toUpperCase());
+          const legacy = renewalSubscription(body, renewalChecks.entitlementId);
+          if (legacy?.subscription.store === "app_store"
+            && revenueCatEntitlementSnapshot(body, renewalChecks.entitlementId).active) current = legacy;
+        }
+      }
+      if (!current || (entitlement?.productId && current.productId !== entitlement.productId)) {
+        await finishDelivery(delivery.id, "cancelled", "renewal_subscription_changed");
+        return;
+      }
+      const result = renewalCheckResult(current.subscription, delivery.expectedExpiresAt!);
+      if (result === "renewed" || result === "cancelled") {
+        if (result === "renewed") {
+          const next = nextRenewalCheck(current.subscription);
+          if (next) await enqueueRenewalCheck(delivery.userId, next);
+        }
+        await finishDelivery(delivery.id, "cancelled", `renewal_${result}`);
+        return;
+      }
+      const purchaseAt = new Date(current.subscription.purchase_date ?? "");
+      const recentRecovery = await prisma.emailDelivery.findFirst({
+        where: {
+          userId: delivery.userId, kind: { in: ["billing_issue", "renewal_check"] }, status: "sent",
+          expectedExpiresAt: {
+            // A later grace deadline is still the same unpaid purchase period.
+            // A successful new period advances purchase_date, allowing the next
+            // cycle's reminder even after last cycle had a billing problem.
+            gt: Number.isFinite(purchaseAt.getTime()) ? purchaseAt
+              : new Date(delivery.expectedExpiresAt!.getTime() - RENEWAL_CHECK_WINDOW_MS),
+            lte: new Date(delivery.expectedExpiresAt!.getTime() + RENEWAL_CHECK_WINDOW_MS)
+          }
+        }, select: { id: true }
+      });
+      if (recentRecovery) {
+        await finishDelivery(delivery.id, "cancelled", "renewal_already_reminded");
+        return;
+      }
+      renewalResult = result;
+      renewalStore = current.subscription.store ?? null;
+      renewalProductId = current.productId;
+    }
+    if (lifecycle && delivery.kind !== "billing_issue" && delivery.kind !== "renewal_check"
       && (!entitlement?.isActive || !sameInstant(entitlement.expiresAt, delivery.expectedExpiresAt))) {
         await finishDelivery(delivery.id, "cancelled", "trial_state_changed");
         return;
@@ -528,9 +694,9 @@ async function processDelivery(delivery: EmailDeliveryRow): Promise<void> {
       })
       : (() => {
         const manageSubscriptionURL = subscriptionURL(
-          entitlement?.store ?? null,
-          entitlement?.productId ?? null,
-          delivery.kind === "billing_issue"
+          renewalStore ?? entitlement?.store ?? null,
+          renewalProductId ?? entitlement?.productId ?? null,
+          delivery.kind === "billing_issue" || renewalResult !== null
         );
         return isTrialEndingKind(delivery.kind)
           ? renderTrialEndingEmail({
@@ -689,7 +855,7 @@ async function unsubscribeCategories(userId: string, categories: UnsubscribeCate
     const kinds = [
       ...categories.includes("marketing") ? [...marketingWinbackKinds(), "trial_cancelled_winback"] : [],
       ...categories.includes("subscription_billing")
-        ? ["trial_ending_48h", "trial_ending_24h", "billing_issue"] : []
+        ? ["trial_ending_48h", "trial_ending_24h", "billing_issue", "renewal_check"] : []
     ];
     await tx.emailDelivery.updateMany({
       where: { userId, kind: { in: kinds }, status: { in: ["scheduled", "processing"] } },

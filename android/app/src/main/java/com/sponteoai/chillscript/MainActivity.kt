@@ -229,6 +229,7 @@ class MainActivity : ComponentActivity() {
             this,
             viewModel::verifyGooglePlayPurchase,
             viewModel::syncRevenueCatSubscription,
+            viewModel::confirmRevenueCatPurchase,
         )
         onboardingPreferences = OnboardingPreferences(this)
         reviewManager = ReviewManagerFactory.create(this)
@@ -281,6 +282,7 @@ class MainActivity : ComponentActivity() {
                         onRetryProducts = billingManager::connect,
                         onDismiss = ::finish,
                         onOpenUrl = ::openExternalTarget,
+                        subscriptionCheck = com.sponteoai.chillscript.billing.SubscriptionCheck.Confirmed,
                         debugPreviewPricing = SubscriptionDebugPreviewPricing(
                             annualPrice = "¥398",
                             annualWeeklyPrice = "¥7.65",
@@ -320,9 +322,14 @@ class MainActivity : ComponentActivity() {
                             subscriptionExpiresAt = null,
                             billingState = billingState,
                             isPurchasing = uiState.busy,
-                            onPurchase = { product -> viewModel.currentUserId?.let { billingManager.launchPurchase(this, product, it) } },
+                            subscriptionCheck = uiState.subscriptionCheck,
+                            onPurchase = { product ->
+                                if (viewModel.uiState.value.canPurchaseSubscription) {
+                                    viewModel.currentUserId?.let { billingManager.launchPurchase(this, product, it) }
+                                } else viewModel.refreshSubscription()
+                            },
                             onRestore = billingManager::restorePurchases,
-                            onRetryProducts = billingManager::connect,
+                            onRetryProducts = { billingManager.connect(); viewModel.refreshSubscription() },
                             onDismiss = viewModel::dismissIntroPaywall,
                             onOpenUrl = ::openExternalTarget,
                         )
@@ -336,9 +343,13 @@ class MainActivity : ComponentActivity() {
                         notificationNoteId = notificationNoteRequest.value,
                         onNotificationNoteConsumed = { notificationNoteRequest.value = null },
                         billingState = billingState,
-                        onPurchase = { product -> viewModel.currentUserId?.let { billingManager.launchPurchase(this, product, it) } },
+                        onPurchase = { product ->
+                            if (viewModel.uiState.value.canPurchaseSubscription) {
+                                viewModel.currentUserId?.let { billingManager.launchPurchase(this, product, it) }
+                            } else viewModel.refreshSubscription()
+                        },
                         onRestorePurchases = billingManager::restorePurchases,
-                        onRetryBilling = billingManager::connect,
+                        onRetryBilling = { billingManager.connect(); viewModel.refreshSubscription() },
                         onOpenUrl = ::openExternalTarget,
                         onOpenStoreReview = {
                             openExternalTarget("https://play.google.com/store/apps/details?id=com.sponteoai.chillscript")
@@ -634,6 +645,7 @@ private fun HomeScreen(
     var retryingAITransformation by remember { mutableStateOf<AppliedAISkillTransformation?>(null) }
     var returnToNoteRequest by remember { mutableLongStateOf(0L) }
     val installedRecipes by viewModel.installedRecipes.collectAsState()
+    val favoriteRecipes by viewModel.favoriteRecipes.collectAsState()
     val aiSkillState by viewModel.aiSkillState.collectAsState()
     val voiceNoteStates by viewModel.voiceNoteStates.collectAsState()
     val activeVoiceNoteState = editingNote?.id?.let(voiceNoteStates::get)
@@ -1088,7 +1100,8 @@ private fun HomeScreen(
         BackHandler { showCreatorSkillsLibrary = false }
         CreatorSkillsLibrary(
             available = viewModel.availableRecipes,
-            installed = installedRecipes,
+            favorites = favoriteRecipes,
+            onReplaceFavorite = viewModel::replaceFavorite,
             isPro = uiState.subscriptionTier.equals("pro", ignoreCase = true),
             onBack = { showCreatorSkillsLibrary = false },
             onToggle = viewModel::toggleRecipe,
@@ -1157,7 +1170,7 @@ private fun HomeScreen(
             note = editingNote,
             text = editorText,
             selectedTags = tags.filter { it.id in selectedEditorTagIds },
-            recipes = installedRecipes,
+            recipes = favoriteRecipes,
             canUseAISkills = !uiState.busy && activeVoiceNoteState !is VoiceNoteState.Processing,
             canEdit = activeVoiceNoteState !is VoiceNoteState.Processing,
             canUndo = undoStack.isNotEmpty(),
@@ -1228,17 +1241,18 @@ private fun HomeScreen(
                 )
             },
             onManageSkills = { showCreatorSkillsLibrary = true },
-            skillsPanelContent = { onDismiss, onSelect ->
+            skillsPanelContent = { onDismiss ->
                 CreatorSkillsLibrary(
                     available = viewModel.availableRecipes,
-                    installed = installedRecipes,
+                    favorites = favoriteRecipes,
+                    onReplaceFavorite = viewModel::replaceFavorite,
                     isPro = uiState.subscriptionTier.equals("pro", ignoreCase = true),
                     onBack = onDismiss,
                     onToggle = viewModel::toggleRecipe,
                     onCreateCustom = viewModel::createCustomRecipe,
                     onDeleteCustom = viewModel::deleteCustomRecipe,
                     onRequestCustomUpgrade = { onDismiss(); showSubscription = true },
-                    onSelect = onSelect,
+                    isSheet = true,
                 )
             },
             conversationFactory = { viewModel.noteConversation(it) },
@@ -1819,6 +1833,15 @@ private fun HomeScreen(
             pendingRecordingsCount = pendingRecordings.size,
             subscriptionTier = uiState.subscriptionTier,
             hasBillingIssue = uiState.hasGooglePlayBillingIssue,
+            billingReminderUserId = signedInUser?.id,
+            billingReminderEnabled = !uiState.subscriptionStatusRefreshing && !uiState.busy &&
+                !billingState.purchasing && !billingState.restoring && !showSubscription &&
+                !showCreateTag && !showManageTags && !showBatchTagDialog &&
+                !showBatchDeleteConfirmation && !showEmptyTrashConfirmation &&
+                pendingPermanentDeleteNote == null && !showNoteExport && !noteExportFailed &&
+                !showEditorSkillPicker && pendingHomeRecipe == null && pendingTranslateRecipe == null &&
+                aiSkillState.processingRecipeId == null && aiSkillState.preview == null &&
+                !showImportNotificationPermissionPrompt,
             onFixBillingIssue = {
                 val sku = uiState.billingIssueProductId?.substringBefore(':')
                 val page = if (sku.isNullOrBlank()) {
@@ -2574,6 +2597,7 @@ private fun SubscriptionDialog(
             activeProductId = uiState.activeSubscriptionProductId,
             billingState = billingState,
             isPurchasing = uiState.busy,
+            subscriptionCheck = uiState.subscriptionCheck,
             onPurchase = onPurchase,
             onRestore = onRestore,
             onRetryProducts = onRetryProducts,

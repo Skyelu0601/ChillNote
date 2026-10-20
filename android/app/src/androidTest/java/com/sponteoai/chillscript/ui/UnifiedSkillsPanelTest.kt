@@ -17,6 +17,8 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import com.sponteoai.chillscript.ui.skills.CreatorSkillSettingsDialog
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.sponteoai.chillscript.R
@@ -42,9 +44,9 @@ class UnifiedSkillsPanelTest {
                 CreatorSkillsSheet(onDismiss = { dismissCount++ }) {
                     Box(Modifier.fillMaxSize().onSizeChanged { heights += it.height }) {
                         CreatorSkillsLibrary(
-                            available = BuiltInRecipes.all, installed = BuiltInRecipes.all.take(4), isPro = true,
+                            available = BuiltInRecipes.all, favorites = BuiltInRecipes.all.take(4), onReplaceFavorite = { _, _ -> }, isPro = true,
                             onBack = {}, onToggle = {}, onRequestCustomUpgrade = {},
-                            onCreateCustom = { _, _ -> }, onDeleteCustom = {}, onSelect = {},
+                            onCreateCustom = { _, _, _ -> }, onDeleteCustom = {}, isSheet = true,
                         )
                     }
                 }
@@ -73,48 +75,62 @@ class UnifiedSkillsPanelTest {
     }
 
     @Test
-    fun configureRemoveAddAndRunWithoutLeavingPanel() {
+    fun repurposeAdditionalPlatformsAreListedWithoutExpanding() {
+        val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
+        composeRule.setContent {
+            ChillScriptTheme {
+                CreatorSkillSettingsDialog(recipeId = "repurpose_pack", onDismiss = {})
+            }
+        }
+        composeRule.onNodeWithText(resources.getString(R.string.repurpose_pack_settings_more_platforms))
+            .performScrollTo().assertIsDisplayed().assertHasNoClickAction()
+        listOf(
+            R.string.repurpose_pack_format_x_post,
+            R.string.repurpose_pack_format_threads,
+            R.string.repurpose_pack_format_linkedin,
+        ).forEach { label ->
+            composeRule.onNodeWithText(resources.getString(label))
+                .performScrollTo().assertIsDisplayed()
+        }
+    }
+
+    @Test
+    fun managementOnlyPanelConfiguresAndSelectsFavorites() {
         val resources = InstrumentationRegistry.getInstrumentation().targetContext.resources
         val caption = BuiltInRecipes.all.first { it.id == "caption_pack" }
         val installed = mutableStateOf(listOf(caption))
-        var runCount = 0
         var closeCount = 0
         composeRule.setContent {
             ChillScriptTheme {
                 CreatorSkillsLibrary(
-                    available = listOf(caption), installed = installed.value, isPro = true,
+                    available = listOf(caption), favorites = installed.value, onReplaceFavorite = { _, _ -> }, isPro = true,
                     onBack = { closeCount++ },
                     onToggle = { recipe ->
                         installed.value = if (recipe in installed.value) emptyList() else listOf(recipe)
                     },
-                    onRequestCustomUpgrade = {}, onCreateCustom = { _, _ -> }, onDeleteCustom = {},
-                    onSelect = { runCount++ },
+                    onRequestCustomUpgrade = {}, onCreateCustom = { _, _, _ -> }, onDeleteCustom = {},
+                    isSheet = true,
                 )
             }
         }
-        val panelTitle = resources.getString(R.string.note_detail_ai_skills_title)
+        val panelTitle = resources.getString(R.string.creator_skills_manage)
         val removeLabel = resources.getString(R.string.creator_skills_remove)
-        val manageLabel = resources.getString(R.string.creator_skills_manage)
         val doneLabel = resources.getString(R.string.common_done)
         val captionName = resources.getString(R.string.recipe_caption_pack_name)
         composeRule.onNodeWithText(panelTitle).assertIsDisplayed()
-        composeRule.onNodeWithContentDescription(removeLabel).assertDoesNotExist()
+        composeRule.onNodeWithContentDescription(removeLabel).assertIsDisplayed()
         composeRule.onNodeWithContentDescription(resources.getString(R.string.caption_pack_settings_title)).performClick()
         composeRule.onNodeWithText(doneLabel).performClick()
         composeRule.onNodeWithText(panelTitle).assertIsDisplayed()
-        composeRule.onNodeWithText(manageLabel).performClick()
         composeRule.onNodeWithText(captionName).assertHasNoClickAction()
         composeRule.onNodeWithContentDescription(removeLabel).performClick()
-        composeRule.runOnIdle { assertEquals(emptyList<Any>(), installed.value) }
-        composeRule.onNodeWithContentDescription(resources.getString(R.string.creator_skills_add)).performClick()
-        composeRule.onNodeWithText(doneLabel).performClick()
+        composeRule.onNodeWithText(resources.getString(R.string.creator_skills_minimum_favorite)).assertIsDisplayed()
+        composeRule.onNodeWithText(resources.getString(R.string.common_ok)).performClick()
         composeRule.runOnIdle {
             assertEquals(listOf(caption), installed.value)
-            assertEquals(0, runCount)
             assertEquals(0, closeCount)
         }
-        composeRule.onNodeWithText(captionName).performClick()
-        composeRule.runOnIdle { assertEquals(1, runCount) }
+        composeRule.onNodeWithText(captionName).assertHasNoClickAction()
         composeRule.onNodeWithText(resources.getString(R.string.common_close)).performClick()
         composeRule.runOnIdle { assertEquals(1, closeCount) }
     }

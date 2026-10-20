@@ -20,6 +20,74 @@ SEARCH_SUFFIXES = {
 REQUIRED_LOCALES = ["en", "zh-Hans", "zh-Hant", "ja", "fr", "de", "es", "ko"]
 
 
+def object_members(text: str, start: int):
+    """Yield JSON object member offsets without reformatting the catalog."""
+    decoder = json.JSONDecoder()
+    cursor = start + 1
+    while True:
+        while text[cursor].isspace():
+            cursor += 1
+        if text[cursor] == "}":
+            return
+        key_start = cursor
+        key, cursor = decoder.raw_decode(text, cursor)
+        while text[cursor].isspace():
+            cursor += 1
+        if text[cursor] != ":":
+            raise ValueError("Expected JSON object separator")
+        cursor += 1
+        while text[cursor].isspace():
+            cursor += 1
+        value_start = cursor
+        _, cursor = decoder.raw_decode(text, cursor)
+        value_end = cursor
+        while text[cursor].isspace():
+            cursor += 1
+        comma = cursor if text[cursor] == "," else None
+        yield key, key_start, value_start, value_end, comma
+        if comma is None:
+            return
+        cursor += 1
+
+
+def cleanup_blank_keys(path: Path = CATALOG) -> list[str]:
+    """Remove only blank identifiers; preserve named entries and file formatting."""
+    text = path.read_text(encoding="utf-8")
+    data = json.loads(text)
+    blank = [key for key in data.get("strings", {}) if not key.strip()]
+    if not blank:
+        return []
+    root_start = len(text) - len(text.lstrip())
+    strings_start = next(member[2] for member in object_members(text, root_start) if member[0] == "strings")
+    members = list(object_members(text, strings_start))
+    removals = []
+    for index, (key, start, _, end, comma) in enumerate(members):
+        if key not in blank:
+            continue
+        if comma is not None:
+            end = comma + 1
+            line_start = text.rfind("\n", 0, start) + 1
+            line_end = text.find("\n", end)
+            if line_end >= 0 and not text[line_start:start].strip() and not text[end:line_end].strip():
+                start, end = line_start, line_end + 1
+        elif index > 0:
+            previous = next((member for member in reversed(members[:index]) if member[0] not in blank), None)
+            start = previous[4] if previous else members[0][1]
+        removals.append((start, end))
+    # Merge adjacent ranges, including a last blank entry's preceding comma.
+    merged = []
+    for start, end in sorted(removals):
+        if merged and start <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(end, merged[-1][1]))
+        else:
+            merged.append((start, end))
+    for start, end in reversed(merged):
+        text = text[:start] + text[end:]
+    json.loads(text)
+    path.write_text(text, encoding="utf-8")
+    return blank
+
+
 def load_catalog() -> dict:
     return json.loads(CATALOG.read_text(encoding="utf-8"))
 

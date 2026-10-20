@@ -138,6 +138,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import com.sponteoai.chillscript.R
 import com.sponteoai.chillscript.analytics.ProductAnalytics
+import com.sponteoai.chillscript.ui.markdown.markdownAnnotatedString
 import com.sponteoai.chillscript.ui.theme.ChillColors
 import java.io.File
 import java.util.UUID
@@ -170,6 +171,11 @@ fun TeleprompterCameraScreen(initialScript: String, onClose: () -> Unit) {
     val scriptScrollState = rememberScrollState()
 
     var script by remember { mutableStateOf(initialScript.trim()) }
+    val promptText = remember(script) {
+        markdownAnnotatedString(
+            script, Color.White, Color.White,
+        ).text
+    }
     var speed by remember { mutableFloatStateOf(16f) }
     var fontSize by remember { mutableFloatStateOf(24f) }
     var textColor by remember { mutableStateOf(Color.White) }
@@ -372,7 +378,7 @@ fun TeleprompterCameraScreen(initialScript: String, onClose: () -> Unit) {
         }
 
         FloatingPromptPanel(
-            script = script.ifBlank { stringResource(R.string.teleprompter_script_empty_placeholder) },
+            script = promptText.ifBlank { stringResource(R.string.teleprompter_script_empty_placeholder) },
             fontSize = fontSize,
             textColor = textColor,
             screenWidth = maxWidth,

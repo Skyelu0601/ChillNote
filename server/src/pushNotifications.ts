@@ -7,12 +7,6 @@ type PushEnvironment = "sandbox" | "production";
 type PushPlatform = "ios" | "android";
 type NotificationKind = "import_ready" | "first_creation" | "weekly_topics_ready";
 
-// New clients retire the old entry points; installed clients keep their service
-// until a separate, explicit retirement decision is made.
-export function legacyWeeklyTopicsEnabled(environment: NodeJS.ProcessEnv = process.env): boolean {
-  return environment.LEGACY_WEEKLY_TOPICS_ENABLED !== "false";
-}
-
 type DeliveryRow = {
   id: string;
   userId: string;
@@ -205,7 +199,9 @@ async function claimNextDelivery(): Promise<DeliveryRow | null> {
 
 async function processDelivery(delivery: DeliveryRow): Promise<void> {
   try {
-    if (delivery.kind === "weekly_topics_ready" && !legacyWeeklyTopicsEnabled()) {
+    // Cancel retired kinds before looking up devices or contacting a provider.
+    const payload = payloadForDelivery(delivery);
+    if (!payload) {
       await markDelivery(delivery.id, "cancelled");
       return;
     }
@@ -228,12 +224,6 @@ async function processDelivery(delivery: DeliveryRow): Promise<void> {
 
     if (devices.length === 0) {
       await markDelivery(delivery.id, "skipped", "no_active_device");
-      return;
-    }
-
-    const payload = payloadForDelivery(delivery);
-    if (!payload) {
-      await markDelivery(delivery.id, "cancelled");
       return;
     }
 
@@ -300,19 +290,6 @@ export function payloadForDelivery(
       kind: delivery.kind,
       route: "note",
       noteId: delivery.noteId ?? undefined
-    };
-  }
-
-  if (delivery.kind === "weekly_topics_ready") {
-    return {
-      apnsAlert: {
-        "title-loc-key": "notification.weekly_topics.title",
-        "loc-key": "notification.weekly_topics.body"
-      },
-      androidTitleKey: "notification_weekly_topics_title",
-      androidBodyKey: "notification_weekly_topics_body",
-      kind: delivery.kind,
-      route: "weekly_topics"
     };
   }
 

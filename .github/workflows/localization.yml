@@ -31,5 +31,8 @@ jobs:
       - name: Validate Android localized resources
         run: python3 android/scripts/validate_localizations.py
 
+      - name: Run iOS catalog cleanup tests
+        run: python3 -m unittest discover -s scripts/i18n -p "test_*.py"
+
       - name: Run localization validator tests
         run: python3 -m unittest discover -s android/scripts -p "test_*.py"

@@ -12,14 +12,6 @@ final class NoteDetailViewModel: ObservableObject {
         var writeFile: (_ content: String, _ url: URL) throws -> Void = { content, url in
             try content.write(to: url, atomically: true, encoding: .utf8)
         }
-        var ensureAIConsent: () async -> Bool = {
-            await AIConsentManager.shared.ensureConsentIfNeeded(for: .text)
-        }
-        var generateAISkill: (AgentRecipe, String, String?) async throws -> String = {
-            try await $0.generateResult(from: $1, userInstruction: $2)
-        }
-        var refreshCredits: () async -> Void = { await StoreService.shared.fetchCreditBalance() }
-        var capture: @MainActor (String, [String: Any]) -> Void = { ProductAnalytics.shared.capture($0, properties: $1) }
     }
 
     enum NoteDetailAction {
@@ -27,31 +19,14 @@ final class NoteDetailViewModel: ObservableObject {
         case restoreTapped
         case deleteTapped
         case exportTapped
-        case aiSkillsTapped
         case teleprompterTapped
-        case aiUndoTapped
-        case aiSaveTapped
-        case aiRetryTapped
         case removeTagTapped(Tag)
         case confirmTagTapped(String)
         case dismissVoiceProcessingErrorTapped
     }
 
     @Published var showDeleteConfirmation = false
-    @Published var isProcessing = false
-    @Published var isAwaitingAIConsent = false
-    var queuedAISkill: (recipe: AgentRecipe, instruction: String?)?
-
-    @Published var showAIToolbar = false
-    @Published var aiOriginalContent: String?
-    @Published var isProgrammaticContentUpdate = false
-    @Published var editorSelection = RichTextEditorSelection()
-    @Published var showAISkillsSheet = false
-    @Published var showAISkillTranslateSheet = false
-    @Published var aiSkillPreview: NoteAISkillPreview?
     @Published var aiSkillErrorMessage: String?
-    @Published var pendingAISkillRecipe: AgentRecipe?
-    var lastAITransformation: NoteAITransformation?
 
     @Published var initialContent: String = ""
     @Published var initialTags: Set<UUID> = []
@@ -161,7 +136,7 @@ final class NoteDetailViewModel: ObservableObject {
     }
 
     var isInteractionEnabled: Bool {
-        !isDeleted && !isProcessing && !isAwaitingAIConsent && !isVoiceProcessing
+        !isDeleted && !isVoiceProcessing
     }
 
     var isAISkillsEnabled: Bool {
@@ -178,17 +153,8 @@ final class NoteDetailViewModel: ObservableObject {
             showDeleteConfirmation = true
         case .exportTapped:
             exportMarkdown()
-        case .aiSkillsTapped:
-            ProductAnalytics.shared.capture("skill_picker_viewed", properties: ["entry_point": "note_detail"])
-            showAISkillsSheet = true
         case .teleprompterTapped:
             showTeleprompterCamera = true
-        case .aiUndoTapped:
-            undoAIContent()
-        case .aiSaveTapped:
-            saveAIContentAndDismissToolbar()
-        case .aiRetryTapped:
-            Task { await retryLastAITransformation() }
         case .removeTagTapped(let tag):
             removeTag(tag)
         case .confirmTagTapped(let tagName):
@@ -375,13 +341,6 @@ final class NoteDetailViewModel: ObservableObject {
             dismissAction?()
         }
         return true
-    }
-
-    func dismissAIToolbar() {
-        withAnimation {
-            showAIToolbar = false
-            aiOriginalContent = nil
-        }
     }
 
     func retryInsufficientCreditsLinkImport() {

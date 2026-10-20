@@ -6,13 +6,9 @@ import { hasActiveProSubscription } from "./store.js";
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL?.trim() || "gemini-3.1-flash-lite";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY?.trim() || "";
-const WORKER_POLL_MS = Number(process.env.WEEKLY_TOPICS_POLL_MS ?? 60_000);
 const MINIMUM_SOURCE_NOTES = 1;
 const MAX_NOTE_CHARACTERS = 12_000;
 const MAX_TOTAL_CHARACTERS = 100_000;
-
-let workerTimer: NodeJS.Timeout | null = null;
-let workerRunning = false;
 
 export const weeklyTopicSettingsInputSchema = z.object({
   enabled: z.boolean(),
@@ -55,13 +51,6 @@ type WeeklyTopic = {
   title: string;
   sources: TopicSource[];
 };
-
-export function scheduleWeeklyTopicWorker(): void {
-  if (workerTimer) return;
-  workerTimer = setInterval(() => void runWeeklyTopicWorker(), Math.max(15_000, WORKER_POLL_MS));
-  workerTimer.unref();
-  void runWeeklyTopicWorker();
-}
 
 export async function getWeeklyTopicDashboard(userId: string) {
   const [settings, latestReport] = await Promise.all([
@@ -215,102 +204,6 @@ export async function hardDeleteNoteWithWeeklyTopicCleanup(
     return existing;
   };
   return database ? operation(database) : prisma.$transaction(operation);
-}
-
-async function runWeeklyTopicWorker(): Promise<void> {
-  if (workerRunning) return;
-  workerRunning = true;
-  try {
-    const dueSettings = await prisma.weeklyTopicSettings.findMany({
-      where: { enabled: true, nextRunAt: { lte: new Date() } },
-      orderBy: { nextRunAt: "asc" },
-      take: 10
-    });
-    for (const settings of dueSettings) {
-      try {
-        await generateScheduledReport(settings);
-      } catch (error) {
-        console.error(`Weekly topics generation failed for user=${settings.userId}:`, safeError(error));
-      }
-    }
-  } catch (error) {
-    console.error("Weekly topics worker failed:", safeError(error));
-  } finally {
-    workerRunning = false;
-  }
-}
-
-async function generateScheduledReport(settings: {
-  userId: string;
-  weekday: number;
-  hour: number;
-  minute: number;
-  timeZone: string;
-  locale: string;
-  lastPeriodEnd: Date | null;
-  nextRunAt: Date | null;
-}): Promise<void> {
-  guardDate(settings.nextRunAt);
-  const periodEnd = settings.nextRunAt;
-  const followingRun = nextOccurrence(
-    new Date(periodEnd.getTime() + 60_000),
-    settings.weekday,
-    settings.hour,
-    settings.minute,
-    settings.timeZone
-  );
-
-  if (!(await hasActiveProSubscription(settings.userId))) {
-    await prisma.weeklyTopicSettings.update({
-      where: { userId: settings.userId },
-      data: { lastPeriodEnd: periodEnd, nextRunAt: followingRun }
-    });
-    return;
-  }
-
-  const periodStart = settings.lastPeriodEnd
-    ?? new Date(periodEnd.getTime() - 7 * 24 * 60 * 60 * 1000);
-  const notes = await loadEligibleNotes(settings.userId, periodStart, periodEnd);
-
-  if (notes.length < MINIMUM_SOURCE_NOTES) {
-    await prisma.weeklyTopicSettings.update({
-      where: { userId: settings.userId },
-      data: { lastPeriodEnd: periodEnd, nextRunAt: followingRun }
-    });
-    return;
-  }
-
-  const existing = await prisma.weeklyTopicReport.findUnique({
-    where: { userId_periodEnd: { userId: settings.userId, periodEnd } }
-  });
-  if (!existing) {
-    const topics = await generateTopics(notes, settings.locale);
-    const report = await prisma.weeklyTopicReport.create({
-      data: {
-        userId: settings.userId,
-        periodStart,
-        periodEnd,
-        sourceNoteCount: notes.length,
-        language: settings.locale,
-        topics
-      }
-    });
-    await prisma.notificationDelivery.upsert({
-      where: { dedupeKey: `weekly_topics_ready:${settings.userId}:${report.id}` },
-      create: {
-        userId: settings.userId,
-        kind: "weekly_topics_ready",
-        dedupeKey: `weekly_topics_ready:${settings.userId}:${report.id}`,
-        scheduledAt: new Date()
-      },
-      update: {}
-    });
-  }
-
-  await prisma.weeklyTopicSettings.update({
-    where: { userId: settings.userId },
-    data: { lastPeriodEnd: periodEnd, nextRunAt: followingRun }
-  });
 }
 
 async function loadEligibleNotes(userId: string, start: Date, end: Date): Promise<SourceNote[]> {
@@ -712,12 +605,4 @@ function normalizedLocale(value: string): string {
 
 function geminiURL(): string {
   return `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(GEMINI_MODEL)}:generateContent?key=${encodeURIComponent(GEMINI_API_KEY)}`;
-}
-
-function guardDate(value: Date | null): asserts value is Date {
-  if (!value) throw new Error("Weekly topic settings missing nextRunAt");
-}
-
-function safeError(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
 }

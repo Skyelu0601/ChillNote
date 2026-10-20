@@ -1,4 +1,5 @@
 import type { PrismaClient } from "@prisma/client";
+import { syncTrialNotification } from "./trialNotifications.js";
 import {
   accountRevenueCatSnapshot,
   canonicalRevenueCatUserId,
@@ -84,6 +85,7 @@ export async function syncRevenueCatUsers(params: {
         create: { userId, entitlementId: params.entitlementId, ...data },
         update: data
       });
+      await syncTrialNotification(tx, userId, snapshot);
       // Old Apple projections came from unverified client metadata and cannot
       // remain an independent grant after a verified sync or a transfer.
       // Google Play and Creem projections belong to separate payment sources.

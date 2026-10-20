@@ -7,7 +7,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
     let name: String
     let description: String
     let prompt: String
-    let category: AgentRecipeCategory
     let isCustom: Bool
     
     var localizedName: String {
@@ -18,17 +17,12 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
         isCustom ? description : L10n.text("agent_recipe.\(id).description")
     }
 
-    var localizedPrompt: String {
-        isCustom ? prompt : NSLocalizedString(prompt, comment: "")
-    }
-
     init(
         id: String,
         systemIcon: String,
         name: String,
         description: String,
         prompt: String,
-        category: AgentRecipeCategory,
         isCustom: Bool = false
     ) {
         self.id = id
@@ -36,7 +30,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
         self.name = name
         self.description = description
         self.prompt = prompt
-        self.category = category
         self.isCustom = isCustom
     }
 
@@ -46,7 +39,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
         case name
         case description
         case prompt
-        case category
         case isCustom
     }
 
@@ -57,7 +49,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
         name = try container.decode(String.self, forKey: .name)
         description = try container.decode(String.self, forKey: .description)
         prompt = try container.decode(String.self, forKey: .prompt)
-        category = try container.decode(AgentRecipeCategory.self, forKey: .category)
         isCustom = (try? container.decode(Bool.self, forKey: .isCustom)) ?? false
     }
 
@@ -68,7 +59,6 @@ struct AgentRecipe: Identifiable, Hashable, Codable {
         try container.encode(name, forKey: .name)
         try container.encode(description, forKey: .description)
         try container.encode(prompt, forKey: .prompt)
-        try container.encode(category, forKey: .category)
         try container.encode(isCustom, forKey: .isCustom)
     }
 }
@@ -113,6 +103,12 @@ enum CaptionPackTone: String, CaseIterable, Identifiable {
     case bold
     case storyDriven
     case creatorVoice
+
+    static let captionOptions = allCases.filter { $0 != .storyDriven && $0 != .creatorVoice }
+
+    static func fromCaptionRawValue(_ value: String?) -> CaptionPackTone {
+        captionOptions.first { $0.rawValue == value } ?? .casualUseful
+    }
 
     var id: String { rawValue }
 
@@ -283,7 +279,7 @@ struct CaptionPackPreferences {
             includeYouTubeLongVideo: defaults.object(forKey: youtubeLongVideoKey) as? Bool ?? true,
             includeInstagramReels: defaults.object(forKey: instagramReelsKey) as? Bool ?? true,
             goal: CaptionPackGoal(rawValue: defaults.string(forKey: goalKey) ?? "") ?? .startDiscussion,
-            tone: CaptionPackTone(rawValue: defaults.string(forKey: toneKey) ?? "") ?? .casualUseful,
+            tone: CaptionPackTone.fromCaptionRawValue(defaults.string(forKey: toneKey)),
             outputStyle: CaptionPackOutputStyle(rawValue: defaults.string(forKey: outputStyleKey) ?? "") ?? .balanced
         )
     }
@@ -322,109 +318,44 @@ struct CaptionPackPreferences {
     }
 }
 
+enum TranslatePreferences {
+    static let targetLanguageKey = "translateTargetLanguage"
+
+    static var currentLanguage: TranslateLanguage {
+        language(for: UserDefaults.standard.string(forKey: targetLanguageKey))
+    }
+
+    static func language(for id: String?) -> TranslateLanguage {
+        let normalizedID = ["pt", "pt-PT", "pt-BR"].contains(id ?? "") ? "pt-BR" : id
+        return TranslateLanguage.defaultLanguages.first { $0.id == normalizedID }
+            ?? TranslateLanguage.defaultLanguages.first { $0.id == "en" }!
+    }
+}
+
 struct BrandVoicePreferences {
-    static let sampleKey = "brandVoiceSample"
-    static let toneKey = "brandVoiceTone"
-    static let audienceKey = "brandVoiceAudience"
-    static let ctaKey = "brandVoiceCTA"
-    static let avoidKey = "brandVoiceAvoid"
+    static let sampleKey = "brandVoiceSample" // Legacy single-example storage.
+    static let samplesKey = "brandVoiceSamples"
+    var samples: [String] = []
 
-    var sample: String
-    var tone: String
-    var audience: String
-    var cta: String
-    var avoid: String
+    static var current: BrandVoicePreferences { load(from: .standard) }
 
-    static var current: BrandVoicePreferences {
-        let defaults = UserDefaults.standard
-        return BrandVoicePreferences(
-            sample: defaults.string(forKey: sampleKey) ?? "",
-            tone: defaults.string(forKey: toneKey) ?? "",
-            audience: defaults.string(forKey: audienceKey) ?? "",
-            cta: defaults.string(forKey: ctaKey) ?? "",
-            avoid: defaults.string(forKey: avoidKey) ?? ""
-        )
+    static func load(from defaults: UserDefaults) -> BrandVoicePreferences {
+        let samples = defaults.stringArray(forKey: samplesKey)
+            ?? [defaults.string(forKey: sampleKey) ?? ""]
+        return BrandVoicePreferences(samples: samples.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
     }
 
-    var isConfigured: Bool {
-        ![sample, tone, audience, cta, avoid]
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .allSatisfy(\.isEmpty)
+    func save(to defaults: UserDefaults = .standard) {
+        defaults.set(samples.filter { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty }, forKey: Self.samplesKey)
     }
+
+    var isConfigured: Bool { samples.contains { !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty } }
 
     var promptProfile: String {
-        var sections: [String] = []
-
-        let trimmedTone = tone.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedTone.isEmpty {
-            sections.append("Tone / voice style:\n\(trimmedTone)")
-        }
-
-        let trimmedAudience = audience.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedAudience.isEmpty {
-            sections.append("Audience:\n\(trimmedAudience)")
-        }
-
-        let trimmedCTA = cta.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedCTA.isEmpty {
-            sections.append("Preferred CTA:\n\(trimmedCTA)")
-        }
-
-        let trimmedAvoid = avoid.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedAvoid.isEmpty {
-            sections.append("Avoid:\n\(trimmedAvoid)")
-        }
-
-        let trimmedSample = sample.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmedSample.isEmpty {
-            sections.append("Example posts / writing samples:\n\(trimmedSample)")
-        }
-
-        return sections.joined(separator: "\n\n")
-    }
-}
-
-enum TimedScriptDuration: String, CaseIterable, Identifiable {
-    case seconds30
-    case seconds45
-    case seconds60
-
-    var id: String { rawValue }
-
-    var seconds: Int {
-        switch self {
-        case .seconds30: return 30
-        case .seconds45: return 45
-        case .seconds60: return 60
-        }
-    }
-
-    var wordCountRange: String {
-        switch self {
-        case .seconds30: return "70-90"
-        case .seconds45: return "105-130"
-        case .seconds60: return "140-170"
-        }
-    }
-
-    var localizedTitle: String {
-        switch self {
-        case .seconds30: return L10n.text("timed_script.duration.30")
-        case .seconds45: return L10n.text("timed_script.duration.45")
-        case .seconds60: return L10n.text("timed_script.duration.60")
-        }
-    }
-}
-
-struct TimedScriptPreferences {
-    static let durationKey = "timedScriptDuration"
-
-    var duration: TimedScriptDuration
-
-    static var current: TimedScriptPreferences {
-        TimedScriptPreferences(
-            duration: TimedScriptDuration(rawValue: UserDefaults.standard.string(forKey: durationKey) ?? "") ?? .seconds45
-        )
+        samples.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }.enumerated()
+            .map { "Writing example \($0.offset + 1):\n\($0.element)" }
+            .joined(separator: "\n\n")
     }
 }
 
@@ -448,235 +379,141 @@ enum RepurposeThreadLength: String, CaseIterable, Identifiable {
     }
 }
 
-enum RepurposeFormat: CaseIterable, Equatable {
-    case xPost
-    case linkedin
-    case threads
-    case facebookPage
-    case newsletter
-    case instagramCarousel
-    case pinterestPin
-    case youtubeCommunity
-
+enum RepurposeFormat: String, CaseIterable, Identifiable {
+    case tiktok = "repurposePackFormatTikTok"
+    case instagramReels = "repurposePackFormatInstagramReels"
+    case youtubeShorts = "repurposePackFormatYouTubeShorts"
+    case youtubeVideo = "repurposePackFormatYouTubeVideo"
+    case newsletter = "repurposePackFormatNewsletter"
+    case xPost = "repurposePackFormatXPost"
+    case threads = "repurposePackFormatThreads"
+    case linkedin = "repurposePackFormatLinkedIn"
+    var id: String { rawValue }
+    static let defaultFormats: [RepurposeFormat] = [.tiktok, .instagramReels]
+    static let primaryFormats = Array(allCases.prefix(5))
+    static let additionalFormats = Array(allCases.suffix(3))
+    var localizedTitle: String {
+        switch self {
+        case .tiktok: return L10n.text("repurpose_pack.format.tiktok")
+        case .instagramReels: return L10n.text("repurpose_pack.format.instagram_reels")
+        case .youtubeShorts: return L10n.text("repurpose_pack.format.youtube_shorts")
+        case .youtubeVideo: return L10n.text("repurpose_pack.format.youtube_video")
+        case .newsletter: return L10n.text("repurpose_pack.format.newsletter")
+        case .xPost: return L10n.text("repurpose_pack.format.x_post")
+        case .threads: return L10n.text("repurpose_pack.format.threads")
+        case .linkedin: return L10n.text("repurpose_pack.format.linkedin")
+        }
+    }
     var displayName: String {
         switch self {
-        case .xPost: return "X Post"
-        case .linkedin: return "LinkedIn"
-        case .threads: return "Threads"
-        case .facebookPage: return "Facebook Page"
+        case .tiktok: return "TikTok"
+        case .instagramReels: return "Instagram Reels"
+        case .youtubeShorts: return "YouTube Shorts"
+        case .youtubeVideo: return "YouTube Video"
         case .newsletter: return "Newsletter"
-        case .instagramCarousel: return "Instagram Carousel Outline"
-        case .pinterestPin: return "Pinterest Pin"
-        case .youtubeCommunity: return "YouTube Community Post"
+        case .xPost: return "X Post"
+        case .threads: return "Threads"
+        case .linkedin: return "LinkedIn"
         }
     }
-
     var formatRule: String {
         switch self {
-        case .xPost:
-            return "- X Post: one standalone post, 280 characters or fewer, leading with the strongest takeaway."
-        case .linkedin:
-            return "- LinkedIn: open with the core insight, use short scannable paragraphs, professional and credible, no hype."
-        case .threads:
-            return "- Threads: numbered posts (1/, 2/, ...). Each post must be 500 characters or fewer, conversational tone."
-        case .facebookPage:
-            return "- Facebook Page: clear, approachable page post for a broader audience. Make it easy to understand and share."
-        case .newsletter:
-            return "- Newsletter: a 2-3 sentence intro blurb that teases the piece, ending with a [link] placeholder."
-        case .instagramCarousel:
-            return "- Instagram Carousel Outline: 6-8 slide outline with one short headline and one supporting line per slide."
-        case .pinterestPin:
-            return "- Pinterest Pin: SEO-friendly Title, Description, and Keywords. Make it searchable and evergreen."
-        case .youtubeCommunity:
-            return "- YouTube Community Post: a short community update, question, or teaser that invites comments without sounding spammy."
+        case .tiktok: return "- TikTok: a ready-to-record video script with a direct, conversational opening, a tightly focused progression, and a natural ending. Reshape the content rather than writing a caption."
+        case .instagramReels: return "- Instagram Reels: a ready-to-record video script with a relatable opening, clear progression, and a memorable takeaway. Do not output carousel slides or a publishing caption."
+        case .youtubeShorts: return "- YouTube Shorts: a ready-to-record short video script focused on one clear question or insight, delivering its promised answer before a complete ending. Do not output a description or tags."
+        case .youtubeVideo: return "- YouTube Video: a complete long-video script with an introduction, clearly titled chapters, transitions, substantive explanations, and a conclusion. Expand supported ideas, not invented facts. Do not return only an outline."
+        case .newsletter: return "- Newsletter: a complete email with a subject line, an opening, substantial body sections, and a closing. Target 600-1,000 English words, 1,200-2,000 Chinese characters, or a comparable reading length in other languages when the material supports it. Never return only an intro blurb or pad the email with repetition. Use a shorter complete email if evidence is limited; do not invent anecdotes, statistics, or links."
+        case .xPost: return "- X Post: one standalone post, 280 characters or fewer, leading with the strongest takeaway."
+        case .threads: return "- Threads: numbered posts (1/, 2/, ...). Each post must be 500 characters or fewer, with a conversational progression."
+        case .linkedin: return "- LinkedIn: open with the core insight, use short scannable paragraphs, professional and credible, no hype."
         }
     }
-
-    var outputTemplate: String {
-        switch self {
-        case .xPost:
-            return """
-            ## X Post
-
-            ...
-            """
-        case .linkedin:
-            return """
-            ## LinkedIn
-
-            ...
-            """
-        case .threads:
-            return """
-            ## Threads
-
-            1/ ...
-            2/ ...
-            """
-        case .facebookPage:
-            return """
-            ## Facebook Page
-
-            ...
-            """
-        case .newsletter:
-            return """
-            ## Newsletter
-
-            ...
-            """
-        case .instagramCarousel:
-            return """
-            ## Instagram Carousel Outline
-
-            Slide 1: ...
-            Slide 2: ...
-            """
-        case .pinterestPin:
-            return """
-            ## Pinterest Pin
-
-            Title:
-            ...
-
-            Description:
-            ...
-
-            Keywords:
-            ...
-            """
-        case .youtubeCommunity:
-            return """
-            ## YouTube Community Post
-
-            ...
-            """
-        }
-    }
+    var outputTemplate: String { "## \(displayName)\n\n..." }
 }
 
 struct RepurposePackPreferences {
-    static let xPostKey = "repurposePackFormatXPost"
-    static let linkedinKey = "repurposePackFormatLinkedIn"
-    static let threadsKey = "repurposePackFormatThreads"
-    static let facebookPageKey = "repurposePackFormatFacebookPage"
-    static let newsletterKey = "repurposePackFormatNewsletter"
-    static let instagramCarouselKey = "repurposePackFormatInstagramCarousel"
-    static let pinterestPinKey = "repurposePackFormatPinterestPin"
-    static let youtubeCommunityKey = "repurposePackFormatYouTubeCommunity"
     static let threadLengthKey = "repurposePackThreadLength"
-    static let toneKey = "repurposePackTone"
-    static let ctaKey = "repurposePackIncludeCTA"
+    static let longVideoMinutesKey = "repurposePackLongVideoMinutes"
+    static let longVideoOptions = [5, 8, 12]
 
-    var includeXPost: Bool
-    var includeLinkedIn: Bool
-    var includeThreads: Bool
-    var includeFacebookPage: Bool
-    var includeNewsletter: Bool
-    var includeInstagramCarousel: Bool
-    var includePinterestPin: Bool
-    var includeYouTubeCommunity: Bool
-    var threadLength: RepurposeThreadLength
-    var tone: CaptionPackTone
-    var includeCTA: Bool
+    var formats: [RepurposeFormat] = RepurposeFormat.defaultFormats
+    var threadLength: RepurposeThreadLength = .medium
+    var longVideoMinutes = 5
 
-    static var current: RepurposePackPreferences {
-        let defaults = UserDefaults.standard
+    static var current: RepurposePackPreferences { load(from: .standard) }
+
+    static func load(from defaults: UserDefaults) -> RepurposePackPreferences {
+        let savedFormats = RepurposeFormat.allCases.filter { defaults.bool(forKey: $0.rawValue) }
+        let minutes = defaults.integer(forKey: longVideoMinutesKey)
         return RepurposePackPreferences(
-            includeXPost: defaults.object(forKey: xPostKey) as? Bool ?? true,
-            includeLinkedIn: defaults.object(forKey: linkedinKey) as? Bool ?? true,
-            includeThreads: defaults.object(forKey: threadsKey) as? Bool ?? false,
-            includeFacebookPage: defaults.object(forKey: facebookPageKey) as? Bool ?? false,
-            includeNewsletter: defaults.object(forKey: newsletterKey) as? Bool ?? false,
-            includeInstagramCarousel: defaults.object(forKey: instagramCarouselKey) as? Bool ?? true,
-            includePinterestPin: defaults.object(forKey: pinterestPinKey) as? Bool ?? false,
-            includeYouTubeCommunity: defaults.object(forKey: youtubeCommunityKey) as? Bool ?? false,
+            formats: savedFormats.isEmpty ? RepurposeFormat.defaultFormats : savedFormats,
             threadLength: RepurposeThreadLength(rawValue: defaults.string(forKey: threadLengthKey) ?? "") ?? .medium,
-            tone: CaptionPackTone(rawValue: defaults.string(forKey: toneKey) ?? "") ?? .creatorVoice,
-            includeCTA: defaults.object(forKey: ctaKey) as? Bool ?? true
+            longVideoMinutes: longVideoOptions.contains(minutes) ? minutes : 5
         )
     }
 
-    var selectedFormats: [RepurposeFormat] {
-        var formats: [RepurposeFormat] = []
-        if includeXPost { formats.append(.xPost) }
-        if includeLinkedIn { formats.append(.linkedin) }
-        if includeThreads { formats.append(.threads) }
-        if includeFacebookPage { formats.append(.facebookPage) }
-        if includeNewsletter { formats.append(.newsletter) }
-        if includeInstagramCarousel { formats.append(.instagramCarousel) }
-        if includePinterestPin { formats.append(.pinterestPin) }
-        if includeYouTubeCommunity { formats.append(.youtubeCommunity) }
-        return formats.isEmpty ? [.xPost, .linkedin, .instagramCarousel] : formats
+    func save(to defaults: UserDefaults = .standard) {
+        for format in RepurposeFormat.allCases {
+            defaults.set(selectedFormats.contains(format), forKey: format.rawValue)
+        }
+        defaults.set(threadLength.rawValue, forKey: Self.threadLengthKey)
+        defaults.set(longVideoMinutes, forKey: Self.longVideoMinutesKey)
     }
 
-    var selectedFormatNames: [String] {
-        selectedFormats.map(\.displayName)
-    }
-
-    var selectedFormatRules: String {
-        selectedFormats.map(\.formatRule).joined(separator: "\n")
-    }
-
-    var selectedOutputTemplate: String {
-        selectedFormats.map(\.outputTemplate).joined(separator: "\n\n")
-    }
-
+    var selectedFormats: [RepurposeFormat] { formats.isEmpty ? RepurposeFormat.defaultFormats : formats }
+    var selectedFormatNames: [String] { selectedFormats.map(\.displayName) }
+    var selectedFormatRules: String { selectedFormats.map(\.formatRule).joined(separator: "\n") }
+    var selectedOutputTemplate: String { selectedFormats.map(\.outputTemplate).joined(separator: "\n\n") }
     var threadLengthInstruction: String {
-        selectedFormats.contains(.threads)
-            ? "Thread length (Threads): \(threadLength.tweetCountRange) posts."
-            : ""
+        selectedFormats.contains(.threads) ? "Thread length (Threads): \(threadLength.tweetCountRange) posts." : ""
     }
-}
+    var lengthInstruction: String {
+        [selectedFormats.contains(.youtubeVideo) ? "YouTube Video target: \(longVideoMinutes) minutes. Use complete spoken sections with chapter headings." : "",
+         threadLengthInstruction].filter { !$0.isEmpty }.joined(separator: "\n")
+    }
+    static let adaptationRules = """
 
-enum AgentRecipeCategory: String, CaseIterable, Identifiable, Codable {
-    case think = "Think"
-    case shape = "Shape"
-    case publish = "Publish"
-    
-    var id: String { rawValue }
-
-    var localizedTitle: String {
-        switch self {
-        case .think: return L10n.text("agent_recipe.category.think")
-        case .shape: return L10n.text("agent_recipe.category.shape")
-        case .publish: return L10n.text("agent_recipe.category.publish")
-        }
-    }
-    
-    var icon: String {
-        switch self {
-        case .think: return "brain.head.profile"
-        case .shape: return "wand.and.stars"
-        case .publish: return "megaphone"
-        }
-    }
+    Adapt the current draft into content for the requested platforms. Use the latest edited draft or the draft selected in our conversation, not the original imported transcript when a revised draft is available.
+    - Preserve the core ideas and supported facts. Treat imported creators' personal experiences as reference material, not as the user's own experiences.
+    - For video targets, return ready-to-record scripts; publishing captions belong to a separate task.
+    - Adapt openings, information order, pacing, detail, and endings to each requested target. Do not repeat the same script with different platform headings, and do not claim that a platform guarantees reach.
+    - Expand or condense the content to the requested length only when the available material supports it. Do not invent facts, quotes, results, personal anecdotes, visual details, or links to fill space.
+    - For Newsletter, write a complete substantial email, not a teaser or a brief introduction.
+    - Return only the requested adapted content, with ## headings reserved for target platforms and ### headings for internal chapters or email sections. Follow explicit conversation preferences over saved defaults.
+    """
 }
 
 extension AgentRecipe {
     static let allRecipes: [AgentRecipe] = [
-        // MARK: - Think
         AgentRecipe(
             id: "why_viral",
             systemIcon: "chart.line.uptrend.xyaxis",
             name: "Why Viral",
             description: "agent_recipe.why_viral.description",
             prompt: """
-            You are analyzing why a piece of content might spread based on a user’s existing note (not a chat message). Explain the likely viral mechanics without pretending you have real platform metrics.
+            Analyze the content we are discussing with an evidence-based breakdown of what could make it appealing and shareable. Base every finding on the supplied content, not generic viral-content advice.
 
-            - Keep the output in the same language as the note.
-            - Identify the core promise, emotional trigger, audience, tension, novelty, and shareability.
-            - Separate what is strong from what is weak or missing.
-            - Give 3 concrete ways to make the idea more shareable while staying truthful.
-            - Avoid vague advice like "make it more engaging"; be specific.
+            Return exactly three sections, with headings and explanations in the content's language unless the user has requested another language:
 
-            Output as:
-            1. Viral thesis
-            2. Why it could spread
-            3. What holds it back
-            4. How to strengthen it
-            """,
-            category: .think
+            1. What works
+            - Identify up to 3 specific strengths across the opening, development, and ending when those parts are present.
+            - For each strength, quote a short, exact excerpt and explain how it could attract attention, sustain interest, deliver value, or encourage sharing. Connect the mechanism to this content and its likely audience.
+
+            2. What could improve
+            - Identify 1-3 concrete weaknesses or gaps. Quote the relevant sentence or identify the specific passage; for a missing element, say where it is missing.
+            - Explain the effect on the reader or viewer, then give a directly usable rewrite example for each issue while preserving the original meaning and supported facts.
+            - Do not manufacture weaknesses or force a rewrite when the content does not support one.
+
+            3. What to borrow
+            - Extract one reusable content structure from this piece, showing how the opening, development, payoff, and ending fit together when present.
+            - Give a short fill-in outline the user can adapt to a different topic. Borrow the structure, not the source author's distinctive wording, claims, or personal experiences.
+
+            Evidence limits:
+            - Separate observable textual evidence from hypotheses about audience response. Do not claim proven reasons for virality, actual performance metrics, or guaranteed results.
+            - With text or a transcript alone, do not assess unseen visuals, editing, music, or delivery.
+            - If the content is too short or incomplete, state the specific limit within the relevant section. Never invent excerpts, missing context, facts, or experiences.
+            - Keep the analysis concise and specific. Return only the three-section breakdown, not a full rewrite of the content.
+            """
         ),
         AgentRecipe(
             id: "summarize",
@@ -691,16 +528,14 @@ extension AgentRecipe {
             - If the note is short, give a one-sentence summary or a tightened rewrite.
             - If the note is long or messy, use bullets to make it easier to scan.
             - If something is unclear or conflicting, flag it briefly instead of guessing.
-            """,
-            category: .think
+            """
         ),
         AgentRecipe(
             id: "translate",
             systemIcon: "globe",
             name: "Translate",
             description: "agent_recipe.translate.description",
-            prompt: "(Built-in Logic) Uses a dynamic translation engine. The target language is selected at runtime.",
-            category: .shape
+            prompt: "(Built-in Logic) Uses a dynamic translation engine. The target language is selected at runtime."
         ),
         AgentRecipe(
             id: "humanizer",
@@ -754,13 +589,12 @@ extension AgentRecipe {
             29. Fragmented headers: remove one-line warmups after headings when they only restate the heading.
 
             Output only the humanized text.
-            """,
-            category: .shape
+            """
         ),
         AgentRecipe(
             id: "rewrite",
             systemIcon: "pencil.and.scribble",
-            name: "Rewrite",
+            name: "Rewrite Content",
             description: "agent_recipe.rewrite.description",
             prompt: """
             You are rewriting a user’s existing note (not a chat message) into an original, natural version they can reuse.
@@ -776,22 +610,19 @@ extension AgentRecipe {
             - Preserve formatting when it helps readability.
 
             Output only the rewritten text.
-            """,
-            category: .shape
+            """
         ),
         AgentRecipe(
             id: "style_match",
             systemIcon: "waveform",
             name: "Brand Voice",
             description: "agent_recipe.style_match.description",
-            prompt: "(Built-in Logic) Rewrites the note in the creator's saved brand voice.",
-            category: .shape
+            prompt: "(Built-in Logic) Rewrites the note in the creator's saved brand voice."
         ),
-        // MARK: - Shape
         AgentRecipe(
             id: "hook_generator",
             systemIcon: "link",
-            name: "Hook",
+            name: "Write Hooks",
             description: "agent_recipe.hook_generator.description",
             prompt: """
             You are an expert short-form copywriter looking at a user’s raw note (not a chat message). Generate a mixed Hook Pack with 8 distinct opening lines based on the content.
@@ -805,38 +636,51 @@ extension AgentRecipe {
             - Keep each hook concise, specific, and easy to say out loud.
 
             Output only the Hook Pack.
-            """,
-            category: .shape
+            """
+        ),
+        AgentRecipe(
+            id: "title_thumbnail",
+            systemIcon: "rectangle.and.text.magnifyingglass",
+            name: "Titles & Thumbnail Text",
+            description: "agent_recipe.title_thumbnail.description",
+            prompt: """
+            Create 5 distinct title and thumbnail text pairs based on the provided notes.
+
+            For each pair, include:
+            - Title: A clear, specific title that gives viewers a reason to watch.
+            - Thumbnail text: A short phrase, ideally 3–8 words, that complements the title without repeating it.
+            - Angle: One sentence explaining what the pair emphasizes.
+
+            Rules:
+            - Use the same language as the notes unless the user requests another language.
+            - Give each pair a different angle, such as a practical benefit, a question, a mistake, a contrast, or a surprising insight. Use only angles supported by the notes.
+            - Make the title and thumbnail text work together to communicate one clear idea.
+            - Keep thumbnail text easy to read at a glance.
+            - Avoid clickbait, fake urgency, exaggerated promises, and unsupported claims.
+            - Do not invent numbers, results, quotes, or personal experiences.
+            - If the notes contain third-party content, use the underlying ideas without copying distinctive wording.
+            - Respect any platform, audience, or tone specified by the user.
+            - Return only the 5 numbered pairs.
+            """
         ),
         AgentRecipe(
             id: "caption_pack",
             systemIcon: "megaphone",
-            name: "Caption",
+            name: "Write Captions",
             description: "agent_recipe.caption_pack.description",
-            prompt: "(Built-in Logic) Generates platform-ready captions from creator inspiration notes.",
-            category: .publish
-        ),
-        AgentRecipe(
-            id: "timed_script",
-            systemIcon: "timer",
-            name: "Timed Script",
-            description: "agent_recipe.timed_script.description",
-            prompt: "(Built-in Logic) Generates a 30, 45, or 60 second short video script.",
-            category: .publish
+            prompt: "(Built-in Logic) Generates platform-ready captions from creator inspiration notes."
         ),
         AgentRecipe(
             id: "repurpose_pack",
             systemIcon: "arrow.triangle.2.circlepath",
             name: "Repurpose",
             description: "agent_recipe.repurpose_pack.description",
-            prompt: "(Built-in Logic) Atomizes one long-form note into native posts for multiple platforms.",
-            category: .publish
+            prompt: "(Built-in Logic) Atomizes one long-form note into native posts for multiple platforms."
         ),
     ]
 }
 
 // MARK: - Execution Logic
-import SwiftData
 
 extension AgentRecipe {
     /// Generate recipe output without deciding where the result should be saved.
@@ -847,7 +691,7 @@ extension AgentRecipe {
         )
     }
 
-    /// Shared by standalone skills and the note's conversational Create workspace.
+    /// Builds the request for standalone skills; conversational requests use NoteConversationPrompt.
     func generationRequest(from content: String, userInstruction: String? = nil) -> (prompt: String, system: String) {
         let prompt: String
         let systemInstruction: String
@@ -857,7 +701,7 @@ extension AgentRecipe {
         case "translate":
             let targetLanguage = (userInstruction?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
                 ? userInstruction!
-                : "English"
+                : TranslatePreferences.currentLanguage.name
             prompt = """
             Translate the following notes into \(targetLanguage).
 
@@ -873,32 +717,6 @@ extension AgentRecipe {
             - Keep proper nouns, product names, URLs, code, and hashtags intact unless a standard translation exists.
             - Do not localize units, dates, or numbers unless explicitly requested.
             - Return only the translated content.
-            """
-
-        case "timed_script":
-            let preferences = TimedScriptPreferences.current
-            prompt = """
-            Create a \(preferences.duration.seconds)-second short video script from these notes.
-
-            Target length: \(preferences.duration.seconds) seconds.
-            Target spoken word count: \(preferences.duration.wordCountRange) words.
-
-            Notes:
-            \(content)
-            """
-
-            systemInstruction = """
-            You write short-form video scripts for TikTok, Instagram Reels, and YouTube Shorts. The input is an existing note, transcript, rough idea, or creator inspiration, not a chat message.
-
-            Core rules:
-            \(languageRule)
-            - Produce a script that can be spoken in about \(preferences.duration.seconds) seconds.
-            - Aim for \(preferences.duration.wordCountRange) spoken words. If the script is over the range, rewrite it shorter before returning.
-            - Use the notes to understand the idea, audience, angle, and useful details, but do not copy distinctive wording from third-party reference text.
-            - Do not invent facts, stats, quotes, personal experiences, product promises, or results that are not supported by the notes.
-            - Make it recordable as a spoken script with short, natural sentences.
-            - Include a strong opening line, a clear middle, a payoff, and a light CTA only when it fits.
-            - Return only the script. Do not include timestamps, labels, notes, word count, or explanations.
             """
 
         case "caption_pack":
@@ -982,10 +800,8 @@ extension AgentRecipe {
                 You rewrite a creator's note using their saved Brand Voice profile.
                 Rules:
                 \(languageRule)
-                - Apply the saved tone, audience, preferred CTA, avoided wording, and example-post style when provided.
+                - Infer the shared tone, vocabulary, sentence rhythm, and expression style across the writing examples. Prioritize the current request over example style.
                 - Treat example posts as style references only. Do not copy their sentences, phrases, claims, or topics.
-                - Use the preferred CTA only if it fits the rewritten note naturally.
-                - Respect the avoided wording and style notes.
                 - Preserve the note's meaning, facts, and structure. Do not invent new facts.
                 - Return only the rewritten note. Do not explain.
                 """
@@ -996,22 +812,18 @@ extension AgentRecipe {
             let formats = preferences.selectedFormatNames.joined(separator: ", ")
             let formatRules = preferences.selectedFormatRules
             let outputTemplate = preferences.selectedOutputTemplate
-            let threadLengthInstruction = preferences.threadLengthInstruction
-            let ctaRule = preferences.includeCTA
-                ? "- Include a light, natural call to action on each piece when it fits."
-                : "- Do not add a call to action."
+            let threadLengthInstruction = preferences.lengthInstruction
             prompt = """
-            Repurpose this long-form content into native posts for these formats: \(formats).
+            Adapt this draft for these target platforms: \(formats).
 
             \(threadLengthInstruction)
-            Tone: \(preferences.tone.localizedTitle)
 
-            Long-form content:
+            Current draft:
             \(content)
             """
 
             systemInstruction = """
-            You repurpose one piece of long-form content (a blog post, video script, transcript, essay, or newsletter) into native posts for multiple platforms. The text is existing content, not a chat message.
+            \(RepurposePackPreferences.adaptationRules)
 
             Core rules:
             \(languageRule)
@@ -1019,7 +831,6 @@ extension AgentRecipe {
             - Rewrite natively for each format. Do not truncate the same paragraph and paste it everywhere.
             - Do not invent facts, stats, quotes, or results that are not supported by the content.
             - Preserve the author's intent and point of view.
-            \(ctaRule)
             - Return only the repurposed posts. Do not explain your reasoning.
 
             Format rules:
@@ -1050,24 +861,5 @@ extension AgentRecipe {
         }
 
         return (prompt, systemInstruction)
-    }
-
-    /// Execute the recipe on given notes
-    @MainActor
-    func execute(on notes: [Note], context: ModelContext, userInstruction: String? = nil) async throws -> Note {
-        // Just join the content directly without adding metadata wrappers which confuse the AI
-        let combinedContent = notes.map { $0.content }.joined(separator: "\n\n---\n\n")
-        let result = try await generateResult(from: combinedContent, userInstruction: userInstruction)
-        
-        guard let userId = AuthService.shared.currentUserId else {
-            throw NSError(
-                domain: "AgentRecipe",
-                code: 1,
-                userInfo: [NSLocalizedDescriptionKey: L10n.text("common.error.sign_in_required")]
-            )
-        }
-        let note = Note(content: result, userId: userId)
-        context.insert(note)
-        return note
     }
 }

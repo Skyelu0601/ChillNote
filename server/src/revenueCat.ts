@@ -7,10 +7,20 @@ export type RevenueCatEntitlementSnapshot = {
   store: string | null;
   originalTransactionId: string | null;
   storeTransactionId?: string | null;
+  trial?: { expiresAt: Date; startedAt?: Date; productId: string; store: string; autoRenew: boolean };
 };
 
-type RevenueCatSubscription = {
+export type RevenueCatSubscription = {
+  period_type?: string | null;
   expires_date?: string | null;
+  purchase_date?: string | null;
+  billing_issues_detected_at?: string | null;
+  grace_period_expires_date?: string | null;
+  unsubscribe_detected_at?: string | null;
+  refunded_at?: string | null;
+  auto_resume_date?: string | null;
+  ownership_type?: string | null;
+  is_sandbox?: boolean;
   store?: string | null;
   original_transaction_id?: string | null;
   store_transaction_id?: string | number | null;
@@ -103,12 +113,13 @@ export function revenueCatEntitlementSnapshot(
   const active = expiresAt == null || expiresAt.getTime() > now.getTime();
   const subscriptions = body.subscriber?.subscriptions ?? {};
   const matchingSubscription = productId
-    ? Object.entries(subscriptions).find(([candidate]) =>
+    ? subscriptions[productId] ?? Object.entries(subscriptions).find(([candidate]) =>
         candidate === productId || baseProductId(candidate) === baseProductId(productId))?.[1]
     : undefined;
   const transactionId = matchingSubscription?.store_transaction_id;
   const storeTransactionId = typeof transactionId === "string" ? transactionId.trim() || null
     : typeof transactionId === "number" && Number.isSafeInteger(transactionId) ? String(transactionId) : null;
+  const trialStartedAt = validDate(matchingSubscription?.purchase_date);
 
   return {
     active,
@@ -116,7 +127,16 @@ export function revenueCatEntitlementSnapshot(
     productId,
     store: matchingSubscription?.store?.trim() || null,
     originalTransactionId: matchingSubscription?.original_transaction_id?.trim() || null,
-    storeTransactionId
+    storeTransactionId,
+    ...(active && expiresAt && productId && matchingSubscription?.period_type?.toLowerCase() === "trial"
+      && ["app_store", "play_store", "google_play"].includes(matchingSubscription.store ?? "")
+      && !matchingSubscription.billing_issues_detected_at && !matchingSubscription.grace_period_expires_date
+      && !matchingSubscription.refunded_at
+      && matchingSubscription.ownership_type !== "FAMILY_SHARED"
+      && (!matchingSubscription.expires_date || validDate(matchingSubscription.expires_date)?.getTime() === expiresAt.getTime())
+      ? { trial: { expiresAt, productId, store: matchingSubscription.store!,
+          ...(trialStartedAt ? { startedAt: trialStartedAt } : {}),
+          autoRenew: !matchingSubscription.unsubscribe_detected_at } } : {})
   };
 }
 

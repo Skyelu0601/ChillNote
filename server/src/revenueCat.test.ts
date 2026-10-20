@@ -7,6 +7,35 @@ import {
   revenueCatWebhookUserIds,
   verifyRevenueCatWebhookSignature
 } from "./revenueCat.js";
+import type { RevenueCatSubscription } from "./revenueCat.js";
+
+test("only active mobile store trial periods create confirmation metadata, including cancelled trials", () => {
+  const parse = (subscription: RevenueCatSubscription) => revenueCatEntitlementSnapshot({ subscriber: {
+    entitlements: { pro: { product_identifier: "pro_yearly:annual", expires_date: "2026-10-17T12:00:00Z" } },
+    subscriptions: { "pro_yearly:annual": subscription }
+  } }, "pro", new Date("2026-10-10T12:00:00Z"));
+  const trial = { store: "play_store", period_type: "trial" };
+  assert.equal(parse(trial).trial?.autoRenew, true);
+  assert.equal(parse({ ...trial, unsubscribe_detected_at: "2026-10-10T12:00:00Z" }).trial?.autoRenew, false);
+  for (const subscription of [{ ...trial, period_type: "normal" }, { ...trial, period_type: "intro" },
+    { store: "app_store" }, { ...trial, store: "stripe" }, { ...trial, billing_issues_detected_at: "2026-10-10" },
+    { ...trial, grace_period_expires_date: "2026-10-20" }, { ...trial, refunded_at: "2026-10-10" },
+    { ...trial, ownership_type: "FAMILY_SHARED" }, { ...trial, expires_date: "2026-10-01T12:00:00Z" }]) {
+    assert.equal(parse(subscription).trial, undefined);
+  }
+});
+
+test("an older trial on another Google base plan cannot replace the exact paid subscription", () => {
+  const snapshot = revenueCatEntitlementSnapshot({ subscriber: {
+    entitlements: { pro: { product_identifier: "yearly:annual", expires_date: "2099-01-01" } },
+    subscriptions: {
+      "yearly:old-plan": { store: "play_store", period_type: "trial", expires_date: "2026-01-01" },
+      "yearly:annual": { store: "play_store", period_type: "normal", expires_date: "2099-01-01", store_transaction_id: "paid" }
+    }
+  } }, "pro");
+  assert.equal(snapshot.trial, undefined);
+  assert.equal(snapshot.storeTransactionId, "paid");
+});
 
 test("parses an active RevenueCat entitlement and matching subscription", () => {
   const snapshot = revenueCatEntitlementSnapshot({ subscriber: {

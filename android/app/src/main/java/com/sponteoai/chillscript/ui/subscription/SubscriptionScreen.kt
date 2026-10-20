@@ -1,6 +1,7 @@
 package com.sponteoai.chillscript.ui.subscription
 
 import androidx.activity.compose.BackHandler
+import com.sponteoai.chillscript.billing.SubscriptionCheck
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.StartOffset
@@ -160,6 +161,7 @@ fun SubscriptionScreen(
     activeProductId: String? = null,
     billingState: BillingUiState,
     isPurchasing: Boolean = false,
+    subscriptionCheck: SubscriptionCheck = SubscriptionCheck.Checking,
     onPurchase: (BillingProduct) -> Unit,
     onRestore: () -> Unit,
     onRetryProducts: () -> Unit,
@@ -173,7 +175,7 @@ fun SubscriptionScreen(
     var showContent by remember { mutableStateOf(false) }
     var onboardingTrialPage by rememberSaveable { mutableStateOf(OnboardingTrialPage.Intro) }
     var showWeeklyOffer by rememberSaveable { mutableStateOf(false) }
-    val purchaseInProgress = isPurchasing || billingState.purchasing
+    val purchaseInProgress = isPurchasing || billingState.purchasing || billingState.restoring
     val paywallViewId = rememberSaveable { UUID.randomUUID().toString() }
     val paywallPlacement = when (context) {
         SubscriptionScreenContext.OnboardingTrial -> "post_login"
@@ -186,7 +188,7 @@ fun SubscriptionScreen(
         "surface" to "main_app",
     )
     val dismissPaywall = {
-        if (!isPro) ProductAnalytics.capture("paywall_dismissed", paywallProperties)
+        if (!isPro && subscriptionCheck == SubscriptionCheck.Confirmed) ProductAnalytics.capture("paywall_dismissed", paywallProperties)
         onDismiss()
     }
     val weeklyProduct = remember(billingState.products) {
@@ -200,7 +202,8 @@ fun SubscriptionScreen(
     val yearlyDisplayInfo = yearlyProduct?.let { rememberGooglePlaySubscriptionDisplayInfo(it) }
     val hasEligibleAnnualFreeTrial = yearlyDisplayInfo?.hasFreeTrial == true || debugPreviewPricing != null
     val requestDismiss = {
-        if (context == SubscriptionScreenContext.OnboardingTrial &&
+        if (subscriptionCheck == SubscriptionCheck.Confirmed &&
+            context == SubscriptionScreenContext.OnboardingTrial &&
             onboardingTrialPage == OnboardingTrialPage.Offer &&
             weeklyProduct != null
         ) {
@@ -211,8 +214,10 @@ fun SubscriptionScreen(
         }
     }
     val trackedPurchase: (BillingProduct) -> Unit = { product ->
-        ProductAnalytics.beginPurchase(paywallPlacement, paywallViewId, product.id)
-        onPurchase(product)
+        if (!isPro && subscriptionCheck == SubscriptionCheck.Confirmed && !purchaseInProgress) {
+            ProductAnalytics.beginPurchase(paywallPlacement, paywallViewId, product.id)
+            onPurchase(product)
+        }
     }
     val revealProgress by animateFloatAsState(
         targetValue = if (showContent) 1f else 0f,
@@ -220,9 +225,12 @@ fun SubscriptionScreen(
         label = "subscription content entrance",
     )
 
-    LaunchedEffect(Unit) {
-        showContent = true
-        if (!isPro) {
+    LaunchedEffect(Unit) { showContent = true }
+    var trackedPaywall by rememberSaveable { mutableStateOf(false) }
+    LaunchedEffect(subscriptionCheck, isPro) {
+        if (subscriptionCheck != SubscriptionCheck.Confirmed || isPro) showWeeklyOffer = false
+        if (!isPro && subscriptionCheck == SubscriptionCheck.Confirmed && !trackedPaywall) {
+            trackedPaywall = true
             ProductAnalytics.capture(
                 if (context == SubscriptionScreenContext.OnboardingTrial) "paywall_intro_viewed" else "paywall_viewed",
                 paywallProperties,
@@ -273,6 +281,24 @@ fun SubscriptionScreen(
                         onManage = onManage,
                         onRestore = onRestore,
                     )
+                    subscriptionCheck != SubscriptionCheck.Confirmed -> PaywallProductState(
+                        loading = subscriptionCheck == SubscriptionCheck.Checking,
+                        error = stringResource(R.string.subscription_status_unavailable),
+                        loadingText = stringResource(R.string.subscription_status_checking),
+                        onRetryProducts = onRetryProducts,
+                        modifier = Modifier.fillMaxSize(),
+                        compact = false,
+                    )
+                    context == SubscriptionScreenContext.OnboardingTrial &&
+                        onboardingTrialPage == OnboardingTrialPage.Intro &&
+                        debugPreviewPricing == null &&
+                        (billingState.loading || billingState.products.isEmpty()) -> PaywallProductState(
+                            loading = billingState.loading,
+                            error = billingState.error,
+                            onRetryProducts = onRetryProducts,
+                            modifier = Modifier.fillMaxSize(),
+                            compact = false,
+                        )
                     context == SubscriptionScreenContext.OnboardingTrial -> {
                         when (onboardingTrialPage) {
                             OnboardingTrialPage.Intro -> OnboardingTrialIntroContent(
@@ -2053,6 +2079,7 @@ private fun PaywallProductState(
     onRetryProducts: () -> Unit,
     modifier: Modifier = Modifier,
     compact: Boolean,
+    loadingText: String? = null,
 ) {
     Column(
         modifier = modifier,
@@ -2075,7 +2102,7 @@ private fun PaywallProductState(
                     modifier = Modifier.size(20.dp),
                 )
                 Text(
-                    text = stringResource(R.string.subscription_loading_prices),
+                    text = loadingText ?: stringResource(R.string.subscription_loading_prices),
                     color = ChillColors.TextSub,
                     style = if (compact) {
                         ChillTypography.labelMedium

@@ -303,6 +303,7 @@ class StoreService: ObservableObject {
     nonisolated private static let logger = Logger(subsystem: "com.chillnote.app", category: "store")
 
     @Published var currentTier: SubscriptionTier = .free
+    @Published private(set) var subscriptionSyncRevision = 0
     @Published var availableProducts: [SubscriptionProduct] = []
     @Published var isPurchasing = false
     @Published var errorMessage: String?
@@ -798,6 +799,8 @@ class StoreService: ObservableObject {
             hasAppleBillingIssue = decoded.billingIssue?.store == "app_store"
             cacheBackendStatus(tier: tier, expiresAt: decoded.expiresAt, for: expectedUserID)
             lastFreshSubscriptionStatusUserId = expectedUserID
+            // Home may have fetched its inbox before backend verification created the trial confirmation.
+            subscriptionSyncRevision += 1
         } catch {
             Self.logger.warning("RevenueCat backend sync failed: \(error.localizedDescription, privacy: .public)")
         }

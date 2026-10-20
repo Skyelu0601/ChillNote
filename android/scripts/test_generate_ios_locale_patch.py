@@ -143,7 +143,6 @@ class GeneratorSafetyTests(unittest.TestCase):
             "recipe_style_match_description",
             "recipe_hook_generator_description",
             "recipe_caption_pack_description",
-            "recipe_timed_script_description",
             "recipe_repurpose_pack_description",
             "ai_chat_thinking",
             "settings_terms",
@@ -173,7 +172,6 @@ class GeneratorSafetyTests(unittest.TestCase):
             if name.startswith(
                 (
                     "caption_pack_",
-                    "timed_script_",
                     "brand_voice_settings_",
                     "repurpose_pack_",
                 )
@@ -222,7 +220,7 @@ class GeneratorSafetyTests(unittest.TestCase):
             return value.replace("\\n", "\n").replace("\\'", "'")
 
         mapped_resources = used_resources & generator.SEMANTIC_KEY_OVERRIDES.keys()
-        self.assertGreater(len(mapped_resources), 400)
+        self.assertGreaterEqual(len(mapped_resources), 390)
         for resource_name in sorted(mapped_resources):
             with self.subTest(resource=resource_name):
                 ios_key = generator.SEMANTIC_KEY_OVERRIDES[resource_name]
@@ -395,7 +393,6 @@ class GeneratorSafetyTests(unittest.TestCase):
     def test_creator_configuration_copy_matches_ios_in_every_locale(self) -> None:
         prefixes = (
             "caption_pack_",
-            "timed_script_",
             "brand_voice_settings_",
             "repurpose_pack_",
         )

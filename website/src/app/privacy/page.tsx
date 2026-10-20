@@ -13,7 +13,7 @@ export default function PrivacyPage() {
       <article className="legal-document">
         <p className="eyebrow">Legal</p>
         <h1>Privacy Policy</h1>
-        <p><strong>Last Updated:</strong> September 21, 2026</p>
+        <p><strong>Last Updated:</strong> October 20, 2026</p>
 
         <p>
           <strong>Sponteoai</strong> respects your privacy and is committed to protecting it. This policy describes the
@@ -61,12 +61,12 @@ export default function PrivacyPage() {
 
         <h3>Advertising Attribution</h3>
         <p>
-          Our iOS and Android apps use AppsFlyer to measure which advertising campaigns lead to app installs and
-          subscriptions. AppsFlyer may process an AppsFlyer-generated identifier, device and app information, IP
+          Earlier iOS and Android versions may use AppsFlyer to measure which advertising campaigns lead to app installs
+          and subscriptions. AppsFlyer may process an AppsFlyer-generated identifier, device and app information, IP
           address, install or referral data, and campaign details. RevenueCat sends subscription lifecycle and revenue
           events to AppsFlyer so we can measure campaign performance. We do not send note content, recordings, email
-          addresses, or login links for advertising attribution. The iOS app uses AppsFlyer&apos;s no-IDFA SDK variant and
-          does not request App Tracking Transparency permission for this integration.
+          addresses, or login links for advertising attribution. Those iOS versions use AppsFlyer&apos;s no-IDFA SDK variant
+          and do not request App Tracking Transparency permission for that integration.
         </p>
 
         <h2>2. How We Use Information</h2>

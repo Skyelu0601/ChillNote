@@ -13,7 +13,7 @@ export function marketingEmailsEnabled(preference: CategoryPreference): boolean 
 
 export function categoryForEmailKind(kind: string): UnsubscribeCategory | null {
   if (kind.startsWith("marketing_winback_") || kind === "trial_cancelled_winback") return "marketing";
-  if (kind === "trial_ending_48h" || kind === "trial_ending_24h" || kind === "billing_issue") {
+  if (kind === "trial_ending_48h" || kind === "trial_ending_24h" || kind === "billing_issue" || kind === "renewal_check") {
     return "subscription_billing";
   }
   return null;

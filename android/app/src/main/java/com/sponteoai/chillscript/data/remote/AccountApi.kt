@@ -6,6 +6,8 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.net.HttpURLConnection
 import java.net.URL
+import java.time.Instant
+import java.net.URI
 
 @Serializable data class SubscriptionStatusResponse(
     val success: Boolean,
@@ -26,8 +28,27 @@ import java.net.URL
     val amount: Int? = null,
     val createdAt: String,
     val readAt: String? = null,
+    val trial: TrialInboxInfo? = null,
 ) {
     val supported: Boolean get() = kind == "welcome_pro" || (kind == "welcome_credits" && (amount ?: 0) > 0)
+}
+@Serializable data class TrialInboxInfo(
+    val expiresAt: String,
+    val autoRenew: Boolean,
+    val reminderStatus: String,
+    val reminderAt: String? = null,
+    val maskedEmail: String? = null,
+    val manageSubscriptionURL: String? = null,
+) {
+    val endDate: Instant? get() = runCatching { Instant.parse(expiresAt) }.getOrNull()
+    val reminderDate: Instant? get() = reminderAt?.let { runCatching { Instant.parse(it) }.getOrNull() }
+    val subscriptionURL: String? get() = manageSubscriptionURL?.takeIf {
+        val url = runCatching { URI(it) }.getOrNull()
+        url?.scheme == "https" && url.userInfo == null && url.port == -1 && (
+            (url.host == "play.google.com" && url.path == "/store/account/subscriptions") ||
+            (url.host == "apps.apple.com" && url.path == "/account/subscriptions")
+        )
+    }
 }
 @Serializable data class NotificationInboxResponse(val notifications: List<InboxNotification>)
 @Serializable private data class ReadNotificationsRequest(val ids: List<String>)

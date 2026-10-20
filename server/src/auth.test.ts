@@ -5,6 +5,7 @@ import type { Request, RequestHandler, Response } from "express";
 import { createClient } from "@supabase/supabase-js";
 import { exportJWK, generateKeyPair, SignJWT } from "jose";
 import { createRequireAuth, type ActiveAuthUser } from "./auth.js";
+import { subscriptionErrorDetails } from "./subscriptionDiagnostics.js";
 
 const userId = "ae07a1c7-f40a-43ac-877f-95fd04140d7b";
 const sessionId = "2f6be3d1-7fa9-4ac9-851e-9f7cf25a065f";
@@ -31,6 +32,7 @@ async function fixture() {
   const requests: string[] = [];
   const checks: Array<[string, string]> = [];
   const errors: unknown[] = [];
+  const rejections: Array<{ reason: string; error: unknown }> = [];
   const state: { user: ActiveAuthUser | null; databaseError?: Error } = {
     user: { id: userId, email: "current@example.test", createdAt }
   };
@@ -59,7 +61,8 @@ async function fixture() {
       if (state.databaseError) throw state.databaseError;
       return state.user;
     },
-    onError: error => errors.push(error)
+    onError: error => errors.push(error),
+    onRejected: (reason, _path, error) => rejections.push({ reason, error })
   });
   async function token(overrides: Record<string, unknown> = {}, signingKey = key.privateKey) {
     return new SignJWT({
@@ -67,7 +70,7 @@ async function fixture() {
       exp: Math.floor(Date.now() / 1000) + 300, email: "stale@example.test", ...overrides
     }).setProtectedHeader({ alg: "ES256", kid: "test-key" }).sign(signingKey);
   }
-  return { middleware, token, requests, checks, errors, state, issuer };
+  return { middleware, token, requests, checks, errors, rejections, state, issuer };
 }
 
 test("repeated mobile Bearer requests verify locally with one cached JWKS fetch and live user fields", async () => {
@@ -94,6 +97,7 @@ test("missing, empty and malformed tokens preserve the existing 401 response con
     assert.deepEqual(result.body, { error: header?.startsWith("Bearer ") ? "Invalid token" : "Missing token" });
   }
   assert.equal(f.checks.length, 0);
+  assert.deepEqual(f.rejections.slice(0, 3).map(r => r.reason), ["missing_token", "missing_token", "empty_token"]);
 });
 
 test("expired and forged signatures cannot reach the database or protected handler", async () => {
@@ -105,6 +109,7 @@ test("expired and forged signatures cannot reach the database or protected handl
     assert.equal(result.passed, false);
   }
   assert.equal(f.checks.length, 0);
+  assert.deepEqual(subscriptionErrorDetails(f.rejections[0].error), { category: "token_expired" });
 });
 
 test("verified tokens must belong to this project, audience, user role and a valid session", async () => {
@@ -134,6 +139,7 @@ test("session revocation or user deletion takes effect on the next request even 
   assert.equal(result.passed, false);
   assert.equal(result.req.userId, undefined);
   assert.equal(f.checks.length, 2);
+  assert.equal(f.rejections.at(-1)?.reason, "inactive_session");
 });
 
 test("a mismatched user result or unavailable session database fails closed", async () => {
@@ -146,6 +152,20 @@ test("a mismatched user result or unavailable session database fails closed", as
   assert.equal(result.status, 401);
   assert.equal(result.passed, false);
   assert.equal(f.errors.length, 1);
+  assert.equal(f.rejections.at(-1)?.reason, "session_lookup_failed");
+});
+
+test("an unavailable diagnostic logger cannot turn an invalid token into success or lose the 401 response", async () => {
+  const middleware = createRequireAuth({
+    issuer: "https://auth.example.test/auth/v1",
+    getClaims: async () => ({ data: null, error: new Error("invalid") }),
+    findActiveUser: async () => { throw new Error("Must not reach database"); },
+    onRejected: () => { throw new Error("Logger unavailable"); }
+  });
+  const result = await call(middleware, "Bearer malformed");
+  assert.equal(result.status, 401);
+  assert.deepEqual(result.body, { error: "Invalid token" });
+  assert.equal(result.passed, false);
 });
 
 test("legacy HS256 user sessions retain the SDK's remote verification fallback", async () => {

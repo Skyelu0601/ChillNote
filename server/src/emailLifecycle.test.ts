@@ -69,6 +69,7 @@ test("billing issue schedules an immediate payment recovery email", () => {
   const schedules = billingIssueEmailSchedules(event({
     type: "BILLING_ISSUE",
     period_type: "NORMAL",
+    expiration_at_ms: null,
     grace_period_expiration_at_ms: Date.parse("2026-10-05T00:00:00Z")
   }), now);
   assert.equal(schedules[0]?.kind, "billing_issue");
@@ -76,10 +77,18 @@ test("billing issue schedules an immediate payment recovery email", () => {
   assert.equal(schedules[0]?.expectedExpiresAt.toISOString(), "2026-10-05T00:00:00.000Z");
 });
 
+test("billing recovery uses the original billing date for deduplication before the grace deadline", () => {
+  const schedules = billingIssueEmailSchedules(event({
+    type: "BILLING_ISSUE", grace_period_expiration_at_ms: Date.parse("2026-10-05T00:00:00Z")
+  }));
+  assert.equal(schedules[0]?.expectedExpiresAt.toISOString(), "2026-09-28T00:00:00.000Z");
+});
+
 test("lifecycle transitions cancel only incompatible messages", () => {
   assert.deepEqual(lifecycleEmailKindsToCancel(event({ type: "CANCELLATION" })), [
     "trial_ending_48h",
-    "trial_ending_24h"
+    "trial_ending_24h",
+    "renewal_check"
   ]);
   assert.deepEqual(lifecycleEmailKindsToCancel(event({ type: "UNCANCELLATION" })), [
     "trial_cancelled_winback"
@@ -88,6 +97,9 @@ test("lifecycle transitions cancel only incompatible messages", () => {
     "trial_ending_48h",
     "trial_ending_24h",
     "trial_cancelled_winback",
-    "billing_issue"
+    "billing_issue",
+    "renewal_check"
   ]);
+  assert.ok(lifecycleEmailKindsToCancel(event({ type: "TRANSFER" })).includes("renewal_check"));
+  assert.ok(!lifecycleEmailKindsToCancel(event({ type: "CANCELLATION", cancel_reason: "BILLING_ERROR" })).includes("renewal_check"));
 });

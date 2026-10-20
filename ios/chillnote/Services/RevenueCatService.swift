@@ -127,30 +127,6 @@ final class RevenueCatService {
         Purchases.shared.attribution.setAttributes(attributes)
     }
 
-    func setAppsFlyerAttribution(
-        appsFlyerID: String?,
-        attribution: AppsFlyerInstallAttribution?
-    ) {
-        guard isConfigured else { return }
-
-        Purchases.shared.attribution.collectDeviceIdentifiers()
-        if let appsFlyerID, !appsFlyerID.isEmpty {
-            Purchases.shared.attribution.setAppsflyerID(appsFlyerID)
-        }
-        if let mediaSource = attribution?.mediaSource {
-            Purchases.shared.attribution.setMediaSource(mediaSource)
-        }
-        if let campaign = attribution?.campaign {
-            Purchases.shared.attribution.setCampaign(campaign)
-        }
-        if let adGroup = attribution?.adGroup {
-            Purchases.shared.attribution.setAdGroup(adGroup)
-        }
-        if let ad = attribution?.ad {
-            Purchases.shared.attribution.setAd(ad)
-        }
-    }
-
     func packages(offeringIdentifier: String) async throws -> [Package] {
         guard isConfigured else { return [] }
         return try await Purchases.shared.offerings()

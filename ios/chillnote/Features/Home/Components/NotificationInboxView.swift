@@ -52,8 +52,9 @@ struct NotificationInboxView: View {
     }
 
     private func notificationCard(_ item: InboxNotification) -> some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "gift")
+        let trial = item.trial.flatMap { $0.endDate == nil ? nil : $0 }
+        return HStack(alignment: .top, spacing: 12) {
+            Image(systemName: trial == nil ? "gift" : "envelope")
                 .font(.system(size: 26, weight: .regular))
                 .foregroundStyle(Color.textMain)
                 .frame(width: 48, height: 48)
@@ -65,15 +66,21 @@ struct NotificationInboxView: View {
                 }
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 10) {
-                Text(item.kind == "welcome_credits"
+                Text(trial != nil
+                     ? L10n.text(trial?.reminderStatus == "ended" ? "notifications.trial_ended_title" : "notifications.trial_title")
+                     : item.kind == "welcome_credits"
                      ? L10n.text("notifications.credits_title", item.amount ?? 0)
                      : L10n.text("notifications.pro_title"))
                     .font(.system(size: 17, weight: .semibold))
                     .foregroundStyle(Color.textMain).fixedSize(horizontal: false, vertical: true)
-                Text(L10n.text(item.kind == "welcome_credits" ? "notifications.credits_body" : "notifications.pro_body"))
-                    .font(.system(size: 15)).foregroundStyle(Color.textSub)
-                    .fixedSize(horizontal: false, vertical: true)
-                if let date = item.date {
+                if let trial {
+                    trialBody(trial)
+                } else {
+                    Text(L10n.text(item.kind == "welcome_credits" ? "notifications.credits_body" : "notifications.pro_body"))
+                        .font(.system(size: 15)).foregroundStyle(Color.textSub)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                if trial == nil, let date = item.date {
                     Text(date, format: .dateTime.year().month().day())
                         .font(.caption).foregroundStyle(Color.textTertiary)
                 }
@@ -83,5 +90,46 @@ struct NotificationInboxView: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.bgSecondary, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    @ViewBuilder
+    private func trialBody(_ trial: TrialInboxInfo) -> some View {
+        if let endDate = trial.endDate {
+            let end = formatDate(endDate)
+            let reminder = trial.reminderDate.map(formatDate)
+            if let message = trialMessage(trial, end: end, reminder: reminder) {
+                Text(message)
+                    .font(.system(size: 15)).foregroundStyle(Color.textSub)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            if trial.reminderStatus != "ended" && trial.reminderStatus != "cancelled" && trial.autoRenew {
+                Text(L10n.text("notifications.trial_end", end))
+                    .font(.system(size: 14)).foregroundStyle(Color.textMain)
+            }
+            if let url = trial.subscriptionURL {
+                Link(L10n.text("notifications.trial_details"), destination: url)
+                    .font(.system(size: 15, weight: .semibold)).tint(Color.brandBlue)
+                    .padding(.vertical, 8)
+            }
+        }
+    }
+
+    private func trialMessage(_ trial: TrialInboxInfo, end: String, reminder: String?) -> String? {
+        if trial.reminderStatus == "ended" { return L10n.text("notifications.trial_ended") }
+        if !trial.autoRenew || trial.reminderStatus == "cancelled" { return L10n.text("notifications.trial_cancelled", end) }
+        if trial.reminderStatus == "scheduled", reminder != nil, let email = trial.maskedEmail, !email.isEmpty {
+            return L10n.text("notifications.trial_scheduled")
+        }
+        if trial.reminderStatus == "sent", let reminder { return L10n.text("notifications.trial_sent", reminder) }
+        return nil
+    }
+
+    private func formatDate(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.locale = .current
+        formatter.timeZone = .current
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter.string(from: date)
     }
 }

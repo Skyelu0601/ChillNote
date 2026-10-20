@@ -23,6 +23,7 @@ struct SubscriptionView: View {
     @State private var showContent = false
     @State private var isAnnual: Bool = true // Default to Annual
     @State private var onboardingTrialPage: OnboardingTrialPage = .intro
+    @State private var isPreparingProducts = true
     @State private var showWeeklyOffer = false
     @State private var paywallViewID = UUID().uuidString.lowercased()
 
@@ -111,7 +112,11 @@ struct SubscriptionView: View {
                     if context == .onboardingTrial {
                         switch onboardingTrialPage {
                         case .intro:
-                            onboardingTrialIntroView
+                            if isPreparingProducts || storeService.isLoadingProducts || storeService.availableProducts.isEmpty {
+                                onboardingProductStateView
+                            } else {
+                                onboardingTrialIntroView
+                            }
                         case .reminder:
                             onboardingTrialReminderView
                         case .offer:
@@ -192,6 +197,7 @@ struct SubscriptionView: View {
             }
             .task {
                 await storeService.refreshProducts()
+                isPreparingProducts = false
                 // Refresh subscription status to get latest expiration date
                 await storeService.refreshSubscriptionStatus()
             }
@@ -235,6 +241,27 @@ struct SubscriptionView: View {
     }
 
     // MARK: - Views
+
+    private var onboardingProductStateView: some View {
+        VStack(spacing: 12) {
+            if isPreparingProducts || storeService.isLoadingProducts {
+                ProgressView(L10n.text("subscription.loading_prices"))
+                    .font(.brandBodySmall)
+            } else {
+                Text(storeService.productsErrorMessage ?? L10n.text("subscription.unavailable"))
+                    .font(.brandBodySmall)
+                    .foregroundColor(.textSub)
+                    .multilineTextAlignment(.center)
+                Button(L10n.text("common.retry")) {
+                    Task { await storeService.refreshProducts() }
+                }
+                .font(.brandLabel)
+                .foregroundColor(.accentPrimaryText)
+            }
+        }
+        .padding(.horizontal, 28)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
 
     private var onboardingTrialIntroView: some View {
         VStack(spacing: 0) {

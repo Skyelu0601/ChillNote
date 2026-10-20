@@ -19,6 +19,12 @@ import com.sponteoai.chillscript.data.local.NoteTagCrossRef
 import com.sponteoai.chillscript.data.remote.SyncApi
 import com.sponteoai.chillscript.data.remote.SyncHttpException
 import com.sponteoai.chillscript.data.remote.AccountApi
+import com.sponteoai.chillscript.data.remote.SubscriptionStatusResponse
+import com.sponteoai.chillscript.billing.BillingReminderStore
+import com.sponteoai.chillscript.billing.RevenueCatService
+import com.sponteoai.chillscript.billing.SubscriptionCheck
+import com.sponteoai.chillscript.billing.SubscriptionRefreshCoordinator
+import com.sponteoai.chillscript.billing.allowsSubscriptionPurchase
 import com.sponteoai.chillscript.data.remote.VoiceApi
 import com.sponteoai.chillscript.data.remote.extractWebUrl
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -129,6 +135,7 @@ data class AppUiState(
     val activeSubscriptionProductId: String? = null,
     val billingIssueProductId: String? = null,
     val hasGooglePlayBillingIssue: Boolean = false,
+    val subscriptionCheck: SubscriptionCheck = SubscriptionCheck.Checking,
     val voiceProcessing: Boolean = false,
     val introPaywallResolved: Boolean = false,
     val introPaywallRequired: Boolean = false,
@@ -137,13 +144,45 @@ data class AppUiState(
     val notifications: List<com.sponteoai.chillscript.data.remote.InboxNotification> = emptyList(),
     val notificationsLoading: Boolean = false,
     val notificationsFailed: Boolean = false,
-)
+) {
+    val subscriptionStatusRefreshing: Boolean get() = subscriptionCheck == SubscriptionCheck.Checking
+    val canPurchaseSubscription: Boolean get() = allowsSubscriptionPurchase(subscriptionTier, subscriptionCheck) && !busy
+}
 
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val authRepository = AuthRepository(application)
     private val notesRepository = NotesRepository(ChillScriptDatabase.get(application).dao(), SyncApi())
     private val accountApi = AccountApi()
+    private val billingReminderStore = BillingReminderStore(application)
+    private val subscriptionRefresh by lazy {
+        SubscriptionRefreshCoordinator(
+            scope = viewModelScope,
+            fetch = ::fetchSubscriptionStatus,
+            onChecking = {
+                mutableUiState.value = mutableUiState.value.copy(subscriptionCheck = SubscriptionCheck.Checking)
+            },
+            onConfirmed = { userId, status ->
+                val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session
+                if (session?.user?.id == userId) {
+                    applySubscriptionStatus(session, status)
+                    refreshNotifications()
+                    refreshCredits()
+                }
+            },
+            onFailed = { userId, error ->
+                if (currentUserId == userId) {
+                    Log.w(TAG, "Subscription verification failed", error)
+                    // Unknown is not free. Keep any verified Pro state; offer a retry at the paywall.
+                    mutableUiState.value = mutableUiState.value.copy(
+                        subscriptionCheck = SubscriptionCheck.Failed,
+                        introPaywallResolved = true,
+                        introPaywallRequired = false,
+                    )
+                }
+            },
+        )
+    }
     private val voiceApi = VoiceApi()
     private val onboardingPreferences = OnboardingPreferences(application)
     private val aiConsentManager = AIConsentManager(application)
@@ -189,6 +228,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     private val mutableVoiceNoteStates = MutableStateFlow<Map<String, VoiceNoteState>>(emptyMap())
     val voiceNoteStates: StateFlow<Map<String, VoiceNoteState>> = mutableVoiceNoteStates.asStateFlow()
     val installedRecipes: StateFlow<List<AgentRecipe>> = recipeStore.installed
+    val favoriteRecipes: StateFlow<List<AgentRecipe>> = recipeStore.favorites
     val availableRecipes: List<AgentRecipe> get() = recipeStore.available
     private val mutableAISkillState = MutableStateFlow(AISkillUiState())
     val aiSkillState: StateFlow<AISkillUiState> = mutableAISkillState
@@ -197,9 +237,6 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     val reviewRequests = appRatingTracker.requests
     val currentUserId: String?
         get() = (mutableUiState.value.authState as? AuthState.SignedIn)?.session?.user?.id
-
-    val isEditorActive: Boolean
-        get() = editorActive
 
     suspend fun chilloAccessToken(): String? {
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return null
@@ -322,6 +359,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     fun signOut() {
         if (signOutJob?.isActive == true) return
+        subscriptionRefresh.reset()
         noteConversationGeneration++
         noteConversations.values.forEach { it.get()?.cancel() }
         noteConversations.clear()
@@ -358,55 +396,49 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     fun refreshSubscription() {
-        val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
-        viewModelScope.launch {
-            runCatching { accountApi.subscriptionStatus(session.accessToken) }
-                .onSuccess { status -> mutableUiState.value = mutableUiState.value.copy(
-                    subscriptionTier = status.tier,
-                    subscriptionExpiresAt = status.expiresAt,
-                    activeSubscriptionProductId = status.activeProductId,
-                    billingIssueProductId = status.billingIssue?.takeIf { it.store == "play_store" || it.store == "google_play" }?.productId,
-                    hasGooglePlayBillingIssue = status.billingIssue?.store in setOf("play_store", "google_play"),
-                    introPaywallResolved = true,
-                    introPaywallRequired = status.tier != "pro" && !onboardingPreferences.hasShownIntroPaywall(session.user.id),
-                ).also {
-                    if (status.tier == "pro") onboardingPreferences.setIntroPaywallShown(session.user.id)
-                    resumePendingLinkImportAfterUpgrade(status.tier)
-                } }
-                .onFailure {
-                    mutableUiState.value = mutableUiState.value.copy(
-                        billingIssueProductId = null,
-                        hasGooglePlayBillingIssue = false,
-                        introPaywallResolved = true,
-                        introPaywallRequired = !onboardingPreferences.hasShownIntroPaywall(session.user.id),
-                    )
-                }
+        currentUserId?.let { subscriptionRefresh.request(it) }
+    }
+
+    fun syncRevenueCatSubscription() = refreshSubscription()
+
+    fun confirmRevenueCatPurchase() {
+        currentUserId?.let { subscriptionRefresh.request(it, purchaseCompleted = true) }
+    }
+
+    private suspend fun fetchSubscriptionStatus(userId: String): SubscriptionStatusResponse {
+        val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session
+            ?.takeIf { it.user.id == userId } ?: throw CancellationException("Account changed")
+        val active = refreshSessionIfNeeded(session) ?: throw CancellationException("Signed out")
+        suspend fun request(token: String): SubscriptionStatusResponse =
+            if (RevenueCatService.isConfigured) accountApi.syncRevenueCatSubscription(token)
+            else accountApi.subscriptionStatus(token)
+        return try {
+            request(active.accessToken)
+        } catch (error: SyncHttpException) {
+            if (error.statusCode != 401) throw error
+            val refreshed = refreshSessionIfNeeded(active, force = true)
+                ?: throw CancellationException("Signed out")
+            request(refreshed.accessToken)
         }
     }
 
-    fun syncRevenueCatSubscription() {
-        val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return
-        viewModelScope.launch {
-            runCatching { accountApi.syncRevenueCatSubscription(session.accessToken) }
-                .onSuccess { status ->
-                    if (currentUserId == session.user.id) {
-                        mutableUiState.value = mutableUiState.value.copy(
-                            subscriptionTier = status.tier,
-                            subscriptionExpiresAt = status.expiresAt,
-                            activeSubscriptionProductId = status.activeProductId,
-                            billingIssueProductId = status.billingIssue?.takeIf { it.store == "play_store" || it.store == "google_play" }?.productId,
-                            hasGooglePlayBillingIssue = status.billingIssue?.store in setOf("play_store", "google_play"),
-                            introPaywallResolved = true,
-                            introPaywallRequired = status.tier != "pro" &&
-                                !onboardingPreferences.hasShownIntroPaywall(session.user.id),
-                        )
-                        if (status.tier == "pro") onboardingPreferences.setIntroPaywallShown(session.user.id)
-                        resumePendingLinkImportAfterUpgrade(status.tier)
-                        refreshCredits()
-                    }
-                }
-                .onFailure { refreshSubscription() }
+    private fun applySubscriptionStatus(session: AuthSession, status: SubscriptionStatusResponse) {
+        val issue = status.billingIssue?.takeIf { it.store in setOf("play_store", "google_play") }
+        billingReminderStore.subscriptionStatusConfirmed(session.user.id, issue != null)
+        mutableUiState.value = mutableUiState.value.copy(
+            subscriptionTier = status.tier,
+            subscriptionExpiresAt = status.expiresAt,
+            activeSubscriptionProductId = status.activeProductId,
+            billingIssueProductId = issue?.productId,
+            hasGooglePlayBillingIssue = issue != null,
+            subscriptionCheck = SubscriptionCheck.Confirmed,
+            introPaywallResolved = true,
+            introPaywallRequired = status.tier != "pro" && !onboardingPreferences.hasShownIntroPaywall(session.user.id),
+        )
+        if (status.tier == "pro") {
+            onboardingPreferences.setIntroPaywallShown(session.user.id)
         }
+        resumePendingLinkImportAfterUpgrade(status.tier)
     }
 
     private var inboxRevision = 0
@@ -494,12 +526,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                     java.io.File(getApplication<Application>().filesDir, "note_conversations"), session.user.id,
                 )
                 onboardingPreferences.clearUserData(session.user.id)
+                billingReminderStore.subscriptionStatusConfirmed(session.user.id, hasBillingIssue = false)
                 mutablePendingRecordings.value = emptyList()
                 mutableVoiceNoteStates.value = emptyMap()
                 mutableAISkillState.value = AISkillUiState()
                 runCatchingPreservingCancellation { pushNotifications.clearLocalRegistration() }
             } finally {
                 // The remote account is already deleted, so never retain its session locally.
+                subscriptionRefresh.reset()
                 authRepository.signOut()
                 mutableUiState.value = AppUiState(authState = AuthState.SignedOut)
             }
@@ -509,17 +543,18 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     fun verifyGooglePlayPurchase(productId: String, purchaseToken: String) = launchBusy {
         val session = (mutableUiState.value.authState as? AuthState.SignedIn)?.session ?: return@launchBusy
         val status = accountApi.verifyGooglePlayPurchase(session.accessToken, productId, purchaseToken)
+        if (currentUserId != session.user.id) return@launchBusy
         mutableUiState.value = mutableUiState.value.copy(
             subscriptionTier = status.tier,
             subscriptionExpiresAt = status.expiresAt,
             activeSubscriptionProductId = status.activeProductId ?: productId,
-            billingIssueProductId = null,
-            hasGooglePlayBillingIssue = false,
             introPaywallResolved = true,
             introPaywallRequired = false,
         )
         onboardingPreferences.setIntroPaywallShown(session.user.id)
         resumePendingLinkImportAfterUpgrade(status.tier)
+        // Legacy verification does not include billingIssue; query the authoritative status.
+        refreshSubscription()
         refreshCredits()
     }
 
@@ -961,9 +996,13 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             .onFailure { reportRecipeStoreFailure(it) }
     }
 
-    fun createCustomRecipe(name: String, prompt: String) {
+    fun replaceFavorite(old: AgentRecipe, recipe: AgentRecipe) {
+        runCatching { recipeStore.replaceFavorite(old, recipe) }.onFailure { reportRecipeStoreFailure(it) }
+    }
+
+    fun createCustomRecipe(name: String, prompt: String, systemIcon: String) {
         if (name.isBlank() || prompt.isBlank()) return
-        runCatching { recipeStore.addCustom(name, prompt) }
+        runCatching { recipeStore.addCustom(name, prompt, systemIcon) }
             .onFailure { reportRecipeStoreFailure(it) }
     }
 
@@ -1497,6 +1536,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun activateSession(session: AuthSession) {
+        subscriptionRefresh.reset()
         if (currentUserId != session.user.id) cancelVoiceWork()
         mutableUiState.value = AppUiState(authState = AuthState.SignedIn(session))
         startSessionRefreshLoop(session)
@@ -1556,6 +1596,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                             error.statusCode in setOf(400, 401, 403)
                         if (isRejectedRefresh) {
                             cancelVoiceWork()
+                            subscriptionRefresh.reset()
                             authRepository.signOut()
                             mutableUiState.value = AppUiState(authState = AuthState.SignedOut)
                             null

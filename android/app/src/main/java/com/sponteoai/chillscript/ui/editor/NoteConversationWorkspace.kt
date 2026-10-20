@@ -1,6 +1,13 @@
 package com.sponteoai.chillscript.ui.editor
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
+import com.sponteoai.chillscript.ui.skills.recipeDescription
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -32,103 +39,101 @@ import com.sponteoai.chillscript.ui.skills.CreatorSkillIcon
 import com.sponteoai.chillscript.ui.skills.recipeName
 import com.sponteoai.chillscript.ui.theme.ChillColors
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun NoteConversationWorkspace(
     controller: NoteConversationController,
     content: String,
     recipes: List<AgentRecipe>,
-    expanded: Boolean,
-    onToggleExpanded: () -> Unit,
     enabled: Boolean,
     onReplace: suspend (String) -> Boolean,
     onSkillSelected: () -> Unit,
     onFirstSkillBounds: (Rect) -> Unit,
-    skillsPanelContent: @Composable (onDismiss: () -> Unit, onSelect: (AgentRecipe) -> Unit) -> Unit,
+    skillsPanelContent: @Composable (onDismiss: () -> Unit) -> Unit,
     onConversationSettled: (Boolean) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val state by controller.state.collectAsState()
-    val preferred = listOf("rewrite", "hook_generator", "caption_pack", "repurpose_pack")
-    val quickSkills = (preferred.mapNotNull { id -> recipes.firstOrNull { it.id == id } } + recipes.filterNot { it.id in preferred }).take(4)
+    val quickSkills = recipes.take(4)
     val scope = rememberCoroutineScope()
     val clipboard = LocalClipboardManager.current
     val focus = LocalFocusManager.current
     val list = rememberLazyListState()
     val input = state.input
     var showSkills by remember { mutableStateOf(false) }
+    var menuOpen by remember { mutableStateOf(false) }
+    var showClearConfirmation by remember { mutableStateOf(false) }
+    var inputFocused by remember { mutableStateOf(false) }
+    val inputFocus = remember { FocusRequester() }
     fun skill(recipe: AgentRecipe) {
         if (!enabled || state.busy || state.applying) return
         focus.clearFocus(); showSkills = false; onSkillSelected()
         controller.send(content, recipe.name, recipe)
     }
-    LaunchedEffect(state.turns.size, state.busy) {
+    LaunchedEffect(state.turns.size, state.busy, inputFocused) {
         val count = list.layoutInfo.totalItemsCount
         if (count > 0 && state.turns.isNotEmpty()) list.animateScrollToItem(count - 1)
     }
     LaunchedEffect(state.busy, state.turns) {
         if (!state.busy) onConversationSettled(state.turns.any { it.answer != null })
     }
-    Column(modifier.fillMaxSize()) {
-        if (expanded) Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onToggleExpanded, modifier = Modifier.size(44.dp)) {
-                Icon(if (expanded) Icons.Outlined.FullscreenExit else Icons.Outlined.Fullscreen,
-                    stringResource(if (expanded) R.string.note_chat_collapse else R.string.note_chat_expand),
-                    tint = ChillColors.TextSub, modifier = Modifier.size(20.dp))
-            }
-            Spacer(Modifier.weight(1f))
-            if (expanded) {
-                Text(stringResource(R.string.chillo_title), fontWeight = FontWeight.SemiBold)
-                Spacer(Modifier.weight(1f))
-                Spacer(Modifier.size(44.dp))
-            }
-        }
+    Column(modifier.fillMaxSize().background(ChillColors.BackgroundSecondary)) {
         Box(Modifier.weight(1f).fillMaxWidth()) {
         LazyColumn(
             state = list, modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(20.dp), verticalArrangement = Arrangement.spacedBy(24.dp),
+            contentPadding = PaddingValues(horizontal = 20.dp, vertical = if (state.turns.isEmpty()) 12.dp else 20.dp), verticalArrangement = Arrangement.spacedBy(24.dp),
         ) {
             if (state.turns.isEmpty()) item {
-                Column(Modifier.padding(top = 32.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text(stringResource(R.string.note_chat_welcome_title), modifier = Modifier.weight(1f), fontSize = 24.sp, fontWeight = FontWeight.Bold, color = ChillColors.TextMain)
-                        IconButton(onClick = { focus.clearFocus(); showSkills = true }, enabled = enabled && !state.busy) {
-                            Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.note_chat_all_skills), tint = ChillColors.TextSub)
-                        }
-                    }
-                    Text(stringResource(R.string.note_chat_welcome_message), color = ChillColors.TextSub)
-                    quickSkills.chunked(2).forEach { row ->
-                        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                            row.forEach { recipe ->
-                                Surface(
-                                    onClick = { skill(recipe) }, enabled = enabled && !state.busy,
-                                    shape = RoundedCornerShape(14.dp), color = ChillColors.BackgroundSecondary,
-                                    border = BorderStroke(1.dp, ChillColors.BorderSubtle),
-                                    modifier = Modifier.weight(1f).onGloballyPositioned {
-                                        if (recipe.id == quickSkills.firstOrNull()?.id) onFirstSkillBounds(it.boundsInRoot())
-                                    },
-                                ) {
-                                    Row(Modifier.padding(12.dp).heightIn(min = 36.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                        CreatorSkillIcon(recipe, iconSize = 18.dp, container = 32.dp)
-                                        Text(recipeName(recipe), fontSize = 14.sp, color = ChillColors.TextMain)
+                Column(Modifier.padding(top = 4.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text(stringResource(R.string.note_chat_welcome_title), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = ChillColors.TextMain)
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        quickSkills.forEach { recipe ->
+                            val first = recipe.id == quickSkills.firstOrNull()?.id
+                            Surface(
+                                onClick = { skill(recipe) }, enabled = enabled && !state.busy,
+                                shape = RoundedCornerShape(14.dp),
+                                color = if (first) ChillColors.BrandBlueSoft else ChillColors.BackgroundSecondary,
+                                border = BorderStroke(1.dp, if (first) ChillColors.BrandBlue.copy(alpha = 0.12f) else ChillColors.BorderSubtle),
+                                modifier = Modifier.fillMaxWidth().onGloballyPositioned {
+                                    if (first) onFirstSkillBounds(it.boundsInRoot())
+                                },
+                            ) {
+                                Row(Modifier.heightIn(min = 60.dp).padding(10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(14.dp)) {
+                                    CreatorSkillIcon(recipe, iconSize = 20.dp, container = 36.dp)
+                                    Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                                        Text(recipeName(recipe), fontSize = 16.sp, fontWeight = FontWeight.SemiBold, color = ChillColors.TextMain)
+                                        Text(quickSkillDescription(recipe), fontSize = 13.sp, color = ChillColors.TextSub)
                                     }
+                                    Icon(Icons.Outlined.ChevronRight, null, Modifier.size(18.dp), tint = ChillColors.TextSub)
                                 }
                             }
-                            if (row.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
+                    Text(stringResource(R.string.note_chat_suggestions_title), modifier = Modifier.padding(top = 8.dp), fontSize = 17.sp, fontWeight = FontWeight.SemiBold, color = ChillColors.TextMain)
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf(R.string.note_chat_suggestions_script, R.string.note_chat_suggestions_hooks).forEach { resource ->
+                            val prompt = stringResource(resource)
+                            Surface(onClick = { controller.input(prompt); inputFocus.requestFocus() }, enabled = enabled && !state.busy,
+                                shape = RoundedCornerShape(50), color = ChillColors.BackgroundPrimary,
+                                border = BorderStroke(1.dp, ChillColors.BorderSubtle)) {
+                                Text(prompt, Modifier.padding(horizontal = 12.dp, vertical = 10.dp), fontSize = 12.sp, color = ChillColors.TextSub)
+                            }
                         }
                     }
                 }
             }
+
             items(state.turns, key = { it.id }) { turn ->
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                        Surface(shape = RoundedCornerShape(16.dp), color = ChillColors.BrandBlue.copy(alpha = 0.10f), modifier = Modifier.widthIn(max = 330.dp)) {
+                        Surface(shape = RoundedCornerShape(16.dp), color = ChillColors.BrandBlueSoft, modifier = Modifier.widthIn(max = 330.dp)) {
                             Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                                 if (turn.recipe != null) {
                                     CreatorSkillIcon(turn.recipe, iconSize = 16.dp, container = 26.dp)
                                     Text(recipeName(turn.recipe), fontWeight = FontWeight.Medium)
-                                    Text(stringResource(R.string.note_chat_skill_badge), fontSize = 11.sp, color = ChillColors.TextSub)
+                                    Text(stringResource(R.string.note_chat_skill_badge), fontSize = 11.sp, color = ChillColors.TextSub, modifier = Modifier.background(ChillColors.BrandBlue.copy(alpha = 0.08f), RoundedCornerShape(4.dp)).padding(horizontal = 5.dp, vertical = 3.dp))
                                 } else SelectionContainer { Text(turn.message) }
                             }
                         }
@@ -141,8 +146,13 @@ fun NoteConversationWorkspace(
                                 Spacer(Modifier.width(6.dp))
                                 Text(stringResource(R.string.note_chat_replace), fontSize = 13.sp)
                             }
-                            IconButton(onClick = { clipboard.setText(AnnotatedString(turn.answer)) }) {
-                                Icon(Icons.Outlined.ContentCopy, stringResource(R.string.chillo_copy), Modifier.size(19.dp))
+                            if (state.appliedTurnId == turn.id && state.undoContent != null && state.appliedContent == content) {
+                                TextButton(onClick = { scope.launch { controller.undo(content, onReplace) } }, enabled = enabled && !state.busy) {
+                                    Text(stringResource(R.string.common_undo))
+                                }
+                            }
+                            NoteConversationCopyButton(answer = turn.answer) {
+                                clipboard.setText(AnnotatedString(turn.answer))
                             }
                         }
                     } else if (turn.failed) {
@@ -161,41 +171,53 @@ fun NoteConversationWorkspace(
             }
             item { Spacer(Modifier.height(1.dp)) }
         }
-            if (!expanded) {
-                IconButton(onClick = onToggleExpanded,
-                    modifier = Modifier.align(Alignment.TopStart).padding(start = 8.dp).size(44.dp)) {
-                    Icon(Icons.Outlined.Fullscreen, stringResource(R.string.note_chat_expand),
-                        tint = ChillColors.TextSub, modifier = Modifier.size(20.dp))
-                }
-            }
         }
         Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            if (state.storageError || state.saveError) {
+            if (state.turns.isNotEmpty()) {
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(quickSkills, key = { it.id }) { recipe ->
+                        Surface(onClick = { skill(recipe) }, enabled = enabled && !state.busy && !state.applying,
+                            color = ChillColors.BrandBlueSoft, shape = RoundedCornerShape(50),
+                            modifier = Modifier.onGloballyPositioned {
+                                if (recipe.id == quickSkills.firstOrNull()?.id) onFirstSkillBounds(it.boundsInRoot())
+                            }) {
+                            Text(recipeName(recipe), Modifier.padding(horizontal = 12.dp, vertical = 8.dp), fontSize = 13.sp, color = ChillColors.TextMain)
+                        }
+                    }
+                }
+            }
+            if (state.storageError || state.saveError || state.clearError) {
                 Text(stringResource(when {
+                    state.clearError -> R.string.note_chat_clear_error
                     state.saveError -> R.string.note_chat_save_error
                     else -> R.string.note_chat_history_error
                 }), color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
             }
-            if (state.undoContent != null && state.appliedContent == content) TextButton(
-                onClick = { scope.launch { controller.undo(content, onReplace) } },
-                enabled = enabled && !state.busy, modifier = Modifier.align(Alignment.End),
-            ) { Text(stringResource(R.string.common_undo)) }
             OutlinedTextField(
                 value = input, onValueChange = controller::input, enabled = enabled,
-                modifier = Modifier.fillMaxWidth(), maxLines = 5, shape = RoundedCornerShape(26.dp),
-                placeholder = { Text(stringResource(R.string.chillo_placeholder)) },
-                leadingIcon = if (state.turns.isNotEmpty()) {
-                    {
-                        IconButton(
-                            onClick = { focus.clearFocus(); showSkills = true },
-                            enabled = enabled && !state.busy,
-                            modifier = Modifier.onGloballyPositioned { onFirstSkillBounds(it.boundsInRoot()) },
-                        ) {
-                            Icon(Icons.Outlined.AutoAwesome, stringResource(R.string.note_chat_all_skills),
-                                modifier = Modifier.size(20.dp), tint = ChillColors.TextSub)
+                modifier = Modifier.fillMaxWidth().focusRequester(inputFocus).onFocusChanged { inputFocused = it.isFocused }, maxLines = 5, shape = RoundedCornerShape(26.dp),
+                placeholder = { Text(stringResource(R.string.note_chat_input_placeholder)) },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = ChillColors.BorderSubtle,
+                    unfocusedBorderColor = ChillColors.BorderSubtle,
+                ),
+                leadingIcon = {
+                    Box {
+                        IconButton(onClick = { focus.clearFocus(); menuOpen = true }, enabled = enabled) {
+                            Icon(Icons.Outlined.MoreHoriz, stringResource(R.string.note_chat_menu), modifier = Modifier.size(20.dp), tint = ChillColors.TextSub)
+                        }
+                        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                            DropdownMenuItem(text = { Text(stringResource(R.string.note_chat_all_skills)) },
+                                leadingIcon = { Icon(Icons.Outlined.AutoAwesome, null) }, enabled = !state.busy,
+                                onClick = { menuOpen = false; showSkills = true })
+                            if (state.turns.isNotEmpty()) DropdownMenuItem(
+                                text = { Text(stringResource(R.string.note_chat_clear_action), color = MaterialTheme.colorScheme.error) },
+                                leadingIcon = { Icon(Icons.Outlined.DeleteOutline, null, tint = MaterialTheme.colorScheme.error) },
+                                enabled = !state.applying,
+                                onClick = { menuOpen = false; showClearConfirmation = true })
                         }
                     }
-                } else null,
+                },
                 trailingIcon = {
                     Row {
                         IconButton(onClick = {
@@ -206,16 +228,63 @@ fun NoteConversationWorkspace(
                             }
                         }, enabled = enabled && !state.applying && (state.busy || input.isNotBlank())) {
                             Icon(if (state.busy) Icons.Outlined.Stop else Icons.Outlined.ArrowUpward,
-                                stringResource(if (state.busy) R.string.common_cancel else R.string.chillo_send), tint = ChillColors.BrandBlue)
+                                stringResource(if (state.busy) R.string.common_cancel else R.string.chillo_send), tint = androidx.compose.ui.graphics.Color.White,
+                                modifier = Modifier.size(40.dp).background(if (state.busy || input.isNotBlank()) ChillColors.BrandBlue else ChillColors.TextSub.copy(alpha = 0.4f), CircleShape).padding(10.dp))
                         }
                     }
                 },
             )
         }
     }
+    if (showClearConfirmation) {
+        AlertDialog(onDismissRequest = { showClearConfirmation = false },
+            title = { Text(stringResource(R.string.note_chat_clear_title)) },
+            text = { Text(stringResource(R.string.note_chat_clear_message)) },
+            confirmButton = { TextButton(onClick = { controller.clearConversation(); showClearConfirmation = false }) {
+                Text(stringResource(R.string.note_chat_clear_action), color = MaterialTheme.colorScheme.error)
+            } },
+            dismissButton = { TextButton(onClick = { showClearConfirmation = false }) { Text(stringResource(R.string.common_cancel)) } })
+    }
     if (showSkills) {
         CreatorSkillsSheet(onDismiss = { showSkills = false }) {
-            skillsPanelContent({ showSkills = false }, ::skill)
+            skillsPanelContent { showSkills = false }
         }
     }
+}
+
+@Composable
+private fun NoteConversationCopyButton(answer: String, onCopy: () -> Unit) {
+    var isCopied by remember(answer) { mutableStateOf(false) }
+    var copyRevision by remember(answer) { mutableIntStateOf(0) }
+    LaunchedEffect(copyRevision) {
+        if (copyRevision == 0) return@LaunchedEffect
+        delay(2_000)
+        isCopied = false
+    }
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+        IconButton(onClick = {
+            onCopy()
+            isCopied = true
+            copyRevision++
+        }) {
+            Icon(
+                if (isCopied) Icons.Outlined.Check else Icons.Outlined.ContentCopy,
+                stringResource(if (isCopied) R.string.ai_skills_result_copied else R.string.chillo_copy),
+                Modifier.size(19.dp), tint = if (isCopied) ChillColors.BrandTealText else ChillColors.TextMain,
+            )
+        }
+        if (isCopied) Text(stringResource(R.string.ai_skills_result_copied), fontSize = 13.sp, color = ChillColors.BrandTealText)
+    }
+}
+
+@Composable
+private fun quickSkillDescription(recipe: AgentRecipe): String {
+    val resource = if (recipe.isCustom) null else when (recipe.id) {
+        "rewrite" -> R.string.note_chat_quick_skill_rewrite_description
+        "hook_generator" -> R.string.note_chat_quick_skill_hook_generator_description
+        "caption_pack" -> R.string.note_chat_quick_skill_caption_pack_description
+        "repurpose_pack" -> R.string.note_chat_quick_skill_repurpose_pack_description
+        else -> null
+    }
+    return resource?.let { stringResource(it) } ?: recipeDescription(recipe)
 }

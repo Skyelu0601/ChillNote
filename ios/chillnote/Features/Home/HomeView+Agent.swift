@@ -9,22 +9,6 @@ extension HomeView {
     func handleAgentActionRequest(_ recipe: AgentRecipe) {
         let selectedCount = selectedNotes.count
         guard selectedCount == 1 else { return }
-        if selectedCount > recipeHardLimit {
-            pendingRecipeForConfirmation = nil
-            showRecipeHardLimitAlert = true
-            return
-        }
-        if selectedCount > recipeSoftLimit {
-            pendingRecipeForConfirmation = recipe
-            showRecipeSoftLimitAlert = true
-            return
-        }
-        performAgentRecipe(recipe)
-    }
-
-    func confirmPendingRecipeOverSoftLimit() {
-        guard let recipe = pendingRecipeForConfirmation else { return }
-        pendingRecipeForConfirmation = nil
         performAgentRecipe(recipe)
     }
 

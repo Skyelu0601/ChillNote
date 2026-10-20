@@ -2,7 +2,7 @@ import Foundation
 
 extension HomeView {
     @MainActor
-    func importPendingSharedNotes(navigateToLatest: Bool) {
+    func importPendingSharedNotes() {
         guard let currentUserId else { return }
 
         let pendingFiles: [SharedImportQueue.PendingImportFile]
@@ -18,15 +18,13 @@ extension HomeView {
 
         var didImport = false
         for pendingFile in pendingFiles {
-            let shouldNavigate = navigateToLatest && pendingFile.fileURL == pendingFiles.last?.fileURL
-
             switch pendingFile.importItem.importKind {
             case .note:
                 guard let noteText = pendingFile.importItem.noteText,
                       saveNote(
                         text: noteText,
                         source: pendingFile.importItem.noteSourceMetadata,
-                        shouldNavigate: shouldNavigate
+                        shouldNavigate: false
                       ) != nil else {
                     continue
                 }
@@ -37,7 +35,6 @@ extension HomeView {
             case .linkImport:
                 let item = pendingFile.importItem
                 let importedNote: Note
-                let shouldOpen = shouldNavigate && !firstActionGuide.isWaitingForSharedVideo
                 if item.importJobId?.isEmpty == false {
                     do {
                         importedNote = try SharedImportQueue.adoptStartedLinkImport(item, context: modelContext)
@@ -45,13 +42,12 @@ extension HomeView {
                         presentSharedImportQueueError(error)
                         continue
                     }
-                    if shouldOpen { navigationPath.append(importedNote) }
                 } else if let url = URL(string: item.source.url),
                           let note = createLinkImportNote(
                         url,
                         noteID: item.id,
                         source: item.noteSourceMetadata,
-                        shouldNavigate: shouldOpen
+                        shouldNavigate: false
                       ) {
                     importedNote = note
                 } else {
@@ -68,6 +64,9 @@ extension HomeView {
         }
 
         guard didImport else { return }
+        // Returning from the share extension should land on the home feed,
+        // including when the app was previously left in a note editor.
+        navigationPath = .init()
         requestReload(keepItemsWhileLoading: true)
         reconcileFirstActionGuideImport()
     }

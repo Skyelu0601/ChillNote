@@ -482,6 +482,7 @@ model AppNotification {
   dedupeKey String
   kind      String
   amount    Int?
+  details   Json?
   createdAt DateTime  @default(now())
   readAt    DateTime?
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)

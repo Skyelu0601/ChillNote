@@ -5,12 +5,16 @@ import type { PrismaClient } from "@prisma/client";
 import { registerAppNotificationRoutes } from "./appNotifications.js";
 
 const notificationID = "00000000-0000-4000-8000-000000000001";
-function fixture(options: { tier?: string; eligible?: boolean; amount?: number | null; balance?: number; oldAuth?: boolean; fail?: boolean } = {}) {
+function fixture(options: { tier?: string; eligible?: boolean; amount?: number | null; balance?: number; oldAuth?: boolean; fail?: boolean;
+  emailEnabled?: boolean; suppressed?: boolean; emailConfigured?: boolean; verified?: boolean; authFail?: boolean; deliveryFail?: boolean } = {}) {
   const now = new Date();
   let tier = options.tier ?? "free";
   let grant: { balance: number; initialGrantAmount: number | null } | null = options.amount !== undefined
     ? { balance: options.balance ?? 2, initialGrantAmount: options.amount } : null;
-  const messages: Array<{ id: string; userId: string; dedupeKey: string; kind: string; amount: number | null; readAt: Date | null; createdAt: Date }> = [];
+  const messages: Array<{ id: string; userId: string; dedupeKey: string; kind: string; amount: number | null; readAt: Date | null; createdAt: Date; details?: any }> = [];
+  const expiresAt = new Date(now.getTime() + 7 * 24 * 60 * 60_000);
+  const deliveries: any[] = [];
+  const entitlements: any[] = [];
   const methods = new Map<string, RequestHandler>();
   const auth: RequestHandler = (_req, _res, next) => next();
   const register = (path: string, middleware: RequestHandler, handler: RequestHandler) => {
@@ -21,7 +25,7 @@ function fixture(options: { tier?: string; eligible?: boolean; amount?: number |
     user: { findUniqueOrThrow: async () => ({ welcomeNotificationEligible: options.eligible ?? true, createdAt: now }) },
     userCredits: { upsert: async ({ create }: any) => grant ??= create },
     appNotification: {
-      findUnique: async () => messages.find(m => m.userId === "user-a") ?? null,
+      findUnique: async ({ where }: any) => messages.find(m => m.userId === where.userId_dedupeKey.userId && m.dedupeKey === where.userId_dedupeKey.dedupeKey) ?? null,
       upsert: async ({ create }: any) => {
         const found = messages.find(m => m.userId === create.userId && m.dedupeKey === create.dedupeKey);
         if (!found) messages.push({ id: notificationID, readAt: null, createdAt: now, ...create });
@@ -31,6 +35,7 @@ function fixture(options: { tier?: string; eligible?: boolean; amount?: number |
         for (const message of messages) {
           if (message.userId !== where.userId) continue;
           if (where.kind && message.kind !== where.kind) continue;
+          if (where.dedupeKey && message.dedupeKey !== where.dedupeKey) continue;
           if (where.id && !where.id.in.includes(message.id)) continue;
           if (where.readAt === null && message.readAt !== null) continue;
           Object.assign(message, data);
@@ -38,6 +43,13 @@ function fixture(options: { tier?: string; eligible?: boolean; amount?: number |
       },
       findMany: async ({ where }: any) => messages.filter(m => m.userId === where.userId).map(m => ({ ...m })),
     },
+    emailPreference: { findUnique: async () => ({ subscriptionBillingEmailsEnabled: options.emailEnabled ?? true,
+      serviceSuppressedAt: options.suppressed ? now : null }) },
+    emailDelivery: { findUnique: async ({ where }: any) => {
+      if (options.deliveryFail) throw new Error("queue unavailable");
+      return deliveries.find(item => item.dedupeKey === where.dedupeKey) ?? null;
+    } },
+    revenueCatEntitlement: { findMany: async ({ where }: any) => entitlements.filter(item => item.userId === where.userId && item.isActive === where.isActive) },
     $transaction: async (body: (db: unknown) => Promise<unknown>) => body(db),
   };
   registerAppNotificationRoutes({ get: register, post: register } as unknown as Express, auth, {
@@ -45,6 +57,11 @@ function fixture(options: { tier?: string; eligible?: boolean; amount?: number |
     upsertUser: async () => {},
     resolveTier: async () => { if (options.fail) throw new Error("subscription unavailable"); return tier; },
     initialCredits: 50,
+    emailConfigured: () => options.emailConfigured ?? true,
+    emailIdentity: async () => {
+      if (options.authFail) throw new Error("Auth unavailable");
+      return { email: "someone@example.com", verified: options.verified ?? true };
+    },
   });
   async function call(path = "/notifications", body: unknown = undefined, userId = "user-a") {
     let status = 200;
@@ -53,7 +70,17 @@ function fixture(options: { tier?: string; eligible?: boolean; amount?: number |
     await methods.get(path)!({ userId, userCreatedAt: options.oldAuth ? "2020-01-01T00:00:00Z" : now.toISOString(), body } as any, response as any, () => {});
     return { status, json };
   }
-  return { call, messages, grant: () => grant, setTier: (value: string) => { tier = value; } };
+  function addTrial(userId = "user-a") {
+    const details = { type: "trial", expiresAt: expiresAt.toISOString(), productId: "pro_yearly:annual", store: "play_store", autoRenew: true };
+    messages.push({ id: notificationID, userId, dedupeKey: `trial:${userId}`, kind: "welcome_pro", amount: null, details, readAt: null, createdAt: now });
+    entitlements.push({ userId, productId: details.productId, store: details.store, expiresAt, isActive: true });
+    return details;
+  }
+  function schedule(userId = "user-a") {
+    deliveries.push({ userId, kind: "trial_ending_48h", dedupeKey: `trial_ending_48h:${userId}:${expiresAt.toISOString()}`, status: "scheduled",
+      scheduledAt: new Date(expiresAt.getTime() - 48 * 60 * 60_000), expectedExpiresAt: expiresAt, sentAt: null });
+  }
+  return { call, messages, deliveries, entitlements, addTrial, schedule, grant: () => grant, setTier: (value: string) => { tier = value; } };
 }
 
 test("free welcome is issued once with actual credited amount, not remaining balance", async () => {
@@ -118,4 +145,66 @@ test("subscription and database failures do not fabricate successful responses",
   assert.equal((await f.call()).status, 503);
   assert.equal((await f.call("/notifications/read", { ids: [notificationID] })).status, 503);
   assert.deepEqual(f.messages, []);
+});
+
+test("trial confirmation folds Pro welcome, preserves old-client fields and survives acknowledgement", async () => {
+  const f = fixture({ tier: "pro" });
+  await f.call();
+  f.messages[0].id = "00000000-0000-4000-8000-000000000002";
+  const details = f.addTrial();
+  f.schedule();
+  const { status, json } = await f.call();
+  assert.equal(status, 200);
+  assert.equal(json.notifications.length, 1);
+  const item = json.notifications[0];
+  assert.equal(item.kind, "welcome_pro");
+  assert.equal(item.amount, null);
+  assert.equal(item.details, undefined);
+  assert.equal(item.trial.expiresAt, details.expiresAt);
+  assert.equal(item.trial.reminderStatus, "scheduled");
+  assert.equal(item.trial.maskedEmail, "s***@example.com");
+  assert.equal(item.readAt, null);
+  await f.call("/notifications/read", { ids: [notificationID] });
+  assert.ok((await f.call()).json.notifications[0].readAt);
+});
+
+test("no queue, disabled mail, unverified email and Auth failure never promise a scheduled reminder", async () => {
+  for (const options of [{}, { emailEnabled: false }, { emailConfigured: false }, { verified: false }, { suppressed: true }, { authFail: true }]) {
+    const f = fixture({ tier: "pro", ...options });
+    f.addTrial();
+    if (Object.keys(options).length) f.schedule();
+    const response = await f.call();
+    assert.equal(response.status, 200);
+    assert.equal(response.json.notifications[0].trial.reminderStatus, Object.keys(options).length ? "unavailable" : "pending");
+    assert.equal(response.json.notifications[0].trial.reminderAt, null);
+  }
+});
+
+test("trial, delivery and entitlement are isolated by account; transferred access no longer promises mail", async () => {
+  const f = fixture({ tier: "pro", eligible: false });
+  f.addTrial();
+  f.schedule("user-b");
+  assert.deepEqual((await f.call("/notifications", undefined, "user-b")).json.notifications, []);
+  assert.equal((await f.call()).json.notifications[0].trial.reminderStatus, "pending");
+  f.schedule();
+  f.entitlements[0].isActive = false;
+  assert.equal((await f.call()).json.notifications[0].trial.reminderStatus, "ended");
+});
+
+test("cancellation updates an existing confirmation without making it unread again", async () => {
+  const f = fixture({ tier: "pro", eligible: false });
+  const details = f.addTrial();
+  f.schedule();
+  await f.call("/notifications/read", { ids: [notificationID] });
+  details.autoRenew = false;
+  const item = (await f.call()).json.notifications[0];
+  assert.equal(item.trial.reminderStatus, "cancelled");
+  assert.equal(item.trial.reminderAt, null);
+  assert.ok(item.readAt);
+});
+
+test("failure to retrieve the queue returns a retryable failure rather than false confirmation", async () => {
+  const f = fixture({ tier: "pro", deliveryFail: true });
+  f.addTrial();
+  assert.equal((await f.call()).status, 503);
 });

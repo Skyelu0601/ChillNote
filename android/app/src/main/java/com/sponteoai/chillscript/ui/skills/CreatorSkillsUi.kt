@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -43,6 +44,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material.icons.outlined.Check
@@ -63,6 +66,7 @@ import androidx.compose.material.icons.outlined.MoreHoriz
 import androidx.compose.material.icons.outlined.PersonOutline
 import androidx.compose.material.icons.outlined.Public
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Title
 import androidx.compose.material.icons.outlined.TrendingUp
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.VerticalAlignBottom
@@ -76,6 +80,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -97,6 +102,9 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLocale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -134,8 +142,8 @@ fun recipeName(recipe: AgentRecipe): String {
         "rewrite" -> R.string.recipe_rewrite_name
         "style_match" -> R.string.recipe_style_match_name
         "hook_generator" -> R.string.recipe_hook_generator_name
+        "title_thumbnail" -> R.string.recipe_title_thumbnail_name
         "caption_pack" -> R.string.recipe_caption_pack_name
-        "timed_script" -> R.string.recipe_timed_script_name
         "repurpose_pack" -> R.string.recipe_repurpose_pack_name
         else -> null
     }
@@ -153,8 +161,8 @@ fun recipeDescription(recipe: AgentRecipe): String {
         "rewrite" -> R.string.recipe_rewrite_description
         "style_match" -> R.string.recipe_style_match_description
         "hook_generator" -> R.string.recipe_hook_generator_description
+        "title_thumbnail" -> R.string.recipe_title_thumbnail_description
         "caption_pack" -> R.string.recipe_caption_pack_description
-        "timed_script" -> R.string.recipe_timed_script_description
         "repurpose_pack" -> R.string.recipe_repurpose_pack_description
         else -> null
     }
@@ -519,38 +527,38 @@ fun CreatorSkillsSheet(onDismiss: () -> Unit, content: @Composable () -> Unit) {
 @Composable
 fun CreatorSkillsLibrary(
     available: List<AgentRecipe>,
-    installed: List<AgentRecipe>,
+    favorites: List<AgentRecipe>,
+    onReplaceFavorite: (AgentRecipe, AgentRecipe) -> Unit,
     isPro: Boolean,
     onBack: () -> Unit,
     onToggle: (AgentRecipe) -> Unit,
     onRequestCustomUpgrade: () -> Unit,
-    onCreateCustom: (String, String) -> Unit,
+    onCreateCustom: (String, String, String) -> Unit,
     onDeleteCustom: (AgentRecipe) -> Unit,
-    onSelect: ((AgentRecipe) -> Unit)? = null,
+    isSheet: Boolean = false,
 ) {
     CreatorSkillPreferences.initialize(LocalContext.current)
-    var isManaging by rememberSaveable { mutableStateOf(false) }
+    var showMinimumFavoriteAlert by remember { mutableStateOf(false) }
+    var pendingReplacement by remember { mutableStateOf<AgentRecipe?>(null) }
     var showCreate by rememberSaveable { mutableStateOf(false) }
     var configuredRecipeId by rememberSaveable { mutableStateOf<String?>(null) }
     var pendingDelete by remember { mutableStateOf<AgentRecipe?>(null) }
-    val installedIds = installed.mapTo(mutableSetOf()) { it.id }
-    val availableRecipes = available.filter { !it.isCustom && it.id !in installedIds }
+    val installedIds = favorites.mapTo(mutableSetOf()) { it.id }
+    val availableRecipes = available.filter { it.id !in installedIds }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(ChillColors.BackgroundPrimary)
-            .then(if (onSelect == null) Modifier.statusBarsPadding() else Modifier),
+            .then(if (!isSheet) Modifier.statusBarsPadding() else Modifier),
     ) {
-        if (onSelect == null) {
+        if (!isSheet) {
             LibraryNavigationBar(onBack = onBack)
         } else {
             SheetNavigationBar(
-                title = stringResource(R.string.note_detail_ai_skills_title),
+                title = stringResource(R.string.creator_skills_manage),
                 leadingText = stringResource(R.string.common_close),
                 onLeading = onBack,
-                trailingText = stringResource(if (isManaging) R.string.common_done else R.string.creator_skills_manage),
-                onTrailing = { isManaging = !isManaging },
             )
         }
         LazyColumn(
@@ -562,25 +570,35 @@ fun CreatorSkillsLibrary(
                 bottom = 28.dp,
             ),
         ) {
-            if (installed.isNotEmpty()) item {
+            item {
+                Text(stringResource(R.string.creator_skills_favorites_help), color = ChillColors.TextSub, fontSize = 13.sp)
+                Spacer(Modifier.height(14.dp))
+            }
+            if (favorites.isNotEmpty()) item {
                 SkillSection(
                     title = stringResource(R.string.creator_skills_installed),
-                    recipes = installed,
+                    recipes = favorites,
                     installed = true,
-                    showsManagement = onSelect == null || isManaging,
-                    onSelect = if (isManaging) null else onSelect,
-                    onToggle = onToggle,
+                    onToggle = { recipe ->
+                        if (recipe.id in installedIds && favorites.size <= 1) showMinimumFavoriteAlert = true
+                        else if (recipe.id !in installedIds && favorites.size >= 4) pendingReplacement = recipe
+                        else onToggle(recipe)
+                    },
                     onConfigure = { configuredRecipeId = it.id },
                     onDelete = { pendingDelete = it },
                 )
             }
-            if (installed.isNotEmpty()) item { Spacer(Modifier.height(22.dp)) }
+            if (favorites.isNotEmpty()) item { Spacer(Modifier.height(22.dp)) }
             if (availableRecipes.isNotEmpty()) item {
                 SkillSection(
                     title = stringResource(R.string.creator_skills_available),
                     recipes = availableRecipes,
                     installed = false,
-                    onToggle = onToggle,
+                    onToggle = { recipe ->
+                        if (recipe.id in installedIds && favorites.size <= 1) showMinimumFavoriteAlert = true
+                        else if (recipe.id !in installedIds && favorites.size >= 4) pendingReplacement = recipe
+                        else onToggle(recipe)
+                    },
                     onConfigure = { configuredRecipeId = it.id },
                     onDelete = { pendingDelete = it },
                 )
@@ -597,11 +615,42 @@ fun CreatorSkillsLibrary(
         }
     }
 
+    if (showMinimumFavoriteAlert) {
+        AlertDialog(
+            onDismissRequest = { showMinimumFavoriteAlert = false },
+            text = { Text(stringResource(R.string.creator_skills_minimum_favorite)) },
+            confirmButton = {
+                TextButton(onClick = { showMinimumFavoriteAlert = false }) { Text(stringResource(R.string.common_ok)) }
+            },
+        )
+    }
+
+    pendingReplacement?.let { replacement ->
+        AlertDialog(
+            onDismissRequest = { pendingReplacement = null },
+            title = { Text(stringResource(R.string.creator_skills_replace_favorite)) },
+            text = {
+                Column {
+                    favorites.forEach { favorite ->
+                        TextButton(onClick = {
+                            onReplaceFavorite(favorite, replacement)
+                            pendingReplacement = null
+                        }) { Text(recipeName(favorite)) }
+                    }
+                }
+            },
+            confirmButton = {},
+            dismissButton = {
+                TextButton(onClick = { pendingReplacement = null }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+    }
+
     if (showCreate) {
         CustomRecipeDialog(
             onDismiss = { showCreate = false },
-            onCreate = { name, prompt ->
-                onCreateCustom(name, prompt)
+            onCreate = { name, prompt, icon ->
+                onCreateCustom(name, prompt, icon)
                 showCreate = false
             },
         )
@@ -647,7 +696,7 @@ private fun LibraryNavigationBar(onBack: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .height(52.dp)
-            .background(ChillColors.BackgroundSecondary),
+            .background(ChillColors.BackgroundPrimary),
     ) {
         IconButton(
             onClick = onBack,
@@ -660,7 +709,7 @@ private fun LibraryNavigationBar(onBack: () -> Unit) {
             )
         }
         Text(
-            text = stringResource(R.string.recipes_title),
+            text = stringResource(R.string.creator_skills_manage),
             modifier = Modifier.align(Alignment.Center),
             color = ChillColors.TextMain,
             style = MaterialTheme.typography.titleMedium,
@@ -674,8 +723,6 @@ private fun SkillSection(
     title: String,
     recipes: List<AgentRecipe>,
     installed: Boolean,
-    showsManagement: Boolean = true,
-    onSelect: ((AgentRecipe) -> Unit)? = null,
     onToggle: (AgentRecipe) -> Unit,
     onConfigure: (AgentRecipe) -> Unit,
     onDelete: (AgentRecipe) -> Unit,
@@ -710,8 +757,6 @@ private fun SkillSection(
                         SkillManagementRow(
                             recipe = recipe,
                             installed = installed,
-                            showsManagement = showsManagement,
-                            onSelect = onSelect?.let { select -> { select(recipe) } },
                             onToggle = { onToggle(recipe) },
                             onConfigure = if (recipe.id in configurableCreatorSkillIds) {
                                 { onConfigure(recipe) }
@@ -741,8 +786,6 @@ private fun SkillSection(
 private fun SkillManagementRow(
     recipe: AgentRecipe,
     installed: Boolean,
-    showsManagement: Boolean,
-    onSelect: (() -> Unit)?,
     onToggle: () -> Unit,
     onConfigure: (() -> Unit)?,
     onDelete: (() -> Unit)?,
@@ -752,10 +795,8 @@ private fun SkillManagementRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        // Keep the run target separate from settings and management actions.
         Row(
             modifier = Modifier.weight(1f)
-                .then(if (onSelect != null) Modifier.clickable(onClick = onSelect) else Modifier)
                 .heightIn(min = 64.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -782,24 +823,17 @@ private fun SkillManagementRow(
                 )
             }
         }
-        if (showsManagement) {
+        run {
+            IconButton(onClick = onToggle, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    imageVector = if (installed) Icons.Outlined.Star else Icons.Outlined.StarBorder,
+                    contentDescription = stringResource(if (installed) R.string.creator_skills_remove else R.string.creator_skills_add),
+                    modifier = Modifier.size(23.dp), tint = if (installed) ChillColors.BrandBlue else ChillColors.TextSub,
+                )
+            }
             if (onDelete != null) {
                 IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
-                    Icon(
-                        imageVector = Icons.Outlined.DeleteOutline,
-                        contentDescription = stringResource(R.string.common_delete),
-                        modifier = Modifier.size(22.dp), tint = Color(0xFFC33B45),
-                    )
-                }
-            } else {
-                IconButton(onClick = onToggle, modifier = Modifier.size(48.dp)) {
-                    Icon(
-                        imageVector = if (installed) Icons.Outlined.RemoveCircleOutline else Icons.Outlined.AddCircleOutline,
-                        contentDescription = stringResource(
-                            if (installed) R.string.creator_skills_remove else R.string.creator_skills_add,
-                        ),
-                        modifier = Modifier.size(23.dp), tint = ChillColors.TextSub,
-                    )
+                    Icon(Icons.Outlined.DeleteOutline, stringResource(R.string.common_delete), tint = Color(0xFFC33B45))
                 }
             }
         }
@@ -808,10 +842,10 @@ private fun SkillManagementRow(
 
 @StringRes
 private fun configurationTitleRes(recipeId: String): Int = when (recipeId) {
+    "translate" -> R.string.translate_settings_title
     "caption_pack" -> R.string.caption_pack_settings_title
     "repurpose_pack" -> R.string.repurpose_pack_settings_title
     "style_match" -> R.string.brand_voice_settings_title
-    "timed_script" -> R.string.timed_script_settings_title
     else -> R.string.recipes_title
 }
 
@@ -903,13 +937,18 @@ private fun CreateCustomSkillRow(onClick: () -> Unit) {
 }
 
 @Composable
-private fun CustomRecipeDialog(
+internal fun CustomRecipeDialog(
     onDismiss: () -> Unit,
-    onCreate: (String, String) -> Unit,
+    onCreate: (String, String, String) -> Unit,
 ) {
     var name by rememberSaveable { mutableStateOf("") }
     var prompt by rememberSaveable { mutableStateOf("") }
+    var selectedIcon by rememberSaveable { mutableStateOf("sparkles") }
+    var showIconPicker by rememberSaveable { mutableStateOf(false) }
     val canSave = name.isNotBlank() && prompt.isNotBlank()
+
+    val nameLabel = stringResource(R.string.creator_skills_custom_name)
+    val promptLabel = stringResource(R.string.creator_skills_custom_instruction)
 
     Dialog(
         onDismissRequest = onDismiss,
@@ -918,56 +957,91 @@ private fun CustomRecipeDialog(
             decorFitsSystemWindows = false,
         ),
     ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.BottomCenter) {
+        Box(Modifier.fillMaxSize().imePadding(), contentAlignment = Alignment.BottomCenter) {
             Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .fillMaxHeight(0.68f)
-                    .navigationBarsPadding(),
+                modifier = Modifier.fillMaxWidth().fillMaxHeight(0.92f).navigationBarsPadding(),
                 color = ChillColors.BackgroundPrimary,
                 shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                 shadowElevation = 18.dp,
             ) {
                 Column(Modifier.fillMaxSize()) {
-                    SheetNavigationBar(
-                        title = stringResource(R.string.creator_skills_custom_create),
-                        leadingText = stringResource(R.string.common_cancel),
-                        onLeading = onDismiss,
-                        trailingText = stringResource(R.string.common_save),
-                        trailingEnabled = canSave,
-                        onTrailing = { onCreate(name.trim(), prompt.trim()) },
-                    )
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState())
-                            .padding(20.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
+                    Row(
+                        modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).padding(horizontal = 12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        OutlinedTextField(
-                            value = name,
-                            onValueChange = { name = it },
-                            modifier = Modifier.fillMaxWidth(),
-                            label = { Text(stringResource(R.string.creator_skills_custom_name)) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(12.dp),
-                        )
-                        OutlinedTextField(
-                            value = prompt,
-                            onValueChange = { prompt = it },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .heightIn(min = 140.dp),
-                            label = { Text(stringResource(R.string.creator_skills_custom_instruction)) },
-                            minLines = 5,
-                            shape = RoundedCornerShape(12.dp),
-                        )
+                        TextButton(onClick = onDismiss) {
+                            Text(stringResource(R.string.common_cancel), color = ChillColors.TextSub,
+                                style = MaterialTheme.typography.bodyLarge)
+                        }
+                        TextButton(enabled = canSave, onClick = { onCreate(name.trim(), prompt.trim(), selectedIcon) }) {
+                            Text(stringResource(R.string.common_save),
+                                color = if (canSave) ChillColors.BrandBlueText else ChillColors.TextTertiary,
+                                style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+                        }
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f).fillMaxWidth()
+                            .verticalScroll(rememberScrollState())
+                            .padding(start = 24.dp, end = 24.dp, top = 12.dp, bottom = 32.dp),
+                        verticalArrangement = Arrangement.spacedBy(28.dp),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                            Icon(Icons.Outlined.Edit, contentDescription = null,
+                                modifier = Modifier.size(28.dp), tint = ChillColors.BrandTealText)
+                            Text(stringResource(R.string.creator_skills_custom_create),
+                                color = ChillColors.TextMain, style = MaterialTheme.typography.displayLarge,
+                                modifier = Modifier.semantics { heading() })
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(nameLabel, style = MaterialTheme.typography.titleMedium,
+                                color = ChillColors.TextMain, modifier = Modifier.semantics { heading() })
+                            OutlinedTextField(
+                                value = name, onValueChange = { name = it },
+                                modifier = Modifier.fillMaxWidth().semantics { contentDescription = nameLabel },
+                                singleLine = true, shape = RoundedCornerShape(14.dp),
+                                colors = customSkillFieldColors(),
+                            )
+                        }
+                        Surface(onClick = { showIconPicker = true }, color = ChillColors.BackgroundSecondary,
+                            shape = RoundedCornerShape(14.dp), border = BorderStroke(1.dp, ChillColors.BorderSubtle)) {
+                            Row(Modifier.fillMaxWidth().padding(16.dp), verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween) {
+                                Text(stringResource(R.string.creator_skills_custom_icon), color = ChillColors.TextMain)
+                                Icon(customSkillImage(selectedIcon), null, Modifier.size(24.dp), tint = ChillColors.BrandBlueText)
+                            }
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Text(promptLabel, style = MaterialTheme.typography.titleMedium,
+                                color = ChillColors.TextMain, modifier = Modifier.semantics { heading() })
+                            OutlinedTextField(
+                                value = prompt, onValueChange = { prompt = it },
+                                modifier = Modifier.fillMaxWidth().heightIn(min = 240.dp)
+                                    .semantics { contentDescription = promptLabel },
+                                minLines = 8, shape = RoundedCornerShape(14.dp),
+                                colors = customSkillFieldColors(),
+                            )
+                        }
                     }
                 }
             }
         }
     }
+    if (showIconPicker) CustomSkillIconPicker(selectedIcon = selectedIcon,
+        onSelect = { selectedIcon = it; showIconPicker = false }, onDismiss = { showIconPicker = false })
+
 }
+
+@Composable
+private fun customSkillFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = ChillColors.TextMain,
+    unfocusedTextColor = ChillColors.TextMain,
+    focusedContainerColor = ChillColors.BackgroundSecondary,
+    unfocusedContainerColor = ChillColors.BackgroundSecondary,
+    focusedBorderColor = ChillColors.BrandBlue,
+    unfocusedBorderColor = ChillColors.BorderSubtle,
+    cursorColor = ChillColors.BrandBlue,
+)
 
 @Composable
 fun TranslateTargetDialog(onDismiss: () -> Unit, onRun: (String) -> Unit) {
@@ -1407,7 +1481,7 @@ private fun SheetNavigationBar(
         modifier = Modifier
             .fillMaxWidth()
             .height(56.dp)
-            .background(ChillColors.BackgroundSecondary),
+            .background(ChillColors.BackgroundPrimary),
     ) {
         TextButton(
             onClick = onLeading,
@@ -1545,7 +1619,7 @@ private fun splitLabelAndContent(text: String): Pair<String, String>? {
     return null
 }
 
-private fun creatorSkillImage(recipe: AgentRecipe): ImageVector = when (recipe.id) {
+private fun creatorSkillImage(recipe: AgentRecipe): ImageVector = if (recipe.isCustom) customSkillImage(selectedIcon = recipe.systemIcon) else when (recipe.id) {
     "why_viral" -> Icons.Outlined.TrendingUp
     "summarize" -> Icons.Outlined.Description
     "translate" -> Icons.Outlined.Public
@@ -1553,8 +1627,8 @@ private fun creatorSkillImage(recipe: AgentRecipe): ImageVector = when (recipe.i
     "rewrite" -> Icons.Outlined.Edit
     "style_match" -> Icons.Outlined.GraphicEq
     "hook_generator" -> Icons.Outlined.Link
+    "title_thumbnail" -> Icons.Outlined.Title
     "caption_pack" -> Icons.Outlined.ClosedCaption
-    "timed_script" -> Icons.Outlined.Timer
     "repurpose_pack" -> Icons.Outlined.Layers
     else -> Icons.Outlined.AutoAwesome
 }
@@ -1567,8 +1641,8 @@ private fun creatorSkillTint(recipe: AgentRecipe): Color = when (recipe.id) {
     "rewrite" -> Color(0xFF38886F)
     "style_match" -> Color(0xFF8A69A5)
     "hook_generator" -> ChillColors.BrandBlue
+    "title_thumbnail" -> Color(0xFF5D8297)
     "caption_pack" -> Color(0xFFB77A2D)
-    "timed_script" -> Color(0xFF68758A)
     "repurpose_pack" -> Color(0xFFC76655)
     else -> CUSTOM_SKILL_TINTS[stableColorIndex(recipe.id)]
 }

@@ -23,6 +23,8 @@ function fixture() {
   let tail = Promise.resolve();
   let lockHeld = false;
   let failWrite = false;
+  let failNotificationWrite = false;
+  let notifications: Record<string, any> = {};
   const invalidated: string[] = [];
   const calls: string[] = [];
   const upstream: Record<string, RevenueCatCustomerResponse> = { a: customer(true), b: customer(false) };
@@ -40,7 +42,7 @@ function fixture() {
       let release!: () => void;
       tail = new Promise<void>((resolve) => { release = resolve; });
       await previous;
-      const backupRows = structuredClone(rows), backupUsers = structuredClone(users);
+      const backupRows = structuredClone(rows), backupUsers = structuredClone(users), backupNotifications = structuredClone(notifications);
       try {
         return await operation({
           $queryRaw: async () => { lockHeld = true; return [{ locked: 1 }]; },
@@ -59,6 +61,12 @@ function fixture() {
               rows[row.userId] = row;
             }
           },
+          appNotification: { upsert: async ({ create, update }: any) => {
+            if (failNotificationWrite) throw new Error("notification write unavailable");
+            const key = `${create.userId}:${create.dedupeKey}`;
+            if (notifications[key]) Object.assign(notifications[key], update);
+            else notifications[key] = { ...create, readAt: null };
+          } },
           user: {
             findMany: async ({ where }: any) => Object.values(users)
               .filter((row) => where.id.in.includes(row.id))
@@ -71,7 +79,7 @@ function fixture() {
           }
         });
       } catch (error) {
-        rows = backupRows; users = backupUsers;
+        rows = backupRows; users = backupUsers; notifications = backupNotifications;
         throw error;
       } finally { lockHeld = false; release(); }
     }
@@ -79,7 +87,9 @@ function fixture() {
   return {
     upstream, invalidated, calls,
     get rows() { return rows; }, get users() { return users; },
+    get notifications() { return notifications; },
     failNextWrite() { failWrite = true; },
+    failNextNotificationWrite() { failNotificationWrite = true; },
     sync(userIds: string[]) {
       return syncRevenueCatUsers({
         userIds, entitlementId: "pro", database,
@@ -94,6 +104,43 @@ function fixture() {
     }
   };
 }
+
+test("trial confirmation is available as soon as verification finishes, and cancellation preserves read state", async () => {
+  const f = fixture();
+  const trial = customer(true);
+  const startedAt = new Date();
+  const expiresAt = new Date(startedAt.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+  trial.subscriber!.entitlements!.pro.expires_date = expiresAt;
+  Object.assign(trial.subscriber!.subscriptions!["com.chillnote.pro.yearly"], {
+    period_type: "trial", purchase_date: startedAt.toISOString(), expires_date: expiresAt
+  });
+  f.upstream.a = trial;
+  // No email queue or webhook is available in this fixture; neither gates the inbox confirmation.
+  await f.sync(["a"]);
+  const notification = Object.values(f.notifications)[0];
+  assert.equal(notification.kind, "welcome_pro");
+  assert.equal(notification.readAt, null);
+  assert.equal(notification.details.expiresAt, expiresAt);
+  assert.equal(notification.details.autoRenew, true);
+  notification.readAt = "read";
+  trial.subscriber!.subscriptions!["com.chillnote.pro.yearly"].unsubscribe_detected_at = new Date().toISOString();
+  await f.sync(["a"]);
+  assert.equal(Object.keys(f.notifications).length, 1);
+  assert.equal(notification.readAt, "read");
+  assert.equal(notification.details.autoRenew, false);
+});
+
+test("a failed trial confirmation rolls back entitlement writes and leaves no false notification", async () => {
+  const f = fixture();
+  const trial = customer(true);
+  trial.subscriber!.subscriptions!["com.chillnote.pro.yearly"].period_type = "trial";
+  f.upstream.a = trial;
+  f.failNextNotificationWrite();
+  await assert.rejects(f.sync(["a"]), /notification write unavailable/);
+  assert.deepEqual(f.rows, {});
+  assert.deepEqual(f.notifications, {});
+  assert.deepEqual(f.invalidated, []);
+});
 
 test("restore claims one transaction and revokes the previous account before webhook arrival", async () => {
   const f = fixture();

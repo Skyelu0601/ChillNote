@@ -5,48 +5,49 @@ import {
   buildFCMRequest,
   classifyFCMResponse,
   isRetryablePushError,
-  legacyWeeklyTopicsEnabled,
-  payloadForDelivery
+  payloadForDelivery,
+  runNotificationWorker
 } from "./pushNotifications.js";
+import { prisma } from "./db.js";
 
-test("Chillo rollout preserves legacy weekly service unless explicitly disabled", () => {
-  assert.equal(legacyWeeklyTopicsEnabled({}), true);
-  assert.equal(legacyWeeklyTopicsEnabled({ LEGACY_WEEKLY_TOPICS_ENABLED: "true" }), true);
-  assert.equal(legacyWeeklyTopicsEnabled({ LEGACY_WEEKLY_TOPICS_ENABLED: "false" }), false);
+test("retired weekly topics have no push payload", () => {
+  assert.equal(payloadForDelivery({ kind: "weekly_topics_ready", noteId: null }), null);
 });
 
-test("weekly topics payload preserves each platform's semantic localization keys", () => {
-  const payload = payloadForDelivery({ kind: "weekly_topics_ready", noteId: null });
-  assert.ok(payload);
-
-  assert.deepEqual(buildAPNsPayload(payload), {
-    aps: {
-      alert: {
-        "title-loc-key": "notification.weekly_topics.title",
-        "loc-key": "notification.weekly_topics.body"
-      },
-      sound: "default"
-    },
-    kind: "weekly_topics_ready",
-    route: "weekly_topics",
-    noteId: undefined
+test("queued weekly pushes are cancelled while later import notifications still run", async (t) => {
+  const queued = [
+    { id: "weekly-1", userId: "user-1", kind: "weekly_topics_ready", noteId: null, dedupeKey: "weekly:1", attempts: 1 },
+    { id: "import-1", userId: "user-1", kind: "import_ready", noteId: "note-1", dedupeKey: "import:1", attempts: 1 }
+  ];
+  const updates: any[] = [];
+  const originalUpdate = prisma.notificationDelivery.update;
+  const originalFindDevices = prisma.pushDevice.findMany;
+  t.after(() => {
+    prisma.notificationDelivery.update = originalUpdate;
+    prisma.pushDevice.findMany = originalFindDevices;
   });
-
-  const fcm = buildFCMRequest("firebase-installation-id", payload, "weekly:user:report") as any;
-  assert.equal(fcm.message.fid, "firebase-installation-id");
-  assert.deepEqual(fcm.message.data, {
-    kind: "weekly_topics_ready",
-    route: "weekly_topics"
+  t.mock.method(prisma, "$queryRaw", async () => {
+    const row = queued.shift();
+    return row ? [row] : [];
   });
-  assert.equal(
-    fcm.message.android.notification.title_loc_key,
-    "notification_weekly_topics_title"
-  );
-  assert.equal(
-    fcm.message.android.notification.body_loc_key,
-    "notification_weekly_topics_body"
-  );
-  assert.equal(fcm.message.android.notification.channel_id, "content_updates");
+  prisma.notificationDelivery.update = t.mock.fn(async (args: any) => {
+    updates.push(args);
+    return {};
+  }) as any;
+  const devices = t.mock.fn(async () => {
+    assert.equal(updates[0]?.where.id, "weekly-1");
+    assert.equal(updates[0]?.data.status, "cancelled");
+    return [];
+  });
+  prisma.pushDevice.findMany = devices as any;
+
+  await runNotificationWorker();
+
+  assert.equal(devices.mock.callCount(), 1);
+  assert.deepEqual(updates.map(item => [item.where.id, item.data.status]), [
+    ["weekly-1", "cancelled"],
+    ["import-1", "skipped"]
+  ]);
 });
 
 test("note notifications carry their note route on APNs and FCM", () => {
@@ -60,6 +61,20 @@ test("note notifications carry their note route on APNs and FCM", () => {
     route: "note",
     noteId: "note-123"
   });
+  assert.equal(fcm.message.android.notification.title_loc_key, "notification_import_ready_title");
+  assert.equal(fcm.message.android.notification.body_loc_key, "notification_import_ready_body");
+  assert.equal(fcm.message.android.notification.channel_id, "content_updates");
+});
+
+test("first creation reminders retain their localized payload", () => {
+  const payload = payloadForDelivery({ kind: "first_creation", noteId: "note-123" });
+  assert.ok(payload);
+  assert.deepEqual((buildAPNsPayload(payload) as any).aps.alert, {
+    "title-loc-key": "notification.first_creation.title",
+    "loc-key": "notification.first_creation.body"
+  });
+  assert.equal(payload.androidTitleKey, "notification_first_creation_title");
+  assert.equal(payload.androidBodyKey, "notification_first_creation_body");
 });
 
 test("FCM response classification invalidates only expired registrations", () => {

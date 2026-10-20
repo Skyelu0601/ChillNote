@@ -23,7 +23,6 @@
 		4B4D4D0132E9A10000A11F1A /* GoMarketMe in Frameworks */ = {isa = PBXBuildFile; productRef = 4B4D4D0332E9A10000A11F1A /* GoMarketMe */; };
 		4C52430132F0000000A11F1A /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 4C52430332F0000000A11F1A /* RevenueCat */; };
 		4D50480132F0000000A11F1A /* PostHog in Frameworks */ = {isa = PBXBuildFile; productRef = 4D50480332F0000000A11F1A /* PostHog */; };
-		4E41500132F1000000A11F1A /* AppsFlyerLib-Strict in Frameworks */ = {isa = PBXBuildFile; productRef = 4E41500332F1000000A11F1A /* AppsFlyerLib-Strict */; };
 		4F5348013300000000000001 /* ShareModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE3491B96189736026BC88AF /* ShareModels.swift */; };
 		4F5348013300000000000002 /* ShareImportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 848A4B6DBF955B10631AC303 /* ShareImportService.swift */; };
 		4F5348013300000000000003 /* ShareL10n.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD7C8A054AC616AD68350DA3 /* ShareL10n.swift */; };
@@ -179,7 +178,6 @@
 				4B4D4D0132E9A10000A11F1A /* GoMarketMe in Frameworks */,
 				4C52430132F0000000A11F1A /* RevenueCat in Frameworks */,
 				4D50480132F0000000A11F1A /* PostHog in Frameworks */,
-				4E41500132F1000000A11F1A /* AppsFlyerLib-Strict in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -337,7 +335,6 @@
 				4B4D4D0332E9A10000A11F1A /* GoMarketMe */,
 				4C52430332F0000000A11F1A /* RevenueCat */,
 				4D50480332F0000000A11F1A /* PostHog */,
-				4E41500332F1000000A11F1A /* AppsFlyerLib-Strict */,
 			);
 			productName = chillnote;
 			productReference = 499583C62F0BD2740053760D /* chillnote.app */;
@@ -437,7 +434,6 @@
 				4A7E0502320A111A0031D6A4 /* XCRemoteSwiftPackageReference "ZIPFoundation" */,
 				4B4D4D0232E9A10000A11F1A /* XCRemoteSwiftPackageReference "gomarketme-swift" */,
 				4C52430232F0000000A11F1A /* XCRemoteSwiftPackageReference "purchases-ios-spm" */,
-				4E41500232F1000000A11F1A /* XCRemoteSwiftPackageReference "AppsFlyerFramework-Strict" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 499583C72F0BD2740053760D /* Products */;
@@ -573,7 +569,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = ChillNoteShareExtension/ChillNoteShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteShareExtension/Info.plist;
@@ -584,7 +580,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.19;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -605,7 +601,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteWidget/Info.plist;
@@ -616,7 +612,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.19;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ChillNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -632,7 +628,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteWidget/Info.plist;
@@ -643,7 +639,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.19;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ChillNoteWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -660,7 +656,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = chillnote/chillnote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = chillnote/Info.plist;
@@ -674,7 +670,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.19;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -694,7 +690,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = chillnote/chillnote.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = chillnote/Info.plist;
@@ -708,7 +704,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.2.19;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -847,11 +843,11 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.2.19;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -866,11 +862,11 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
-				MARKETING_VERSION = 1.2.19;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -884,10 +880,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2.19;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -901,10 +897,10 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
-				MARKETING_VERSION = 1.2.19;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnoteUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = NO;
@@ -921,7 +917,7 @@
 				CLANG_ENABLE_OBJC_WEAK = NO;
 				CODE_SIGN_ENTITLEMENTS = ChillNoteShareExtension/ChillNoteShareExtension.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 3;
 				DEVELOPMENT_TEAM = Y6A6D9322M;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = ChillNoteShareExtension/Info.plist;
@@ -932,7 +928,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.2.19;
+				MARKETING_VERSION = 1.3.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.sponteoai.chillnote.ShareExtension;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = iphoneos;
@@ -1064,14 +1060,6 @@
 				version = 3.56.0;
 			};
 		};
-		4E41500232F1000000A11F1A /* XCRemoteSwiftPackageReference "AppsFlyerFramework-Strict" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/AppsFlyerSDK/AppsFlyerFramework-Strict";
-			requirement = {
-				kind = exactVersion;
-				version = 7.0.1;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1109,11 +1097,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 4D50480232F0000000A11F1A /* XCRemoteSwiftPackageReference "posthog-ios" */;
 			productName = PostHog;
-		};
-		4E41500332F1000000A11F1A /* AppsFlyerLib-Strict */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 4E41500232F1000000A11F1A /* XCRemoteSwiftPackageReference "AppsFlyerFramework-Strict" */;
-			productName = "AppsFlyerLib-Strict";
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

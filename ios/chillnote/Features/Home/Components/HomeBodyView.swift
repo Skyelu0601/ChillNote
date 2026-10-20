@@ -205,27 +205,6 @@ struct HomeBodyView: View {
         } message: {
             Text(L10n.text("home.ask_agent.message"))
         }
-        .alert(L10n.text("home.alert.large_selection.title"), isPresented: Binding(
-            get: { state.showRecipeSoftLimitAlert },
-            set: { _ in }
-        )) {
-            Button(L10n.text("common.cancel"), role: .cancel) {
-                dispatch(.cancelRecipeSoftLimit)
-            }
-            Button(L10n.text("common.continue")) {
-                dispatch(.confirmRecipeSoftLimit)
-            }
-        } message: {
-            Text(L10n.text("home.alert.recipe_soft_limit.message", state.selectedNotes.count))
-        }
-        .alert(L10n.text("home.alert.too_many_notes.title"), isPresented: Binding(
-            get: { state.showRecipeHardLimitAlert },
-            set: { _ in }
-        )) {
-            Button(L10n.text("common.ok"), role: .cancel) { }
-        } message: {
-            Text(L10n.text("home.alert.recipe_hard_limit.message", state.recipeHardLimit))
-        }
         .sheet(isPresented: translateInputPresentedBinding) {
             TranslateSheetView(
                 translateLanguages: state.translateLanguages,

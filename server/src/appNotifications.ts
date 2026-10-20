@@ -1,6 +1,7 @@
 import type { Express, RequestHandler } from "express";
 import type { PrismaClient } from "@prisma/client";
 import { z } from "zod";
+import { readTrialDetails, trialInboxContent, type TrialEmailIdentity } from "./trialNotifications.js";
 
 export function welcomeContent(tier: string, initialGrant: number | null) {
   if (tier === "pro") return { kind: "welcome_pro", amount: null };
@@ -13,6 +14,8 @@ export interface InboxDependencies {
   upsertUser(userId: string): Promise<unknown>;
   resolveTier(userId: string): Promise<string>;
   initialCredits: number;
+  emailConfigured?(): boolean;
+  emailIdentity?(userId: string): Promise<TrialEmailIdentity | null>;
 }
 
 export function registerAppNotificationRoutes(app: Express, auth: RequestHandler, deps: InboxDependencies) {
@@ -57,7 +60,39 @@ export function registerAppNotificationRoutes(app: Express, auth: RequestHandler
         }
         return tx.appNotification.findMany({ where: { userId }, orderBy: { createdAt: "desc" } });
       });
-      res.json({ notifications });
+      const hasTrial = notifications.some(item => readTrialDetails(item.details));
+      if (!hasTrial) {
+        res.json({ notifications });
+        return;
+      }
+      const [preference, entitlements, identity] = await Promise.all([
+        deps.prisma.emailPreference.findUnique({ where: { userId } }),
+        deps.prisma.revenueCatEntitlement.findMany({ where: { userId, isActive: true } }),
+        // Auth availability must never turn into a false confirmation of an email.
+        deps.emailIdentity?.(userId).catch(() => null) ?? Promise.resolve(null)
+      ]);
+      const now = new Date();
+      const items = await Promise.all(notifications
+        // Fold the generic Pro welcome into the more useful trial confirmation.
+        .filter(item => !(item.dedupeKey === "welcome" && item.kind === "welcome_pro"))
+        .map(async item => {
+          const { details: metadata, ...notification } = item;
+          const details = readTrialDetails(metadata);
+          if (!details) return notification;
+          const delivery = await deps.prisma.emailDelivery.findUnique({
+            where: { dedupeKey: `trial_ending_48h:${userId}:${details.expiresAt}` }
+          });
+          const activeTrial = entitlements.some(entitlement => entitlement.productId === details.productId
+            && entitlement.store === details.store && entitlement.expiresAt?.toISOString() === details.expiresAt);
+          return { ...notification, trial: trialInboxContent({
+            details, delivery: delivery?.userId === userId && delivery.kind === "trial_ending_48h" ? delivery : null,
+            identity, activeTrial, now,
+            emailConfigured: deps.emailConfigured?.() ?? false,
+            emailEnabled: preference?.subscriptionBillingEmailsEnabled !== false,
+            suppressed: preference?.serviceSuppressedAt != null
+          }) };
+        }));
+      res.json({ notifications: items });
     } catch (error) {
       console.error("Notification inbox unavailable", error);
       res.status(503).json({ error: "NOTIFICATIONS_UNAVAILABLE" });

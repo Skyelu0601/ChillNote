@@ -2,10 +2,9 @@ import SwiftUI
 
 struct NoteDetailEditorSectionView: View {
     @Binding var noteContent: String
-    @Binding var editorSelection: RichTextEditorSelection
+    @State private var editorSelection = RichTextEditorSelection()
     let editorController: RichTextEditorController
     let isDeleted: Bool
-    let isProcessing: Bool
     let isVoiceProcessing: Bool
     let minimumHeight: CGFloat
     @Binding var isEditing: Bool
@@ -16,7 +15,7 @@ struct NoteDetailEditorSectionView: View {
             text: $noteContent,
             selection: $editorSelection,
             controller: editorController,
-            isEditable: !isProcessing && !isVoiceProcessing && !isDeleted,
+            isEditable: !isVoiceProcessing && !isDeleted,
             font: .systemFont(ofSize: 17),
             textColor: UIColor(Color.textMain),
             bottomInset: 40,
@@ -24,7 +23,6 @@ struct NoteDetailEditorSectionView: View {
             isEditing: $isEditing,
             onFinalTextCommit: onFinalTextCommit
         )
-        .opacity(isProcessing ? 0.6 : 1)
         .frame(minHeight: max(120, minimumHeight), alignment: .topLeading)
         .frame(maxWidth: .infinity, alignment: .leading)
     }

@@ -8,6 +8,11 @@ import re
 import sys
 from pathlib import Path
 
+if __package__:
+    from .cleanup_empty_xcstrings import cleanup_blank_keys
+else:
+    from cleanup_empty_xcstrings import cleanup_blank_keys
+
 CATALOG_PATH = Path("ios/chillnote/Resources/Localizable.xcstrings")
 REQUIRED_LOCALES = ("en", "zh-Hans", "zh-Hant", "ja", "fr", "de", "es", "ko", "pt-BR", "pt-PT")
 SWIFT_ROOTS = (Path("ios/chillnote"), Path("ios/ChillNoteWidget"), Path("ios/ChillNoteShareExtension"))
@@ -89,7 +94,7 @@ def check_catalog() -> list[str]:
     errors: list[str] = []
     strings = load_catalog().get("strings", {})
     for key, entry in strings.items():
-        if not key:
+        if not key.strip():
             errors.append("[catalog] empty key is not allowed")
         localizations = entry.get("localizations", {})
         unexpected = sorted(set(localizations) - set(REQUIRED_LOCALES))
@@ -208,6 +213,9 @@ def check_permission_descriptions() -> list[str]:
 
 
 def main() -> int:
+    removed = cleanup_blank_keys(CATALOG_PATH)
+    if removed:
+        print(f"Cleaned {len(removed)} blank catalog key(s).")
     errors = check_catalog() + check_swift_sources() + check_permission_descriptions()
     if errors:
         print("\n".join(errors))

@@ -4,7 +4,8 @@ export type LifecycleEmailKind =
   | "trial_ending_48h"
   | "trial_ending_24h"
   | "trial_cancelled_winback"
-  | "billing_issue";
+  | "billing_issue"
+  | "renewal_check";
 
 export type LifecycleEmailSchedule = {
   kind: LifecycleEmailKind;
@@ -17,7 +18,8 @@ const LIFECYCLE_EMAIL_TYPES = new Set<LifecycleEmailKind>([
   "trial_ending_48h",
   "trial_ending_24h",
   "trial_cancelled_winback",
-  "billing_issue"
+  "billing_issue",
+  "renewal_check"
 ]);
 
 export function trialEmailSchedules(
@@ -62,9 +64,9 @@ export function billingIssueEmailSchedules(
   now = new Date()
 ): LifecycleEmailSchedule[] {
   if (event.type !== "BILLING_ISSUE") return [];
-  const deadlineMs = Number.isFinite(event.grace_period_expiration_at_ms)
-    ? event.grace_period_expiration_at_ms!
-    : Number.isFinite(event.expiration_at_ms) ? event.expiration_at_ms! : event.event_timestamp_ms;
+  const deadlineMs = Number.isFinite(event.expiration_at_ms)
+    ? event.expiration_at_ms!
+    : Number.isFinite(event.grace_period_expiration_at_ms) ? event.grace_period_expiration_at_ms! : event.event_timestamp_ms;
   const expectedExpiresAt = new Date(deadlineMs);
   return Number.isNaN(expectedExpiresAt.getTime()) ? [] : [{
     kind: "billing_issue",
@@ -87,9 +89,10 @@ export function lifecycleEmailSchedules(
 export function lifecycleEmailKindsToCancel(event: RevenueCatWebhook["event"]): LifecycleEmailKind[] {
   if (event.type === "TRANSFER") return [...LIFECYCLE_EMAIL_TYPES];
   if (event.type === "RENEWAL") {
-    return ["trial_ending_48h", "trial_ending_24h", "trial_cancelled_winback", "billing_issue"];
+    return ["trial_ending_48h", "trial_ending_24h", "trial_cancelled_winback", "billing_issue", "renewal_check"];
   }
-  if (event.type === "CANCELLATION") return ["trial_ending_48h", "trial_ending_24h"];
+  if (event.type === "CANCELLATION") return ["trial_ending_48h", "trial_ending_24h",
+    ...event.cancel_reason === "BILLING_ERROR" ? [] : ["renewal_check" as const]];
   if (event.type === "UNCANCELLATION") return ["trial_cancelled_winback"];
   if (event.type === "EXPIRATION") return ["trial_ending_48h", "trial_ending_24h", "trial_cancelled_winback"];
   return [];

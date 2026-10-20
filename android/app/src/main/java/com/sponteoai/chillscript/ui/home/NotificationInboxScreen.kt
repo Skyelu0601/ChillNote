@@ -10,17 +10,22 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.CardGiftcard
+import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sponteoai.chillscript.R
 import com.sponteoai.chillscript.data.remote.InboxNotification
+import com.sponteoai.chillscript.data.remote.TrialInboxInfo
 import com.sponteoai.chillscript.ui.theme.ChillColors
 import java.time.Instant
 import java.time.ZoneId
@@ -57,34 +62,69 @@ fun NotificationInboxScreen(
                 Text(stringResource(R.string.notifications_empty), color = ChillColors.TextSub, modifier = Modifier.padding(top = 32.dp))
             }
             items(notifications, key = { it.id }) { notification ->
+                val trial = notification.trial?.takeIf { it.endDate != null }
                 LaunchedEffect(notification.id, loading) { if (!loading) onRead(notification.id) }
                 Row(
                     Modifier.fillMaxWidth().background(Color.White, RoundedCornerShape(20.dp)).padding(16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Box(Modifier.size(48.dp).background(ChillColors.BackgroundPrimary, CircleShape), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Outlined.CardGiftcard, null, tint = ChillColors.TextMain, modifier = Modifier.size(26.dp))
+                        Icon(if (trial != null) Icons.Outlined.MailOutline else Icons.Outlined.CardGiftcard, null,
+                            tint = ChillColors.TextMain, modifier = Modifier.size(26.dp))
                         if (notification.readAt == null) {
                             Box(Modifier.align(Alignment.TopStart).size(7.dp).background(ChillColors.BrandBlue, CircleShape))
                         }
                     }
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         Text(
-                            if (notification.kind == "welcome_credits") stringResource(R.string.notifications_credits_title, notification.amount ?: 0)
+                            if (trial != null) stringResource(if (trial.reminderStatus == "ended") R.string.notifications_trial_ended_title else R.string.notifications_trial_title)
+                            else if (notification.kind == "welcome_credits") stringResource(R.string.notifications_credits_title, notification.amount ?: 0)
                             else stringResource(R.string.notifications_pro_title),
                             color = ChillColors.TextMain, fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
                         )
-                        Text(stringResource(if (notification.kind == "welcome_credits") R.string.notifications_credits_body else R.string.notifications_pro_body),
+                        if (trial != null) TrialNotificationBody(trial)
+                        else Text(stringResource(if (notification.kind == "welcome_credits") R.string.notifications_credits_body else R.string.notifications_pro_body),
                             color = ChillColors.TextSub, fontSize = 15.sp)
                         val date = remember(notification.createdAt) {
                             runCatching { DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM).format(Instant.parse(notification.createdAt).atZone(ZoneId.systemDefault())) }.getOrNull()
                         }
-                        if (date != null) Text(date, color = ChillColors.TextSub, fontSize = 12.sp)
+                        if (trial == null && date != null) Text(date, color = ChillColors.TextSub, fontSize = 12.sp)
                     }
                 }
             }
         }
         Text(stringResource(R.string.notifications_footer), fontSize = 13.sp, color = ChillColors.TextSub,
             modifier = Modifier.align(Alignment.CenterHorizontally).padding(24.dp))
+    }
+}
+
+@Composable
+private fun TrialNotificationBody(trial: TrialInboxInfo) {
+    val locale = LocalConfiguration.current.locales[0]
+    val formatter = remember(locale) {
+        DateTimeFormatter.ofLocalizedDate(FormatStyle.MEDIUM)
+            .withLocale(locale).withZone(ZoneId.systemDefault())
+    }
+    val end = trial.endDate?.let(formatter::format) ?: return
+    val reminder = trial.reminderDate?.let(formatter::format)
+    val status = trial.reminderStatus
+    val body = when {
+        status == "ended" -> stringResource(R.string.notifications_trial_ended)
+        !trial.autoRenew || status == "cancelled" -> stringResource(R.string.notifications_trial_cancelled, end)
+        status == "scheduled" && reminder != null && !trial.maskedEmail.isNullOrBlank() ->
+            stringResource(R.string.notifications_trial_scheduled)
+        status == "sent" && reminder != null -> stringResource(R.string.notifications_trial_sent, reminder)
+        else -> null
+    }
+    if (body != null) Text(body, color = ChillColors.TextSub, fontSize = 15.sp)
+    if (status != "ended" && status != "cancelled" && trial.autoRenew) {
+        Text(stringResource(R.string.notifications_trial_end, end), color = ChillColors.TextMain, fontSize = 14.sp,
+            modifier = Modifier.testTag("trial-renewal-summary"))
+    }
+    val uriHandler = LocalUriHandler.current
+    trial.subscriptionURL?.let { url ->
+        TextButton(onClick = { uriHandler.openUri(url) }) {
+            Text(stringResource(R.string.notifications_trial_details))
+        }
     }
 }

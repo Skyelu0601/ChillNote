@@ -189,6 +189,8 @@ fun HomeScreenContent(
     subscriptionTier: String,
     hasBillingIssue: Boolean = false,
     onFixBillingIssue: () -> Unit = {},
+    billingReminderUserId: String? = null,
+    billingReminderEnabled: Boolean = true,
     creditBalance: Int?,
     snackbarHostState: SnackbarHostState,
     onSelectSection: (String) -> Unit,
@@ -310,18 +312,6 @@ fun HomeScreenContent(
                 onDeleteSelection = onDeleteSelection,
                 onEmptyTrash = onEmptyTrash,
             )
-
-            if (hasBillingIssue) {
-                Button(
-                    onClick = onFixBillingIssue,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp),
-                ) {
-                    Column {
-                        Text(stringResource(R.string.subscription_billing_issue_title))
-                        Text(stringResource(R.string.subscription_billing_issue_action))
-                    }
-                }
-            }
 
             AnimatedVisibility(
                 visible = searchVisible,
@@ -501,7 +491,7 @@ fun HomeScreenContent(
         )
 
         AnimatedVisibility(
-            visible = firstActionGuideState.stage == HomeFirstActionStage.SharePrompt,
+            visible = !hasBillingIssue && firstActionGuideState.stage == HomeFirstActionStage.SharePrompt,
             modifier = Modifier.align(Alignment.BottomCenter),
             enter = slideInVertically(
                 animationSpec = spring(dampingRatio = 0.86f, stiffness = Spring.StiffnessMediumLow),
@@ -520,7 +510,7 @@ fun HomeScreenContent(
             )
         }
 
-        if (firstActionGuideState.stage == HomeFirstActionStage.OpenImportedNote) {
+        if (!hasBillingIssue && firstActionGuideState.stage == HomeFirstActionStage.OpenImportedNote) {
             guideTargetBounds?.let { bounds ->
                 IOSFirstActionImportedNoteSpotlight(
                     targetBounds = bounds,
@@ -528,6 +518,20 @@ fun HomeScreenContent(
                 )
             }
         }
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val billingReminderStore = remember(context) {
+            com.sponteoai.chillscript.billing.BillingReminderStore(context)
+        }
+        BillingIssueReminder(
+            userId = billingReminderUserId,
+            hasBillingIssue = hasBillingIssue,
+            hasProAccess = subscriptionTier.equals("pro", ignoreCase = true),
+            enabled = billingReminderEnabled && !sidebarOpen && !isTrash &&
+                !isSelectionMode && !searchVisible && !isRecording && !isVoiceProcessing &&
+                !initialNotesSyncing,
+            store = billingReminderStore,
+            onFixPayment = onFixBillingIssue,
+        )
     }
 }
 

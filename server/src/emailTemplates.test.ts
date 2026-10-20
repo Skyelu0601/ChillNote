@@ -69,6 +69,8 @@ test("billing issue email focuses on payment recovery without claiming cancellat
 
   assert.equal(email.subject, "Payment issue with your ChillScript Pro renewal");
   assert.match(email.html, /Payment issue/);
+  assert.match(email.text, /There is a billing issue/);
+  assert.doesNotMatch(email.text, /reported a payment issue|awaiting confirmation/);
   assert.match(email.text, /check or update your payment method/);
   assert.match(email.text, /access may be interrupted/);
   assert.match(email.html, /Review subscription/);

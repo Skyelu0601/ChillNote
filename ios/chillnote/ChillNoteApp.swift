@@ -56,7 +56,6 @@ struct ChillScriptApp: App {
                 }
             }
             .task(id: authService.currentUserId) {
-                AppsFlyerService.shared.identify(userID: authService.currentUserId)
                 await StoreService.shared.identifyRevenueCat(userID: authService.currentUserId)
             }
         }

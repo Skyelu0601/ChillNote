@@ -21,8 +21,7 @@ struct TranslateLanguage: Identifiable {
         TranslateLanguage(id: "de", name: "German", displayName: "Deutsch", flag: "🇩🇪"),
         TranslateLanguage(id: "ja", name: "Japanese", displayName: "日本語", flag: "🇯🇵"),
         TranslateLanguage(id: "es", name: "Spanish", displayName: "Español", flag: "🇪🇸"),
-        TranslateLanguage(id: "pt-BR", name: "Brazilian Portuguese", displayName: "Português (Brasil)", flag: "🇧🇷"),
-        TranslateLanguage(id: "pt-PT", name: "European Portuguese", displayName: "Português (Portugal)", flag: "🇵🇹"),
+        TranslateLanguage(id: "pt-BR", name: "Portuguese", displayName: "Português", flag: "🇧🇷"),
         TranslateLanguage(id: "ko", name: "Korean", displayName: "한국어", flag: "🇰🇷")
     ]
 }
@@ -66,9 +65,6 @@ struct HomeScreenState {
     let isExecutingAction: Bool
 
 
-    let showRecipeSoftLimitAlert: Bool
-    let showRecipeHardLimitAlert: Bool
-    let recipeHardLimit: Int
 
     let hasPendingRecordings: Bool
     let pendingRecordingsCount: Int
@@ -132,8 +128,6 @@ enum HomeScreenAction {
     case openSubscription
     case resolveLinkImportCredits(Note)
 
-    case confirmRecipeSoftLimit
-    case cancelRecipeSoftLimit
 
     case noteDetailDisappear(Note)
 }

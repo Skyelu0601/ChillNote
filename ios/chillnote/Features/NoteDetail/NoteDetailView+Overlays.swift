@@ -26,9 +26,6 @@ struct NoteDetailOverlaysView: View {
                 refinedOverlay
             }
 
-            if viewModel.showAIToolbar {
-                aiToolbarOverlay
-            }
         }
     }
 
@@ -84,34 +81,6 @@ struct NoteDetailOverlaysView: View {
             .onAppear {
                 viewModel.triggerVoiceRefinedHaptic()
             }
-        }
-    }
-
-    private var aiToolbarOverlay: some View {
-        VStack {
-            Spacer()
-            HStack {
-                Spacer()
-                AIPreviewCard(
-                    onRetry: {
-                        onBeforeContentAction()
-                        viewModel.send(.aiRetryTapped)
-                    },
-                    onUndo: {
-                        onBeforeContentAction()
-                        viewModel.send(.aiUndoTapped)
-                    },
-                    onSave: {
-                        onBeforeContentAction()
-                        viewModel.send(.aiSaveTapped)
-                    }
-                )
-                .frame(maxWidth: 360)
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 20)
-            .transition(.move(edge: .bottom).combined(with: .opacity))
         }
     }
 

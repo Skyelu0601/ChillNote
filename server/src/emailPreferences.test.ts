@@ -14,6 +14,7 @@ test("each active email kind belongs to exactly one choice", () => {
   assert.equal(categoryForEmailKind("trial_ending_48h"), "subscription_billing");
   assert.equal(categoryForEmailKind("trial_cancelled_winback"), "marketing");
   assert.equal(categoryForEmailKind("billing_issue"), "subscription_billing");
+  assert.equal(categoryForEmailKind("renewal_check"), "subscription_billing");
   assert.equal(categoryForEmailKind("unknown"), null);
 });
 
@@ -26,6 +27,7 @@ test("a category opt-out stops only that category", () => {
   assert.equal(categoryAllowsEmail("trial_ending_48h", preference), false);
   assert.equal(categoryAllowsEmail("trial_cancelled_winback", preference), true);
   assert.equal(categoryAllowsEmail("billing_issue", preference), false);
+  assert.equal(categoryAllowsEmail("renewal_check", preference), false);
   assert.equal(categoryAllowsEmail("marketing_winback_1", null), true);
   assert.equal(categoryAllowsEmail("billing_issue", null), true);
   assert.equal(categoryAllowsEmail("trial_cancelled_winback", null), true);

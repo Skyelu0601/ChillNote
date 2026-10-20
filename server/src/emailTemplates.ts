@@ -247,7 +247,7 @@ export function renderBillingIssueEmail(input: BillingIssueTemplateInput): Rende
     badge: "Payment issue",
     heading: "Your Pro renewal",
     headingAccent: "couldn't be completed.",
-    intro: "The App Store or Google Play reported a payment issue with your ChillScript Pro subscription.",
+    intro: "There is a billing issue with your ChillScript Pro renewal. Please review your subscription and payment method in the App Store or Google Play.",
     accent: "#B94A36",
     panelLabel: "What to do next",
     panelValue: "Open your store's subscription settings and follow the instructions to check or update your payment method.",

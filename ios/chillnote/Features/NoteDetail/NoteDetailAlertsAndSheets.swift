@@ -2,7 +2,6 @@ import SwiftUI
 
 struct NoteDetailAlertsAndSheets: ViewModifier {
     @ObservedObject var viewModel: NoteDetailViewModel
-    let onAISkillApplied: () -> Void
 
     func body(content: Content) -> some View {
         content
@@ -10,27 +9,6 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
                 AddTagSheetView(initialColorHex: viewModel.newTagColorHex) { name, colorHex in
                     viewModel.confirmTag(name, preferredColorHex: colorHex)
                 }
-            }
-            .sheet(isPresented: $viewModel.showAISkillsSheet, onDismiss: viewModel.aiSkillsSheetDidDismiss) {
-                NoteDetailAISkillsSheet(
-                    onSelect: { viewModel.startAISkill($0) }
-                )
-            }
-            .sheet(isPresented: $viewModel.showAISkillTranslateSheet, onDismiss: viewModel.aiSkillTranslateSheetDidDismiss) {
-                TranslateSheetView(
-                    translateLanguages: TranslateLanguage.defaultLanguages,
-                    onSelect: { viewModel.startPendingTranslateAISkill(targetLanguage: $0) },
-                    onCancel: { viewModel.cancelPendingTranslateAISkill() }
-                )
-            }
-            .sheet(item: $viewModel.aiSkillPreview) { preview in
-                NoteDetailAISkillPreviewSheet(
-                    preview: preview,
-                    onApply: {
-                        viewModel.applyAISkillPreview(preview, mode: $0)
-                        onAISkillApplied()
-                    }
-                )
             }
             .alert(L10n.text("note_detail.alert.delete.title"), isPresented: $viewModel.showDeleteConfirmation) {
                 Button(L10n.text("common.cancel"), role: .cancel) { }
@@ -70,13 +48,11 @@ struct NoteDetailAlertsAndSheets: ViewModifier {
 
 extension View {
     func noteDetailAlertsAndSheets(
-        viewModel: NoteDetailViewModel,
-        onAISkillApplied: @escaping () -> Void
+        viewModel: NoteDetailViewModel
     ) -> some View {
         modifier(
             NoteDetailAlertsAndSheets(
-                viewModel: viewModel,
-                onAISkillApplied: onAISkillApplied
+                viewModel: viewModel
             )
         )
     }

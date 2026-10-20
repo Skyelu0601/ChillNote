@@ -18,6 +18,7 @@
 - 模板示例：`L10n.text("export.progress.summary", processedCount, totalCount, percentText)`。不要拼接 `"SAVE \(percent)%"` 等英文句子。
 - 权限描述同时维护对应的 `InfoPlist.strings`。
 - 葡萄牙语同时维护 `pt-BR`（巴西）与 `pt-PT`（葡萄牙），不要只补其中一种。
+- 空词条处理：常规 iOS 本地化校验会自动删除键名为空或仅含空白的词条；发现时直接清理，无需再次确认。有正常键名但缺少翻译的词条必须修复翻译，不自动删除。
 - 校验器：[lint_i18n.py](../../scripts/i18n/lint_i18n.py)；仅在词条整理任务需要时使用 [normalize_xcstrings.py](../../scripts/i18n/normalize_xcstrings.py)，避免顺带批量重写词条。
 
 ## Android

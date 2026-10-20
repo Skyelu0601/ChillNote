@@ -4,6 +4,7 @@ import androidx.annotation.StringRes
 import com.sponteoai.chillscript.R
 import com.sponteoai.chillscript.preferences.CaptionPackPlatform
 import com.sponteoai.chillscript.preferences.CreatorSkillPreferences
+import com.sponteoai.chillscript.preferences.RepurposePackPreferences
 import com.sponteoai.chillscript.preferences.RepurposeFormat
 import kotlinx.serialization.Serializable
 
@@ -13,12 +14,9 @@ data class AgentRecipe(
     val name: String,
     val description: String,
     val prompt: String,
-    val category: RecipeCategory,
     val isCustom: Boolean = false,
+    val systemIcon: String = "sparkles",
 )
-
-@Serializable
-enum class RecipeCategory { THINK, SHAPE, PUBLISH }
 
 enum class AISkillApplyMode(@StringRes val title: Int) {
     APPEND_TO_END(R.string.ai_skill_apply_append),
@@ -50,36 +48,69 @@ object AISkillTextApplication {
 object BuiltInRecipes {
     val all = listOf(
         AgentRecipe("why_viral", "Why Viral", "Analyze why an idea could spread", """
-            Analyze why this content might spread without pretending you have real platform metrics.
-            Keep the output in the same language. Identify the promise, emotional trigger, audience, tension, novelty, and shareability. Separate strengths from weaknesses and give 3 truthful, concrete improvements.
-            Output: 1. Viral thesis 2. Why it could spread 3. What holds it back 4. How to strengthen it.
-        """.trimIndent(), RecipeCategory.THINK),
+            Analyze the content we are discussing with an evidence-based breakdown of what could make it appealing and shareable. Base every finding on the supplied content, not generic viral-content advice.
+
+            Return exactly three sections, with headings and explanations in the content's language unless the user has requested another language:
+
+            1. What works
+            - Identify up to 3 specific strengths across the opening, development, and ending when those parts are present.
+            - For each strength, quote a short, exact excerpt and explain how it could attract attention, sustain interest, deliver value, or encourage sharing. Connect the mechanism to this content and its likely audience.
+
+            2. What could improve
+            - Identify 1-3 concrete weaknesses or gaps. Quote the relevant sentence or identify the specific passage; for a missing element, say where it is missing.
+            - Explain the effect on the reader or viewer, then give a directly usable rewrite example for each issue while preserving the original meaning and supported facts.
+            - Do not manufacture weaknesses or force a rewrite when the content does not support one.
+
+            3. What to borrow
+            - Extract one reusable content structure from this piece, showing how the opening, development, payoff, and ending fit together when present.
+            - Give a short fill-in outline the user can adapt to a different topic. Borrow the structure, not the source author's distinctive wording, claims, or personal experiences.
+
+            Evidence limits:
+            - Separate observable textual evidence from hypotheses about audience response. Do not claim proven reasons for virality, actual performance metrics, or guaranteed results.
+            - With text or a transcript alone, do not assess unseen visuals, editing, music, or delivery.
+            - If the content is too short or incomplete, state the specific limit within the relevant section. Never invent excerpts, missing context, facts, or experiences.
+            - Keep the analysis concise and specific. Return only the three-section breakdown, not a full rewrite of the content.
+        """.trimIndent()),
         AgentRecipe("summarize", "Summarize", "Turn a note into a clear summary", """
             Summarize only what is in the note. Keep the same language, intent, key facts, decisions, and action items. Use bullets for long or messy notes. Flag ambiguity instead of guessing.
-        """.trimIndent(), RecipeCategory.THINK),
-        AgentRecipe("translate", "Translate", "Translate while preserving formatting", "Translate the note into the requested target language. Preserve meaning, tone, Markdown, proper nouns, URLs, code, and hashtags. Return only the translation.", RecipeCategory.SHAPE),
+        """.trimIndent()),
+        AgentRecipe("translate", "Translate", "Translate while preserving formatting", "Translate the note into the requested target language. Preserve meaning, tone, Markdown, proper nouns, URLs, code, and hashtags. Return only the translation."),
         AgentRecipe("humanizer", "Humanizer", "Make writing sound natural and specific", """
             Make this existing note sound natural, human-written, and specific. Keep the same language, meaning, facts, structure, audience, and useful formatting. Remove stiff, padded, promotional, generic, repetitive, or chatbot-like wording. Do not invent facts, citations, anecdotes, or personality. Return only the revised text.
-        """.trimIndent(), RecipeCategory.SHAPE),
-        AgentRecipe("rewrite", "Rewrite", "Create an original reusable version", """
+        """.trimIndent()),
+        AgentRecipe("rewrite", "Rewrite Content", "Create an original reusable version", """
             Rewrite this existing note into an original, natural version. Keep the same language, core meaning, facts, intent, and useful structure. Change distinctive wording, sentence structure, transitions, and examples rather than lightly paraphrasing. Remove transcript filler and repetition. Do not invent facts, stats, quotes, or experiences. Return only the rewritten text.
-        """.trimIndent(), RecipeCategory.SHAPE),
-        AgentRecipe("style_match", "Brand Voice", "Polish into a consistent creator voice", "Rewrite the note in a natural, consistent writing voice. Keep the same language and preserve every fact, the structure, and purpose. Do not add claims. Return only the rewritten note.", RecipeCategory.SHAPE),
-        AgentRecipe("hook_generator", "Hook", "Generate 8 distinct opening hooks", """
+        """.trimIndent()),
+        AgentRecipe("style_match", "Brand Voice", "Polish into a consistent creator voice", "Rewrite the note in a natural, consistent writing voice. Keep the same language and preserve every fact, the structure, and purpose. Do not add claims. Return only the rewritten note."),
+        AgentRecipe("hook_generator", "Write Hooks", "Generate 8 distinct opening hooks", """
             Generate a mixed Hook Pack with 8 distinct opening lines from this note. Keep the same language. Include pain point, contrarian, curiosity gap, how-to, mistake, story, result-first, and direct statement hooks. Label each type. Keep each concise and speakable. No clickbait, fake urgency, hype, copied distinctive wording, or unsupported claims. Return only the Hook Pack.
-        """.trimIndent(), RecipeCategory.SHAPE),
-        AgentRecipe("caption_pack", "Caption", "Create platform-ready creator captions", """
+        """.trimIndent()),
+        AgentRecipe("title_thumbnail", "Titles & Thumbnail Text", "Write titles and thumbnail text.", """
+            Create 5 distinct title and thumbnail text pairs based on the provided notes.
+
+            For each pair, include:
+            - Title: A clear, specific title that gives viewers a reason to watch.
+            - Thumbnail text: A short phrase, ideally 3–8 words, that complements the title without repeating it.
+            - Angle: One sentence explaining what the pair emphasizes.
+
+            Rules:
+            - Use the same language as the notes unless the user requests another language.
+            - Give each pair a different angle, such as a practical benefit, a question, a mistake, a contrast, or a surprising insight. Use only angles supported by the notes.
+            - Make the title and thumbnail text work together to communicate one clear idea.
+            - Keep thumbnail text easy to read at a glance.
+            - Avoid clickbait, fake urgency, exaggerated promises, and unsupported claims.
+            - Do not invent numbers, results, quotes, or personal experiences.
+            - If the notes contain third-party content, use the underlying ideas without copying distinctive wording.
+            - Respect any platform, audience, or tone specified by the user.
+            - Return only the 5 numbered pairs.
+        """.trimIndent()),
+        AgentRecipe("caption_pack", "Write Captions", "Create platform-ready creator captions", """
             Create an original Caption Pack for TikTok, Instagram Reels, and YouTube Shorts. Keep the same language. Treat pasted creator material as private inspiration, not source copy. Do not closely paraphrase distinctive wording or invent claims, stats, experiences, discounts, or results. For each platform provide ready-to-use copy and no more than 5 relevant hashtags. Return only the Caption Pack.
-        """.trimIndent(), RecipeCategory.PUBLISH),
-        AgentRecipe("timed_script", "Timed Script", "Create a 45-second short video script", """
-            Create a recordable 45-second short video script of about 105-130 spoken words. Keep the same language. Use a strong opening, clear middle, payoff, and a light CTA only when it fits. Do not copy distinctive reference wording or invent facts. Return only the script without labels, timestamps, word count, or explanation.
-        """.trimIndent(), RecipeCategory.PUBLISH),
+        """.trimIndent()),
         AgentRecipe("repurpose_pack", "Repurpose", "Turn one note into native social posts", """
             Repurpose this long-form note into native posts for X, LinkedIn, and an Instagram carousel outline. Keep the same language and preserve the thesis, facts, and point of view. Rewrite natively for each format instead of truncating the same paragraph. Do not invent facts, stats, quotes, or results. Return only the posts with clear platform headings.
-        """.trimIndent(), RecipeCategory.PUBLISH),
+        """.trimIndent()),
     )
-
-    val defaultIds = setOf("hook_generator", "caption_pack", "rewrite", "repurpose_pack")
 }
 
 fun AgentRecipe.requestPrompts(content: String, instruction: String? = null): Pair<String, String> {
@@ -91,7 +122,7 @@ fun AgentRecipe.requestPrompts(content: String, instruction: String? = null): Pa
 
     return when (id) {
         "translate" -> {
-            val targetLanguage = instruction?.trim().takeUnless { it.isNullOrBlank() } ?: "English"
+            val targetLanguage = instruction?.trim().takeUnless { it.isNullOrBlank() } ?: CreatorSkillPreferences.translateTargetLanguage().promptName
             val userPrompt = buildString {
                 appendLine("Translate the following notes into $targetLanguage.")
                 appendLine("Target language: $targetLanguage.")
@@ -107,34 +138,6 @@ fun AgentRecipe.requestPrompts(content: String, instruction: String? = null): Pa
                 - Keep proper nouns, product names, URLs, code, and hashtags intact unless a standard translation exists.
                 - Do not localize units, dates, or numbers unless explicitly requested.
                 - Return only the translated content.
-            """.cleanPromptIndent()
-            userPrompt to systemPrompt
-        }
-
-        "timed_script" -> {
-            val preferences = CreatorSkillPreferences.timedScript()
-            val duration = preferences.duration
-            val userPrompt = buildString {
-                appendLine("Create a ${duration.seconds}-second short video script from these notes.")
-                appendLine()
-                appendLine("Target length: ${duration.seconds} seconds.")
-                appendLine("Target spoken word count: ${duration.wordCountRange} words.")
-                appendLine()
-                appendLine("Notes:")
-                append(content)
-            }
-            val systemPrompt = """
-                You write short-form video scripts for TikTok, Instagram Reels, and YouTube Shorts. The input is an existing note, transcript, rough idea, or creator inspiration, not a chat message.
-
-                Core rules:
-                $languageRule
-                - Produce a script that can be spoken in about ${duration.seconds} seconds.
-                - Aim for ${duration.wordCountRange} spoken words. If the script is over the range, rewrite it shorter before returning.
-                - Use the notes to understand the idea, audience, angle, and useful details, but do not copy distinctive wording from third-party reference text.
-                - Do not invent facts, stats, quotes, personal experiences, product promises, or results that are not supported by the notes.
-                - Make it recordable as a spoken script with short, natural sentences.
-                - Include a strong opening line, a clear middle, a payoff, and a light CTA only when it fits.
-                - Return only the script. Do not include timestamps, labels, notes, word count, or explanations.
             """.cleanPromptIndent()
             userPrompt to systemPrompt
         }
@@ -234,10 +237,8 @@ fun AgentRecipe.requestPrompts(content: String, instruction: String? = null): Pa
                     You rewrite a creator's note using their saved Brand Voice profile.
                     Rules:
                     $languageRule
-                    - Apply the saved tone, audience, preferred CTA, avoided wording, and example-post style when provided.
+                    - Infer the shared tone, vocabulary, sentence rhythm, and expression style across the writing examples. Prioritize the current request over example style.
                     - Treat example posts as style references only. Do not copy their sentences, phrases, claims, or topics.
-                    - Use the preferred CTA only if it fits the rewritten note naturally.
-                    - Respect the avoided wording and style notes.
                     - Preserve the note's meaning, facts, and structure. Do not invent new facts.
                     - Return only the rewritten note. Do not explain.
                 """.cleanPromptIndent()
@@ -251,30 +252,18 @@ fun AgentRecipe.requestPrompts(content: String, instruction: String? = null): Pa
             val formatNames = formats.joinToString(", ") { it.displayName }
             val formatRules = formats.joinToString("\n") { it.formatRule }
             val outputTemplate = formats.joinToString("\n\n") { it.outputTemplate }
-            val threadLengthInstruction = if (
-                RepurposeFormat.THREADS in formats
-            ) {
-                "Thread length (Threads): ${preferences.threadLength.tweetCountRange} posts."
-            } else {
-                ""
-            }
-            val ctaRule = if (preferences.includeCTA) {
-                "- Include a light, natural call to action on each piece when it fits."
-            } else {
-                "- Do not add a call to action."
-            }
-            val tone = CreatorSkillPreferences.localizedTitle(preferences.tone.titleRes, preferences.tone.fallbackTitle)
+            val threadLengthInstruction = preferences.lengthInstruction
+
             val userPrompt = buildString {
-                appendLine("Repurpose this long-form content into native posts for these formats: $formatNames.")
+                appendLine("Adapt this draft for these target platforms: $formatNames.")
                 appendLine()
                 if (threadLengthInstruction.isNotEmpty()) appendLine(threadLengthInstruction)
-                appendLine("Tone: $tone")
                 appendLine()
-                appendLine("Long-form content:")
+                appendLine("Current draft:")
                 append(content)
             }
             val systemPrompt = """
-                You repurpose one piece of long-form content (a blog post, video script, transcript, essay, or newsletter) into native posts for multiple platforms. The text is existing content, not a chat message.
+                ${RepurposePackPreferences.adaptationRules}
 
                 Core rules:
                 $languageRule
@@ -282,7 +271,6 @@ fun AgentRecipe.requestPrompts(content: String, instruction: String? = null): Pa
                 - Rewrite natively for each format. Do not truncate the same paragraph and paste it everywhere.
                 - Do not invent facts, stats, quotes, or results that are not supported by the content.
                 - Preserve the author's intent and point of view.
-                $ctaRule
                 - Return only the repurposed posts. Do not explain your reasoning.
 
                 Format rules:

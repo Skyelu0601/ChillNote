@@ -311,7 +311,7 @@ struct NoteDetailRecordPageView: View {
     }
 
     private static func makePreviewPages(from script: String) -> [String] {
-        let words = script
+        let words = RichTextConverter.markdownToAttributedString(script).string
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .split(whereSeparator: { $0.isWhitespace })
             .map(String.init)

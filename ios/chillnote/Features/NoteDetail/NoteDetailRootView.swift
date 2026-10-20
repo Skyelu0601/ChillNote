@@ -22,7 +22,6 @@ struct NoteDetailView: View {
     @State private var activeVoiceAlert: VoiceAlertState?
     @State private var editorController = RichTextEditorController()
     @State private var workspacePage: NoteDetailWorkspacePage = .script
-    @State private var isConversationExpanded = false
     @State private var isEditorActive = false
     @State private var pendingLinkImportUpgrade = false
 
@@ -82,7 +81,6 @@ struct NoteDetailView: View {
             Color.bgSecondary.ignoresSafeArea()
 
             VStack(alignment: .leading, spacing: 0) {
-                if !isConversationExpanded {
                 NoteDetailHeaderView(
                     isDeleted: viewModel.isDeleted,
                     onBack: {
@@ -143,13 +141,10 @@ struct NoteDetailView: View {
                     onSelect: selectWorkspacePage
                 )
 
-                }
-
                 GeometryReader { geometry in
                     if workspacePage == .create {
                         NoteConversationView(
                             store: conversation, recipes: workspaceRecipes,
-                            isExpanded: $isConversationExpanded,
                             enabled: viewModel.isInteractionEnabled,
                             content: note.content, onSkill: startAISkill,
                             save: viewModel.replaceConversationContent
@@ -161,10 +156,8 @@ struct NoteDetailView: View {
                             case .script:
                                 NoteDetailEditorSectionView(
                                     noteContent: noteContentBinding,
-                                    editorSelection: $viewModel.editorSelection,
                                     editorController: editorController,
                                     isDeleted: viewModel.isDeleted,
-                                    isProcessing: viewModel.isProcessing,
                                     isVoiceProcessing: viewModel.isVoiceProcessing,
                                     minimumHeight: minimumContentHeight,
                                     isEditing: $isEditorActive,
@@ -219,8 +212,7 @@ struct NoteDetailView: View {
             TeleprompterCameraView(initialScript: note.content)
         }
         .noteDetailAlertsAndSheets(
-            viewModel: viewModel,
-            onAISkillApplied: returnToNoteWorkspace
+            viewModel: viewModel
         )
         .onChange(of: viewModel.voiceProcessingErrorMessage) { _, message in
             guard let message else { return }
@@ -244,8 +236,7 @@ struct NoteDetailView: View {
                 viewModel.commitPendingEdits()
             }
         }
-        .onChange(of: firstActionGuide.stage) { _, stage in
-            if stage == .tapRecordTab || stage == .tapTeleprompter { isConversationExpanded = false }
+        .onChange(of: firstActionGuide.stage) { _, _ in
             syncWorkspaceWithFirstActionGuide()
         }
         .animation(.easeInOut(duration: 0.2), value: isEditorActive)
@@ -318,12 +309,6 @@ struct NoteDetailView: View {
         conversation.send(recipe: recipe)
     }
 
-    private func returnToNoteWorkspace() {
-        withAnimation(.easeInOut(duration: 0.2)) {
-            workspacePage = .script
-        }
-    }
-
     private func openTeleprompter() {
         editorController.endEditing()
         editorController.flush()
@@ -332,9 +317,7 @@ struct NoteDetailView: View {
     }
 
     private var workspaceRecipes: [AgentRecipe] {
-        let installed = recipeManager.savedRecipes.filter {
-            !RecipeManager.retiredRecipeIds.contains($0.id)
-        }
+        let installed = recipeManager.favoriteRecipes
 
         if !installed.isEmpty {
             return installed

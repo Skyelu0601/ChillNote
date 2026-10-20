@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import java.util.UUID
 
@@ -16,6 +17,8 @@ class RecipeStore(context: Context) {
     private var customRecipes = readCustom()
     private val mutableInstalled = MutableStateFlow(loadInstalled())
     val installed: StateFlow<List<AgentRecipe>> = mutableInstalled.asStateFlow()
+    private val mutableFavorites = MutableStateFlow(loadFavorites())
+    val favorites: StateFlow<List<AgentRecipe>> = mutableFavorites.asStateFlow()
 
     val available: List<AgentRecipe>
         get() = BuiltInRecipes.all + customRecipes.getOrElse { emptyList() }
@@ -24,31 +27,37 @@ class RecipeStore(context: Context) {
 
     init {
         CreatorSkillPreferences.initialize(context)
-        if (!preferences.contains(KEY_INSTALLED_IDS)) {
-            saveInstalledIds(BuiltInRecipes.defaultIds)
-            mutableInstalled.value = loadInstalled()
-        }
     }
 
     fun toggle(recipe: AgentRecipe) {
-        val ids = mutableInstalled.value.mapTo(mutableSetOf()) { it.id }
-        if (!ids.add(recipe.id)) ids.remove(recipe.id)
-        saveInstalledIds(ids)
-        mutableInstalled.value = loadInstalled()
+        val ids = mutableFavorites.value.map { it.id }.toMutableList()
+        if (recipe.id in ids) {
+            if (ids.size <= 1) return
+            ids.remove(recipe.id)
+        }
+        else if (ids.size < 4) ids.add(recipe.id)
+        saveFavoriteIds(ids)
     }
 
-    fun addCustom(name: String, prompt: String): AgentRecipe {
+    fun replaceFavorite(old: AgentRecipe, recipe: AgentRecipe) {
+        val ids = mutableFavorites.value.map { it.id }.toMutableList()
+        val index = ids.indexOf(old.id)
+        if (index < 0 || recipe.id in ids) return
+        ids[index] = recipe.id
+        saveFavoriteIds(ids)
+    }
+
+    fun addCustom(name: String, prompt: String, systemIcon: String = "sparkles"): AgentRecipe {
         val recipe = AgentRecipe(
             id = "custom_${UUID.randomUUID()}",
             name = name.trim(),
             description = "Custom skill",
             prompt = prompt.trim(),
-            category = RecipeCategory.SHAPE,
             isCustom = true,
+            systemIcon = systemIcon.ifBlank { "sparkles" },
         )
         val custom = customRecipes.getOrThrow() + recipe
         saveCustom(custom)
-        saveInstalledIds(mutableInstalled.value.mapTo(mutableSetOf()) { it.id } + recipe.id)
         mutableInstalled.value = loadInstalled()
         return recipe
     }
@@ -57,23 +66,39 @@ class RecipeStore(context: Context) {
         if (!recipe.isCustom) return
         val custom = customRecipes.getOrThrow().filterNot { it.id == recipe.id }
         saveCustom(custom)
-        saveInstalledIds(mutableInstalled.value.mapTo(mutableSetOf()) { it.id }.apply { remove(recipe.id) })
+        saveFavoriteIds(mutableFavorites.value.map { it.id }.filterNot { it == recipe.id })
         mutableInstalled.value = loadInstalled()
     }
 
     fun clearUserData() {
         check(preferences.edit().clear().commit()) { "Could not clear creator skill preferences" }
         customRecipes = Result.success(emptyList())
-        saveInstalledIds(BuiltInRecipes.defaultIds)
+        saveFavoriteIds(DEFAULT_FAVORITE_IDS)
         mutableInstalled.value = loadInstalled()
     }
 
-    private fun loadInstalled(): List<AgentRecipe> {
+    private fun loadInstalled(): List<AgentRecipe> = available
+
+    private fun loadFavorites(): List<AgentRecipe> {
+        val ids = preferences.getString(KEY_FAVORITES, null)?.let { encoded ->
+            runCatching { json.decodeFromString<List<String>>(encoded) }.getOrNull()
+        } ?: DEFAULT_FAVORITE_IDS
         val all = available.associateBy { it.id }
-        val ids = preferences.getStringSet(KEY_INSTALLED_IDS, BuiltInRecipes.defaultIds).orEmpty()
-        return ids.mapNotNull(all::get).sortedBy { recipe ->
-            listOf("hook_generator", "caption_pack", "rewrite", "repurpose_pack").indexOf(recipe.id).let { if (it < 0) Int.MAX_VALUE else it }
+        return ids.distinct().mapNotNull(all::get).take(4).ifEmpty {
+            DEFAULT_FAVORITE_IDS.take(1).mapNotNull(all::get)
         }
+    }
+
+    private fun saveFavoriteIds(ids: List<String>) {
+        val valid = available.mapTo(mutableSetOf()) { it.id }
+        val normalized = ids.distinct().filter { it in valid }.take(4).ifEmpty {
+            DEFAULT_FAVORITE_IDS.take(1).filter { it in valid }
+        }
+        val encoded = json.encodeToString(ListSerializer(String.serializer()), normalized)
+        check(preferences.edit().putString(KEY_FAVORITES, encoded).commit()) {
+            "Could not save favorite creator skills"
+        }
+        mutableFavorites.value = loadFavorites()
     }
 
     private fun readCustom(): Result<List<AgentRecipe>> = runCatching {
@@ -88,14 +113,9 @@ class RecipeStore(context: Context) {
         customRecipes = Result.success(recipes)
     }
 
-    private fun saveInstalledIds(ids: Set<String>) {
-        check(preferences.edit().putStringSet(KEY_INSTALLED_IDS, ids).commit()) {
-            "Could not save installed creator skills"
-        }
-    }
-
     private companion object {
-        const val KEY_INSTALLED_IDS = "installed_ids"
+        const val KEY_FAVORITES = "favorite_ids"
+        val DEFAULT_FAVORITE_IDS = listOf("rewrite", "hook_generator", "caption_pack", "repurpose_pack")
         const val KEY_CUSTOM = "custom_recipes"
     }
 }

@@ -113,6 +113,7 @@ import com.sponteoai.chillscript.domain.sourceMetadata
 import com.sponteoai.chillscript.ui.skills.recipeName
 import com.sponteoai.chillscript.ui.skills.CreatorSkillIcon
 import com.sponteoai.chillscript.ui.markdown.EditableRichMarkdown
+import com.sponteoai.chillscript.ui.markdown.markdownAnnotatedString
 import com.sponteoai.chillscript.ui.source.NoteSourceCard
 import com.sponteoai.chillscript.ui.theme.ChillColors
 import com.sponteoai.chillscript.ui.home.HomeFirstActionGuideState
@@ -144,7 +145,7 @@ fun EditorScreen(
     onRemoveTag: (TagEntity) -> Unit,
     onSelectRecipe: (AgentRecipe) -> Unit,
     onManageSkills: () -> Unit,
-    skillsPanelContent: @Composable (onDismiss: () -> Unit, onSelect: (AgentRecipe) -> Unit) -> Unit,
+    skillsPanelContent: @Composable (onDismiss: () -> Unit) -> Unit,
     conversationFactory: (NoteEntity) -> com.sponteoai.chillscript.ai.NoteConversationController,
     onReplaceConversationContent: suspend (String) -> Boolean,
     onConversationSettled: (Boolean) -> Unit,
@@ -175,8 +176,6 @@ fun EditorScreen(
     val conversation = remember(note?.id) { note?.let(conversationFactory) }
     DisposableEffect(conversation) { onDispose { conversation?.cancel() } }
     var workspace by remember { mutableStateOf(IOSNoteWorkspace.NOTE) }
-    var conversationExpanded by remember(note?.id) { mutableStateOf(false) }
-    BackHandler(enabled = conversationExpanded) { conversationExpanded = false }
     var menuOpen by remember { mutableStateOf(false) }
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
@@ -199,7 +198,6 @@ fun EditorScreen(
     }
 
     LaunchedEffect(guideStage) {
-        if (guideStage == HomeFirstActionStage.TapRecordTab || guideStage == HomeFirstActionStage.TapTeleprompter) conversationExpanded = false
         // Keep the conversation visible after applying; let the user choose Record.
         if (guideStage == HomeFirstActionStage.TapRecordTab) return@LaunchedEffect
         val guidedWorkspace = when (guideStage) {
@@ -217,7 +215,6 @@ fun EditorScreen(
 
     LaunchedEffect(returnToNoteRequest) {
         if (returnToNoteRequest > 0L) {
-            conversationExpanded = false
             focusManager.clearFocus()
             workspace = IOSNoteWorkspace.NOTE
         }
@@ -225,7 +222,6 @@ fun EditorScreen(
 
     Box(modifier.fillMaxSize().background(ChillColors.BackgroundSecondary)) {
         Column(Modifier.fillMaxSize().statusBarsPadding()) {
-            if (!conversationExpanded) {
             Row(
                 Modifier.fillMaxWidth().height(56.dp).padding(horizontal = 20.dp, vertical = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -310,13 +306,11 @@ fun EditorScreen(
                     }
                 },
             )
-            }
             BoxWithConstraints(Modifier.fillMaxWidth().weight(1f)) {
                 val minimumContentHeight = maxHeight.coerceAtLeast(120.dp)
                 if (workspace == IOSNoteWorkspace.CREATE && conversation != null) {
                     NoteConversationWorkspace(
                         controller = conversation, content = text.text, recipes = workspaceRecipes,
-                        expanded = conversationExpanded, onToggleExpanded = { conversationExpanded = !conversationExpanded },
                         enabled = canUseAISkills && !isDeleted, onReplace = onReplaceConversationContent,
                         onSkillSelected = onOpenAISkill, onFirstSkillBounds = { firstSkillBounds = it },
                         skillsPanelContent = skillsPanelContent,
@@ -1269,8 +1263,9 @@ private fun IOSNoteMenuItem(title: Int, icon: ImageVector, destructive: Boolean 
     )
 }
 
-private fun teleprompterPages(script: String, emptyScript: String): List<String> {
-    val words = script.trim().split(Regex("\\s+")).filter(String::isNotBlank)
+internal fun teleprompterPages(script: String, emptyScript: String): List<String> {
+    val plainScript = markdownAnnotatedString(script, Color.White, Color.White).text
+    val words = plainScript.trim().split(Regex("\\s+")).filter(String::isNotBlank)
     if (words.isEmpty()) return listOf(emptyScript)
     val pageCount = ((words.size + 69) / 70).coerceIn(1, 3)
     val pageSize = (words.size + pageCount - 1) / pageCount

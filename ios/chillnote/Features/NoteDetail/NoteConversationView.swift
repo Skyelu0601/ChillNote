@@ -3,34 +3,21 @@ import SwiftUI
 struct NoteConversationView: View {
     @ObservedObject var store: NoteConversationStore
     let recipes: [AgentRecipe]
-    @Binding var isExpanded: Bool
     let enabled: Bool
     let content: String
     let onSkill: (AgentRecipe) -> Void
     let save: (String) -> Bool
     @State private var showsSkills = false
-    @State private var selectedSkill: AgentRecipe?
+    @State private var showsClearConfirmation = false
     @State private var readingPosition: String?
     @FocusState private var focused: Bool
 
     private var quickSkills: [AgentRecipe] {
-        let preferred = ["rewrite", "hook_generator", "caption_pack", "repurpose_pack"]
-        let ordered = preferred.compactMap { id in recipes.first { $0.id == id } }
-        return Array((ordered + recipes.filter { !preferred.contains($0.id) }).prefix(4))
+        Array(recipes.prefix(4))
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            if isExpanded {
-                HStack {
-                    expandButton
-                    Spacer()
-                    Text(L10n.text("chillo.title")).font(.headline)
-                    Spacer()
-                    Color.clear.frame(width: 44, height: 44)
-                }
-                .padding(.horizontal, 12)
-            }
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 24) {
@@ -51,7 +38,7 @@ struct NoteConversationView: View {
                         Color.clear.frame(height: 1).id("conversation-bottom")
                     }
                     .scrollTargetLayout()
-                    .padding(.vertical, 20)
+                    .padding(.vertical, store.turns.isEmpty ? 12 : 20)
                 }
                 .scrollPosition(id: $readingPosition, anchor: .top)
                 .scrollDismissesKeyboard(.interactively)
@@ -59,69 +46,140 @@ struct NoteConversationView: View {
                 .onChange(of: store.busy) { _, _ in scrollToBottom(proxy) }
                 .onChange(of: focused) { _, focus in if focus { scrollToBottom(proxy) } }
             }
-            .overlay(alignment: .topLeading) {
-                if !isExpanded { expandButton.padding(.leading, 12).padding(.top, 8) }
-            }
             composer
         }
         .background(Color.bgSecondary)
-        .sheet(isPresented: $showsSkills, onDismiss: {
-            if let recipe = selectedSkill { selectedSkill = nil; onSkill(recipe) }
-        }) {
-            NoteDetailAISkillsSheet(onSelect: { selectedSkill = $0 })
+        .sheet(isPresented: $showsSkills) {
+            NoteDetailAISkillsSheet()
         }
         .sheet(isPresented: $store.showSubscription) { SubscriptionView() }
+        .alert(L10n.text("note_chat.clear.title"), isPresented: $showsClearConfirmation) {
+            Button(L10n.text("common.cancel"), role: .cancel) {}
+            Button(L10n.text("note_chat.clear.action"), role: .destructive) {
+                store.clearConversation()
+                readingPosition = nil
+            }
+        } message: {
+            Text(L10n.text("note_chat.clear.message"))
+        }
     }
 
-    private var expandButton: some View {
-        Button { isExpanded.toggle() } label: {
-            ChatFullscreenIcon(isExpanded: isExpanded)
-                .stroke(Color.textSub, style: StrokeStyle(lineWidth: 1.5, lineCap: .square, lineJoin: .miter))
-                .frame(width: 13, height: 13)
+    private var conversationMenu: some View {
+        Menu {
+            Button {
+                focused = false
+                showsSkills = true
+            } label: {
+                Label(L10n.text("recipes.action.manage"), systemImage: "sparkles")
+            }
+            .disabled(store.busy)
+            .accessibilityIdentifier("note-chat-menu-skills")
+            if !store.turns.isEmpty {
+                Button(role: .destructive) {
+                    focused = false
+                    showsClearConfirmation = true
+                } label: {
+                    Label(L10n.text("note_chat.clear.action"), systemImage: "trash")
+                }
+                .accessibilityIdentifier("note-chat-clear")
+            }
+        } label: {
+            Image(systemName: "ellipsis")
+                .font(.system(size: 18, weight: .semibold))
                 .frame(width: 44, height: 44)
-                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(L10n.text(isExpanded ? "note_chat.collapse" : "note_chat.expand"))
-        .accessibilityIdentifier("note-chat-expand")
+        .foregroundStyle(Color.textSub)
+        .disabled(!enabled)
+        .accessibilityLabel(L10n.text("note_chat.menu"))
+        .accessibilityIdentifier("note-chat-menu")
     }
 
     private var welcome: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            HStack {
-                Text(L10n.text("note_chat.welcome.title"))
-                    .font(.title2.bold()).foregroundStyle(Color.textMain)
-                Spacer(minLength: 0)
-                Button { focused = false; showsSkills = true } label: {
-                    Image(systemName: "ellipsis").frame(width: 44, height: 44)
-                }
-                .foregroundStyle(Color.textSub)
-                .disabled(!enabled || store.busy)
-                .accessibilityLabel(L10n.text("note_chat.all_skills"))
-                .accessibilityIdentifier("note-chat-skills")
-            }
-            Text(L10n.text("note_chat.welcome.message"))
-                .foregroundStyle(Color.textSub)
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(L10n.text("note_chat.welcome.title"))
+                .font(.headline).foregroundStyle(Color.textMain)
+            VStack(spacing: 8) {
                 ForEach(quickSkills) { recipe in
                     Button { sendSkill(recipe) } label: {
-                        HStack(spacing: 10) {
-                            CreatorSkillIcon(recipe: recipe, size: 18, container: 34)
-                            Text(recipe.localizedName).font(.subheadline.weight(.medium))
-                                .foregroundStyle(Color.textMain)
-                                .frame(maxWidth: .infinity, alignment: .leading)
+                        HStack(spacing: 14) {
+                            CreatorSkillIcon(recipe: recipe, size: 20, container: 36)
+                            VStack(alignment: .leading, spacing: 3) {
+                                Text(recipe.localizedName)
+                                    .font(.system(size: 16, weight: .semibold))
+                                    .foregroundStyle(Color.textMain)
+                                Text(quickSkillDescription(recipe))
+                                    .font(.footnote)
+                                    .foregroundStyle(Color.textSub)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                            Image(systemName: "chevron.right")
+                                .font(.system(size: 14, weight: .medium))
+                                .foregroundStyle(Color.textSub)
                         }
-                        .padding(12)
-                        .frame(maxWidth: .infinity, minHeight: 60)
-                        .background(RoundedRectangle(cornerRadius: 14).stroke(Color.borderSubtle))
+                        .padding(10)
+                        .frame(maxWidth: .infinity, minHeight: 60, alignment: .leading)
+                        .background(
+                            RoundedRectangle(cornerRadius: 14)
+                                .fill(recipe.id == quickSkills.first?.id ? Color.brandBlueSoft : Color.bgSecondary)
+                        )
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(recipe.id == quickSkills.first?.id ? Color.brandBlue.opacity(0.12) : Color.borderSubtle)
+                        )
+                        .contentShape(RoundedRectangle(cornerRadius: 14))
                     }
                     .buttonStyle(.plain).disabled(!enabled || store.busy)
                     .accessibilityIdentifier("note-chat-skill-\(recipe.id)")
                     .firstActionGuideTarget(recipe.id == quickSkills.first?.id ? .aiSkills : nil)
                 }
             }
+            VStack(alignment: .leading, spacing: 10) {
+                Text(L10n.text("note_chat.suggestions.title"))
+                    .font(.headline).foregroundStyle(Color.textMain)
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 8) {
+                        promptSuggestion("script")
+                        promptSuggestion("hooks")
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        promptSuggestion("script")
+                        promptSuggestion("hooks")
+                    }
+                }
+            }
+            .padding(.top, 8)
         }
-        .padding(.top, 32)
+        .padding(.top, 4)
+    }
+
+    private func quickSkillDescription(_ recipe: AgentRecipe) -> String {
+        guard !recipe.isCustom else { return recipe.localizedDescription }
+        switch recipe.id {
+        case "rewrite", "hook_generator", "caption_pack", "repurpose_pack":
+            return L10n.text("note_chat.quick_skill.\(recipe.id).description")
+        default:
+            return recipe.localizedDescription
+        }
+    }
+
+    private func promptSuggestion(_ name: String) -> some View {
+        let prompt = L10n.text("note_chat.suggestions.\(name)")
+        return Button {
+            store.input = prompt
+            focused = true
+        } label: {
+            Text(prompt)
+                .font(.caption)
+                .foregroundStyle(Color.textSub)
+                .padding(.horizontal, 12).padding(.vertical, 10)
+                .fixedSize(horizontal: false, vertical: true)
+                .background(Color.bgPrimary, in: Capsule())
+                .overlay(Capsule().stroke(Color.borderSubtle))
+        }
+        .buttonStyle(.plain)
+        .disabled(!enabled || store.busy)
+        .accessibilityIdentifier("note-chat-prompt-\(name)")
     }
 
     private func conversationTurn(_ turn: NoteConversationTurn) -> some View {
@@ -155,10 +213,13 @@ struct NoteConversationView: View {
                     }
                     .disabled(!enabled || store.busy)
                     .accessibilityIdentifier("note-chat-replace-\(turn.id)")
-                    Button { UIPasteboard.general.string = answer } label: {
-                        Image(systemName: "doc.on.doc").frame(width: 44, height: 44)
+                    if store.appliedTurnID == turn.id && store.canUndo(currentContent: content) {
+                        Button(L10n.text("common.undo")) { store.undo(save: save) }
+                            .font(.subheadline)
+                            .accessibilityIdentifier("note-chat-undo")
+                            .disabled(!enabled || store.busy)
                     }
-                    .accessibilityLabel(L10n.text("chillo.copy"))
+                    NoteConversationCopyButton(answer: answer, turnID: turn.id)
                 }
                 .buttonStyle(.plain).foregroundStyle(Color.textMain)
             } else if turn.failed {
@@ -175,34 +236,33 @@ struct NoteConversationView: View {
 
     private var composer: some View {
         VStack(alignment: .leading, spacing: 8) {
+            if !store.turns.isEmpty {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(quickSkills) { recipe in
+                            Button { sendSkill(recipe) } label: {
+                                Text(recipe.localizedName).font(.footnote)
+                                    .padding(.horizontal, 12).padding(.vertical, 8)
+                                    .background(Color.brandBlueSoft, in: Capsule())
+                            }
+                            .buttonStyle(.plain)
+                            .disabled(!enabled || store.busy)
+                            .accessibilityIdentifier("note-chat-skill-\(recipe.id)")
+                            .firstActionGuideTarget(recipe.id == quickSkills.first?.id ? .aiSkills : nil)
+                        }
+                    }
+                }
+            }
             if let error = store.error {
                 Text(error).font(.caption).foregroundStyle(Color.red)
             }
-            if store.canUndo(currentContent: content) {
-                HStack {
-                    Spacer()
-                    Button(L10n.text("common.undo")) { store.undo(save: save) }
-                        .accessibilityIdentifier("note-chat-undo")
-                        .disabled(!enabled || store.busy)
-                }
-            }
             HStack(alignment: .bottom, spacing: 8) {
-                if !store.turns.isEmpty {
-                    Button { focused = false; showsSkills = true } label: {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 18)).foregroundStyle(Color.textSub)
-                            .frame(width: 44, height: 44)
-                    }
-                    .buttonStyle(.plain).disabled(!enabled || store.busy)
+                conversationMenu
                     .padding(.leading, 4).padding(.bottom, 1)
-                    .accessibilityLabel(L10n.text("note_chat.all_skills"))
-                    .accessibilityIdentifier("note-chat-skills")
-                    .firstActionGuideTarget(.aiSkills)
-                }
-                TextField(L10n.text("chillo.placeholder"), text: $store.input, axis: .vertical)
+                TextField(L10n.text("note_chat.input.placeholder"), text: $store.input, axis: .vertical)
                     .lineLimit(1...5).focused($focused)
                     .accessibilityIdentifier("note-chat-input")
-                    .padding(.vertical, 12).padding(.leading, store.turns.isEmpty ? 14 : 0)
+                    .padding(.vertical, 12)
                     .disabled(!enabled)
                 Button {
                     if store.busy { store.cancel() } else { focused = false; store.send() }
@@ -230,25 +290,35 @@ struct NoteConversationView: View {
     }
 }
 
-/// Four-corner fullscreen glyph, matching the Android conversation control.
-private struct ChatFullscreenIcon: Shape {
-    let isExpanded: Bool
+private struct NoteConversationCopyButton: View {
+    let answer: String
+    let turnID: UUID
+    @State private var isCopied = false
+    @State private var copyRevision = 0
 
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        for x in [CGFloat(0), 1] {
-            for y in [CGFloat(0), 1] {
-                let dx: CGFloat = x == 0 ? 1 : -1
-                let dy: CGFloat = y == 0 ? 1 : -1
-                let corner = CGPoint(x: rect.minX + x * rect.width, y: rect.minY + y * rect.height)
-                let horizontal = CGPoint(x: corner.x + dx * rect.width / 3, y: corner.y)
-                let vertical = CGPoint(x: corner.x, y: corner.y + dy * rect.height / 3)
-                let elbow = isExpanded ? CGPoint(x: horizontal.x, y: vertical.y) : corner
-                path.move(to: horizontal)
-                path.addLine(to: elbow)
-                path.addLine(to: vertical)
+    var body: some View {
+        Button {
+            UIPasteboard.general.string = answer
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+            isCopied = true
+            copyRevision += 1
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: isCopied ? "checkmark" : "doc.on.doc")
+                    .frame(width: 44, height: 44)
+                if isCopied {
+                    Text(L10n.text("ai_skills.result.copy_success")).font(.footnote)
+                }
             }
+            .foregroundStyle(isCopied ? Color.accentSecondaryText : Color.textMain)
         }
-        return path
+        .accessibilityLabel(L10n.text("chillo.copy"))
+        .accessibilityValue(isCopied ? L10n.text("ai_skills.result.copy_success") : "")
+        .accessibilityIdentifier("note-chat-copy-\(turnID)")
+        .task(id: copyRevision) {
+            guard copyRevision > 0 else { return }
+            do { try await Task.sleep(for: .seconds(2)) } catch { return }
+            isCopied = false
+        }
     }
 }

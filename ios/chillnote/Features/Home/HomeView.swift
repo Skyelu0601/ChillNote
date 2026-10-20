@@ -47,11 +47,6 @@ struct HomeView: View {
     @State var translateTargetLanguage = ""
     @StateObject var recipeManager = RecipeManager.shared
 
-    let recipeSoftLimit = 5
-    let recipeHardLimit = 8
-    @State var showRecipeSoftLimitAlert = false
-    @State var showRecipeHardLimitAlert = false
-    @State var pendingRecipeForConfirmation: AgentRecipe?
 
     @State var showSubscription = false
     @State var pendingLinkImportUpgradeNoteID: UUID?
@@ -154,9 +149,6 @@ struct HomeView: View {
             headerTitle: headerTitle,
             actionProgress: actionProgress,
             isExecutingAction: isExecutingAction,
-            showRecipeSoftLimitAlert: showRecipeSoftLimitAlert,
-            showRecipeHardLimitAlert: showRecipeHardLimitAlert,
-            recipeHardLimit: recipeHardLimit,
             hasPendingRecordings: hasPendingRecordings,
             pendingRecordingsCount: pendingRecordings.count,
             showPendingRecordings: showPendingRecordings
@@ -181,7 +173,7 @@ struct HomeView: View {
     private var homeViewLifecyclePhaseOne: AnyView {
         AnyView(
             homeRootView
-        .task(id: "\(currentUserId ?? "signed-out")-\(storeService.currentTier)-\(scenePhase == .active)") {
+        .task(id: "\(currentUserId ?? "signed-out")-\(storeService.currentTier)-\(storeService.subscriptionSyncRevision)-\(scenePhase == .active)") {
             await notificationInbox.reload()
         }
         .onChange(of: speechRecognizer.recordingState) { _, newState in
@@ -335,7 +327,7 @@ struct HomeView: View {
         .onReceive(NotificationCenter.default.publisher(for: .sharedImportsRequested)) { _ in
             ProductAnalytics.shared.flushPendingShareExtensionEvents()
             configureFirstActionGuide()
-            importPendingSharedNotes(navigateToLatest: true)
+            importPendingSharedNotes()
         }
         .onReceive(NotificationCenter.default.publisher(for: .pushNotificationDestinationRequested)) { _ in
             handlePendingPushNotificationDestination()
@@ -343,7 +335,7 @@ struct HomeView: View {
         .onChange(of: scenePhase) { _, newPhase in
             guard newPhase == .active else { return }
             ProductAnalytics.shared.flushPendingShareExtensionEvents()
-            importPendingSharedNotes(navigateToLatest: true)
+            importPendingSharedNotes()
             scheduleMaintenance(reason: .foreground)
             Task {
                 await PushNotificationManager.shared.refreshRegistration()
@@ -361,7 +353,7 @@ struct HomeView: View {
             await PushNotificationManager.shared.refreshRegistration()
             await bootstrapHome(for: userId, source: .initialTask)
             configureFirstActionGuide()
-            importPendingSharedNotes(navigateToLatest: true)
+            importPendingSharedNotes()
             await checkForClipboardLinkImport()
             await evaluateImportNotificationPermissionPrompt()
             handlePendingPushNotificationDestination()
@@ -570,12 +562,6 @@ struct HomeView: View {
                 pendingLinkImportUpgradeNoteID = note.id
                 showSubscription = true
             }
-        case .confirmRecipeSoftLimit:
-            showRecipeSoftLimitAlert = false
-            confirmPendingRecipeOverSoftLimit()
-        case .cancelRecipeSoftLimit:
-            pendingRecipeForConfirmation = nil
-            showRecipeSoftLimitAlert = false
         case .noteDetailDisappear(let note):
             let isVisibleInCurrentMode = isNoteVisibleInCurrentMode(note)
             if !isVisibleInCurrentMode {

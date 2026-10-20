@@ -32,7 +32,7 @@ struct TeleprompterFloatingPanel: View {
 
                 GeometryReader { textAreaProxy in
                     ZStack(alignment: .topLeading) {
-                        Text(scriptText)
+                        Text(RichTextConverter.markdownToAttributedString(scriptText).string)
                             .font(.system(size: fontSize, weight: .bold))
                             .lineSpacing(fontSize * 0.35)
                             .foregroundColor(textColor)

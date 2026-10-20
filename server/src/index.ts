@@ -86,6 +86,7 @@ import { createRequireAuth } from "./auth.js";
 import { findActiveAuthUser } from "./authSession.js";
 import { syncRevenueCatUsers } from "./revenueCatSync.js";
 import { registerSubscriptionVerificationRoutes } from "./subscriptionVerification.js";
+import { RevenueCatLookupError, subscriptionErrorDetails } from "./subscriptionDiagnostics.js";
 import {
   isSupportedMediaLinkURL,
   isHandledTikTokTranscriptError,
@@ -102,7 +103,6 @@ import {
 import { preferredLanguageFromHeader } from "./linkImportLocalization.js";
 import {
   deactivatePushDevice,
-  legacyWeeklyTopicsEnabled,
   registerPushDevice,
   scheduleNotificationWorker
 } from "./pushNotifications.js";
@@ -123,7 +123,6 @@ import {
   listWeeklyTopicReports,
   markWeeklyTopicReportRead,
   regenerateWeeklyTopicReport,
-  scheduleWeeklyTopicWorker,
   updateWeeklyTopicSettings,
   weeklyTopicSettingsInputSchema
 } from "./weeklyTopics.js";
@@ -133,7 +132,8 @@ import { registerChillo } from "./chillo.js";
 import {
   handleRevenueCatEmailLifecycle,
   registerEmailRoutes,
-  scheduleEmailWorker
+  scheduleEmailWorker,
+  subscriptionReminderEmailConfigured
 } from "./email.js";
 import { registerSesEventRoute } from "./sesEvents.js";
 
@@ -399,6 +399,12 @@ const requireAuth = createRequireAuth({
   issuer: `${process.env.SUPABASE_URL!.replace(/\/$/, "")}/auth/v1`,
   getClaims: token => supabaseAdmin.auth.getClaims(token),
   findActiveUser: (userId, sessionId) => findActiveAuthUser(prisma, userId, sessionId),
+  onRejected: (reason, path, error) => {
+    if (!["/subscription/status", "/subscription/verify", "/subscription/revenuecat/sync",
+      "/subscription/google/verify", "/notifications"].includes(path)) return;
+    console.warn(JSON.stringify({ event: "subscription_auth_rejected", path, reason,
+      ...subscriptionErrorDetails(error) }));
+  },
   onError: error => console.error("Auth verification failed:", {
     name: error instanceof Error ? error.name : "UnknownError",
     code: typeof error === "object" && error !== null && "code" in error ? error.code : undefined
@@ -461,7 +467,7 @@ function constantTimeStringEqual(left: string, right: string): boolean {
 }
 
 async function fetchRevenueCatCustomer(appUserId: string): Promise<RevenueCatCustomerResponse> {
-  if (!REVENUECAT_API_KEY) throw new Error("REVENUECAT_API_KEY is not configured");
+  if (!REVENUECAT_API_KEY) throw new RevenueCatLookupError("not_configured");
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 15_000);
   try {
@@ -476,7 +482,7 @@ async function fetchRevenueCatCustomer(appUserId: string): Promise<RevenueCatCus
       }
     );
     if (!response.ok) {
-      throw new Error(`RevenueCat customer lookup failed with HTTP ${response.status}`);
+      throw new RevenueCatLookupError("http", response.status);
     }
     return await response.json() as RevenueCatCustomerResponse;
   } finally {
@@ -1739,7 +1745,13 @@ registerAppNotificationRoutes(app, requireAuth, {
   upsertUser,
   // Do not use the AI tier cache when deciding whether to announce a free gift.
   resolveTier: async (userId) => (await getEffectiveSubscription(userId, new Date(), REVENUECAT_ENTITLEMENT_ID)).tier,
-  initialCredits: INITIAL_CREDITS
+  initialCredits: INITIAL_CREDITS,
+  emailConfigured: subscriptionReminderEmailConfigured,
+  emailIdentity: async userId => {
+    const { data, error } = await supabaseAdmin.auth.admin.getUserById(userId);
+    if (error || !data.user || data.user.id !== userId) return null;
+    return { email: data.user.email ?? null, verified: Boolean(data.user.email_confirmed_at) };
+  }
 });
 registerEmailRoutes(app, requireAuth);
 registerSesEventRoute(app);
@@ -1802,8 +1814,9 @@ app.listen(PORT, () => {
   console.log(`ChillScript backend listening on :${PORT}`);
   scheduleLinkImportWorker();
   scheduleNotificationWorker();
-  scheduleEmailWorker();
-  // Keep older installed clients working during the Chillo rollout.
-  if (legacyWeeklyTopicsEnabled()) scheduleWeeklyTopicWorker();
+  scheduleEmailWorker(REVENUECAT_API_KEY ? {
+    entitlementId: REVENUECAT_ENTITLEMENT_ID,
+    fetchCustomer: fetchRevenueCatCustomer
+  } : undefined);
   scheduleGooglePlayBillingWorker(googlePlayBillingDependencies);
 });

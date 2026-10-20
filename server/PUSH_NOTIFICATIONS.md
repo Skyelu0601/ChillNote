@@ -28,6 +28,19 @@ FIRST_CREATION_REMINDER_DELAY_HOURS=24
 NOTIFICATION_POLL_MS=60000
 ```
 
+### Retired Weekly Post Ideas notifications
+
+Weekly Post Ideas no longer runs a scheduled report worker or sends pushes.
+The notification worker cancels queued `weekly_topics_ready` deliveries before
+looking up devices. Import completion and first creation reminders remain active.
+Historical reports and legacy mobile API routes are retained for compatibility.
+
+For a production release that still supports `LEGACY_WEEKLY_TOPICS_ENABLED`, set
+it to `false` in the shared runtime environment and restart the backend with the
+updated environment to stop both generation and delivery immediately. The current
+code removes the worker and push payload entirely, so that flag cannot re-enable
+the retired notifications after deployment.
+
 ## 3. Database
 
 Apply the Prisma migration:

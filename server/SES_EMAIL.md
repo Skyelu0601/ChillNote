@@ -10,6 +10,42 @@ one message 48 hours before `expiration_at_ms`. Cancellation, renewal,
 expiration, and transfer events cancel pending reminders. The worker checks the
 current RevenueCat entitlement again immediately before sending.
 
+## Billing-day renewal checks
+
+When email delivery and the RevenueCat API key are configured, the email worker
+also scans mobile entitlements every five minutes. It saves checks for billing
+dates within the next 24 hours (and catches up only for dates within the past
+24 hours). A check becomes due one hour after the saved billing timestamp;
+the existing email worker polls every 60 seconds by default. Timing follows the
+store's renewal instant, not a midnight-based calendar schedule.
+
+Each check fetches fresh RevenueCat customer information. A new purchase period
+with a later expiry cancels the reminder and schedules the next check. An expiry
+extension alone is not treated as payment success: Google Play can extend access
+during silent grace or an explicit grace period. If payment has not been
+confirmed after one hour, the check sends the billing-issue recovery template,
+even when the store has not yet reported an explicit billing issue. The template
+does not claim that the store reported the issue. The account owner authorized
+this billing-issue treatment for unconfirmed renewals on October 7, 2026.
+
+Voluntary cancellation, refunds, paused subscriptions, family sharing, sandbox
+subscriptions and non-mobile stores are excluded at send time. Missing ownership
+or a changed subscription cancels a check; a failed API request is retried, not
+treated as proof of payment failure. Checks older than 24 hours are cancelled.
+Subscription/billing email opt-outs, confirmed-email requirements and service
+suppression apply to these emails. These checks do not grant or revoke Pro.
+Checks queued under the previous five-minute delay are deferred until one hour
+has elapsed. Confirmed billing-issue webhooks continue to send immediately.
+
+Checks share the existing billing-recovery deduplication key with billing-issue
+webhooks using the original billing date rather than the grace deadline. Delayed
+webhooks additionally check for sent recovery reminders near their event date,
+and replace pending checks in that window. Renewal and transfer webhooks cancel
+pending checks. No database migration or client update is required.
+
+References: [Google Play silent grace period](https://developer.android.com/google/play/billing/lifecycle/subscriptions#silent-grace-period)
+and [RevenueCat customer schema](https://www.revenuecat.com/docs/api-v1/customer-info-model).
+
 The account owner confirmed Marketing is on by default for registered users.
 Only an explicit unsubscribe turns it off. The preference API and signed
 unsubscribe endpoint preserve that choice; the win-back scheduler sends

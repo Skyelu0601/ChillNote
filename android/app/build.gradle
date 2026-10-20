@@ -49,11 +49,6 @@ def firebaseSenderId = firebaseConfigValue("CHILLSCRIPT_FIREBASE_SENDER_ID", "ch
 def revenueCatAndroidApiKey = firebaseConfigValue(
     "CHILLSCRIPT_REVENUECAT_ANDROID_API_KEY", "chillscript.revenuecat.androidApiKey"
 ).trim()
-// AppsFlyer's developer key is a public client SDK key and is safe to ship in the app.
-def appsFlyerDevKey = firebaseConfigValue(
-    "CHILLSCRIPT_APPSFLYER_DEV_KEY", "chillscript.appsflyer.devKey"
-).trim()
-if (!appsFlyerDevKey) appsFlyerDevKey = "zgZpPsE5HK7YBMDALjs2fe"
 def configuredAuthRedirectUri = firebaseConfigValue(
     "CHILLSCRIPT_ANDROID_AUTH_REDIRECT_URI", "chillscript.auth.redirectUri"
 )
@@ -84,8 +79,8 @@ android {
         applicationId "com.sponteoai.chillscript"
         minSdk 26
         targetSdk 36
-        versionCode 22
-        versionName "1.2.22"
+        versionCode 24
+        versionName "1.3.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField "String", "SUPABASE_URL", '"https://qsyhkpaeyzhjojdvbntq.supabase.co"'
         buildConfigField "String", "SUPABASE_ANON_KEY", '"sb_publishable_smWWadjejdbKYvmg3fidsg_41XPu70e"'
@@ -96,7 +91,6 @@ android {
         buildConfigField "String", "FIREBASE_PROJECT_ID", JsonOutput.toJson(firebaseProjectId)
         buildConfigField "String", "FIREBASE_SENDER_ID", JsonOutput.toJson(firebaseSenderId)
         buildConfigField "String", "REVENUECAT_ANDROID_API_KEY", JsonOutput.toJson(revenueCatAndroidApiKey)
-        buildConfigField "String", "APPSFLYER_DEV_KEY", JsonOutput.toJson(appsFlyerDevKey)
         buildConfigField "boolean", "APP_REVIEW_LOGIN_ENABLED", appReviewLoginEnabled.toBoolean().toString()
         buildConfigField "String", "APP_REVIEW_WHITELIST_EMAILS", JsonOutput.toJson(appReviewWhitelistEmails)
         buildConfigField "String", "APP_REVIEW_VERIFICATION_CODE", JsonOutput.toJson(appReviewVerificationCode)
@@ -159,7 +153,6 @@ tasks.matching { it.name == "bundleRelease" || it.name == "assembleRelease" }.co
 }
 
 dependencies {
-    implementation "com.appsflyer:af-android-sdk:7.0.1"
     implementation "com.posthog:posthog-android:3.61.1"
     def composeBom = platform("androidx.compose:compose-bom:2026.06.00")
     implementation composeBom
